@@ -4,7 +4,14 @@ import path from "node:path"
 import { adjudicateLateConvergence, validateBoundTimelineEvidence } from "./lib/ai-painter-stage4-late-convergence-qualification.mjs"
 
 const root = process.cwd()
-const runRoot = path.join(root, ".runtime", "ai-painter", "stage4-fact-conditioned-semantic-mixture-smoke-executions", "20260813-073000000")
+const argument = (name, fallback) => {
+  const index = process.argv.indexOf(name)
+  return index >= 0 && process.argv[index + 1] ? process.argv[index + 1] : fallback
+}
+const runRoot = path.resolve(root, argument(
+  "--smoke-root",
+  ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-smoke-executions/20260813-073000000",
+))
 const read = (value) => JSON.parse(fs.readFileSync(value, "utf8"))
 const input = {
   terminal: read(path.join(runRoot, "finalization", "phase-terminal.json")),

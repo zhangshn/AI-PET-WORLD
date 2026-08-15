@@ -45,7 +45,13 @@ function semanticMixtureDiagnosticMetricsFromConfig(config) {
   const provenance = registry.configurationProvenance?.reusedDiscreteConditionWeight
   const vegetationRepair = config?.training?.stage4VegetationFinalVisibleSemanticRepair
   const vegetationLuminance = config?.training?.stage4VegetationLuminanceSpatialStructureSupervision
-  const expectedCount = vegetationLuminance?.enabled === true
+  const objectVisibleStructure = config?.training?.stage4ObjectVisibleStructureSupervision
+  const objectReferenceMultiscale = config?.training?.stage4ObjectReferenceMultiscaleLuminanceStructureSupervision
+  const expectedCount = objectReferenceMultiscale?.enabled === true
+    ? 48
+    : objectVisibleStructure?.enabled === true
+    ? 32
+    : vegetationLuminance?.enabled === true
     ? 29
     : (vegetationRepair?.enabled === true ? 28 : 27)
   if (
@@ -63,6 +69,18 @@ function semanticMixtureDiagnosticMetricsFromConfig(config) {
       && !fields.includes("stage4SemanticMixtureVegetationFinalTypedEdgeMae"))
     || (vegetationLuminance?.enabled === true
       && !fields.includes("stage4SemanticMixtureVegetationFinalTypedLuminanceCorrelationLoss"))
+    || (objectVisibleStructure?.enabled === true
+      && !["Footprints", "Tree", "Rock", "Vegetation"].every((identity) =>
+        fields.includes(`stage4SemanticMixture${identity}FinalTypedLuminanceCorrelationLoss`)))
+    || (objectReferenceMultiscale?.enabled === true
+      && !["Footprints", "Tree", "Rock", "Vegetation"].every((identity) =>
+        [
+          "NativeLuminanceCorrelationLoss",
+          "HalfLuminanceCorrelationLoss",
+          "QuarterLuminanceCorrelationLoss",
+          "CrossScaleStructureConsistencyLoss",
+          "MultiscaleLuminanceStructureLoss",
+        ].every((suffix) => fields.includes(`stage4SemanticMixture${identity}FinalTyped${suffix}`))))
   ) throw new Error("semantic_mixture_diagnostic_registry_invalid")
   return fields
 }
@@ -1676,7 +1694,10 @@ function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorizat
     || !authorization.requestId
     || authorization.commandRef !== authorization.requestId
     || authorization.scope !== SEMANTIC_MIXTURE_SMOKE_SCOPE
-    || !/^owner-authorized-stage4-fact-conditioned-semantic-mixture-30-epoch-model-smoke-[0-9-]+$/.test(authorization.requestId)
+    || !(
+      /^owner-authorized-stage4-fact-conditioned-semantic-mixture-30-epoch-model-smoke-[0-9-]+$/.test(authorization.requestId)
+      || /^owner-authorized-stage4-object-reference-multiscale-early-convergence-30-epoch-model-smoke-[0-9-]+$/.test(authorization.requestId)
+    )
     || !sameJson([...(authorization.executionActions ?? [])].sort(), STRUCTURE_SMOKE_ACTIONS)
     || !sameJson([...(authorization.explicitlyDeniedActions ?? [])].sort(), denied)
   ) throw new Error("semantic_mixture_smoke_authorization_identity_invalid")
@@ -1764,6 +1785,7 @@ function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorizat
   const implementationConsumption = readJsonRequired(authorization.bindings.implementationConsumption.path)
   const terminal = readJsonRequired(authorization.bindings.readonlyGpuTerminal.path)
   const diagnostic = readJsonRequired(authorization.bindings.readonlyGpuDiagnostic.path)
+  const cudaTelemetry = readJsonRequired(authorization.bindings.cudaTelemetry.path)
   const readonlyCpu = readJsonRequired(authorization.bindings.readonlyCpuReport.path)
   const inactiveConfig = readJsonRequired(authorization.bindings.inactiveConfig.path)
   const semanticMixtureDiagnosticMetrics = semanticMixtureDiagnosticMetricsFromConfig(inactiveConfig)
@@ -1793,11 +1815,125 @@ function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorizat
     && diagnostic.gradientEvidence?.vegetationLuminanceSpatialStructure?.reachesFinalDenoiserRgbPath === true
     && diagnostic.gradientEvidence?.vegetationLuminanceSpatialStructure?.reachesFrozenAutoencoderDecodedRgb === true
   )
+  const fullRolloutQualification = (
+    terminal.status === "stage4_full_rollout_readonly_gpu_qualification_succeeded_closed"
+    && diagnostic.status === "passed_readonly_full_50_step_rollout_gradient_qualification"
+    && readonlyCpu.status === "passed_stage4_full_rollout_final_visible_consistency_cpu"
+    && inactiveConfig.training?.stage4FullRolloutFinalVisibleConsistency?.contractId
+      === "stage4_full_rollout_final_visible_consistency_v1"
+    && inactiveConfig.training?.stage4FullRolloutFinalVisibleConsistency?.rolloutSteps === 50
+    && inactiveConfig.training?.stage4FullRolloutFinalVisibleConsistency?.gradientTailSteps === 5
+  )
+  const epochWorstReplayQualification = (
+    terminal.status === "stage4_epoch_worst_readonly_gpu_qualification_succeeded_closed"
+    && diagnostic.status === "passed_stage4_epoch_worst_readonly_gpu_qualification"
+    && readonlyCpu.status === "passed_stage4_epoch_worst_sample_class_replay_cpu"
+    && inactiveConfig.training?.stage4EpochWorstSampleClassReplay?.contractId
+      === "stage4_epoch_global_worst_sample_class_final_visible_replay_v1"
+    && inactiveConfig.training?.stage4EpochWorstSampleClassReplay?.replay
+      ?.passesSource === "training.pathHardExampleReplay.passesPerEpoch"
+  )
+  const objectVisibleStructureQualification = (
+    terminal.status === "stage4_object_visible_structure_phase0_passed_closed"
+    && terminal.diagnosticCheckpointPromotable === false
+    && terminal.smokeStarted === false
+    && terminal.formalTrainingStarted === false
+    && diagnostic.status === "stage4_object_visible_structure_phase0_passed_closed"
+    && diagnostic.optimizerSteps === 1
+    && diagnostic.smokeQuotaConsumed === false
+    && Object.values(diagnostic.equality ?? {}).every((value) => value === true)
+    && cudaTelemetry.status === "phase0_single_cuda_optimizer_step_passed_closed"
+    && cudaTelemetry.weightsChanged === true
+    && cudaTelemetry.autoencoderWeightsChanged === false
+    && cudaTelemetry.fullTrainingInitializationEligible === false
+    && readonlyCpu.status === "stage4_object_visible_structure_phase0_derived_diagnostic_registry_correction_cpu_contract_passed"
+    && readonlyCpu.positivePassed === readonlyCpu.positiveTotal
+    && readonlyCpu.negativePassed === readonlyCpu.negativeTotal
+    && inactiveConfig.training?.stage4ObjectVisibleStructureSupervision?.contractId
+      === "stage4_four_typed_object_visible_structure_supervision_v1"
+    && inactiveConfig.training?.stage4ObjectVisibleStructureSupervision?.status
+      === "cpu_support_verified_inactive"
+  )
+  const objectReferenceMultiscaleQualification = (
+    terminal.status === "stage4_object_reference_multiscale_phase0_passed_closed"
+    && terminal.diagnosticCheckpointPromotable === false
+    && terminal.smokeStarted === false
+    && terminal.formalTrainingStarted === false
+    && diagnostic.status === "stage4_object_reference_multiscale_phase0_passed_closed"
+    && diagnostic.optimizerSteps === 1
+    && diagnostic.backwardCalls === 1
+    && diagnostic.replayOptimizerSteps === 0
+    && diagnostic.diagnosticManifestMetricCount === 48
+    && diagnostic.requiredGradientGroupCount === 5
+    && diagnostic.smokeQuotaConsumed === false
+    && Object.values(diagnostic.equality ?? {}).every((value) => value === true)
+    && cudaTelemetry.status === "phase0_single_cuda_optimizer_step_passed_closed"
+    && cudaTelemetry.optimizerStepCount === 1
+    && cudaTelemetry.backwardCallCount === 1
+    && cudaTelemetry.replayOptimizerStepCount === 0
+    && cudaTelemetry.parameterGradientsCleared === true
+    && cudaTelemetry.weightsChanged === true
+    && cudaTelemetry.autoencoderWeightsChanged === false
+    && cudaTelemetry.diagnosticManifest?.fieldCount === 48
+    && sameJson(Object.keys(cudaTelemetry.requiredGradientGroups ?? {}), ["footprints", "tree", "rock", "vegetation", "combined"])
+    && readonlyCpu.status === "stage4_object_reference_multiscale_phase0_success_continuation_path_correction_cpu_passed"
+    && readonlyCpu.positivePassed === readonlyCpu.positiveTotal
+    && readonlyCpu.negativePassed === readonlyCpu.negativeTotal
+    && identity.trainingObjectiveContractId === "typed_object_multiscale_luminance_structure_correlation_supervision_v1"
+    && sameJson(identity.objectSemanticChannels, ["object_footprints", "object_tree", "object_rock", "object_vegetation"])
+    && sameJson(identity.pyramidScales, [1, 0.5, 0.25])
+    && inactiveConfig.training?.stage4ObjectReferenceMultiscaleLuminanceStructureSupervision?.contractId
+      === "typed_object_multiscale_luminance_structure_correlation_supervision_v1"
+    && inactiveConfig.training?.stage4ObjectReferenceMultiscaleLuminanceStructureSupervision?.status
+      === "cpu_support_verified_inactive"
+    && inactiveConfig.training?.stage4ObjectReferenceMultiscaleLuminanceStructureSupervision?.noveltyBoundary
+      ?.failedSingleScaleContractReuseAllowed === false
+    && inactiveConfig.training?.stage4ObjectVisibleStructureSupervision === undefined
+  )
+  const objectReferenceMultiscaleEarlyConvergenceQualification = (
+    terminal.status === "stage4_two_lane_early_convergence_gpu_qualification_passed_closed"
+    && terminal.optimizerCreated === false
+    && terminal.backwardMethodExecuted === false
+    && terminal.modelWeightsModified === false
+    && terminal.checkpointWritten === false
+    && terminal.trainingStarted === false
+    && terminal.automaticRetryStarted === false
+    && diagnostic.status === "passed_readonly_stage4_two_lane_early_convergence_gpu_gradient_qualification"
+    && diagnostic.identity?.trainingObjectiveContractId === "stage4_object_reference_multiscale_two_lane_early_convergence_stabilization_v1"
+    && diagnostic.identity?.replayLaneCount === 2
+    && diagnostic.diagnosticManifest?.fieldCount === 48
+    && diagnostic.gradientEvidence?.fourObjectVisibleStructure?.combined?.finiteAndStrictlyNonzero === true
+    && diagnostic.gradientEvidence?.twoLaneEarlyConvergenceStabilization?.lane1DenoiserGradientNorm > 0
+    && diagnostic.gradientEvidence?.twoLaneEarlyConvergenceStabilization?.lane2DenoiserGradientNorm > 0
+    && diagnostic.gradientEvidence?.twoLaneEarlyConvergenceStabilization?.combinedTwoLaneDenoiserGradientNorm > 0
+    && diagnostic.gradientEvidence?.twoLaneEarlyConvergenceStabilization?.replayPassesAdded === 0
+    && diagnostic.optimizerCreated === false
+    && diagnostic.backwardMethodExecuted === false
+    && diagnostic.modelWeightsModified === false
+    && diagnostic.checkpointWritten === false
+    && diagnostic.trainingStarted === false
+    && cudaTelemetry.status === "collected_after_readonly_forward_and_autograd_grad"
+    && readonlyCpu.status === "early_convergence_gpu_qualification_finalization_cpu_contract_passed"
+    && readonlyCpu.positivePassed === readonlyCpu.positiveTotal
+    && readonlyCpu.negativePassed === readonlyCpu.negativeTotal
+    && identity.trainingObjectiveContractId === "stage4_object_reference_multiscale_two_lane_early_convergence_stabilization_v1"
+    && sameJson(identity.objectSemanticChannels, ["object_footprints", "object_tree", "object_rock", "object_vegetation"])
+    && sameJson(identity.pyramidScales, [1, 0.5, 0.25])
+    && identity.replayLaneCount === 2
+    && inactiveConfig.training?.stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization?.contractId
+      === "stage4_object_reference_multiscale_two_lane_early_convergence_stabilization_v1"
+    && inactiveConfig.training?.stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization?.status
+      === "cpu_support_verified_inactive"
+    && inactiveConfig.training?.stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization?.replayBudget
+      ?.addsReplayPasses === false
+    && inactiveConfig.training?.stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization?.replayBudget
+      ?.addsOptimizerSteps === false
+  )
   if (
     !["resolved_owner_authorized_not_consumed", "owner_authorized_unconsumed"].includes(implementationAuthorization.status)
     || implementationConsumption.authorizationSha256 !== authorization.bindings.implementationAuthorization.sha256
     || implementationConsumption.oneTimeConsumption !== true
-    || (!legacySemanticMixtureQualification && !finalVisibleRgbQualification && !vegetationRepairQualification && !vegetationLuminanceQualification)
+    || (!legacySemanticMixtureQualification && !finalVisibleRgbQualification && !vegetationRepairQualification && !vegetationLuminanceQualification && !fullRolloutQualification && !epochWorstReplayQualification && !objectVisibleStructureQualification && !objectReferenceMultiscaleQualification && !objectReferenceMultiscaleEarlyConvergenceQualification)
     || readonlyCpu.positivePassed !== readonlyCpu.positiveTotal
     || readonlyCpu.negativePassed !== readonlyCpu.negativeTotal
     || inactiveConfig.denoiserArchitecture !== SEMANTIC_MIXTURE_SMOKE_ARCHITECTURE
@@ -2904,6 +3040,51 @@ function activateConfig(context, consumption) {
     contract.status = "training_loss_active_owner_authorized"
     contract.diagnosticManifestRegistry.fixedEpochs = PREVIEW_EPOCHS
     for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "smoke30EpochNow"]) contract.activationGate[key] = true
+    const fullRollout = training.stage4FullRolloutFinalVisibleConsistency
+    if (fullRollout?.enabled === true) {
+      fullRollout.status = "training_loss_active_owner_authorized"
+      for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "smokeNow"]) {
+        fullRollout.activationGate[key] = true
+      }
+    }
+    const epochWorstReplay = training.stage4EpochWorstSampleClassReplay
+    if (epochWorstReplay?.enabled === true) {
+      epochWorstReplay.status = "training_loss_active_owner_authorized"
+      for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "smokeNow"]) {
+        epochWorstReplay.activationGate[key] = true
+      }
+    }
+    const objectVisibleStructure = training.stage4ObjectVisibleStructureSupervision
+    if (objectVisibleStructure?.enabled === true) {
+      objectVisibleStructure.status = "training_loss_active_owner_authorized"
+      for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "smokeNow"]) {
+        objectVisibleStructure.activationGate[key] = true
+      }
+    }
+    const objectReferenceMultiscale = training.stage4ObjectReferenceMultiscaleLuminanceStructureSupervision
+    if (objectReferenceMultiscale?.enabled === true) {
+      if (
+        objectReferenceMultiscale.contractId !== "typed_object_multiscale_luminance_structure_correlation_supervision_v1"
+        || objectReferenceMultiscale.noveltyBoundary?.failedSingleScaleContractReuseAllowed !== false
+        || training.stage4ObjectVisibleStructureSupervision !== undefined
+      ) throw new Error("object_reference_multiscale_smoke_contract_identity_invalid")
+      objectReferenceMultiscale.status = "training_loss_active_owner_authorized"
+      for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "smokeNow"]) {
+        objectReferenceMultiscale.activationGate[key] = true
+      }
+    }
+    const objectReferenceMultiscaleEarlyConvergence = training.stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization
+    if (objectReferenceMultiscaleEarlyConvergence?.enabled === true) {
+      if (
+        objectReferenceMultiscaleEarlyConvergence.contractId !== "stage4_object_reference_multiscale_two_lane_early_convergence_stabilization_v1"
+        || objectReferenceMultiscaleEarlyConvergence.replayBudget?.addsReplayPasses !== false
+        || objectReferenceMultiscaleEarlyConvergence.replayBudget?.addsOptimizerSteps !== false
+      ) throw new Error("object_reference_multiscale_early_convergence_smoke_contract_identity_invalid")
+      objectReferenceMultiscaleEarlyConvergence.status = "training_loss_active_owner_authorized"
+      for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "smokeNow"]) {
+        objectReferenceMultiscaleEarlyConvergence.activationGate[key] = true
+      }
+    }
     training.stage4FailureDiagnostics.status = "fact_conditioned_semantic_mixture_diagnostic_manifest_supported_active_smoke"
     training.stage4FailureDiagnostics.trainingConfigApplied = true
     training.stage4FailureDiagnostics.checkpointFileReadAuthorized = true
@@ -3366,7 +3547,7 @@ function collectDiagnosticEvidence(context, manifest) {
   const rows = PREVIEW_EPOCHS.map((epoch) => manifest.metrics.find((row) => row.epoch === epoch)).filter(Boolean)
   if (manifest.architectureVersion === "all-validation-multiseed-semantic-rollout-fact-conditioned-semantic-mixture-smoke") {
     const metricNames = context.semanticMixtureDiagnosticMetrics
-    if (!Array.isArray(metricNames) || ![27, 28, 29].includes(metricNames.length)) throw new Error("semantic_mixture_diagnostic_registry_context_missing")
+    if (!Array.isArray(metricNames) || ![27, 28, 29, 32, 48].includes(metricNames.length)) throw new Error("semantic_mixture_diagnostic_registry_context_missing")
     const epochs = rows.map((row) => ({
       epoch: row.epoch,
       metrics: Object.fromEntries(metricNames.map((name) => [name, row[name]])),

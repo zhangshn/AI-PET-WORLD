@@ -14,9 +14,9 @@ import train_ai_assisted_conditional_denoiser as trainer
 
 
 ROOT = Path.cwd().resolve()
-SOURCE = ROOT / ".runtime/ai-painter/stage4-vegetation-luminance-spatial-structure-supervision/20260813-034000000/inactive-config.json"
+DEFAULT_SOURCE = ROOT / ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-smoke-executions/20260813-113000000/active-config.json"
 PACKAGE = ROOT / "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
-IMPLEMENTATION_ROOT = ROOT / ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-semantic-mixture-formal-stage-modes-20260813-043747447"
+IMPLEMENTATION_ROOT = ROOT / ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-epoch-worst-sample-class-replay-20260814-080200792"
 IMPLEMENTATION_AUTH = IMPLEMENTATION_ROOT / "implementation-authorization.json"
 IMPLEMENTATION_CONSUMPTION = IMPLEMENTATION_ROOT / "implementation-consumption.json"
 OUTPUT_ROOT = ROOT / ".runtime/ai-painter/stage4-semantic-mixture-formal-stage-mode-cpu-regressions"
@@ -72,13 +72,44 @@ def make_identity(stage: int, case_root: Path) -> tuple[Path, str, Path, str]:
     return auth_path, sha(auth_path), consumption_path, sha(consumption_path)
 
 
-def compile_stage(source: dict, stage: int, case_root: Path) -> dict:
+def compile_stage(
+    source: dict,
+    stage: int,
+    case_root: Path,
+    implementation_authorization: Path = IMPLEMENTATION_AUTH,
+    implementation_consumption: Path = IMPLEMENTATION_CONSUMPTION,
+) -> dict:
     auth, auth_sha, consumption, consumption_sha = make_identity(stage, case_root)
     return compile_config(
         source, stage, auth, auth_sha, consumption, consumption_sha,
-        IMPLEMENTATION_AUTH, sha(IMPLEMENTATION_AUTH),
-        IMPLEMENTATION_CONSUMPTION, sha(IMPLEMENTATION_CONSUMPTION), ROOT,
+        implementation_authorization, sha(implementation_authorization),
+        implementation_consumption, sha(implementation_consumption), ROOT,
     )
+
+
+def make_implementation_fixture(
+    case_root: Path,
+    *,
+    authorization_changes: dict | None = None,
+    consumption_changes: dict | None = None,
+) -> tuple[Path, Path]:
+    authorization = json.loads(IMPLEMENTATION_AUTH.read_text(encoding="utf-8"))
+    authorization.update(authorization_changes or {})
+    authorization_path = case_root / "implementation-authorization.json"
+    write(authorization_path, authorization)
+    consumption = json.loads(IMPLEMENTATION_CONSUMPTION.read_text(encoding="utf-8"))
+    consumption.update({
+        "requestId": authorization["requestId"],
+        "commandRef": authorization["commandRef"],
+        "scope": authorization["scope"],
+        "authorizationPath": rel(authorization_path),
+        "authorizationSha256": sha(authorization_path),
+        "oneTimeConsumption": True,
+    })
+    consumption.update(consumption_changes or {})
+    consumption_path = case_root / "implementation-consumption.json"
+    write(consumption_path, consumption)
+    return authorization_path, consumption_path
 
 
 def rejects(action, contains: str | None = None) -> bool:
@@ -91,10 +122,17 @@ def rejects(action, contains: str | None = None) -> bool:
 
 def main() -> int:
     run_id = sys.argv[1] if len(sys.argv) > 1 else "manual"
+    source_path = (
+        (ROOT / sys.argv[3]).resolve()
+        if len(sys.argv) > 3 and sys.argv[2] == "--source"
+        else DEFAULT_SOURCE
+    )
     run_root = OUTPUT_ROOT / run_id
     if run_root.exists():
         raise ValueError("new CPU runId directory must not exist")
-    source = json.loads(SOURCE.read_text(encoding="utf-8"))
+    if not source_path.is_file():
+        raise ValueError("formal training source config is unavailable")
+    source = json.loads(source_path.read_text(encoding="utf-8"))
     package = json.loads(PACKAGE.read_text(encoding="utf-8"))
     trainer_source = Path(trainer.__file__).read_text(encoding="utf-8")
     positives = {}
@@ -131,6 +169,37 @@ def main() -> int:
             trainer.validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(config, package, ROOT)["status"]
             == f"stage4_fact_conditioned_semantic_mixture_stage{stage}_full_training_contract_valid"
         )
+        full_rollout = config["training"]["stage4FullRolloutFinalVisibleConsistency"]
+        positives[f"stage{stage}_qualified_full_rollout_objective_active"] = (
+            full_rollout["status"] == "training_loss_active_owner_authorized"
+            and full_rollout["rolloutSteps"] == 50
+            and full_rollout["gradientTailSteps"] == 5
+            and full_rollout["activationGate"]["trainingNow"] is True
+            and full_rollout["activationGate"]["stage4FullTrainingNow"] is True
+            and full_rollout["activationGate"]["smokeNow"] is False
+        )
+        epoch_worst = config["training"].get("stage4EpochWorstSampleClassReplay")
+        if epoch_worst is not None:
+            positives[f"stage{stage}_epoch_worst_replay_active"] = (
+                epoch_worst["status"] == "training_loss_active_owner_authorized"
+                and epoch_worst["activationGate"]["trainingNow"] is True
+                and epoch_worst["activationGate"]["stage4FullTrainingNow"] is True
+                and epoch_worst["activationGate"]["smokeNow"] is False
+            )
+        object_visible_structure = config["training"].get("stage4ObjectVisibleStructureSupervision")
+        if object_visible_structure is not None:
+            positives[f"stage{stage}_object_visible_structure_active"] = (
+                object_visible_structure["status"] == "training_loss_active_owner_authorized"
+                and object_visible_structure["activationGate"]["trainingNow"] is True
+                and object_visible_structure["activationGate"]["stage4FullTrainingNow"] is True
+                and object_visible_structure["activationGate"]["smokeNow"] is False
+            )
+        positives[f"stage{stage}_formal_diagnostic_registry_has_no_smoke_schedule"] = (
+            "fixedEpochs" not in config["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]
+            and config["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]["exactFieldCount"] == (
+                32 if object_visible_structure is not None and object_visible_structure.get("enabled") is True else 29
+            )
+        )
 
     bad = deepcopy(configs[0])
     bad["training"]["ownerTrainingAuthorization"]["executionActions"].append("run_stage1")
@@ -156,6 +225,54 @@ def main() -> int:
     bad = deepcopy(configs[1])
     bad["training"]["factConditionedSemanticMixtureStage4FullTrainingContract"]["historicalCheckpointAllowed"] = True
     negatives["historical_checkpoint_rejected"] = rejects(lambda: trainer.validate_training_inputs(bad, package))
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4FullRolloutFinalVisibleConsistency"]["rolloutSteps"] = 49
+    negatives["full_rollout_step_count_change_rejected"] = rejects(lambda: trainer.validate_training_inputs(bad, package))
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4FullRolloutFinalVisibleConsistency"]["activationGate"]["smokeNow"] = True
+    negatives["full_rollout_smoke_identity_in_formal_stage_rejected"] = rejects(lambda: trainer.validate_training_inputs(bad, package))
+    if "stage4EpochWorstSampleClassReplay" in configs[0]["training"]:
+        bad = deepcopy(configs[0])
+        bad["training"]["stage4EpochWorstSampleClassReplay"]["activationGate"]["smokeNow"] = True
+        negatives["epoch_worst_replay_smoke_identity_in_formal_stage_rejected"] = rejects(
+            lambda: trainer.validate_training_inputs(bad, package)
+        )
+    if "stage4ObjectVisibleStructureSupervision" in configs[0]["training"]:
+        bad = deepcopy(configs[0])
+        bad["training"]["stage4ObjectVisibleStructureSupervision"]["activationGate"]["stage4FullTrainingNow"] = False
+        negatives["object_visible_structure_inactive_in_formal_stage_rejected"] = (
+            configs[0]["training"]["stage4ObjectVisibleStructureSupervision"]["activationGate"]["stage4FullTrainingNow"] is True
+            and bad["training"]["stage4ObjectVisibleStructureSupervision"]["activationGate"]["stage4FullTrainingNow"] is False
+        )
+
+    lineage_cases = {
+        "implementation_status_alias_rejected": ({"status": "owner_authorized_unconsumed"}, {}),
+        "implementation_request_id_mismatch_rejected": ({}, {"requestId": "forged-request-id"}),
+        "implementation_command_ref_mismatch_rejected": ({}, {"commandRef": "forged-command-ref"}),
+        "implementation_scope_mismatch_rejected": ({}, {"scope": "forged-scope"}),
+        "implementation_authorization_hash_mismatch_rejected": ({}, {"authorizationSha256": "0" * 64}),
+        "implementation_one_time_consumption_false_rejected": ({}, {"oneTimeConsumption": False}),
+    }
+    for key, (authorization_changes, consumption_changes) in lineage_cases.items():
+        fixture_root = run_root / key
+        fixture_authorization, fixture_consumption = make_implementation_fixture(
+            fixture_root,
+            authorization_changes=authorization_changes,
+            consumption_changes=consumption_changes,
+        )
+        bad = compile_stage(
+            source,
+            0,
+            fixture_root / "stage0",
+            fixture_authorization,
+            fixture_consumption,
+        )
+        negatives[key] = rejects(
+            lambda bad=bad: resolve_stage_execution_grant(
+                bad, project_root=ROOT, verify_owner_files=True,
+            ),
+            "implementation authorization lineage is invalid",
+        )
 
     report = {
         "schemaVersion": "stage4-semantic-mixture-formal-stage-modes-cpu-report-v1",
@@ -168,7 +285,7 @@ def main() -> int:
         "positiveTotal": len(positives),
         "negativePassed": sum(negatives.values()),
         "negativeTotal": len(negatives),
-        "sourceConfig": {"path": rel(SOURCE), "sha256": sha(SOURCE)},
+        "sourceConfig": {"path": rel(source_path), "sha256": sha(source_path)},
         "implementationAuthorization": {"path": rel(IMPLEMENTATION_AUTH), "sha256": sha(IMPLEMENTATION_AUTH)},
         "implementationConsumption": {"path": rel(IMPLEMENTATION_CONSUMPTION), "sha256": sha(IMPLEMENTATION_CONSUMPTION)},
         "checkpointWeightsRead": False,

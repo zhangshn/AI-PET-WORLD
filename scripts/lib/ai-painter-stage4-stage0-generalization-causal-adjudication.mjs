@@ -2,6 +2,12 @@ import assert from "node:assert/strict"
 
 export const SMOKE_EPOCHS = Object.freeze([1, 5, 10, 20, 30])
 export const STAGE0_REVIEW_EPOCHS = Object.freeze([1, 5, 10, 20, 30, 40])
+export const REAL_FAILURE_OBJECT_CHANNELS = Object.freeze([
+  "object_footprints",
+  "object_tree",
+  "object_rock",
+  "object_vegetation",
+])
 export const FINAL_VISIBLE_CLASSES = Object.freeze([
   "Route",
   "Footprints",
@@ -191,5 +197,124 @@ export function adjudicateStage0GeneralizationFailure(input) {
     smokeReviewTimeline: smokeReviews,
     stage0ReviewTimeline: stage0Reviews,
     nextContractId: "stage4_distribution_aware_visible_spatial_semantic_obligation_v1",
+  }
+}
+
+function exactBinding(actual, expected) {
+  return actual?.path === expected?.path && actual?.sha256 === expected?.sha256
+}
+
+function collectRealFailureContract(input) {
+  const {
+    expectedRunId,
+    sourceEvidence,
+    stage0Terminal,
+    stage0Manifest,
+    stage0Review,
+    previewBindings,
+  } = input
+  const terminalEpochs = stage0Review.reviews?.map((row) => row.epoch) ?? []
+  const terminalReview = stage0Review.reviews?.at(-1)
+  const terminalObjects = Object.fromEntries((terminalReview?.conditionAlignment?.objectSemanticAudits ?? [])
+    .filter((row) => REAL_FAILURE_OBJECT_CHANNELS.includes(row.channelId))
+    .map((row) => [row.channelId, row]))
+  const bindingChecks = {
+    terminal_run_identity: stage0Terminal.runId === expectedRunId,
+    review_run_identity: stage0Review.runId === expectedRunId,
+    terminal_manifest_binding: exactBinding(stage0Terminal.manifest, sourceEvidence.stage0Manifest),
+    terminal_review_binding: exactBinding(stage0Terminal.machineReview, sourceEvidence.stage0MachineReview),
+    terminal_checkpoint_binding: exactBinding(stage0Terminal.checkpoint, sourceEvidence.failedCheckpointIdentityOnly),
+    manifest_checkpoint_binding: stage0Manifest.checkpointPath === sourceEvidence.failedCheckpointIdentityOnly.path
+      && stage0Manifest.checkpointSha256 === sourceEvidence.failedCheckpointIdentityOnly.sha256,
+    preview_count_and_hash_binding: Array.isArray(previewBindings)
+      && previewBindings.length === STAGE0_REVIEW_EPOCHS.length
+      && previewBindings.every((row) => row.previewManifestMatch === true
+        && row.normalizedManifestMatch === true
+        && row.reproductionByteMatch === true),
+    checkpoint_bound_terminal_reproduction: stage0Manifest.stage4UnifiedTrainingPreviewSampling?.previewSha256Matches === true
+      && stage0Manifest.stage4UnifiedTrainingPreviewSampling?.denoiserStateIdentityMatches === true,
+  }
+  const auditContractChecks = {
+    exact_review_epochs: JSON.stringify(terminalEpochs) === JSON.stringify(STAGE0_REVIEW_EPOCHS),
+    thresholds_unchanged: stage0Review.reviewThresholdsChanged === false,
+    review_counts_consistent: stage0Review.previewCount === 6
+      && stage0Review.previewPassCount === 0
+      && stage0Review.previewFailCount === 6,
+    professional_aesthetic_contract_present: stage0Review.reviews?.every((row) => (
+      row.professionalAesthetic?.schemaVersion === "ai-assisted-professional-aesthetic-audit-v2"
+      && row.professionalAesthetic?.passed === true
+    )) === true,
+    condition_alignment_contract_present: stage0Review.reviews?.every((row) => (
+      row.conditionAlignment?.schemaVersion === "ai-assisted-condition-alignment-audit-v1"
+      && row.conditionAlignment?.passed === false
+    )) === true,
+    object_thresholds_unchanged: stage0Review.reviews?.every((row) => (
+      row.conditionAlignment?.objectSemanticAudits
+        ?.filter((item) => REAL_FAILURE_OBJECT_CHANNELS.includes(item.channelId))
+        .every((item) => item.priorAcceptanceThresholdChanged === false)
+    )) === true,
+  }
+  const modelFailureChecks = {
+    formal_stage_failed_closed: stage0Terminal.status === "semantic_mixture_stage4_formal_stage_failed_closed"
+      && stage0Terminal.stage === 0
+      && JSON.stringify(stage0Terminal.blockers) === JSON.stringify(["stage_0_visual_review_failed_0_of_6"]),
+    weights_changed: stage0Manifest.modelStateHashEvidence?.weightsChanged === true,
+    forty_epochs_recorded: stage0Manifest.metrics?.some((row) => row.epoch === 40) === true,
+    all_fixed_previews_failed: stage0Review.reviews?.every((row) => row.passed === false) === true,
+    terminal_water_passed: terminalReview?.conditionAlignment?.channelAudits
+      ?.find((row) => row.channelId === "terrain_water")?.passed === true,
+    terminal_path_passed: terminalReview?.conditionAlignment?.channelAudits
+      ?.find((row) => row.channelId === "terrain_path_ground")?.passed === true,
+    terminal_four_object_semantics_failed: REAL_FAILURE_OBJECT_CHANNELS.every((channelId) => (
+      terminalObjects[channelId]?.passed === false
+      && terminalObjects[channelId]?.localResponsePassed === true
+      && terminalObjects[channelId]?.referenceResponse?.maskedLumaCorrelation
+        < terminalObjects[channelId]?.referenceThresholds?.minimumMaskedLumaCorrelation
+    )),
+  }
+  return { bindingChecks, auditContractChecks, modelFailureChecks, terminalObjects }
+}
+
+export function adjudicateStage0RealFailure(input) {
+  const contract = collectRealFailureContract(input)
+  const bindingPassed = Object.values(contract.bindingChecks).every(Boolean)
+  const auditContractPassed = Object.values(contract.auditContractChecks).every(Boolean)
+  const modelFailurePassed = Object.values(contract.modelFailureChecks).every(Boolean)
+  const classification = !bindingPassed
+    ? "evidence_binding_error"
+    : !auditContractPassed
+      ? "audit_program_or_contract_error"
+      : modelFailurePassed
+        ? "real_model_visual_failure"
+        : "insufficient_evidence_for_failure_classification"
+  const terminalObjectMetrics = Object.fromEntries(REAL_FAILURE_OBJECT_CHANNELS.map((channelId) => {
+    const row = contract.terminalObjects[channelId]
+    return [channelId, row ? {
+      localResponsePassed: row.localResponsePassed,
+      maskedRgbMae: row.referenceResponse?.maskedRgbMae,
+      maximumMaskedRgbMae: row.referenceThresholds?.maximumMaskedRgbMae,
+      maskedEdgeMae: row.referenceResponse?.maskedEdgeMae,
+      maximumMaskedEdgeMae: row.referenceThresholds?.maximumMaskedEdgeMae,
+      maskedLumaCorrelation: row.referenceResponse?.maskedLumaCorrelation,
+      minimumMaskedLumaCorrelation: row.referenceThresholds?.minimumMaskedLumaCorrelation,
+    } : null]
+  }))
+  return {
+    schemaVersion: "ai-painter-stage4-semantic-mixture-real-failure-adjudication-v1",
+    status: classification === "real_model_visual_failure"
+      ? "stage0_real_model_visual_failure_confirmed"
+      : "stage0_failure_classification_blocked",
+    classification,
+    bindingChecks: contract.bindingChecks,
+    auditContractChecks: contract.auditContractChecks,
+    modelFailureChecks: contract.modelFailureChecks,
+    terminalObjectMetrics,
+    fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 },
+    nextLegalAction: classification === "real_model_visual_failure"
+      ? "owner_review_bounded_object_visible_structure_supervision_or_candidate_exit"
+      : "owner_review_of_adjudication_blocker",
+    automaticRetryAllowed: false,
+    stage1EntryPermitted: false,
+    stage2EntryPermitted: false,
   }
 }

@@ -36,7 +36,7 @@ const QUALIFICATION_SHA = authorization?.bindings?.terminalQualification?.sha256
 const runRoot = resolve(`.runtime/ai-painter/stage4-semantic-mixture-formal-training/${args.runId}`)
 const outputDir = path.join(runRoot, "training-output")
 const finalizationDir = path.join(runRoot, "finalization")
-const consumptionPath = path.join(runRoot, "execution-consumption.json")
+const consumptionPath = path.join(path.dirname(authorizationPath), "execution-consumption.json")
 const configPath = path.join(runRoot, "active-config.json")
 const preflightPath = path.join(runRoot, "preflight-report.json")
 const lockPath = resolve(".runtime/ai-painter/stage4-semantic-mixture-formal-training/.formal-stage.lock")
@@ -53,9 +53,9 @@ if (args.preflightOnly) {
 }
 
 try {
+  const consumption = consumeAuthorization()
   fs.mkdirSync(runRoot, { recursive: true })
   writeJsonAtomic(preflightPath, preflight)
-  const consumption = consumeAuthorization()
   compileActiveConfig(consumption)
   releaseLock = acquireLock()
   event("formal_stage_started", "running", `Stage ${stage}正式训练开始`, `40 Epoch; ${EXPECTED_STAGES[stage].width}x${EXPECTED_STAGES[stage].height}`, project(configPath))
@@ -84,6 +84,7 @@ function validatePreflight() {
   const blockers = []
   const expect = (value, code) => { if (!value) blockers.push(code) }
   expect(!fs.existsSync(runRoot), "run_id_already_exists")
+  expect(!fs.existsSync(consumptionPath), "authorization_already_consumed")
   expect(hash(authorizationPath) === args.authorizationSha256, "authorization_hash_invalid")
   expect(authorization?.status === "resolved_owner_authorized_not_consumed", "authorization_status_invalid")
   expect(authorization?.requestId === authorization?.commandRef, "authorization_command_identity_invalid")
@@ -94,9 +95,20 @@ function validatePreflight() {
   expect(fileHash(SOURCE_CONFIG, SOURCE_CONFIG_SHA), "source_config_identity_invalid")
   expect(fileHash(AE, AE_SHA), "autoencoder_identity_invalid")
   expect(Boolean(QUALIFICATION && QUALIFICATION_SHA), "stage0_qualification_binding_missing")
-  expect(fileHash(QUALIFICATION, QUALIFICATION_SHA) && read(QUALIFICATION)?.status === "terminal_pass_with_late_convergence_evidence_qualified_closed" && read(QUALIFICATION)?.stage0EntryPermitted === true, "stage0_qualification_invalid")
+  const qualification = read(QUALIFICATION)
+  const qualificationStatusAccepted = qualification?.status === "terminal_pass_with_late_convergence_evidence_qualified_closed"
+    || qualification?.status === "three_consecutive_late_previews_qualified_closed"
+  expect(fileHash(QUALIFICATION, QUALIFICATION_SHA) && qualificationStatusAccepted && qualification?.stage0EntryPermitted === true, "stage0_qualification_invalid")
   expect(fileHash(IMPLEMENTATION_AUTH, authorization?.bindings?.implementationAuthorization?.sha256), "implementation_authorization_identity_invalid")
   expect(fileHash(IMPLEMENTATION_CONSUMPTION, authorization?.bindings?.implementationConsumption?.sha256), "implementation_consumption_identity_invalid")
+  const implementationAuthorization = read(IMPLEMENTATION_AUTH)
+  const implementationConsumption = read(IMPLEMENTATION_CONSUMPTION)
+  expect(implementationAuthorization?.status === "resolved_owner_authorized_not_consumed", "implementation_authorization_status_invalid")
+  expect(implementationConsumption?.requestId === implementationAuthorization?.requestId, "implementation_consumption_request_id_invalid")
+  expect(implementationConsumption?.commandRef === implementationAuthorization?.commandRef, "implementation_consumption_command_ref_invalid")
+  expect(implementationConsumption?.scope === implementationAuthorization?.scope, "implementation_consumption_scope_invalid")
+  expect(implementationConsumption?.authorizationSha256 === authorization?.bindings?.implementationAuthorization?.sha256, "implementation_consumption_authorization_hash_invalid")
+  expect(implementationConsumption?.oneTimeConsumption === true, "implementation_consumption_one_time_invalid")
   const boundCode = authorization?.bindings?.code ?? {}
   expect(fileHash("ml/ai-painter/scripts/ai_painter_authorization_policy.py", boundCode.authorizationPolicy), "authorization_policy_hash_invalid")
   expect(fileHash("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py", boundCode.modeRegistry), "mode_registry_hash_invalid")

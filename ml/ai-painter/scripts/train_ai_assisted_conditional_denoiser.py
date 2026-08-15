@@ -326,6 +326,12 @@ STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_IMPLEMENTATION_AUTHORIZATION 
     "implementationConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-distribution-aware-visible-spatial-semantic-obligation-20260813-062820868/implementation-consumption.json",
     "implementationConsumptionSha256": "49f749b642fd9fd6aa25896f7511773d60363823e52c62655d735889b3ca1745",
 }
+STAGE4_EPOCH_WORST_SAMPLE_CLASS_REPLAY_ID = (
+    "stage4_epoch_global_worst_sample_class_final_visible_replay_v1"
+)
+STAGE4_OBJECT_REFERENCE_MULTISCALE_EARLY_CONVERGENCE_STABILIZATION_ID = (
+    "stage4_object_reference_multiscale_two_lane_early_convergence_stabilization_v1"
+)
 STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_ID = (
     "stage4_vegetation_final_visible_semantic_repair_v1"
 )
@@ -379,10 +385,101 @@ STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_DIAGNOSTIC_FIELDS = (
     STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS
     + ("stage4SemanticMixtureVegetationFinalTypedLuminanceCorrelationLoss",)
 )
+STAGE4_OBJECT_VISIBLE_STRUCTURE_SUPERVISION_ID = (
+    "stage4_four_typed_object_visible_structure_supervision_v1"
+)
+STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS = (
+    "object_footprints", "object_tree", "object_rock", "object_vegetation",
+)
+STAGE4_OBJECT_VISIBLE_STRUCTURE_EVIDENCE_BINDINGS = {
+    "formalDesign": {
+        "path": ".runtime/ai-painter/stage4-semantic-mixture-object-visible-structure-supervision-designs/20260815-000700000/object-visible-structure-supervision-design.json",
+        "sha256": "f6b33d0edb30c391eb896b02bcbd78040f95c923fa5928a7acce25bb6a73dccc",
+    },
+    "formalDesignTerminal": {
+        "path": ".runtime/ai-painter/stage4-semantic-mixture-object-visible-structure-supervision-designs/20260815-000700000/phase-terminal.json",
+        "sha256": "8ddddfdf1924fdfdfcd167083a0cf5c7ce1f0360a52dba55b1994d3454e19d5d",
+    },
+    "inactiveImplementationContract": {
+        "path": ".runtime/ai-painter/stage4-semantic-mixture-object-visible-structure-supervision-designs/20260815-000700000/inactive-candidate-implementation-contract.json",
+        "sha256": "7ef8b2b676e275785124fc2caa731937cc0a754e8943a63ce47c751456cb2184",
+    },
+}
+STAGE4_OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_AUTHORIZATION = {
+    "authorizationPath": (
+        ".runtime/ai-painter/owner-action-requests/"
+        "owner-authorized-stage4-semantic-mixture-object-visible-structure-"
+        "supervision-implementation-20260815-002000000/authorization.json"
+    ),
+    "authorizationSha256": "62105816997550a94d3610e3c0d9cb356db27930b58789e747ad05ad9bdaf576",
+    "implementationConsumptionPath": (
+        ".runtime/ai-painter/owner-action-requests/"
+        "owner-authorized-stage4-semantic-mixture-object-visible-structure-"
+        "supervision-implementation-20260815-002000000/implementation-consumption.json"
+    ),
+    "implementationConsumptionSha256": "70b1b267b7d8d94ab3f7544c2dcb94e5ba2469368c798c639f8197b761586c4e",
+}
+STAGE4_OBJECT_VISIBLE_STRUCTURE_DIAGNOSTIC_FIELDS = (
+    STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS
+    + tuple(
+        f"stage4SemanticMixture{prefix}FinalTypedLuminanceCorrelationLoss"
+        for prefix in ("Footprints", "Tree", "Rock", "Vegetation")
+    )
+)
+STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_SUPERVISION_ID = (
+    "typed_object_multiscale_luminance_structure_correlation_supervision_v1"
+)
+STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_SCALES = (1.0, 0.5, 0.25)
+STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_EVIDENCE_BINDINGS = {
+    "formalDesign": {
+        "path": ".runtime/ai-painter/stage4-object-reference-multiscale-luminance-structure-supervision-designs/20260815-140100000/object-reference-multiscale-luminance-structure-supervision-design.json",
+        "sha256": "796ca9d239feb0154459f3e43663bee06394391014eebaa32b3f7c41e7be5265",
+    },
+    "formalDesignTerminal": {
+        "path": ".runtime/ai-painter/stage4-object-reference-multiscale-luminance-structure-supervision-designs/20260815-140100000/phase-terminal.json",
+        "sha256": "15a8dae16354067351f06987e24bafa905e736cf2bdda8597185fb188604e7e0",
+    },
+    "inactiveImplementationContract": {
+        "path": ".runtime/ai-painter/stage4-object-reference-multiscale-luminance-structure-supervision-designs/20260815-140100000/inactive-candidate-implementation-contract.json",
+        "sha256": "efa22c613926446314b0e40eb9ff4e19a4e66d87c6dcd7e91bb8eea2647e5a90",
+    },
+}
+STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_IMPLEMENTATION_AUTHORIZATION = {
+    "authorizationPath": (
+        ".runtime/ai-painter/owner-action-requests/"
+        "owner-authorized-stage4-object-reference-multiscale-luminance-structure-"
+        "supervision-cpu-implementation-20260815-141934048/authorization.json"
+    ),
+    "authorizationSha256": "582f235fd0f91e005ac8e828e6a47c2b93f4c3da9a22d32b41c06492351a6946",
+    "implementationConsumptionPath": (
+        ".runtime/ai-painter/owner-action-requests/"
+        "owner-authorized-stage4-object-reference-multiscale-luminance-structure-"
+        "supervision-cpu-implementation-20260815-141934048/consumption.json"
+    ),
+    "implementationConsumptionSha256": "e088624b02db39b665aed2dc5a9f7aebd00a29bda5770d5da24df186494a7166",
+}
+STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_DIAGNOSTIC_FIELDS = (
+    STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS
+    + tuple(
+        f"stage4SemanticMixture{prefix}FinalTyped{suffix}"
+        for prefix in ("Footprints", "Tree", "Rock", "Vegetation")
+        for suffix in (
+            "NativeLuminanceCorrelationLoss",
+            "HalfLuminanceCorrelationLoss",
+            "QuarterLuminanceCorrelationLoss",
+            "CrossScaleStructureConsistencyLoss",
+            "MultiscaleLuminanceStructureLoss",
+        )
+    )
+)
 
 
 def fact_conditioned_semantic_mixture_diagnostic_fields(config):
     """Keep exact historical registries and extend only the selected bounded repair."""
+    if "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision" in config.get("training", {}):
+        return STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_DIAGNOSTIC_FIELDS
+    if "stage4ObjectVisibleStructureSupervision" in config.get("training", {}):
+        return STAGE4_OBJECT_VISIBLE_STRUCTURE_DIAGNOSTIC_FIELDS
     if "stage4VegetationLuminanceSpatialStructureSupervision" in config.get("training", {}):
         return STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_DIAGNOSTIC_FIELDS
     if "stage4VegetationFinalVisibleSemanticRepair" in config.get("training", {}):
@@ -1012,9 +1109,18 @@ def main() -> int:
     best_epoch = None
     best_denoiser_state = None
     batch_target = min(len(loaders["train"]), max_train_batches) if max_train_batches is not None else len(loaders["train"])
-    path_replay_passes = r5_path_replay_passes_per_epoch(config)
-    optimizer_steps_per_batch = 1 + path_replay_passes
-    optimizer_step_target = epoch_count * batch_target * optimizer_steps_per_batch
+    epoch_worst_replay_contract = validate_stage4_epoch_worst_sample_class_replay(config)
+    path_replay_passes = (
+        0 if epoch_worst_replay_contract is not None
+        else r5_path_replay_passes_per_epoch(config)
+    )
+    epoch_worst_replay_passes = (
+        int(epoch_worst_replay_contract["replay"]["passesPerObservedPrimaryBatch"])
+        if epoch_worst_replay_contract is not None else 0
+    )
+    optimizer_steps_per_batch = 1 + path_replay_passes + epoch_worst_replay_passes
+    optimizer_steps_per_epoch = batch_target * optimizer_steps_per_batch
+    optimizer_step_target = epoch_count * optimizer_steps_per_epoch
     train_samples_target_per_epoch = min(
         len(optimization_datasets["train"]),
         batch_target * int(config["training"]["batchSize"]),
@@ -1075,7 +1181,7 @@ def main() -> int:
     for epoch in range(epoch_count):
         def on_batch_progress(batch_progress):
             optimizer_step = (
-                epoch * batch_target * optimizer_steps_per_batch
+                epoch * optimizer_steps_per_epoch
                 + batch_progress["optimizerStepsCompletedInEpoch"]
             )
             completed_training_samples = (
@@ -1083,7 +1189,8 @@ def main() -> int:
                 + batch_progress["samplesProcessedInEpoch"]
             )
             local_denoiser_sample_forward_passes = completed_training_samples * (
-                (1 + trajectory_steps_per_sample) * optimizer_steps_per_batch
+                (1 + trajectory_steps_per_sample) * (1 + path_replay_passes)
+                + epoch_worst_replay_passes
                 + cross_domain_rollout_steps_per_sample
             )
             persist_live_progress(build_live_progress(
@@ -1146,7 +1253,7 @@ def main() -> int:
                 epoch_target=epoch_count,
                 batch=batch_target,
                 batch_target=batch_target,
-                optimizer_step=(epoch + 1) * batch_target * optimizer_steps_per_batch,
+                optimizer_step=(epoch + 1) * optimizer_steps_per_epoch,
                 optimizer_step_target=optimizer_step_target,
                 started_monotonic=started,
                 batch_loss=latest_live_progress.get("batchLoss"),
@@ -1162,7 +1269,7 @@ def main() -> int:
             epoch_target=epoch_count,
             batch=batch_target,
             batch_target=batch_target,
-            optimizer_step=(epoch + 1) * batch_target * optimizer_steps_per_batch,
+            optimizer_step=(epoch + 1) * optimizer_steps_per_epoch,
             optimizer_step_target=optimizer_step_target,
             started_monotonic=started,
             batch_loss=latest_live_progress.get("batchLoss"),
@@ -1280,7 +1387,7 @@ def main() -> int:
             epoch_target=epoch_count,
             batch=batch_target,
             batch_target=batch_target,
-            optimizer_step=(epoch + 1) * batch_target * optimizer_steps_per_batch,
+            optimizer_step=(epoch + 1) * optimizer_steps_per_epoch,
             optimizer_step_target=optimizer_step_target,
             started_monotonic=started,
             batch_loss=latest_live_progress.get("batchLoss"),
@@ -1543,11 +1650,13 @@ def main() -> int:
         validation_score=metrics[-1].get("validationFixedGridCompositeConditionQualityScore") if metrics else None,
         checkpoint_score=metrics[-1].get("validationCheckpointSelectionScore") if metrics else None,
         local_denoiser_sample_forward_passes=epoch_count * train_samples_target_per_epoch * (
-            (1 + trajectory_steps_per_sample) * optimizer_steps_per_batch
+            (1 + trajectory_steps_per_sample) * (1 + path_replay_passes)
+            + epoch_worst_replay_passes
             + cross_domain_rollout_steps_per_sample
         ),
         local_training_token_count=epoch_count * train_samples_target_per_epoch * (
-            (1 + trajectory_steps_per_sample) * optimizer_steps_per_batch
+            (1 + trajectory_steps_per_sample) * (1 + path_replay_passes)
+            + epoch_worst_replay_passes
             + cross_domain_rollout_steps_per_sample
         ) * latent_spatial_positions,
     )
@@ -1812,6 +1921,7 @@ def record_stage4_step(telemetry_path, step, status, **details):
         "forward_loss",
         "backward",
         "optimizer_step",
+        "epoch_worst_sample_class_replay",
         "checkpoint_write",
     }
     if step not in allowed_steps or status not in {"started", "completed", "failed"}:
@@ -4113,6 +4223,14 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
         validate_stage4_vegetation_final_visible_semantic_repair(config)
     if "stage4VegetationLuminanceSpatialStructureSupervision" in training:
         validate_stage4_vegetation_luminance_spatial_structure_supervision(config)
+    if "stage4FullRolloutFinalVisibleConsistency" in training:
+        validate_stage4_full_rollout_final_visible_consistency(config)
+    if "stage4EpochWorstSampleClassReplay" in training:
+        validate_stage4_epoch_worst_sample_class_replay(config)
+    if "stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization" in training:
+        validate_stage4_object_reference_multiscale_early_convergence_stabilization(
+            config
+        )
 
     registry = contract.get("diagnosticManifestRegistry", {})
     diagnostic_fields = fact_conditioned_semantic_mixture_diagnostic_fields(config)
@@ -4620,6 +4738,240 @@ def validate_stage4_distribution_aware_visible_spatial_semantic_obligation(confi
     ), "derivedWeights": base["derivedWeights"]}
 
 
+def validate_stage4_epoch_worst_sample_class_replay(config):
+    training = config.get("training", {})
+    contract = training.get("stage4EpochWorstSampleClassReplay", {})
+    if not contract:
+        return None
+    expected_fields = {
+        "enabled", "status", "contractId", "selection", "replay",
+        "legalSupervision", "compatibility", "activationGate",
+    }
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 epoch-worst replay fields changed")
+    if (
+        contract.get("enabled") is not True
+        or contract.get("contractId") != STAGE4_EPOCH_WORST_SAMPLE_CLASS_REPLAY_ID
+        or contract.get("selection") != {
+            "population": "observed_current_train_split_epoch_prefix_with_complete_epoch_finalization",
+            "sampleIdentity": "dataset_sampleId",
+            "classIdentities": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES),
+            "score": "direct_plus_full_rollout_existing_derived_weighted_final_visible_rgb",
+            "tieBreak": "lexicographic_sample_id_then_fixed_class_order",
+        }
+    ):
+        raise ValueError("Stage 4 epoch-worst replay selection changed")
+    expected_passes = r5_path_replay_passes_per_epoch(config)
+    if contract.get("replay") != {
+        "passesPerObservedPrimaryBatch": expected_passes,
+        "passesSource": "training.pathHardExampleReplay.passesPerEpoch",
+        "replacesPerBatchPathOnlyReplay": True,
+        "loss": "selected_existing_derived_weighted_final_visible_rgb",
+        "freeNumericWeightSelected": False,
+    }:
+        raise ValueError("Stage 4 epoch-worst replay execution changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "maskChannels": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS),
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "validationSamplesUsedAsTrainingTargets": False,
+    }:
+        raise ValueError("Stage 4 epoch-worst replay supervision changed")
+    if contract.get("compatibility") != {
+        "modelArchitectureChanged": False,
+        "checkpointFormatChanged": False,
+        "datasetSplitChanged": False,
+        "oldModesWithoutContractPreserved": True,
+    }:
+        raise ValueError("Stage 4 epoch-worst replay compatibility changed")
+    mode = resolve_stage_mode(config).mode_id
+    active = mode in {
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+        "fact_conditioned_semantic_mixture_stage4_smoke",
+    }
+    expected_active = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow",
+        "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+    } if active else set()
+    if mode in {
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+    }:
+        expected_active.add("stage4FullTrainingNow")
+    if mode == "fact_conditioned_semantic_mixture_stage4_smoke":
+        expected_active.add("smokeNow")
+    activation = contract.get("activationGate", {})
+    expected_gate = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    if (
+        set(activation) != expected_gate
+        or any(activation.get(key) is not (key in expected_active) for key in expected_gate)
+        or contract.get("status") != (
+            "training_loss_active_owner_authorized" if active
+            else "cpu_support_verified_inactive"
+        )
+    ):
+        raise ValueError("Stage 4 epoch-worst replay activation changed")
+    return contract
+
+
+def validate_stage4_object_reference_multiscale_early_convergence_stabilization(
+    config,
+):
+    training = config.get("training", {})
+    contract = training.get(
+        "stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization", {}
+    )
+    if not contract:
+        return None
+    if set(contract) != {
+        "enabled", "status", "contractId", "sourceRunId", "replayBudget",
+        "lanes", "preservedSupervision", "legalSupervision", "compatibility",
+        "evidenceBindings", "activationGate",
+    }:
+        raise ValueError("Stage 4 early-convergence stabilization fields changed")
+    if (
+        contract.get("enabled") is not True
+        or contract.get("contractId")
+        != STAGE4_OBJECT_REFERENCE_MULTISCALE_EARLY_CONVERGENCE_STABILIZATION_ID
+        or contract.get("sourceRunId") != "20260815-190000000"
+    ):
+        raise ValueError("Stage 4 early-convergence stabilization identity changed")
+    epoch_worst = validate_stage4_epoch_worst_sample_class_replay(config)
+    if (
+        epoch_worst is None
+        or epoch_worst["replay"]["passesPerObservedPrimaryBatch"] != 2
+        or contract.get("replayBudget") != {
+            "totalReplayPassesPerObservedPrimaryBatch": 2,
+            "source": "training.stage4EpochWorstSampleClassReplay.replay.passesPerObservedPrimaryBatch",
+            "addsReplayPasses": False,
+            "addsOptimizerSteps": False,
+        }
+    ):
+        raise ValueError("Stage 4 early-convergence stabilization replay budget changed")
+    object_channels = list(STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS)
+    expected_lanes = [
+        {
+            "laneId": "lane_1_existing_global_worst_sample_class",
+            "passIndex": 0,
+            "passCount": 1,
+            "selection": "existing_global_worst_sample_class_selection_unchanged",
+            "loss": "selected_existing_derived_weighted_final_visible_rgb",
+            "includesRoute": True,
+        },
+        {
+            "laneId": "lane_2_joint_four_object_reference_multiscale",
+            "passIndex": 1,
+            "passCount": 1,
+            "selection": "all_four_typed_objects_in_fixed_existing_channel_order",
+            "loss": "existing_typed_object_multiscale_luminance_structure_losses_jointly_aggregated_with_existing_derived_weights",
+            "includesRoute": False,
+            "objectChannels": object_channels,
+            "aggregation": "sum_of_existing_typed_weighted_object_obligations",
+        },
+    ]
+    if contract.get("lanes") != expected_lanes:
+        raise ValueError("Stage 4 early-convergence stabilization lane allocation changed")
+    multiscale = (
+        validate_stage4_object_reference_multiscale_luminance_structure_supervision(
+            config
+        )
+    )
+    expected_preserved = {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "objectChannels": object_channels,
+        "pyramidScales": [1, 0.5, 0.25],
+        "pyramidAuthority": "training.textureHierarchyScales_exact_inheritance",
+        "derivedWeights": multiscale["derivedWeights"],
+        "derivedWeightAuthority": "training.stage4ObjectReferenceMultiscaleLuminanceStructureSupervision.derivedWeights",
+        "freeNumericWeightSelectionAllowed": False,
+    }
+    if contract.get("preservedSupervision") != expected_preserved:
+        raise ValueError("Stage 4 early-convergence stabilization supervision changed")
+    if contract.get("legalSupervision") != {
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "validationSamplesUsedAsTrainingTargets": False,
+    }:
+        raise ValueError("Stage 4 early-convergence stabilization target authority changed")
+    if contract.get("compatibility") != {
+        "firstWorstClassLanePreserved": True,
+        "routeAndWaterBaseLossesPreserved": True,
+        "existingTwoReplayPassBudgetPreserved": True,
+        "modelArchitectureChanged": False,
+        "checkpointFormatChanged": False,
+        "datasetOrSplitChanged": False,
+        "conditionPackChanged": False,
+        "reviewThresholdsChanged": False,
+        "oldModesWithoutContractPreserved": True,
+    }:
+        raise ValueError("Stage 4 early-convergence stabilization compatibility changed")
+    if contract.get("evidenceBindings") != {
+        "design": {
+            "path": ".runtime/ai-painter/stage4-object-reference-multiscale-early-convergence-stabilization-designs/20260815-182607000/early-convergence-stabilization-design.json",
+            "sha256": "09a276d9f6c655ddef8c91d2604d9442043804a4662d5b6ebba42ad50ad7c735",
+        },
+        "cpuReport": {
+            "path": ".runtime/ai-painter/stage4-object-reference-multiscale-early-convergence-stabilization-designs/20260815-182607000/cpu-contract-regression.json",
+            "sha256": "9bf2ee1a5cefff227d6da7a9a9d900323d6e5c6048a84bd8a2d408cdaf1e7191",
+        },
+        "inactiveImplementationContract": {
+            "path": ".runtime/ai-painter/stage4-object-reference-multiscale-early-convergence-stabilization-designs/20260815-182607000/inactive-implementation-contract.json",
+            "sha256": "9d225b9cbf6ebbdb4a0a923f3d72c3bcaa5bab8ce5cf89bb3fba866c58f210c8",
+        },
+    }:
+        raise ValueError("Stage 4 early-convergence stabilization evidence changed")
+    activation = contract.get("activationGate", {})
+    expected_gate = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    status = contract.get("status")
+    if status == "cpu_support_verified_inactive":
+        expected_active = set()
+    elif status == "training_loss_active_owner_authorized":
+        mode = resolve_stage_mode(config).mode_id
+        if mode not in {
+            "fact_conditioned_semantic_mixture_stage0_full_training",
+            "fact_conditioned_semantic_mixture_stage1_full_training",
+            "fact_conditioned_semantic_mixture_stage2_full_training",
+            "fact_conditioned_semantic_mixture_stage4_smoke",
+        }:
+            raise ValueError("Stage 4 early-convergence stabilization mode is invalid")
+        expected_active = {
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow",
+        }
+        if mode == "fact_conditioned_semantic_mixture_stage4_smoke":
+            expected_active.add("smokeNow")
+        else:
+            expected_active.add("stage4FullTrainingNow")
+    else:
+        raise ValueError("Stage 4 early-convergence stabilization status changed")
+    if (
+        set(activation) != expected_gate
+        or any(activation.get(key) is not (key in expected_active) for key in expected_gate)
+    ):
+        raise ValueError("Stage 4 early-convergence stabilization activation changed")
+    return contract
+
+
 def derive_stage4_vegetation_final_visible_semantic_repair_weight(config):
     """Reuse the existing vegetation final-RGB weight; never select a new value."""
     final_visible = derive_stage4_per_class_final_visible_rgb_weights(config)
@@ -4631,6 +4983,255 @@ def derive_stage4_vegetation_final_visible_semantic_repair_weight(config):
         "source": "stage4PerClassFinalVisibleRgbObligation.derivedWeights.vegetation",
         "sourceValue": vegetation_weight,
         "freeValueSelectionAllowed": False,
+    }
+
+
+def derive_stage4_object_visible_structure_weights(config):
+    """Reuse the existing typed final-RGB weights; never select a new number."""
+    base = derive_stage4_per_class_final_visible_rgb_weights(config)
+    identities = FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+    weights = {identity: float(base["weights"][identity]) for identity in identities}
+    if not all(math.isfinite(value) and value > 0.0 for value in weights.values()):
+        raise ValueError("Stage 4 object visible-structure weights are not uniquely derivable")
+    return {
+        "weights": weights,
+        "source": "stage4PerClassFinalVisibleRgbObligation.derivedWeights",
+        "sourceValues": weights,
+        "freeValueSelectionAllowed": False,
+    }
+
+
+def validate_stage4_object_visible_structure_supervision(config):
+    if not is_fact_conditioned_semantic_mixture_stage4(config):
+        raise ValueError("Stage 4 object visible-structure supervision requires semantic mixture architecture")
+    training = config.get("training", {})
+    contract = training.get("stage4ObjectVisibleStructureSupervision", {})
+    expected_fields = {
+        "enabled", "status", "contractId", "sourceChannels",
+        "luminanceCoefficients", "lossFunction", "derivedWeights",
+        "weightDerivation", "legalSupervision", "compatibility",
+        "evidenceBindings", "ownerImplementationAuthorization", "activationGate",
+    }
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 object visible-structure supervision fields changed")
+    if "stage4VegetationLuminanceSpatialStructureSupervision" in training:
+        raise ValueError("Stage 4 single-object luminance contract must be replaced, not duplicated")
+    derived = derive_stage4_object_visible_structure_weights(config)
+    mode = resolve_stage_mode(config).mode_id
+    active = mode in {
+        "fact_conditioned_semantic_mixture_stage4_smoke",
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+    }
+    if (
+        contract.get("enabled") is not True
+        or contract.get("status") != (
+            "training_loss_active_owner_authorized" if active
+            else "cpu_support_verified_inactive"
+        )
+        or contract.get("contractId") != STAGE4_OBJECT_VISIBLE_STRUCTURE_SUPERVISION_ID
+        or tuple(contract.get("sourceChannels", ()))
+        != STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS
+        or contract.get("luminanceCoefficients") != [0.2126, 0.7152, 0.0722]
+        or contract.get("lossFunction")
+        != "one_minus_masked_zero_mean_normalized_luminance_correlation"
+        or contract.get("derivedWeights") != derived["weights"]
+        or contract.get("weightDerivation") != derived
+    ):
+        raise ValueError("Stage 4 object visible-structure supervision identity changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "worldFacts": "approved_world_facts",
+        "maskChannels": list(STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS),
+        "failedPreviewPixelsUsedAsTargets": False,
+        "failedCheckpointWeightsReadOrLoaded": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 object visible-structure legal supervision changed")
+    if contract.get("compatibility") != {
+        "waterAndPathBehaviorPreserved": True,
+        "existingColorAndEdgeObligationsPreserved": True,
+        "modelArchitectureChanged": False,
+        "checkpointFormatChanged": False,
+        "datasetOrSplitChanged": False,
+        "conditionPackChanged": False,
+        "reviewThresholdsChanged": False,
+        "oldModesWithoutContractPreserved": True,
+    }:
+        raise ValueError("Stage 4 object visible-structure compatibility changed")
+    if (
+        contract.get("evidenceBindings")
+        != STAGE4_OBJECT_VISIBLE_STRUCTURE_EVIDENCE_BINDINGS
+        or contract.get("ownerImplementationAuthorization")
+        != STAGE4_OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_AUTHORIZATION
+    ):
+        raise ValueError("Stage 4 object visible-structure implementation lineage changed")
+    expected_gate = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    active_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+    } if active else set()
+    if mode == "fact_conditioned_semantic_mixture_stage4_smoke":
+        active_fields.add("smokeNow")
+    if mode in {
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+    }:
+        active_fields.add("stage4FullTrainingNow")
+    gate = contract.get("activationGate", {})
+    if set(gate) != expected_gate or any(
+        gate.get(key) is not (key in active_fields) for key in expected_gate
+    ):
+        raise ValueError("Stage 4 object visible-structure activation gate changed")
+    return {
+        "status": (
+            "stage4_object_visible_structure_supervision_contract_valid_active"
+            if active else "stage4_object_visible_structure_supervision_contract_valid_inactive"
+        ),
+        "sourceChannels": list(STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS),
+        "derivedWeights": derived["weights"],
+    }
+
+
+def validate_stage4_object_reference_multiscale_luminance_structure_supervision(config):
+    """Validate the novel inactive four-object multiscale supervision contract."""
+    if not is_fact_conditioned_semantic_mixture_stage4(config):
+        raise ValueError("Stage 4 object multiscale supervision requires semantic mixture architecture")
+    training = config.get("training", {})
+    contract = training.get(
+        "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision", {}
+    )
+    expected_fields = {
+        "enabled", "status", "contractId", "sourceChannels",
+        "luminanceCoefficients", "pyramidScales", "pyramidAuthority",
+        "perScaleLossFunction", "crossScaleLossFunction", "aggregation",
+        "derivedWeights", "weightDerivation", "noveltyBoundary",
+        "legalSupervision", "compatibility", "evidenceBindings",
+        "ownerImplementationAuthorization", "activationGate",
+    }
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 object multiscale supervision fields changed")
+    if (
+        "stage4ObjectVisibleStructureSupervision" in training
+        or "stage4VegetationLuminanceSpatialStructureSupervision" in training
+    ):
+        raise ValueError("Failed single-scale luminance contracts must be replaced, not reused")
+    derived = derive_stage4_object_visible_structure_weights(config)
+    mode = resolve_stage_mode(config).mode_id
+    active = mode in {
+        "fact_conditioned_semantic_mixture_stage4_smoke",
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+    }
+    exact_scales = list(STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_SCALES)
+    if (
+        contract.get("enabled") is not True
+        or contract.get("status") != (
+            "training_loss_active_owner_authorized" if active
+            else "cpu_support_verified_inactive"
+        )
+        or contract.get("contractId")
+        != STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_SUPERVISION_ID
+        or tuple(contract.get("sourceChannels", ()))
+        != STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS
+        or contract.get("luminanceCoefficients") != [0.2126, 0.7152, 0.0722]
+        or contract.get("pyramidScales") != exact_scales
+        or list(training.get("textureHierarchyScales", ())) != exact_scales
+        or contract.get("pyramidAuthority")
+        != "training.textureHierarchyScales_exact_inheritance"
+        or contract.get("perScaleLossFunction")
+        != "masked_zero_mean_normalized_luminance_correlation_at_each_inherited_scale"
+        or contract.get("crossScaleLossFunction")
+        != "masked_laplacian_pyramid_structure_consistency"
+        or contract.get("aggregation") != {
+            "perObject": "arithmetic_mean_of_three_per_scale_correlations_and_one_cross_scale_structure_consistency",
+            "crossObject": "sum_of_existing_typed_weighted_object_obligations",
+            "freeNumericalWeightSelectionAllowed": False,
+        }
+        or contract.get("derivedWeights") != derived["weights"]
+        or contract.get("weightDerivation") != derived
+    ):
+        raise ValueError("Stage 4 object multiscale supervision identity changed")
+    if contract.get("noveltyBoundary") != {
+        "rejectedCandidateContractId": STAGE4_OBJECT_VISIBLE_STRUCTURE_SUPERVISION_ID,
+        "rejectedCandidateLossFunction": "one_minus_masked_zero_mean_normalized_luminance_correlation",
+        "failedSingleScaleContractReuseAllowed": False,
+        "distinctMechanism": "per_scale_masked_luminance_correlation_plus_cross_scale_structure_consistency",
+    }:
+        raise ValueError("Stage 4 object multiscale novelty boundary changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "worldFacts": "approved_world_facts",
+        "maskChannels": list(STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS),
+        "failedPreviewPixelsUsedAsTargets": False,
+        "failedCheckpointWeightsReadOrLoaded": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 object multiscale legal supervision changed")
+    if contract.get("compatibility") != {
+        "waterAndPathBehaviorPreserved": True,
+        "existingColorAndEdgeObligationsPreserved": True,
+        "modelArchitectureChanged": False,
+        "checkpointFormatChanged": False,
+        "datasetOrSplitChanged": False,
+        "conditionPackChanged": False,
+        "reviewThresholdsChanged": False,
+        "oldModesWithoutContractPreserved": True,
+    }:
+        raise ValueError("Stage 4 object multiscale compatibility changed")
+    if (
+        contract.get("evidenceBindings")
+        != STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_EVIDENCE_BINDINGS
+        or contract.get("ownerImplementationAuthorization")
+        != STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_IMPLEMENTATION_AUTHORIZATION
+    ):
+        raise ValueError("Stage 4 object multiscale implementation lineage changed")
+    expected_gate = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    active_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+    } if active else set()
+    if mode == "fact_conditioned_semantic_mixture_stage4_smoke":
+        active_fields.add("smokeNow")
+    if mode in {
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+    }:
+        active_fields.add("stage4FullTrainingNow")
+    gate = contract.get("activationGate", {})
+    if set(gate) != expected_gate or any(
+        gate.get(key) is not (key in active_fields) for key in expected_gate
+    ):
+        raise ValueError("Stage 4 object multiscale activation gate changed")
+    return {
+        "status": (
+            "stage4_object_reference_multiscale_luminance_structure_contract_valid_active"
+            if active else
+            "stage4_object_reference_multiscale_luminance_structure_contract_valid_inactive"
+        ),
+        "sourceChannels": list(STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS),
+        "pyramidScales": exact_scales,
+        "derivedWeights": derived["weights"],
     }
 
 
@@ -4907,6 +5508,7 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
     attestation = read_json(verified["implementationAttestation"])
     terminal = read_json(verified["readonlyGpuTerminal"])
     diagnostic = read_json(verified["readonlyGpuDiagnostic"])
+    cuda_telemetry = read_json(verified["cudaTelemetry"])
     cpu_report = read_json(verified["readonlyCpuReport"])
     expected_actions = sorted(
         action.value for action in (
@@ -4960,6 +5562,115 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
             "vegetationLuminanceSpatialStructure", {}
         ).get("reachesFrozenAutoencoderDecodedRgb") is True
     )
+    full_rollout_qualification = (
+        terminal.get("status")
+        == "stage4_full_rollout_readonly_gpu_qualification_succeeded_closed"
+        and diagnostic.get("status")
+        == "passed_readonly_full_50_step_rollout_gradient_qualification"
+        and cpu_report.get("status")
+        == "passed_stage4_full_rollout_final_visible_consistency_cpu"
+        and source.get("training", {}).get(
+            "stage4FullRolloutFinalVisibleConsistency", {}
+        ).get("contractId") == "stage4_full_rollout_final_visible_consistency_v1"
+        and source.get("training", {}).get(
+            "stage4FullRolloutFinalVisibleConsistency", {}
+        ).get("rolloutSteps") == 50
+        and source.get("training", {}).get(
+            "stage4FullRolloutFinalVisibleConsistency", {}
+        ).get("gradientTailSteps") == 5
+    )
+    epoch_worst_replay_qualification = (
+        terminal.get("status")
+        == "stage4_epoch_worst_readonly_gpu_qualification_succeeded_closed"
+        and diagnostic.get("status")
+        == "passed_stage4_epoch_worst_readonly_gpu_qualification"
+        and cpu_report.get("status")
+        == "passed_stage4_epoch_worst_sample_class_replay_cpu"
+        and source.get("training", {}).get(
+            "stage4EpochWorstSampleClassReplay", {}
+        ).get("contractId")
+        == STAGE4_EPOCH_WORST_SAMPLE_CLASS_REPLAY_ID
+        and source.get("training", {}).get(
+            "stage4EpochWorstSampleClassReplay", {}
+        ).get("replay", {}).get("passesSource")
+        == "training.pathHardExampleReplay.passesPerEpoch"
+    )
+    object_visible_structure_qualification = (
+        terminal.get("status")
+        == "stage4_object_visible_structure_phase0_passed_closed"
+        and terminal.get("diagnosticCheckpointPromotable") is False
+        and terminal.get("smokeStarted") is False
+        and terminal.get("formalTrainingStarted") is False
+        and diagnostic.get("status")
+        == "stage4_object_visible_structure_phase0_passed_closed"
+        and diagnostic.get("optimizerSteps") == 1
+        and diagnostic.get("smokeQuotaConsumed") is False
+        and all(value is True for value in diagnostic.get("equality", {}).values())
+        and len(diagnostic.get("equality", {})) == 5
+        and cuda_telemetry.get("status")
+        == "phase0_single_cuda_optimizer_step_passed_closed"
+        and cuda_telemetry.get("weightsChanged") is True
+        and cuda_telemetry.get("autoencoderWeightsChanged") is False
+        and cuda_telemetry.get("fullTrainingInitializationEligible") is False
+        and cpu_report.get("status")
+        == "stage4_object_visible_structure_phase0_derived_diagnostic_registry_correction_cpu_contract_passed"
+        and source.get("training", {}).get(
+            "stage4ObjectVisibleStructureSupervision", {}
+        ).get("contractId") == STAGE4_OBJECT_VISIBLE_STRUCTURE_SUPERVISION_ID
+        and source.get("training", {}).get(
+            "stage4ObjectVisibleStructureSupervision", {}
+        ).get("status") == "cpu_support_verified_inactive"
+    )
+    identity = authorization.get("taskIdentity", {})
+    object_reference_multiscale_qualification = (
+        terminal.get("status")
+        == "stage4_object_reference_multiscale_phase0_passed_closed"
+        and terminal.get("diagnosticCheckpointPromotable") is False
+        and terminal.get("smokeStarted") is False
+        and terminal.get("formalTrainingStarted") is False
+        and diagnostic.get("status")
+        == "stage4_object_reference_multiscale_phase0_passed_closed"
+        and diagnostic.get("optimizerSteps") == 1
+        and diagnostic.get("backwardCalls") == 1
+        and diagnostic.get("replayOptimizerSteps") == 0
+        and diagnostic.get("diagnosticManifestMetricCount") == 48
+        and diagnostic.get("requiredGradientGroupCount") == 5
+        and diagnostic.get("smokeQuotaConsumed") is False
+        and len(diagnostic.get("equality", {})) == 5
+        and all(value is True for value in diagnostic.get("equality", {}).values())
+        and cuda_telemetry.get("status")
+        == "phase0_single_cuda_optimizer_step_passed_closed"
+        and cuda_telemetry.get("optimizerStepCount") == 1
+        and cuda_telemetry.get("backwardCallCount") == 1
+        and cuda_telemetry.get("replayOptimizerStepCount") == 0
+        and cuda_telemetry.get("parameterGradientsCleared") is True
+        and cuda_telemetry.get("weightsChanged") is True
+        and cuda_telemetry.get("autoencoderWeightsChanged") is False
+        and cuda_telemetry.get("diagnosticManifest", {}).get("fieldCount") == 48
+        and list(cuda_telemetry.get("requiredGradientGroups", {}))
+        == ["footprints", "tree", "rock", "vegetation", "combined"]
+        and cpu_report.get("status")
+        == "stage4_object_reference_multiscale_phase0_success_continuation_path_correction_cpu_passed"
+        and cpu_report.get("positivePassed") == cpu_report.get("positiveTotal")
+        and cpu_report.get("negativePassed") == cpu_report.get("negativeTotal")
+        and identity.get("trainingObjectiveContractId")
+        == STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_SUPERVISION_ID
+        and identity.get("objectSemanticChannels")
+        == ["object_footprints", "object_tree", "object_rock", "object_vegetation"]
+        and identity.get("pyramidScales")
+        == list(STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_SCALES)
+        and source.get("training", {}).get(
+            "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision", {}
+        ).get("contractId")
+        == STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_SUPERVISION_ID
+        and source.get("training", {}).get(
+            "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision", {}
+        ).get("status") == "cpu_support_verified_inactive"
+        and source.get("training", {}).get(
+            "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision", {}
+        ).get("noveltyBoundary", {}).get("failedSingleScaleContractReuseAllowed") is False
+        and source.get("training", {}).get("stage4ObjectVisibleStructureSupervision") is None
+    )
     if (
         source.get("denoiserArchitecture")
         != "stage4_fact_conditioned_semantic_mixture_decoder_v1"
@@ -4984,6 +5695,10 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
             or final_visible_rgb_qualification
             or vegetation_repair_qualification
             or vegetation_luminance_qualification
+            or full_rollout_qualification
+            or epoch_worst_replay_qualification
+            or object_visible_structure_qualification
+            or object_reference_multiscale_qualification
         )
         or cpu_report.get("positivePassed") != cpu_report.get("positiveTotal")
         or cpu_report.get("negativePassed") != cpu_report.get("negativeTotal")
@@ -7373,10 +8088,23 @@ def build_training_token_accounting(config, datasets, stage, epoch_count, smoke_
     evaluation_epoch_count = epoch_count if evaluation_epoch_count is None else int(evaluation_epoch_count)
     trajectory_supervision_steps = int(training.get("shortTrajectorySupervision", {}).get("steps", 0)) if training.get("shortTrajectorySupervision", {}).get("enabled") is True else 0
     cross_domain_rollout_steps = int(config["inferenceSteps"]) if training.get("stage4CrossDomainVisualConsistency", {}).get("enabled") is True else 0
-    path_replay_passes = r5_path_replay_passes_per_epoch(config)
+    epoch_worst_contract = validate_stage4_epoch_worst_sample_class_replay(config)
+    path_replay_passes = (
+        0 if epoch_worst_contract is not None
+        else r5_path_replay_passes_per_epoch(config)
+    )
+    epoch_worst_replay_passes = (
+        int(epoch_worst_contract["replay"]["passesPerObservedPrimaryBatch"])
+        if epoch_worst_contract is not None else 0
+    )
     train_samples_per_epoch = min(len(datasets["train"]), batch_size) if smoke_test else len(datasets["train"])
-    effective_training_presentations_per_epoch = train_samples_per_epoch * (1 + path_replay_passes)
-    optimizer_steps_per_epoch = ((train_samples_per_epoch + batch_size - 1) // batch_size) * (1 + path_replay_passes)
+    effective_training_presentations_per_epoch = (
+        train_samples_per_epoch * (1 + path_replay_passes + epoch_worst_replay_passes)
+    )
+    optimizer_steps_per_epoch = (
+        ((train_samples_per_epoch + batch_size - 1) // batch_size)
+        * (1 + path_replay_passes + epoch_worst_replay_passes)
+    )
     validation_samples = len(datasets["validation"])
     fixed_validation_sample_passes = validation_samples * fixed_timestep_count
     rollout_seeds = int(training.get("checkpointRolloutSeedsPerSample", 2)) if uses_v7_rollout_validation(config) else 0
@@ -7384,7 +8112,8 @@ def build_training_token_accounting(config, datasets, stage, epoch_count, smoke_
     rollout_trajectories = validation_samples * rollout_seeds
     rollout_sample_passes = rollout_trajectories * rollout_steps
     training_denoiser_passes_per_epoch = (
-        effective_training_presentations_per_epoch * (1 + trajectory_supervision_steps)
+        train_samples_per_epoch * (1 + path_replay_passes) * (1 + trajectory_supervision_steps)
+        + train_samples_per_epoch * epoch_worst_replay_passes
         + train_samples_per_epoch * cross_domain_rollout_steps
     )
     evaluated_epoch_sample_passes = training_denoiser_passes_per_epoch + fixed_validation_sample_passes + rollout_sample_passes
@@ -7407,7 +8136,8 @@ def build_training_token_accounting(config, datasets, stage, epoch_count, smoke_
     )
     total_sample_passes = epoch_sample_passes + final_evaluation_sample_passes + evidence_sample_passes
     decoded_rgb_training_frames_per_epoch = (
-        effective_training_presentations_per_epoch * (1 + trajectory_supervision_steps)
+        train_samples_per_epoch * (1 + path_replay_passes) * (1 + trajectory_supervision_steps)
+        + train_samples_per_epoch * epoch_worst_replay_passes
         + (train_samples_per_epoch if cross_domain_rollout_steps else 0)
     )
     decoded_rgb_frames_per_evaluated_epoch = decoded_rgb_training_frames_per_epoch + fixed_validation_sample_passes + rollout_trajectories
@@ -7459,6 +8189,7 @@ def build_training_token_accounting(config, datasets, stage, epoch_count, smoke_
             "trainingSamplePresentations": effective_training_presentations_per_epoch,
             "primaryTrainingSamplePresentations": train_samples_per_epoch,
             "pathHardExampleReplayPassesPerEpoch": path_replay_passes,
+            "epochWorstSampleClassReplayPassesPerEpoch": epoch_worst_replay_passes,
             "optimizerSteps": optimizer_steps_per_epoch,
             "shortTrajectoryDenoiserStepsPerTrainingSample": trajectory_supervision_steps,
             "crossDomainRolloutDenoiserStepsPerPrimaryTrainingSample": cross_domain_rollout_steps,
@@ -7480,6 +8211,7 @@ def build_training_token_accounting(config, datasets, stage, epoch_count, smoke_
             "trainingSamplePresentations": effective_training_presentations_per_epoch * epoch_count,
             "primaryTrainingSamplePresentations": train_samples_per_epoch * epoch_count,
             "pathHardExampleReplaySamplePresentations": train_samples_per_epoch * path_replay_passes * epoch_count,
+            "epochWorstSampleClassReplaySamplePresentations": train_samples_per_epoch * epoch_worst_replay_passes * epoch_count,
             "optimizerSteps": optimizer_steps_per_epoch * epoch_count,
             "shortTrajectoryDenoiserSteps": train_samples_per_epoch * trajectory_supervision_steps * epoch_count,
             "crossDomainRolloutDenoiserSteps": train_samples_per_epoch * cross_domain_rollout_steps * epoch_count,
@@ -8244,11 +8976,109 @@ def run_structure_fact_first_phase0_causal(
     return 0
 
 
+def stage4_object_reference_multiscale_phase0_pre_step_gradient_evidence(
+    model, loss_metrics, config,
+):
+    expected_fields = tuple(fact_conditioned_semantic_mixture_diagnostic_fields(config))
+    registry = config["training"]["stage4FactConditionedSemanticMixture"][
+        "diagnosticManifestRegistry"
+    ]
+    if (
+        len(expected_fields) != 48
+        or registry.get("exactFieldCount") != 48
+        or registry.get("exactFields") != list(expected_fields)
+    ):
+        raise ValueError("object-reference-multiscale Phase0 diagnostic field contract changed")
+    diagnostic_values = {}
+    for field in expected_fields:
+        value = loss_metrics.get(field)
+        if not isinstance(value, torch.Tensor):
+            raise ValueError(f"object-reference-multiscale Phase0 metric missing:{field}")
+        scalar = float(value.detach().cpu())
+        if not math.isfinite(scalar) or scalar < 0.0:
+            raise ValueError(f"object-reference-multiscale Phase0 metric invalid:{field}")
+        diagnostic_values[field] = scalar
+
+    object_contract = validate_stage4_object_reference_multiscale_luminance_structure_supervision(
+        config
+    )
+    object_terms = (
+        ("footprints", "object_footprints", "Footprints"),
+        ("tree", "object_tree", "Tree"),
+        ("rock", "object_rock", "Rock"),
+        ("vegetation", "object_vegetation", "Vegetation"),
+    )
+    all_denoiser_parameters = tuple(
+        parameter for parameter in model.denoiser.parameters() if parameter.requires_grad
+    )
+    if not all_denoiser_parameters:
+        raise ValueError("object-reference-multiscale Phase0 Denoiser parameters are missing")
+
+    def gradient_summary(values):
+        present = tuple(value for value in values if value is not None)
+        finite = bool(present) and all(bool(torch.isfinite(value).all()) for value in present)
+        absolute_sum = sum(float(value.detach().abs().sum().cpu()) for value in present)
+        if not finite or not math.isfinite(absolute_sum) or absolute_sum <= 0.0:
+            raise ValueError("object-reference-multiscale Phase0 required gradient is missing")
+        return {"finite": True, "absoluteSum": absolute_sum}
+
+    groups = {}
+    combined_loss = loss_metrics["compositeLossTensor"].new_zeros(())
+    for identity, source_channel, prefix in object_terms:
+        metric = f"stage4SemanticMixture{prefix}FinalTypedMultiscaleLuminanceStructureLoss"
+        loss = loss_metrics.get(metric)
+        if not isinstance(loss, torch.Tensor):
+            raise ValueError(f"object-reference-multiscale Phase0 loss missing:{identity}")
+        denoiser = gradient_summary(torch.autograd.grad(
+            loss, all_denoiser_parameters, retain_graph=True, allow_unused=True,
+        ))
+        matching_parameters = tuple(
+            model.denoiser.semantic_mixture_experts[identity].parameters()
+        )
+        matching = gradient_summary(torch.autograd.grad(
+            loss, matching_parameters, retain_graph=True, allow_unused=True,
+        ))
+        weight = float(object_contract["derivedWeights"][identity])
+        if not math.isfinite(weight) or weight <= 0.0:
+            raise ValueError(f"object-reference-multiscale Phase0 weight invalid:{identity}")
+        combined_loss = combined_loss + loss * weight
+        groups[identity] = {
+            "sourceChannel": source_channel,
+            "metric": metric,
+            "lossValue": float(loss.detach().cpu()),
+            "derivedWeight": weight,
+            "denoiserGradient": denoiser,
+            "matchingSemanticMixtureExpertGradient": matching,
+            "finiteAndStrictlyNonzero": True,
+        }
+    groups["combined"] = {
+        "metric": "weightedFourObjectReferenceMultiscaleLoss",
+        "lossValue": float(combined_loss.detach().cpu()),
+        "denoiserGradient": gradient_summary(torch.autograd.grad(
+            combined_loss, all_denoiser_parameters, retain_graph=True, allow_unused=True,
+        )),
+        "finiteAndStrictlyNonzero": True,
+    }
+    if any(parameter.grad is not None for parameter in model.denoiser.parameters()):
+        raise ValueError("object-reference-multiscale pre-step gate populated parameter.grad")
+    return {
+        "fourObjectReferenceMultiscale": groups,
+        "diagnosticManifest": {
+            "fieldCount": 48,
+            "fields": list(expected_fields),
+            "values": diagnostic_values,
+        },
+    }
+
+
 def run_stage4_validation_kernel_phase0_update(
     args, config, package, datasets, dataset_binding_evidence, overfit_evidence,
     sample_bound_boundary_provenance, identity, model, diffusion, device, event, telemetry_path,
 ):
     structure_phase0 = identity.get("schemaVersion") == "ai-painter-stage4-structure-fact-first-phase0-execution-identity-v1"
+    object_reference_multiscale_phase0 = identity.get("schemaVersion") == (
+        "ai-painter-stage4-object-reference-multiscale-phase0-execution-identity-v1"
+    )
     selected = build_optimization_datasets(datasets, overfit_evidence)
     event("latent_normalization", "started")
     latent_normalization = compute_latent_normalization(
@@ -8262,9 +9092,16 @@ def run_stage4_validation_kernel_phase0_update(
     before = state_dict_sha256(model.denoiser.state_dict())
     autoencoder_before = state_dict_sha256(model.autoencoder.state_dict())
     event("single_training_step", "started", deterministicAlgorithmsEnabled=torch.are_deterministic_algorithms_enabled())
+    phase0_pre_step_evidence = {}
     metrics = train_epoch(
         model, loader, optimizer, diffusion, latent_normalization, device, config, 0,
         max_batches=1, step_telemetry_path=None, enable_path_replay=False,
+        enable_epoch_worst_replay=not object_reference_multiscale_phase0,
+        phase0_pre_step_gate=(
+            stage4_object_reference_multiscale_phase0_pre_step_gradient_evidence
+            if object_reference_multiscale_phase0 else None
+        ),
+        phase0_pre_step_evidence=phase0_pre_step_evidence,
     )
     gradients = [parameter.grad.detach() for parameter in model.denoiser.parameters() if parameter.grad is not None]
     if not gradients or any(not bool(torch.isfinite(value).all()) for value in gradients):
@@ -8297,14 +9134,28 @@ def run_stage4_validation_kernel_phase0_update(
         int(value["step"].detach().cpu()) if torch.is_tensor(value.get("step")) else int(value.get("step", 0))
         for value in optimizer.state.values()
     }
-    if structure_phase0 and optimizer_steps != {1}:
-        raise ValueError("structure-fact-first Phase0-B optimizer step count is not exactly one")
+    if (structure_phase0 or object_reference_multiscale_phase0) and optimizer_steps != {1}:
+        raise ValueError("Stage4 Phase0 optimizer step count is not exactly one")
     after = state_dict_sha256(model.denoiser.state_dict())
     autoencoder_after = state_dict_sha256(model.autoencoder.state_dict())
     if before == after:
         raise ValueError("Stage4 validation kernel Phase0 optimizer step did not change model state")
     if autoencoder_before != autoencoder_after:
         raise ValueError("Stage4 validation kernel Phase0 changed the frozen Autoencoder")
+    optimizer.zero_grad(set_to_none=True)
+    parameter_gradients_cleared = all(
+        parameter.grad is None for parameter in model.denoiser.parameters()
+    )
+    if object_reference_multiscale_phase0 and not parameter_gradients_cleared:
+        raise ValueError("object-reference-multiscale Phase0 parameter gradients were not cleared")
+    multiscale_gradient_groups = (
+        phase0_pre_step_evidence.get("fourObjectReferenceMultiscale", {})
+        if object_reference_multiscale_phase0 else gradient_groups
+    )
+    diagnostic_manifest = (
+        phase0_pre_step_evidence.get("diagnosticManifest")
+        if object_reference_multiscale_phase0 else None
+    )
     event("single_training_step", "completed", gradientFinite=True, gradientNonzero=True, weightsChanged=True)
     checkpoint_path = args.output_dir / "phase0-diagnostic-checkpoint.pt"
     event("diagnostic_checkpoint_write", "started")
@@ -8358,8 +9209,12 @@ def run_stage4_validation_kernel_phase0_update(
         "gradientNonzero": True,
         "gradientAbsSum": gradient_abs_sum,
         "gradientNonzeroCount": gradient_nonzero_count,
-        "requiredGradientGroups": gradient_groups,
-        "optimizerStepCount": 1 if structure_phase0 else None,
+        "requiredGradientGroups": multiscale_gradient_groups,
+        "diagnosticManifest": diagnostic_manifest,
+        "optimizerStepCount": 1 if (structure_phase0 or object_reference_multiscale_phase0) else None,
+        "backwardCallCount": 1 if object_reference_multiscale_phase0 else None,
+        "replayOptimizerStepCount": 0 if object_reference_multiscale_phase0 else None,
+        "parameterGradientsCleared": parameter_gradients_cleared,
         "formalInferenceEligible": False,
         "checkpointPromotionEligible": False,
         "fullTrainingInitializationEligible": False,
@@ -8386,8 +9241,12 @@ def run_stage4_validation_kernel_phase0_update(
         "initialAutoencoderStateSha256": autoencoder_before,
         "finalAutoencoderStateSha256": autoencoder_after,
         "autoencoderWeightsChanged": autoencoder_before != autoencoder_after,
-        "requiredGradientGroups": gradient_groups,
-        "optimizerStepCount": 1 if structure_phase0 else None,
+        "requiredGradientGroups": multiscale_gradient_groups,
+        "diagnosticManifest": diagnostic_manifest,
+        "optimizerStepCount": 1 if (structure_phase0 or object_reference_multiscale_phase0) else None,
+        "backwardCallCount": 1 if object_reference_multiscale_phase0 else None,
+        "replayOptimizerStepCount": 0 if object_reference_multiscale_phase0 else None,
+        "parameterGradientsCleared": parameter_gradients_cleared,
         "conditionTensorSha256": condition_sha256,
         "checkpointPath": project_path(checkpoint_path),
         "checkpointSha256": sha256_file(checkpoint_path),
@@ -8550,11 +9409,40 @@ def train_epoch(
     on_batch_progress=None,
     step_telemetry_path=None,
     enable_path_replay=True,
+    enable_epoch_worst_replay=True,
+    phase0_pre_step_gate=None,
+    phase0_pre_step_evidence=None,
 ):
     model.denoiser.train()
     totals = {}
     count = 0
     samples_processed = 0
+    configured_epoch_worst_contract = validate_stage4_epoch_worst_sample_class_replay(config)
+    epoch_worst_contract = (
+        configured_epoch_worst_contract if enable_epoch_worst_replay else None
+    )
+    configured_early_convergence_contract = (
+        validate_stage4_object_reference_multiscale_early_convergence_stabilization(
+            config
+        )
+    )
+    early_convergence_contract = (
+        configured_early_convergence_contract
+        if (
+            enable_epoch_worst_replay
+            and configured_early_convergence_contract is not None
+            and configured_early_convergence_contract["status"]
+            == "training_loss_active_owner_authorized"
+        )
+        else None
+    )
+    if early_convergence_contract is not None and epoch_worst_contract is None:
+        raise ValueError(
+            "Stage 4 early-convergence stabilization requires epoch-worst replay"
+        )
+    if epoch_worst_contract is not None and int(config["training"]["batchSize"]) != 1:
+        raise ValueError("Stage 4 epoch-worst replay requires the locked batchSize=1 contract")
+    epoch_worst = None
     for batch_index, batch in enumerate(loader):
         if max_batches is not None and batch_index >= max_batches:
             break
@@ -8660,6 +9548,37 @@ def train_epoch(
             )
             loss_metrics["compositeLoss"] = loss_metrics["compositeLossTensor"]
             loss_metrics.update(full_rollout_metrics)
+        if epoch_worst_contract is not None:
+            weighted_classes = loss_metrics.get(
+                "stage4DistributionAwareWeightedPerSampleClassTensor"
+            )
+            if not isinstance(weighted_classes, torch.Tensor) or weighted_classes.shape != (
+                image.shape[0], len(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES)
+            ):
+                raise ValueError("Stage 4 epoch-worst replay class ledger is unavailable")
+            rollout_score = loss_metrics.get(
+                "stage4FullRolloutFinalVisibleConsistencyWeightedLoss",
+                weighted_classes.new_zeros(()),
+            )
+            for sample_index in range(image.shape[0]):
+                class_index = int(weighted_classes[sample_index].argmax().detach())
+                score = float(
+                    (weighted_classes[sample_index, class_index] + rollout_score).detach()
+                )
+                sample_id = str(batch["sampleId"][sample_index])
+                candidate_key = (
+                    -score, sample_id,
+                    FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[class_index],
+                )
+                if epoch_worst is None or candidate_key < epoch_worst["selectionKey"]:
+                    epoch_worst = {
+                        "selectionKey": candidate_key,
+                        "score": score,
+                        "sampleId": sample_id,
+                        "classIndex": class_index,
+                        "image": image[sample_index:sample_index + 1].detach().cpu().clone(),
+                        "conditions": conditions[sample_index:sample_index + 1].detach().cpu().clone(),
+                    }
         record_stage4_step(
             step_telemetry_path,
             "forward_loss",
@@ -8667,6 +9586,13 @@ def train_epoch(
             epoch=epoch_index + 1,
             batch=batch_index + 1,
         )
+        if phase0_pre_step_gate is not None:
+            if batch_index != 0 or phase0_pre_step_evidence is None:
+                raise ValueError("Phase0 pre-step gradient gate invocation is invalid")
+            phase0_pre_step_evidence.clear()
+            phase0_pre_step_evidence.update(
+                phase0_pre_step_gate(model, loss_metrics, config)
+            )
         record_stage4_step(
             step_telemetry_path,
             "backward",
@@ -8697,7 +9623,10 @@ def train_epoch(
             epoch=epoch_index + 1,
             batch=batch_index + 1,
         )
-        replay_passes = r5_path_replay_passes_per_epoch(config) if enable_path_replay else 0
+        replay_passes = (
+            r5_path_replay_passes_per_epoch(config)
+            if enable_path_replay and epoch_worst_contract is None else 0
+        )
         replay_totals = {}
         for replay_index in range(replay_passes):
             replay_timestep = training_timesteps(
@@ -8745,6 +9674,82 @@ def train_epoch(
             for key, value in replay_totals.items():
                 loss_metrics[key] = loss_metrics["compositeLossTensor"].new_tensor(value / replay_passes)
             loss_metrics["pathHardExampleReplayPasses"] = loss_metrics["compositeLossTensor"].new_tensor(float(replay_passes))
+        epoch_worst_replay_passes = (
+            int(epoch_worst_contract["replay"]["passesPerObservedPrimaryBatch"])
+            if epoch_worst_contract is not None else 0
+        )
+        epoch_worst_replay_totals = {}
+        if epoch_worst_replay_passes:
+            if epoch_worst is None:
+                raise ValueError("Stage 4 epoch-worst replay did not observe a training sample")
+            replay_image = epoch_worst["image"].to(device)
+            replay_conditions = epoch_worst["conditions"].to(device)
+            with torch.no_grad():
+                replay_latent = normalize_latent(
+                    model.autoencoder.encode(replay_image), latent_normalization,
+                )
+            for replay_index in range(epoch_worst_replay_passes):
+                replay_timestep = training_timesteps(
+                    config, epoch_index,
+                    batch_index + (replay_index + 1) * len(loader),
+                    len(loader) * (1 + epoch_worst_replay_passes),
+                    replay_image.shape[0],
+                    diffusion["alphasCumulative"].shape[0], device,
+                )
+                replay_noise = torch.randn_like(replay_latent)
+                replay_noisy_latent = add_noise(
+                    replay_latent, replay_noise, replay_timestep,
+                    diffusion["alphasCumulative"],
+                )
+                replay_target_velocity = velocity_target(
+                    replay_latent, replay_noise, replay_timestep,
+                    diffusion["alphasCumulative"],
+                )
+                optimizer.zero_grad(set_to_none=True)
+                epoch_replay_metrics = stage4_epoch_worst_sample_class_replay_supervision(
+                    model, replay_noisy_latent, replay_target_velocity, replay_latent,
+                    replay_timestep, diffusion["alphasCumulative"], replay_conditions,
+                    replay_image, latent_normalization, config, epoch_worst["classIndex"],
+                    replay_index=replay_index,
+                )
+                epoch_replay_metrics["stage4EpochWorstSampleClassReplayLossTensor"].backward()
+                optimizer.step()
+                for key, value in epoch_replay_metrics.items():
+                    if key.endswith("Tensor"):
+                        continue
+                    epoch_worst_replay_totals[key] = (
+                        epoch_worst_replay_totals.get(key, 0.0) + float(value.detach())
+                    )
+                record_stage4_step(
+                    step_telemetry_path, "epoch_worst_sample_class_replay", "completed",
+                    epoch=epoch_index + 1, batch=batch_index + 1,
+                    replayPass=replay_index + 1, sampleId=epoch_worst["sampleId"],
+                    classIdentity=(
+                        "joint_four_object_reference_multiscale"
+                        if early_convergence_contract is not None and replay_index == 1
+                        else FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[
+                            epoch_worst["classIndex"]
+                        ]
+                    ),
+                    replayLane=(
+                        early_convergence_contract["lanes"][replay_index]["laneId"]
+                        if early_convergence_contract is not None
+                        else "legacy_global_worst_sample_class"
+                    ),
+                    selectionScore=epoch_worst["score"],
+                )
+            for key, value in epoch_worst_replay_totals.items():
+                loss_metrics[key] = loss_metrics["compositeLossTensor"].new_tensor(
+                    value / epoch_worst_replay_passes
+                )
+            loss_metrics["stage4EpochWorstSampleClassSelectionScore"] = (
+                loss_metrics["compositeLossTensor"].new_tensor(epoch_worst["score"])
+            )
+            loss_metrics["stage4EpochWorstSampleClassReplayPasses"] = (
+                loss_metrics["compositeLossTensor"].new_tensor(
+                    float(epoch_worst_replay_passes)
+                )
+            )
         for key, value in loss_metrics.items():
             if key.endswith("Tensor"):
                 continue
@@ -8760,7 +9765,9 @@ def train_epoch(
                 "lastBatchDurationSeconds": time.perf_counter() - batch_started,
                 "samplesInBatch": int(image.shape[0]),
                 "samplesProcessedInEpoch": samples_processed,
-                "optimizerStepsCompletedInEpoch": count * (1 + replay_passes),
+                "optimizerStepsCompletedInEpoch": count * (
+                    1 + replay_passes + epoch_worst_replay_passes
+                ),
             })
     if count == 0:
         raise ValueError("conditional denoiser training loader produced no batches")
@@ -8829,6 +9836,41 @@ def validate_stage4_full_rollout_final_visible_consistency(config):
         "oldModesPreserved": True,
     }:
         raise ValueError("Stage 4 full-rollout compatibility changed")
+    active = training.get("trainingAuthorizationStatus") in {
+        "owner_authorized_stage4_fact_conditioned_semantic_mixture_single_sample_gpu_smoke",
+        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage0_full_training",
+        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage1_full_training",
+        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage2_full_training",
+    }
+    expected_true = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+    }
+    if active and "single_sample_gpu_smoke" in training.get("trainingAuthorizationStatus", ""):
+        expected_true.add("smokeNow")
+    if active and training.get("trainingAuthorizationStatus") in {
+        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage0_full_training",
+        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage1_full_training",
+        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage2_full_training",
+    }:
+        expected_true.add("stage4FullTrainingNow")
+    gate = contract.get("activationGate", {})
+    if set(gate) != {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+    }:
+        raise ValueError("Stage 4 full-rollout activation gate fields changed")
+    if active:
+        if contract.get("status") != "training_loss_active_owner_authorized":
+            raise ValueError("Stage 4 full-rollout active status is invalid")
+        if any(gate.get(key) is not True for key in expected_true):
+            raise ValueError("Stage 4 full-rollout required active gate is closed")
+        if any(gate.get(key) is not False for key in set(gate) - expected_true):
+            raise ValueError("Stage 4 full-rollout forbidden active gate is open")
+    elif contract.get("status") != "cpu_support_verified_inactive" or any(gate.values()):
+        raise ValueError("Stage 4 full-rollout inactive gate is not closed")
     return contract
 
 
@@ -9222,6 +10264,181 @@ def masked_condition_luminance_correlation_loss(
     return predicted_rgb.new_tensor(1.0) - numerator / denominator
 
 
+def stage4_object_visible_structure_supervision_losses(
+    predicted_rgb,
+    target_rgb,
+    conditions,
+    config,
+):
+    """Compute four typed forward losses without creating an optimizer or running backward."""
+    contract = validate_stage4_object_visible_structure_supervision(config)
+    identities = FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+    prefixes = ("Footprints", "Tree", "Rock", "Vegetation")
+    losses = {}
+    weighted = []
+    for identity, prefix, channel in zip(
+        identities, prefixes, STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS,
+    ):
+        value = masked_condition_luminance_correlation_loss(
+            predicted_rgb, target_rgb, conditions, config, channel,
+        )
+        losses[
+            f"stage4SemanticMixture{prefix}FinalTypedLuminanceCorrelationLoss"
+        ] = value
+        weighted.append(value * float(contract["derivedWeights"][identity]))
+    return {
+        "status": contract["status"],
+        "losses": losses,
+        "weightedTotalTensor": torch.stack(weighted).sum(),
+        "sourceChannels": contract["sourceChannels"],
+        "derivedWeights": contract["derivedWeights"],
+    }
+
+
+def _stage4_masked_luminance_correlation_from_mask(
+    predicted_rgb,
+    target_rgb,
+    mask,
+):
+    if predicted_rgb.shape[1] != 3 or target_rgb.shape[1] != 3:
+        raise ValueError("masked multiscale luminance correlation requires RGB tensors")
+    support = mask.sum()
+    if float(support.detach().cpu()) <= 1.0:
+        raise ValueError("masked multiscale luminance correlation requires spatial support")
+    coefficients = predicted_rgb.new_tensor([0.2126, 0.7152, 0.0722]).view(1, 3, 1, 1)
+    predicted_luminance = (predicted_rgb * coefficients).sum(dim=1, keepdim=True)
+    target_luminance = (target_rgb * coefficients).sum(dim=1, keepdim=True)
+    predicted_mean = (predicted_luminance * mask).sum() / support
+    target_mean = (target_luminance * mask).sum() / support
+    predicted_centered = (predicted_luminance - predicted_mean) * mask
+    target_centered = (target_luminance - target_mean) * mask
+    numerator = (predicted_centered * target_centered).sum()
+    predicted_energy = predicted_centered.square().sum()
+    target_energy = target_centered.square().sum()
+    epsilon = torch.finfo(predicted_rgb.dtype).eps
+    if float(target_energy.detach().cpu()) <= epsilon:
+        raise ValueError("masked multiscale reference luminance must contain spatial variation")
+    denominator = torch.sqrt(predicted_energy * target_energy).clamp_min(epsilon)
+    return predicted_rgb.new_tensor(1.0) - numerator / denominator
+
+
+def _stage4_object_luminance_structure_pyramid(predicted_rgb, target_rgb, mask, scales):
+    functional = torch.nn.functional
+    pyramid = []
+    height, width = predicted_rgb.shape[-2:]
+    predicted_masked = predicted_rgb * mask
+    target_masked = target_rgb * mask
+    for scale in scales:
+        size = (max(2, round(height * float(scale))), max(2, round(width * float(scale))))
+        if size == (height, width):
+            predicted_scale = predicted_masked
+            target_scale = target_masked
+        else:
+            predicted_scale = functional.interpolate(
+                predicted_masked, size=size, mode="bilinear", align_corners=False,
+            )
+            target_scale = functional.interpolate(
+                target_masked, size=size, mode="bilinear", align_corners=False,
+            )
+        mask_scale = functional.interpolate(mask, size=size, mode="nearest")
+        pyramid.append((predicted_scale, target_scale, mask_scale))
+    return pyramid
+
+
+def _stage4_masked_cross_scale_structure_consistency(pyramid):
+    functional = torch.nn.functional
+    coefficients = pyramid[0][0].new_tensor([0.2126, 0.7152, 0.0722]).view(1, 3, 1, 1)
+    pair_losses = []
+    for current, lower in zip(pyramid, pyramid[1:]):
+        predicted_current, target_current, mask_current = current
+        predicted_lower, target_lower, _ = lower
+        current_size = predicted_current.shape[-2:]
+        predicted_lower_up = functional.interpolate(
+            predicted_lower, size=current_size, mode="bilinear", align_corners=False,
+        )
+        target_lower_up = functional.interpolate(
+            target_lower, size=current_size, mode="bilinear", align_corners=False,
+        )
+        predicted_laplacian = (
+            (predicted_current * coefficients).sum(dim=1, keepdim=True)
+            - (predicted_lower_up * coefficients).sum(dim=1, keepdim=True)
+        )
+        target_laplacian = (
+            (target_current * coefficients).sum(dim=1, keepdim=True)
+            - (target_lower_up * coefficients).sum(dim=1, keepdim=True)
+        )
+        support = mask_current.sum()
+        if float(support.detach().cpu()) <= 1.0:
+            raise ValueError("masked cross-scale structure consistency requires spatial support")
+        pair_losses.append(
+            ((predicted_laplacian - target_laplacian).abs() * mask_current).sum()
+            / support
+        )
+    return torch.stack(pair_losses).mean()
+
+
+def stage4_object_reference_multiscale_luminance_structure_supervision_losses(
+    predicted_rgb,
+    target_rgb,
+    conditions,
+    config,
+):
+    """Compute the bounded multiscale CPU forward contract without backward or an optimizer."""
+    contract = validate_stage4_object_reference_multiscale_luminance_structure_supervision(
+        config
+    )
+    order = list(config["conditionChannelOrder"])
+    identities = FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+    prefixes = ("Footprints", "Tree", "Rock", "Vegetation")
+    scale_suffixes = ("Native", "Half", "Quarter")
+    losses = {}
+    weighted = []
+    object_totals = {}
+    for identity, prefix, channel in zip(
+        identities, prefixes, STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS,
+    ):
+        if channel not in order:
+            raise ValueError(f"condition channel is missing: {channel}")
+        mask = conditions[:, order.index(channel):order.index(channel) + 1]
+        mask = torch.nn.functional.interpolate(
+            mask, size=predicted_rgb.shape[-2:], mode="nearest",
+        )
+        pyramid = _stage4_object_luminance_structure_pyramid(
+            predicted_rgb, target_rgb, mask, contract["pyramidScales"],
+        )
+        obligations = []
+        for suffix, (predicted_scale, target_scale, mask_scale) in zip(
+            scale_suffixes, pyramid,
+        ):
+            value = _stage4_masked_luminance_correlation_from_mask(
+                predicted_scale, target_scale, mask_scale,
+            )
+            losses[
+                f"stage4SemanticMixture{prefix}FinalTyped{suffix}LuminanceCorrelationLoss"
+            ] = value
+            obligations.append(value)
+        cross_scale = _stage4_masked_cross_scale_structure_consistency(pyramid)
+        losses[
+            f"stage4SemanticMixture{prefix}FinalTypedCrossScaleStructureConsistencyLoss"
+        ] = cross_scale
+        obligations.append(cross_scale)
+        object_total = torch.stack(obligations).mean()
+        losses[
+            f"stage4SemanticMixture{prefix}FinalTypedMultiscaleLuminanceStructureLoss"
+        ] = object_total
+        object_totals[identity] = object_total
+        weighted.append(object_total * float(contract["derivedWeights"][identity]))
+    return {
+        "status": contract["status"],
+        "losses": losses,
+        "objectTotalTensors": object_totals,
+        "weightedTotalTensor": torch.stack(weighted).sum(),
+        "sourceChannels": contract["sourceChannels"],
+        "pyramidScales": contract["pyramidScales"],
+        "derivedWeights": contract["derivedWeights"],
+    }
+
+
 def r5_path_replay_passes_per_epoch(config):
     contract = config.get("training", {}).get("pathHardExampleReplay", {})
     if contract.get("enabled") is not True:
@@ -9308,6 +10525,110 @@ def path_hard_example_replay_supervision(
         "pathHardExampleReplayCoverageCalibrationLoss": coverage_loss,
         "pathHardExampleReplayAuthorizedBoundaryTopologyLoss": boundary_topology_loss,
     }
+
+
+def stage4_epoch_worst_sample_class_replay_loss_from_measurements(
+    distribution,
+    multiscale,
+    config,
+    class_index,
+    replay_index=0,
+    allow_inactive_stabilization=False,
+):
+    contract = validate_stage4_epoch_worst_sample_class_replay(config)
+    if contract is None:
+        raise ValueError("Stage 4 epoch-worst replay is not enabled")
+    class_index = int(class_index)
+    replay_index = int(replay_index)
+    if class_index < 0 or class_index >= len(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES):
+        raise ValueError("Stage 4 epoch-worst replay class index is invalid")
+    if replay_index < 0 or replay_index >= int(
+        contract["replay"]["passesPerObservedPrimaryBatch"]
+    ):
+        raise ValueError("Stage 4 epoch-worst replay pass index is invalid")
+    per_class = distribution.get(
+        "stage4DistributionAwareWeightedPerSampleClassTensor"
+    )
+    if not isinstance(per_class, torch.Tensor) or per_class.ndim != 2:
+        raise ValueError("Stage 4 epoch-worst replay measurement ledger is invalid")
+    direct = per_class[0, class_index]
+    stabilization = (
+        validate_stage4_object_reference_multiscale_early_convergence_stabilization(
+            config
+        )
+    )
+    use_stabilization = stabilization is not None and (
+        allow_inactive_stabilization
+        or stabilization["status"] == "training_loss_active_owner_authorized"
+    )
+    joint = direct.new_zeros(())
+    lane_index = 0
+    replay_loss = direct
+    if use_stabilization:
+        lane = stabilization["lanes"][replay_index]
+        lane_index = replay_index
+        if lane["laneId"] == "lane_2_joint_four_object_reference_multiscale":
+            if not isinstance(multiscale, dict) or not isinstance(
+                multiscale.get("weightedTotalTensor"), torch.Tensor
+            ):
+                raise ValueError(
+                    "Stage 4 joint four-object multiscale replay measurement is unavailable"
+                )
+            joint = multiscale["weightedTotalTensor"]
+            replay_loss = joint
+        elif lane["laneId"] != "lane_1_existing_global_worst_sample_class":
+            raise ValueError("Stage 4 early-convergence replay lane is invalid")
+    return {
+        "stage4EpochWorstSampleClassReplayLossTensor": replay_loss,
+        "stage4EpochWorstSampleClassReplayDirectWeightedLoss": direct,
+        "stage4EpochWorstSampleClassReplayJointFourObjectMultiscaleWeightedLoss": joint,
+        "stage4EpochWorstSampleClassReplayClassIndex": direct.new_tensor(
+            float(class_index)
+        ),
+        "stage4EpochWorstSampleClassReplayLaneIndex": direct.new_tensor(
+            float(lane_index)
+        ),
+    }
+
+
+def stage4_epoch_worst_sample_class_replay_supervision(
+    model, noisy_latent, target_velocity, clean_latent, timesteps, alpha_bars,
+    conditions, target_image, latent_normalization, config, class_index,
+    replay_index=0,
+):
+    contract = validate_stage4_epoch_worst_sample_class_replay(config)
+    if contract is None:
+        raise ValueError("Stage 4 epoch-worst replay is not enabled")
+    measured = predict_and_measure(
+        model, noisy_latent, target_velocity, clean_latent, timesteps, alpha_bars,
+        conditions, config, target_image, latent_normalization,
+    )
+    distribution = stage4_distribution_aware_visible_spatial_semantic_obligation(
+        [measured["predictedRgbTensor"]], target_image, conditions, config,
+    )
+    stabilization = (
+        validate_stage4_object_reference_multiscale_early_convergence_stabilization(
+            config
+        )
+    )
+    multiscale = None
+    if (
+        stabilization is not None
+        and stabilization["status"] == "training_loss_active_owner_authorized"
+        and int(replay_index) == 1
+    ):
+        multiscale = (
+            stage4_object_reference_multiscale_luminance_structure_supervision_losses(
+                measured["predictedRgbTensor"], target_image, conditions, config
+            )
+        )
+    return stage4_epoch_worst_sample_class_replay_loss_from_measurements(
+        distribution,
+        multiscale,
+        config,
+        class_index,
+        replay_index=replay_index,
+    )
 
 
 def short_trajectory_supervision(model, noisy_latent, clean_latent, timesteps, alpha_bars, conditions, target_image, latent_normalization, config):
@@ -10249,6 +11570,26 @@ def composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
         )
         composite = composite + weighted_vegetation_luminance_correlation
         checkpoint = checkpoint + weighted_vegetation_luminance_correlation
+    if "stage4ObjectVisibleStructureSupervision" in config.get("training", {}):
+        object_visible_structure = stage4_object_visible_structure_supervision_losses(
+            predicted_rgb,
+            target_rgb,
+            full_conditions,
+            config,
+        )
+        composite = composite + object_visible_structure["weightedTotalTensor"]
+        checkpoint = checkpoint + object_visible_structure["weightedTotalTensor"]
+    if "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision" in config.get("training", {}):
+        object_multiscale_structure = (
+            stage4_object_reference_multiscale_luminance_structure_supervision_losses(
+                predicted_rgb,
+                target_rgb,
+                full_conditions,
+                config,
+            )
+        )
+        composite = composite + object_multiscale_structure["weightedTotalTensor"]
+        checkpoint = checkpoint + object_multiscale_structure["weightedTotalTensor"]
     prefixes = ("Route", "Footprints", "Tree", "Rock", "Vegetation")
     metrics = {}
     for index, prefix in enumerate(prefixes):
@@ -10263,6 +11604,10 @@ def composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
         metrics[
             "stage4SemanticMixtureVegetationFinalTypedLuminanceCorrelationLoss"
         ] = vegetation_luminance_correlation
+    if "stage4ObjectVisibleStructureSupervision" in config.get("training", {}):
+        metrics.update(object_visible_structure["losses"])
+    if "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision" in config.get("training", {}):
+        metrics.update(object_multiscale_structure["losses"])
     metrics.update({
         "stage4SemanticMixtureFinalResponseMae": (
             predicted_velocity - base_velocity
@@ -10277,6 +11622,9 @@ def composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
         ]
         metrics["stage4DistributionAwareMeanSampleWorstClassFinalRgbObligation"] = distribution[
             "stage4DistributionAwareMeanSampleWorstClassFinalRgbObligation"
+        ]
+        metrics["stage4DistributionAwareWeightedPerSampleClassTensor"] = distribution[
+            "stage4DistributionAwareWeightedPerSampleClassTensor"
         ]
     return {
         **base,
@@ -10644,11 +11992,14 @@ def stage4_distribution_aware_visible_spatial_semantic_obligation(
     raw_tensor = torch.stack(raw_steps, dim=0)
     weighted_tensor = torch.stack(weighted_steps, dim=0)
     per_sample_worst = weighted_tensor.amax(dim=(0, 2))
+    per_sample_class_worst = weighted_tensor.amax(dim=0)
     return {
         "stage4DistributionAwareVisibleSpatialSemanticLossTensor": per_sample_worst.amax(),
         "stage4DistributionAwareWorstSampleClassFinalRgbObligation": per_sample_worst.amax(),
         "stage4DistributionAwareMeanSampleWorstClassFinalRgbObligation": per_sample_worst.mean(),
         "stage4DistributionAwareRawPerStepSampleClass": raw_tensor,
+        "stage4DistributionAwareWeightedPerSampleClassTensor": per_sample_class_worst,
+        "stage4DistributionAwareWorstClassIndexTensor": per_sample_class_worst.argmax(dim=1),
     }
 
 
@@ -11804,6 +13155,13 @@ def condition_type_indices(config):
     )
 
 
+STAGE4_DISTRIBUTION_AWARE_INTERNAL_TENSOR_FIELDS = {
+    "stage4DistributionAwareRawPerStepSampleClass": (3, -1),
+    "stage4DistributionAwareWeightedPerSampleClassTensor": (2, -1),
+    "stage4DistributionAwareWorstClassIndexTensor": (1, None),
+}
+
+
 def serialize_condition_evidence_metrics(loss_metrics):
     serialized = {}
     preset_scalar_keys = {
@@ -11819,6 +13177,21 @@ def serialize_condition_evidence_metrics(loss_metrics):
         if key == "predictedRgbTensor":
             if not isinstance(value, torch.Tensor) or value.ndim != 4 or value.shape[1] != 3:
                 raise ValueError("condition evidence predictedRgbTensor must be a batched RGB image tensor")
+            continue
+        if key in STAGE4_DISTRIBUTION_AWARE_INTERNAL_TENSOR_FIELDS:
+            expected_ndim, class_axis = STAGE4_DISTRIBUTION_AWARE_INTERNAL_TENSOR_FIELDS[key]
+            if not isinstance(value, torch.Tensor) or value.ndim != expected_ndim:
+                raise ValueError(
+                    f"condition evidence internal distribution ledger is invalid: {key}"
+                )
+            if (
+                class_axis is not None
+                and value.shape[class_axis]
+                != len(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES)
+            ):
+                raise ValueError(
+                    f"condition evidence internal distribution class axis is invalid: {key}"
+                )
             continue
         if isinstance(value, torch.Tensor):
             if value.numel() != 1:

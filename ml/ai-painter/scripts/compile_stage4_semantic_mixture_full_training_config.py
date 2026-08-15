@@ -128,6 +128,7 @@ def compile_config(
     mixture["enabled"] = True
     mixture["status"] = "training_loss_active_owner_authorized"
     mixture["activationGate"] = active_gate(mixture["activationGate"], smoke_key="smoke30EpochNow")
+    mixture["diagnosticManifestRegistry"].pop("fixedEpochs", None)
     diagnostics = training["stage4FailureDiagnostics"]
     diagnostics["status"] = "fact_conditioned_semantic_mixture_diagnostic_manifest_supported_active_full_training"
     for key in ("trainingConfigApplied", "checkpointFileReadAuthorized", "gpuUseAuthorized", "trainingAuthorized"):
@@ -137,6 +138,9 @@ def compile_config(
         "stage4DistributionAwareVisibleSpatialSemanticObligation",
         "stage4VegetationFinalVisibleSemanticRepair",
         "stage4VegetationLuminanceSpatialStructureSupervision",
+        "stage4FullRolloutFinalVisibleConsistency",
+        "stage4EpochWorstSampleClassReplay",
+        "stage4ObjectVisibleStructureSupervision",
     ):
         contract = training.get(name)
         if contract:

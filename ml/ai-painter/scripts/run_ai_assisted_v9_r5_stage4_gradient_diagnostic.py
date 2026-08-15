@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
@@ -147,6 +148,144 @@ VEGETATION_LUMINANCE_SCOPE = (
 VEGETATION_LUMINANCE_CONTRACT_ID = (
     "stage4_vegetation_luminance_spatial_structure_supervision_v1"
 )
+OBJECT_VISIBLE_STRUCTURE_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-object-visible-structure-readonly-gpu-gradient-qualification-"
+    "20260815-025000000/gpu-execution-authorization.json"
+)
+OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-object-visible-structure-readonly-gpu-gradient-entry-"
+    "implementation-20260815-005000000/authorization.json"
+)
+OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_CONSUMPTION_PATH = (
+    OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_AUTHORIZATION_PATH.parent
+    / "implementation-consumption.json"
+)
+OBJECT_VISIBLE_STRUCTURE_REQUEST_ID = (
+    "owner-authorized-stage4-object-visible-structure-readonly-gpu-gradient-"
+    "qualification-20260815-025000000"
+)
+OBJECT_VISIBLE_STRUCTURE_SCOPE = (
+    "one_stage4_four_object_visible_structure_readonly_gpu_gradient_qualification_only"
+)
+OBJECT_VISIBLE_STRUCTURE_CONTRACT_ID = (
+    "stage4_four_typed_object_visible_structure_supervision_v1"
+)
+OBJECT_VISIBLE_STRUCTURE_SCHEMA = (
+    "ai-painter-owner-stage4-object-visible-structure-readonly-gpu-gradient-qualification-v1"
+)
+OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_REQUEST_ID = (
+    "owner-authorized-stage4-object-visible-structure-readonly-gpu-gradient-entry-"
+    "implementation-20260815-005000000"
+)
+OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_SCOPE = (
+    "implement_current_four_object_readonly_gpu_gradient_diagnostic_entry_and_cpu_"
+    "regressions_only"
+)
+OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_AUTHORIZATION_SHA256 = (
+    "d230ee00ac584da119129540a07d7517822a7ab5775c5385d94c3a1a8875a615"
+)
+OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_CONSUMPTION_SHA256 = (
+    "898b37d2306917964383bb70c127af2ac9511ba2ee1a3177efc2013b82f5c11a"
+)
+OBJECT_VISIBLE_STRUCTURE_LINEAGE_ATTESTATION_PATH = Path(
+    ".runtime/ai-painter/stage4-object-visible-structure-readonly-gpu-entry-cpu-contract-"
+    "corrections/20260815-024000000/implementation-attestation.json"
+)
+OBJECT_REFERENCE_MULTISCALE_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-object-reference-multiscale-readonly-gpu-gradient-"
+    "qualification-20260815-144500000/authorization.json"
+)
+OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-object-reference-multiscale-readonly-gpu-entry-"
+    "implementation-20260815-143331000/authorization.json"
+)
+OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_CONSUMPTION_PATH = (
+    OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_AUTHORIZATION_PATH.parent
+    / "consumption.json"
+)
+OBJECT_REFERENCE_MULTISCALE_REQUEST_ID = (
+    "owner-authorized-stage4-object-reference-multiscale-readonly-gpu-gradient-"
+    "qualification-20260815-144500000"
+)
+OBJECT_REFERENCE_MULTISCALE_SCOPE = (
+    "one_stage4_four_object_reference_multiscale_luminance_structure_readonly_"
+    "gpu_gradient_qualification_only"
+)
+OBJECT_REFERENCE_MULTISCALE_CONTRACT_ID = (
+    "typed_object_multiscale_luminance_structure_correlation_supervision_v1"
+)
+OBJECT_REFERENCE_MULTISCALE_SCHEMA = (
+    "ai-painter-owner-stage4-object-reference-multiscale-luminance-structure-"
+    "readonly-gpu-gradient-qualification-v1"
+)
+OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_REQUEST_ID = (
+    "owner-authorized-stage4-object-reference-multiscale-readonly-gpu-entry-"
+    "implementation-20260815-143331000"
+)
+OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_SCOPE = (
+    "one_cpu_bounded_multiscale_luminance_structure_readonly_gpu_qualification_"
+    "entry_implementation_and_contract_regression_only"
+)
+OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_AUTHORIZATION_SHA256 = (
+    "10b70640b8e8226fc90e905d73ec2febf2b9ee105a11e868cc6b7b29afa12684"
+)
+OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_CONSUMPTION_SHA256 = (
+    "c9204b3f94245d0ff7d7606368738908ebb11ec7899935baed010888527ae43e"
+)
+OBJECT_REFERENCE_MULTISCALE_LINEAGE_ATTESTATION_PATH = Path(
+    ".runtime/ai-painter/stage4-object-reference-multiscale-readonly-gpu-entry-"
+    "implementations/20260815-143331000/implementation-attestation.json"
+)
+EARLY_CONVERGENCE_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-object-reference-multiscale-early-convergence-readonly-"
+    "gpu-gradient-qualification-20260815-210000000/authorization.json"
+)
+EARLY_CONVERGENCE_IMPLEMENTATION_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-object-reference-multiscale-early-convergence-gpu-runner-"
+    "local-mode-and-preflight-hash-contract-correction-20260815-204600000/authorization.json"
+)
+EARLY_CONVERGENCE_IMPLEMENTATION_CONSUMPTION_PATH = (
+    EARLY_CONVERGENCE_IMPLEMENTATION_AUTHORIZATION_PATH.parent / "consumption.json"
+)
+EARLY_CONVERGENCE_REQUEST_ID = (
+    "owner-authorized-stage4-object-reference-multiscale-early-convergence-readonly-"
+    "gpu-gradient-qualification-20260815-210000000"
+)
+EARLY_CONVERGENCE_SCOPE = (
+    "one_fixed_sample194_two_lane_early_convergence_readonly_gpu_gradient_"
+    "qualification_only"
+)
+EARLY_CONVERGENCE_SCHEMA = (
+    "ai-painter-owner-stage4-object-reference-multiscale-early-convergence-"
+    "readonly-gpu-gradient-qualification-v1"
+)
+EARLY_CONVERGENCE_CONTRACT_ID = (
+    "stage4_object_reference_multiscale_two_lane_early_convergence_stabilization_v1"
+)
+EARLY_CONVERGENCE_IMPLEMENTATION_REQUEST_ID = (
+    "owner-authorized-stage4-object-reference-multiscale-early-convergence-gpu-runner-"
+    "local-mode-and-preflight-hash-contract-correction-20260815-204600000"
+)
+EARLY_CONVERGENCE_IMPLEMENTATION_SCOPE = (
+    "one_cpu_bounded_gpu_runner_local_mode_and_preflight_hash_contract_correction"
+)
+EARLY_CONVERGENCE_IMPLEMENTATION_AUTHORIZATION_SHA256 = (
+    "7cb50b7f9396b1630843a4ee0e06bb866db33096c325c323ff74948dfc05a608"
+)
+EARLY_CONVERGENCE_IMPLEMENTATION_CONSUMPTION_SHA256 = (
+    "977fe4d5e752b4769159d5eefd5e7cf8ce3be093f94c2d1fce9e4a320aa6152a"
+)
+EARLY_CONVERGENCE_LINEAGE_ATTESTATION_PATH = Path(
+    ".runtime/ai-painter/stage4-object-reference-multiscale-early-convergence-"
+    "gpu-runner-contract-corrections/20260815-204600000/"
+    "implementation-attestation.json"
+)
 
 
 def main() -> int:
@@ -165,6 +304,15 @@ def main() -> int:
             raise ValueError("cpu_contract_check_must_not_receive_execution_paths")
         print(json.dumps({
             "status": (
+                "stage4_object_reference_multiscale_early_convergence_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                if is_early_convergence_authorization(authorization)
+                else (
+                "stage4_object_reference_multiscale_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                if is_object_reference_multiscale_authorization(authorization)
+                else (
+                "stage4_object_visible_structure_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                if is_object_visible_structure_authorization(authorization)
+                else (
                 "stage4_vegetation_luminance_spatial_gpu_diagnostic_authorization_contract_valid_cpu_only"
                 if is_vegetation_luminance_authorization(authorization)
                 else (
@@ -181,7 +329,7 @@ def main() -> int:
                         if is_structure_fact_authorization(authorization)
                         else "v9_gpu_diagnostic_authorization_contract_valid_cpu_only"
                     )
-                )))
+                ))))))
             ),
             "requestId": authorization_request_id(authorization),
             "sampleId": SAMPLE_ID,
@@ -200,6 +348,101 @@ def main() -> int:
 
 def validate_authorization(path: Path) -> dict:
     resolved = resolve(path)
+    if resolved == resolve(EARLY_CONVERGENCE_AUTHORIZATION_PATH):
+        authorization = read_json(resolved)
+        validate_authorization_document(authorization, verify_bindings=True)
+        if sha256_file(resolve(EARLY_CONVERGENCE_IMPLEMENTATION_AUTHORIZATION_PATH)) != (
+            EARLY_CONVERGENCE_IMPLEMENTATION_AUTHORIZATION_SHA256
+        ):
+            raise ValueError("early_convergence_implementation_authorization_changed")
+        if sha256_file(resolve(EARLY_CONVERGENCE_IMPLEMENTATION_CONSUMPTION_PATH)) != (
+            EARLY_CONVERGENCE_IMPLEMENTATION_CONSUMPTION_SHA256
+        ):
+            raise ValueError("early_convergence_implementation_consumption_changed")
+        consumption = read_json(resolve(EARLY_CONVERGENCE_IMPLEMENTATION_CONSUMPTION_PATH))
+        if (
+            consumption.get("status")
+            != "cpu_only_gpu_runner_local_mode_and_preflight_hash_contract_correction_authorization_atomically_consumed"
+            or consumption.get("requestId") != EARLY_CONVERGENCE_IMPLEMENTATION_REQUEST_ID
+            or consumption.get("commandRef") != EARLY_CONVERGENCE_IMPLEMENTATION_REQUEST_ID
+            or consumption.get("scope") != EARLY_CONVERGENCE_IMPLEMENTATION_SCOPE
+            or consumption.get("authorizationSha256")
+            != EARLY_CONVERGENCE_IMPLEMENTATION_AUTHORIZATION_SHA256
+            or any(consumption.get(key) is not False for key in (
+                "gpuUsed", "cudaInitialized", "autogradExecuted", "checkpointFileRead",
+                "modelLoaded", "optimizerCreated", "backwardExecuted", "trainingStarted",
+                "validationStarted", "smokeStarted", "stage0Started", "stage1Started",
+                "stage2Started",
+            ))
+        ):
+            raise ValueError("early_convergence_implementation_consumption_invalid")
+        authorization["_diagnosticMode"] = "object_reference_multiscale_early_convergence"
+        authorization["_authorizationPath"] = project_path(resolved)
+        authorization["_authorizationSha256"] = sha256_file(resolved)
+        return authorization
+    if resolved == resolve(OBJECT_REFERENCE_MULTISCALE_AUTHORIZATION_PATH):
+        authorization = read_json(resolved)
+        validate_authorization_document(authorization, verify_bindings=True)
+        if sha256_file(resolve(OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_AUTHORIZATION_PATH)) != (
+            OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_AUTHORIZATION_SHA256
+        ):
+            raise ValueError("object_reference_multiscale_implementation_authorization_changed")
+        if sha256_file(resolve(OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_CONSUMPTION_PATH)) != (
+            OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_CONSUMPTION_SHA256
+        ):
+            raise ValueError("object_reference_multiscale_implementation_consumption_changed")
+        consumption = read_json(resolve(OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_CONSUMPTION_PATH))
+        if (
+            consumption.get("status")
+            != "multiscale_readonly_gpu_entry_implementation_authorization_atomically_consumed"
+            or consumption.get("requestId")
+            != OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_REQUEST_ID
+            or consumption.get("commandRef")
+            != OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_REQUEST_ID
+            or consumption.get("scope") != OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_SCOPE
+            or consumption.get("authorizationSha256")
+            != OBJECT_REFERENCE_MULTISCALE_IMPLEMENTATION_AUTHORIZATION_SHA256
+            or any(consumption.get(key) is not False for key in (
+                "gpuUsed", "cudaInitialized", "autogradExecuted", "checkpointFileRead",
+                "modelLoaded", "optimizerCreated", "backwardExecuted", "trainingStarted",
+                "validationStarted", "smokeStarted", "stage1Or2Started",
+            ))
+        ):
+            raise ValueError("object_reference_multiscale_implementation_consumption_invalid")
+        authorization["_diagnosticMode"] = "object_reference_multiscale_luminance_structure"
+        authorization["_authorizationPath"] = project_path(resolved)
+        authorization["_authorizationSha256"] = sha256_file(resolved)
+        return authorization
+    if resolved == resolve(OBJECT_VISIBLE_STRUCTURE_AUTHORIZATION_PATH):
+        authorization = read_json(resolved)
+        validate_authorization_document(authorization, verify_bindings=True)
+        if sha256_file(resolve(OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_AUTHORIZATION_PATH)) != (
+            OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_AUTHORIZATION_SHA256
+        ):
+            raise ValueError("object_visible_structure_implementation_authorization_changed")
+        if sha256_file(resolve(OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_CONSUMPTION_PATH)) != (
+            OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_CONSUMPTION_SHA256
+        ):
+            raise ValueError("object_visible_structure_implementation_consumption_changed")
+        consumption = read_json(resolve(OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_CONSUMPTION_PATH))
+        if (
+            consumption.get("status")
+            != "readonly_gpu_gradient_entry_implementation_authorization_atomically_consumed"
+            or consumption.get("requestId") != OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_REQUEST_ID
+            or consumption.get("commandRef") != OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_REQUEST_ID
+            or consumption.get("scope") != OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_SCOPE
+            or consumption.get("authorizationSha256")
+            != OBJECT_VISIBLE_STRUCTURE_IMPLEMENTATION_AUTHORIZATION_SHA256
+            or consumption.get("gpuUsed") is not False
+            or consumption.get("autogradExecuted") is not False
+            or consumption.get("checkpointFileRead") is not False
+            or consumption.get("modelLoaded") is not False
+        ):
+            raise ValueError("object_visible_structure_implementation_consumption_invalid")
+        authorization["_diagnosticMode"] = "object_visible_structure"
+        authorization["_authorizationPath"] = project_path(resolved)
+        authorization["_authorizationSha256"] = sha256_file(resolved)
+        return authorization
     if resolved == resolve(VEGETATION_LUMINANCE_AUTHORIZATION_PATH):
         authorization = read_json(resolved)
         validate_authorization_document(authorization, verify_bindings=True)
@@ -308,6 +551,19 @@ def validate_authorization(path: Path) -> dict:
 
 
 def validate_authorization_document(authorization: dict, verify_bindings: bool) -> None:
+    if authorization.get("schemaVersion") == EARLY_CONVERGENCE_SCHEMA:
+        validate_early_convergence_authorization_document(authorization, verify_bindings)
+        return
+    if authorization.get("schemaVersion") == OBJECT_REFERENCE_MULTISCALE_SCHEMA:
+        validate_object_reference_multiscale_authorization_document(
+            authorization, verify_bindings
+        )
+        return
+    if authorization.get("schemaVersion") == OBJECT_VISIBLE_STRUCTURE_SCHEMA:
+        validate_object_visible_structure_authorization_document(
+            authorization, verify_bindings
+        )
+        return
     if authorization.get("schemaVersion") == (
         "ai-painter-owner-stage4-vegetation-luminance-spatial-readonly-gpu-qualification-v1"
     ):
@@ -415,6 +671,553 @@ def validate_authorization_document(authorization: dict, verify_bindings: bool) 
     ):
         raise ValueError("v9_diagnostic_cpu_prerequisite_not_successful")
     trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+
+
+def validate_early_convergence_authorization_document(
+    authorization: dict, verify_bindings: bool,
+) -> None:
+    if (
+        authorization.get("status") != "owner_authorized_unconsumed"
+        or authorization.get("requestId") != EARLY_CONVERGENCE_REQUEST_ID
+        or authorization.get("commandRef") != EARLY_CONVERGENCE_REQUEST_ID
+        or authorization.get("scope") != EARLY_CONVERGENCE_SCOPE
+    ):
+        raise ValueError("early_convergence_diagnostic_owner_identity_invalid")
+    expected_identity = {
+        "architectureId": SEMANTIC_MIXTURE_ARCHITECTURE,
+        "trainingObjectiveContractId": EARLY_CONVERGENCE_CONTRACT_ID,
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": SAMPLE_SPLIT,
+        "seed": SEED,
+        "timestep": TIMESTEP,
+        "resolution": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+        "requiredBoundarySides": ["west"],
+        "objectSemanticChannels": list(OBJECT_CHANNELS),
+        "pyramidScales": [1.0, 0.5, 0.25],
+        "replayLaneCount": 2,
+        "diagnosticManifestMetricCount": 48,
+        "denoiserInitialization": "fixed_random_seed_20263722",
+        "autoencoderState": "bound_project_checkpoint_loaded_and_frozen",
+    }
+    if authorization.get("taskIdentity") != expected_identity:
+        raise ValueError("early_convergence_diagnostic_task_identity_invalid")
+    expected_actions = {
+        "projectAutoencoderCheckpointReadAndLoadFrozen": True,
+        "fixedRandomDenoiserInitialization": True,
+        "singleSample194ValidationRead": True,
+        "singleReadonlyCudaForward": True,
+        "torchAutogradGradInspection": True,
+        "lane1SelectedGlobalWorstClassGradientVerification": True,
+        "lane2JointFourObjectReferenceMultiscaleGradientVerification": True,
+        "combinedTwoLaneGradientVerification": True,
+        "matchingSemanticMixtureExpertRouteVerification": True,
+        "exactFortyEightDiagnosticManifestExport": True,
+        "preAndPostModelStateSha256IdentityComparison": True,
+        "cudaTelemetryWrite": True,
+        "diagnosticReportWrite": True,
+        "terminalEvidenceWrite": True,
+        "failedDenoiserCheckpointReadOrLoad": False,
+        "optimizerCreation": False,
+        "backwardMethodExecution": False,
+        "modelWeightModification": False,
+        "checkpointWrite": False,
+        "training": False,
+        "validation": False,
+        "smoke": False,
+        "automaticRetry": False,
+        "stage0OrStage1OrStage2": False,
+        "formalInference": False,
+        "checkpointPromotion": False,
+        "runtimeFrame": False,
+        "worldEntry": False,
+    }
+    if authorization.get("executionActions") != expected_actions:
+        raise ValueError("early_convergence_diagnostic_execution_actions_invalid")
+    if authorization.get("failurePolicy") != {
+        "stopImmediately": True,
+        "automaticRetry": False,
+        "preserveEvidence": True,
+        "noTrainingEscalation": True,
+    }:
+        raise ValueError("early_convergence_diagnostic_failure_policy_invalid")
+    implementation_root = Path(
+        ".runtime/ai-painter/stage4-object-reference-multiscale-early-convergence-"
+        "gpu-runner-contract-corrections/20260815-204600000"
+    )
+    execution_root = Path(
+        ".runtime/ai-painter/stage4-object-reference-multiscale-early-convergence-"
+        "readonly-gpu-gradient-qualifications/20260815-210000000"
+    )
+    if authorization.get("implementation") != {
+        "cpuReportPath": project_path(implementation_root / "cpu-report.json"),
+        "implementationAttestationPath": project_path(
+            EARLY_CONVERGENCE_LINEAGE_ATTESTATION_PATH
+        ),
+        "pythonPreflightPath": project_path(execution_root / "python-preflight.json"),
+        "resourcePreflightPath": project_path(execution_root / "resource-preflight.json"),
+    }:
+        raise ValueError("early_convergence_diagnostic_implementation_paths_invalid")
+    if authorization.get("execution") != {
+        "outputDirectory": project_path(execution_root / "gpu-execution"),
+        "gpuConsumptionPath": project_path(
+            EARLY_CONVERGENCE_AUTHORIZATION_PATH.parent / "gpu-execution-consumption.json"
+        ),
+    }:
+        raise ValueError("early_convergence_diagnostic_execution_paths_invalid")
+    if not verify_bindings:
+        return
+    required_bindings = (
+        "implementationReport", "inactiveSupportContract", "inactiveConfig", "cpuReport",
+        "trainer", "datasetManifest", "datasetSourceIndex", "projectAutoencoderCheckpoint",
+        "implementationAuthorization", "implementationConsumption", "runner", "cpuChecker",
+        "entryImplementationReport",
+    )
+    if set(authorization.get("bindings", {})) != set(required_bindings):
+        raise ValueError("early_convergence_diagnostic_binding_set_invalid")
+    if authorization["bindings"].get("entryImplementationReport", {}).get("path") != project_path(
+        EARLY_CONVERGENCE_LINEAGE_ATTESTATION_PATH
+    ):
+        raise ValueError("early_convergence_diagnostic_attestation_path_invalid")
+    for key in required_bindings:
+        value = authorization["bindings"].get(key, {})
+        if value.get("sha256") != sha256_file(resolve(Path(value.get("path", "missing")))):
+            raise ValueError(f"early_convergence_diagnostic_binding_changed:{key}")
+    support = read_json(resolve(Path(authorization["bindings"]["inactiveSupportContract"]["path"])))
+    cpu_report = read_json(resolve(Path(authorization["bindings"]["cpuReport"]["path"])))
+    if (
+        support.get("status") != "cpu_support_verified_inactive"
+        or cpu_report.get("status")
+        != "passed_stage4_object_reference_multiscale_early_convergence_stabilization_cpu"
+    ):
+        raise ValueError("early_convergence_diagnostic_cpu_prerequisite_not_successful")
+    config = load_early_convergence_config(authorization)
+    validate_early_convergence_diagnostic_config(config)
+
+
+def validate_object_reference_multiscale_authorization_document(
+    authorization: dict, verify_bindings: bool,
+) -> None:
+    if (
+        authorization.get("status") != "owner_authorized_unconsumed"
+        or authorization.get("requestId") != OBJECT_REFERENCE_MULTISCALE_REQUEST_ID
+        or authorization.get("commandRef") != OBJECT_REFERENCE_MULTISCALE_REQUEST_ID
+        or authorization.get("scope") != OBJECT_REFERENCE_MULTISCALE_SCOPE
+    ):
+        raise ValueError("object_reference_multiscale_diagnostic_owner_identity_invalid")
+    expected_identity = {
+        "architectureId": SEMANTIC_MIXTURE_ARCHITECTURE,
+        "trainingObjectiveContractId": OBJECT_REFERENCE_MULTISCALE_CONTRACT_ID,
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": SAMPLE_SPLIT,
+        "seed": SEED,
+        "timestep": TIMESTEP,
+        "resolution": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+        "requiredBoundarySides": ["west"],
+        "objectSemanticChannels": list(OBJECT_CHANNELS),
+        "pyramidScales": [1.0, 0.5, 0.25],
+        "diagnosticManifestMetricCount": 48,
+        "denoiserInitialization": "fixed_random_seed_20263722",
+        "autoencoderState": "bound_project_checkpoint_loaded_and_frozen",
+    }
+    if authorization.get("taskIdentity") != expected_identity:
+        raise ValueError("object_reference_multiscale_diagnostic_task_identity_invalid")
+    expected_actions = {
+        "projectAutoencoderCheckpointReadAndLoadFrozen": True,
+        "fixedRandomDenoiserInitialization": True,
+        "singleSample194ValidationRead": True,
+        "singleReadonlyCudaForward": True,
+        "torchAutogradGradInspection": True,
+        "fourSeparateTypedMultiscaleAggregateGradientVerification": True,
+        "matchingSemanticMixtureExpertRouteVerification": True,
+        "combinedTypedMultiscaleGradientVerification": True,
+        "exactFortyEightDiagnosticManifestExport": True,
+        "preAndPostModelStateSha256IdentityComparison": True,
+        "cudaTelemetryWrite": True,
+        "diagnosticReportWrite": True,
+        "terminalEvidenceWrite": True,
+        "localTaskCapsuleEventLedgerSqliteSync": True,
+        "failedDenoiserCheckpointReadOrLoad": False,
+        "optimizerCreation": False,
+        "backwardMethodExecution": False,
+        "modelWeightModification": False,
+        "checkpointWrite": False,
+        "training": False,
+        "validation": False,
+        "smoke": False,
+        "automaticRetry": False,
+        "stage1OrStage2": False,
+        "formalInference": False,
+        "checkpointPromotion": False,
+        "runtimeFrame": False,
+        "worldEntry": False,
+    }
+    if authorization.get("executionActions") != expected_actions:
+        raise ValueError("object_reference_multiscale_diagnostic_execution_actions_invalid")
+    if authorization.get("failurePolicy") != {
+        "stopImmediately": True,
+        "automaticRetry": False,
+        "preserveEvidence": True,
+        "noTrainingEscalation": True,
+    }:
+        raise ValueError("object_reference_multiscale_diagnostic_failure_policy_invalid")
+    implementation_root = Path(
+        ".runtime/ai-painter/stage4-object-reference-multiscale-readonly-gpu-entry-"
+        "implementations/20260815-143331000"
+    )
+    execution_root = Path(
+        ".runtime/ai-painter/stage4-object-reference-multiscale-readonly-gpu-gradient-"
+        "qualifications/20260815-144500000"
+    )
+    if authorization.get("implementation") != {
+        "cpuReportPath": project_path(implementation_root / "cpu-report.json"),
+        "implementationAttestationPath": project_path(
+            OBJECT_REFERENCE_MULTISCALE_LINEAGE_ATTESTATION_PATH
+        ),
+        "pythonPreflightPath": project_path(execution_root / "python-preflight.json"),
+        "resourcePreflightPath": project_path(execution_root / "resource-preflight.json"),
+    }:
+        raise ValueError("object_reference_multiscale_diagnostic_implementation_paths_invalid")
+    if authorization.get("execution") != {
+        "outputDirectory": project_path(execution_root / "gpu-execution"),
+        "gpuConsumptionPath": project_path(
+            OBJECT_REFERENCE_MULTISCALE_AUTHORIZATION_PATH.parent
+            / "gpu-execution-consumption.json"
+        ),
+    }:
+        raise ValueError("object_reference_multiscale_diagnostic_execution_paths_invalid")
+    if not verify_bindings:
+        return
+    required_bindings = (
+        "cpuTerminal", "implementationReport", "cpuReport", "supportContract",
+        "inactiveConfigFragment", "gpuQualificationRequest", "sourceConfig", "model",
+        "trainer", "compiler", "objectCpuChecker", "modeRegistry", "datasetManifest",
+        "datasetSourceIndex", "projectAutoencoderCheckpoint", "implementationAuthorization",
+        "implementationConsumption", "runner", "cpuChecker", "entryImplementationReport",
+    )
+    if set(authorization.get("bindings", {})) != set(required_bindings):
+        raise ValueError("object_reference_multiscale_diagnostic_binding_set_invalid")
+    if authorization["bindings"].get("entryImplementationReport") != {
+        "path": project_path(OBJECT_REFERENCE_MULTISCALE_LINEAGE_ATTESTATION_PATH),
+        "sha256": authorization["bindings"].get("entryImplementationReport", {}).get("sha256"),
+    }:
+        raise ValueError("object_reference_multiscale_diagnostic_attestation_path_invalid")
+    for key in required_bindings:
+        value = authorization["bindings"].get(key, {})
+        if value.get("sha256") != sha256_file(resolve(Path(value.get("path", "missing")))):
+            raise ValueError(f"object_reference_multiscale_diagnostic_binding_changed:{key}")
+    terminal = read_json(resolve(Path(authorization["bindings"]["cpuTerminal"]["path"])))
+    cpu_report = read_json(resolve(Path(authorization["bindings"]["cpuReport"]["path"])))
+    support = read_json(resolve(Path(authorization["bindings"]["supportContract"]["path"])))
+    if (
+        terminal.get("status")
+        != "stage4_object_reference_multiscale_luminance_structure_cpu_succeeded_closed"
+        or cpu_report.get("status")
+        != "stage4_object_reference_multiscale_luminance_structure_cpu_regression_passed"
+        or support.get("status") != "cpu_support_verified_inactive"
+    ):
+        raise ValueError("object_reference_multiscale_diagnostic_cpu_prerequisite_not_successful")
+    config = load_object_visible_structure_config(authorization)
+    trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+    result = trainer.validate_stage4_object_reference_multiscale_luminance_structure_supervision(
+        config
+    )
+    if result.get("status") != (
+        "stage4_object_reference_multiscale_luminance_structure_contract_valid_active"
+    ):
+        raise ValueError("object_reference_multiscale_diagnostic_objective_contract_invalid")
+
+
+def validate_object_visible_structure_authorization_document(
+    authorization: dict, verify_bindings: bool,
+) -> None:
+    if (
+        authorization.get("status") != "owner_authorized_unconsumed"
+        or authorization.get("requestId") != OBJECT_VISIBLE_STRUCTURE_REQUEST_ID
+        or authorization.get("commandRef") != OBJECT_VISIBLE_STRUCTURE_REQUEST_ID
+        or authorization.get("scope") != OBJECT_VISIBLE_STRUCTURE_SCOPE
+    ):
+        raise ValueError("object_visible_structure_diagnostic_owner_identity_invalid")
+    expected_identity = {
+        "architectureId": SEMANTIC_MIXTURE_ARCHITECTURE,
+        "trainingObjectiveContractId": OBJECT_VISIBLE_STRUCTURE_CONTRACT_ID,
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": SAMPLE_SPLIT,
+        "seed": SEED,
+        "timestep": TIMESTEP,
+        "resolution": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+        "requiredBoundarySides": ["west"],
+        "objectSemanticChannels": list(OBJECT_CHANNELS),
+        "diagnosticManifestMetricCount": 32,
+        "denoiserInitialization": "fixed_random_seed_20263722",
+        "autoencoderState": "bound_project_checkpoint_loaded_and_frozen",
+    }
+    if authorization.get("taskIdentity") != expected_identity:
+        raise ValueError("object_visible_structure_diagnostic_task_identity_invalid")
+    expected_actions = {
+        "projectAutoencoderCheckpointReadAndLoadFrozen": True,
+        "fixedRandomDenoiserInitialization": True,
+        "singleSample194ValidationRead": True,
+        "singleReadonlyCudaForward": True,
+        "torchAutogradGradInspection": True,
+        "fourSeparateTypedVisibleStructureGradientVerification": True,
+        "matchingSemanticMixtureExpertRouteVerification": True,
+        "combinedTypedVisibleStructureGradientVerification": True,
+        "exactThirtyTwoDiagnosticManifestExport": True,
+        "preAndPostModelStateSha256IdentityComparison": True,
+        "cudaTelemetryWrite": True,
+        "diagnosticReportWrite": True,
+        "terminalEvidenceWrite": True,
+        "localTaskCapsuleEventLedgerSqliteSync": True,
+        "failedDenoiserCheckpointReadOrLoad": False,
+        "optimizerCreation": False,
+        "backwardMethodExecution": False,
+        "modelWeightModification": False,
+        "checkpointWrite": False,
+        "training": False,
+        "validation": False,
+        "smoke": False,
+        "automaticRetry": False,
+        "stage1OrStage2": False,
+        "formalInference": False,
+        "checkpointPromotion": False,
+        "runtimeFrame": False,
+        "worldEntry": False,
+    }
+    if authorization.get("executionActions") != expected_actions:
+        raise ValueError("object_visible_structure_diagnostic_execution_actions_invalid")
+    if authorization.get("failurePolicy") != {
+        "stopImmediately": True,
+        "automaticRetry": False,
+        "preserveEvidence": True,
+        "noTrainingEscalation": True,
+    }:
+        raise ValueError("object_visible_structure_diagnostic_failure_policy_invalid")
+    implementation_root = Path(
+        ".runtime/ai-painter/stage4-object-visible-structure-readonly-gpu-entry-cpu-"
+        "contract-corrections/20260815-024000000"
+    )
+    execution_root = Path(
+        ".runtime/ai-painter/stage4-object-visible-structure-readonly-gpu-gradient-"
+        "qualifications/20260815-025000000"
+    )
+    if authorization.get("implementation") != {
+        "cpuReportPath": project_path(implementation_root / "cpu-report.json"),
+        "implementationAttestationPath": project_path(
+            OBJECT_VISIBLE_STRUCTURE_LINEAGE_ATTESTATION_PATH
+        ),
+        "pythonPreflightPath": project_path(execution_root / "python-preflight.json"),
+        "resourcePreflightPath": project_path(execution_root / "resource-preflight.json"),
+    }:
+        raise ValueError("object_visible_structure_diagnostic_implementation_paths_invalid")
+    if authorization.get("execution") != {
+        "outputDirectory": project_path(execution_root / "gpu-execution"),
+        "gpuConsumptionPath": project_path(
+            OBJECT_VISIBLE_STRUCTURE_AUTHORIZATION_PATH.parent
+            / "gpu-execution-consumption.json"
+        ),
+    }:
+        raise ValueError("object_visible_structure_diagnostic_execution_paths_invalid")
+    if not verify_bindings:
+        return
+    required_bindings = (
+        "cpuTerminal", "cpuReport", "inactiveSupportContract",
+        "inactiveConfigFragment", "sourceConfig", "model", "trainer", "compiler",
+        "objectCpuChecker", "modeRegistry", "datasetManifest", "datasetSourceIndex",
+        "projectAutoencoderCheckpoint", "implementationAuthorization",
+        "implementationConsumption", "runner", "cpuChecker",
+        "entryImplementationReport",
+    )
+    if set(authorization.get("bindings", {})) != set(required_bindings):
+        raise ValueError("object_visible_structure_diagnostic_binding_set_invalid")
+    if authorization["bindings"].get("entryImplementationReport") != {
+        "path": project_path(OBJECT_VISIBLE_STRUCTURE_LINEAGE_ATTESTATION_PATH),
+        "sha256": authorization["bindings"].get("entryImplementationReport", {}).get(
+            "sha256"
+        ),
+    }:
+        raise ValueError("object_visible_structure_diagnostic_attestation_binding_path_invalid")
+    for key in required_bindings:
+        value = authorization["bindings"].get(key, {})
+        if value.get("sha256") != sha256_file(resolve(Path(value.get("path", "missing")))):
+            raise ValueError(f"object_visible_structure_diagnostic_binding_changed:{key}")
+    terminal = read_json(resolve(Path(authorization["bindings"]["cpuTerminal"]["path"])))
+    cpu_report = read_json(resolve(Path(authorization["bindings"]["cpuReport"]["path"])))
+    support = read_json(
+        resolve(Path(authorization["bindings"]["inactiveSupportContract"]["path"]))
+    )
+    if (
+        terminal.get("status")
+        != "stage4_object_visible_structure_supervision_cpu_succeeded_closed"
+        or cpu_report.get("status")
+        != "stage4_object_visible_structure_supervision_cpu_regression_passed"
+        or support.get("status") != "cpu_support_verified_inactive"
+    ):
+        raise ValueError("object_visible_structure_diagnostic_cpu_prerequisite_not_successful")
+    config = load_object_visible_structure_config(authorization)
+    trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+    result = trainer.validate_stage4_object_visible_structure_supervision(config)
+    if result.get("status") != (
+        "stage4_object_visible_structure_supervision_contract_valid_active"
+    ):
+        raise ValueError("object_visible_structure_diagnostic_objective_contract_invalid")
+
+
+def load_object_visible_structure_config(authorization: dict) -> dict:
+    if is_early_convergence_authorization(authorization):
+        return load_early_convergence_config(authorization)
+    if is_object_reference_multiscale_authorization(authorization):
+        return load_object_reference_multiscale_config(authorization)
+    source = read_json(resolve(Path(authorization["bindings"]["sourceConfig"]["path"])))
+    fragment = read_json(
+        resolve(Path(authorization["bindings"]["inactiveConfigFragment"]["path"]))
+    )
+    if (
+        source.get("denoiserArchitecture") != SEMANTIC_MIXTURE_ARCHITECTURE
+        or fragment.get("status") != "cpu_support_verified_inactive"
+        or fragment.get("sourceConfig") != authorization["bindings"]["sourceConfig"]
+        or set(fragment.get("trainingPatch", {}))
+        != {"stage4ObjectVisibleStructureSupervision"}
+    ):
+        raise ValueError("object_visible_structure_inactive_config_lineage_invalid")
+    config = deepcopy(source)
+    training = config.get("training", {})
+    training.pop("stage4VegetationLuminanceSpatialStructureSupervision", None)
+    object_contract = deepcopy(
+        fragment["trainingPatch"]["stage4ObjectVisibleStructureSupervision"]
+    )
+    object_contract["status"] = "training_loss_active_owner_authorized"
+    active_gate_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "stage4FullTrainingNow",
+    }
+    object_contract["activationGate"] = {
+        key: key in active_gate_fields for key in object_contract["activationGate"]
+    }
+    training["stage4ObjectVisibleStructureSupervision"] = object_contract
+    diagnostic_fields = list(
+        trainer.fact_conditioned_semantic_mixture_diagnostic_fields(config)
+    )
+    registry = training["stage4FactConditionedSemanticMixture"][
+        "diagnosticManifestRegistry"
+    ]
+    registry["exactFields"] = diagnostic_fields
+    registry["exactFieldCount"] = len(diagnostic_fields)
+    if len(diagnostic_fields) != 32:
+        raise ValueError("object_visible_structure_diagnostic_metric_count_invalid")
+    result = trainer.validate_stage4_object_visible_structure_supervision(config)
+    if result.get("status") != (
+        "stage4_object_visible_structure_supervision_contract_valid_active"
+    ):
+        raise ValueError("object_visible_structure_diagnostic_activation_invalid")
+    return config
+
+
+def load_object_reference_multiscale_config(authorization: dict) -> dict:
+    source = read_json(resolve(Path(authorization["bindings"]["sourceConfig"]["path"])))
+    fragment = read_json(
+        resolve(Path(authorization["bindings"]["inactiveConfigFragment"]["path"]))
+    )
+    patch = fragment.get("trainingPatch", {})
+    if (
+        source.get("denoiserArchitecture") != SEMANTIC_MIXTURE_ARCHITECTURE
+        or fragment.get("status") != "cpu_support_verified_inactive"
+        or fragment.get("sourceConfig") != authorization["bindings"]["sourceConfig"]
+        or set(patch) != {"remove", "add"}
+        or patch.get("remove") != [
+            "stage4ObjectVisibleStructureSupervision",
+            "stage4VegetationLuminanceSpatialStructureSupervision",
+        ]
+        or set(patch.get("add", {}))
+        != {"stage4ObjectReferenceMultiscaleLuminanceStructureSupervision"}
+    ):
+        raise ValueError("object_reference_multiscale_inactive_config_lineage_invalid")
+    config = deepcopy(source)
+    training = config["training"]
+    for key in patch["remove"]:
+        training.pop(key, None)
+    contract = deepcopy(
+        patch["add"]["stage4ObjectReferenceMultiscaleLuminanceStructureSupervision"]
+    )
+    contract["status"] = "training_loss_active_owner_authorized"
+    active_gate_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "stage4FullTrainingNow",
+    }
+    contract["activationGate"] = {
+        key: key in active_gate_fields for key in contract["activationGate"]
+    }
+    training["stage4ObjectReferenceMultiscaleLuminanceStructureSupervision"] = contract
+    diagnostic_fields = list(
+        trainer.fact_conditioned_semantic_mixture_diagnostic_fields(config)
+    )
+    registry = training["stage4FactConditionedSemanticMixture"][
+        "diagnosticManifestRegistry"
+    ]
+    registry["exactFields"] = diagnostic_fields
+    registry["exactFieldCount"] = len(diagnostic_fields)
+    if len(diagnostic_fields) != 48:
+        raise ValueError("object_reference_multiscale_diagnostic_metric_count_invalid")
+    result = trainer.validate_stage4_object_reference_multiscale_luminance_structure_supervision(
+        config
+    )
+    if result.get("status") != (
+        "stage4_object_reference_multiscale_luminance_structure_contract_valid_active"
+    ):
+        raise ValueError("object_reference_multiscale_diagnostic_activation_invalid")
+    return config
+
+
+def load_early_convergence_config(authorization: dict) -> dict:
+    config = read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+    contract = trainer.validate_stage4_object_reference_multiscale_early_convergence_stabilization(
+        config
+    )
+    if (
+        contract is None
+        or contract.get("status") != "cpu_support_verified_inactive"
+        or contract.get("contractId") != EARLY_CONVERGENCE_CONTRACT_ID
+        or len(contract.get("lanes", ())) != 2
+        or contract["lanes"][0].get("laneId")
+        != "lane_1_existing_global_worst_sample_class"
+        or contract["lanes"][1].get("laneId")
+        != "lane_2_joint_four_object_reference_multiscale"
+    ):
+        raise ValueError("early_convergence_inactive_config_contract_invalid")
+    return config
+
+
+def validate_early_convergence_diagnostic_config(config: dict) -> None:
+    if (
+        config.get("denoiserArchitecture") != SEMANTIC_MIXTURE_ARCHITECTURE
+        or len(config.get("conditionChannelOrder", ())) != 23
+        or any(
+            channel not in config.get("conditionChannelOrder", ())
+            for channel in OBJECT_CHANNELS
+        )
+    ):
+        raise ValueError("early_convergence_diagnostic_base_config_invalid")
+    stabilization = (
+        trainer.validate_stage4_object_reference_multiscale_early_convergence_stabilization(
+            config
+        )
+    )
+    multiscale = (
+        trainer.validate_stage4_object_reference_multiscale_luminance_structure_supervision(
+            config
+        )
+    )
+    epoch_worst = trainer.validate_stage4_epoch_worst_sample_class_replay(config)
+    if (
+        stabilization is None
+        or stabilization.get("status") != "cpu_support_verified_inactive"
+        or multiscale.get("status")
+        != "stage4_object_reference_multiscale_luminance_structure_contract_valid_active"
+        or epoch_worst is None
+        or epoch_worst.get("status") != "training_loss_active_owner_authorized"
+    ):
+        raise ValueError("early_convergence_diagnostic_objective_lineage_invalid")
 
 
 def validate_final_visible_rgb_authorization_document(
@@ -894,8 +1697,23 @@ def validate_implementation_attestation(path: Path | None, authorization: dict) 
     final_visible_rgb_mode = is_final_visible_rgb_authorization(authorization)
     vegetation_repair_mode = is_vegetation_repair_authorization(authorization)
     vegetation_luminance_mode = is_vegetation_luminance_authorization(authorization)
+    object_visible_structure_mode = is_object_visible_structure_authorization(authorization)
+    object_reference_multiscale_mode = is_object_reference_multiscale_authorization(
+        authorization
+    )
+    early_convergence_mode = is_early_convergence_authorization(authorization)
+    early_convergence_mode = is_early_convergence_authorization(authorization)
     expected_values = {
         "status": (
+            "stage4_object_reference_multiscale_early_convergence_gpu_diagnostic_implementation_cpu_verified"
+            if early_convergence_mode
+            else (
+            "stage4_object_reference_multiscale_gpu_diagnostic_implementation_cpu_verified"
+            if object_reference_multiscale_mode
+            else (
+            "stage4_object_visible_structure_gpu_diagnostic_implementation_cpu_verified"
+            if object_visible_structure_mode
+            else (
             "stage4_vegetation_luminance_spatial_gpu_diagnostic_implementation_cpu_verified"
             if vegetation_luminance_mode
             else (
@@ -911,7 +1729,7 @@ def validate_implementation_attestation(path: Path | None, authorization: dict) 
                     "structure_fact_first_gpu_diagnostic_implementation_cpu_verified"
                     if structure_mode else "v9_gpu_diagnostic_implementation_cpu_verified"
                 )
-            )))
+            ))))))
         ),
         "requestId": authorization_request_id(authorization),
         "authorizationSha256": authorization_sha256(authorization),
@@ -919,12 +1737,24 @@ def validate_implementation_attestation(path: Path | None, authorization: dict) 
         "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
         "cpuReportSha256": sha256_file(cpu_report_path),
     }
+    if object_visible_structure_mode:
+        expected_values.pop("requestId")
+        expected_values.pop("authorizationSha256")
     for key, expected_value in expected_values.items():
         if attestation.get(key) != expected_value:
             raise ValueError(f"v9_diagnostic_implementation_attestation_invalid:{key}")
     cpu_report = read_json(cpu_report_path)
     if (
         cpu_report.get("status") != (
+            "passed_stage4_early_convergence_gpu_runner_local_mode_and_preflight_hash_contract_correction_cpu_contract"
+            if early_convergence_mode
+            else (
+            "passed_stage4_object_reference_multiscale_readonly_gpu_entry_implementation_cpu_contract"
+            if object_reference_multiscale_mode
+            else (
+            "passed_stage4_object_visible_structure_readonly_gpu_entry_implementation_cpu_contract"
+            if object_visible_structure_mode
+            else (
             "passed_stage4_vegetation_luminance_spatial_readonly_gpu_diagnostic_cpu_authorization_regression"
             if vegetation_luminance_mode
             else (
@@ -940,7 +1770,7 @@ def validate_implementation_attestation(path: Path | None, authorization: dict) 
                     "passed_structure_fact_first_readonly_gpu_diagnostic_cpu_authorization_regression"
                     if structure_mode else "passed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
                 )
-            )))
+            ))))))
         )
         or cpu_report.get("failedPositiveKeys") != []
         or cpu_report.get("failedNegativeKeys") != []
@@ -956,16 +1786,25 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
         raise ValueError("v9_diagnostic_resource_preflight_output_invalid")
     if resolve(python_path).exists() or resolve(resource_path).exists():
         raise FileExistsError("v9_diagnostic_preflight_output_already_exists")
+    if is_object_visible_structure_authorization(authorization):
+        raise ValueError(
+            "object_visible_structure_preflight_must_be_integrated_with_atomic_consumption"
+        )
     structure_mode = is_structure_fact_authorization(authorization)
     semantic_mixture_mode = is_semantic_mixture_authorization(authorization)
     final_visible_rgb_mode = is_final_visible_rgb_authorization(authorization)
     vegetation_repair_mode = is_vegetation_repair_authorization(authorization)
+    object_visible_structure_mode = is_object_visible_structure_authorization(authorization)
     config_binding_key = (
         "inactiveConfig"
         if (structure_mode or semantic_mixture_mode or final_visible_rgb_mode)
         else "v9InactiveConfig"
     )
-    config = read_json(resolve(Path(authorization["bindings"][config_binding_key]["path"])))
+    config = (
+        load_object_visible_structure_config(authorization)
+        if object_visible_structure_mode
+        else read_json(resolve(Path(authorization["bindings"][config_binding_key]["path"])))
+    )
     package = read_json(resolve(DATASET_PATH))
     trainer.validate_training_inputs(config, package)
     python_report = {
@@ -989,7 +1828,13 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
         "pythonExecutable": str(Path(sys.executable).resolve()),
         "pythonVersion": sys.version,
         "torchVersion": torch.__version__,
-        "configSha256": authorization["bindings"][config_binding_key]["sha256"],
+        "configSha256": (
+            hashlib.sha256(
+                json.dumps(config, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            ).hexdigest()
+            if object_visible_structure_mode
+            else authorization["bindings"][config_binding_key]["sha256"]
+        ),
         "implementationAttestationSha256": sha256_file(resolve(Path(authorization["implementation"]["implementationAttestationPath"]))),
         "checkpointRead": False,
         "gpuExecutionConsumed": False,
@@ -1053,14 +1898,99 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
     return 0
 
 
+def build_object_visible_structure_preflight_reports(
+    authorization: dict, attestation: dict,
+) -> tuple[dict, dict]:
+    if not is_object_visible_structure_authorization(authorization):
+        raise ValueError("object_visible_structure_integrated_preflight_mode_required")
+    config = load_object_visible_structure_config(authorization)
+    multiscale_mode = is_object_reference_multiscale_authorization(authorization)
+    early_convergence_mode = is_early_convergence_authorization(authorization)
+    package = read_json(resolve(DATASET_PATH))
+    if early_convergence_mode:
+        validate_early_convergence_diagnostic_config(config)
+    else:
+        trainer.validate_training_inputs(config, package)
+    python_report = {
+        "schemaVersion": (
+            "ai-painter-r5-stage4-object-reference-multiscale-gradient-diagnostic-"
+            "python-preflight-v1"
+            if multiscale_mode else
+            "ai-painter-r5-stage4-object-visible-structure-gradient-diagnostic-"
+            "python-preflight-v1"
+        ),
+        "status": "passed_python_preflight_gpu_not_consumed",
+        **timestamps("recordedAt"),
+        "pythonExecutable": str(Path(sys.executable).resolve()),
+        "pythonVersion": sys.version,
+        "torchVersion": torch.__version__,
+        "configSha256": hashlib.sha256(
+            json.dumps(config, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest(),
+        "diagnosticManifestMetricCount": len(
+            trainer.fact_conditioned_semantic_mixture_diagnostic_fields(config)
+        ),
+        "implementationAttestationSha256": sha256_file(
+            resolve(Path(authorization["implementation"]["implementationAttestationPath"]))
+        ),
+        "checkpointRead": False,
+        "gpuExecutionConsumed": False,
+    }
+    if not torch.cuda.is_available() or torch.cuda.device_count() < 1:
+        raise ValueError("v9_diagnostic_cuda_device_zero_unavailable")
+    free_bytes = disk_free_bytes(
+        resolve(Path(authorization["execution"]["outputDirectory"])).parent
+    )
+    required_disk_bytes = 2 * 1024**3
+    if free_bytes < required_disk_bytes:
+        raise ValueError("v9_diagnostic_disk_budget_insufficient")
+    resource_report = {
+        "schemaVersion": (
+            "ai-painter-r5-stage4-object-reference-multiscale-gradient-diagnostic-"
+            "resource-preflight-v1"
+            if multiscale_mode else
+            "ai-painter-r5-stage4-object-visible-structure-gradient-diagnostic-"
+            "resource-preflight-v1"
+        ),
+        "status": "passed_cuda_resource_and_disk_preflight_gpu_not_consumed",
+        **timestamps("recordedAt"),
+        "cuda": {
+            "available": True,
+            "deviceCount": torch.cuda.device_count(),
+            "device0Name": torch.cuda.get_device_name(0),
+            "device0TotalMemoryBytes": int(
+                torch.cuda.get_device_properties(0).total_memory
+            ),
+        },
+        "diskFreeBytes": free_bytes,
+        "requiredDiskBytes": required_disk_bytes,
+        "checkpointRead": False,
+        "gpuExecutionConsumed": False,
+    }
+    return python_report, resource_report
+
+
 def consume_and_run(authorization_path: Path, authorization: dict, attestation: dict, output_dir: Path) -> int:
     output = resolve(output_dir)
     if output != resolve(Path(authorization["execution"]["outputDirectory"])) or output.exists():
         raise ValueError("v9_diagnostic_output_identity_invalid_or_exists")
     python_path = resolve(Path(authorization["implementation"]["pythonPreflightPath"]))
     resource_path = resolve(Path(authorization["implementation"]["resourcePreflightPath"]))
-    python_report = read_json(python_path)
-    resource_report = read_json(resource_path)
+    object_visible_structure_mode = is_object_visible_structure_authorization(authorization)
+    object_reference_multiscale_mode = is_object_reference_multiscale_authorization(
+        authorization
+    )
+    if object_visible_structure_mode:
+        if python_path.exists() or resource_path.exists():
+            raise FileExistsError(
+                "object_visible_structure_integrated_preflight_output_already_exists"
+            )
+        python_report, resource_report = build_object_visible_structure_preflight_reports(
+            authorization, attestation
+        )
+    else:
+        python_report = read_json(python_path)
+        resource_report = read_json(resource_path)
     if (
         python_report.get("status") != "passed_python_preflight_gpu_not_consumed"
         or resource_report.get("status") != "passed_cuda_resource_and_disk_preflight_gpu_not_consumed"
@@ -1078,6 +2008,12 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
     vegetation_luminance_mode = is_vegetation_luminance_authorization(authorization)
     consumption = {
         "schemaVersion": (
+            "ai-painter-r5-stage4-object-reference-multiscale-gradient-diagnostic-gpu-consumption-v1"
+            if object_reference_multiscale_mode
+            else (
+            "ai-painter-r5-stage4-object-visible-structure-gradient-diagnostic-gpu-consumption-v1"
+            if object_visible_structure_mode
+            else (
             "ai-painter-r5-stage4-vegetation-luminance-spatial-gradient-diagnostic-gpu-consumption-v1"
             if vegetation_luminance_mode
             else (
@@ -1093,9 +2029,15 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
                     "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-gpu-consumption-v1"
                     if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-gpu-consumption-v1"
                 )
-            )))
+            )))))
         ),
         "status": (
+            "stage4_object_reference_multiscale_readonly_gpu_diagnostic_authorization_atomically_consumed"
+            if object_reference_multiscale_mode
+            else (
+            "stage4_object_visible_structure_readonly_gpu_diagnostic_authorization_atomically_consumed"
+            if object_visible_structure_mode
+            else (
             "stage4_vegetation_luminance_spatial_readonly_gpu_diagnostic_authorization_atomically_consumed"
             if vegetation_luminance_mode
             else (
@@ -1111,7 +2053,7 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
                     "structure_fact_first_readonly_gpu_diagnostic_authorization_atomically_consumed"
                     if structure_mode else "v9_readonly_gpu_diagnostic_authorization_atomically_consumed"
                 )
-            )))
+            )))))
         ),
         "requestId": authorization_request_id(authorization),
         "commandRef": authorization_request_id(authorization),
@@ -1120,8 +2062,14 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
         "authorizationSha256": authorization_sha256(authorization),
         "implementationAttestationPath": project_path(Path(authorization["implementation"]["implementationAttestationPath"])),
         "implementationAttestationSha256": sha256_file(resolve(Path(authorization["implementation"]["implementationAttestationPath"]))),
-        "pythonPreflightSha256": sha256_file(python_path),
-        "resourcePreflightSha256": sha256_file(resource_path),
+        "pythonPreflightSha256": (
+            sha256_json_document(python_report)
+            if object_visible_structure_mode else sha256_file(python_path)
+        ),
+        "resourcePreflightSha256": (
+            sha256_json_document(resource_report)
+            if object_visible_structure_mode else sha256_file(resource_path)
+        ),
         **timestamps("consumedAt"),
         "oneTimeConsumption": True,
         "optimizerAuthorized": False,
@@ -1132,6 +2080,9 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
         "automaticRetryAuthorized": False,
     }
     write_json_exclusive(consumption_path, consumption)
+    if object_visible_structure_mode:
+        write_json_exclusive(python_path, python_report)
+        write_json_exclusive(resource_path, resource_report)
     return run_gpu(authorization, output, consumption_path, python_report, resource_report)
 
 
@@ -1415,6 +2366,11 @@ def run_semantic_mixture_gpu(
     final_visible_rgb_mode = is_final_visible_rgb_authorization(authorization)
     vegetation_repair_mode = is_vegetation_repair_authorization(authorization)
     vegetation_luminance_mode = is_vegetation_luminance_authorization(authorization)
+    object_visible_structure_mode = is_object_visible_structure_authorization(authorization)
+    object_reference_multiscale_mode = is_object_reference_multiscale_authorization(
+        authorization
+    )
+    early_convergence_mode = is_early_convergence_authorization(authorization)
     output.mkdir(parents=True, exist_ok=False)
     started = time.perf_counter()
     steps = []
@@ -1449,9 +2405,18 @@ def run_semantic_mixture_gpu(
         state["gpuUsed"] = True
         step("cuda_context_initialized_device_zero_confirmed")
 
-        config = read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+        config = (
+            load_early_convergence_config(authorization)
+            if early_convergence_mode
+            else load_object_visible_structure_config(authorization)
+            if object_visible_structure_mode
+            else read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+        )
         package = read_json(resolve(DATASET_PATH))
-        trainer.validate_training_inputs(config, package)
+        if early_convergence_mode:
+            validate_early_convergence_diagnostic_config(config)
+        else:
+            trainer.validate_training_inputs(config, package)
         dataset = AiAssistedConditionalDenoiserDataset(
             DATASET_PATH, SAMPLE_SPLIT, list(config["conditionChannelOrder"]), IMAGE_SIZE,
             selection_contract=trainer.conditional_dataset_selection_contract(config),
@@ -1565,6 +2530,8 @@ def run_semantic_mixture_gpu(
         final_visible_rgb_evidence = {}
         vegetation_edge_evidence = {}
         vegetation_luminance_evidence = {}
+        object_visible_structure_evidence = {}
+        early_convergence_evidence = {}
         if final_visible_rgb_mode:
             objective = trainer.validate_stage4_per_class_final_visible_rgb_obligation(config)
             expected_terms = list(trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS)
@@ -1716,12 +2683,189 @@ def run_semantic_mixture_gpu(
                 "reachesFrozenAutoencoderDecodedRgb": True,
             }
             step("vegetation_luminance_spatial_structure_gradient_verified")
+        if object_visible_structure_mode:
+            if object_reference_multiscale_mode:
+                object_contract = (
+                    trainer.validate_stage4_object_reference_multiscale_luminance_structure_supervision(
+                        config
+                    )
+                )
+                metric_suffix = "MultiscaleLuminanceStructureLoss"
+            else:
+                object_contract = trainer.validate_stage4_object_visible_structure_supervision(
+                    config
+                )
+                metric_suffix = "LuminanceCorrelationLoss"
+            object_terms = tuple(
+                (
+                    identity,
+                    source_channel,
+                    f"stage4SemanticMixture{prefix}FinalTyped{metric_suffix}",
+                )
+                for identity, source_channel, prefix in (
+                    ("footprints", "object_footprints", "Footprints"),
+                    ("tree", "object_tree", "Tree"),
+                    ("rock", "object_rock", "Rock"),
+                    ("vegetation", "object_vegetation", "Vegetation"),
+                )
+            )
+            all_denoiser_parameters = tuple(
+                parameter for parameter in model.denoiser.parameters()
+                if parameter.requires_grad
+            )
+            combined_loss = predicted_rgb.new_zeros(())
+            for identity, source_channel, metric in object_terms:
+                loss = losses[metric]
+                denoiser_gradients = torch.autograd.grad(
+                    loss, all_denoiser_parameters, retain_graph=True, allow_unused=True,
+                )
+                matching_parameters = tuple(
+                    model.denoiser.semantic_mixture_experts[identity].parameters()
+                )
+                matching_gradients = torch.autograd.grad(
+                    loss, matching_parameters, retain_graph=True, allow_unused=True,
+                )
+                loss_value = float(loss.detach().cpu())
+                denoiser_norm = sum(gradient_norm(value) for value in denoiser_gradients)
+                matching_norm = sum(gradient_norm(value) for value in matching_gradients)
+                weight = float(object_contract["derivedWeights"][identity])
+                if (
+                    not math.isfinite(loss_value)
+                    or loss_value <= 0.0
+                    or not math.isfinite(denoiser_norm)
+                    or denoiser_norm <= 0.0
+                    or not math.isfinite(matching_norm)
+                    or matching_norm <= 0.0
+                    or not math.isfinite(weight)
+                    or weight <= 0.0
+                ):
+                    raise ValueError(
+                        f"object_visible_structure_gradient_route_failed:{identity}"
+                    )
+                combined_loss = combined_loss + loss * weight
+                object_visible_structure_evidence[identity] = {
+                    "sourceChannel": source_channel,
+                    "metric": metric,
+                    "lossValue": loss_value,
+                    "derivedWeight": weight,
+                    "denoiserGradientNorm": denoiser_norm,
+                    "matchingSemanticMixtureExpertGradientNorm": matching_norm,
+                    "finiteAndStrictlyNonzero": True,
+                }
+                if object_reference_multiscale_mode:
+                    prefix = metric.split("FinalTyped", 1)[0]
+                    component_names = [
+                        f"{prefix}FinalTyped{suffix}"
+                        for suffix in (
+                            "NativeLuminanceCorrelationLoss",
+                            "HalfLuminanceCorrelationLoss",
+                            "QuarterLuminanceCorrelationLoss",
+                            "CrossScaleStructureConsistencyLoss",
+                        )
+                    ]
+                    component_values = {
+                        name: float(losses[name].detach().cpu()) for name in component_names
+                    }
+                    if not all(math.isfinite(value) and value >= 0.0 for value in component_values.values()):
+                        raise ValueError(
+                            f"object_reference_multiscale_component_metric_failed:{identity}"
+                        )
+                    object_visible_structure_evidence[identity][
+                        "multiscaleComponentMetrics"
+                    ] = component_values
+            combined_gradients = torch.autograd.grad(
+                combined_loss, all_denoiser_parameters,
+                retain_graph=True, allow_unused=True,
+            )
+            combined_norm = sum(gradient_norm(value) for value in combined_gradients)
+            if not math.isfinite(combined_norm) or combined_norm <= 0.0:
+                raise ValueError("object_visible_structure_combined_gradient_route_failed")
+            object_visible_structure_evidence["combined"] = {
+                "metric": "weightedFourObjectVisibleStructureLoss",
+                "lossValue": float(combined_loss.detach().cpu()),
+                "denoiserGradientNorm": combined_norm,
+                "finiteAndStrictlyNonzero": True,
+            }
+            step(
+                "four_object_reference_multiscale_and_combined_gradient_routes_verified"
+                if object_reference_multiscale_mode
+                else "four_object_visible_structure_and_combined_gradient_routes_verified"
+            )
+            if early_convergence_mode:
+                stabilization = (
+                    trainer.validate_stage4_object_reference_multiscale_early_convergence_stabilization(
+                        config
+                    )
+                )
+                distribution = (
+                    trainer.stage4_distribution_aware_visible_spatial_semantic_obligation(
+                        [predicted_rgb], image, conditions, config
+                    )
+                )
+                per_class = distribution[
+                    "stage4DistributionAwareWeightedPerSampleClassTensor"
+                ]
+                selected_class_index = int(per_class[0].detach().argmax().cpu())
+                multiscale_measurements = (
+                    trainer.stage4_object_reference_multiscale_luminance_structure_supervision_losses(
+                        predicted_rgb, image, conditions, config
+                    )
+                )
+                lane1 = trainer.stage4_epoch_worst_sample_class_replay_loss_from_measurements(
+                    distribution, multiscale_measurements, config, selected_class_index,
+                    replay_index=0, allow_inactive_stabilization=True,
+                )["stage4EpochWorstSampleClassReplayLossTensor"]
+                lane2 = trainer.stage4_epoch_worst_sample_class_replay_loss_from_measurements(
+                    distribution, multiscale_measurements, config, selected_class_index,
+                    replay_index=1, allow_inactive_stabilization=True,
+                )["stage4EpochWorstSampleClassReplayLossTensor"]
+                lane1_gradients = torch.autograd.grad(
+                    lane1, all_denoiser_parameters, retain_graph=True, allow_unused=True,
+                )
+                lane2_gradients = torch.autograd.grad(
+                    lane2, all_denoiser_parameters, retain_graph=True, allow_unused=True,
+                )
+                combined_two_lane_gradients = torch.autograd.grad(
+                    lane1 + lane2, all_denoiser_parameters,
+                    retain_graph=True, allow_unused=True,
+                )
+                lane1_norm = sum(gradient_norm(value) for value in lane1_gradients)
+                lane2_norm = sum(gradient_norm(value) for value in lane2_gradients)
+                combined_two_lane_norm = sum(
+                    gradient_norm(value) for value in combined_two_lane_gradients
+                )
+                if (
+                    stabilization.get("status") != "cpu_support_verified_inactive"
+                    or any(
+                        not math.isfinite(value) or value <= 0.0
+                        for value in (lane1_norm, lane2_norm, combined_two_lane_norm)
+                    )
+                ):
+                    raise ValueError("early_convergence_two_lane_gradient_route_failed")
+                early_convergence_evidence = {
+                    "contractStatusDuringQualification": stabilization["status"],
+                    "selectedGlobalWorstClassIndex": selected_class_index,
+                    "selectedGlobalWorstClassIdentity": SEMANTIC_MIXTURE_IDENTITIES[
+                        selected_class_index
+                    ],
+                    "lane1LossValue": float(lane1.detach().cpu()),
+                    "lane1DenoiserGradientNorm": lane1_norm,
+                    "lane2LossValue": float(lane2.detach().cpu()),
+                    "lane2DenoiserGradientNorm": lane2_norm,
+                    "combinedTwoLaneDenoiserGradientNorm": combined_two_lane_norm,
+                    "replayPassesAdded": 0,
+                    "optimizerCreated": False,
+                    "backwardMethodExecuted": False,
+                }
+                step("two_lane_early_convergence_gradient_routes_verified")
         named = [
             (name, parameter) for name, parameter in model.denoiser.named_parameters()
             if parameter.requires_grad
         ]
         expert_gradient_evidence = {}
-        for index, identity in enumerate(identities):
+        for index, identity in (
+            enumerate(identities) if not object_visible_structure_mode else ()
+        ):
             own_parameters = tuple(model.denoiser.semantic_mixture_experts[identity].parameters())
             other_parameters = tuple(
                 parameter
@@ -1753,23 +2897,30 @@ def run_semantic_mixture_gpu(
                 "otherPrivateExpertGradientNorm": cross_norm,
                 "participationGateGradientNorm": gate_norm,
             }
-        final_gradients = torch.autograd.grad(
-            predicted_velocity.mean(), gated, retain_graph=True, allow_unused=True,
-        )
-        if any(gradient_norm(value) <= 0.0 for value in final_gradients):
-            raise ValueError("semantic_mixture_diagnostic_final_velocity_gradient_missing")
-        base_parameters = tuple(
-            parameter for name, parameter in named if "semantic_mixture_" not in name
-        )
-        base_gradients = torch.autograd.grad(
-            base_velocity.mean(), base_parameters, retain_graph=True, allow_unused=True,
-        )
-        if sum(gradient_norm(value) for value in base_gradients) <= 0.0:
-            raise ValueError("semantic_mixture_diagnostic_base_denoiser_gradient_missing")
+        final_gradients = ()
+        base_gradients = ()
+        if not object_visible_structure_mode:
+            final_gradients = torch.autograd.grad(
+                predicted_velocity.mean(), gated, retain_graph=True, allow_unused=True,
+            )
+            if any(gradient_norm(value) <= 0.0 for value in final_gradients):
+                raise ValueError("semantic_mixture_diagnostic_final_velocity_gradient_missing")
+            base_parameters = tuple(
+                parameter for name, parameter in named if "semantic_mixture_" not in name
+            )
+            base_gradients = torch.autograd.grad(
+                base_velocity.mean(), base_parameters, retain_graph=True, allow_unused=True,
+            )
+            if sum(gradient_norm(value) for value in base_gradients) <= 0.0:
+                raise ValueError("semantic_mixture_diagnostic_base_denoiser_gradient_missing")
         if any(parameter.grad is not None for parameter in model.parameters()):
             raise ValueError("semantic_mixture_diagnostic_parameter_grad_fields_populated")
         state["autogradGradCompleted"] = True
-        step("torch_autograd_grad_five_private_experts_gates_final_and_base_verified")
+        step(
+            "torch_autograd_grad_four_object_visible_structure_routes_verified"
+            if object_visible_structure_mode
+            else "torch_autograd_grad_five_private_experts_gates_final_and_base_verified"
+        )
 
         expected_diagnostic_fields = trainer.fact_conditioned_semantic_mixture_diagnostic_fields(
             config
@@ -1813,22 +2964,40 @@ def run_semantic_mixture_gpu(
 
         report = {
             "schemaVersion": (
+                "ai-painter-stage4-object-reference-multiscale-early-convergence-gradient-diagnostic-report-v1"
+                if early_convergence_mode
+                else (
+                "ai-painter-stage4-object-reference-multiscale-gradient-diagnostic-report-v1"
+                if object_reference_multiscale_mode
+                else (
+                "ai-painter-stage4-object-visible-structure-gradient-diagnostic-report-v1"
+                if object_visible_structure_mode
+                else (
                 "ai-painter-stage4-vegetation-final-visible-gradient-diagnostic-report-v1"
                 if vegetation_repair_mode
                 else (
                 "ai-painter-stage4-final-visible-rgb-gradient-diagnostic-report-v1"
                 if final_visible_rgb_mode
                 else "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-report-v1"
-                )
+                ))))
             ),
             "status": (
+                "passed_readonly_stage4_two_lane_early_convergence_gpu_gradient_qualification"
+                if early_convergence_mode
+                else (
+                "passed_readonly_stage4_four_object_reference_multiscale_gpu_gradient_qualification"
+                if object_reference_multiscale_mode
+                else (
+                "passed_readonly_stage4_four_object_visible_structure_gpu_gradient_qualification"
+                if object_visible_structure_mode
+                else (
                 "passed_readonly_stage4_vegetation_final_visible_gpu_gradient_qualification"
                 if vegetation_repair_mode
                 else (
                 "passed_readonly_stage4_per_class_final_visible_rgb_gpu_gradient_qualification"
                 if final_visible_rgb_mode
                 else "passed_readonly_fact_conditioned_semantic_mixture_gpu_causal_and_gradient_diagnostic"
-                )
+                ))))
             ),
             **timestamps("recordedAt"),
             "durationSeconds": round(time.perf_counter() - started, 3),
@@ -1846,6 +3015,12 @@ def run_semantic_mixture_gpu(
                 "finalVisibleRgbObligations": final_visible_rgb_evidence,
                 "vegetationFinalVisibleEdgeStructure": vegetation_edge_evidence,
                 "vegetationLuminanceSpatialStructure": vegetation_luminance_evidence,
+                "fourObjectVisibleStructure": object_visible_structure_evidence,
+                "fourObjectReferenceMultiscaleLuminanceStructure": (
+                    object_visible_structure_evidence
+                    if object_reference_multiscale_mode else {}
+                ),
+                "twoLaneEarlyConvergenceStabilization": early_convergence_evidence,
                 "finalVelocityGatedContributionGradientNorms": [
                     gradient_norm(value) for value in final_gradients
                 ],
@@ -1876,22 +3051,40 @@ def run_semantic_mixture_gpu(
         write_json_exclusive(report_path, report)
         terminal = {
             "schemaVersion": (
+                "ai-painter-stage4-object-reference-multiscale-early-convergence-gradient-diagnostic-terminal-v1"
+                if early_convergence_mode
+                else (
+                "ai-painter-stage4-object-reference-multiscale-gradient-diagnostic-terminal-v1"
+                if object_reference_multiscale_mode
+                else (
+                "ai-painter-stage4-object-visible-structure-gradient-diagnostic-terminal-v1"
+                if object_visible_structure_mode
+                else (
                 "ai-painter-stage4-vegetation-final-visible-gradient-diagnostic-terminal-v1"
                 if vegetation_repair_mode
                 else (
                 "ai-painter-stage4-final-visible-rgb-gradient-diagnostic-terminal-v1"
                 if final_visible_rgb_mode
                 else "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-terminal-v1"
-                )
+                ))))
             ),
             "status": (
+                "stage4_two_lane_early_convergence_gpu_qualification_passed_closed"
+                if early_convergence_mode
+                else (
+                "stage4_four_object_reference_multiscale_gpu_qualification_passed_closed"
+                if object_reference_multiscale_mode
+                else (
+                "stage4_four_object_visible_structure_gpu_qualification_passed_closed"
+                if object_visible_structure_mode
+                else (
                 "stage4_vegetation_final_visible_gpu_qualification_passed_closed"
                 if vegetation_repair_mode
                 else (
                 "stage4_per_class_final_visible_rgb_gpu_qualification_passed_closed"
                 if final_visible_rgb_mode
                 else "fact_conditioned_semantic_mixture_gradient_diagnostic_passed_closed"
-                )
+                ))))
             ),
             **timestamps("recordedAt"),
             "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
@@ -1899,7 +3092,18 @@ def run_semantic_mixture_gpu(
             "reportSha256": sha256_file(report_path),
             "cudaTelemetryPath": project_path(output / "cuda-telemetry.json"),
             "cudaTelemetrySha256": sha256_file(output / "cuda-telemetry.json"),
-            "nextAction": "separately_authorized_fixed_sample194_30_epoch_model_smoke",
+            "nextAction": (
+                "owner_review_of_two_lane_early_convergence_gradient_qualification"
+                if early_convergence_mode
+                else (
+                "owner_review_of_four_object_reference_multiscale_gradient_qualification"
+                if object_reference_multiscale_mode
+                else (
+                "owner_review_of_four_object_visible_structure_gradient_qualification"
+                if object_visible_structure_mode
+                else "separately_authorized_fixed_sample194_30_epoch_model_smoke"
+                ))
+            ),
             "blockers": [],
             **state,
             "automaticRetryStarted": False,
@@ -1914,22 +3118,40 @@ def run_semantic_mixture_gpu(
     except Exception as error:
         terminal = {
             "schemaVersion": (
+                "ai-painter-stage4-object-reference-multiscale-early-convergence-gradient-diagnostic-terminal-v1"
+                if early_convergence_mode
+                else (
+                "ai-painter-stage4-object-reference-multiscale-gradient-diagnostic-terminal-v1"
+                if object_reference_multiscale_mode
+                else (
+                "ai-painter-stage4-object-visible-structure-gradient-diagnostic-terminal-v1"
+                if object_visible_structure_mode
+                else (
                 "ai-painter-stage4-vegetation-final-visible-gradient-diagnostic-terminal-v1"
                 if vegetation_repair_mode
                 else (
                 "ai-painter-stage4-final-visible-rgb-gradient-diagnostic-terminal-v1"
                 if final_visible_rgb_mode
                 else "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-terminal-v1"
-                )
+                ))))
             ),
             "status": (
+                "stage4_two_lane_early_convergence_gpu_qualification_failed_closed"
+                if early_convergence_mode
+                else (
+                "stage4_four_object_reference_multiscale_gpu_qualification_failed_closed"
+                if object_reference_multiscale_mode
+                else (
+                "stage4_four_object_visible_structure_gpu_qualification_failed_closed"
+                if object_visible_structure_mode
+                else (
                 "stage4_vegetation_final_visible_gpu_qualification_failed_closed"
                 if vegetation_repair_mode
                 else (
                 "stage4_per_class_final_visible_rgb_gpu_qualification_failed_closed"
                 if final_visible_rgb_mode
                 else "fact_conditioned_semantic_mixture_gradient_diagnostic_failed_closed"
-                )
+                ))))
             ),
             **timestamps("recordedAt"),
             "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
@@ -2323,7 +3545,9 @@ def is_structure_fact_authorization(authorization: dict) -> bool:
 
 
 def is_semantic_mixture_authorization(authorization: dict) -> bool:
-    return authorization.get("_diagnosticMode") == "fact_conditioned_semantic_mixture" or (
+    return is_object_visible_structure_authorization(authorization) or authorization.get(
+        "_diagnosticMode"
+    ) == "fact_conditioned_semantic_mixture" or (
         authorization.get("schemaVersion")
         == "ai-painter-owner-stage4-fact-conditioned-semantic-mixture-readonly-gpu-diagnostic-v1"
     )
@@ -2354,7 +3578,31 @@ def is_vegetation_luminance_authorization(authorization: dict) -> bool:
     )
 
 
+def is_object_visible_structure_authorization(authorization: dict) -> bool:
+    return is_object_reference_multiscale_authorization(authorization) or authorization.get("_diagnosticMode") == "object_visible_structure" or (
+        authorization.get("schemaVersion") == OBJECT_VISIBLE_STRUCTURE_SCHEMA
+    )
+
+
+def is_object_reference_multiscale_authorization(authorization: dict) -> bool:
+    return is_early_convergence_authorization(authorization) or authorization.get("_diagnosticMode") == (
+        "object_reference_multiscale_luminance_structure"
+    ) or authorization.get("schemaVersion") == OBJECT_REFERENCE_MULTISCALE_SCHEMA
+
+
+def is_early_convergence_authorization(authorization: dict) -> bool:
+    return authorization.get("_diagnosticMode") == (
+        "object_reference_multiscale_early_convergence"
+    ) or authorization.get("schemaVersion") == EARLY_CONVERGENCE_SCHEMA
+
+
 def authorization_request_id(authorization: dict) -> str:
+    if is_early_convergence_authorization(authorization):
+        return EARLY_CONVERGENCE_REQUEST_ID
+    if is_object_reference_multiscale_authorization(authorization):
+        return OBJECT_REFERENCE_MULTISCALE_REQUEST_ID
+    if is_object_visible_structure_authorization(authorization):
+        return OBJECT_VISIBLE_STRUCTURE_REQUEST_ID
     if is_vegetation_luminance_authorization(authorization):
         return VEGETATION_LUMINANCE_REQUEST_ID
     if is_vegetation_repair_authorization(authorization):
@@ -2367,6 +3615,12 @@ def authorization_request_id(authorization: dict) -> str:
 
 
 def authorization_scope(authorization: dict) -> str:
+    if is_early_convergence_authorization(authorization):
+        return EARLY_CONVERGENCE_SCOPE
+    if is_object_reference_multiscale_authorization(authorization):
+        return OBJECT_REFERENCE_MULTISCALE_SCOPE
+    if is_object_visible_structure_authorization(authorization):
+        return OBJECT_VISIBLE_STRUCTURE_SCOPE
     if is_vegetation_luminance_authorization(authorization):
         return VEGETATION_LUMINANCE_SCOPE
     if is_vegetation_repair_authorization(authorization):
@@ -2379,6 +3633,18 @@ def authorization_scope(authorization: dict) -> str:
 
 
 def authorization_sha256(authorization: dict) -> str:
+    if is_early_convergence_authorization(authorization):
+        return authorization.get("_authorizationSha256") or sha256_file(
+            resolve(EARLY_CONVERGENCE_AUTHORIZATION_PATH)
+        )
+    if is_object_reference_multiscale_authorization(authorization):
+        return authorization.get("_authorizationSha256") or sha256_file(
+            resolve(OBJECT_REFERENCE_MULTISCALE_AUTHORIZATION_PATH)
+        )
+    if is_object_visible_structure_authorization(authorization):
+        return authorization.get("_authorizationSha256") or sha256_file(
+            resolve(OBJECT_VISIBLE_STRUCTURE_AUTHORIZATION_PATH)
+        )
     if is_vegetation_luminance_authorization(authorization):
         return authorization.get("_authorizationSha256") or sha256_file(
             resolve(VEGETATION_LUMINANCE_AUTHORIZATION_PATH)
@@ -2466,6 +3732,14 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(resolve(path).read_bytes()).hexdigest()
 
 
+def json_document_bytes(value: dict) -> bytes:
+    return (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+def sha256_json_document(value: dict) -> str:
+    return hashlib.sha256(json_document_bytes(value)).hexdigest()
+
+
 def read_json(path: Path) -> dict:
     return json.loads(resolve(path).read_text(encoding="utf-8"))
 
@@ -2477,16 +3751,15 @@ def binding(path: Path) -> dict:
 def write_json_exclusive(path: Path, value: dict) -> None:
     target = resolve(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        json.dump(value, handle, ensure_ascii=False, indent=2)
-        handle.write("\n")
+    with target.open("xb") as handle:
+        handle.write(json_document_bytes(value))
 
 
 def write_json_atomic(path: Path, value: dict) -> None:
     target = resolve(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(target.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.write_bytes(json_document_bytes(value))
     temporary.replace(target)
 
 
