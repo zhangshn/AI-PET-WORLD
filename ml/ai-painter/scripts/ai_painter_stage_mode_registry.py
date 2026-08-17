@@ -49,6 +49,12 @@ FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_INACTIVE_STATUS = (
 FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS = (
     "owner_authorized_stage4_fact_conditioned_semantic_mixture_single_sample_gpu_smoke"
 )
+STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID = (
+    "stage4_per_class_final_visible_reference_feature_structure_obligation_v1"
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_OBJECTIVE_CONTRACT_IDS = frozenset({
+    STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID,
+})
 FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE0_FULL_TRAINING_STATUS = (
     "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage0_full_training"
 )
@@ -243,6 +249,11 @@ def resolve_stage_mode(config) -> ModeSpec:
         str(training.get("trainingAuthorizationStatus")),
         str(config.get("denoiserArchitecture")),
     )
+
+
+def fact_conditioned_semantic_mixture_smoke_supports_objective(contract_id: str) -> bool:
+    """Declare bounded objective variants supported by the existing Smoke ModeSpec."""
+    return contract_id in FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_OBJECTIVE_CONTRACT_IDS
 
 
 def build_synthetic_extension_registry() -> ModeRegistry:

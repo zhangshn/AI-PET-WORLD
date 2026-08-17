@@ -51,6 +51,7 @@ from ai_painter_stage_mode_registry import (
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE0_FULL_TRAINING_STATUS,
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE1_FULL_TRAINING_STATUS,
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE2_FULL_TRAINING_STATUS,
+    fact_conditioned_semantic_mixture_smoke_supports_objective,
     resolve_stage_mode,
 )
 
@@ -472,6 +473,78 @@ STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_DIAGNOSTIC_FIELDS = (
         )
     )
 )
+STAGE4_FULL_ROLLOUT_PER_CLASS_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID = (
+    "stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_v1"
+)
+STAGE4_FULL_ROLLOUT_PER_CLASS_FINAL_VISIBLE_LUMINANCE_STRUCTURE_EVIDENCE_BINDINGS = {
+    "causalAdjudicationTerminal": {
+        "path": ".runtime/ai-painter/stage4-stage0-four-object-final-visible-generalization-adjudications/20260816-101044293/phase-terminal.json",
+        "sha256": "d80a4494eb1171b6a242df64204e043c0634dfde951f6d9c6c8d56aa695f904c",
+    },
+    "causalAnalysisReport": {
+        "path": ".runtime/ai-painter/stage4-stage0-four-object-final-visible-generalization-adjudications/20260816-101044293/causal-analysis-report.json",
+        "sha256": "513ef4ce43c555f95121407d4548ecc1cd8c0d21407e2eda32cdbfddd6cd0ad1",
+    },
+    "causalAdjudication": {
+        "path": ".runtime/ai-painter/stage4-stage0-four-object-final-visible-generalization-adjudications/20260816-101044293/adjudication.json",
+        "sha256": "4fbe4ffc9ffad03d3b1afada6d7f420b1719e5eaa4c0fe6f24c938e99c49e677",
+    },
+    "inactiveRepairContract": {
+        "path": ".runtime/ai-painter/stage4-stage0-four-object-final-visible-generalization-adjudications/20260816-101044293/inactive-repair-contract.json",
+        "sha256": "90c437da599b3632e63d0ab0e6cfaf60708470c22672dbe42af069e167c3a1a9",
+    },
+}
+STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID = (
+    "stage4_full_rollout_worst_sample_class_reference_luminance_obligation_v1"
+)
+STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_EVIDENCE_BINDINGS = {
+    "causalAdjudicationTerminal": {
+        "path": ".runtime/ai-painter/stage4-stage0-visual-generalization-causal-adjudications/20260817-024048736/phase-terminal.json",
+        "sha256": "416298185947d37068c265cfaabd73128fb34e1e7ec340102a8696195e1f77d2",
+    },
+    "causalAnalysisReport": {
+        "path": ".runtime/ai-painter/stage4-stage0-visual-generalization-causal-adjudications/20260817-024048736/causal-analysis-report.json",
+        "sha256": "815688e0a21ab75e12d44e1206464e82a43872ada280698e29e85d9a13350495",
+    },
+    "causalAdjudication": {
+        "path": ".runtime/ai-painter/stage4-stage0-visual-generalization-causal-adjudications/20260817-024048736/adjudication.json",
+        "sha256": "fe4dab3afc812198de8e69d055550414d9ad9dfae9cd09570bd8d944e09b4ada",
+    },
+    "inactiveRepairContract": {
+        "path": ".runtime/ai-painter/stage4-stage0-visual-generalization-causal-adjudications/20260817-024048736/inactive-repair-contract.json",
+        "sha256": "a613e7a9b57edc2a9b28e45dcd1b78e3a957434fd0d999727cf017b97b9c4180",
+    },
+}
+STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID = (
+    "stage4_per_class_final_visible_reference_feature_structure_obligation_v1"
+)
+STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_EVIDENCE_BINDINGS = {
+    "causalAdjudicationTerminal": {
+        "path": ".runtime/ai-painter/stage4-stage0-four-object-visible-semantic-causal-adjudications/20260817-144141271-stage0-four-object-adjudication/phase-terminal.json",
+        "sha256": "313f18feaee309176cc1939e6300ed0731d8f39c9fc2c5d5bc46e6f25c54136b",
+    },
+    "causalAdjudication": {
+        "path": ".runtime/ai-painter/stage4-stage0-four-object-visible-semantic-causal-adjudications/20260817-144141271-stage0-four-object-adjudication/adjudication.json",
+        "sha256": "0a51964b062210e0aa5e850c80ca80062cf47a38ae348a32a60f42b36712703b",
+    },
+    "inactiveRepairContract": {
+        "path": ".runtime/ai-painter/stage4-stage0-four-object-visible-semantic-causal-adjudications/20260817-144141271-stage0-four-object-adjudication/inactive-repair-contract.json",
+        "sha256": "6e572faf2c3cfafbd3e19d957a0aa229dd37b4533ff2d9495f21804aa4b953b2",
+    },
+    "ownerActionRequest": {
+        "path": ".runtime/ai-painter/stage4-stage0-four-object-visible-semantic-causal-adjudications/20260817-144141271-stage0-four-object-adjudication/owner-action-request.json",
+        "sha256": "ca8b2b0d227c2af0f3bb9a0006d1c96a0ea606751d9625214b2bae09181d2d3c",
+    },
+}
+STAGE4_BEST_CHECKPOINT_TERMINAL_QUALIFICATION_IDENTITY_SEPARATION_ID = (
+    "stage4_best_checkpoint_and_terminal_qualification_identity_separation_v1"
+)
+STAGE4_BEST_CHECKPOINT_TERMINAL_QUALIFICATION_IDENTITY_SEPARATION_EVIDENCE = {
+    "causalAdjudicationTerminalSha256": "7f8b54f783376ac8dac3c1dc526786c5b5230967a1e8c70c5feaea6cade37545",
+    "analysisReportSha256": "ad23107489a1e8f8a9e5823d485670a1b05526fcb5570f27ac058ebc631afb69",
+    "decisionSha256": "0a5c78edc4ead6cd93a03431281c93ebf2acefb27f1ef88ae28e2721217e68e7",
+    "inactiveRepairContractSha256": "57d3489cce2235867d99617cd1f311eedab0580f3f68f82edf13751469155761",
+}
 
 
 def fact_conditioned_semantic_mixture_diagnostic_fields(config):
@@ -1108,6 +1181,14 @@ def main() -> int:
     best_validation_loss = float("inf")
     best_epoch = None
     best_denoiser_state = None
+    best_checkpoint_route_required_boundary_contact = None
+    terminal_identity_contract = (
+        validate_stage4_best_checkpoint_and_terminal_qualification_identity_separation(
+            config
+        )
+    )
+    terminal_qualification_state = None
+    terminal_qualification_preview_reproduction = None
     batch_target = min(len(loaders["train"]), max_train_batches) if max_train_batches is not None else len(loaders["train"])
     epoch_worst_replay_contract = validate_stage4_epoch_worst_sample_class_replay(config)
     path_replay_passes = (
@@ -1373,10 +1454,59 @@ def main() -> int:
             if key not in {"compositeConditionQualityScore", "velocityPredictionMse", "cleanLatentMae", "fixedTimesteps"}:
                 row[f"validationFixedGrid{upper_camel(key)}"] = value
         register_v9_stage4_diagnostic_manifest_fields(row, train_metrics, epoch + 1, config)
-        if validation_loss < best_validation_loss:
+        if terminal_identity_contract is not None and epoch + 1 == 30:
+            terminal_qualification_state = deepcopy({
+                key: value.detach().cpu()
+                for key, value in model.denoiser.state_dict().items()
+            })
+            terminal_qualification_preview_reproduction = row.get(
+                "validationPreviewReproductionArtifact"
+            )
+            if not isinstance(terminal_qualification_preview_reproduction, dict):
+                raise ValueError(
+                    "Stage 4 terminal qualification Epoch 30 preview reproduction is missing"
+                )
+            if not all(
+                terminal_qualification_preview_reproduction.get(key) is True
+                for key in (
+                    "modelStateSha256Matches",
+                    "conditionTensorSha256Matches",
+                    "rgbTensorSha256Matches",
+                    "pngByteSha256Matches",
+                )
+            ):
+                raise ValueError(
+                    "Stage 4 terminal qualification Epoch 30 preview is not byte-exact"
+                )
+        route_required_boundary_contact = validation.get(
+            "stage4DiagnosticRouteRequiredBoundaryContactMinimum"
+        )
+        worst_sample_class_contract_active = config.get("training", {}).get(
+            "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation", {}
+        ).get("status") == "training_loss_active_owner_authorized"
+        if worst_sample_class_contract_active and route_required_boundary_contact is None:
+            raise ValueError(
+                "Stage 4 worst sample-class checkpoint qualification requires the route west-boundary metric"
+            )
+        route_non_regression_passed = (
+            stage4_worst_sample_class_checkpoint_candidate_preserves_west_boundary(
+                config,
+                route_required_boundary_contact,
+                best_checkpoint_route_required_boundary_contact,
+            )
+        )
+        if worst_sample_class_contract_active:
+            row["stage4CheckpointRouteWestBoundaryNonRegressionPassed"] = (
+                route_non_regression_passed
+            )
+        if validation_loss < best_validation_loss and route_non_regression_passed:
             best_validation_loss = validation_loss
             best_epoch = epoch + 1
             best_denoiser_state = deepcopy({key: value.detach().cpu() for key, value in model.denoiser.state_dict().items()})
+            if worst_sample_class_contract_active:
+                best_checkpoint_route_required_boundary_contact = float(
+                    route_required_boundary_contact
+                )
             row["bestCheckpointUpdated"] = True
         else:
             row["bestCheckpointUpdated"] = False
@@ -1401,6 +1531,58 @@ def main() -> int:
 
     if best_denoiser_state is None:
         raise ValueError("fixed validation did not produce a selectable checkpoint")
+    terminal_qualification_identity = None
+    if terminal_identity_contract is not None:
+        if terminal_qualification_state is None:
+            raise ValueError("Stage 4 terminal qualification Epoch 30 state is missing")
+        terminal_state_sha256 = state_dict_sha256(terminal_qualification_state)
+        best_state_sha256 = state_dict_sha256(best_denoiser_state)
+        source_preview = terminal_qualification_preview_reproduction.get("sourcePreview")
+        repeated_preview = terminal_qualification_preview_reproduction.get("repeatedPreview")
+        if not isinstance(source_preview, dict) or not isinstance(repeated_preview, dict):
+            raise ValueError("Stage 4 terminal qualification preview identities are missing")
+        if not (
+            source_preview.get("denoiserStateSha256")
+            == terminal_state_sha256
+            == repeated_preview.get("denoiserStateSha256")
+        ):
+            raise ValueError("Stage 4 terminal qualification state identity mismatch")
+        terminal_identity_dir = args.output_dir / "terminal-qualification-identity"
+        terminal_identity_dir.mkdir(parents=True, exist_ok=False)
+        terminal_state_path = terminal_identity_dir / "epoch-030-denoiser-state.pt"
+        torch.save({
+            "schemaVersion": "stage4-terminal-qualification-model-state-artifact-v1",
+            "role": "non_promotable_late_stability_qualification_evidence_only",
+            "terminalEpoch": 30,
+            "stage0InitializationEligible": False,
+            "denoiserStateSha256": terminal_state_sha256,
+            "denoiserState": terminal_qualification_state,
+        }, terminal_state_path)
+        terminal_qualification_identity = {
+            "schemaVersion": "stage4-best-checkpoint-terminal-qualification-identity-separation-evidence-v1",
+            "status": "terminal_epoch_30_identity_saved_and_preview_reproduced_exactly",
+            "contractId": STAGE4_BEST_CHECKPOINT_TERMINAL_QUALIFICATION_IDENTITY_SEPARATION_ID,
+            "terminalEpoch": 30,
+            "terminalDenoiserStateSha256": terminal_state_sha256,
+            "terminalStateArtifactPath": project_path(terminal_state_path),
+            "terminalStateArtifactSha256": sha256_file(terminal_state_path),
+            "terminalStateArtifactRole": "non_promotable_late_stability_qualification_evidence_only",
+            "terminalCheckpointPromotable": False,
+            "stage0InitializationEligible": False,
+            "sourcePreview": source_preview,
+            "reproducedPreview": repeated_preview,
+            "denoiserStateIdentityMatches": True,
+            "previewSha256Matches": source_preview.get("previewSha256") == repeated_preview.get("previewSha256"),
+            "bestCheckpointEpoch": int(best_epoch),
+            "bestCheckpointDenoiserStateSha256": best_state_sha256,
+            "bestCheckpointSelectionContractUnchanged": True,
+            "identityRolesSeparated": True,
+            "crossIdentitySubstitutionAllowed": False,
+            "mainCheckpointFormatChanged": False,
+            "machineReviewThresholdsChanged": False,
+        }
+        if terminal_qualification_identity["previewSha256Matches"] is not True:
+            raise ValueError("Stage 4 terminal qualification byte-exact preview mismatch")
     model.denoiser.load_state_dict(best_denoiser_state)
     final_denoiser_state_sha256 = (
         state_dict_sha256(model.denoiser.state_dict())
@@ -1633,6 +1815,8 @@ def main() -> int:
     }
     if unified_preview_reproduction is not None:
         manifest["stage4UnifiedTrainingPreviewSampling"] = unified_preview_reproduction
+    if terminal_qualification_identity is not None:
+        manifest["stage4TerminalQualificationIdentity"] = terminal_qualification_identity
     if record_stage4_smoke_state_hashes:
         manifest["modelStateHashEvidence"] = deepcopy(checkpoint["modelStateHashEvidence"])
     manifest_path = args.output_dir / "manifest.json"
@@ -4225,6 +4409,18 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
         validate_stage4_vegetation_luminance_spatial_structure_supervision(config)
     if "stage4FullRolloutFinalVisibleConsistency" in training:
         validate_stage4_full_rollout_final_visible_consistency(config)
+    if "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation" in training:
+        validate_stage4_full_rollout_per_class_final_visible_luminance_structure_obligation(
+            config
+        )
+    if "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation" in training:
+        validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation(
+            config
+        )
+    if "stage4PerClassFinalVisibleReferenceFeatureStructureObligation" in training:
+        validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
+            config
+        )
     if "stage4EpochWorstSampleClassReplay" in training:
         validate_stage4_epoch_worst_sample_class_replay(config)
     if "stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization" in training:
@@ -5430,6 +5626,70 @@ def validate_stage4_vegetation_luminance_spatial_structure_supervision(config):
     }
 
 
+def is_stage4_object_reference_multiscale_early_convergence_qualification(
+    *,
+    terminal: dict,
+    diagnostic: dict,
+    cuda_telemetry: dict,
+    cpu_report: dict,
+    identity: dict,
+    source: dict,
+) -> bool:
+    early_convergence = source.get("training", {}).get(
+        "stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization", {}
+    )
+    two_lane = diagnostic.get("gradientEvidence", {}).get(
+        "twoLaneEarlyConvergenceStabilization", {}
+    )
+    four_object = diagnostic.get("gradientEvidence", {}).get(
+        "fourObjectVisibleStructure", {}
+    )
+    return (
+        terminal.get("status")
+        == "stage4_two_lane_early_convergence_gpu_qualification_passed_closed"
+        and terminal.get("optimizerCreated") is False
+        and terminal.get("backwardMethodExecuted") is False
+        and terminal.get("modelWeightsModified") is False
+        and terminal.get("checkpointWritten") is False
+        and terminal.get("trainingStarted") is False
+        and terminal.get("automaticRetryStarted") is False
+        and diagnostic.get("status")
+        == "passed_readonly_stage4_two_lane_early_convergence_gpu_gradient_qualification"
+        and diagnostic.get("identity", {}).get("trainingObjectiveContractId")
+        == STAGE4_OBJECT_REFERENCE_MULTISCALE_EARLY_CONVERGENCE_STABILIZATION_ID
+        and diagnostic.get("identity", {}).get("replayLaneCount") == 2
+        and diagnostic.get("diagnosticManifest", {}).get("fieldCount") == 48
+        and four_object.get("combined", {}).get("finiteAndStrictlyNonzero") is True
+        and float(two_lane.get("lane1DenoiserGradientNorm", 0.0)) > 0.0
+        and float(two_lane.get("lane2DenoiserGradientNorm", 0.0)) > 0.0
+        and float(two_lane.get("combinedTwoLaneDenoiserGradientNorm", 0.0)) > 0.0
+        and two_lane.get("replayPassesAdded") == 0
+        and diagnostic.get("optimizerCreated") is False
+        and diagnostic.get("backwardMethodExecuted") is False
+        and diagnostic.get("modelWeightsModified") is False
+        and diagnostic.get("checkpointWritten") is False
+        and diagnostic.get("trainingStarted") is False
+        and cuda_telemetry.get("status")
+        == "collected_after_readonly_forward_and_autograd_grad"
+        and cpu_report.get("status")
+        == "early_convergence_gpu_qualification_finalization_cpu_contract_passed"
+        and cpu_report.get("positivePassed") == cpu_report.get("positiveTotal")
+        and cpu_report.get("negativePassed") == cpu_report.get("negativeTotal")
+        and identity.get("trainingObjectiveContractId")
+        == STAGE4_OBJECT_REFERENCE_MULTISCALE_EARLY_CONVERGENCE_STABILIZATION_ID
+        and identity.get("objectSemanticChannels")
+        == ["object_footprints", "object_tree", "object_rock", "object_vegetation"]
+        and identity.get("pyramidScales")
+        == list(STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_SCALES)
+        and identity.get("replayLaneCount") == 2
+        and early_convergence.get("contractId")
+        == STAGE4_OBJECT_REFERENCE_MULTISCALE_EARLY_CONVERGENCE_STABILIZATION_ID
+        and early_convergence.get("status") == "cpu_support_verified_inactive"
+        and early_convergence.get("replayBudget", {}).get("addsReplayPasses") is False
+        and early_convergence.get("replayBudget", {}).get("addsOptimizerSteps") is False
+    )
+
+
 def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
     config, project_root=None,
 ):
@@ -5473,6 +5733,20 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
         or preview.get("machineReviewThresholdsUsedAsTrainingTargets") is not False
     ):
         raise ValueError("Stage 4 semantic mixture fixed preview reproduction contract is invalid")
+    identity_separation = (
+        validate_stage4_best_checkpoint_and_terminal_qualification_identity_separation(
+            config
+        )
+    )
+    if (
+        training.get(
+            "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation", {}
+        ).get("status") == "training_loss_active_owner_authorized"
+        and identity_separation is None
+    ):
+        raise ValueError(
+            "Stage 4 worst sample-class Smoke requires checkpoint-terminal identity separation"
+        )
     execution = training.get("factConditionedSemanticMixtureStage4SmokeExecution", {})
     required_fields = {
         "sourceInactiveConfigPath", "sourceInactiveConfigSha256",
@@ -5622,6 +5896,179 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
         ).get("status") == "cpu_support_verified_inactive"
     )
     identity = authorization.get("taskIdentity", {})
+    full_rollout_per_class_luminance_qualification = (
+        terminal.get("status")
+        == "stage4_full_rollout_per_class_luminance_readonly_gpu_qualification_succeeded_closed"
+        and terminal.get("automaticRetryStarted") is False
+        and terminal.get("laterExecutionStarted") is False
+        and diagnostic.get("status")
+        == "passed_readonly_50_step_per_class_final_visible_luminance_structure_gradient_qualification"
+        and len(diagnostic.get("perClassGradientEvidence", {})) == 4
+        and all(
+            value.get("lossFinite") is True
+            and value.get("decodedRgbGradientFinite") is True
+            and value.get("insideMaskDecodedRgbGradientAbsSum", 0) > 0
+            and value.get("outsideMaskDecodedRgbGradientAbsSum") == 0
+            and value.get("denoiserGradientFinite") is True
+            and value.get("denoiserGradientAbsSum", 0) > 0
+            for value in diagnostic.get("perClassGradientEvidence", {}).values()
+        )
+        and diagnostic.get("stateHashes", {}).get("denoiserBefore")
+        == diagnostic.get("stateHashes", {}).get("denoiserAfter")
+        and diagnostic.get("stateHashes", {}).get("autoencoderBefore")
+        == diagnostic.get("stateHashes", {}).get("autoencoderAfter")
+        and diagnostic.get("safety", {}).get("optimizerCreated") is False
+        and diagnostic.get("safety", {}).get("backwardExecuted") is False
+        and diagnostic.get("safety", {}).get("modelWeightsModified") is False
+        and diagnostic.get("safety", {}).get("checkpointWritten") is False
+        and diagnostic.get("safety", {}).get("trainingStarted") is False
+        and cpu_report.get("status")
+        == "passed_stage4_full_rollout_per_class_luminance_readonly_gpu_cpu_gate"
+        and cpu_report.get("positivePassed") == cpu_report.get("positiveTotal")
+        and cpu_report.get("negativePassed") == cpu_report.get("negativeTotal")
+        and identity.get("trainingObjectiveContractId")
+        == STAGE4_FULL_ROLLOUT_PER_CLASS_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
+        and source.get("training", {}).get(
+            "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation", {}
+        ).get("contractId")
+        == STAGE4_FULL_ROLLOUT_PER_CLASS_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
+        and source.get("training", {}).get(
+            "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation", {}
+        ).get("status") == "cpu_support_verified_inactive"
+        and source.get("training", {}).get(
+            "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation", {}
+        ).get("rolloutBinding", {}).get("rolloutSteps") == 50
+        and source.get("training", {}).get(
+            "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation", {}
+        ).get("rolloutBinding", {}).get("gradientTailSteps") == 5
+    )
+    full_rollout_worst_sample_class_reference_luminance_qualification = (
+        terminal.get("status")
+        == "stage4_full_rollout_worst_sample_class_reference_luminance_readonly_gpu_qualification_succeeded_closed"
+        and terminal.get("automaticRetryStarted") is False
+        and terminal.get("laterExecutionStarted") is False
+        and diagnostic.get("status")
+        == "passed_readonly_50_step_worst_sample_class_reference_luminance_gradient_qualification"
+        and diagnostic.get("taskIdentity", {}).get("contractId")
+        == STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID
+        and diagnostic.get("taskIdentity", {}).get("rolloutSteps") == 50
+        and diagnostic.get("taskIdentity", {}).get("gradientTailSteps") == 5
+        and diagnostic.get("worstSampleClassEvidence", {}).get(
+            "worstWeightedSampleClass", 0
+        ) > 0
+        and diagnostic.get("worstSampleClassEvidence", {}).get(
+            "decodedRgbGradientFinite"
+        ) is True
+        and diagnostic.get("worstSampleClassEvidence", {}).get(
+            "insideMaskDecodedRgbGradientAbsSum", 0
+        ) > 0
+        and diagnostic.get("worstSampleClassEvidence", {}).get(
+            "outsideMaskDecodedRgbGradientAbsSum"
+        ) == 0
+        and diagnostic.get("worstSampleClassEvidence", {}).get(
+            "denoiserGradientFinite"
+        ) is True
+        and diagnostic.get("worstSampleClassEvidence", {}).get(
+            "denoiserGradientAbsSum", 0
+        ) > 0
+        and diagnostic.get("worstSampleClassEvidence", {}).get(
+            "routeWestBoundary", {}
+        ).get("equalCandidatePasses") is True
+        and diagnostic.get("worstSampleClassEvidence", {}).get(
+            "routeWestBoundary", {}
+        ).get("syntheticRegressionRejected") is True
+        and diagnostic.get("stateHashes", {}).get("denoiserBefore")
+        == diagnostic.get("stateHashes", {}).get("denoiserAfter")
+        and diagnostic.get("stateHashes", {}).get("autoencoderBefore")
+        == diagnostic.get("stateHashes", {}).get("autoencoderAfter")
+        and diagnostic.get("safety", {}).get("optimizerCreated") is False
+        and diagnostic.get("safety", {}).get("backwardExecuted") is False
+        and diagnostic.get("safety", {}).get("modelWeightsModified") is False
+        and diagnostic.get("safety", {}).get("checkpointWritten") is False
+        and diagnostic.get("safety", {}).get("trainingStarted") is False
+        and cpu_report.get("status")
+        == "passed_stage4_full_rollout_worst_sample_class_reference_luminance_readonly_gpu_cpu_gate"
+        and cpu_report.get("positivePassed") == cpu_report.get("positiveTotal")
+        and cpu_report.get("negativePassed") == cpu_report.get("negativeTotal")
+        and identity.get("trainingObjectiveContractId")
+        == STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID
+        and source.get("training", {}).get(
+            "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation", {}
+        ).get("contractId")
+        == STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID
+        and source.get("training", {}).get(
+            "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation", {}
+        ).get("status") == "cpu_support_verified_inactive"
+        and source.get("training", {}).get(
+            "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation", {}
+        ).get("rolloutBinding", {}).get("rolloutSteps") == 50
+        and source.get("training", {}).get(
+            "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation", {}
+        ).get("rolloutBinding", {}).get("gradientTailSteps") == 5
+    )
+    per_class_reference_feature_structure_qualification = (
+        terminal.get("status")
+        == "stage4_per_class_final_visible_reference_feature_structure_readonly_gpu_qualification_succeeded_closed"
+        and terminal.get("automaticRetryStarted") is False
+        and terminal.get("laterExecutionStarted") is False
+        and diagnostic.get("status")
+        == "passed_readonly_50_step_per_class_final_visible_reference_feature_structure_gradient_qualification"
+        and diagnostic.get("taskIdentity", {}).get("contractId")
+        == STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+        and diagnostic.get("taskIdentity", {}).get("rolloutSteps") == 50
+        and diagnostic.get("taskIdentity", {}).get("gradientTailSteps") == 5
+        and diagnostic.get("referenceFeatureStructureEvidence", {}).get(
+            "featureStageCount", 0
+        ) >= 2
+        and len(
+            diagnostic.get("referenceFeatureStructureEvidence", {}).get(
+                "perClass", {}
+            )
+        ) == 4
+        and all(
+            value.get("lossFinite") is True
+            and value.get("decodedRgbGradientFinite") is True
+            and value.get("insideMaskDecodedRgbGradientAbsSum", 0) > 0
+            and value.get("outsideMaskDecodedRgbGradientAbsSum") == 0
+            and value.get("denoiserGradientFinite") is True
+            and value.get("denoiserGradientAbsSum", 0) > 0
+            and value.get("crossClassConditionSourcesIsolated") is True
+            for value in diagnostic.get(
+                "referenceFeatureStructureEvidence", {}
+            ).get("perClass", {}).values()
+        )
+        and diagnostic.get("stateHashes", {}).get("denoiserBefore")
+        == diagnostic.get("stateHashes", {}).get("denoiserAfter")
+        and diagnostic.get("stateHashes", {}).get("autoencoderBefore")
+        == diagnostic.get("stateHashes", {}).get("autoencoderAfter")
+        and diagnostic.get("safety", {}).get("optimizerCreated") is False
+        and diagnostic.get("safety", {}).get("backwardExecuted") is False
+        and diagnostic.get("safety", {}).get("modelWeightsModified") is False
+        and diagnostic.get("safety", {}).get("checkpointWritten") is False
+        and diagnostic.get("safety", {}).get("trainingStarted") is False
+        and cpu_report.get("status")
+        == "passed_stage4_per_class_final_visible_reference_feature_structure_readonly_gpu_cpu_gate"
+        and cpu_report.get("positivePassed") == cpu_report.get("positiveTotal")
+        and cpu_report.get("negativePassed") == cpu_report.get("negativeTotal")
+        and identity.get("trainingObjectiveContractId")
+        == STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+        and fact_conditioned_semantic_mixture_smoke_supports_objective(
+            identity.get("trainingObjectiveContractId", "")
+        )
+        and source.get("training", {}).get(
+            "stage4PerClassFinalVisibleReferenceFeatureStructureObligation", {}
+        ).get("contractId")
+        == STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+        and source.get("training", {}).get(
+            "stage4PerClassFinalVisibleReferenceFeatureStructureObligation", {}
+        ).get("status") == "cpu_support_verified_inactive"
+        and source.get("training", {}).get(
+            "stage4PerClassFinalVisibleReferenceFeatureStructureObligation", {}
+        ).get("rolloutBinding", {}).get("rolloutSteps") == 50
+        and source.get("training", {}).get(
+            "stage4PerClassFinalVisibleReferenceFeatureStructureObligation", {}
+        ).get("rolloutBinding", {}).get("gradientTailSteps") == 5
+    )
     object_reference_multiscale_qualification = (
         terminal.get("status")
         == "stage4_object_reference_multiscale_phase0_passed_closed"
@@ -5671,6 +6118,16 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
         ).get("noveltyBoundary", {}).get("failedSingleScaleContractReuseAllowed") is False
         and source.get("training", {}).get("stage4ObjectVisibleStructureSupervision") is None
     )
+    object_reference_multiscale_early_convergence_qualification = (
+        is_stage4_object_reference_multiscale_early_convergence_qualification(
+            terminal=terminal,
+            diagnostic=diagnostic,
+            cuda_telemetry=cuda_telemetry,
+            cpu_report=cpu_report,
+            identity=identity,
+            source=source,
+        )
+    )
     if (
         source.get("denoiserArchitecture")
         != "stage4_fact_conditioned_semantic_mixture_decoder_v1"
@@ -5696,9 +6153,13 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
             or vegetation_repair_qualification
             or vegetation_luminance_qualification
             or full_rollout_qualification
+            or full_rollout_per_class_luminance_qualification
+            or full_rollout_worst_sample_class_reference_luminance_qualification
+            or per_class_reference_feature_structure_qualification
             or epoch_worst_replay_qualification
             or object_visible_structure_qualification
             or object_reference_multiscale_qualification
+            or object_reference_multiscale_early_convergence_qualification
         )
         or cpu_report.get("positivePassed") != cpu_report.get("positiveTotal")
         or cpu_report.get("negativePassed") != cpu_report.get("negativeTotal")
@@ -9874,6 +10335,687 @@ def validate_stage4_full_rollout_final_visible_consistency(config):
     return contract
 
 
+def validate_stage4_full_rollout_per_class_final_visible_luminance_structure_obligation(
+    config,
+):
+    """Validate the bounded per-class obligation on the final 50-step decoded RGB."""
+    training = config.get("training", {})
+    contract = training.get(
+        "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation", {}
+    )
+    if not contract:
+        return None
+    if set(contract) != {
+        "enabled", "status", "contractId", "sourceContract", "requiredClasses",
+        "rolloutBinding", "aggregation", "legalSupervision",
+        "checkpointQualification", "compatibility", "evidenceBindings",
+        "activationGate",
+    }:
+        raise ValueError("Stage 4 full-rollout per-class luminance fields changed")
+    multiscale = validate_stage4_object_reference_multiscale_luminance_structure_supervision(
+        config
+    )
+    rollout = validate_stage4_full_rollout_final_visible_consistency(config)
+    expected_classes = list(STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS)
+    if (
+        contract.get("enabled") is not True
+        or contract.get("contractId")
+        != STAGE4_FULL_ROLLOUT_PER_CLASS_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
+        or contract.get("sourceContract") != {
+            "contractId": STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_SUPERVISION_ID,
+            "function": "stage4_object_reference_multiscale_luminance_structure_supervision_losses",
+            "pyramidScales": list(STAGE4_OBJECT_REFERENCE_MULTISCALE_LUMINANCE_STRUCTURE_SCALES),
+            "derivedWeights": multiscale["derivedWeights"],
+            "freeNumericalWeightSelectionAllowed": False,
+        }
+        or contract.get("requiredClasses") != expected_classes
+        or contract.get("rolloutBinding") != {
+            "parentContractId": "stage4_full_rollout_final_visible_consistency_v1",
+            "decodedRgbSource": "same_50_step_final_decoded_rgb_before_detach",
+            "rolloutSteps": int(config.get("inferenceSteps", 0)),
+            "gradientTailSteps": int(rollout["gradientTailSteps"]),
+            "entersTotalLoss": True,
+        }
+        or contract.get("aggregation") != {
+            "perClass": "reuse_native_half_quarter_and_cross_scale_structure_consistency",
+            "crossClass": "sum_existing_derived_weighted_object_obligations",
+            "rolloutWeight": float(rollout["weight"]),
+            "rolloutWeightSource": "training.stage4FullRolloutFinalVisibleConsistency.weight",
+            "freeNumericalWeightSelectionAllowed": False,
+        }
+    ):
+        raise ValueError("Stage 4 full-rollout per-class luminance identity changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "maskChannels": expected_classes,
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 full-rollout per-class legal supervision changed")
+    if contract.get("checkpointQualification") != {
+        "metric": "validationCheckpointSelectionScore",
+        "source": "same_final_rollout_per_class_weighted_luminance_structure_obligation",
+        "sameDerivedClassWeightsRequired": True,
+        "sameRolloutWeightRequired": True,
+    }:
+        raise ValueError("Stage 4 full-rollout per-class checkpoint qualification changed")
+    if contract.get("compatibility") != {
+        "modelArchitectureChanged": False,
+        "lossWeightsChanged": False,
+        "datasetOrSplitChanged": False,
+        "checkpointFormatChanged": False,
+        "reviewThresholdsChanged": False,
+        "oldModesWithoutContractPreserved": True,
+    }:
+        raise ValueError("Stage 4 full-rollout per-class compatibility changed")
+    if (
+        contract.get("evidenceBindings")
+        != STAGE4_FULL_ROLLOUT_PER_CLASS_FINAL_VISIBLE_LUMINANCE_STRUCTURE_EVIDENCE_BINDINGS
+    ):
+        raise ValueError("Stage 4 full-rollout per-class evidence identity changed")
+    gate = contract.get("activationGate", {})
+    gate_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    status = contract.get("status")
+    if status == "cpu_support_verified_inactive":
+        active_fields = set()
+    elif status == "training_loss_active_owner_authorized":
+        mode = resolve_stage_mode(config).mode_id
+        if mode not in {
+            "fact_conditioned_semantic_mixture_stage4_smoke",
+            "fact_conditioned_semantic_mixture_stage0_full_training",
+            "fact_conditioned_semantic_mixture_stage1_full_training",
+            "fact_conditioned_semantic_mixture_stage2_full_training",
+        }:
+            raise ValueError("Stage 4 full-rollout per-class active mode is invalid")
+        active_fields = {
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow",
+        }
+        active_fields.add(
+            "smokeNow"
+            if mode == "fact_conditioned_semantic_mixture_stage4_smoke"
+            else "stage4FullTrainingNow"
+        )
+    else:
+        raise ValueError("Stage 4 full-rollout per-class status changed")
+    if set(gate) != gate_fields or any(
+        gate.get(name) is not (name in active_fields) for name in gate_fields
+    ):
+        raise ValueError("Stage 4 full-rollout per-class activation gate changed")
+    return contract
+
+
+def stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_losses(
+    predicted_rgb,
+    target_rgb,
+    conditions,
+    config,
+):
+    """Reuse the existing typed multiscale terms on the final rollout RGB."""
+    contract = (
+        validate_stage4_full_rollout_per_class_final_visible_luminance_structure_obligation(
+            config
+        )
+    )
+    if contract is None:
+        return None
+    source = stage4_object_reference_multiscale_luminance_structure_supervision_losses(
+        predicted_rgb, target_rgb, conditions, config,
+    )
+    prefixes = ("Footprints", "Tree", "Rock", "Vegetation")
+    per_class = {}
+    metrics = {}
+    for identity, prefix in zip(
+        FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:], prefixes,
+    ):
+        value = source["objectTotalTensors"][identity]
+        per_class[identity] = value
+        metrics[
+            f"stage4FullRollout{prefix}FinalVisibleMultiscaleLuminanceStructureLoss"
+        ] = value
+    return {
+        "status": contract["status"],
+        "perClassLossTensors": per_class,
+        "weightedTotalTensor": source["weightedTotalTensor"],
+        "metrics": metrics,
+        "sourceChannels": list(contract["requiredClasses"]),
+        "derivedWeights": dict(contract["sourceContract"]["derivedWeights"]),
+    }
+
+
+def validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation(
+    config,
+):
+    """Validate the source-derived worst sample-class final-visible obligation."""
+    training = config.get("training", {})
+    contract = training.get(
+        "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation", {}
+    )
+    if not contract:
+        return None
+    if set(contract) != {
+        "enabled", "status", "contractId", "sourceContract", "requiredClasses",
+        "rolloutBinding", "aggregation", "legalSupervision",
+        "checkpointQualification", "routeWestBoundaryNonRegression",
+        "compatibility", "evidenceBindings", "activationGate",
+    }:
+        raise ValueError("Stage 4 worst sample-class luminance fields changed")
+    source = (
+        validate_stage4_full_rollout_per_class_final_visible_luminance_structure_obligation(
+            config
+        )
+    )
+    rollout = validate_stage4_full_rollout_final_visible_consistency(config)
+    required_classes = list(STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS)
+    expected_source = {
+        "contractId": STAGE4_FULL_ROLLOUT_PER_CLASS_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID,
+        "function": "stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_losses",
+        "perClassFunction": "stage4_object_reference_multiscale_luminance_structure_supervision_losses",
+        "derivedWeights": dict(source["sourceContract"]["derivedWeights"]),
+        "freeNumericalWeightSelectionAllowed": False,
+    }
+    if (
+        contract.get("enabled") is not True
+        or contract.get("contractId")
+        != STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID
+        or contract.get("sourceContract") != expected_source
+        or contract.get("requiredClasses") != required_classes
+        or contract.get("rolloutBinding") != {
+            "parentContractId": "stage4_full_rollout_final_visible_consistency_v1",
+            "decodedRgbSource": "same_50_step_final_decoded_rgb_before_detach",
+            "rolloutSteps": int(config.get("inferenceSteps", 0)),
+            "gradientTailSteps": int(rollout["gradientTailSteps"]),
+            "entersExistingFullRolloutLossSlot": True,
+            "replacesCrossClassSumInThatSlot": True,
+        }
+        or contract.get("aggregation") != {
+            "perSample": "retain_each_batch_sample_before_aggregation",
+            "perClass": "reuse_native_half_quarter_and_cross_scale_structure_consistency",
+            "classWeighting": "multiply_each_sample_class_by_existing_derived_class_weight",
+            "selection": "maximum_over_sample_and_class",
+            "rolloutWeight": float(rollout["weight"]),
+            "rolloutWeightSource": "training.stage4FullRolloutFinalVisibleConsistency.weight",
+            "freeNumericalWeightSelectionAllowed": False,
+        }
+    ):
+        raise ValueError("Stage 4 worst sample-class luminance identity changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "maskChannels": required_classes,
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 worst sample-class legal supervision changed")
+    if contract.get("checkpointQualification") != {
+        "metric": "validationCheckpointSelectionScore",
+        "source": "maximum_existing_derived_weighted_validation_sample_class_luminance_obligation",
+        "scope": "all_validation_samples_all_rollout_seeds_all_required_classes",
+        "sameDerivedClassWeightsRequired": True,
+        "sameRolloutWeightRequired": True,
+        "replacesAveragedCrossClassSum": True,
+    }:
+        raise ValueError("Stage 4 worst sample-class checkpoint qualification changed")
+    required_sides = list(
+        training.get("authorizedBoundaryTopology", {}).get("requiredBoundarySides", [])
+    )
+    if contract.get("routeWestBoundaryNonRegression") != {
+        "sourceMetric": "stage4DiagnosticRouteRequiredBoundaryContactMinimum",
+        "requiredBoundarySidesSource": "training.authorizedBoundaryTopology.requiredBoundarySides",
+        "requiredBoundarySides": required_sides,
+        "requiredSide": "west",
+        "candidateRule": "candidate_value_must_be_greater_than_or_equal_to_selected_checkpoint_value",
+        "freeThresholdSelected": False,
+    } or required_sides != ["west"]:
+        raise ValueError("Stage 4 route west-boundary non-regression contract changed")
+    if contract.get("compatibility") != {
+        "modelArchitectureChanged": False,
+        "lossWeightsChanged": False,
+        "datasetOrSplitChanged": False,
+        "checkpointFormatChanged": False,
+        "reviewThresholdsChanged": False,
+        "oldModesWithoutContractPreserved": True,
+    }:
+        raise ValueError("Stage 4 worst sample-class compatibility changed")
+    if (
+        contract.get("evidenceBindings")
+        != STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_EVIDENCE_BINDINGS
+    ):
+        raise ValueError("Stage 4 worst sample-class evidence identity changed")
+    gate_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    status = contract.get("status")
+    if status == "cpu_support_verified_inactive":
+        active_fields = set()
+    elif status == "training_loss_active_owner_authorized":
+        mode = resolve_stage_mode(config).mode_id
+        if mode not in {
+            "fact_conditioned_semantic_mixture_stage4_smoke",
+            "fact_conditioned_semantic_mixture_stage0_full_training",
+            "fact_conditioned_semantic_mixture_stage1_full_training",
+            "fact_conditioned_semantic_mixture_stage2_full_training",
+        }:
+            raise ValueError("Stage 4 worst sample-class active mode is invalid")
+        active_fields = {
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow",
+        }
+        active_fields.add(
+            "smokeNow"
+            if mode == "fact_conditioned_semantic_mixture_stage4_smoke"
+            else "stage4FullTrainingNow"
+        )
+    else:
+        raise ValueError("Stage 4 worst sample-class status changed")
+    gate = contract.get("activationGate", {})
+    if set(gate) != gate_fields or any(
+        gate.get(name) is not (name in active_fields) for name in gate_fields
+    ):
+        raise ValueError("Stage 4 worst sample-class activation gate changed")
+    return contract
+
+
+def stage4_full_rollout_worst_sample_class_reference_luminance_obligation_losses(
+    predicted_rgb,
+    target_rgb,
+    conditions,
+    config,
+):
+    """Retain each sample/class source obligation and select its weighted maximum."""
+    contract = validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation(
+        config
+    )
+    if contract is None:
+        return None
+    if not (
+        predicted_rgb.shape[0] == target_rgb.shape[0] == conditions.shape[0]
+    ) or predicted_rgb.shape[0] < 1:
+        raise ValueError("Stage 4 worst sample-class batch identity changed")
+    identities = FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+    derived_weights = contract["sourceContract"]["derivedWeights"]
+    per_sample_class = []
+    for sample_index in range(predicted_rgb.shape[0]):
+        source = stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_losses(
+            predicted_rgb[sample_index:sample_index + 1],
+            target_rgb[sample_index:sample_index + 1],
+            conditions[sample_index:sample_index + 1],
+            config,
+        )
+        per_sample_class.append(torch.stack([
+            source["perClassLossTensors"][identity] * float(derived_weights[identity])
+            for identity in identities
+        ]))
+    matrix = torch.stack(per_sample_class)
+    worst = matrix.reshape(-1).amax()
+    return {
+        "status": contract["status"],
+        "weightedPerSampleClassTensors": matrix,
+        "worstWeightedSampleClassTensor": worst,
+        "sampleCount": predicted_rgb.shape[0],
+        "classIdentityOrder": list(identities),
+        "derivedWeights": dict(derived_weights),
+    }
+
+
+def validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
+    config,
+):
+    """Validate the inactive per-class final-visible frozen-reference feature contract."""
+    training = config.get("training", {})
+    contract = training.get(
+        "stage4PerClassFinalVisibleReferenceFeatureStructureObligation", {}
+    )
+    if not contract:
+        return None
+    expected_fields = {
+        "enabled", "status", "contractId", "sourceContract", "requiredClasses",
+        "featureExtraction", "rolloutBinding", "aggregation", "legalSupervision",
+        "checkpointQualification", "compatibility", "evidenceBindings",
+        "activationGate",
+    }
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 reference-feature obligation fields changed")
+    source = validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation(
+        config
+    )
+    rollout = validate_stage4_full_rollout_final_visible_consistency(config)
+    expected_classes = list(STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS)
+    if (
+        contract.get("enabled") is not True
+        or contract.get("contractId")
+        != STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+        or contract.get("sourceContract") != {
+            "contractId": (
+                STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID
+            ),
+            "derivedClassWeights": source["sourceContract"]["derivedWeights"],
+            "classWeightSource": (
+                "training.stage4FullRolloutWorstSampleClassReferenceLuminanceObligation."
+                "sourceContract.derivedWeights"
+            ),
+            "rolloutWeight": float(rollout["weight"]),
+            "rolloutWeightSource": "training.stage4FullRolloutFinalVisibleConsistency.weight",
+            "freeNumericalWeightSelectionAllowed": False,
+        }
+        or contract.get("requiredClasses") != expected_classes
+        or contract.get("featureExtraction") != {
+            "autoencoderSource": "frozen_project_autoencoder",
+            "encoderPath": "existing_project_autoencoder_encoder_sequential",
+            "spatialStageSelection": (
+                "ordered_unique_spatial_shapes_after_each_existing_encoder_module"
+            ),
+            "stageAggregation": "arithmetic_mean_over_all_unique_existing_spatial_stages",
+            "predictionInput": (
+                "final_decoded_rgb_inside_bound_class_mask_reference_rgb_outside_mask"
+            ),
+            "targetInput": "original_owner_approved_reference_rgb",
+            "targetFeaturesDetached": True,
+            "autoencoderParametersFrozen": True,
+            "freeFeatureScaleOrWeightSelectionAllowed": False,
+        }
+        or contract.get("rolloutBinding") != {
+            "parentContractId": "stage4_full_rollout_final_visible_consistency_v1",
+            "decodedRgbSource": "same_50_step_final_decoded_rgb_before_detach",
+            "rolloutSteps": int(config.get("inferenceSteps", 0)),
+            "gradientTailSteps": int(rollout["gradientTailSteps"]),
+            "entersExistingFullRolloutLossSlot": True,
+        }
+        or contract.get("aggregation") != {
+            "perSample": "preserve_batch_samples_before_class_aggregation",
+            "perClass": "one_independent_reference_feature_structure_obligation",
+            "withinClassStages": (
+                "arithmetic_mean_over_all_unique_existing_autoencoder_spatial_stages"
+            ),
+            "crossClass": "sum_existing_derived_weighted_object_obligations",
+            "rolloutWeight": float(rollout["weight"]),
+            "freeNumericalWeightSelectionAllowed": False,
+        }
+    ):
+        raise ValueError("Stage 4 reference-feature obligation identity changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "maskChannels": expected_classes,
+        "featureSource": "frozen_project_autoencoder_features",
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 reference-feature legal supervision changed")
+    if contract.get("checkpointQualification") != {
+        "metric": "validationCheckpointSelectionScore",
+        "source": "same_final_rollout_per_class_reference_feature_structure_obligation",
+        "sameDerivedClassWeightsRequired": True,
+        "sameRolloutWeightRequired": True,
+        "entersQualificationScore": True,
+    }:
+        raise ValueError("Stage 4 reference-feature checkpoint qualification changed")
+    if contract.get("compatibility") != {
+        "modelArchitectureChanged": False,
+        "existingLossValuesOrWeightsChanged": False,
+        "datasetOrSplitChanged": False,
+        "checkpointFormatChanged": False,
+        "reviewThresholdsChanged": False,
+        "oldModesWithoutContractPreserved": True,
+    }:
+        raise ValueError("Stage 4 reference-feature compatibility changed")
+    if (
+        contract.get("evidenceBindings")
+        != STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_EVIDENCE_BINDINGS
+    ):
+        raise ValueError("Stage 4 reference-feature evidence identity changed")
+    gate_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    status = contract.get("status")
+    if status == "cpu_support_verified_inactive":
+        active_fields = set()
+    elif status == "training_loss_active_owner_authorized":
+        mode = resolve_stage_mode(config).mode_id
+        if mode not in {
+            "fact_conditioned_semantic_mixture_stage4_smoke",
+            "fact_conditioned_semantic_mixture_stage0_full_training",
+            "fact_conditioned_semantic_mixture_stage1_full_training",
+            "fact_conditioned_semantic_mixture_stage2_full_training",
+        }:
+            raise ValueError("Stage 4 reference-feature active mode is invalid")
+        active_fields = {
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow",
+        }
+        active_fields.add(
+            "smokeNow"
+            if mode == "fact_conditioned_semantic_mixture_stage4_smoke"
+            else "stage4FullTrainingNow"
+        )
+    else:
+        raise ValueError("Stage 4 reference-feature status changed")
+    gate = contract.get("activationGate", {})
+    if set(gate) != gate_fields or any(
+        gate.get(name) is not (name in active_fields) for name in gate_fields
+    ):
+        raise ValueError("Stage 4 reference-feature activation gate changed")
+    return contract
+
+
+def stage4_frozen_autoencoder_unique_spatial_feature_pyramid(autoencoder, value):
+    """Return the final feature at every existing encoder spatial stage."""
+    encoder = getattr(autoencoder, "encoder", None)
+    if encoder is None or not hasattr(encoder, "__iter__"):
+        raise ValueError("Stage 4 frozen Autoencoder encoder path is unavailable")
+    if any(parameter.requires_grad for parameter in autoencoder.parameters()):
+        raise ValueError("Stage 4 reference-feature Autoencoder must remain frozen")
+    current = value
+    ordered_shapes = []
+    features_by_shape = {}
+    for module in encoder:
+        current = module(current)
+        spatial_shape = tuple(int(item) for item in current.shape[-2:])
+        if spatial_shape not in features_by_shape:
+            ordered_shapes.append(spatial_shape)
+        features_by_shape[spatial_shape] = current
+    if len(ordered_shapes) < 2:
+        raise ValueError("Stage 4 reference-feature spatial stages are insufficient")
+    return tuple(features_by_shape[shape] for shape in ordered_shapes)
+
+
+def stage4_per_class_final_visible_reference_feature_structure_obligation_losses(
+    autoencoder,
+    predicted_rgb,
+    target_rgb,
+    conditions,
+    config,
+):
+    """Compare frozen reference features while keeping gradients inside each class mask."""
+    contract = validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
+        config
+    )
+    if contract is None:
+        return None
+    if (
+        predicted_rgb.shape != target_rgb.shape
+        or predicted_rgb.ndim != 4
+        or predicted_rgb.shape[1] != 3
+        or predicted_rgb.shape[0] != conditions.shape[0]
+    ):
+        raise ValueError("Stage 4 reference-feature input identity changed")
+    order = list(config.get("conditionChannelOrder", []))
+    required_classes = list(STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS)
+    if any(name not in order for name in required_classes):
+        raise ValueError("Stage 4 reference-feature condition channel is missing")
+    with torch.no_grad():
+        target_features = stage4_frozen_autoencoder_unique_spatial_feature_pyramid(
+            autoencoder, target_rgb.detach(),
+        )
+    per_sample_rows = []
+    derived_weights = contract["sourceContract"]["derivedClassWeights"]
+    identities = FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+    for sample_index in range(predicted_rgb.shape[0]):
+        class_row = []
+        for identity in identities:
+            channel_name = f"object_{identity}"
+            mask = conditions[
+                sample_index:sample_index + 1,
+                order.index(channel_name):order.index(channel_name) + 1,
+            ]
+            mask = torch.nn.functional.interpolate(
+                mask, size=predicted_rgb.shape[-2:], mode="nearest",
+            ).clamp(0.0, 1.0)
+            if float(mask.sum().detach()) <= 0.0:
+                class_loss = predicted_rgb.new_zeros(())
+            else:
+                predicted_sample = predicted_rgb[sample_index:sample_index + 1]
+                target_sample = target_rgb[sample_index:sample_index + 1]
+                masked_prediction = (
+                    predicted_sample * mask + target_sample.detach() * (1.0 - mask)
+                )
+                predicted_features = (
+                    stage4_frozen_autoencoder_unique_spatial_feature_pyramid(
+                        autoencoder, masked_prediction,
+                    )
+                )
+                if len(predicted_features) != len(target_features):
+                    raise ValueError("Stage 4 reference-feature stage count changed")
+                stage_losses = []
+                for predicted_feature, target_feature in zip(
+                    predicted_features, target_features,
+                ):
+                    target_sample_feature = target_feature[
+                        sample_index:sample_index + 1
+                    ]
+                    feature_mask = torch.nn.functional.interpolate(
+                        mask, size=predicted_feature.shape[-2:], mode="nearest",
+                    )
+                    denominator = feature_mask.sum() * predicted_feature.shape[1]
+                    if float(denominator.detach()) <= 0.0:
+                        continue
+                    stage_losses.append(
+                        (
+                            (predicted_feature - target_sample_feature).abs()
+                            * feature_mask
+                        ).sum() / denominator
+                    )
+                if not stage_losses:
+                    raise ValueError("Stage 4 reference-feature mask has no spatial support")
+                class_loss = torch.stack(stage_losses).mean()
+            class_row.append(class_loss)
+        per_sample_rows.append(torch.stack(class_row))
+    per_sample_class = torch.stack(per_sample_rows)
+    per_class = {
+        identity: per_sample_class[:, class_index].mean()
+        for class_index, identity in enumerate(identities)
+    }
+    metrics = {}
+    for identity in identities:
+        metrics[
+            f"stage4PerClassFinalVisible{upper_camel(identity)}ReferenceFeatureStructureLoss"
+        ] = per_class[identity]
+    weighted_total = sum(
+        per_class[identity] * float(derived_weights[identity])
+        for identity in FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+    )
+    return {
+        "status": contract["status"],
+        "perClassLossTensors": per_class,
+        "perSampleClassTensors": per_sample_class,
+        "weightedTotalTensor": weighted_total,
+        "metrics": metrics,
+        "derivedClassWeights": dict(derived_weights),
+        "featureStageCount": len(target_features),
+    }
+
+
+def stage4_best_checkpoint_and_terminal_qualification_identity_separation_contract():
+    return {
+        "schemaVersion": "stage4-best-checkpoint-terminal-qualification-identity-separation-contract-v1",
+        "enabled": True,
+        "status": "active_owner_authorized_single_execution",
+        "contractId": STAGE4_BEST_CHECKPOINT_TERMINAL_QUALIFICATION_IDENTITY_SEPARATION_ID,
+        "bestCheckpointIdentity": {
+            "selectionContract": "existing_validation_score_plus_west_boundary_non_regression_unchanged",
+            "previewIdentityGate": "byte_exact_best_epoch_reproduction",
+            "mainCheckpointFormatChanged": False,
+        },
+        "terminalQualificationIdentity": {
+            "terminalEpoch": 30,
+            "stateArtifactFileName": "epoch-030-denoiser-state.pt",
+            "stateArtifactRole": "non_promotable_late_stability_qualification_evidence_only",
+            "previewIdentityGate": "byte_exact_terminal_epoch_reproduction",
+            "stage0InitializationEligible": False,
+        },
+        "identitySeparationRequired": True,
+        "crossIdentitySubstitutionAllowed": False,
+        "machineReviewThresholdsChanged": False,
+        "failedPreviewPixelsUsedAsTrainingTargets": False,
+        "machineReviewResultsUsedAsTrainingTargets": False,
+        "evidenceBindings": dict(
+            STAGE4_BEST_CHECKPOINT_TERMINAL_QUALIFICATION_IDENTITY_SEPARATION_EVIDENCE
+        ),
+    }
+
+
+def validate_stage4_best_checkpoint_and_terminal_qualification_identity_separation(
+    config,
+):
+    """Keep the best training checkpoint and Epoch 30 qualification identity separate."""
+    contract = config.get("training", {}).get(
+        "stage4BestCheckpointAndTerminalQualificationIdentitySeparation", {}
+    )
+    if not contract:
+        return None
+    expected = stage4_best_checkpoint_and_terminal_qualification_identity_separation_contract()
+    if contract != expected:
+        raise ValueError(
+            "Stage 4 best-checkpoint and terminal-qualification identity contract changed"
+        )
+    if resolve_stage_mode(config).mode_id != "fact_conditioned_semantic_mixture_stage4_smoke":
+        raise ValueError("Stage 4 terminal qualification identity is Smoke-only")
+    worst_sample = validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation(
+        config
+    )
+    if worst_sample is None or worst_sample.get("status") != "training_loss_active_owner_authorized":
+        raise ValueError(
+            "Stage 4 terminal qualification identity requires the active worst sample-class obligation"
+        )
+    return contract
+
+
+def stage4_worst_sample_class_checkpoint_candidate_preserves_west_boundary(
+    config,
+    candidate_value,
+    selected_value,
+):
+    contract = validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation(
+        config
+    )
+    if contract is None or contract.get("status") != "training_loss_active_owner_authorized":
+        return True
+    if selected_value is None:
+        return True
+    return float(candidate_value) >= float(selected_value)
+
+
 def stage4_full_rollout_final_visible_consistency(
     model,
     conditions,
@@ -9937,6 +11079,36 @@ def stage4_full_rollout_final_visible_consistency(
     distribution = stage4_distribution_aware_visible_spatial_semantic_obligation(
         [predicted_rgb], target_image, conditions, config,
     )
+    per_class_luminance = None
+    per_class_contract = config.get("training", {}).get(
+        "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation", {}
+    )
+    if per_class_contract.get("status") == "training_loss_active_owner_authorized":
+        per_class_luminance = (
+            stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_losses(
+                predicted_rgb, target_image, conditions, config,
+            )
+        )
+    worst_sample_class_luminance = None
+    worst_sample_class_contract = config.get("training", {}).get(
+        "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation", {}
+    )
+    if worst_sample_class_contract.get("status") == "training_loss_active_owner_authorized":
+        worst_sample_class_luminance = (
+            stage4_full_rollout_worst_sample_class_reference_luminance_obligation_losses(
+                predicted_rgb, target_image, conditions, config,
+            )
+        )
+    reference_feature_structure = None
+    reference_feature_contract = config.get("training", {}).get(
+        "stage4PerClassFinalVisibleReferenceFeatureStructureObligation", {}
+    )
+    if reference_feature_contract.get("status") == "training_loss_active_owner_authorized":
+        reference_feature_structure = (
+            stage4_per_class_final_visible_reference_feature_structure_obligation_losses(
+                model.autoencoder, predicted_rgb, target_image, conditions, config,
+            )
+        )
     rgb = torch.nn.functional.l1_loss(predicted_rgb, target_image)
     grid = spatial_grid_rgb_loss(predicted_rgb, target_image)
     raw = (
@@ -9949,9 +11121,20 @@ def stage4_full_rollout_final_visible_consistency(
         + activation * float(terms["routeActivationMass"])
         + boundary * float(terms["routeRequiredBoundary"])
         + distribution["stage4DistributionAwareVisibleSpatialSemanticLossTensor"]
+        + (
+            reference_feature_structure["weightedTotalTensor"]
+            if reference_feature_structure is not None
+            else predicted_rgb.new_zeros(())
+        )
+        + (
+            worst_sample_class_luminance["worstWeightedSampleClassTensor"]
+            if worst_sample_class_luminance is not None
+            else per_class_luminance["weightedTotalTensor"]
+            if per_class_luminance is not None else predicted_rgb.new_zeros(())
+        )
     )
     weighted = raw * float(contract["weight"])
-    return {
+    result = {
         "stage4FullRolloutFinalVisibleConsistencyLossTensor": weighted,
         "stage4FullRolloutFinalVisibleConsistencyWeightedLoss": weighted,
         "stage4FullRolloutFinalVisibleConsistencyRawLoss": raw,
@@ -9968,6 +11151,30 @@ def stage4_full_rollout_final_visible_consistency(
         "stage4FullRolloutStepCount": predicted_rgb.new_tensor(float(len(steps))),
         "stage4FullRolloutGradientTailStepCount": predicted_rgb.new_tensor(float(gradient_tail_steps)),
     }
+    if per_class_luminance is not None:
+        result.update(per_class_luminance["metrics"])
+        result[
+            "stage4FullRolloutPerClassFinalVisibleLuminanceStructureWeightedLoss"
+        ] = per_class_luminance["weightedTotalTensor"] * float(contract["weight"])
+    if worst_sample_class_luminance is not None:
+        result[
+            "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation"
+        ] = worst_sample_class_luminance["worstWeightedSampleClassTensor"]
+        result[
+            "stage4FullRolloutWorstSampleClassReferenceLuminanceWeightedLoss"
+        ] = (
+            worst_sample_class_luminance["worstWeightedSampleClassTensor"]
+            * float(contract["weight"])
+        )
+    if reference_feature_structure is not None:
+        result.update(reference_feature_structure["metrics"])
+        result[
+            "stage4PerClassFinalVisibleReferenceFeatureStructureWeightedLoss"
+        ] = (
+            reference_feature_structure["weightedTotalTensor"]
+            * float(contract["weight"])
+        )
+    return result
 
 
 def stage4_cross_domain_rollout_supervision(
@@ -10322,6 +11529,67 @@ def _stage4_masked_luminance_correlation_from_mask(
     return predicted_rgb.new_tensor(1.0) - numerator / denominator
 
 
+def _stage4_reference_luminance_energy_from_mask(target_rgb, mask):
+    coefficients = target_rgb.new_tensor([0.2126, 0.7152, 0.0722]).view(1, 3, 1, 1)
+    target_luminance = (target_rgb * coefficients).sum(dim=1, keepdim=True)
+    support = mask.sum()
+    if float(support.detach().cpu()) <= 1.0:
+        return target_rgb.new_tensor(0.0)
+    target_mean = (target_luminance * mask).sum() / support
+    target_centered = (target_luminance - target_mean) * mask
+    return target_centered.square().sum()
+
+
+def _stage4_resolve_multiscale_support_mask(mask, size, target_rgb=None):
+    """Preserve the primary mask, with bounded area fallbacks for undefined correlation."""
+    functional = torch.nn.functional
+    nearest = functional.interpolate(mask, size=size, mode="nearest")
+    resolved = []
+    for sample_index in range(nearest.shape[0]):
+        nearest_sample = nearest[sample_index:sample_index + 1]
+        nearest_support = float(nearest_sample.sum().detach().cpu())
+        if nearest_support > 1.0:
+            selected_sample = nearest_sample
+        else:
+            selected_sample = functional.interpolate(
+                mask[sample_index:sample_index + 1], size=size, mode="area",
+            )
+            area_support = float(selected_sample.sum().detach().cpu())
+            area_nonzero = int(torch.count_nonzero(selected_sample).detach().cpu())
+            if area_support <= 1.0 or area_nonzero < 2:
+                raise ValueError(
+                    "masked multiscale luminance correlation requires spatial support "
+                    "after sparse area occupancy fallback"
+                )
+        if target_rgb is not None:
+            target_sample = target_rgb[sample_index:sample_index + 1]
+            selected_energy = _stage4_reference_luminance_energy_from_mask(
+                target_sample, selected_sample,
+            )
+            epsilon = torch.finfo(target_sample.dtype).eps
+            if float(selected_energy.detach().cpu()) <= epsilon:
+                area_sample = functional.interpolate(
+                    mask[sample_index:sample_index + 1], size=size, mode="area",
+                )
+                area_support = float(area_sample.sum().detach().cpu())
+                area_nonzero = int(torch.count_nonzero(area_sample).detach().cpu())
+                area_energy = _stage4_reference_luminance_energy_from_mask(
+                    target_sample, area_sample,
+                )
+                if (
+                    area_support <= 1.0
+                    or area_nonzero < 2
+                    or float(area_energy.detach().cpu()) <= epsilon
+                ):
+                    raise ValueError(
+                        "masked multiscale reference luminance must contain spatial variation "
+                        "after area occupancy fallback"
+                    )
+                selected_sample = area_sample
+        resolved.append(selected_sample)
+    return torch.cat(resolved, dim=0)
+
+
 def _stage4_object_luminance_structure_pyramid(predicted_rgb, target_rgb, mask, scales):
     functional = torch.nn.functional
     pyramid = []
@@ -10340,7 +11608,9 @@ def _stage4_object_luminance_structure_pyramid(predicted_rgb, target_rgb, mask, 
             target_scale = functional.interpolate(
                 target_masked, size=size, mode="bilinear", align_corners=False,
             )
-        mask_scale = functional.interpolate(mask, size=size, mode="nearest")
+        mask_scale = _stage4_resolve_multiscale_support_mask(
+            mask, size, target_rgb=target_scale,
+        )
         pyramid.append((predicted_scale, target_scale, mask_scale))
     return pyramid
 
@@ -12542,6 +13812,24 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
     if sample_count == 0:
         raise ValueError("V7 rollout checkpoint validation has no validation samples")
     trajectory_scores = []
+    per_class_luminance_totals = {
+        identity: 0.0 for identity in FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+    }
+    per_class_luminance_weighted_total = 0.0
+    worst_sample_class_luminance_values = []
+    reference_feature_structure_totals = {
+        identity: 0.0 for identity in FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+    }
+    reference_feature_structure_weighted_total = 0.0
+    per_class_luminance_active = config.get("training", {}).get(
+        "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation", {}
+    ).get("status") == "training_loss_active_owner_authorized"
+    worst_sample_class_luminance_active = config.get("training", {}).get(
+        "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation", {}
+    ).get("status") == "training_loss_active_owner_authorized"
+    reference_feature_structure_active = config.get("training", {}).get(
+        "stage4PerClassFinalVisibleReferenceFeatureStructureObligation", {}
+    ).get("status") == "training_loss_active_owner_authorized"
     with torch.no_grad():
         for index in range(sample_count):
             row = dataset[index]
@@ -12558,6 +13846,48 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
                     previous = int(steps[step_index + 1].item()) if step_index + 1 < len(steps) else -1
                     latent = deterministic_velocity_step(latent, velocity, int(timestep.item()), previous, diffusion["alphasCumulative"])
                 predicted_rgb = model.autoencoder.decode(denormalize_latent(latent, latent_normalization)).clamp(0.0, 1.0)
+                if per_class_luminance_active:
+                    per_class_luminance = (
+                        stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_losses(
+                            predicted_rgb, target_rgb, conditions, config,
+                        )
+                    )
+                    rollout_weight = float(
+                        config["training"]["stage4FullRolloutFinalVisibleConsistency"]["weight"]
+                    )
+                    per_class_luminance_weighted_total += float(
+                        per_class_luminance["weightedTotalTensor"]
+                    ) * rollout_weight
+                    for identity, value in per_class_luminance["perClassLossTensors"].items():
+                        per_class_luminance_totals[identity] += float(value)
+                    if worst_sample_class_luminance_active:
+                        worst_sample_class = (
+                            stage4_full_rollout_worst_sample_class_reference_luminance_obligation_losses(
+                                predicted_rgb, target_rgb, conditions, config,
+                            )
+                        )
+                        worst_sample_class_luminance_values.extend(
+                            float(value)
+                            for value in worst_sample_class[
+                                "weightedPerSampleClassTensors"
+                            ].reshape(-1)
+                        )
+                if reference_feature_structure_active:
+                    reference_feature_structure = (
+                        stage4_per_class_final_visible_reference_feature_structure_obligation_losses(
+                            model.autoencoder, predicted_rgb, target_rgb, conditions, config,
+                        )
+                    )
+                    rollout_weight = float(
+                        config["training"]["stage4FullRolloutFinalVisibleConsistency"]["weight"]
+                    )
+                    reference_feature_structure_weighted_total += float(
+                        reference_feature_structure["weightedTotalTensor"]
+                    ) * rollout_weight
+                    for identity, value in reference_feature_structure[
+                        "perClassLossTensors"
+                    ].items():
+                        reference_feature_structure_totals[identity] += float(value)
                 gradient, laplacian = multiscale_latent_hierarchy_losses(predicted_rgb, target_rgb, config)
                 object_semantic = object_semantic_rgb_losses(predicted_rgb, target_rgb, conditions, config)
                 values = {
@@ -12622,6 +13952,40 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
         result["rolloutAverageQualityScore"]
         + result["rolloutWorstTrajectoryQualityScore"] * float(config["training"].get("checkpointWorstTrajectoryWeight", 1.0))
     )
+    if per_class_luminance_active:
+        checkpoint_obligation = per_class_luminance_weighted_total / trajectory_count
+        result[
+            "rolloutPerClassFinalVisibleLuminanceStructureCheckpointObligation"
+        ] = checkpoint_obligation
+        if worst_sample_class_luminance_active:
+            if not worst_sample_class_luminance_values:
+                raise ValueError("Stage 4 worst sample-class checkpoint evidence is empty")
+            worst_checkpoint_obligation = (
+                max(worst_sample_class_luminance_values)
+                * float(config["training"]["stage4FullRolloutFinalVisibleConsistency"]["weight"])
+            )
+            result[
+                "rolloutWorstSampleClassReferenceLuminanceCheckpointObligation"
+            ] = worst_checkpoint_obligation
+            result["rolloutRgbQualityScore"] += worst_checkpoint_obligation
+        else:
+            result["rolloutRgbQualityScore"] += checkpoint_obligation
+        for identity, total in per_class_luminance_totals.items():
+            result[
+                f"rollout{upper_camel(identity)}FinalVisibleMultiscaleLuminanceStructureLoss"
+            ] = total / trajectory_count
+    if reference_feature_structure_active:
+        checkpoint_obligation = (
+            reference_feature_structure_weighted_total / trajectory_count
+        )
+        result[
+            "rolloutPerClassFinalVisibleReferenceFeatureStructureCheckpointObligation"
+        ] = checkpoint_obligation
+        result["rolloutRgbQualityScore"] += checkpoint_obligation
+        for identity, total in reference_feature_structure_totals.items():
+            result[
+                f"rollout{upper_camel(identity)}FinalVisibleReferenceFeatureStructureLoss"
+            ] = total / trajectory_count
     result["rolloutSampleCount"] = sample_count
     result["rolloutSeedCountPerSample"] = seed_count
     result["rolloutTrajectoryCount"] = trajectory_count

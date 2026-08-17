@@ -1,6 +1,6 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-08-03 11:12:09 +08:00
+更新时间：2026-08-15 23:36:00 +08:00
 
 状态：long-term-architecture-reference
 
@@ -61,6 +61,26 @@ Owner离线Ed25519私钥签发
 已有任务专用编排器在迁入通用签名门禁前，必须至少使用程序内固定授权文件SHA锚点，并核对commandRef、scope、具体动作和任务范围，同时在任何事件、配置、锁或训练写入前使用`wx`原子消费；不得接受调用方同时提供路径和哈希作为身份依据。该兼容边界不得扩展到新入口。
 
 生产构建属于写操作。构建程序必须先消费绑定`platform.production_build`与确定命令的授权，再在同一个`try/finally`保护范围内临时持有`.runtime`入口；任一中间步骤失败都必须恢复原Runtime身份。训练、验证、正式推理、RuntimeFrame和世界运行继续分别授权，任何一项都不能从构建或普通写授权推导。
+
+## 0.3 Stage4一次签署与连续执行架构
+
+Stage4允许项目所有者通过一次离线签署操作形成一个连续执行授权包，但不得改变“一个授权只绑定一个动作并消费一次”的信任原则。总包只承担不可变容器和顺序关系；协调器、Smoke、Stage 0、Stage 1和Stage 2仍分别使用`project-owner-write-authorization-v2`子授权、Ed25519签名和独立消费记录。
+
+```text
+本地系统形成未签名精确执行计划
+-> Owner离线批量签署器核对受信公钥、运行器SHA、任务身份和新输出目录
+-> 一次Owner操作签出协调器 + Smoke + Stage 0 + Stage 1 + Stage 2独立授权
+-> 持续执行器验证总包签名及全部子授权
+-> 消费协调器授权并建立本地状态、日志、事件和SQLite记录
+-> 当前阶段只读预检
+-> 原子消费当前阶段授权
+-> 长时等待运行器自然退出并验证正式终态
+-> 成功才进入下一阶段；失败则关闭且保留后续授权未消费
+```
+
+Stage 1和Stage 2签署时尚不知道前一阶段实际Checkpoint哈希，因此授权不得绑定模糊的“任意父Checkpoint”。它必须绑定精确前序Run ID、成功终态路径、要求状态和Checkpoint字段选择规则；执行器只允许从该不可变成功终态解析实际路径与SHA，并把解析结果随执行证据保存。任何调用方直接提供的其他Checkpoint、旧失败Run、`latest.json`或聊天内容均不得替代该派生关系。
+
+离线批量签署器的可审查源代码保存在项目中，Owner侧安装副本保存在项目外私钥目录；两者必须SHA一致。Codex不得读取或调用私钥，签署器不得输出私钥。持续执行器不得使用Shell命令字符串，只能直接调用机器合同允许的Node运行器及参数数组；不得自动重试、恢复已消费额度或跨过机器审核。机器可读长期合同为`data/ai-painter/system-governance/stage4-continuous-execution-authorization-contract-v1.json`，AI Painter具体阶段验收见[正式实现规格](game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md#102-stage4连续授权包与顺序执行合同)。
 
 ## 1. 架构原则
 

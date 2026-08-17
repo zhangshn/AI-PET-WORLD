@@ -12,12 +12,12 @@ import { closeStorageCatalog, indexArtifact } from "./lib/ai-pet-world-storage-c
 import { logicalProjectPath } from "./lib/ai-pet-world-storage.mjs"
 
 const ROOT = process.cwd()
-const REQUEST_ID = "owner-authorized-stage4-object-reference-multiscale-early-convergence-30-epoch-smoke-entry-integration-20260815-213000000"
-const SCOPE = "one_cpu_bounded_30_epoch_smoke_entry_lineage_integration_for_early_convergence_two_lane_candidate"
-const AUTH_SHA = "92854be603ce57aa4c3e7390e5129436aaac24dcda09d1377d127443e51ed8de"
-const CONSUMPTION_SHA = "46bb0a3cb95dc4305dc7baf451836914df026ccae5d057391af3d48c052bef1b"
-const OUTPUT = ".runtime/ai-painter/stage4-object-reference-multiscale-early-convergence-smoke-entry-integrations/20260815-213000000"
-const REGISTRY_ID = "20260815-213000000"
+const REQUEST_ID = "owner-authorized-stage4-current-candidate-inactive-bound-owner-preflight-20260816-032403029"
+const SCOPE = "cpu_only_inactive_registry_fix_preflight_and_unsigned_five_step_plan"
+const AUTH_SHA = "8fd09228f91ec38704d18160db8d461e1a8cb6b63514908fd0fa6045c5028745"
+const CONSUMPTION_SHA = "428fe14fdd909ee4311323e1d75520abb2869b3884c50a8191e8c61431659d20"
+const OUTPUT = ".runtime/ai-painter/stage4-object-reference-multiscale-early-convergence-smoke-entry-integrations/20260816-032403029"
+const REGISTRY_ID = "20260816-032403029"
 const REGISTRY_PATH = `.runtime/ai-painter/stage4-execution-evidence-eligibility/${REGISTRY_ID}/registry.json`
 const RUNNER = "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs"
 const RECORDER = "scripts/record-stage4-object-reference-multiscale-smoke-entry-implementation.mjs"
@@ -81,9 +81,9 @@ const consumption = read(consumptionPath)
 assert.equal(authorization.requestId, REQUEST_ID)
 assert.equal(authorization.commandRef, REQUEST_ID)
 assert.equal(authorization.scope, SCOPE)
-assert.equal(authorization.execution.outputDirectory, OUTPUT)
+assert.equal(authorization.execution.smokeEntryOutputDirectory, OUTPUT)
 assert.equal(authorization.execution.consumeBeforeFirstCodeOrEvidenceWrite, true)
-assert.equal(consumption.status, "early_convergence_smoke_entry_integration_authorization_atomically_consumed")
+assert.equal(consumption.status, "stage4_current_candidate_inactive_registry_and_plan_authorization_atomically_consumed")
 assert.equal(consumption.authorizationSha256, AUTH_SHA)
 assert.equal(consumption.oneTimeConsumption, true)
 for (const key of [
@@ -94,7 +94,7 @@ for (const key of [
 
 for (const [name, binding] of Object.entries(authorization.bindings)) {
   const file = projectFile(binding.path)
-  if (["currentSmokeRunner", "currentSmokeRecorder"].includes(name)) {
+  if (name === "smokeEntryIntegrationBefore") {
     assert.notEqual(sha(file), binding.sha256, `${name}_was_not_implemented`)
   } else {
     assert.equal(sha(file), binding.sha256, `${name}_binding_changed`)
@@ -111,6 +111,14 @@ const continuationCpuPath = projectFile(continuationReport.cpuContractReport.pat
 assert.equal(sha(continuationCpuPath), continuationReport.cpuContractReport.sha256, "continuation_cpu_report_changed")
 const continuationCpu = read(continuationCpuPath)
 const sourceConfig = read(projectFile(authorization.bindings.inactiveConfig.path))
+const FORMAL_INACTIVE_GATE_FIELDS = Object.freeze({
+  stage4FullRolloutFinalVisibleConsistency: Object.freeze(
+    Object.keys(sourceConfig.training.stage4FullRolloutFinalVisibleConsistency.activationGate).sort(),
+  ),
+  stage4EpochWorstSampleClassReplay: Object.freeze(
+    Object.keys(sourceConfig.training.stage4EpochWorstSampleClassReplay.activationGate).sort(),
+  ),
+})
 
 function validateQualification(candidate) {
   const t = candidate.terminal
@@ -172,6 +180,13 @@ function validateQualification(candidate) {
 }
 
 const source = { terminal, diagnostic, telemetry, cpu: continuationCpu, config: sourceConfig }
+const inactiveGateProbe = clone(sourceConfig)
+inactiveGateProbe.training.trainingAuthorizationStatus = "stage4_fact_conditioned_semantic_mixture_decoder_cpu_supported_inactive"
+delete inactiveGateProbe.training.stage4FactConditionedSemanticMixture.diagnosticManifestRegistry.fixedEpochs
+inactiveGateProbe.training.ownerTrainingAuthorization = buildInactiveOwnerAuthorization()
+for (const name of ["stage4FullRolloutFinalVisibleConsistency", "stage4EpochWorstSampleClassReplay"]) {
+  closeInactiveTrainingContract(inactiveGateProbe.training, name, "cpu_support_verified_inactive")
+}
 const positive = {
   immutableQualificationValid: validateQualification(source),
   exactObjective: diagnostic.identity.trainingObjectiveContractId === CONTRACT_ID,
@@ -189,6 +204,11 @@ const positive = {
   autoencoderUnchanged: diagnostic.integrity.autoencoderStateSha256Before === diagnostic.integrity.autoencoderStateSha256After,
   noFailedDenoiserRead: diagnostic.oldDenoiserCheckpointRead === false,
   continuationCpuPassed: continuationCpu.positivePassed === continuationCpu.positiveTotal && continuationCpu.negativePassed === continuationCpu.negativeTotal,
+  fullRolloutInactiveGateClosed: inactiveContractIsClosed(inactiveGateProbe.training.stage4FullRolloutFinalVisibleConsistency, "cpu_support_verified_inactive", FORMAL_INACTIVE_GATE_FIELDS.stage4FullRolloutFinalVisibleConsistency),
+  epochWorstReplayInactiveGateClosed: inactiveContractIsClosed(inactiveGateProbe.training.stage4EpochWorstSampleClassReplay, "cpu_support_verified_inactive", FORMAL_INACTIVE_GATE_FIELDS.stage4EpochWorstSampleClassReplay),
+  inactiveDiagnosticRegistryExact: inactiveDiagnosticRegistryIsValid(inactiveGateProbe),
+  activeDiagnosticRegistryExact: activeDiagnosticRegistryIsValid(withActiveSmokeDiagnosticRegistry(inactiveGateProbe)),
+  inactiveOwnerAuthorizationClosed: inactiveOwnerAuthorizationIsClosed(inactiveGateProbe),
 }
 const mutations = {
   rejectWrongTerminal: (x) => { x.terminal.status = "wrong" },
@@ -214,6 +234,29 @@ const negative = Object.fromEntries(Object.entries(mutations).map(([name, mutati
   mutation(candidate)
   return [name, validateQualification(candidate) === false]
 }))
+for (const [name, mutate] of Object.entries({
+  rejectFullRolloutPartialActivation: (config) => { config.training.stage4FullRolloutFinalVisibleConsistency.activationGate.trainingNow = true },
+  rejectEpochWorstReplayPartialActivation: (config) => { config.training.stage4EpochWorstSampleClassReplay.activationGate.smokeNow = true },
+  rejectFullRolloutWrongInactiveStatus: (config) => { config.training.stage4FullRolloutFinalVisibleConsistency.status = "training_loss_active_owner_authorized" },
+  rejectEpochWorstReplayUnknownGate: (config) => { config.training.stage4EpochWorstSampleClassReplay.activationGate.unknownNow = false },
+  rejectFullRolloutMissingGate: (config) => { delete config.training.stage4FullRolloutFinalVisibleConsistency.activationGate.trainingNow },
+  rejectEpochWorstReplayReplacementGate: (config) => {
+    delete config.training.stage4EpochWorstSampleClassReplay.activationGate.smokeNow
+    config.training.stage4EpochWorstSampleClassReplay.activationGate.replacementNow = false
+  },
+  rejectInactiveSmokeFixedEpochs: (config) => { config.training.stage4FactConditionedSemanticMixture.diagnosticManifestRegistry.fixedEpochs = [1, 5, 10, 20, 30] },
+  rejectActiveSmokeMissingFixedEpochs: (config) => { delete config.training.stage4FactConditionedSemanticMixture.diagnosticManifestRegistry.fixedEpochs },
+  rejectActiveSmokeWrongFixedEpochs: (config) => { config.training.stage4FactConditionedSemanticMixture.diagnosticManifestRegistry.fixedEpochs = [1, 5, 10, 30] },
+  rejectInactiveReducedOwnerAuthorization: (config) => { config.training.ownerTrainingAuthorization = { authorizationId: REQUEST_ID, status: "not_authorized_cpu_support_only" } },
+})) {
+  const candidate = clone(inactiveGateProbe)
+  const activeRegistryCase = name.startsWith("rejectActiveSmoke")
+  const target = activeRegistryCase ? withActiveSmokeDiagnosticRegistry(candidate) : candidate
+  mutate(target)
+  negative[name] = activeRegistryCase
+    ? !activeDiagnosticRegistryIsValid(target)
+    : !(inactiveSmokeGatesAreClosed(target) && inactiveDiagnosticRegistryIsValid(target) && inactiveOwnerAuthorizationIsClosed(target))
+}
 const failedPositiveKeys = Object.entries(positive).filter(([, value]) => value !== true).map(([name]) => name)
 const failedNegativeKeys = Object.entries(negative).filter(([, value]) => value !== true).map(([name]) => name)
 const pureReport = {
@@ -275,44 +318,31 @@ if (!process.argv.includes("--record")) {
   const inactiveConfig = clone(sourceConfig)
   const training = inactiveConfig.training
   training.trainingAuthorizationStatus = "stage4_fact_conditioned_semantic_mixture_decoder_cpu_supported_inactive"
+  delete training.stage4FactConditionedSemanticMixture.diagnosticManifestRegistry.fixedEpochs
   training.denoiserEpochs = 30
   delete training.factConditionedSemanticMixtureStage4FullTrainingContract
   delete training.factConditionedSemanticMixtureStage4SingleSampleSmokeContract
   delete training.factConditionedSemanticMixtureStage4SmokeExecution
   delete training.stage4UnifiedTrainingPreviewSamplingContract
-  training.ownerTrainingAuthorization = {
-    authorizationId: REQUEST_ID,
-    status: "not_authorized_cpu_support_only",
-    checkpointLoadingAuthorized: false,
-    optimizerCreationAuthorized: false,
-    backwardExecutionAuthorized: false,
-    modelWeightMutationAuthorized: false,
-    gpuTrainingAuthorizedNow: false,
-    singleSampleGpuOverfitSmokeAuthorized: false,
-    fullTrainingAuthorized: false,
-    stage1Authorized: false,
-    stage2Authorized: false,
-    strictRevalidationAuthorized: false,
-    validationAuthorized: false,
-    formalInferenceAuthorized: false,
-    checkpointPromotionAuthorized: false,
-    runtimeFrameAuthorized: false,
-    worldEntryAuthorized: false,
-    automaticRetryAuthorized: false,
-  }
+  training.ownerTrainingAuthorization = buildInactiveOwnerAuthorization()
   for (const contractName of [
     "stage4FactConditionedSemanticMixture",
+    "stage4FullRolloutFinalVisibleConsistency",
+    "stage4EpochWorstSampleClassReplay",
     "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision",
     "stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization",
   ]) {
     const contract = training[contractName]
     if (!contract) continue
-    contract.status = contractName === "stage4FactConditionedSemanticMixture"
+    const inactiveStatus = contractName === "stage4FactConditionedSemanticMixture"
       ? "cpu_support_verified_not_active"
       : "cpu_support_verified_inactive"
+    closeInactiveTrainingContract(training, contractName, inactiveStatus)
     if (contractName === "stage4FactConditionedSemanticMixture") contract.enabled = false
-    for (const key of Object.keys(contract.activationGate ?? {})) contract.activationGate[key] = false
   }
+  assert.equal(inactiveSmokeGatesAreClosed(inactiveConfig), true, "inactive_smoke_nested_activation_gate_not_closed")
+  assert.equal(inactiveDiagnosticRegistryIsValid(inactiveConfig), true, "inactive_smoke_diagnostic_registry_not_exact")
+  assert.equal(inactiveOwnerAuthorizationIsClosed(inactiveConfig), true, "inactive_smoke_owner_authorization_not_closed")
   training.stage4FailureDiagnostics.status = "fact_conditioned_semantic_mixture_diagnostic_manifest_supported_inactive"
   training.stage4FailureDiagnostics.trainingConfigApplied = false
   training.stage4FailureDiagnostics.checkpointFileReadAuthorized = false
@@ -691,4 +721,106 @@ if (!process.argv.includes("--record")) {
     terminal: bind(files.terminal),
     capsule: bind(files.capsule),
   }, null, 2))
+}
+
+function closeInactiveTrainingContract(training, name, inactiveStatus) {
+  const contract = training[name]
+  if (!contract) return
+  contract.status = inactiveStatus
+  for (const key of Object.keys(contract.activationGate ?? {})) contract.activationGate[key] = false
+}
+
+function inactiveContractIsClosed(contract, inactiveStatus, expectedGateNames) {
+  if (!contract || contract.status !== inactiveStatus || !contract.activationGate) return false
+  const gateNames = Object.keys(contract.activationGate).sort()
+  return gateNames.length > 0
+    && JSON.stringify(gateNames) === JSON.stringify(expectedGateNames)
+    && gateNames.every((key) => contract.activationGate[key] === false)
+}
+
+function inactiveSmokeGatesAreClosed(config) {
+  const training = config.training ?? {}
+  return training.trainingAuthorizationStatus === "stage4_fact_conditioned_semantic_mixture_decoder_cpu_supported_inactive"
+    && inactiveContractIsClosed(training.stage4FullRolloutFinalVisibleConsistency, "cpu_support_verified_inactive", FORMAL_INACTIVE_GATE_FIELDS.stage4FullRolloutFinalVisibleConsistency)
+    && inactiveContractIsClosed(training.stage4EpochWorstSampleClassReplay, "cpu_support_verified_inactive", FORMAL_INACTIVE_GATE_FIELDS.stage4EpochWorstSampleClassReplay)
+}
+
+function inactiveDiagnosticRegistryIsValid(config) {
+  const registry = config.training?.stage4FactConditionedSemanticMixture?.diagnosticManifestRegistry
+  if (!registry) return false
+  const expectedKeys = ["configurationProvenance", "exactFieldCount", "exactFields", "registrationDecisionBindings", "rejectUnknownFields"].sort()
+  return JSON.stringify(Object.keys(registry).sort()) === JSON.stringify(expectedKeys)
+    && registry.exactFieldCount === diagnostic.diagnosticManifest.fields.length
+    && JSON.stringify(registry.exactFields) === JSON.stringify(diagnostic.diagnosticManifest.fields)
+    && registry.rejectUnknownFields === true
+}
+
+function withActiveSmokeDiagnosticRegistry(config) {
+  const value = clone(config)
+  value.training.stage4FactConditionedSemanticMixture.diagnosticManifestRegistry.fixedEpochs = [1, 5, 10, 20, 30]
+  return value
+}
+
+function activeDiagnosticRegistryIsValid(config) {
+  const registry = config.training?.stage4FactConditionedSemanticMixture?.diagnosticManifestRegistry
+  if (!registry) return false
+  const expectedKeys = ["configurationProvenance", "exactFieldCount", "exactFields", "fixedEpochs", "registrationDecisionBindings", "rejectUnknownFields"].sort()
+  return JSON.stringify(Object.keys(registry).sort()) === JSON.stringify(expectedKeys)
+    && JSON.stringify(registry.fixedEpochs) === JSON.stringify([1, 5, 10, 20, 30])
+    && registry.exactFieldCount === diagnostic.diagnosticManifest.fields.length
+    && JSON.stringify(registry.exactFields) === JSON.stringify(diagnostic.diagnosticManifest.fields)
+    && registry.rejectUnknownFields === true
+}
+
+function inactiveOwnerAuthorizationIsClosed(config) {
+  const owner = config.training?.ownerTrainingAuthorization
+  const expectedFlags = [
+    "checkpointLoadingAuthorized", "optimizerCreationAuthorized", "backwardExecutionAuthorized",
+    "modelWeightMutationAuthorized", "gpuTrainingAuthorizedNow", "singleSampleGpuOverfitSmokeAuthorized",
+    "fullTrainingAuthorized", "stage1Authorized", "stage2Authorized", "strictRevalidationAuthorized",
+    "validationAuthorized", "formalInferenceAuthorized", "checkpointPromotionAuthorized",
+    "runtimeFrameAuthorized", "worldEntryAuthorized", "automaticRetryAuthorized",
+  ]
+  return owner?.authorizationId === REQUEST_ID
+    && owner?.requestId === REQUEST_ID
+    && owner?.commandRef === REQUEST_ID
+    && owner?.scope === SCOPE
+    && owner?.authorizationPath === relative(authorizationPath)
+    && owner?.authorizationSha256 === AUTH_SHA
+    && owner?.executionConsumptionPath === relative(consumptionPath)
+    && owner?.executionConsumptionSha256 === CONSUMPTION_SHA
+    && owner?.executionState === "consumed"
+    && owner?.status === "not_authorized_cpu_support_only"
+    && expectedFlags.every((key) => owner[key] === false)
+}
+
+function buildInactiveOwnerAuthorization() {
+  return {
+    authorizationId: REQUEST_ID,
+    requestId: REQUEST_ID,
+    commandRef: REQUEST_ID,
+    scope: SCOPE,
+    authorizationPath: relative(authorizationPath),
+    authorizationSha256: AUTH_SHA,
+    executionConsumptionPath: relative(consumptionPath),
+    executionConsumptionSha256: CONSUMPTION_SHA,
+    executionState: "consumed",
+    status: "not_authorized_cpu_support_only",
+    checkpointLoadingAuthorized: false,
+    optimizerCreationAuthorized: false,
+    backwardExecutionAuthorized: false,
+    modelWeightMutationAuthorized: false,
+    gpuTrainingAuthorizedNow: false,
+    singleSampleGpuOverfitSmokeAuthorized: false,
+    fullTrainingAuthorized: false,
+    stage1Authorized: false,
+    stage2Authorized: false,
+    strictRevalidationAuthorized: false,
+    validationAuthorized: false,
+    formalInferenceAuthorized: false,
+    checkpointPromotionAuthorized: false,
+    runtimeFrameAuthorized: false,
+    worldEntryAuthorized: false,
+    automaticRetryAuthorized: false,
+  }
 }

@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[3]
 def main() -> int:
     parser = ArgumentParser()
     parser.add_argument("--authorization", type=Path)
+    parser.add_argument("--authorization-sha256")
     parser.add_argument("--report", type=Path)
     parser.add_argument("--attestation", type=Path)
     parser.add_argument("--object-visible-structure-implementation-contract", action="store_true")
@@ -43,7 +44,37 @@ def main() -> int:
     )
     parser.add_argument("--implementation-authorization", type=Path)
     parser.add_argument("--implementation-consumption", type=Path)
+    parser.add_argument("--sparse-support-fallback-contract", action="store_true")
+    parser.add_argument(
+        "--reference-luminance-variation-fallback-contract", action="store_true"
+    )
     args = parser.parse_args()
+    if (
+        args.sparse_support_fallback_contract
+        or args.reference_luminance_variation_fallback_contract
+    ):
+        if any((
+            args.attestation,
+            args.object_visible_structure_implementation_contract,
+            args.object_reference_multiscale_implementation_contract,
+            args.early_convergence_implementation_contract,
+            args.early_convergence_integrated_preflight_correction_contract,
+            args.early_convergence_gpu_runner_contract_correction,
+            args.implementation_authorization,
+            args.implementation_consumption,
+        )):
+            raise ValueError("sparse_support_fallback_contract_paths_mixed")
+        report = run_sparse_support_fallback_contract(
+            args.authorization, args.authorization_sha256, args.report,
+        )
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        expected_status = (
+            "passed_stage4_multiscale_reference_luminance_variation_fallback_"
+            "readonly_gpu_cpu_contract"
+            if args.reference_luminance_variation_fallback_contract
+            else "passed_stage4_multiscale_sparse_support_fallback_readonly_gpu_cpu_contract"
+        )
+        return 0 if report["status"] == expected_status else 1
     if args.early_convergence_gpu_runner_contract_correction:
         if any((
             args.authorization, args.report, args.attestation,
@@ -2943,6 +2974,192 @@ def inspect_source_contract(source_text: str) -> dict:
         "autoencoderLoaderCount": autoencoder_loaders,
         "denoiserCheckpointLoaderCount": denoiser_loaders,
     }
+
+
+def run_sparse_support_fallback_contract(
+    authorization_path: Path,
+    authorization_sha256: str,
+    report_path: Path,
+) -> dict:
+    if authorization_path is None or authorization_sha256 is None or report_path is None:
+        raise ValueError("sparse_support_fallback_contract_arguments_missing")
+    resolved_authorization = runner.resolve(authorization_path)
+    resolved_report = runner.resolve(report_path)
+    if resolved_report.exists() or resolved_report.parent.exists():
+        raise FileExistsError("sparse_support_fallback_cpu_report_namespace_already_exists")
+    resolved_report.parent.mkdir(parents=True, exist_ok=False)
+    authorization = runner.validate_sparse_support_fallback_gpu_authorization(
+        resolved_authorization, authorization_sha256,
+    )
+    variation_mode = authorization.get("_fallbackMode") == "reference_luminance_variation"
+
+    runner_source = runner.RUNNER_PATH.resolve().read_text(encoding="utf-8")
+    trainer_source = Path(trainer.__file__).resolve().read_text(encoding="utf-8")
+    runner_tree = ast.parse(runner_source)
+    trainer_tree = ast.parse(trainer_source)
+    runner_functions = {
+        node.name: node for node in runner_tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    trainer_functions = {
+        node.name: node for node in trainer_tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    gpu_function = runner_functions.get("run_sparse_support_fallback_gpu")
+    resolver_function = trainer_functions.get("_stage4_resolve_multiscale_support_mask")
+    pyramid_function = trainer_functions.get("_stage4_object_luminance_structure_pyramid")
+    if gpu_function is None or resolver_function is None or pyramid_function is None:
+        raise ValueError("sparse_support_fallback_required_functions_missing")
+
+    forbidden_calls = []
+    for node in ast.walk(gpu_function):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if node.func.attr in {"backward", "step", "save"}:
+                forbidden_calls.append(node.func.attr)
+        if (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "torch"
+            and node.attr == "optim"
+        ):
+            forbidden_calls.append("torch.optim")
+    resolver_modes = [
+        node.value.value
+        for node in ast.walk(resolver_function)
+        if isinstance(node, ast.keyword)
+        and node.arg == "mode"
+        and isinstance(node.value, ast.Constant)
+        and isinstance(node.value.value, str)
+    ]
+    pyramid_resolver_calls = [
+        node for node in ast.walk(pyramid_function)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "_stage4_resolve_multiscale_support_mask"
+    ]
+    positives = {
+        "authorization_contract_valid": authorization["requestId"]
+        == authorization["commandRef"],
+        "exact_two_bound_samples": authorization["taskIdentity"]["samples"] == (
+            [
+                {
+                    "sampleId": "ai-cold-start-v7-v7-capacity-slot-198-grassland-forest-transition-v4",
+                    "split": "validation",
+                },
+                {"sampleId": runner.SAMPLE_ID, "split": runner.SAMPLE_SPLIT},
+            ]
+            if variation_mode else [
+                {
+                    "sampleId": "ai-cold-start-v7-v7-capacity-slot-164-bamboo-grove-v2",
+                    "split": "train",
+                },
+                {"sampleId": runner.SAMPLE_ID, "split": runner.SAMPLE_SPLIT},
+            ]
+        ),
+        "exact_readonly_actions": authorization["executionActions"]
+        == (
+            runner.LUMINANCE_VARIATION_FALLBACK_GPU_ACTIONS
+            if variation_mode else runner.SPARSE_SUPPORT_FALLBACK_GPU_ACTIONS
+        ),
+        "gpu_function_uses_autograd_grad": any(
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "grad"
+            for node in ast.walk(gpu_function)
+        ),
+        "gpu_function_has_no_optimizer_backward_or_checkpoint_write": not forbidden_calls,
+        "shared_resolver_uses_nearest_and_area": set(resolver_modes) == {"nearest", "area"},
+        "pyramid_uses_shared_resolver_once": len(pyramid_resolver_calls) == 1,
+        "cross_scale_has_no_second_mask_resize": (
+            "interpolate(mask" not in ast.get_source_segment(
+                trainer_source,
+                trainer_functions["_stage4_masked_cross_scale_structure_consistency"],
+            )
+        ),
+    }
+
+    fixture_root = resolved_report.parent / "negative-fixtures"
+    fixture_root.mkdir(parents=False, exist_ok=False)
+    mutations = {
+        "scope_change_rejected": lambda value: value.update(scope="other"),
+        "unknown_action_rejected": lambda value: value["executionActions"].append("train"),
+        "missing_action_rejected": lambda value: value["executionActions"].pop(),
+        "sample_change_rejected": lambda value: value["taskIdentity"]["samples"][0].update(
+            split="train" if variation_mode else "validation"
+        ),
+        "forbidden_action_removal_rejected": lambda value: value["explicitlyDeniedActions"].remove("execute_backward"),
+        "binding_hash_change_rejected": lambda value: value["bindings"]["cpuReport"].update(sha256="0" * 64),
+        "implementation_cross_injection_rejected": lambda value: value["bindings"]["implementationAuthorization"].update(
+            path=value["bindings"]["activeConfig"]["path"],
+            sha256=value["bindings"]["activeConfig"]["sha256"],
+        ),
+    }
+    negatives = {}
+    for index, (name, mutation) in enumerate(mutations.items(), start=1):
+        candidate = deepcopy(authorization)
+        candidate.pop("_authorizationPath", None)
+        candidate.pop("_authorizationSha256", None)
+        mutation(candidate)
+        fixture = fixture_root / f"{index:02d}-{name}.json"
+        candidate["execution"]["authorizationPath"] = runner.project_path(fixture)
+        fixture.write_text(
+            json.dumps(candidate, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        try:
+            runner.validate_sparse_support_fallback_gpu_authorization(
+                fixture, runner.sha256_file(fixture),
+            )
+            negatives[name] = False
+        except (ValueError, FileNotFoundError, PermissionError):
+            negatives[name] = True
+    if not all(positives.values()) or not all(negatives.values()):
+        raise ValueError(
+            "sparse support fallback readonly GPU CPU contract failed: "
+            f"positive={[name for name, passed in positives.items() if not passed]}, "
+            f"negative={[name for name, passed in negatives.items() if not passed]}"
+        )
+    report = {
+        "schemaVersion": (
+            "stage4-multiscale-reference-luminance-variation-fallback-readonly-gpu-cpu-contract-v1"
+            if variation_mode
+            else "stage4-multiscale-sparse-support-fallback-readonly-gpu-cpu-contract-v1"
+        ),
+        "status": (
+            "passed_stage4_multiscale_reference_luminance_variation_fallback_readonly_gpu_cpu_contract"
+            if variation_mode
+            else "passed_stage4_multiscale_sparse_support_fallback_readonly_gpu_cpu_contract"
+        ),
+        **timestamps("recordedAt"),
+        "positivePassed": sum(positives.values()),
+        "positiveTotal": len(positives),
+        "negativePassed": sum(negatives.values()),
+        "negativeTotal": len(negatives),
+        "positiveChecks": positives,
+        "negativeChecks": negatives,
+        "authorization": {
+            "path": runner.project_path(resolved_authorization),
+            "sha256": authorization_sha256,
+        },
+        "sourceContract": {
+            "forbiddenCallsInReadonlyGpuFunction": forbidden_calls,
+            "resolverInterpolationModes": resolver_modes,
+            "pyramidSharedResolverCallCount": len(pyramid_resolver_calls),
+        },
+        "executionBoundary": {
+            "checkpointWeightsRead": False,
+            "gpuUsed": False,
+            "optimizerCreated": False,
+            "backwardExecuted": False,
+            "modelWeightsModified": False,
+            "trainingStarted": False,
+        },
+    }
+    resolved_report.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return report
 
 
 def rejects(authorization: dict, mutation) -> bool:

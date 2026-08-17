@@ -286,18 +286,717 @@ EARLY_CONVERGENCE_LINEAGE_ATTESTATION_PATH = Path(
     "gpu-runner-contract-corrections/20260815-204600000/"
     "implementation-attestation.json"
 )
+SPARSE_SUPPORT_FALLBACK_GPU_SCHEMA = (
+    "ai-painter-owner-stage4-multiscale-sparse-support-preserving-mask-fallback-"
+    "readonly-gpu-qualification-v1"
+)
+SPARSE_SUPPORT_FALLBACK_GPU_SCOPE = (
+    "one_readonly_gpu_qualification_for_sparse_support_fallback_samples_164_and_194"
+)
+SPARSE_SUPPORT_FALLBACK_GPU_ACTIONS = [
+    "inspect_autoencoder_identity",
+    "inspect_checkpoint_identity",
+    "load_autoencoder",
+    "run_cuda_forward",
+    "run_torch_autograd_grad",
+    "select_bound_samples_164_and_194",
+]
+LUMINANCE_VARIATION_FALLBACK_GPU_SCHEMA = (
+    "ai-painter-owner-stage4-multiscale-reference-luminance-variation-preserving-"
+    "mask-fallback-readonly-gpu-qualification-v1"
+)
+LUMINANCE_VARIATION_FALLBACK_GPU_SCOPE = (
+    "one_readonly_gpu_qualification_for_reference_luminance_variation_fallback_"
+    "samples_198_and_194"
+)
+LUMINANCE_VARIATION_FALLBACK_GPU_ACTIONS = [
+    "inspect_autoencoder_identity",
+    "inspect_checkpoint_identity",
+    "load_autoencoder",
+    "run_cuda_forward",
+    "run_torch_autograd_grad",
+    "select_bound_samples_198_and_194",
+]
+
+
+def validate_sparse_support_fallback_gpu_authorization(path: Path, expected_sha256: str) -> dict:
+    resolved = resolve(path)
+    if not expected_sha256 or sha256_file(resolved) != expected_sha256:
+        raise ValueError("sparse_support_fallback_gpu_authorization_sha256_changed")
+    authorization = read_json(resolved)
+    variation_mode = authorization.get("schemaVersion") == LUMINANCE_VARIATION_FALLBACK_GPU_SCHEMA
+    expected_schema = (
+        LUMINANCE_VARIATION_FALLBACK_GPU_SCHEMA
+        if variation_mode else SPARSE_SUPPORT_FALLBACK_GPU_SCHEMA
+    )
+    expected_prefix = (
+        "owner-authorized-stage4-multiscale-reference-luminance-variation-fallback-readonly-gpu-"
+        if variation_mode
+        else "owner-authorized-stage4-multiscale-sparse-support-fallback-readonly-gpu-"
+    )
+    expected_scope = (
+        LUMINANCE_VARIATION_FALLBACK_GPU_SCOPE
+        if variation_mode else SPARSE_SUPPORT_FALLBACK_GPU_SCOPE
+    )
+    expected_actions = (
+        LUMINANCE_VARIATION_FALLBACK_GPU_ACTIONS
+        if variation_mode else SPARSE_SUPPORT_FALLBACK_GPU_ACTIONS
+    )
+    request_id = authorization.get("requestId")
+    if (
+        authorization.get("schemaVersion") != expected_schema
+        or authorization.get("status") != "owner_authorized_unconsumed"
+        or not isinstance(request_id, str)
+        or not request_id.startswith(expected_prefix)
+        or authorization.get("commandRef") != request_id
+        or authorization.get("scope") != expected_scope
+        or authorization.get("executionActions") != expected_actions
+        or authorization.get("oneTimeConsumptionRequired") is not True
+    ):
+        raise ValueError("sparse_support_fallback_gpu_owner_contract_invalid")
+    identity = authorization.get("taskIdentity", {})
+    expected_samples = (
+        [
+            {
+                "sampleId": "ai-cold-start-v7-v7-capacity-slot-198-grassland-forest-transition-v4",
+                "split": "validation",
+            },
+            {"sampleId": SAMPLE_ID, "split": SAMPLE_SPLIT},
+        ]
+        if variation_mode else [
+            {
+                "sampleId": "ai-cold-start-v7-v7-capacity-slot-164-bamboo-grove-v2",
+                "split": "train",
+            },
+            {"sampleId": SAMPLE_ID, "split": SAMPLE_SPLIT},
+        ]
+    )
+    expected_objective = (
+        "stage4_multiscale_reference_luminance_variation_preserving_mask_fallback_v1"
+        if variation_mode else "stage4_multiscale_sparse_support_preserving_mask_fallback_v1"
+    )
+    if identity != {
+        "architecture": "stage4_fact_conditioned_semantic_mixture_decoder_v1",
+        "trainingObjective": expected_objective,
+        "samples": expected_samples,
+        "seed": SEED,
+        "timestep": TIMESTEP,
+        "resolution": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+        "denoiserInitialization": "fixed_random_seed_20263722",
+        "autoencoderState": "bound_project_checkpoint_loaded_and_frozen",
+    }:
+        raise ValueError("sparse_support_fallback_gpu_task_identity_invalid")
+    forbidden = authorization.get("explicitlyDeniedActions", [])
+    required_denied = {
+        "create_optimizer", "execute_backward", "mutate_model_weights",
+        "write_checkpoint", "run_smoke", "run_stage0", "run_stage1", "run_stage2",
+        "run_stage5", "run_formal_inference", "promote_checkpoint",
+        "create_runtime_frame", "enter_world", "automatic_retry",
+    }
+    if set(forbidden) != required_denied:
+        raise ValueError("sparse_support_fallback_gpu_denied_actions_changed")
+    expected_bindings = {
+        "implementationAuthorization", "implementationConsumption", "cpuReport",
+        "activeConfig", "datasetManifest", "projectAutoencoderCheckpoint",
+        "trainer", "runner", "cpuChecker",
+    }
+    bindings = authorization.get("bindings", {})
+    if set(bindings) != expected_bindings:
+        raise ValueError("sparse_support_fallback_gpu_binding_set_invalid")
+    for name, value in bindings.items():
+        source = resolve(Path(value.get("path", "")))
+        if not source.is_file() or sha256_file(source) != value.get("sha256"):
+            raise ValueError(f"sparse_support_fallback_gpu_binding_changed:{name}")
+    implementation = read_json(resolve(Path(bindings["implementationAuthorization"]["path"])))
+    implementation_consumption = read_json(
+        resolve(Path(bindings["implementationConsumption"]["path"]))
+    )
+    cpu_report = read_json(resolve(Path(bindings["cpuReport"]["path"])))
+    expected_implementation_schema = (
+        "ai-painter-owner-stage4-multiscale-reference-luminance-variation-preserving-mask-fallback-v1"
+        if variation_mode
+        else "ai-painter-owner-stage4-multiscale-sparse-support-preserving-mask-fallback-v1"
+    )
+    expected_consumption_status = (
+        "stage4_multiscale_reference_luminance_variation_preserving_mask_fallback_"
+        "authorization_atomically_consumed"
+        if variation_mode
+        else "stage4_multiscale_sparse_support_preserving_mask_fallback_authorization_atomically_consumed"
+    )
+    expected_cpu_status = (
+        "stage4_multiscale_reference_luminance_variation_preserving_mask_fallback_cpu_passed"
+        if variation_mode
+        else "stage4_multiscale_sparse_support_preserving_mask_fallback_cpu_passed"
+    )
+    if (
+        implementation.get("schemaVersion") != expected_implementation_schema
+        or implementation_consumption.get("status") != expected_consumption_status
+        or implementation_consumption.get("authorizationSha256")
+        != bindings["implementationAuthorization"]["sha256"]
+        or cpu_report.get("status") != expected_cpu_status
+        or cpu_report.get("audit", {}).get("fallbackEntryCount") != 1
+    ):
+        raise ValueError("sparse_support_fallback_gpu_prerequisite_lineage_invalid")
+    execution = authorization.get("execution", {})
+    if (
+        execution.get("authorizationPath") != project_path(resolved)
+        or execution.get("pythonPreflightPath") is None
+        or execution.get("resourcePreflightPath") is None
+        or execution.get("gpuConsumptionPath") is None
+        or execution.get("outputDirectory") is None
+    ):
+        raise ValueError("sparse_support_fallback_gpu_execution_paths_invalid")
+    authorization["_authorizationPath"] = project_path(resolved)
+    authorization["_authorizationSha256"] = expected_sha256
+    authorization["_fallbackMode"] = (
+        "reference_luminance_variation" if variation_mode else "sparse_support"
+    )
+    return authorization
+
+
+def sparse_support_fallback_preflight(authorization: dict, python_path: Path, resource_path: Path) -> int:
+    execution = authorization["execution"]
+    if (
+        resolve(python_path) != resolve(Path(execution["pythonPreflightPath"]))
+        or resolve(resource_path) != resolve(Path(execution["resourcePreflightPath"]))
+    ):
+        raise ValueError("sparse_support_fallback_preflight_paths_invalid")
+    if not torch.cuda.is_available() or torch.cuda.device_count() < 1:
+        raise ValueError("sparse_support_fallback_cuda_device_zero_unavailable")
+    output_parent = resolve(Path(execution["outputDirectory"])).parent
+    free_bytes = disk_free_bytes(output_parent)
+    if free_bytes < 2 * 1024**3:
+        raise ValueError("sparse_support_fallback_disk_budget_insufficient")
+    python_report = {
+        "schemaVersion": "stage4-multiscale-sparse-support-fallback-python-preflight-v1",
+        "status": "passed_python_preflight_gpu_not_consumed",
+        **timestamps("recordedAt"),
+        "pythonExecutable": str(Path(sys.executable).resolve()),
+        "pythonVersion": sys.version,
+        "torchVersion": torch.__version__,
+        "checkpointRead": False,
+        "gpuExecutionConsumed": False,
+    }
+    resource_report = {
+        "schemaVersion": "stage4-multiscale-sparse-support-fallback-resource-preflight-v1",
+        "status": "passed_cuda_resource_and_disk_preflight_gpu_not_consumed",
+        **timestamps("recordedAt"),
+        "cuda": {
+            "available": True,
+            "deviceCount": torch.cuda.device_count(),
+            "device0Name": torch.cuda.get_device_name(0),
+            "device0TotalMemoryBytes": int(torch.cuda.get_device_properties(0).total_memory),
+        },
+        "diskFreeBytes": free_bytes,
+        "requiredDiskBytes": 2 * 1024**3,
+        "checkpointRead": False,
+        "gpuExecutionConsumed": False,
+    }
+    write_json_exclusive(python_path, python_report)
+    write_json_exclusive(resource_path, resource_report)
+    print(json.dumps({
+        "status": "stage4_multiscale_sparse_support_fallback_preflight_passed",
+        "pythonReport": binding(python_path),
+        "resourceReport": binding(resource_path),
+        "gpuUsed": False,
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def run_sparse_support_fallback_entry(args) -> int:
+    authorization = validate_sparse_support_fallback_gpu_authorization(
+        args.authorization, args.authorization_sha256,
+    )
+    if args.cpu_contract_only:
+        if any((args.implementation_attestation, args.python_report, args.resource_report, args.output_dir)):
+            raise ValueError("sparse_support_fallback_cpu_contract_received_execution_paths")
+        print(json.dumps({
+            "status": "stage4_multiscale_sparse_support_fallback_gpu_authorization_contract_valid_cpu_only",
+            "requestId": authorization["requestId"],
+            "samples": authorization["taskIdentity"]["samples"],
+            "gpuUsed": False,
+        }, ensure_ascii=False, indent=2))
+        return 0
+    if args.implementation_attestation is not None:
+        raise ValueError("sparse_support_fallback_does_not_accept_unbound_attestation")
+    if args.preflight_only:
+        if args.output_dir is not None or args.python_report is None or args.resource_report is None:
+            raise ValueError("sparse_support_fallback_preflight_arguments_invalid")
+        return sparse_support_fallback_preflight(
+            authorization, args.python_report, args.resource_report,
+        )
+    if args.output_dir is None or args.python_report is not None or args.resource_report is not None:
+        raise ValueError("sparse_support_fallback_gpu_execution_arguments_invalid")
+    execution = authorization["execution"]
+    output = resolve(args.output_dir)
+    if output != resolve(Path(execution["outputDirectory"])) or output.exists():
+        raise ValueError("sparse_support_fallback_output_identity_invalid_or_exists")
+    python_path = resolve(Path(execution["pythonPreflightPath"]))
+    resource_path = resolve(Path(execution["resourcePreflightPath"]))
+    python_report = read_json(python_path)
+    resource_report = read_json(resource_path)
+    if (
+        python_report.get("status") != "passed_python_preflight_gpu_not_consumed"
+        or resource_report.get("status")
+        != "passed_cuda_resource_and_disk_preflight_gpu_not_consumed"
+    ):
+        raise ValueError("sparse_support_fallback_saved_preflight_not_successful")
+    consumption_path = resolve(Path(execution["gpuConsumptionPath"]))
+    if consumption_path.exists():
+        raise FileExistsError("sparse_support_fallback_gpu_authorization_already_consumed")
+    variation_mode = authorization.get("_fallbackMode") == "reference_luminance_variation"
+    consumption = {
+        "schemaVersion": (
+            "stage4-multiscale-reference-luminance-variation-fallback-readonly-gpu-consumption-v1"
+            if variation_mode
+            else "stage4-multiscale-sparse-support-fallback-readonly-gpu-consumption-v1"
+        ),
+        "status": (
+            "stage4_multiscale_reference_luminance_variation_fallback_readonly_gpu_"
+            "authorization_atomically_consumed"
+            if variation_mode
+            else "stage4_multiscale_sparse_support_fallback_readonly_gpu_authorization_atomically_consumed"
+        ),
+        "requestId": authorization["requestId"],
+        "commandRef": authorization["commandRef"],
+        "scope": authorization["scope"],
+        "authorizationPath": authorization["_authorizationPath"],
+        "authorizationSha256": authorization["_authorizationSha256"],
+        "pythonPreflightSha256": sha256_file(python_path),
+        "resourcePreflightSha256": sha256_file(resource_path),
+        **timestamps("consumedAt"),
+        "oneTimeConsumption": True,
+        "optimizerAuthorized": False,
+        "backwardMethodAuthorized": False,
+        "modelWeightModificationAuthorized": False,
+        "checkpointWriteAuthorized": False,
+        "trainingAuthorized": False,
+        "automaticRetryAuthorized": False,
+    }
+    write_json_exclusive(consumption_path, consumption)
+    return run_sparse_support_fallback_gpu(
+        authorization, output, consumption_path, python_report, resource_report,
+    )
+
+
+def run_sparse_support_fallback_gpu(
+    authorization: dict,
+    output: Path,
+    consumption_path: Path,
+    python_report: dict,
+    resource_report: dict,
+) -> int:
+    output.mkdir(parents=True, exist_ok=False)
+    variation_mode = authorization.get("_fallbackMode") == "reference_luminance_variation"
+    started = time.perf_counter()
+    steps = []
+    state = {
+        "autoencoderCheckpointRead": False,
+        "oldDenoiserCheckpointRead": False,
+        "gpuUsed": False,
+        "forwardCompleted": False,
+        "autogradGradCompleted": False,
+        "optimizerCreated": False,
+        "backwardMethodExecuted": False,
+        "modelWeightsModified": False,
+        "checkpointWritten": False,
+        "trainingStarted": False,
+    }
+    try:
+        def step(code: str, details=None):
+            steps.append({
+                "index": len(steps) + 1,
+                "code": code,
+                "details": details or {},
+                **timestamps("completedAt"),
+            })
+            write_json_atomic(output / "step-telemetry.json", {
+                "schemaVersion": "stage4-multiscale-sparse-support-fallback-step-telemetry-v1",
+                "completedSteps": steps,
+                **state,
+            })
+
+        step("gpu_authorization_consumption_validated", {
+            "sha256": sha256_file(consumption_path),
+        })
+        torch.cuda.init()
+        torch.cuda.set_device(0)
+        if torch.cuda.current_device() != 0:
+            raise ValueError("sparse_support_fallback_cuda_device_zero_not_active")
+        torch.cuda.reset_peak_memory_stats(0)
+        state["gpuUsed"] = True
+        step("cuda_context_initialized_device_zero_confirmed")
+
+        bindings = authorization["bindings"]
+        config = read_json(resolve(Path(bindings["activeConfig"]["path"])))
+        objective = trainer.validate_stage4_object_reference_multiscale_luminance_structure_supervision(
+            config
+        )
+        if objective.get("pyramidScales") != [1.0, 0.5, 0.25]:
+            raise ValueError("sparse_support_fallback_objective_scales_changed")
+        dataset_manifest = resolve(Path(bindings["datasetManifest"]["path"]))
+        datasets = {
+            split: AiAssistedConditionalDenoiserDataset(
+                dataset_manifest,
+                split,
+                list(config["conditionChannelOrder"]),
+                IMAGE_SIZE,
+                selection_contract="registered_v7_capacity_contribution_v1",
+            )
+            for split in ("train", "validation")
+        }
+        requested = tuple(
+            (item["sampleId"], item["split"])
+            for item in authorization["taskIdentity"]["samples"]
+        )
+        samples = []
+        for sample_id, split in requested:
+            dataset = datasets[split]
+            matches = [
+                index for index, row in enumerate(dataset.rows)
+                if row.get("sampleId") == sample_id
+            ]
+            if len(matches) != 1:
+                raise ValueError(f"sparse_support_fallback_sample_not_unique:{sample_id}")
+            samples.append((split, dataset[matches[0]]))
+        step("bound_qualification_samples_loaded", {
+            "sampleIds": [sample_id for sample_id, _ in requested],
+        })
+
+        torch.manual_seed(SEED)
+        torch.cuda.manual_seed_all(SEED)
+        model = build_complete_world_system(config)
+        denoiser_hash_before = state_dict_sha256(model.denoiser.state_dict())
+        autoencoder_path = resolve(Path(bindings["projectAutoencoderCheckpoint"]["path"]))
+        if sha256_file(autoencoder_path) != bindings["projectAutoencoderCheckpoint"]["sha256"]:
+            raise ValueError("sparse_support_fallback_autoencoder_hash_changed_before_read")
+        checkpoint = torch.load(autoencoder_path, map_location="cpu", weights_only=False)
+        state["autoencoderCheckpointRead"] = True
+        model.autoencoder.load_state_dict(checkpoint["autoencoderState"])
+        for parameter in model.autoencoder.parameters():
+            parameter.requires_grad_(False)
+        autoencoder_hash_before = state_dict_sha256(model.autoencoder.state_dict())
+        device = torch.device("cuda:0")
+        model.to(device).eval()
+        step("project_autoencoder_loaded_frozen_denoiser_random_initialized")
+
+        diffusion = trainer.build_diffusion_schedule(config, device)
+        timestep = torch.tensor([TIMESTEP], dtype=torch.long, device=device)
+        channel_order = list(config["conditionChannelOrder"])
+        denoiser_parameters = tuple(
+            parameter for parameter in model.denoiser.parameters()
+            if parameter.requires_grad
+        )
+        sample_evidence = {}
+        for sample_offset, (split, sample) in enumerate(samples):
+            image = sample["image"].unsqueeze(0).to(device)
+            conditions = sample["conditions"].unsqueeze(0).to(device)
+            with torch.no_grad():
+                raw_latent = model.autoencoder.encode(image)
+                mean = raw_latent.mean(dim=(0, 2, 3), keepdim=True)
+                std = raw_latent.std(dim=(0, 2, 3), keepdim=True).clamp_min(1e-6)
+                clean_latent = (raw_latent - mean) / std
+            generator = torch.Generator(device=device).manual_seed(SEED + sample_offset)
+            noise = torch.randn(
+                clean_latent.shape,
+                device=device,
+                dtype=clean_latent.dtype,
+                generator=generator,
+            )
+            noisy_latent = add_noise(
+                clean_latent, noise, timestep, diffusion["alphasCumulative"],
+            )
+            predicted_velocity, _ = model.predict_velocity_with_stage4_semantic_mixture(
+                noisy_latent, timestep, conditions,
+            )
+            alpha = diffusion["alphasCumulative"][timestep].view(-1, 1, 1, 1)
+            predicted_clean = (
+                alpha.sqrt() * noisy_latent
+                - (1.0 - alpha).sqrt() * predicted_velocity
+            )
+            predicted_rgb = model.autoencoder.decode(predicted_clean * std + mean)
+            measurements = (
+                trainer.stage4_object_reference_multiscale_luminance_structure_supervision_losses(
+                    predicted_rgb, image, conditions, config,
+                )
+            )
+            if sample["sampleId"] != SAMPLE_ID:
+                metric = (
+                    "stage4SemanticMixtureRockFinalTypedQuarter"
+                    "LuminanceCorrelationLoss"
+                )
+                selected_loss = measurements["losses"][metric]
+                selected_channels = ("object_rock",)
+            else:
+                metric = "weightedFourObjectMultiscaleLuminanceStructureLoss"
+                selected_loss = measurements["weightedTotalTensor"]
+                selected_channels = tuple(trainer.STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS)
+            predicted_gradient = torch.autograd.grad(
+                selected_loss, predicted_rgb, retain_graph=True, allow_unused=False,
+            )[0]
+            denoiser_gradients = torch.autograd.grad(
+                selected_loss,
+                denoiser_parameters,
+                retain_graph=False,
+                allow_unused=True,
+            )
+            union_mask = torch.zeros_like(conditions[:, :1])
+            for channel in selected_channels:
+                union_mask = torch.maximum(
+                    union_mask,
+                    conditions[:, channel_order.index(channel):channel_order.index(channel) + 1],
+                )
+            union_mask = torch.nn.functional.interpolate(
+                union_mask, size=predicted_rgb.shape[-2:], mode="nearest",
+            )
+            inside = float((predicted_gradient.abs() * union_mask).sum().detach().cpu())
+            outside = float(
+                (predicted_gradient.abs() * (1.0 - union_mask)).sum().detach().cpu()
+            )
+            denoiser_norm = sum(gradient_norm(value) for value in denoiser_gradients)
+            if (
+                not math.isfinite(float(selected_loss.detach().cpu()))
+                or not torch.isfinite(predicted_gradient).all()
+                or inside <= 0.0
+                or outside != 0.0
+                or not math.isfinite(denoiser_norm)
+                or denoiser_norm <= 0.0
+            ):
+                raise ValueError(
+                    f"sparse_support_fallback_gradient_qualification_failed:{sample['sampleId']}"
+                )
+            scale_evidence = {}
+            fallback_count = 0
+            for channel in trainer.STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS:
+                mask = conditions[:, channel_order.index(channel):channel_order.index(channel) + 1]
+                channel_scales = []
+                for scale in (1.0, 0.5, 0.25):
+                    size = (
+                        max(2, round(mask.shape[-2] * scale)),
+                        max(2, round(mask.shape[-1] * scale)),
+                    )
+                    nearest = torch.nn.functional.interpolate(mask, size=size, mode="nearest")
+                    area = torch.nn.functional.interpolate(mask, size=size, mode="area")
+                    target_masked = image * mask
+                    target_scale = (
+                        target_masked
+                        if size == image.shape[-2:]
+                        else torch.nn.functional.interpolate(
+                            target_masked, size=size, mode="bilinear", align_corners=False,
+                        )
+                    )
+                    primary_mask = trainer._stage4_resolve_multiscale_support_mask(mask, size)
+                    resolved_mask = trainer._stage4_resolve_multiscale_support_mask(
+                        mask, size, target_rgb=target_scale,
+                    )
+                    if not torch.equal(primary_mask, resolved_mask):
+                        mode = "area_luminance_variation"
+                    elif float(nearest.sum().detach().cpu()) <= 1.0:
+                        mode = "area_sparse_support"
+                    else:
+                        mode = "nearest"
+                    fallback_count += int(mode != "nearest")
+                    channel_scales.append({
+                        "scale": scale,
+                        "mode": mode,
+                        "nearestSupport": float(nearest.sum().detach().cpu()),
+                        "areaSupport": float(area.sum().detach().cpu()),
+                        "areaNonzeroPositions": int(torch.count_nonzero(area).detach().cpu()),
+                        "selectedSupport": float(resolved_mask.sum().detach().cpu()),
+                        "primaryReferenceLuminanceEnergy": float(
+                            trainer._stage4_reference_luminance_energy_from_mask(
+                                target_scale, primary_mask,
+                            ).detach().cpu()
+                        ),
+                        "selectedReferenceLuminanceEnergy": float(
+                            trainer._stage4_reference_luminance_energy_from_mask(
+                                target_scale, resolved_mask,
+                            ).detach().cpu()
+                        ),
+                    })
+                scale_evidence[channel] = channel_scales
+            expected_fallback_count = 1 if sample["sampleId"] != SAMPLE_ID else 0
+            if fallback_count != expected_fallback_count:
+                raise ValueError(
+                    f"sparse_support_fallback_gpu_route_count_changed:{sample['sampleId']}"
+                )
+            sample_evidence[sample["sampleId"]] = {
+                "split": split,
+                "selectedMetric": metric,
+                "selectedLoss": float(selected_loss.detach().cpu()),
+                "decodedRgbInsideMaskGradientAbsSum": inside,
+                "decodedRgbOutsideMaskGradientAbsSum": outside,
+                "denoiserGradientNorm": denoiser_norm,
+                "fallbackCount": fallback_count,
+                "scaleEvidence": scale_evidence,
+                "lossFinite": True,
+                "gradientFiniteAndNonzero": True,
+                "maskOutsideGradientZero": True,
+            }
+            del predicted_gradient, denoiser_gradients, selected_loss, measurements
+            step("sample_readonly_forward_and_autograd_grad_verified", {
+                "sampleId": sample["sampleId"],
+                "fallbackCount": fallback_count,
+            })
+        state["forwardCompleted"] = True
+        state["autogradGradCompleted"] = True
+        if any(parameter.grad is not None for parameter in model.parameters()):
+            raise ValueError("sparse_support_fallback_parameter_grad_fields_populated")
+
+        torch.cuda.synchronize(0)
+        cuda_telemetry = {
+            "deviceIndex": 0,
+            "deviceName": torch.cuda.get_device_name(0),
+            "memoryAllocatedBytes": int(torch.cuda.memory_allocated(0)),
+            "memoryReservedBytes": int(torch.cuda.memory_reserved(0)),
+            "peakMemoryAllocatedBytes": int(torch.cuda.max_memory_allocated(0)),
+            "peakMemoryReservedBytes": int(torch.cuda.max_memory_reserved(0)),
+        }
+        telemetry_path = output / "cuda-telemetry.json"
+        write_json_exclusive(telemetry_path, {
+            "schemaVersion": "stage4-multiscale-sparse-support-fallback-cuda-telemetry-v1",
+            "status": "collected_after_readonly_forward_and_autograd_grad",
+            **timestamps("recordedAt"),
+            **cuda_telemetry,
+        })
+        step("cuda_telemetry_saved")
+
+        model.to("cpu")
+        denoiser_hash_after = state_dict_sha256(model.denoiser.state_dict())
+        autoencoder_hash_after = state_dict_sha256(model.autoencoder.state_dict())
+        if (
+            denoiser_hash_before != denoiser_hash_after
+            or autoencoder_hash_before != autoencoder_hash_after
+        ):
+            raise ValueError("sparse_support_fallback_model_state_changed")
+        step("denoiser_and_autoencoder_state_hashes_unchanged")
+        report = {
+            "schemaVersion": (
+                "stage4-multiscale-reference-luminance-variation-fallback-readonly-gpu-report-v1"
+                if variation_mode
+                else "stage4-multiscale-sparse-support-fallback-readonly-gpu-report-v1"
+            ),
+            "status": (
+                "stage4_multiscale_reference_luminance_variation_fallback_readonly_gpu_passed"
+                if variation_mode
+                else "stage4_multiscale_sparse_support_fallback_readonly_gpu_passed"
+            ),
+            **timestamps("recordedAt"),
+            "durationSeconds": round(time.perf_counter() - started, 3),
+            "identity": authorization["taskIdentity"],
+            "sampleEvidence": sample_evidence,
+            "cuda": cuda_telemetry,
+            "integrity": {
+                "denoiserStateSha256Before": denoiser_hash_before,
+                "denoiserStateSha256After": denoiser_hash_after,
+                "autoencoderStateSha256Before": autoencoder_hash_before,
+                "autoencoderStateSha256After": autoencoder_hash_after,
+                "parameterGradFieldsAbsent": True,
+            },
+            "pythonPreflight": python_report,
+            "resourcePreflight": resource_report,
+            "authorizationConsumption": binding(consumption_path),
+            "completedSteps": steps,
+            **state,
+        }
+        report_path = output / "diagnostic-report.json"
+        write_json_exclusive(report_path, report)
+        capsule_path = output / "local-task-capsule.json"
+        write_json_exclusive(capsule_path, {
+            "schemaVersion": "ai-painter-local-task-capsule-v1",
+            "capsuleId": (
+                f"stage4-multiscale-reference-luminance-variation-fallback-{output.name}"
+                if variation_mode
+                else f"stage4-multiscale-sparse-support-fallback-{output.name}"
+            ),
+            "module": "AI Painter R5",
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "currentStage": 4,
+            "candidateTerminal": report["status"],
+            "nextLegalAction": "compile_fresh_unsigned_stage0_to_stage2_continuation_plan",
+            "evidence": {"diagnosticReport": binding(report_path)},
+            **timestamps("recordedAt"),
+        })
+        terminal = {
+            "schemaVersion": (
+                "stage4-multiscale-reference-luminance-variation-fallback-readonly-gpu-terminal-v1"
+                if variation_mode
+                else "stage4-multiscale-sparse-support-fallback-readonly-gpu-terminal-v1"
+            ),
+            "status": (
+                "stage4_multiscale_reference_luminance_variation_fallback_readonly_gpu_passed_closed"
+                if variation_mode
+                else "stage4_multiscale_sparse_support_fallback_readonly_gpu_passed_closed"
+            ),
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "report": binding(report_path),
+            "cudaTelemetry": binding(telemetry_path),
+            "localTaskCapsule": binding(capsule_path),
+            "nextLegalAction": "compile_fresh_unsigned_stage0_to_stage2_continuation_plan",
+            "automaticRetryStarted": False,
+            **state,
+        }
+        terminal_path = output / "phase-terminal.json"
+        write_json_exclusive(terminal_path, terminal)
+        print(json.dumps({
+            **terminal,
+            "terminalPath": project_path(terminal_path),
+            "terminalSha256": sha256_file(terminal_path),
+        }, ensure_ascii=False, indent=2))
+        return 0
+    except Exception as error:
+        terminal = {
+            "schemaVersion": (
+                "stage4-multiscale-reference-luminance-variation-fallback-readonly-gpu-terminal-v1"
+                if variation_mode
+                else "stage4-multiscale-sparse-support-fallback-readonly-gpu-terminal-v1"
+            ),
+            "status": (
+                "stage4_multiscale_reference_luminance_variation_fallback_readonly_gpu_failed_closed"
+                if variation_mode
+                else "stage4_multiscale_sparse_support_fallback_readonly_gpu_failed_closed"
+            ),
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "failureType": type(error).__name__,
+            "failureMessage": str(error),
+            "traceback": traceback.format_exc(),
+            "completedSteps": steps,
+            "automaticRetryStarted": False,
+            "laterExecutionStarted": False,
+            **state,
+        }
+        terminal_path = output / "phase-terminal.json"
+        write_json_exclusive(terminal_path, terminal)
+        print(json.dumps({
+            **terminal,
+            "terminalPath": project_path(terminal_path),
+            "terminalSha256": sha256_file(terminal_path),
+        }, ensure_ascii=False, indent=2))
+        return 1
 
 
 def main() -> int:
     parser = ArgumentParser()
     parser.add_argument("--authorization", type=Path, required=True)
+    parser.add_argument("--authorization-sha256")
     parser.add_argument("--implementation-attestation", type=Path)
     parser.add_argument("--cpu-contract-only", action="store_true")
     parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument("--python-report", type=Path)
     parser.add_argument("--resource-report", type=Path)
     parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--sparse-support-fallback-qualification", action="store_true")
+    parser.add_argument(
+        "--reference-luminance-variation-fallback-qualification", action="store_true"
+    )
     args = parser.parse_args()
+    if (
+        args.sparse_support_fallback_qualification
+        or args.reference_luminance_variation_fallback_qualification
+    ):
+        return run_sparse_support_fallback_entry(args)
     authorization = validate_authorization(args.authorization)
     if args.cpu_contract_only:
         if any((args.implementation_attestation, args.python_report, args.resource_report, args.output_dir)):

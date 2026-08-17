@@ -16,7 +16,7 @@ import train_ai_assisted_conditional_denoiser as trainer
 ROOT = Path.cwd().resolve()
 DEFAULT_SOURCE = ROOT / ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-smoke-executions/20260813-113000000/active-config.json"
 PACKAGE = ROOT / "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
-IMPLEMENTATION_ROOT = ROOT / ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-epoch-worst-sample-class-replay-20260814-080200792"
+IMPLEMENTATION_ROOT = ROOT / ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-full-rollout-per-class-luminance-stage0-20260817-003500000"
 IMPLEMENTATION_AUTH = IMPLEMENTATION_ROOT / "implementation-authorization.json"
 IMPLEMENTATION_CONSUMPTION = IMPLEMENTATION_ROOT / "implementation-consumption.json"
 OUTPUT_ROOT = ROOT / ".runtime/ai-painter/stage4-semantic-mixture-formal-stage-mode-cpu-regressions"
@@ -120,14 +120,40 @@ def rejects(action, contains: str | None = None) -> bool:
     return False
 
 
+def validate_current_candidate_activation_contract(config: dict) -> None:
+    training = config.get("training", {})
+    for name in (
+        "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision",
+        "stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization",
+        "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation",
+        "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation",
+        "stage4PerClassFinalVisibleReferenceFeatureStructureObligation",
+    ):
+        contract = training.get(name)
+        if not isinstance(contract, dict):
+            raise ValueError(f"current candidate contract is missing: {name}")
+        gate = contract.get("activationGate", {})
+        required_true = {
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow", "stage4FullTrainingNow",
+        }
+        required_false = {
+            "smokeNow", "stage5Now", "formalInferenceNow", "checkpointPromotionNow",
+            "runtimeFrameNow", "worldEntryNow",
+        }
+        if (
+            contract.get("status") != "training_loss_active_owner_authorized"
+            or set(gate) != required_true | required_false
+            or any(gate.get(key) is not True for key in required_true)
+            or any(gate.get(key) is not False for key in required_false)
+        ):
+            raise ValueError(f"current candidate formal activation is invalid: {name}")
+
+
 def main() -> int:
-    run_id = sys.argv[1] if len(sys.argv) > 1 else "manual"
-    source_path = (
-        (ROOT / sys.argv[3]).resolve()
-        if len(sys.argv) > 3 and sys.argv[2] == "--source"
-        else DEFAULT_SOURCE
-    )
-    run_root = OUTPUT_ROOT / run_id
+    run_id, source_path, output_root = parse_cli(sys.argv[1:])
+    run_root = output_root / run_id
     if run_root.exists():
         raise ValueError("new CPU runId directory must not exist")
     if not source_path.is_file():
@@ -155,6 +181,7 @@ def main() -> int:
         mode = resolve_stage_mode(config)
         grant = resolve_stage_execution_grant(config, project_root=ROOT, verify_owner_files=True)
         trainer.validate_training_inputs(config, package)
+        validate_current_candidate_activation_contract(config)
         positives[f"stage{stage}_mode_registered"] = mode.stage == stage and mode.execution_kind == f"full_training_stage{stage}"
         positives[f"stage{stage}_only_its_action"] = all(
             grant.permits(action) is (index == stage)
@@ -194,11 +221,113 @@ def main() -> int:
                 and object_visible_structure["activationGate"]["stage4FullTrainingNow"] is True
                 and object_visible_structure["activationGate"]["smokeNow"] is False
             )
+        multiscale = config["training"].get(
+            "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision"
+        )
+        early_convergence = config["training"].get(
+            "stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization"
+        )
+        positives[f"stage{stage}_object_reference_multiscale_active"] = (
+            multiscale is not None
+            and multiscale["status"] == "training_loss_active_owner_authorized"
+            and multiscale["activationGate"]["configurationActiveNow"] is True
+            and multiscale["activationGate"]["trainingNow"] is True
+            and multiscale["activationGate"]["stage4FullTrainingNow"] is True
+            and multiscale["activationGate"]["smokeNow"] is False
+            and all(
+                multiscale["activationGate"][key] is False
+                for key in (
+                    "stage5Now", "formalInferenceNow", "checkpointPromotionNow",
+                    "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
+        positives[f"stage{stage}_early_convergence_stabilization_active"] = (
+            early_convergence is not None
+            and early_convergence["status"] == "training_loss_active_owner_authorized"
+            and early_convergence["activationGate"]["configurationActiveNow"] is True
+            and early_convergence["activationGate"]["trainingNow"] is True
+            and early_convergence["activationGate"]["stage4FullTrainingNow"] is True
+            and early_convergence["activationGate"]["smokeNow"] is False
+            and all(
+                early_convergence["activationGate"][key] is False
+                for key in (
+                    "stage5Now", "formalInferenceNow", "checkpointPromotionNow",
+                    "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
+        full_rollout_per_class_luminance = config["training"].get(
+            "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation"
+        )
+        positives[f"stage{stage}_full_rollout_per_class_luminance_active"] = (
+            full_rollout_per_class_luminance is not None
+            and full_rollout_per_class_luminance["status"]
+            == "training_loss_active_owner_authorized"
+            and full_rollout_per_class_luminance["activationGate"]["configurationActiveNow"] is True
+            and full_rollout_per_class_luminance["activationGate"]["trainingNow"] is True
+            and full_rollout_per_class_luminance["activationGate"]["stage4FullTrainingNow"] is True
+            and full_rollout_per_class_luminance["activationGate"]["smokeNow"] is False
+            and all(
+                full_rollout_per_class_luminance["activationGate"][key] is False
+                for key in (
+                    "stage5Now", "formalInferenceNow", "checkpointPromotionNow",
+                    "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
+        full_rollout_worst_sample_class_luminance = config["training"].get(
+            "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation"
+        )
+        positives[f"stage{stage}_full_rollout_worst_sample_class_luminance_active"] = (
+            full_rollout_worst_sample_class_luminance is not None
+            and full_rollout_worst_sample_class_luminance["status"]
+            == "training_loss_active_owner_authorized"
+            and full_rollout_worst_sample_class_luminance["activationGate"]["configurationActiveNow"] is True
+            and full_rollout_worst_sample_class_luminance["activationGate"]["trainingNow"] is True
+            and full_rollout_worst_sample_class_luminance["activationGate"]["stage4FullTrainingNow"] is True
+            and full_rollout_worst_sample_class_luminance["activationGate"]["smokeNow"] is False
+            and all(
+                full_rollout_worst_sample_class_luminance["activationGate"][key] is False
+                for key in (
+                    "stage5Now", "formalInferenceNow", "checkpointPromotionNow",
+                    "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
+        reference_feature_structure = config["training"].get(
+            "stage4PerClassFinalVisibleReferenceFeatureStructureObligation"
+        )
+        positives[f"stage{stage}_per_class_reference_feature_structure_active"] = (
+            reference_feature_structure is not None
+            and reference_feature_structure["status"]
+            == "training_loss_active_owner_authorized"
+            and all(
+                reference_feature_structure["activationGate"][key] is True
+                for key in (
+                    "configurationActiveNow", "checkpointReadNow",
+                    "optimizerCreationNow", "backwardExecutionNow",
+                    "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+                    "stage4FullTrainingNow",
+                )
+            )
+            and all(
+                reference_feature_structure["activationGate"][key] is False
+                for key in (
+                    "smokeNow", "stage5Now", "formalInferenceNow",
+                    "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
+        resolved_diagnostic_fields = (
+            trainer.fact_conditioned_semantic_mixture_diagnostic_fields(config)
+        )
         positives[f"stage{stage}_formal_diagnostic_registry_has_no_smoke_schedule"] = (
             "fixedEpochs" not in config["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]
-            and config["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]["exactFieldCount"] == (
-                32 if object_visible_structure is not None and object_visible_structure.get("enabled") is True else 29
-            )
+            and config["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]["exactFieldCount"]
+            == len(resolved_diagnostic_fields)
+            and config["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]["exactFields"]
+            == list(resolved_diagnostic_fields)
         )
 
     bad = deepcopy(configs[0])
@@ -244,6 +373,86 @@ def main() -> int:
             configs[0]["training"]["stage4ObjectVisibleStructureSupervision"]["activationGate"]["stage4FullTrainingNow"] is True
             and bad["training"]["stage4ObjectVisibleStructureSupervision"]["activationGate"]["stage4FullTrainingNow"] is False
         )
+    bad = deepcopy(configs[0])
+    del bad["training"]["stage4ObjectReferenceMultiscaleLuminanceStructureSupervision"]
+    negatives["object_reference_multiscale_missing_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4ObjectReferenceMultiscaleLuminanceStructureSupervision"]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["object_reference_multiscale_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4ObjectReferenceMultiscaleLuminanceStructureSupervision"]["activationGate"]["smokeNow"] = True
+    negatives["object_reference_multiscale_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4ObjectReferenceMultiscaleLuminanceStructureSupervision"]["unknown"] = True
+    negatives["object_reference_multiscale_unknown_field_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    del bad["training"]["stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization"]
+    negatives["early_convergence_contract_missing_rejected"] = rejects(
+        lambda: validate_current_candidate_activation_contract(bad)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization"]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["early_convergence_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization"]["activationGate"]["smokeNow"] = True
+    negatives["early_convergence_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization"]["unknown"] = True
+    negatives["early_convergence_unknown_field_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    del bad["training"]["stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation"]
+    negatives["full_rollout_per_class_luminance_missing_rejected"] = rejects(
+        lambda: validate_current_candidate_activation_contract(bad)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation"]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["full_rollout_per_class_luminance_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation"]["activationGate"]["smokeNow"] = True
+    negatives["full_rollout_per_class_luminance_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation"]["unknown"] = True
+    negatives["full_rollout_per_class_luminance_unknown_field_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    del bad["training"]["stage4PerClassFinalVisibleReferenceFeatureStructureObligation"]
+    negatives["reference_feature_structure_contract_missing_rejected"] = rejects(
+        lambda: validate_current_candidate_activation_contract(bad)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4PerClassFinalVisibleReferenceFeatureStructureObligation"]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["reference_feature_structure_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4PerClassFinalVisibleReferenceFeatureStructureObligation"]["activationGate"]["smokeNow"] = True
+    negatives["reference_feature_structure_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4PerClassFinalVisibleReferenceFeatureStructureObligation"]["unknown"] = True
+    negatives["reference_feature_structure_unknown_field_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
 
     lineage_cases = {
         "implementation_status_alias_rejected": ({"status": "owner_authorized_unconsumed"}, {}),
@@ -296,6 +505,29 @@ def main() -> int:
     write(run_root / "cpu-report.json", report)
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["status"].startswith("passed_") else 1
+
+
+def parse_cli(values: list[str]) -> tuple[str, Path, Path]:
+    run_id = "manual"
+    source_path = DEFAULT_SOURCE
+    output_root = OUTPUT_ROOT
+    index = 0
+    if values and not values[0].startswith("--"):
+        run_id = values[0]
+        index = 1
+    while index < len(values):
+        name = values[index]
+        if name not in {"--source", "--output-root"} or index + 1 >= len(values):
+            raise ValueError(f"unknown or incomplete CPU checker argument: {name}")
+        resolved = (ROOT / values[index + 1]).resolve()
+        if name == "--source":
+            source_path = resolved
+        else:
+            output_root = resolved
+        index += 2
+    if not run_id or any(token in run_id for token in ("/", "\\", "..")):
+        raise ValueError("CPU runId is invalid")
+    return run_id, source_path, output_root
 
 
 if __name__ == "__main__":

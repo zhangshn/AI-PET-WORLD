@@ -195,14 +195,21 @@ export async function runV8Stage4Smoke(argv = process.argv.slice(2)) {
   }
   const authorizationPath = argument(argv, "--gpu-authorization")
   const authorizationSha256 = argument(argv, "--gpu-authorization-sha256")
+  const preflightReportSha256 = argument(argv, "--preflight-report-sha256")
   const preflightOnly = argv.includes("--preflight-only")
   const cpuContractOnly = argv.includes("--cpu-contract-only")
+  const cpuTrainerContractOnly = argv.includes("--cpu-trainer-contract-only")
+  const cpuPreflightOwnershipContractOnly = argv.includes("--cpu-preflight-ownership-contract-only")
   const v9Mode = argv.includes("--v9-object-alignment")
   const continuousPreviewMode = argv.includes("--stage4-continuous-preview-contract")
   const validationKernelSmokeMode = argv.includes("--stage4-validation-kernel-model-smoke")
   const structureFactFirstSmokeMode = argv.includes("--stage4-structure-fact-first-model-smoke")
   const semanticRendererSmokeMode = argv.includes("--stage4-condition-preserving-semantic-renderer-model-smoke")
-  const semanticMixtureSmokeMode = argv.includes("--stage4-fact-conditioned-semantic-mixture-model-smoke")
+  const referenceFeatureStructureSmokeMode = argv.includes("--stage4-per-class-final-visible-reference-feature-structure-model-smoke")
+  const semanticMixtureSmokeMode = (
+    argv.includes("--stage4-fact-conditioned-semantic-mixture-model-smoke")
+    || referenceFeatureStructureSmokeMode
+  )
   if (structureFactFirstSmokeMode && preflightOnly) {
     const preflightAuthorizationPath = argument(argv, "--preflight-authorization")
     const preflightAuthorizationSha256 = argument(argv, "--preflight-authorization-sha256")
@@ -217,13 +224,28 @@ export async function runV8Stage4Smoke(argv = process.argv.slice(2)) {
   }
   if (!authorizationPath) throw new Error("v8_smoke_gpu_authorization_argument_required")
   const authorization = readJsonRequired(authorizationPath)
-  const context = validateAuthorization(authorizationPath, authorization, { v9Mode, continuousPreviewMode, validationKernelSmokeMode, structureFactFirstSmokeMode, semanticRendererSmokeMode, semanticMixtureSmokeMode, cpuContractOnly, authorizationSha256 })
+  if (cpuPreflightOwnershipContractOnly && (preflightOnly || cpuContractOnly || cpuTrainerContractOnly)) {
+    throw new Error("cpu_preflight_ownership_contract_mode_conflict")
+  }
+  const context = validateAuthorization(authorizationPath, authorization, { v9Mode, continuousPreviewMode, validationKernelSmokeMode, structureFactFirstSmokeMode, semanticRendererSmokeMode, semanticMixtureSmokeMode, referenceFeatureStructureSmokeMode, cpuContractOnly: cpuContractOnly || cpuTrainerContractOnly, cpuPreflightOwnershipContractOnly, preflightOnly, preflightReportSha256, authorizationSha256 })
+  if (cpuTrainerContractOnly) return runSemanticMixtureTrainerContractRegression(context)
+  if (cpuPreflightOwnershipContractOnly) {
+    console.log(JSON.stringify({
+      status: `${context.mode}_stage4_smoke_current_run_preflight_ownership_contract_valid_cpu_only`,
+      preflightReportPath: projectPath(context.preflightReportPath),
+      preflightReportSha256: sha256File(context.preflightReportPath),
+      gpuAuthorizationConsumed: false,
+      gpuStarted: false,
+      trainingStarted: false,
+    }, null, 2))
+    return 0
+  }
   if (cpuContractOnly) {
     console.log(JSON.stringify({ status: `${context.mode}_stage4_smoke_authorization_contract_valid_cpu_only`, gpuStarted: false }, null, 2))
     return 0
   }
-  const preflight = runPreflights(context)
-  if (context.mode === "semantic-renderer" || context.mode === "semantic-mixture") {
+  const preflight = context.boundPreflight ?? runPreflights(context)
+  if ((context.mode === "semantic-renderer" || context.mode === "semantic-mixture") && !context.boundPreflight) {
     writeImmutableJson(context.preflightReportPath, preflight)
   }
   if (preflightOnly) {
@@ -256,6 +278,7 @@ export async function runV8Stage4Smoke(argv = process.argv.slice(2)) {
         ? context.semanticMixtureDiagnosticMetrics.length
         : 17
     if (diagnostics.metricCount !== expectedDiagnosticCount || diagnostics.epochs.length !== 5) blockers.push("diagnostic_metric_evidence_incomplete")
+    if ((context.referenceFeatureStructureMetrics ?? []).length > 0 && diagnostics.referenceFeatureStructure?.allMetricsPresent !== true) blockers.push("reference_feature_structure_metric_evidence_incomplete")
     if (review.previewCount !== 5) blockers.push("fixed_preview_machine_review_incomplete")
     if (review.previewFailCount > 0) blockers.push("fixed_preview_machine_review_failed")
     const status = blockers.length === 0
@@ -267,6 +290,96 @@ export async function runV8Stage4Smoke(argv = process.argv.slice(2)) {
     closeFailure(context, `${context.mode}_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed`, [String(error?.message ?? error)], { preflight, consumption, stack: error?.stack })
     return 1
   }
+}
+
+function runSemanticMixtureTrainerContractRegression(context) {
+  if (context.mode !== "semantic-mixture") throw new Error("cpu_trainer_contract_requires_semantic_mixture_mode")
+  const formalExecutionPaths = [
+    context.preflightReportPath,
+    context.consumptionPath,
+    context.activeConfigPath,
+    context.outputDir,
+    context.finalizationDir,
+  ]
+  if (formalExecutionPaths.some((value) => fs.existsSync(value))) {
+    throw new Error("cpu_trainer_contract_formal_execution_path_already_exists")
+  }
+  const fixtureBase = resolve(".runtime/ai-painter/stage4-smoke-cpu-trainer-contract-fixtures")
+  fs.mkdirSync(fixtureBase, { recursive: true })
+  const fixtureRoot = fs.mkdtempSync(path.join(fixtureBase, `${timestampId()}-`))
+  const fixtureAuthorizationPath = path.join(fixtureRoot, "authorization.json")
+  const fixturePreflightReportPath = path.join(fixtureRoot, "preflight-report.json")
+  const fixtureConsumptionPath = path.join(fixtureRoot, "gpu-consumption.json")
+  const fixtureActiveConfigPath = path.join(fixtureRoot, "active-config.json")
+  const fixtureOutputDir = path.join(fixtureRoot, "trainer-output-must-not-exist")
+  const fixtureFinalizationDir = path.join(fixtureRoot, "finalization-must-not-exist")
+  const fixtureAuthorization = structuredClone(context.authorization)
+  fixtureAuthorization.execution = {
+    consumptionPath: projectPath(fixtureConsumptionPath),
+    activeConfigPath: projectPath(fixtureActiveConfigPath),
+    trainingOutputDirectory: projectPath(fixtureOutputDir),
+    finalizationDirectory: projectPath(fixtureFinalizationDir),
+    preflightReportPath: projectPath(fixturePreflightReportPath),
+  }
+  writeImmutableJson(fixtureAuthorizationPath, fixtureAuthorization)
+  const fixtureContext = {
+    ...context,
+    authorization: fixtureAuthorization,
+    authorizationPath: projectPath(fixtureAuthorizationPath),
+    authorizationSha256: sha256File(fixtureAuthorizationPath),
+    preflightReportPath: fixturePreflightReportPath,
+    consumptionPath: fixtureConsumptionPath,
+    activeConfigPath: fixtureActiveConfigPath,
+    outputDir: fixtureOutputDir,
+    finalizationDir: fixtureFinalizationDir,
+  }
+  const preflight = {
+    schemaVersion: "ai-painter-stage4-smoke-cpu-trainer-contract-preflight-v1",
+    status: "passed_gpu_not_started_not_consumed",
+    recordedAtUtc: new Date().toISOString(),
+    blockers: [],
+    gpuStarted: false,
+    checkpointRead: false,
+    optimizerCreated: false,
+    trainingStarted: false,
+    cpuRegressionFixture: true,
+  }
+  writeImmutableJson(fixturePreflightReportPath, preflight)
+  const consumption = consumeGpuAuthorization(fixtureContext, preflight)
+  const activeConfig = activateConfig(fixtureContext, consumption)
+  writeImmutableJson(fixtureActiveConfigPath, activeConfig)
+  const python = spawnSync(PYTHON, [
+    TRAINER,
+    "--config", fixtureActiveConfigPath,
+    "--dataset-package", resolve(context.datasetPath),
+    "--autoencoder-checkpoint", resolve(context.autoencoderPath),
+    "--output-dir", fixtureOutputDir,
+    "--resolution-stage", "0",
+    "--single-sample-overfit-smoke",
+    "--overfit-sample-id", SAMPLE_ID,
+    "--overfit-epochs", "30",
+    "--overfit-evaluation-interval", "5",
+    "--stage-control-dry-run",
+    "--preflight-only",
+  ], { cwd: ROOT, env: pythonEnv(), encoding: "utf8", windowsHide: true, timeout: 180000 })
+  if (fs.existsSync(fixtureOutputDir)) throw new Error("cpu_trainer_contract_created_training_output")
+  if (formalExecutionPaths.some((value) => fs.existsSync(value))) {
+    throw new Error("cpu_trainer_contract_created_formal_execution_path")
+  }
+  if (python.status !== 0) {
+    process.stderr.write(python.stderr ?? "")
+    throw new Error(`semantic_mixture_cpu_trainer_contract_failed:${python.status}`)
+  }
+  console.log(JSON.stringify({
+    status: "semantic_mixture_stage4_smoke_node_to_trainer_contract_valid_cpu_only",
+    gpuStarted: false,
+    trainingStarted: false,
+    formalExecutionPathsCreated: false,
+    fixtureRoot: projectPath(fixtureRoot),
+    activeConfigPath: projectPath(fixtureActiveConfigPath),
+    trainerStdout: python.stdout,
+  }, null, 2))
+  return 0
 }
 
 export function validateExistingSemanticMixtureSmokeFinalizationAuthorization(
@@ -666,6 +779,10 @@ const SEMANTIC_MIXTURE_SMOKE_MODE_ID = "fact_conditioned_semantic_mixture_stage4
 const SEMANTIC_MIXTURE_SMOKE_ARCHITECTURE = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
 const SEMANTIC_MIXTURE_SMOKE_SCOPE = "one_stage4_fact_conditioned_semantic_mixture_sample194_30_epoch_model_smoke_only"
 const SEMANTIC_MIXTURE_SMOKE_SCHEMA = "ai-painter-stage4-fact-conditioned-semantic-mixture-smoke-execution-authorization-v1"
+const REFERENCE_FEATURE_STRUCTURE_OBJECTIVE_ID = "stage4_per_class_final_visible_reference_feature_structure_obligation_v1"
+const REFERENCE_FEATURE_STRUCTURE_METRICS = ["Footprints", "Tree", "Rock", "Vegetation"].map(
+  (name) => `trainStage4PerClassFinalVisible${name}ReferenceFeatureStructureLoss`,
+)
 const STRUCTURE_SMOKE_ACTIONS = ["create_optimizer", "execute_backward", "inspect_autoencoder_identity", "inspect_checkpoint_identity", "load_autoencoder", "mutate_model_weights", "select_bound_sample", "write_smoke_checkpoint"].sort()
 const STRUCTURE_SMOKE_PREFLIGHT_ACTIONS = ["inspect_autoencoder_identity", "inspect_checkpoint_identity", "select_bound_sample"].sort()
 const STRUCTURE_PHASE0_READONLY_ACTIONS = ["inspect_autoencoder_identity", "inspect_checkpoint_identity", "load_autoencoder", "select_bound_sample"].sort()
@@ -1684,7 +1801,7 @@ function validateAuthorization(authorizationPath, authorization, options = {}) {
   }
 }
 
-function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorization, { cpuContractOnly = false, authorizationSha256 } = {}) {
+function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorization, { cpuContractOnly = false, preflightOnly = false, preflightReportSha256, authorizationSha256, referenceFeatureStructureSmokeMode = false } = {}) {
   const normalizedPath = assertProjectBoundPath(authorizationPath, "semantic_mixture_smoke_authorization")
   if (!authorizationSha256 || sha256File(authorizationPath) !== authorizationSha256.toLowerCase()) throw new Error("semantic_mixture_smoke_authorization_sha256_invalid")
   const denied = ALL_EXECUTION_ACTIONS.filter((value) => !STRUCTURE_SMOKE_ACTIONS.includes(value)).sort()
@@ -1697,6 +1814,9 @@ function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorizat
     || !(
       /^owner-authorized-stage4-fact-conditioned-semantic-mixture-30-epoch-model-smoke-[0-9-]+$/.test(authorization.requestId)
       || /^owner-authorized-stage4-object-reference-multiscale-early-convergence-30-epoch-model-smoke-[0-9-]+$/.test(authorization.requestId)
+      || /^owner-authorized-stage4-full-rollout-per-class-luminance-30-epoch-model-smoke-[0-9-]+$/.test(authorization.requestId)
+      || /^owner-authorized-stage4-worst-sample-class-reference-luminance-30-epoch-model-smoke-[0-9-]+$/.test(authorization.requestId)
+      || /^owner-authorized-stage4-per-class-final-visible-reference-feature-structure-30-epoch-model-smoke-[0-9-]+$/.test(authorization.requestId)
     )
     || !sameJson([...(authorization.executionActions ?? [])].sort(), STRUCTURE_SMOKE_ACTIONS)
     || !sameJson([...(authorization.explicitlyDeniedActions ?? [])].sort(), denied)
@@ -1824,6 +1944,127 @@ function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorizat
     && inactiveConfig.training?.stage4FullRolloutFinalVisibleConsistency?.rolloutSteps === 50
     && inactiveConfig.training?.stage4FullRolloutFinalVisibleConsistency?.gradientTailSteps === 5
   )
+  const fullRolloutPerClassLuminanceQualification = (
+    terminal.status
+      === "stage4_full_rollout_per_class_luminance_readonly_gpu_qualification_succeeded_closed"
+    && terminal.automaticRetryStarted === false
+    && terminal.laterExecutionStarted === false
+    && diagnostic.status
+      === "passed_readonly_50_step_per_class_final_visible_luminance_structure_gradient_qualification"
+    && Object.keys(diagnostic.perClassGradientEvidence ?? {}).length === 4
+    && Object.values(diagnostic.perClassGradientEvidence ?? {}).every((value) => (
+      value.lossFinite === true
+      && value.decodedRgbGradientFinite === true
+      && value.insideMaskDecodedRgbGradientAbsSum > 0
+      && value.outsideMaskDecodedRgbGradientAbsSum === 0
+      && value.denoiserGradientFinite === true
+      && value.denoiserGradientAbsSum > 0
+    ))
+    && diagnostic.stateHashes?.denoiserBefore === diagnostic.stateHashes?.denoiserAfter
+    && diagnostic.stateHashes?.autoencoderBefore === diagnostic.stateHashes?.autoencoderAfter
+    && diagnostic.safety?.optimizerCreated === false
+    && diagnostic.safety?.backwardExecuted === false
+    && diagnostic.safety?.modelWeightsModified === false
+    && diagnostic.safety?.checkpointWritten === false
+    && diagnostic.safety?.trainingStarted === false
+    && readonlyCpu.status
+      === "passed_stage4_full_rollout_per_class_luminance_readonly_gpu_cpu_gate"
+    && readonlyCpu.positivePassed === readonlyCpu.positiveTotal
+    && readonlyCpu.negativePassed === readonlyCpu.negativeTotal
+    && identity.trainingObjectiveContractId
+      === "stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_v1"
+    && inactiveConfig.training?.stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation
+      ?.contractId === "stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_v1"
+    && inactiveConfig.training?.stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation
+      ?.status === "cpu_support_verified_inactive"
+    && inactiveConfig.training?.stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation
+      ?.rolloutBinding?.rolloutSteps === 50
+    && inactiveConfig.training?.stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation
+      ?.rolloutBinding?.gradientTailSteps === 5
+  )
+  const fullRolloutWorstSampleClassReferenceLuminanceQualification = (
+    terminal.status
+      === "stage4_full_rollout_worst_sample_class_reference_luminance_readonly_gpu_qualification_succeeded_closed"
+    && terminal.automaticRetryStarted === false
+    && terminal.laterExecutionStarted === false
+    && diagnostic.status
+      === "passed_readonly_50_step_worst_sample_class_reference_luminance_gradient_qualification"
+    && diagnostic.taskIdentity?.contractId
+      === "stage4_full_rollout_worst_sample_class_reference_luminance_obligation_v1"
+    && diagnostic.taskIdentity?.rolloutSteps === 50
+    && diagnostic.taskIdentity?.gradientTailSteps === 5
+    && diagnostic.worstSampleClassEvidence?.worstWeightedSampleClass > 0
+    && diagnostic.worstSampleClassEvidence?.decodedRgbGradientFinite === true
+    && diagnostic.worstSampleClassEvidence?.insideMaskDecodedRgbGradientAbsSum > 0
+    && diagnostic.worstSampleClassEvidence?.outsideMaskDecodedRgbGradientAbsSum === 0
+    && diagnostic.worstSampleClassEvidence?.denoiserGradientFinite === true
+    && diagnostic.worstSampleClassEvidence?.denoiserGradientAbsSum > 0
+    && diagnostic.worstSampleClassEvidence?.routeWestBoundary?.equalCandidatePasses === true
+    && diagnostic.worstSampleClassEvidence?.routeWestBoundary?.syntheticRegressionRejected === true
+    && diagnostic.stateHashes?.denoiserBefore === diagnostic.stateHashes?.denoiserAfter
+    && diagnostic.stateHashes?.autoencoderBefore === diagnostic.stateHashes?.autoencoderAfter
+    && diagnostic.safety?.optimizerCreated === false
+    && diagnostic.safety?.backwardExecuted === false
+    && diagnostic.safety?.modelWeightsModified === false
+    && diagnostic.safety?.checkpointWritten === false
+    && diagnostic.safety?.trainingStarted === false
+    && readonlyCpu.status
+      === "passed_stage4_full_rollout_worst_sample_class_reference_luminance_readonly_gpu_cpu_gate"
+    && readonlyCpu.positivePassed === readonlyCpu.positiveTotal
+    && readonlyCpu.negativePassed === readonlyCpu.negativeTotal
+    && identity.trainingObjectiveContractId
+      === "stage4_full_rollout_worst_sample_class_reference_luminance_obligation_v1"
+    && inactiveConfig.training?.stage4FullRolloutWorstSampleClassReferenceLuminanceObligation
+      ?.contractId === "stage4_full_rollout_worst_sample_class_reference_luminance_obligation_v1"
+    && inactiveConfig.training?.stage4FullRolloutWorstSampleClassReferenceLuminanceObligation
+      ?.status === "cpu_support_verified_inactive"
+    && inactiveConfig.training?.stage4FullRolloutWorstSampleClassReferenceLuminanceObligation
+      ?.rolloutBinding?.rolloutSteps === 50
+    && inactiveConfig.training?.stage4FullRolloutWorstSampleClassReferenceLuminanceObligation
+      ?.rolloutBinding?.gradientTailSteps === 5
+  )
+  const perClassReferenceFeatureStructureQualification = (
+    terminal.status
+      === "stage4_per_class_final_visible_reference_feature_structure_readonly_gpu_qualification_succeeded_closed"
+    && terminal.automaticRetryStarted === false
+    && terminal.laterExecutionStarted === false
+    && diagnostic.status
+      === "passed_readonly_50_step_per_class_final_visible_reference_feature_structure_gradient_qualification"
+    && diagnostic.taskIdentity?.contractId === REFERENCE_FEATURE_STRUCTURE_OBJECTIVE_ID
+    && diagnostic.taskIdentity?.rolloutSteps === 50
+    && diagnostic.taskIdentity?.gradientTailSteps === 5
+    && diagnostic.referenceFeatureStructureEvidence?.featureStageCount >= 2
+    && Object.keys(diagnostic.referenceFeatureStructureEvidence?.perClass ?? {}).length === 4
+    && Object.values(diagnostic.referenceFeatureStructureEvidence?.perClass ?? {}).every((value) => (
+      value.lossFinite === true
+      && value.decodedRgbGradientFinite === true
+      && value.insideMaskDecodedRgbGradientAbsSum > 0
+      && value.outsideMaskDecodedRgbGradientAbsSum === 0
+      && value.denoiserGradientFinite === true
+      && value.denoiserGradientAbsSum > 0
+      && value.crossClassConditionSourcesIsolated === true
+    ))
+    && diagnostic.stateHashes?.denoiserBefore === diagnostic.stateHashes?.denoiserAfter
+    && diagnostic.stateHashes?.autoencoderBefore === diagnostic.stateHashes?.autoencoderAfter
+    && diagnostic.safety?.optimizerCreated === false
+    && diagnostic.safety?.backwardExecuted === false
+    && diagnostic.safety?.modelWeightsModified === false
+    && diagnostic.safety?.checkpointWritten === false
+    && diagnostic.safety?.trainingStarted === false
+    && readonlyCpu.status
+      === "passed_stage4_per_class_final_visible_reference_feature_structure_readonly_gpu_cpu_gate"
+    && readonlyCpu.positivePassed === readonlyCpu.positiveTotal
+    && readonlyCpu.negativePassed === readonlyCpu.negativeTotal
+    && identity.trainingObjectiveContractId === REFERENCE_FEATURE_STRUCTURE_OBJECTIVE_ID
+    && inactiveConfig.training?.stage4PerClassFinalVisibleReferenceFeatureStructureObligation
+      ?.contractId === REFERENCE_FEATURE_STRUCTURE_OBJECTIVE_ID
+    && inactiveConfig.training?.stage4PerClassFinalVisibleReferenceFeatureStructureObligation
+      ?.status === "cpu_support_verified_inactive"
+    && inactiveConfig.training?.stage4PerClassFinalVisibleReferenceFeatureStructureObligation
+      ?.rolloutBinding?.rolloutSteps === 50
+    && inactiveConfig.training?.stage4PerClassFinalVisibleReferenceFeatureStructureObligation
+      ?.rolloutBinding?.gradientTailSteps === 5
+  )
   const epochWorstReplayQualification = (
     terminal.status === "stage4_epoch_worst_readonly_gpu_qualification_succeeded_closed"
     && diagnostic.status === "passed_stage4_epoch_worst_readonly_gpu_qualification"
@@ -1933,7 +2174,8 @@ function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorizat
     !["resolved_owner_authorized_not_consumed", "owner_authorized_unconsumed"].includes(implementationAuthorization.status)
     || implementationConsumption.authorizationSha256 !== authorization.bindings.implementationAuthorization.sha256
     || implementationConsumption.oneTimeConsumption !== true
-    || (!legacySemanticMixtureQualification && !finalVisibleRgbQualification && !vegetationRepairQualification && !vegetationLuminanceQualification && !fullRolloutQualification && !epochWorstReplayQualification && !objectVisibleStructureQualification && !objectReferenceMultiscaleQualification && !objectReferenceMultiscaleEarlyConvergenceQualification)
+    || (!legacySemanticMixtureQualification && !finalVisibleRgbQualification && !vegetationRepairQualification && !vegetationLuminanceQualification && !fullRolloutQualification && !fullRolloutPerClassLuminanceQualification && !fullRolloutWorstSampleClassReferenceLuminanceQualification && !perClassReferenceFeatureStructureQualification && !epochWorstReplayQualification && !objectVisibleStructureQualification && !objectReferenceMultiscaleQualification && !objectReferenceMultiscaleEarlyConvergenceQualification)
+    || (referenceFeatureStructureSmokeMode && !perClassReferenceFeatureStructureQualification)
     || readonlyCpu.positivePassed !== readonlyCpu.positiveTotal
     || readonlyCpu.negativePassed !== readonlyCpu.negativeTotal
     || inactiveConfig.denoiserArchitecture !== SEMANTIC_MIXTURE_SMOKE_ARCHITECTURE
@@ -1974,15 +2216,38 @@ function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorizat
   const activeConfigPath = resolve(assertProjectBoundPath(execution.activeConfigPath, "semantic_mixture_smoke_active_config"))
   const preflightReportPath = resolve(assertProjectBoundPath(execution.preflightReportPath, "semantic_mixture_smoke_preflight_report"))
   if (fs.existsSync(consumptionPath)) throw new Error("semantic_mixture_smoke_authorization_already_consumed")
-  if (!cpuContractOnly && [outputDir, finalizationDir, activeConfigPath, preflightReportPath].some((value) => fs.existsSync(value))) throw new Error("semantic_mixture_smoke_output_already_exists")
+  let boundPreflight = null
+  if (!cpuContractOnly && [outputDir, finalizationDir, activeConfigPath].some((value) => fs.existsSync(value))) {
+    throw new Error("semantic_mixture_smoke_output_already_exists")
+  }
+  if (referenceFeatureStructureSmokeMode && !cpuContractOnly) {
+    if (preflightOnly) {
+      if (preflightReportSha256) throw new Error("semantic_mixture_smoke_preflight_sha256_not_allowed_before_preflight")
+      if (fs.existsSync(preflightReportPath)) throw new Error("semantic_mixture_smoke_preflight_output_already_exists")
+    } else {
+      boundPreflight = validateCurrentRunBoundSmokePreflight({
+        authorization,
+        authorizationPath: normalizedPath,
+        authorizationSha256: authorizationSha256.toLowerCase(),
+        preflightReportPath,
+        preflightReportSha256,
+      })
+    }
+  } else if (!cpuContractOnly && fs.existsSync(preflightReportPath)) {
+    throw new Error("semantic_mixture_smoke_output_already_exists")
+  }
   return {
     mode: "semantic-mixture", requestId: authorization.requestId, scope: authorization.scope,
     authorization, authorizationPath: normalizedPath, authorizationSha256: authorizationSha256.toLowerCase(),
     implementationAttestationPath: authorization.bindings.implementationAttestation?.path ?? null,
     implementationAttestationSha256: authorization.bindings.implementationAttestation?.sha256 ?? null,
     inactiveConfig, inactiveConfigPath: authorization.bindings.inactiveConfig.path,
-    semanticMixtureDiagnosticMetrics, sample,
-    outputDir, finalizationDir, activeConfigPath, consumptionPath, preflightReportPath,
+    semanticMixtureDiagnosticMetrics,
+    referenceFeatureStructureMetrics: perClassReferenceFeatureStructureQualification
+      ? REFERENCE_FEATURE_STRUCTURE_METRICS
+      : [],
+    sample,
+    outputDir, finalizationDir, activeConfigPath, consumptionPath, preflightReportPath, boundPreflight,
     autoencoderPath: authorization.bindings.projectAutoencoderCheckpoint.path,
     autoencoderSha256: authorization.bindings.projectAutoencoderCheckpoint.sha256,
     datasetPath: authorization.bindings.datasetManifest.path,
@@ -2831,11 +3096,53 @@ function runPreflights(context) {
     disk,
     python: { exitCode: python.status, signal: python.signal, stdout: python.stdout, stderr: python.stderr },
     blockers: [...new Set(blockers)],
+    authorizationIdentity: context.mode === "semantic-mixture"
+      ? {
+          requestId: context.requestId,
+          commandRef: context.authorization.commandRef,
+          scope: context.scope,
+          authorizationPath: context.authorizationPath,
+          authorizationSha256: context.authorizationSha256,
+          preflightReportPath: projectPath(context.preflightReportPath),
+        }
+      : undefined,
     gpuStarted: false,
     checkpointRead: false,
     optimizerCreated: false,
     trainingStarted: false,
   }
+}
+
+function validateCurrentRunBoundSmokePreflight({ authorization, authorizationPath, authorizationSha256, preflightReportPath, preflightReportSha256 }) {
+  if (!/^[0-9a-f]{64}$/.test(preflightReportSha256 ?? "")) {
+    throw new Error("semantic_mixture_smoke_preflight_sha256_required")
+  }
+  if (!fs.existsSync(preflightReportPath) || sha256File(preflightReportPath) !== preflightReportSha256) {
+    throw new Error("semantic_mixture_smoke_preflight_path_or_sha256_invalid")
+  }
+  const preflight = readJsonRequired(preflightReportPath)
+  const expectedIdentity = {
+    requestId: authorization.requestId,
+    commandRef: authorization.commandRef,
+    scope: authorization.scope,
+    authorizationPath,
+    authorizationSha256,
+    preflightReportPath: projectPath(preflightReportPath),
+  }
+  if (
+    preflight.schemaVersion !== "ai-painter-r5-stage4-semantic-mixture-smoke-preflight-v1"
+    || preflight.status !== "passed_gpu_not_started_not_consumed"
+    || !Array.isArray(preflight.blockers)
+    || preflight.blockers.length !== 0
+    || !sameJson(preflight.authorizationIdentity, expectedIdentity)
+    || preflight.python?.exitCode !== 0
+    || preflight.disk?.passed !== true
+    || preflight.gpuStarted !== false
+    || preflight.checkpointRead !== false
+    || preflight.optimizerCreated !== false
+    || preflight.trainingStarted !== false
+  ) throw new Error("semantic_mixture_smoke_current_run_preflight_identity_invalid")
+  return preflight
 }
 
 function consumeGpuAuthorization(context, preflight) {
@@ -3047,6 +3354,48 @@ function activateConfig(context, consumption) {
         fullRollout.activationGate[key] = true
       }
     }
+    const fullRolloutPerClassLuminance = training.stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation
+    if (fullRolloutPerClassLuminance?.enabled === true) {
+      if (
+        fullRolloutPerClassLuminance.contractId
+          !== "stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_v1"
+        || fullRolloutPerClassLuminance.rolloutBinding?.rolloutSteps !== 50
+        || fullRolloutPerClassLuminance.rolloutBinding?.gradientTailSteps !== 5
+      ) throw new Error("full_rollout_per_class_luminance_smoke_contract_identity_invalid")
+      fullRolloutPerClassLuminance.status = "training_loss_active_owner_authorized"
+      for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "smokeNow"]) {
+        fullRolloutPerClassLuminance.activationGate[key] = true
+      }
+    }
+    const fullRolloutWorstSampleClassReferenceLuminance = training.stage4FullRolloutWorstSampleClassReferenceLuminanceObligation
+    if (fullRolloutWorstSampleClassReferenceLuminance?.enabled === true) {
+      if (
+        fullRolloutWorstSampleClassReferenceLuminance.contractId
+          !== "stage4_full_rollout_worst_sample_class_reference_luminance_obligation_v1"
+        || fullRolloutWorstSampleClassReferenceLuminance.rolloutBinding?.rolloutSteps !== 50
+        || fullRolloutWorstSampleClassReferenceLuminance.rolloutBinding?.gradientTailSteps !== 5
+        || fullRolloutWorstSampleClassReferenceLuminance.rolloutBinding?.entersExistingFullRolloutLossSlot !== true
+        || fullRolloutWorstSampleClassReferenceLuminance.rolloutBinding?.replacesCrossClassSumInThatSlot !== true
+      ) throw new Error("full_rollout_worst_sample_class_reference_luminance_smoke_contract_identity_invalid")
+      fullRolloutWorstSampleClassReferenceLuminance.status = "training_loss_active_owner_authorized"
+      for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "smokeNow"]) {
+        fullRolloutWorstSampleClassReferenceLuminance.activationGate[key] = true
+      }
+    }
+    const perClassReferenceFeatureStructure = training.stage4PerClassFinalVisibleReferenceFeatureStructureObligation
+    if (perClassReferenceFeatureStructure?.enabled === true) {
+      if (
+        perClassReferenceFeatureStructure.contractId !== REFERENCE_FEATURE_STRUCTURE_OBJECTIVE_ID
+        || perClassReferenceFeatureStructure.rolloutBinding?.rolloutSteps !== 50
+        || perClassReferenceFeatureStructure.rolloutBinding?.gradientTailSteps !== 5
+        || perClassReferenceFeatureStructure.rolloutBinding?.entersExistingFullRolloutLossSlot !== true
+        || perClassReferenceFeatureStructure.featureExtraction?.autoencoderSource !== "frozen_project_autoencoder"
+      ) throw new Error("per_class_reference_feature_structure_smoke_contract_identity_invalid")
+      perClassReferenceFeatureStructure.status = "training_loss_active_owner_authorized"
+      for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "smokeNow"]) {
+        perClassReferenceFeatureStructure.activationGate[key] = true
+      }
+    }
     const epochWorstReplay = training.stage4EpochWorstSampleClassReplay
     if (epochWorstReplay?.enabled === true) {
       epochWorstReplay.status = "training_loss_active_owner_authorized"
@@ -3104,6 +3453,37 @@ function activateConfig(context, consumption) {
       cublasWorkspaceConfig: ":4096:8",
       failedPreviewPixelsUsedAsTrainingTargets: false,
       machineReviewThresholdsUsedAsTrainingTargets: false,
+    }
+    if (fullRolloutWorstSampleClassReferenceLuminance?.enabled === true) {
+      training.stage4BestCheckpointAndTerminalQualificationIdentitySeparation = {
+        schemaVersion: "stage4-best-checkpoint-terminal-qualification-identity-separation-contract-v1",
+        enabled: true,
+        status: "active_owner_authorized_single_execution",
+        contractId: "stage4_best_checkpoint_and_terminal_qualification_identity_separation_v1",
+        bestCheckpointIdentity: {
+          selectionContract: "existing_validation_score_plus_west_boundary_non_regression_unchanged",
+          previewIdentityGate: "byte_exact_best_epoch_reproduction",
+          mainCheckpointFormatChanged: false,
+        },
+        terminalQualificationIdentity: {
+          terminalEpoch: 30,
+          stateArtifactFileName: "epoch-030-denoiser-state.pt",
+          stateArtifactRole: "non_promotable_late_stability_qualification_evidence_only",
+          previewIdentityGate: "byte_exact_terminal_epoch_reproduction",
+          stage0InitializationEligible: false,
+        },
+        identitySeparationRequired: true,
+        crossIdentitySubstitutionAllowed: false,
+        machineReviewThresholdsChanged: false,
+        failedPreviewPixelsUsedAsTrainingTargets: false,
+        machineReviewResultsUsedAsTrainingTargets: false,
+        evidenceBindings: {
+          causalAdjudicationTerminalSha256: "7f8b54f783376ac8dac3c1dc526786c5b5230967a1e8c70c5feaea6cade37545",
+          analysisReportSha256: "ad23107489a1e8f8a9e5823d485670a1b05526fcb5570f27ac058ebc631afb69",
+          decisionSha256: "0a5c78edc4ead6cd93a03431281c93ebf2acefb27f1ef88ae28e2721217e68e7",
+          inactiveRepairContractSha256: "57d3489cce2235867d99617cd1f311eedab0580f3f68f82edf13751469155761",
+        },
+      }
     }
     training.factConditionedSemanticMixtureStage4SmokeExecution = {
       sourceInactiveConfigPath: context.inactiveConfigPath,
@@ -3539,6 +3919,21 @@ function validateManifest(context, manifest) {
       check(fixedRows.every((row) => row?.validationPreviewReproductionArtifact?.status === "fixed_epoch_preview_reproduced_exactly"), "fixed_epoch_preview_reproduction_missing")
       check(fixedRows.every((row) => ["modelStateSha256Matches", "conditionTensorSha256Matches", "rgbTensorSha256Matches", "pngByteSha256Matches"].every((key) => row.validationPreviewReproductionArtifact?.[key] === true)), "fixed_epoch_preview_reproduction_identity_mismatch")
     }
+    if (semanticMixtureLike && context.inactiveConfig?.training?.stage4FullRolloutWorstSampleClassReferenceLuminanceObligation?.enabled === true) {
+      const terminalIdentity = manifest.stage4TerminalQualificationIdentity
+      const bestIdentity = manifest.stage4UnifiedTrainingPreviewSampling
+      check(terminalIdentity?.status === "terminal_epoch_30_identity_saved_and_preview_reproduced_exactly", "terminal_qualification_status_invalid")
+      check(terminalIdentity?.contractId === "stage4_best_checkpoint_and_terminal_qualification_identity_separation_v1", "terminal_qualification_contract_invalid")
+      check(terminalIdentity?.terminalEpoch === 30, "terminal_qualification_epoch_invalid")
+      check(terminalIdentity?.terminalCheckpointPromotable === false && terminalIdentity?.stage0InitializationEligible === false, "terminal_qualification_promotion_boundary_invalid")
+      check(terminalIdentity?.terminalStateArtifactRole === "non_promotable_late_stability_qualification_evidence_only", "terminal_qualification_artifact_role_invalid")
+      check(fileHashMatches(terminalIdentity?.terminalStateArtifactPath, terminalIdentity?.terminalStateArtifactSha256), "terminal_qualification_state_artifact_missing_or_changed")
+      check(terminalIdentity?.denoiserStateIdentityMatches === true && terminalIdentity?.previewSha256Matches === true, "terminal_qualification_reproduction_invalid")
+      check(terminalIdentity?.sourcePreview?.denoiserStateSha256 === terminalIdentity?.terminalDenoiserStateSha256 && terminalIdentity?.reproducedPreview?.denoiserStateSha256 === terminalIdentity?.terminalDenoiserStateSha256, "terminal_qualification_state_binding_invalid")
+      check(terminalIdentity?.sourcePreview?.previewSha256 === terminalIdentity?.reproducedPreview?.previewSha256, "terminal_qualification_preview_bytes_invalid")
+      check(terminalIdentity?.bestCheckpointEpoch === bestIdentity?.bestEpoch && terminalIdentity?.bestCheckpointDenoiserStateSha256 === bestIdentity?.selectedCheckpointDenoiserStateSha256, "best_checkpoint_identity_binding_invalid")
+      check(terminalIdentity?.bestCheckpointSelectionContractUnchanged === true && terminalIdentity?.identityRolesSeparated === true && terminalIdentity?.crossIdentitySubstitutionAllowed === false && terminalIdentity?.mainCheckpointFormatChanged === false && terminalIdentity?.machineReviewThresholdsChanged === false, "checkpoint_terminal_identity_separation_invalid")
+    }
   }
   return issues
 }
@@ -3553,7 +3948,28 @@ function collectDiagnosticEvidence(context, manifest) {
       metrics: Object.fromEntries(metricNames.map((name) => [name, row[name]])),
     }))
     const allPresent = epochs.every((row) => metricNames.every((name) => Number.isFinite(row.metrics[name])))
-    return { schemaVersion: "stage4-fact-conditioned-semantic-mixture-smoke-diagnostic-evidence-v1", metricNames, metricCount: allPresent ? metricNames.length : 0, epochs, allMetricsPresent: allPresent }
+    const referenceMetricNames = context.referenceFeatureStructureMetrics
+    const referenceEpochs = rows.map((row) => ({
+      epoch: row.epoch,
+      metrics: Object.fromEntries(referenceMetricNames.map((name) => [name, row[name]])),
+    }))
+    const allReferenceMetricsPresent = (
+      referenceMetricNames.length === 0
+      || referenceEpochs.every((row) => referenceMetricNames.every((name) => Number.isFinite(row.metrics[name])))
+    )
+    return {
+      schemaVersion: "stage4-fact-conditioned-semantic-mixture-smoke-diagnostic-evidence-v1",
+      metricNames,
+      metricCount: allPresent ? metricNames.length : 0,
+      epochs,
+      allMetricsPresent: allPresent,
+      referenceFeatureStructure: {
+        metricNames: referenceMetricNames,
+        metricCount: allReferenceMetricsPresent ? referenceMetricNames.length : 0,
+        epochs: referenceEpochs,
+        allMetricsPresent: allReferenceMetricsPresent,
+      },
+    }
   }
   if (manifest.architectureVersion === "all-validation-multiseed-semantic-rollout-condition-preserving-semantic-renderer-smoke") {
     const epochs = rows.map((row) => ({
@@ -3648,7 +4064,11 @@ function readJson(value) { try { return JSON.parse(fs.readFileSync(resolve(value
 function readJsonRequired(value) { const result = readJson(value); if (!result) throw new Error(`json_missing_or_invalid:${projectPath(value)}`); return result }
 function sha256File(value) { return crypto.createHash("sha256").update(fs.readFileSync(resolve(value))).digest("hex") }
 function sha256Text(value) { return crypto.createHash("sha256").update(value, "utf8").digest("hex") }
-function fileHashMatches(value, expected) { const absolute = resolve(value); return Boolean(value && expected && fs.existsSync(absolute) && sha256File(absolute) === expected) }
+function fileHashMatches(value, expected) {
+  if (!value || !expected) return false
+  const absolute = resolve(value)
+  return fs.existsSync(absolute) && sha256File(absolute) === expected
+}
 function sameJson(left, right) { return JSON.stringify(left) === JSON.stringify(right) }
 function sameExactObject(left, right) { return Boolean(left && right && sameJson(Object.fromEntries(Object.entries(left).sort(([a], [b]) => a.localeCompare(b))), Object.fromEntries(Object.entries(right).sort(([a], [b]) => a.localeCompare(b))))) }
 function assertProjectBoundPath(value, label) { if (typeof value !== "string" || value.length === 0) throw new Error(`${label}_path_missing`); const absolute = resolve(value); const relative = path.relative(ROOT, absolute); if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) throw new Error(`${label}_path_outside_project`); return relative.replaceAll("\\", "/") }
@@ -3675,6 +4095,7 @@ if (
   || process.argv.includes("--stage4-condition-preserving-semantic-renderer-readonly-diagnostic")
   || process.argv.includes("--stage4-condition-preserving-semantic-renderer-model-smoke")
   || process.argv.includes("--stage4-fact-conditioned-semantic-mixture-model-smoke")
+  || process.argv.includes("--stage4-per-class-final-visible-reference-feature-structure-model-smoke")
   || process.argv.includes("--stage4-structure-fact-first-phase0-c-only-continuation")
   || process.argv.includes("--stage4-structure-fact-first-phase0-bc-continuation")
   || process.argv.includes("--stage4-structure-fact-first-phase0")

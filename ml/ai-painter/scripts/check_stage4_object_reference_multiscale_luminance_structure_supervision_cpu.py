@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from argparse import ArgumentParser
 from copy import deepcopy
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -13,6 +14,392 @@ import train_ai_assisted_conditional_denoiser as trainer
 
 
 CONTRACT_KEY = "stage4ObjectReferenceMultiscaleLuminanceStructureSupervision"
+SPARSE_FALLBACK_AUTH_SCHEMA = (
+    "ai-painter-owner-stage4-multiscale-sparse-support-preserving-mask-fallback-v1"
+)
+SPARSE_FALLBACK_CONSUMPTION_STATUS = (
+    "stage4_multiscale_sparse_support_preserving_mask_fallback_authorization_atomically_consumed"
+)
+LUMINANCE_VARIATION_FALLBACK_AUTH_SCHEMA = (
+    "ai-painter-owner-stage4-multiscale-reference-luminance-variation-preserving-mask-fallback-v1"
+)
+LUMINANCE_VARIATION_FALLBACK_CONSUMPTION_STATUS = (
+    "stage4_multiscale_reference_luminance_variation_preserving_mask_fallback_"
+    "authorization_atomically_consumed"
+)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def validate_sparse_fallback_implementation_authority(args):
+    authorization_path = args.implementation_authorization.resolve()
+    consumption_path = args.implementation_consumption.resolve()
+    if sha256_file(authorization_path) != args.implementation_authorization_sha256:
+        raise ValueError("sparse fallback implementation authorization SHA-256 changed")
+    if sha256_file(consumption_path) != args.implementation_consumption_sha256:
+        raise ValueError("sparse fallback implementation consumption SHA-256 changed")
+    authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
+    consumption = json.loads(consumption_path.read_text(encoding="utf-8"))
+    if authorization.get("schemaVersion") != SPARSE_FALLBACK_AUTH_SCHEMA:
+        raise ValueError("sparse fallback implementation authorization schema is invalid")
+    if authorization.get("status") != "owner_authorized_unconsumed":
+        raise ValueError("sparse fallback immutable authorization source status changed")
+    if consumption.get("status") != SPARSE_FALLBACK_CONSUMPTION_STATUS:
+        raise ValueError("sparse fallback implementation authorization is not consumed")
+    for field in ("requestId", "commandRef", "scope"):
+        if consumption.get(field) != authorization.get(field):
+            raise ValueError(f"sparse fallback implementation lineage changed: {field}")
+    if consumption.get("authorizationSha256") != args.implementation_authorization_sha256:
+        raise ValueError("sparse fallback consumption authorization identity changed")
+    if consumption.get("oneTimeConsumption") is not True:
+        raise ValueError("sparse fallback implementation was not atomically consumed")
+    return authorization, consumption
+
+
+def validate_luminance_variation_fallback_implementation_authority(args):
+    authorization_path = args.implementation_authorization.resolve()
+    consumption_path = args.implementation_consumption.resolve()
+    if sha256_file(authorization_path) != args.implementation_authorization_sha256:
+        raise ValueError("luminance variation fallback implementation authorization SHA-256 changed")
+    if sha256_file(consumption_path) != args.implementation_consumption_sha256:
+        raise ValueError("luminance variation fallback implementation consumption SHA-256 changed")
+    authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
+    consumption = json.loads(consumption_path.read_text(encoding="utf-8"))
+    if authorization.get("schemaVersion") != LUMINANCE_VARIATION_FALLBACK_AUTH_SCHEMA:
+        raise ValueError("luminance variation fallback implementation authorization schema is invalid")
+    if authorization.get("status") != "owner_authorized_unconsumed":
+        raise ValueError("luminance variation fallback immutable authorization source status changed")
+    if consumption.get("status") != LUMINANCE_VARIATION_FALLBACK_CONSUMPTION_STATUS:
+        raise ValueError("luminance variation fallback implementation authorization is not consumed")
+    for field in ("requestId", "commandRef", "scope"):
+        if consumption.get(field) != authorization.get(field):
+            raise ValueError(f"luminance variation fallback lineage changed: {field}")
+    if consumption.get("authorizationSha256") != args.implementation_authorization_sha256:
+        raise ValueError("luminance variation fallback consumption authorization identity changed")
+    if consumption.get("oneTimeConsumption") is not True:
+        raise ValueError("luminance variation fallback implementation was not atomically consumed")
+    return authorization, consumption
+
+
+def reference_luminance_energy(target_rgb, mask) -> float:
+    coefficients = target_rgb.new_tensor([0.2126, 0.7152, 0.0722]).view(1, 3, 1, 1)
+    luminance = (target_rgb * coefficients).sum(dim=1, keepdim=True)
+    support = mask.sum()
+    if float(support) <= 1.0:
+        return 0.0
+    mean = (luminance * mask).sum() / support
+    centered = (luminance - mean) * mask
+    return float(centered.square().sum())
+
+
+def audit_sparse_support_fallback(config: dict, dataset_manifest: Path) -> dict:
+    order = list(config["conditionChannelOrder"])
+    image_size = (256, 192)
+    splits = ("train", "validation", "challenge", "regression")
+    scales = (1.0, 0.5, 0.25)
+    entries = []
+    fallback_entries = []
+    for split in splits:
+        dataset = trainer.AiAssistedConditionalDenoiserDataset(
+            dataset_manifest,
+            split,
+            order,
+            image_size,
+            selection_contract="registered_v7_capacity_contribution_v1",
+        )
+        for sample_index in range(len(dataset)):
+            row = dataset[sample_index]
+            target = row["image"].unsqueeze(0)
+            conditions = row["conditions"].unsqueeze(0)
+            for channel in trainer.STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS:
+                mask = conditions[:, order.index(channel):order.index(channel) + 1]
+                for scale in scales:
+                    size = (
+                        max(2, round(target.shape[-2] * scale)),
+                        max(2, round(target.shape[-1] * scale)),
+                    )
+                    nearest = torch.nn.functional.interpolate(mask, size=size, mode="nearest")
+                    area = torch.nn.functional.interpolate(mask, size=size, mode="area")
+                    resolved = trainer._stage4_resolve_multiscale_support_mask(mask, size)
+                    nearest_support = float(nearest.sum())
+                    area_support = float(area.sum())
+                    area_nonzero = int(torch.count_nonzero(area))
+                    fallback_used = nearest_support <= 1.0
+                    expected = area if fallback_used else nearest
+                    if not torch.equal(resolved, expected):
+                        raise ValueError("shared sparse support mask resolver changed its selected mask")
+                    target_masked = target * mask
+                    target_scale = (
+                        target_masked
+                        if size == target.shape[-2:]
+                        else torch.nn.functional.interpolate(
+                            target_masked, size=size, mode="bilinear", align_corners=False,
+                        )
+                    )
+                    energy = reference_luminance_energy(target_scale, resolved)
+                    entry = {
+                        "split": split,
+                        "sampleId": row["sampleId"],
+                        "objectClass": channel,
+                        "scale": scale,
+                        "nearestSupport": nearest_support,
+                        "areaSupport": area_support,
+                        "areaNonzeroPositions": area_nonzero,
+                        "selectedMode": "area" if fallback_used else "nearest",
+                        "selectedSupport": float(resolved.sum()),
+                        "referenceLuminanceEnergy": energy,
+                    }
+                    entries.append(entry)
+                    if fallback_used:
+                        fallback_entries.append(entry)
+    if len(entries) != 64 * 4 * 3:
+        raise ValueError("sparse support audit did not cover all 64 records, four classes and three scales")
+    expected_id = "ai-cold-start-v7-v7-capacity-slot-164-bamboo-grove-v2"
+    if len(fallback_entries) != 1:
+        raise ValueError(f"unexpected sparse fallback count: {len(fallback_entries)}")
+    fallback = fallback_entries[0]
+    if not (
+        fallback["split"] == "train"
+        and fallback["sampleId"] == expected_id
+        and fallback["objectClass"] == "object_rock"
+        and fallback["scale"] == 0.25
+        and fallback["nearestSupport"] == 1.0
+        and abs(fallback["areaSupport"] - 2.25) <= 1e-7
+        and fallback["areaNonzeroPositions"] == 5
+        and abs(fallback["referenceLuminanceEnergy"] - 0.010511141270399094) <= 1e-7
+    ):
+        raise ValueError(f"unique sparse fallback identity changed: {fallback}")
+    return {
+        "recordCount": 64,
+        "objectClassCount": 4,
+        "scaleCount": 3,
+        "auditedEntryCount": len(entries),
+        "nearestUnchangedEntryCount": len(entries) - len(fallback_entries),
+        "fallbackEntryCount": len(fallback_entries),
+        "fallbackEntries": fallback_entries,
+    }
+
+
+def run_sparse_support_audit(args) -> int:
+    authorization, consumption = validate_sparse_fallback_implementation_authority(args)
+    config_path = args.sparse_support_audit_config.resolve()
+    dataset_manifest = args.dataset_package.resolve()
+    if sha256_file(config_path) != args.sparse_support_audit_config_sha256:
+        raise ValueError("sparse support audit config SHA-256 changed")
+    if sha256_file(dataset_manifest) != args.dataset_package_sha256:
+        raise ValueError("sparse support audit dataset Manifest SHA-256 changed")
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    audit = audit_sparse_support_fallback(config, dataset_manifest)
+
+    empty = torch.zeros((1, 1, 192, 256), dtype=torch.float32)
+    singleton = empty.clone()
+    singleton[:, :, 0, 0] = 1.0
+    negatives = {}
+    for name, mask in (("empty_original_mask_rejected", empty), ("area_still_insufficient_rejected", singleton)):
+        try:
+            trainer._stage4_resolve_multiscale_support_mask(mask, (48, 64))
+            negatives[name] = False
+        except ValueError:
+            negatives[name] = True
+    try:
+        predicted = torch.rand((1, 3, 192, 256), dtype=torch.float32, requires_grad=True)
+        target = torch.zeros_like(predicted)
+        conditions = torch.zeros((1, 23, 192, 256), dtype=torch.float32)
+        rock_index = config["conditionChannelOrder"].index("object_rock")
+        conditions[:, rock_index, 10:16, 10:16] = 1.0
+        trainer.stage4_object_reference_multiscale_luminance_structure_supervision_losses(
+            predicted, target, conditions, config,
+        )
+        negatives["zero_reference_luminance_variation_rejected"] = False
+    except ValueError:
+        negatives["zero_reference_luminance_variation_rejected"] = True
+    if not all(negatives.values()):
+        raise ValueError(f"sparse fallback negative checks failed: {negatives}")
+
+    report = {
+        "schemaVersion": "stage4-multiscale-sparse-support-preserving-mask-fallback-cpu-report-v1",
+        "status": "stage4_multiscale_sparse_support_preserving_mask_fallback_cpu_passed",
+        "implementationAuthorization": {
+            "path": authorization.get("requestId"),
+            "sha256": args.implementation_authorization_sha256,
+            "consumptionSha256": args.implementation_consumption_sha256,
+            "oneTimeConsumption": consumption.get("oneTimeConsumption"),
+        },
+        "datasetManifest": {
+            "path": dataset_manifest.as_posix(),
+            "sha256": args.dataset_package_sha256,
+        },
+        "activeConfig": {
+            "path": config_path.as_posix(),
+            "sha256": args.sparse_support_audit_config_sha256,
+        },
+        "audit": audit,
+        "negativeChecks": negatives,
+        "executionBoundary": {
+            "checkpointWeightsRead": False,
+            "gpuUsed": False,
+            "optimizerCreated": False,
+            "backwardExecuted": False,
+            "modelWeightsModified": False,
+            "trainingStarted": False,
+        },
+    }
+    output = args.output_path.resolve()
+    output.parent.mkdir(parents=True, exist_ok=False)
+    output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(report, indent=2))
+    return 0
+
+
+def audit_reference_luminance_variation_fallback(config: dict, dataset_manifest: Path) -> dict:
+    order = list(config["conditionChannelOrder"])
+    entries = []
+    fallback_entries = []
+    for split in ("train", "validation", "challenge", "regression"):
+        dataset = trainer.AiAssistedConditionalDenoiserDataset(
+            dataset_manifest,
+            split,
+            order,
+            (256, 192),
+            selection_contract="registered_v7_capacity_contribution_v1",
+        )
+        for sample_index in range(len(dataset)):
+            row = dataset[sample_index]
+            target = row["image"].unsqueeze(0)
+            conditions = row["conditions"].unsqueeze(0)
+            for channel in trainer.STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS:
+                mask = conditions[:, order.index(channel):order.index(channel) + 1]
+                for scale in (1.0, 0.5, 0.25):
+                    size = (
+                        max(2, round(target.shape[-2] * scale)),
+                        max(2, round(target.shape[-1] * scale)),
+                    )
+                    target_masked = target * mask
+                    target_scale = (
+                        target_masked
+                        if size == target.shape[-2:]
+                        else torch.nn.functional.interpolate(
+                            target_masked, size=size, mode="bilinear", align_corners=False,
+                        )
+                    )
+                    primary = trainer._stage4_resolve_multiscale_support_mask(mask, size)
+                    resolved = trainer._stage4_resolve_multiscale_support_mask(
+                        mask, size, target_rgb=target_scale,
+                    )
+                    area = torch.nn.functional.interpolate(mask, size=size, mode="area")
+                    primary_energy = reference_luminance_energy(target_scale, primary)
+                    area_energy = reference_luminance_energy(target_scale, area)
+                    fallback_used = not torch.equal(primary, resolved)
+                    entry = {
+                        "split": split,
+                        "sampleId": row["sampleId"],
+                        "objectClass": channel,
+                        "scale": scale,
+                        "primarySupport": float(primary.sum()),
+                        "primaryReferenceLuminanceEnergy": primary_energy,
+                        "areaSupport": float(area.sum()),
+                        "areaNonzeroPositions": int(torch.count_nonzero(area)),
+                        "areaReferenceLuminanceEnergy": area_energy,
+                        "selectedMode": "area_luminance_variation_fallback" if fallback_used else "primary",
+                    }
+                    entries.append(entry)
+                    if fallback_used:
+                        fallback_entries.append(entry)
+    if len(entries) != 64 * 4 * 3:
+        raise ValueError("luminance variation audit did not cover all records/classes/scales")
+    if len(fallback_entries) != 1:
+        raise ValueError(f"unexpected luminance variation fallback count: {len(fallback_entries)}")
+    fallback = fallback_entries[0]
+    expected_id = "ai-cold-start-v7-v7-capacity-slot-198-grassland-forest-transition-v4"
+    if not (
+        fallback["split"] == "validation"
+        and fallback["sampleId"] == expected_id
+        and fallback["objectClass"] == "object_rock"
+        and fallback["scale"] == 0.25
+        and fallback["primarySupport"] == 3.0
+        and fallback["primaryReferenceLuminanceEnergy"] == 0.0
+        and abs(fallback["areaSupport"] - 3.375) <= 1e-7
+        and fallback["areaNonzeroPositions"] == 13
+        and abs(
+            fallback["areaReferenceLuminanceEnergy"] - 0.028859881684184074
+        ) <= 1e-7
+    ):
+        raise ValueError(f"unique luminance variation fallback identity changed: {fallback}")
+    return {
+        "recordCount": 64,
+        "objectClassCount": 4,
+        "scaleCount": 3,
+        "auditedEntryCount": len(entries),
+        "primaryUnchangedEntryCount": len(entries) - len(fallback_entries),
+        "fallbackEntryCount": len(fallback_entries),
+        "fallbackEntries": fallback_entries,
+    }
+
+
+def run_reference_luminance_variation_audit(args) -> int:
+    authorization, consumption = (
+        validate_luminance_variation_fallback_implementation_authority(args)
+    )
+    config_path = args.sparse_support_audit_config.resolve()
+    dataset_manifest = args.dataset_package.resolve()
+    if sha256_file(config_path) != args.sparse_support_audit_config_sha256:
+        raise ValueError("luminance variation audit config SHA-256 changed")
+    if sha256_file(dataset_manifest) != args.dataset_package_sha256:
+        raise ValueError("luminance variation audit dataset Manifest SHA-256 changed")
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    audit = audit_reference_luminance_variation_fallback(config, dataset_manifest)
+    target = torch.zeros((1, 3, 48, 64), dtype=torch.float32)
+    mask = torch.zeros((1, 1, 192, 256), dtype=torch.float32)
+    mask[:, :, 8:32, 8:32] = 1.0
+    negatives = {}
+    try:
+        trainer._stage4_resolve_multiscale_support_mask(
+            mask, (48, 64), target_rgb=target,
+        )
+        negatives["area_with_zero_reference_variation_rejected"] = False
+    except ValueError:
+        negatives["area_with_zero_reference_variation_rejected"] = True
+    if not all(negatives.values()):
+        raise ValueError(f"luminance variation fallback negatives failed: {negatives}")
+    report = {
+        "schemaVersion": "stage4-multiscale-reference-luminance-variation-preserving-mask-fallback-cpu-report-v1",
+        "status": "stage4_multiscale_reference_luminance_variation_preserving_mask_fallback_cpu_passed",
+        "implementationAuthorization": {
+            "requestId": authorization.get("requestId"),
+            "sha256": args.implementation_authorization_sha256,
+            "consumptionSha256": args.implementation_consumption_sha256,
+            "oneTimeConsumption": consumption.get("oneTimeConsumption"),
+        },
+        "datasetManifest": {
+            "path": dataset_manifest.as_posix(),
+            "sha256": args.dataset_package_sha256,
+        },
+        "activeConfig": {
+            "path": config_path.as_posix(),
+            "sha256": args.sparse_support_audit_config_sha256,
+        },
+        "audit": audit,
+        "negativeChecks": negatives,
+        "executionBoundary": {
+            "checkpointWeightsRead": False,
+            "gpuUsed": False,
+            "optimizerCreated": False,
+            "backwardExecuted": False,
+            "modelWeightsModified": False,
+            "trainingStarted": False,
+        },
+    }
+    output = args.output_path.resolve()
+    output.parent.mkdir(parents=True, exist_ok=False)
+    output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(report, indent=2))
+    return 0
 
 
 def rejected(config: dict, mutation) -> bool:
@@ -84,13 +471,63 @@ def synthetic_forward(config: dict) -> dict:
 
 def main() -> int:
     parser = ArgumentParser()
-    parser.add_argument("--source", type=Path, required=True)
-    parser.add_argument("--source-sha256", required=True)
-    parser.add_argument("--authorization", type=Path, required=True)
-    parser.add_argument("--authorization-sha256", required=True)
-    parser.add_argument("--consumption", type=Path, required=True)
-    parser.add_argument("--consumption-sha256", required=True)
+    parser.add_argument("--source", type=Path)
+    parser.add_argument("--source-sha256")
+    parser.add_argument("--authorization", type=Path)
+    parser.add_argument("--authorization-sha256")
+    parser.add_argument("--consumption", type=Path)
+    parser.add_argument("--consumption-sha256")
+    parser.add_argument("--sparse-support-audit", action="store_true")
+    parser.add_argument("--reference-luminance-variation-audit", action="store_true")
+    parser.add_argument("--sparse-support-audit-config", type=Path)
+    parser.add_argument("--sparse-support-audit-config-sha256")
+    parser.add_argument("--dataset-package", type=Path)
+    parser.add_argument("--dataset-package-sha256")
+    parser.add_argument("--implementation-authorization", type=Path)
+    parser.add_argument("--implementation-authorization-sha256")
+    parser.add_argument("--implementation-consumption", type=Path)
+    parser.add_argument("--implementation-consumption-sha256")
+    parser.add_argument("--output-path", type=Path)
     args = parser.parse_args()
+    if args.reference_luminance_variation_audit:
+        required = (
+            "sparse_support_audit_config",
+            "sparse_support_audit_config_sha256",
+            "dataset_package",
+            "dataset_package_sha256",
+            "implementation_authorization",
+            "implementation_authorization_sha256",
+            "implementation_consumption",
+            "implementation_consumption_sha256",
+            "output_path",
+        )
+        missing = [name for name in required if getattr(args, name) is None]
+        if missing:
+            raise ValueError(f"luminance variation audit arguments are missing: {missing}")
+        return run_reference_luminance_variation_audit(args)
+    if args.sparse_support_audit:
+        required = (
+            "sparse_support_audit_config",
+            "sparse_support_audit_config_sha256",
+            "dataset_package",
+            "dataset_package_sha256",
+            "implementation_authorization",
+            "implementation_authorization_sha256",
+            "implementation_consumption",
+            "implementation_consumption_sha256",
+            "output_path",
+        )
+        missing = [name for name in required if getattr(args, name) is None]
+        if missing:
+            raise ValueError(f"sparse support audit arguments are missing: {missing}")
+        return run_sparse_support_audit(args)
+    required = (
+        "source", "source_sha256", "authorization", "authorization_sha256",
+        "consumption", "consumption_sha256",
+    )
+    missing = [name for name in required if getattr(args, name) is None]
+    if missing:
+        raise ValueError(f"legacy multiscale CPU arguments are missing: {missing}")
     authorization, consumption = compiler.validate_authorization(
         args.authorization.resolve(), args.authorization_sha256,
         args.consumption.resolve(), args.consumption_sha256,

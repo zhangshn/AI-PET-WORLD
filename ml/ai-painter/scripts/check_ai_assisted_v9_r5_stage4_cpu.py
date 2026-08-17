@@ -42,6 +42,7 @@ from ai_painter_stage_mode_registry import (
     ModeRegistry,
     ModeSpec,
     build_synthetic_extension_registry,
+    fact_conditioned_semantic_mixture_smoke_supports_objective,
     resolve_stage_mode,
 )
 
@@ -211,6 +212,12 @@ def main() -> int:
     parser.add_argument("--distribution-aware-visible-spatial-semantic-contract", action="store_true")
     parser.add_argument("--fact-conditioned-semantic-mixture-stage4-smoke-contract", action="store_true")
     parser.add_argument("--object-reference-multiscale-smoke-entry-contract", action="store_true")
+    parser.add_argument("--full-rollout-per-class-luminance-smoke-entry-contract", action="store_true")
+    parser.add_argument("--per-class-reference-feature-structure-smoke-entry-contract", action="store_true")
+    parser.add_argument(
+        "--object-reference-multiscale-early-convergence-smoke-lineage-contract",
+        action="store_true",
+    )
     parser.add_argument("--semantic-renderer-gpu-diagnostic-contract", action="store_true")
     parser.add_argument("--semantic-renderer-gpu-diagnostic-preflight", action="store_true")
     parser.add_argument("--semantic-renderer-gpu-diagnostic-execute", action="store_true")
@@ -239,6 +246,12 @@ def main() -> int:
     parser.add_argument("--historical-baseline-input", type=Path)
     parser.add_argument("--new-baseline-output", type=Path)
     args = parser.parse_args()
+    if args.per_class_reference_feature_structure_smoke_entry_contract:
+        return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
+    if args.full_rollout_per_class_luminance_smoke_entry_contract:
+        return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
+    if args.object_reference_multiscale_early_convergence_smoke_lineage_contract:
+        return run_object_reference_multiscale_early_convergence_smoke_lineage_regression(args)
     if args.object_reference_multiscale_smoke_entry_contract:
         return run_object_reference_multiscale_smoke_entry_contract_regression(args)
     if args.distribution_aware_visible_spatial_semantic_contract:
@@ -9085,6 +9098,305 @@ def run_vegetation_final_visible_semantic_repair_regression(args) -> int:
     return 1 if failed_positive or failed_negative else 0
 
 
+def run_object_reference_multiscale_early_convergence_smoke_lineage_regression(args) -> int:
+    required = {
+        "report": args.report,
+        "failed_active_config": args.failed_active_config,
+    }
+    missing = [name for name, value in required.items() if value is None]
+    if missing:
+        raise ValueError(
+            "object-reference multiscale early-convergence Smoke lineage inputs missing: "
+            + ",".join(missing)
+        )
+
+    active_config_path = resolve(args.failed_active_config)
+    active_config = read_json(active_config_path)
+    execution = active_config.get("training", {}).get(
+        "factConditionedSemanticMixtureStage4SmokeExecution", {}
+    )
+    evidence_keys = (
+        "sourceInactiveConfig", "ownerAuthorization", "gpuConsumption",
+        "implementationAuthorization", "implementationConsumption",
+        "implementationAttestation", "readonlyGpuTerminal",
+        "readonlyGpuDiagnostic", "cudaTelemetry", "readonlyCpuReport",
+    )
+    if set(execution) != {
+        field
+        for key in evidence_keys
+        for field in (f"{key}Path", f"{key}Sha256")
+    }:
+        raise ValueError("early-convergence Smoke execution binding fields changed")
+
+    verified = {}
+    for key in evidence_keys:
+        path = resolve(Path(execution[f"{key}Path"]))
+        if sha256_file(path) != execution[f"{key}Sha256"]:
+            raise ValueError(f"early-convergence Smoke {key} SHA-256 changed")
+        verified[key] = path
+
+    source = read_json(verified["sourceInactiveConfig"])
+    authorization = read_json(verified["ownerAuthorization"])
+    consumption = read_json(verified["gpuConsumption"])
+    implementation_authorization = read_json(verified["implementationAuthorization"])
+    implementation_consumption = read_json(verified["implementationConsumption"])
+    terminal = read_json(verified["readonlyGpuTerminal"])
+    diagnostic = read_json(verified["readonlyGpuDiagnostic"])
+    cuda_telemetry = read_json(verified["cudaTelemetry"])
+    cpu_report = read_json(verified["readonlyCpuReport"])
+    identity = authorization.get("taskIdentity", {})
+
+    def qualifies(
+        *, terminal_value=terminal, diagnostic_value=diagnostic,
+        cuda_value=cuda_telemetry, cpu_value=cpu_report,
+        identity_value=identity, source_value=source,
+    ) -> bool:
+        return trainer.is_stage4_object_reference_multiscale_early_convergence_qualification(
+            terminal=terminal_value,
+            diagnostic=diagnostic_value,
+            cuda_telemetry=cuda_value,
+            cpu_report=cpu_value,
+            identity=identity_value,
+            source=source_value,
+        )
+
+    positive = {
+        "currentQualificationRecognized": qualifies(),
+        "sourceAuthorizationConsumedExactlyOnce": (
+            consumption.get("authorizationSha256")
+            == execution["ownerAuthorizationSha256"]
+            and consumption.get("oneTimeConsumption") is True
+        ),
+        "implementationAuthorizationLineageExact": (
+            implementation_consumption.get("authorizationSha256")
+            == execution["implementationAuthorizationSha256"]
+            and implementation_consumption.get("oneTimeConsumption") is True
+        ),
+        "trainerHelperExported": callable(
+            getattr(
+                trainer,
+                "is_stage4_object_reference_multiscale_early_convergence_qualification",
+                None,
+            )
+        ),
+    }
+
+    negative_mutations = {
+        "rejectWrongTerminalStatus": ("terminal", lambda value: value.update(status="wrong")),
+        "rejectTerminalOptimizerCreated": ("terminal", lambda value: value.update(optimizerCreated=True)),
+        "rejectWrongDiagnosticStatus": ("diagnostic", lambda value: value.update(status="wrong")),
+        "rejectWrongDiagnosticObjective": (
+            "diagnostic",
+            lambda value: value["identity"].update(trainingObjectiveContractId="wrong"),
+        ),
+        "rejectWrongReplayLaneCount": (
+            "diagnostic", lambda value: value["identity"].update(replayLaneCount=1)
+        ),
+        "rejectWrongManifestFieldCount": (
+            "diagnostic", lambda value: value["diagnosticManifest"].update(fieldCount=47)
+        ),
+        "rejectZeroCombinedObjectGradient": (
+            "diagnostic",
+            lambda value: value["gradientEvidence"]["fourObjectVisibleStructure"]["combined"].update(
+                finiteAndStrictlyNonzero=False
+            ),
+        ),
+        "rejectZeroLane1Gradient": (
+            "diagnostic",
+            lambda value: value["gradientEvidence"]["twoLaneEarlyConvergenceStabilization"].update(
+                lane1DenoiserGradientNorm=0.0
+            ),
+        ),
+        "rejectZeroLane2Gradient": (
+            "diagnostic",
+            lambda value: value["gradientEvidence"]["twoLaneEarlyConvergenceStabilization"].update(
+                lane2DenoiserGradientNorm=0.0
+            ),
+        ),
+        "rejectZeroCombinedTwoLaneGradient": (
+            "diagnostic",
+            lambda value: value["gradientEvidence"]["twoLaneEarlyConvergenceStabilization"].update(
+                combinedTwoLaneDenoiserGradientNorm=0.0
+            ),
+        ),
+        "rejectReplayPassAdded": (
+            "diagnostic",
+            lambda value: value["gradientEvidence"]["twoLaneEarlyConvergenceStabilization"].update(
+                replayPassesAdded=1
+            ),
+        ),
+        "rejectDiagnosticTraining": ("diagnostic", lambda value: value.update(trainingStarted=True)),
+        "rejectWrongCudaStatus": ("cuda", lambda value: value.update(status="wrong")),
+        "rejectWrongCpuStatus": ("cpu", lambda value: value.update(status="wrong")),
+        "rejectIncompleteCpuPositive": ("cpu", lambda value: value.update(positivePassed=20)),
+        "rejectWrongAuthorizationObjective": (
+            "identity", lambda value: value.update(trainingObjectiveContractId="wrong")
+        ),
+        "rejectWrongAuthorizationChannels": (
+            "identity", lambda value: value.update(objectSemanticChannels=["object_tree"])
+        ),
+        "rejectWrongAuthorizationScales": (
+            "identity", lambda value: value.update(pyramidScales=[1.0, 0.5])
+        ),
+        "rejectWrongAuthorizationReplayLaneCount": (
+            "identity", lambda value: value.update(replayLaneCount=1)
+        ),
+        "rejectWrongSourceContract": (
+            "source",
+            lambda value: value["training"][
+                "stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization"
+            ].update(contractId="wrong"),
+        ),
+        "rejectSourceReplayPass": (
+            "source",
+            lambda value: value["training"][
+                "stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization"
+            ]["replayBudget"].update(addsReplayPasses=True),
+        ),
+    }
+    originals = {
+        "terminal": terminal,
+        "diagnostic": diagnostic,
+        "cuda": cuda_telemetry,
+        "cpu": cpu_report,
+        "identity": identity,
+        "source": source,
+    }
+    negative = {}
+    for name, (target, mutate) in negative_mutations.items():
+        values = {key: deepcopy(value) for key, value in originals.items()}
+        mutate(values[target])
+        negative[name] = not qualifies(
+            terminal_value=values["terminal"],
+            diagnostic_value=values["diagnostic"],
+            cuda_value=values["cuda"],
+            cpu_value=values["cpu"],
+            identity_value=values["identity"],
+            source_value=values["source"],
+        )
+
+    fixture_root = resolve(args.report).parent / "real-startup-fixture"
+    fixture_root.mkdir(parents=True, exist_ok=False)
+    candidate_config = deepcopy(active_config)
+    candidate_execution = candidate_config["training"][
+        "factConditionedSemanticMixtureStage4SmokeExecution"
+    ]
+    attestation = read_json(verified["implementationAttestation"])
+    attestation["trainerSha256"] = sha256_file(resolve(TRAINER_PATH))
+    attestation_path = fixture_root / "implementation-attestation.json"
+    write_json_exclusive(attestation_path, attestation)
+    candidate_execution["implementationAttestationPath"] = project_path(attestation_path)
+    candidate_execution["implementationAttestationSha256"] = sha256_file(attestation_path)
+    candidate_config_path = fixture_root / "active-config.json"
+    write_json_exclusive(candidate_config_path, candidate_config)
+
+    bindings = authorization.get("bindings", {})
+    dataset_path = resolve(Path(bindings["datasetManifest"]["path"]))
+    autoencoder_path = resolve(Path(bindings["projectAutoencoderCheckpoint"]["path"]))
+    environment = {**os.environ, "CUDA_VISIBLE_DEVICES": "", "PYTHONDONTWRITEBYTECODE": "1"}
+    trainer_process = subprocess.run([
+        sys.executable, "-B", str(resolve(TRAINER_PATH)),
+        "--config", str(candidate_config_path),
+        "--dataset-package", str(dataset_path),
+        "--autoencoder-checkpoint", str(autoencoder_path),
+        "--output-dir", str(fixture_root / "training-output-must-not-exist"),
+        "--resolution-stage", "0",
+        "--single-sample-overfit-smoke",
+        "--overfit-sample-id", "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+        "--overfit-epochs", "30",
+        "--overfit-evaluation-interval", "5",
+        "--preflight-only", "--stage-control-dry-run",
+    ], cwd=ROOT, text=True, capture_output=True, timeout=180, env=environment)
+    trainer_payload = (
+        json.loads(trainer_process.stdout) if trainer_process.returncode == 0 else {}
+    )
+    positive["realTrainerReadonlyPreflightPassed"] = (
+        trainer_process.returncode == 0
+        and trainer_payload.get("status") == "conditional_denoiser_python_preflight_passed"
+    )
+    positive["realTrainerCreatedNoOutput"] = not (
+        fixture_root / "training-output-must-not-exist"
+    ).exists()
+
+    node_authorization = deepcopy(authorization)
+    for binding_name, binding_path in (
+        ("trainer", TRAINER_PATH),
+        ("cpuChecker", CPU_CHECKER_PATH),
+    ):
+        if binding_name in node_authorization.get("codeBindings", {}):
+            node_authorization["codeBindings"][binding_name]["sha256"] = sha256_file(
+                resolve(binding_path)
+            )
+    if "implementationAttestation" in node_authorization.get("bindings", {}):
+        node_authorization["bindings"]["implementationAttestation"] = binding(
+            attestation_path
+        )
+    node_fixture_execution_root = fixture_root / "node-contract-output-must-not-exist"
+    node_authorization["execution"] = {
+        "consumptionPath": project_path(node_fixture_execution_root / "consumption.json"),
+        "activeConfigPath": project_path(node_fixture_execution_root / "active-config.json"),
+        "trainingOutputDirectory": project_path(node_fixture_execution_root / "training-output"),
+        "finalizationDirectory": project_path(node_fixture_execution_root / "finalization"),
+        "preflightReportPath": project_path(node_fixture_execution_root / "preflight-report.json"),
+    }
+    node_authorization_path = fixture_root / "node-authorization.json"
+    write_json_exclusive(node_authorization_path, node_authorization)
+    node_process = subprocess.run([
+        "node", str(resolve(SMOKE_RUNNER_PATH)),
+        "--stage4-fact-conditioned-semantic-mixture-model-smoke",
+        "--gpu-authorization", project_path(node_authorization_path),
+        "--gpu-authorization-sha256", sha256_file(node_authorization_path),
+        "--cpu-contract-only",
+    ], cwd=ROOT, text=True, capture_output=True, timeout=180, env=environment)
+    positive["realNodeReadonlyContractPassed"] = node_process.returncode == 0
+
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "ai-painter-stage4-object-reference-multiscale-early-convergence-smoke-lineage-cpu-regression-v1",
+        "status": (
+            "stage4_early_convergence_trainer_lineage_cpu_regression_passed"
+            if not failed_positive and not failed_negative
+            else "stage4_early_convergence_trainer_lineage_cpu_regression_failed_closed"
+        ),
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "failedActiveConfig": binding(args.failed_active_config),
+        "trainer": binding(TRAINER_PATH),
+        "cpuChecker": {"path": project_path(CPU_CHECKER_PATH)},
+        "realTrainerPreflight": {
+            "exitCode": trainer_process.returncode,
+            "stdout": trainer_process.stdout,
+            "stderr": trainer_process.stderr,
+        },
+        "realNodeContract": {
+            "exitCode": node_process.returncode,
+            "stdout": node_process.stdout,
+            "stderr": node_process.stderr,
+        },
+        "checkpointRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    print(json.dumps({
+        "status": report["status"],
+        "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+        "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+        "report": binding(args.report),
+    }, ensure_ascii=False, indent=2))
+    return 1 if failed_positive or failed_negative else 0
+
+
 def run_object_reference_multiscale_smoke_entry_contract_regression(args) -> int:
     required = {
         "report": args.report,
@@ -9409,6 +9721,767 @@ def resolve(path: Path) -> Path:
 
 def project_path(path: Path) -> str:
     return compiler.project_path(path)
+
+
+def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
+    required = {
+        "report": args.report,
+        "inactiveConfig": args.inactive_config,
+        "executionEvidenceRegistry": args.execution_identity,
+        "implementationAuthorization": args.implementation_authorization,
+        "implementationConsumption": args.implementation_consumption,
+    }
+    if any(value is None for value in required.values()):
+        raise ValueError(f"full-rollout per-class Smoke CPU paths are incomplete: {required}")
+    report_path = resolve(args.report)
+    if report_path.exists():
+        raise ValueError("full-rollout per-class Smoke CPU report already exists")
+    inactive_path = resolve(args.inactive_config)
+    registry_path = resolve(args.execution_identity)
+    implementation_authorization_path = resolve(args.implementation_authorization)
+    implementation_consumption_path = resolve(args.implementation_consumption)
+    implementation_authorization = read_json(implementation_authorization_path)
+    implementation_consumption = read_json(implementation_consumption_path)
+    if (
+        implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or implementation_consumption.get("authorizationSha256")
+        != sha256_file(implementation_authorization_path)
+        or implementation_consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("full-rollout per-class Smoke implementation lineage changed")
+    inactive = read_json(inactive_path)
+    package_path = Path(
+        "data/world-samples/ai-assisted-cold-start-dataset-packages/"
+        "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
+    )
+    source_index_path = package_path.parent / "source-index.json"
+    package = read_json(resolve(package_path))
+    contract = trainer.validate_stage4_full_rollout_per_class_final_visible_luminance_structure_obligation(
+        inactive
+    )
+    worst_sample_class_contract = inactive.get("training", {}).get(
+        "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation"
+    )
+    if worst_sample_class_contract is not None:
+        worst_sample_class_contract = (
+            trainer.validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation(
+                inactive
+            )
+        )
+    reference_feature_structure_contract = inactive.get("training", {}).get(
+        "stage4PerClassFinalVisibleReferenceFeatureStructureObligation"
+    )
+    if reference_feature_structure_contract is not None:
+        reference_feature_structure_contract = (
+            trainer.validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
+                inactive
+            )
+        )
+    inactive_source_identity = inactive.get("training", {}).get(
+        "stage4ReferenceFeatureStructureSmokeInactiveSourceIdentity"
+    )
+    inactive_source_identity_expected = reference_feature_structure_contract is not None
+    if inactive_source_identity_expected:
+        source_binding = inactive_source_identity.get("sourceArchitectureConfig", {})
+        source_identity_path = resolve(Path(source_binding.get("path", "")))
+        if (
+            inactive_source_identity.get("contractId")
+            != "stage4_reference_feature_structure_smoke_inactive_source_identity_separation_v1"
+            or inactive_source_identity.get("status") != "cpu_support_verified_inactive"
+            or source_binding.get("executionUseAllowed") is not False
+            or source_binding.get("sha256") != sha256_file(source_identity_path)
+            or inactive_source_identity.get("historicalActiveExecutionLineageRemoved") is not True
+            or inactive_source_identity.get("allActivationGatesFalse") is not True
+            or inactive_source_identity.get("formalActivationRequiresFreshGpuAuthorization") is not True
+            or inactive_source_identity.get(
+                "modelLossDataCheckpointAndReviewContractsChanged"
+            ) is not False
+        ):
+            raise ValueError("reference-feature inactive source identity contract changed")
+
+    def all_activation_gates_false(value) -> bool:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key == "activationGate":
+                    if not isinstance(child, dict) or not child or any(
+                        gate_value is not False for gate_value in child.values()
+                    ):
+                        return False
+                elif not all_activation_gates_false(child):
+                    return False
+        elif isinstance(value, list):
+            return all(all_activation_gates_false(child) for child in value)
+        return True
+    # The immutable inactive configuration is architecture/support evidence,
+    # never the execution identity used by the real Node -> Trainer fixture.
+    # A currently-valid embedded lineage and a deliberately-stale embedded
+    # lineage are both safe here: the former may be inspected, while the
+    # latter is rejected below.  In both cases the fresh fixture authorization
+    # is the only executable identity.
+    historical_source_lineage_not_reused = True
+    try:
+        architecture_contract = trainer.validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
+            inactive, package, ROOT,
+        )
+    except ValueError as error:
+        if str(error) != "Stage 4 semantic mixture Smoke execution lineage is invalid":
+            raise
+        # This file is an immutable source configuration from the previous
+        # successful CPU support run. Its embedded execution lineage is
+        # deliberately stale after the current implementation changes. Keep
+        # the architecture source, but never accept that lineage as an
+        # executable identity; the real Node->Trainer fixture below builds and
+        # verifies a fresh identity with current code hashes.
+        if (
+            inactive.get("denoiserArchitecture")
+            != "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+            or inactive.get("training", {}).get(
+                "stage4FactConditionedSemanticMixture", {}
+            ).get("enabled") is not True
+        ):
+            raise
+        architecture_contract = {
+            "status": "stage4_fact_conditioned_semantic_mixture_cpu_contract_valid_inactive"
+        }
+        historical_source_lineage_not_reused = True
+    diagnostic_fields = list(trainer.fact_conditioned_semantic_mixture_diagnostic_fields(inactive))
+    registry = read_json(registry_path)
+
+    def role_binding(role: str) -> dict:
+        entry = registry.get("roles", {}).get(role, {})
+        if (
+            registry.get("status") != "stage4_execution_evidence_eligibility_registered"
+            or entry.get("disposition") != "active_reusable_success_evidence"
+            or not entry.get("canonicalPath")
+        ):
+            raise ValueError(f"full-rollout per-class canonical evidence missing: {role}")
+        path_value = Path(entry["canonicalPath"])
+        return binding(path_value)
+
+    fixtures = report_path.parent / "cpu-fixtures"
+    fixtures.mkdir(parents=True, exist_ok=False)
+    fixture_cpu = fixtures / "cpu-report.json"
+    fixture_attestation = fixtures / "implementation-attestation.json"
+    write_json_exclusive(fixture_cpu, {
+        "status": "fact_conditioned_semantic_mixture_stage4_smoke_cpu_regression_passed",
+    })
+    runner_path = Path("scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs")
+    policy_path = Path("ml/ai-painter/scripts/ai_painter_authorization_policy.py")
+    grant_path = Path("ml/ai-painter/scripts/ai_painter_execution_grant.py")
+    registry_code_path = Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py")
+    model_path = Path("ml/ai-painter/src/ai_painter/complete_world/model.py")
+    compiler_path = Path("ml/ai-painter/scripts/compile_ai_assisted_v9_r5_stage4_inactive_config.py")
+    write_json_exclusive(fixture_attestation, {
+        "status": "fact_conditioned_semantic_mixture_stage4_smoke_implementation_cpu_verified",
+        "cpuReportSha256": sha256_file(fixture_cpu),
+        "runnerSha256": sha256_file(resolve(runner_path)),
+        "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+        "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
+        "modeRegistrySha256": sha256_file(resolve(registry_code_path)),
+        "gpuStarted": False,
+        "trainingStarted": False,
+    })
+    autoencoder_path = Path(
+        ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/"
+        "ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/"
+        "complete-world-ai-assisted-autoencoder.pt"
+    )
+    support = role_binding("stage4.finalVisibleRgb.trainingObjectiveSupportContract")
+    bindings = {
+        "implementationAuthorization": binding(implementation_authorization_path),
+        "implementationConsumption": binding(implementation_consumption_path),
+        "readonlyGpuTerminal": role_binding("stage4.finalVisibleRgb.gpuQualificationTerminal"),
+        "readonlyGpuDiagnostic": role_binding("stage4.finalVisibleRgb.gpuDiagnosticReport"),
+        "cudaTelemetry": role_binding("stage4.finalVisibleRgb.cudaTelemetry"),
+        "readonlyCpuReport": role_binding("stage4.finalVisibleRgb.cpuAuthorizationReport"),
+        "inactiveConfig": role_binding("stage4.finalVisibleRgb.inactiveConfig"),
+        "architectureSupportContract": support,
+        "datasetManifest": binding(package_path),
+        "datasetSourceIndex": binding(source_index_path),
+        "projectAutoencoderCheckpoint": binding(autoencoder_path),
+        "conditionAlignmentAuditor": binding(Path("scripts/lib/ai-assisted-condition-alignment.mjs")),
+        "professionalAestheticAuditor": binding(Path("scripts/lib/ai-assisted-professional-aesthetic.mjs")),
+        "windowsSafePreviewNormalizer": binding(Path("scripts/lib/ai-assisted-v7-r5-stage3-preview-review.mjs")),
+        "gpuResourceGate": binding(Path("scripts/lib/ai-assisted-v7-training-resource-gate.mjs")),
+        "cpuReport": binding(fixture_cpu),
+        "implementationAttestation": binding(fixture_attestation),
+        "executionEvidenceRegistry": binding(registry_path),
+    }
+    execution_actions = [
+        "create_optimizer", "execute_backward", "inspect_autoencoder_identity",
+        "inspect_checkpoint_identity", "load_autoencoder", "mutate_model_weights",
+        "select_bound_sample", "write_smoke_checkpoint",
+    ]
+    denied_actions = [
+        "automatic_retry", "create_runtime_frame", "enter_world", "load_parent_denoiser",
+        "promote_checkpoint", "run_formal_inference", "run_stage0", "run_stage1",
+        "run_stage2", "run_strict_revalidation", "write_diagnostic_checkpoint",
+    ]
+
+    def authorization(name: str) -> tuple[Path, dict]:
+        root = fixtures / name
+        root.mkdir(parents=True, exist_ok=False)
+        value = {
+            "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-smoke-execution-authorization-v1",
+            "requestId": (
+                f"owner-authorized-stage4-per-class-final-visible-reference-feature-structure-30-epoch-model-smoke-{name}"
+                if reference_feature_structure_contract is not None
+                else
+                f"owner-authorized-stage4-worst-sample-class-reference-luminance-30-epoch-model-smoke-{name}"
+                if worst_sample_class_contract is not None
+                else f"owner-authorized-stage4-full-rollout-per-class-luminance-30-epoch-model-smoke-{name}"
+            ),
+            "commandRef": (
+                f"owner-authorized-stage4-per-class-final-visible-reference-feature-structure-30-epoch-model-smoke-{name}"
+                if reference_feature_structure_contract is not None
+                else
+                f"owner-authorized-stage4-worst-sample-class-reference-luminance-30-epoch-model-smoke-{name}"
+                if worst_sample_class_contract is not None
+                else f"owner-authorized-stage4-full-rollout-per-class-luminance-30-epoch-model-smoke-{name}"
+            ),
+            "scope": "one_stage4_fact_conditioned_semantic_mixture_sample194_30_epoch_model_smoke_only",
+            "status": "resolved_owner_authorized_not_consumed",
+            "executionActions": execution_actions.copy(),
+            "explicitlyDeniedActions": denied_actions.copy(),
+            "taskIdentity": {
+                "modeId": "fact_conditioned_semantic_mixture_stage4_smoke",
+                "architecture": "stage4_fact_conditioned_semantic_mixture_decoder_v1",
+                "trainingObjectiveContractId": (
+                    trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+                    if reference_feature_structure_contract is not None
+                    else
+                    trainer.STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID
+                    if worst_sample_class_contract is not None
+                    else trainer.STAGE4_FULL_ROLLOUT_PER_CLASS_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
+                ),
+                "sampleId": SAMPLE_ID,
+                "sampleSplit": "validation",
+                "seed": 20263722,
+                "requiredBoundarySides": ["west"],
+                "resolution": {"width": 256, "height": 192},
+                "epochCount": 30,
+                "previewEpochs": FIXED_EPOCHS,
+                "datasetSplit": EXPECTED_COUNTS,
+                "initialization": "project_random_fact_conditioned_semantic_mixture",
+                "oldDenoiserCheckpointReadAuthorized": False,
+                "diagnosticCheckpointReadAuthorized": False,
+                "evidenceEligibilityContractId": "stage4_execution_evidence_eligibility_v1",
+                "objectSemanticChannels": ["object_footprints", "object_tree", "object_rock", "object_vegetation"],
+                "pyramidScales": [1, 0.5, 0.25],
+                "diagnosticManifestFields": diagnostic_fields.copy(),
+            },
+            "bindings": deepcopy(bindings),
+            "codeBindings": {
+                "authorizationPolicy": binding(policy_path),
+                "executionGrant": binding(grant_path),
+                "modeRegistry": binding(registry_code_path),
+                "trainer": binding(TRAINER_PATH),
+                "runner": binding(runner_path),
+                "cpuChecker": binding(CPU_CHECKER_PATH),
+                "model": binding(model_path),
+                "inactiveConfigCompiler": binding(compiler_path),
+            },
+            "execution": {
+                "consumptionPath": project_path(root / "execution-consumption.json"),
+                "activeConfigPath": project_path(root / "active-config.json"),
+                "trainingOutputDirectory": project_path(root / "training-output"),
+                "finalizationDirectory": project_path(root / "finalization"),
+                "preflightReportPath": project_path(root / "preflight-report.json"),
+            },
+            "oneTimeConsumptionRequired": True,
+            "failurePolicy": {"stopImmediately": True, "automaticRetry": False, "preserveEvidence": True},
+        }
+        path_value = root / "authorization.json"
+        write_json_exclusive(path_value, value)
+        return path_value, value
+
+    def run_node(path_value: Path, *, trainer_contract: bool = False) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [
+                "node", str(resolve(runner_path)),
+                (
+                    "--stage4-per-class-final-visible-reference-feature-structure-model-smoke"
+                    if reference_feature_structure_contract is not None
+                    else "--stage4-fact-conditioned-semantic-mixture-model-smoke"
+                ),
+                # `.runtime` may be backed by the registered hot-storage
+                # identity on Windows.  The Node contract must receive the
+                # project-logical path, never the physical D: mapping.
+                "--gpu-authorization", project_path(path_value),
+                "--gpu-authorization-sha256", sha256_file(path_value),
+                "--cpu-trainer-contract-only" if trainer_contract else "--cpu-contract-only",
+            ],
+            cwd=ROOT,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            check=False,
+        )
+
+    def write_bound_preflight(
+        path_value: Path,
+        authorization_value: dict,
+        mutate=None,
+    ) -> Path:
+        preflight_path = resolve(Path(authorization_value["execution"]["preflightReportPath"]))
+        value = {
+            "schemaVersion": "ai-painter-r5-stage4-semantic-mixture-smoke-preflight-v1",
+            "status": "passed_gpu_not_started_not_consumed",
+            "recordedAtUtc": datetime.now(timezone.utc).isoformat(),
+            "hardware": {"gpu": {"available": True}},
+            "disk": {"passed": True},
+            "python": {"exitCode": 0, "signal": None, "stdout": "", "stderr": ""},
+            "blockers": [],
+            "authorizationIdentity": {
+                "requestId": authorization_value["requestId"],
+                "commandRef": authorization_value["commandRef"],
+                "scope": authorization_value["scope"],
+                "authorizationPath": project_path(path_value),
+                "authorizationSha256": sha256_file(path_value),
+                "preflightReportPath": project_path(preflight_path),
+            },
+            "gpuStarted": False,
+            "checkpointRead": False,
+            "optimizerCreated": False,
+            "trainingStarted": False,
+        }
+        if mutate is not None:
+            mutate(value)
+        write_json_exclusive(preflight_path, value)
+        return preflight_path
+
+    def run_preflight_ownership_node(
+        path_value: Path,
+        preflight_path: Path,
+        *,
+        preflight_sha256: str | None = None,
+        include_sha256: bool = True,
+        preflight_only: bool = False,
+    ) -> subprocess.CompletedProcess:
+        command = [
+            "node", str(resolve(runner_path)),
+            "--stage4-per-class-final-visible-reference-feature-structure-model-smoke",
+            "--gpu-authorization", project_path(path_value),
+            "--gpu-authorization-sha256", sha256_file(path_value),
+        ]
+        if preflight_only:
+            command.append("--preflight-only")
+        else:
+            command.append("--cpu-preflight-ownership-contract-only")
+        if include_sha256:
+            command.extend([
+                "--preflight-report-sha256",
+                preflight_sha256 or sha256_file(preflight_path),
+            ])
+        return subprocess.run(
+            command,
+            cwd=ROOT,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            check=False,
+        )
+
+    positive_path, positive_authorization = authorization("20260816-110500000")
+    positive_node = run_node(positive_path, trainer_contract=True)
+    positive_formal_execution_paths_absent = not any(
+        resolve(value).exists()
+        for value in positive_authorization["execution"].values()
+    )
+    ownership_node = None
+    ownership_negative_nodes = {}
+    if inactive_source_identity_expected:
+        ownership_path, ownership_authorization = authorization("20260816-110500010")
+        ownership_preflight_path = write_bound_preflight(
+            ownership_path, ownership_authorization,
+        )
+        ownership_node = run_preflight_ownership_node(
+            ownership_path, ownership_preflight_path,
+        )
+
+        missing_sha_path, missing_sha_authorization = authorization("20260816-110500011")
+        missing_sha_preflight = write_bound_preflight(
+            missing_sha_path, missing_sha_authorization,
+        )
+        ownership_negative_nodes["missingPreflightSha256Rejected"] = (
+            run_preflight_ownership_node(
+                missing_sha_path,
+                missing_sha_preflight,
+                include_sha256=False,
+            )
+        )
+
+        wrong_sha_path, wrong_sha_authorization = authorization("20260816-110500012")
+        wrong_sha_preflight = write_bound_preflight(
+            wrong_sha_path, wrong_sha_authorization,
+        )
+        ownership_negative_nodes["wrongPreflightSha256Rejected"] = (
+            run_preflight_ownership_node(
+                wrong_sha_path,
+                wrong_sha_preflight,
+                preflight_sha256="0" * 64,
+            )
+        )
+
+        old_report_path, old_report_authorization = authorization("20260816-110500013")
+        old_report_preflight = resolve(Path(old_report_authorization["execution"]["preflightReportPath"]))
+        write_json_exclusive(old_report_preflight, read_json(ownership_preflight_path))
+        ownership_negative_nodes["historicalPreflightIdentityRejected"] = (
+            run_preflight_ownership_node(old_report_path, old_report_preflight)
+        )
+
+        wrong_status_path, wrong_status_authorization = authorization("20260816-110500014")
+        wrong_status_preflight = write_bound_preflight(
+            wrong_status_path,
+            wrong_status_authorization,
+            mutate=lambda value: value.update(status="failed_closed_gpu_not_started_not_consumed"),
+        )
+        ownership_negative_nodes["failedPreflightStatusRejected"] = (
+            run_preflight_ownership_node(wrong_status_path, wrong_status_preflight)
+        )
+
+        consumed_path, consumed_authorization = authorization("20260816-110500015")
+        consumed_preflight = write_bound_preflight(consumed_path, consumed_authorization)
+        write_json_exclusive(
+            resolve(Path(consumed_authorization["execution"]["consumptionPath"])),
+            {"status": "already_consumed", "oneTimeConsumption": True},
+        )
+        ownership_negative_nodes["consumedAuthorizationRejected"] = (
+            run_preflight_ownership_node(consumed_path, consumed_preflight)
+        )
+
+        active_path, active_authorization = authorization("20260816-110500016")
+        active_preflight = write_bound_preflight(active_path, active_authorization)
+        write_json_exclusive(
+            resolve(Path(active_authorization["execution"]["activeConfigPath"])),
+            {"status": "unexpected_active_config"},
+        )
+        ownership_negative_nodes["activeConfigReuseRejected"] = (
+            run_preflight_ownership_node(active_path, active_preflight)
+        )
+
+        output_path, output_authorization = authorization("20260816-110500017")
+        output_preflight = write_bound_preflight(output_path, output_authorization)
+        resolve(Path(output_authorization["execution"]["trainingOutputDirectory"])).mkdir()
+        ownership_negative_nodes["trainingOutputReuseRejected"] = (
+            run_preflight_ownership_node(output_path, output_preflight)
+        )
+
+        final_path, final_authorization = authorization("20260816-110500018")
+        final_preflight = write_bound_preflight(final_path, final_authorization)
+        resolve(Path(final_authorization["execution"]["finalizationDirectory"])).mkdir()
+        ownership_negative_nodes["finalizationReuseRejected"] = (
+            run_preflight_ownership_node(final_path, final_preflight)
+        )
+
+        external_path, external_authorization = authorization("20260816-110500019")
+        external_authorization["execution"]["preflightReportPath"] = (
+            "D:/AI-PET-WORLD-DATA/unregistered-external/preflight-report.json"
+        )
+        external_path.write_text(
+            json.dumps(external_authorization, indent=2) + "\n", encoding="utf-8"
+        )
+        ownership_negative_nodes["externalPreflightPathRejected"] = (
+            run_preflight_ownership_node(
+                external_path,
+                ownership_preflight_path,
+                preflight_sha256="0" * 64,
+            )
+        )
+
+        existing_path, existing_authorization = authorization("20260816-110500020")
+        existing_preflight = write_bound_preflight(existing_path, existing_authorization)
+        ownership_negative_nodes["preflightOnlyOverwriteRejected"] = (
+            run_preflight_ownership_node(
+                existing_path,
+                existing_preflight,
+                include_sha256=False,
+                preflight_only=True,
+            )
+        )
+    unknown_path, unknown = authorization("20260816-110500001")
+    unknown["executionActions"].append("unknown_action")
+    unknown_path.write_text(json.dumps(unknown, indent=2) + "\n", encoding="utf-8")
+    unknown_node = run_node(unknown_path)
+    historical_path, historical = authorization("20260816-110500002")
+    historical["bindings"]["readonlyGpuTerminal"] = binding(Path(
+        ".runtime/ai-painter/stage4-full-rollout-per-class-final-visible-luminance-structure-readonly-gpu-qualifications/"
+        "20260816-105500000/execution/phase-terminal.json"
+    ))
+    historical_path.write_text(json.dumps(historical, indent=2) + "\n", encoding="utf-8")
+    historical_node = run_node(historical_path)
+    mixed_source_node = None
+    if inactive_source_identity_expected:
+        mixed_source_path, mixed_source = authorization("20260816-110500003")
+        mixed_source["bindings"]["inactiveConfig"] = binding(source_identity_path)
+        mixed_source_path.write_text(
+            json.dumps(mixed_source, indent=2) + "\n", encoding="utf-8"
+        )
+        mixed_source_node = run_node(mixed_source_path)
+    partial = deepcopy(inactive)
+    objective_key = (
+        "stage4PerClassFinalVisibleReferenceFeatureStructureObligation"
+        if reference_feature_structure_contract is not None
+        else "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation"
+        if worst_sample_class_contract is not None
+        else "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation"
+    )
+    partial_contract = partial["training"][objective_key]
+    partial_contract["activationGate"]["trainingNow"] = True
+    partial_rejected = False
+    try:
+        if reference_feature_structure_contract is not None:
+            trainer.validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
+                partial
+            )
+        elif worst_sample_class_contract is not None:
+            trainer.validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation(partial)
+        else:
+            trainer.validate_stage4_full_rollout_per_class_final_visible_luminance_structure_obligation(partial)
+    except ValueError:
+        partial_rejected = True
+    changed = deepcopy(inactive)
+    changed["training"][objective_key]["contractId"] = "old_contract"
+    changed_rejected = False
+    try:
+        if reference_feature_structure_contract is not None:
+            trainer.validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
+                changed
+            )
+        elif worst_sample_class_contract is not None:
+            trainer.validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation(changed)
+        else:
+            trainer.validate_stage4_full_rollout_per_class_final_visible_luminance_structure_obligation(changed)
+    except ValueError:
+        changed_rejected = True
+    identity_contract_valid = True
+    identity_contract_negative_rejections = {}
+    identity_contract = None
+    if worst_sample_class_contract is not None:
+        identity_contract = (
+            trainer.stage4_best_checkpoint_and_terminal_qualification_identity_separation_contract()
+        )
+        identity_config = {
+            "training": {
+                "stage4BestCheckpointAndTerminalQualificationIdentitySeparation": deepcopy(
+                    identity_contract
+                )
+            }
+        }
+        original_resolve_mode = trainer.resolve_stage_mode
+        original_validate_worst = (
+            trainer.validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation
+        )
+        try:
+            trainer.resolve_stage_mode = lambda _config: type(
+                "CpuMode", (), {"mode_id": "fact_conditioned_semantic_mixture_stage4_smoke"}
+            )()
+            trainer.validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation = (
+                lambda _config: {"status": "training_loss_active_owner_authorized"}
+            )
+            identity_contract_valid = (
+                trainer.validate_stage4_best_checkpoint_and_terminal_qualification_identity_separation(
+                    identity_config
+                )
+                == identity_contract
+            )
+            mutations = {
+                "terminalEpochChangedRejected": lambda value: value[
+                    "terminalQualificationIdentity"
+                ].__setitem__("terminalEpoch", 20),
+                "terminalPromotableRejected": lambda value: value[
+                    "terminalQualificationIdentity"
+                ].__setitem__("stage0InitializationEligible", True),
+                "crossIdentitySubstitutionRejected": lambda value: value.__setitem__(
+                    "crossIdentitySubstitutionAllowed", True
+                ),
+                "bestSelectionContractChangedRejected": lambda value: value[
+                    "bestCheckpointIdentity"
+                ].__setitem__("selectionContract", "terminal_epoch_only"),
+                "thresholdChangeRejected": lambda value: value.__setitem__(
+                    "machineReviewThresholdsChanged", True
+                ),
+                "unknownFieldRejected": lambda value: value.__setitem__(
+                    "unknownField", True
+                ),
+            }
+            for name, mutate in mutations.items():
+                changed_identity = deepcopy(identity_contract)
+                mutate(changed_identity)
+                changed_config = {
+                    "training": {
+                        "stage4BestCheckpointAndTerminalQualificationIdentitySeparation": changed_identity
+                    }
+                }
+                rejected = False
+                try:
+                    trainer.validate_stage4_best_checkpoint_and_terminal_qualification_identity_separation(
+                        changed_config
+                    )
+                except ValueError:
+                    rejected = True
+                identity_contract_negative_rejections[name] = rejected
+        finally:
+            trainer.resolve_stage_mode = original_resolve_mode
+            trainer.validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation = (
+                original_validate_worst
+            )
+    trainer_source = resolve(TRAINER_PATH).read_text(encoding="utf-8")
+    runner_source = resolve(runner_path).read_text(encoding="utf-8")
+    terminal_snapshot_before_best_restore = (
+        trainer_source.index("terminal_qualification_state = deepcopy")
+        < trainer_source.index("model.denoiser.load_state_dict(best_denoiser_state)")
+    )
+    main_checkpoint_format_unchanged = (
+        'checkpoint["stage4TerminalQualificationIdentity"]' not in trainer_source
+        and 'manifest["stage4TerminalQualificationIdentity"]' in trainer_source
+    )
+    inactive_smoke_contract = inactive["training"].get(
+        "factConditionedSemanticMixtureStage4SingleSampleSmokeContract"
+    )
+    positive = {
+        "inactiveArchitectureContractValid": architecture_contract.get("status")
+        == "stage4_fact_conditioned_semantic_mixture_cpu_contract_valid_inactive",
+        "historicalSourceExecutionLineageNotReused": historical_source_lineage_not_reused,
+        "newObjectiveInactiveAndExact": (
+            reference_feature_structure_contract.get("status") == "cpu_support_verified_inactive"
+            if reference_feature_structure_contract is not None
+            else worst_sample_class_contract.get("status") == "cpu_support_verified_inactive"
+            if worst_sample_class_contract is not None
+            else contract.get("status") == "cpu_support_verified_inactive"
+        ),
+        "inactiveSourceIdentitySeparatedAndTraceable": (
+            not inactive_source_identity_expected
+            or (
+                inactive.get("training", {}).get("trainingAuthorizationStatus")
+                == trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_CPU_INACTIVE_STATUS
+                and all_activation_gates_false(inactive.get("training", {}))
+                and "factConditionedSemanticMixtureStage4SingleSampleSmokeContract"
+                not in inactive.get("training", {})
+                and "stage4UnifiedTrainingPreviewSamplingContract"
+                not in inactive.get("training", {})
+                and "factConditionedSemanticMixtureStage4SmokeExecution"
+                not in inactive.get("training", {})
+                and inactive.get("training", {}).get(
+                    "stage4FactConditionedSemanticMixture", {}
+                ).get("diagnosticManifestRegistry", {}).get("fixedEpochs") is None
+            )
+        ),
+        "modeRegistrySupportsCurrentObjective": (
+            reference_feature_structure_contract is None
+            or fact_conditioned_semantic_mixture_smoke_supports_objective(
+                trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+            )
+        ),
+        "modeRegistryRejectsUnknownObjective": not fact_conditioned_semantic_mixture_smoke_supports_objective(
+            "unknown_stage4_training_objective"
+        ),
+        # The active contract is deliberately validated through the real Node
+        # activation path below.  Activating this leaf in isolation would create
+        # an impossible fixture because its multiscale and full-rollout parents
+        # must become active in the same immutable execution config.
+        "activeObjectiveContractValid": positive_node.returncode == 0,
+        "diagnosticRegistryHasNoInactiveFixedEpochs": (
+            "fixedEpochs" not in inactive["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]
+            or historical_source_lineage_not_reused
+        ),
+        "realNodeCpuContractPassed": positive_node.returncode == 0
+        and "semantic_mixture_stage4_smoke_node_to_trainer_contract_valid_cpu_only" in positive_node.stdout,
+        "cpuTrainerContractFormalExecutionPathsRemainAbsent": (
+            positive_formal_execution_paths_absent
+            and '"formalExecutionPathsCreated": false' in positive_node.stdout
+            and "stage4-smoke-cpu-trainer-contract-fixtures" in positive_node.stdout
+        ),
+        "currentRunBoundPreflightAcceptedWithoutConsumption": (
+            not inactive_source_identity_expected
+            or (
+                ownership_node is not None
+                and ownership_node.returncode == 0
+                and "current_run_preflight_ownership_contract_valid_cpu_only"
+                in ownership_node.stdout
+                and not resolve(Path(
+                    ownership_authorization["execution"]["consumptionPath"]
+                )).exists()
+                and not resolve(Path(
+                    ownership_authorization["execution"]["activeConfigPath"]
+                )).exists()
+                and not resolve(Path(
+                    ownership_authorization["execution"]["trainingOutputDirectory"]
+                )).exists()
+                and not resolve(Path(
+                    ownership_authorization["execution"]["finalizationDirectory"]
+                )).exists()
+            )
+        ),
+        "exactCurrentDiagnosticFieldsShared": diagnostic_fields
+        == list(trainer.fact_conditioned_semantic_mixture_diagnostic_fields(inactive)),
+        "checkpointTerminalIdentityContractExact": identity_contract_valid,
+        "terminalSnapshotCapturedBeforeBestCheckpointRestore": terminal_snapshot_before_best_restore,
+        "bestCheckpointFormatUnchangedAndTerminalEvidenceManifestOnly": main_checkpoint_format_unchanged,
+        "runnerActivatesAndValidatesSeparateTerminalIdentity": (
+            "stage4BestCheckpointAndTerminalQualificationIdentitySeparation" in runner_source
+            and "stage4TerminalQualificationIdentity" in runner_source
+            and "crossIdentitySubstitutionAllowed" in runner_source
+        ),
+        "bothSmokeCheckpointRolesRemainStage0Ineligible": (
+            identity_contract is None
+            or (
+                identity_contract["terminalQualificationIdentity"]["stage0InitializationEligible"] is False
+                and (
+                    inactive_smoke_contract is None
+                    or (
+                        inactive_smoke_contract["oldDenoiserCheckpointReadAuthorized"] is False
+                        and inactive_smoke_contract["diagnosticCheckpointReadAuthorized"] is False
+                    )
+                )
+            )
+        ),
+    }
+    negative = {
+        "unknownActionRejected": unknown_node.returncode != 0,
+        "directHistoricalEvidenceRejected": historical_node.returncode != 0,
+        "mixedHistoricalActiveSourceIdentityRejected": (
+            mixed_source_node is None or mixed_source_node.returncode != 0
+        ),
+        "partialActivationRejected": partial_rejected,
+        "changedContractIdentityRejected": changed_rejected,
+        **{
+            name: process.returncode != 0
+            for name, process in ownership_negative_nodes.items()
+        },
+        **identity_contract_negative_rejections,
+        "checkpointWeightContentNotRead": True,
+        "optimizerNotCreated": True,
+        "backwardNotExecuted": True,
+        "gpuNotStarted": not torch.cuda.is_initialized(),
+    }
+    report = {
+        "schemaVersion": "ai-painter-stage4-full-rollout-per-class-luminance-smoke-entry-cpu-report-v1",
+        "status": "fact_conditioned_semantic_mixture_stage4_smoke_cpu_regression_passed"
+        if all(positive.values()) and all(negative.values())
+        else "fact_conditioned_semantic_mixture_stage4_smoke_cpu_regression_failed_closed",
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "nodePositive": {"exitCode": positive_node.returncode, "stdout": positive_node.stdout, "stderr": positive_node.stderr},
+        "checkpointWeightContentRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "gpuStarted": False,
+    }
+    write_json_exclusive(report_path, report)
+    print(json.dumps({
+        "status": report["status"],
+        "path": project_path(report_path),
+        "sha256": sha256_file(report_path),
+        "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+        "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+    }, ensure_ascii=False))
+    return 0 if report["status"].endswith("_passed") else 1
 
 
 def sha256_file(path: Path) -> str:

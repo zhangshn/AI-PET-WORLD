@@ -1,6 +1,6 @@
 # 项目文档权威索引
 
-更新时间：2026-08-02 22:58:31 +08:00
+更新时间：2026-08-15 23:36:00 +08:00
 
 状态：active-document-governance-index
 
@@ -14,7 +14,7 @@
 | 项目总体架构 | `docs/ARCHITECTURE.md` | 系统分层、数据流、Runtime和模块边界 |
 | 本地AI能力迁移架构 | `docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md` | 本地AI能力、MVP筛选、Codex职能迁移与治理 |
 | 唯一模块计划表 | `docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md` | 当前模块、模块目标、阻断、完成条件与下一模块 |
-| AI Painter正式规格 | `docs/game-world-generation/` | 模型、数据、来源、审核和专项机器合同 |
+| AI Painter正式规格 | `docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | 模型、数据、来源、审核、Stage4连续授权和专项机器合同 |
 | 页面与后台规格 | `docs/ai-painter-progress/` | 页面职责、只读/写入边界、API和自动化合同 |
 | 世界视觉数据字典 | `docs/world-visual-data-dictionary/` | 视觉事实、标签、失败码和机器审核语义 |
 | 人格数据子系统 | `docs/ziwei/` | 紫微斗数、八字与人格映射输入数据 |
@@ -57,3 +57,5 @@ DOCUMENT_AUTHORITY_INDEX
 -> 当前模块对应的一份正式规格
 -> 需要时读取机器合同和运行证据
 ```
+
+AI Painter Stage4涉及一次Owner签署和连续执行时，阅读链不得跳过总体授权边界：先从`BUSINESS_SPEC.md`理解一次决策的业务目标，再从`ARCHITECTURE.md`读取签名与独立消费架构，从本地AI能力迁移架构读取执行主体职责，最后进入AI Painter正式规格和唯一计划表。机器可读合同固定为`data/ai-painter/system-governance/stage4-continuous-execution-authorization-contract-v1.json`，它不取代上述文档，也不产生授权。
