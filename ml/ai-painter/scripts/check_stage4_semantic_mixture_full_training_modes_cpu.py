@@ -14,9 +14,9 @@ import train_ai_assisted_conditional_denoiser as trainer
 
 
 ROOT = Path.cwd().resolve()
-DEFAULT_SOURCE = ROOT / ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-smoke-executions/20260813-113000000/active-config.json"
+DEFAULT_SOURCE = ROOT / ".runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-cpu-implementations/20260821-051855146/inactive-config.json"
 PACKAGE = ROOT / "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
-IMPLEMENTATION_ROOT = ROOT / ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-full-rollout-per-class-luminance-stage0-20260817-003500000"
+IMPLEMENTATION_ROOT = ROOT / ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-stage0-20260821-063700000"
 IMPLEMENTATION_AUTH = IMPLEMENTATION_ROOT / "implementation-authorization.json"
 IMPLEMENTATION_CONSUMPTION = IMPLEMENTATION_ROOT / "implementation-consumption.json"
 OUTPUT_ROOT = ROOT / ".runtime/ai-painter/stage4-semantic-mixture-formal-stage-mode-cpu-regressions"
@@ -128,6 +128,9 @@ def validate_current_candidate_activation_contract(config: dict) -> None:
         "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation",
         "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation",
         "stage4PerClassFinalVisibleReferenceFeatureStructureObligation",
+        "stage4EpochWorstSampleClassReferenceFeatureStructureReplay",
+        "stage4PerClassWorstSampleReferenceFeatureStructureObligation",
+        "stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation",
     ):
         contract = training.get(name)
         if not isinstance(contract, dict):
@@ -319,6 +322,78 @@ def main() -> int:
                 )
             )
         )
+        epoch_worst_reference_feature_replay = config["training"].get(
+            "stage4EpochWorstSampleClassReferenceFeatureStructureReplay"
+        )
+        positives[f"stage{stage}_epoch_worst_reference_feature_replay_active"] = (
+            epoch_worst_reference_feature_replay is not None
+            and epoch_worst_reference_feature_replay["status"]
+            == "training_loss_active_owner_authorized"
+            and all(
+                epoch_worst_reference_feature_replay["activationGate"][key] is True
+                for key in (
+                    "configurationActiveNow", "checkpointReadNow",
+                    "optimizerCreationNow", "backwardExecutionNow",
+                    "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+                    "stage4FullTrainingNow",
+                )
+            )
+            and all(
+                epoch_worst_reference_feature_replay["activationGate"][key] is False
+                for key in (
+                    "smokeNow", "stage5Now", "formalInferenceNow",
+                    "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
+        per_class_worst_reference_feature_structure = config["training"].get(
+            "stage4PerClassWorstSampleReferenceFeatureStructureObligation"
+        )
+        positives[f"stage{stage}_per_class_worst_reference_feature_structure_active"] = (
+            per_class_worst_reference_feature_structure is not None
+            and per_class_worst_reference_feature_structure["status"]
+            == "training_loss_active_owner_authorized"
+            and all(
+                per_class_worst_reference_feature_structure["activationGate"][key] is True
+                for key in (
+                    "configurationActiveNow", "checkpointReadNow",
+                    "optimizerCreationNow", "backwardExecutionNow",
+                    "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+                    "stage4FullTrainingNow",
+                )
+            )
+            and all(
+                per_class_worst_reference_feature_structure["activationGate"][key] is False
+                for key in (
+                    "smokeNow", "stage5Now", "formalInferenceNow",
+                    "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
+        per_class_worst_final_visible_luminance = config["training"].get(
+            "stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation"
+        )
+        positives[f"stage{stage}_per_class_worst_final_visible_luminance_active"] = (
+            per_class_worst_final_visible_luminance is not None
+            and per_class_worst_final_visible_luminance["status"]
+            == "training_loss_active_owner_authorized"
+            and all(
+                per_class_worst_final_visible_luminance["activationGate"][key] is True
+                for key in (
+                    "configurationActiveNow", "checkpointReadNow",
+                    "optimizerCreationNow", "backwardExecutionNow",
+                    "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+                    "stage4FullTrainingNow",
+                )
+            )
+            and all(
+                per_class_worst_final_visible_luminance["activationGate"][key] is False
+                for key in (
+                    "smokeNow", "stage5Now", "formalInferenceNow",
+                    "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
         resolved_diagnostic_fields = (
             trainer.fact_conditioned_semantic_mixture_diagnostic_fields(config)
         )
@@ -451,6 +526,66 @@ def main() -> int:
     bad = deepcopy(configs[0])
     bad["training"]["stage4PerClassFinalVisibleReferenceFeatureStructureObligation"]["unknown"] = True
     negatives["reference_feature_structure_unknown_field_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    del bad["training"]["stage4EpochWorstSampleClassReferenceFeatureStructureReplay"]
+    negatives["epoch_worst_reference_feature_replay_missing_rejected"] = rejects(
+        lambda: validate_current_candidate_activation_contract(bad)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4EpochWorstSampleClassReferenceFeatureStructureReplay"]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["epoch_worst_reference_feature_replay_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4EpochWorstSampleClassReferenceFeatureStructureReplay"]["activationGate"]["smokeNow"] = True
+    negatives["epoch_worst_reference_feature_replay_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4EpochWorstSampleClassReferenceFeatureStructureReplay"]["unknown"] = True
+    negatives["epoch_worst_reference_feature_replay_unknown_field_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    del bad["training"]["stage4PerClassWorstSampleReferenceFeatureStructureObligation"]
+    negatives["per_class_worst_reference_feature_structure_missing_rejected"] = rejects(
+        lambda: validate_current_candidate_activation_contract(bad)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4PerClassWorstSampleReferenceFeatureStructureObligation"]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["per_class_worst_reference_feature_structure_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4PerClassWorstSampleReferenceFeatureStructureObligation"]["activationGate"]["smokeNow"] = True
+    negatives["per_class_worst_reference_feature_structure_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4PerClassWorstSampleReferenceFeatureStructureObligation"]["unknown"] = True
+    negatives["per_class_worst_reference_feature_structure_unknown_field_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    del bad["training"]["stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation"]
+    negatives["per_class_worst_final_visible_luminance_missing_rejected"] = rejects(
+        lambda: validate_current_candidate_activation_contract(bad)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation"]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["per_class_worst_final_visible_luminance_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation"]["activationGate"]["smokeNow"] = True
+    negatives["per_class_worst_final_visible_luminance_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"]["stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation"]["unknown"] = True
+    negatives["per_class_worst_final_visible_luminance_unknown_field_rejected"] = rejects(
         lambda: trainer.validate_training_inputs(bad, package)
     )
 

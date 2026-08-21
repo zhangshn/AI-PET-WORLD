@@ -1,0 +1,172 @@
+import fs from "node:fs"
+import path from "node:path"
+import { createHash } from "node:crypto"
+
+const root = process.cwd()
+const runId = process.argv[2]
+if (!/^[0-9]{8}-[0-9]{9}$/.test(runId ?? "")) throw new Error("runId is required")
+
+const resolve = (value) => {
+  const normalized = String(value).replaceAll("\\", "/")
+  if (normalized === ".runtime" || normalized.startsWith(".runtime/")) {
+    const suffix = normalized === ".runtime" ? "" : normalized.slice(9)
+    return path.join("D:/AI-PET-WORLD-DATA/hot/runtime", suffix)
+  }
+  return path.resolve(root, value)
+}
+const projectPath = (value) => {
+  const absolute = path.resolve(value)
+  const hot = path.resolve("D:/AI-PET-WORLD-DATA/hot/runtime")
+  const relativeHot = path.relative(hot, absolute)
+  if (relativeHot === "" || (!relativeHot.startsWith("..") && !path.isAbsolute(relativeHot))) {
+    return relativeHot ? `.runtime/${relativeHot.replaceAll("\\", "/")}` : ".runtime"
+  }
+  return path.relative(root, absolute).replaceAll("\\", "/")
+}
+const hash = (value) => createHash("sha256").update(fs.readFileSync(resolve(value))).digest("hex")
+const read = (value) => JSON.parse(fs.readFileSync(resolve(value), "utf8"))
+const bind = (value) => ({ path: projectPath(resolve(value)), sha256: hash(value) })
+const writeExclusive = (value, data) => {
+  const target = resolve(value)
+  fs.mkdirSync(path.dirname(target), { recursive: true })
+  fs.writeFileSync(target, `${JSON.stringify(data, null, 2)}\n`, { encoding: "utf8", flag: "wx" })
+}
+
+const sourceConfig = ".runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-cpu-implementations/20260821-051855146/inactive-config.json"
+const sourceSupport = ".runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-cpu-implementations/20260821-051855146/training-objective-support-contract.json"
+const implementationAuthorization = ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-cpu-20260821-051855146/implementation-authorization.json"
+const implementationConsumption = ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-cpu-20260821-051855146/implementation-consumption.json"
+const evidence = {
+  "stage4.finalVisibleRgb.gpuQualificationTerminal": ".runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-readonly-gpu-qualifications/20260821-054300000/phase-terminal.json",
+  "stage4.finalVisibleRgb.gpuDiagnosticReport": ".runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-readonly-gpu-qualifications/20260821-054300000/gpu-qualification-report.json",
+  "stage4.finalVisibleRgb.cudaTelemetry": ".runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-readonly-gpu-qualifications/20260821-054300000/cuda-telemetry.json",
+  "stage4.finalVisibleRgb.cpuAuthorizationReport": ".runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-gpu-entry-cpu-checks/20260821-054209749/cpu-report.json",
+}
+const expected = new Map([
+  [sourceConfig, "886ed53287c1d384d13d94c0aa3fbe224eb5228febe65f36580bec8012373ad4"],
+  [sourceSupport, "8d1d8e1e635f542ed4a2bb3d741acdf5aca91dd3fdd195860b65f37e7cec23aa"],
+  [implementationAuthorization, "1040a6bd3402c8e184710391d72cbfb739bd10808a28e058625349b99ff8d3c4"],
+  [implementationConsumption, "4effd0f53db14f6ed519d105a03f0143278c26554654110dae88275754213ea6"],
+  [evidence["stage4.finalVisibleRgb.gpuQualificationTerminal"], "694fca7ce21cdf5936ccd6ead878fbbf9bf2df381542ee374acc5eb09aa9ac11"],
+  [evidence["stage4.finalVisibleRgb.gpuDiagnosticReport"], "b0ee905c371a7ce09ed906b7dd48a47463e5ddc5e2a6ef626d81de3ea6a8aa37"],
+  [evidence["stage4.finalVisibleRgb.cudaTelemetry"], "ffe3b41133a878551b4b9898681fa9e2caaad7732a623f7fa6af745879a9ba4e"],
+  [evidence["stage4.finalVisibleRgb.cpuAuthorizationReport"], "9e7ed5522b86d680b6767d431526025dd479f3979a86b8c855effdb946ca6929"],
+])
+for (const [file, expectedHash] of expected) {
+  if (!fs.existsSync(resolve(file)) || hash(file) !== expectedHash) throw new Error(`bound source changed: ${file}`)
+}
+const implementation = read(implementationAuthorization)
+const consumption = read(implementationConsumption)
+if (implementation.status !== "resolved_owner_authorized_not_consumed" || consumption.authorizationSha256 !== hash(implementationAuthorization) || consumption.oneTimeConsumption !== true) {
+  throw new Error("implementation lineage invalid")
+}
+
+const output = `.runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-smoke-entry-integrations/${runId}`
+if (fs.existsSync(resolve(output))) throw new Error("smoke entry output already exists")
+const config = structuredClone(read(sourceConfig))
+const training = config.training
+training.trainingAuthorizationStatus = "stage4_fact_conditioned_semantic_mixture_decoder_cpu_supported_inactive"
+training.denoiserEpochs = 30
+delete training.stage4FactConditionedSemanticMixture.diagnosticManifestRegistry.fixedEpochs
+delete training.factConditionedSemanticMixtureStage4FullTrainingContract
+delete training.factConditionedSemanticMixtureStage4SingleSampleSmokeContract
+delete training.factConditionedSemanticMixtureStage4SmokeExecution
+delete training.stage4UnifiedTrainingPreviewSamplingContract
+for (const [name, contract] of Object.entries(training)) {
+  if (!contract || typeof contract !== "object" || !contract.activationGate) continue
+  contract.status = name === "stage4FactConditionedSemanticMixture" ? "cpu_support_verified_not_active" : "cpu_support_verified_inactive"
+  if (name === "stage4FactConditionedSemanticMixture") contract.enabled = false
+  for (const gate of Object.keys(contract.activationGate)) contract.activationGate[gate] = false
+}
+training.stage4FailureDiagnostics.status = "fact_conditioned_semantic_mixture_diagnostic_manifest_supported_inactive"
+training.stage4FailureDiagnostics.trainingConfigApplied = false
+training.stage4FailureDiagnostics.checkpointFileReadAuthorized = false
+training.stage4FailureDiagnostics.gpuUseAuthorized = false
+training.stage4FailureDiagnostics.trainingAuthorized = false
+training.ownerTrainingAuthorization = {
+  authorizationId: implementation.requestId,
+  requestId: implementation.requestId,
+  commandRef: implementation.commandRef,
+  scope: implementation.scope,
+  authorizationPath: implementationAuthorization,
+  authorizationSha256: hash(implementationAuthorization),
+  executionConsumptionPath: implementationConsumption,
+  executionConsumptionSha256: hash(implementationConsumption),
+  executionState: "consumed",
+  status: "not_authorized_cpu_support_only",
+  checkpointLoadingAuthorized: false,
+  optimizerCreationAuthorized: false,
+  backwardExecutionAuthorized: false,
+  modelWeightMutationAuthorized: false,
+  gpuTrainingAuthorizedNow: false,
+  singleSampleGpuOverfitSmokeAuthorized: false,
+  fullTrainingAuthorized: false,
+  stage1Authorized: false,
+  stage2Authorized: false,
+  strictRevalidationAuthorized: false,
+  validationAuthorized: false,
+  formalInferenceAuthorized: false,
+  checkpointPromotionAuthorized: false,
+  runtimeFrameAuthorized: false,
+  worldEntryAuthorized: false,
+  automaticRetryAuthorized: false,
+}
+const objective = training.stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation
+if (objective?.contractId !== "stage4_per_class_worst_sample_final_visible_luminance_structure_obligation_v1" || objective.status !== "cpu_support_verified_inactive" || Object.values(objective.activationGate ?? {}).some(Boolean)) {
+  throw new Error("new objective is not exactly inactive")
+}
+const inactiveConfig = `${output}/inactive-smoke-config.json`
+writeExclusive(inactiveConfig, config)
+
+const canonicalRoot = `${output}/canonical`
+const roles = {}
+for (const [role, source] of Object.entries({
+  ...evidence,
+  "stage4.finalVisibleRgb.inactiveConfig": inactiveConfig,
+  "stage4.finalVisibleRgb.trainingObjectiveSupportContract": sourceSupport,
+})) {
+  const target = `${canonicalRoot}/${role}-${hash(source)}.json`
+  fs.mkdirSync(path.dirname(resolve(target)), { recursive: true })
+  fs.copyFileSync(resolve(source), resolve(target), fs.constants.COPYFILE_EXCL)
+  roles[role] = {
+    disposition: "active_reusable_success_evidence",
+    canonicalPath: target,
+    sha256: hash(target),
+    sourceHistoricalPath: source,
+    successTerminal: bind(evidence["stage4.finalVisibleRgb.gpuQualificationTerminal"]),
+  }
+}
+const registry = `${output}/registry.json`
+writeExclusive(registry, {
+  schemaVersion: "ai-painter-stage4-execution-evidence-eligibility-registry-v1",
+  registryId: runId,
+  status: "stage4_execution_evidence_eligibility_registered",
+  recordedAtUtc: new Date().toISOString(),
+  authorization: bind(implementationAuthorization),
+  policy: {
+    executionRequiresCanonicalPath: true,
+    sha256AloneNeverSelectsEvidence: true,
+    siblingPathInferenceForbidden: true,
+    failedExitedPartialSupersededExecutionUseAllowed: false,
+    historicalAnalysisReadAllowed: true,
+    ambiguousResolutionFailsClosed: true,
+    unknownTerminalStatusFailsClosed: true,
+  },
+  roles,
+  historical: [],
+})
+const terminal = `${output}/registration-terminal.json`
+writeExclusive(terminal, {
+  schemaVersion: "stage4-per-class-worst-sample-final-visible-luminance-structure-smoke-entry-registration-terminal-v1",
+  status: "stage4_per_class_worst_sample_final_visible_luminance_structure_smoke_entry_inputs_registered_cpu_only",
+  runId,
+  inactiveConfig: bind(inactiveConfig),
+  supportContract: bind(sourceSupport),
+  executionEvidenceRegistry: bind(registry),
+  gpuStarted: false,
+  checkpointRead: false,
+  optimizerCreated: false,
+  backwardExecuted: false,
+  trainingStarted: false,
+})
+console.log(JSON.stringify({ status: read(terminal).status, inactiveConfig: bind(inactiveConfig), registry: bind(registry), terminal: bind(terminal) }, null, 2))

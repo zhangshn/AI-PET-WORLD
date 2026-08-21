@@ -88,21 +88,29 @@ def main() -> int:
     if sha256_file(paths["supportContract"]) != args.support_contract_sha256:
         raise ValueError("support contract identity changed")
     config = json.loads(paths["inactiveConfig"].read_text(encoding="utf-8"))
+    per_class_worst_sample_luminance = (
+        runner.PER_CLASS_WORST_SAMPLE_LUMINANCE_CONTRACT_KEY
+        in config.get("training", {})
+    )
     reference_feature_structure = (
-        runner.REFERENCE_FEATURE_STRUCTURE_CONTRACT_KEY
+        not per_class_worst_sample_luminance
+        and runner.REFERENCE_FEATURE_STRUCTURE_CONTRACT_KEY
         in config.get("training", {})
     )
     worst_sample_class = (
-        not reference_feature_structure
+        not per_class_worst_sample_luminance
+        and not reference_feature_structure
         and runner.WORST_SAMPLE_CLASS_CONTRACT_KEY in config.get("training", {})
     )
-    if worst_sample_class or reference_feature_structure:
+    if per_class_worst_sample_luminance:
+        paths["sourceIndex"] = runner.resolve(runner.SOURCE_INDEX_PATH)
+    if per_class_worst_sample_luminance or worst_sample_class or reference_feature_structure:
         if args.configuration_audit is None or args.configuration_audit_sha256 is None:
             raise ValueError("configuration audit binding is required")
         paths["configurationAudit"] = (ROOT / args.configuration_audit).resolve()
         if sha256_file(paths["configurationAudit"]) != args.configuration_audit_sha256:
             raise ValueError("configuration audit identity changed")
-    if reference_feature_structure:
+    if per_class_worst_sample_luminance or reference_feature_structure:
         if args.owner_action_request is None or args.owner_action_request_sha256 is None:
             raise ValueError("reference feature structure Owner action request binding is required")
         paths["ownerActionRequest"] = (ROOT / args.owner_action_request).resolve()
@@ -110,7 +118,11 @@ def main() -> int:
             raise ValueError("Owner action request identity changed")
     activated = runner.active_config(config)
     active_contract = (
-        trainer.validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
+        trainer.validate_stage4_per_class_worst_sample_final_visible_luminance_structure_obligation(
+            activated
+        )
+        if per_class_worst_sample_luminance
+        else trainer.validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
             activated
         )
         if reference_feature_structure
@@ -137,16 +149,52 @@ def main() -> int:
                 calls.append(node.func.id)
     positive = {
         "inactive_configuration_identity_valid": True,
-        "active_contract_validation_passes": active_contract["status"] == "training_loss_active_owner_authorized",
+        "active_contract_validation_passes": active_contract["status"] == (
+            "cpu_support_verified_inactive"
+            if per_class_worst_sample_luminance
+            else "training_loss_active_owner_authorized"
+        ),
         "readonly_diagnostic_dataset_identity_is_48_8_4_4": readonly_inputs["identity"]["actualSplitCounts"] == trainer.V7_MVP64_SPLIT_COUNTS,
         "formal_smoke_execution_lineage_not_required": "validate_training_inputs(config, package)" not in source,
-        "exact_four_classes_preserved": active_contract["requiredClasses"] == list(trainer.STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS),
+        "exact_four_classes_preserved": (
+            active_contract["selection"]["classIdentities"]
+            if per_class_worst_sample_luminance
+            else active_contract["requiredClasses"]
+        ) == list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]),
         "runner_uses_real_50_step_rollout": "stage4_full_rollout_final_visible_consistency" in calls,
         "runner_uses_torch_autograd_grad": "grad" in calls,
         "runner_uses_worst_sample_class_aggregation": (
             not worst_sample_class
             or "stage4_full_rollout_worst_sample_class_reference_luminance_obligation_losses"
             in source
+        ),
+        "runner_uses_per_class_worst_sample_luminance_aggregation": (
+            not per_class_worst_sample_luminance
+            or "stage4_per_class_worst_sample_final_visible_luminance_structure_obligation_from_tensor"
+            in source
+        ),
+        "runner_uses_immutable_source_index_first_four_train_records": (
+            not per_class_worst_sample_luminance
+            or (
+                "source_order_train_ids[:4]" in source
+                and "first_four_train_records_in_immutable_source_index_formal_order"
+                in source
+                and paths["sourceIndex"].is_file()
+            )
+        ),
+        "runner_compares_direct_cpu_oracle": (
+            not per_class_worst_sample_luminance
+            or (
+                "matrix.detach().cpu()" in source
+                and "cpuOracleExactlyMatched" in source
+            )
+        ),
+        "runner_proves_four_class_sum_and_checkpoint_identity": (
+            not per_class_worst_sample_luminance
+            or (
+                "sameFinalVisibleLossSlotExact" in source
+                and "sameCheckpointQualificationTensorExact" in source
+            )
         ),
         "runner_uses_reference_feature_structure_obligation": (
             not reference_feature_structure
@@ -191,7 +239,9 @@ def main() -> int:
         authorization_path = temporary_root / "authorization.json"
         execution_output = (temporary_root / "execution-output").resolve()
         contract_id = (
-            trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+            trainer.STAGE4_PER_CLASS_WORST_SAMPLE_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
+            if per_class_worst_sample_luminance
+            else trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
             if reference_feature_structure
             else
             trainer.STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID
@@ -200,7 +250,9 @@ def main() -> int:
         )
         authorization = {
             "schemaVersion": (
-                "ai-painter-stage4-per-class-final-visible-reference-feature-structure-readonly-gpu-authorization-v1"
+                "ai-painter-stage4-per-class-worst-sample-final-visible-luminance-structure-readonly-gpu-authorization-v1"
+                if per_class_worst_sample_luminance
+                else "ai-painter-stage4-per-class-final-visible-reference-feature-structure-readonly-gpu-authorization-v1"
                 if reference_feature_structure
                 else
                 "ai-painter-stage4-full-rollout-worst-sample-class-reference-luminance-readonly-gpu-authorization-v1"
@@ -211,7 +263,9 @@ def main() -> int:
             "requestId": "owner-authorized-stage4-full-rollout-per-class-luminance-readonly-gpu-test-20260816-104100000",
             "commandRef": "owner-authorized-stage4-full-rollout-per-class-luminance-readonly-gpu-test-20260816-104100000",
             "scope": (
-                "stage4_per_class_final_visible_reference_feature_structure_readonly_gpu_qualification"
+                "stage4_per_class_worst_sample_final_visible_luminance_structure_readonly_gpu_qualification"
+                if per_class_worst_sample_luminance
+                else "stage4_per_class_final_visible_reference_feature_structure_readonly_gpu_qualification"
                 if reference_feature_structure
                 else
                 "stage4_full_rollout_worst_sample_class_reference_luminance_readonly_gpu_qualification"
@@ -232,6 +286,11 @@ def main() -> int:
                 "rolloutSteps": 50,
                 "gradientTailSteps": 5,
                 "requiredClasses": list(runner.CLASS_IDENTITIES),
+                **({
+                    "trainSampleSelection": "first_four_train_records_in_source_index_order",
+                    "trainSampleCount": 4,
+                    "validationIdentitySampleId": runner.SAMPLE_ID,
+                } if per_class_worst_sample_luminance else {}),
             },
             "consumptionState": {"consumed": False, "consumptionPath": None},
         }
@@ -249,6 +308,12 @@ def main() -> int:
             "wrong_scope_rejected": lambda value: value.update(scope="wrong_scope"),
             "consumed_authorization_rejected": lambda value: value.update(consumptionState={"consumed": True, "consumptionPath": "old.json"}),
             "output_reuse_rejected": lambda value: execution_output.mkdir(parents=True, exist_ok=False),
+            **({
+                "wrong_train_sample_selection_rejected": lambda value: value["taskIdentity"].update(trainSampleSelection="manual_selection"),
+                "wrong_train_sample_count_rejected": lambda value: value["taskIdentity"].update(trainSampleCount=3),
+                "wrong_validation_identity_rejected": lambda value: value["taskIdentity"].update(validationIdentitySampleId="old-sample"),
+                "source_index_hash_mismatch_rejected": lambda value: value["bindings"]["sourceIndex"].update(sha256="0" * 64),
+            } if per_class_worst_sample_luminance else {}),
         }
         negative = {}
         for name, mutate in negative_mutations.items():
@@ -260,7 +325,9 @@ def main() -> int:
         raise ValueError(f"GPU qualification CPU contract failed: positive={positive}, negative={negative}")
     report = {
         "schemaVersion": (
-            "stage4-per-class-final-visible-reference-feature-structure-readonly-gpu-cpu-report-v1"
+            "stage4-per-class-worst-sample-final-visible-luminance-structure-readonly-gpu-cpu-report-v1"
+            if per_class_worst_sample_luminance
+            else "stage4-per-class-final-visible-reference-feature-structure-readonly-gpu-cpu-report-v1"
             if reference_feature_structure
             else
             "stage4-full-rollout-worst-sample-class-reference-luminance-readonly-gpu-cpu-report-v1"
@@ -268,7 +335,9 @@ def main() -> int:
             else "stage4-full-rollout-per-class-luminance-readonly-gpu-cpu-report-v1"
         ),
         "status": (
-            "passed_stage4_per_class_final_visible_reference_feature_structure_readonly_gpu_cpu_gate"
+            "passed_stage4_per_class_worst_sample_final_visible_luminance_structure_readonly_gpu_cpu_gate"
+            if per_class_worst_sample_luminance
+            else "passed_stage4_per_class_final_visible_reference_feature_structure_readonly_gpu_cpu_gate"
             if reference_feature_structure
             else
             "passed_stage4_full_rollout_worst_sample_class_reference_luminance_readonly_gpu_cpu_gate"

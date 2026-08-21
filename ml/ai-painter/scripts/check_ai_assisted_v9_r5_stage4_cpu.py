@@ -214,6 +214,9 @@ def main() -> int:
     parser.add_argument("--object-reference-multiscale-smoke-entry-contract", action="store_true")
     parser.add_argument("--full-rollout-per-class-luminance-smoke-entry-contract", action="store_true")
     parser.add_argument("--per-class-reference-feature-structure-smoke-entry-contract", action="store_true")
+    parser.add_argument("--reference-feature-source-isolation-causal-boundary-smoke-entry-contract", action="store_true")
+    parser.add_argument("--per-class-worst-sample-reference-feature-structure-smoke-entry-contract", action="store_true")
+    parser.add_argument("--per-class-worst-sample-final-visible-luminance-structure-smoke-entry-contract", action="store_true")
     parser.add_argument(
         "--object-reference-multiscale-early-convergence-smoke-lineage-contract",
         action="store_true",
@@ -246,6 +249,12 @@ def main() -> int:
     parser.add_argument("--historical-baseline-input", type=Path)
     parser.add_argument("--new-baseline-output", type=Path)
     args = parser.parse_args()
+    if args.reference_feature_source_isolation_causal_boundary_smoke_entry_contract:
+        return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
+    if args.per_class_worst_sample_final_visible_luminance_structure_smoke_entry_contract:
+        return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
+    if args.per_class_worst_sample_reference_feature_structure_smoke_entry_contract:
+        return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
     if args.per_class_reference_feature_structure_smoke_entry_contract:
         return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
     if args.full_rollout_per_class_luminance_smoke_entry_contract:
@@ -9759,6 +9768,15 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
     contract = trainer.validate_stage4_full_rollout_per_class_final_visible_luminance_structure_obligation(
         inactive
     )
+    per_class_worst_sample_final_visible_luminance_structure_contract = inactive.get(
+        "training", {}
+    ).get("stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation")
+    if per_class_worst_sample_final_visible_luminance_structure_contract is not None:
+        per_class_worst_sample_final_visible_luminance_structure_contract = (
+            trainer.validate_stage4_per_class_worst_sample_final_visible_luminance_structure_obligation(
+                inactive
+            )
+        )
     worst_sample_class_contract = inactive.get("training", {}).get(
         "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation"
     )
@@ -9777,10 +9795,31 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
                 inactive
             )
         )
+    source_isolation_causal_boundary_contract = inactive.get("training", {}).get(
+        "stage4EpochWorstSampleClassReferenceFeatureStructureReplay"
+    )
+    if source_isolation_causal_boundary_contract is not None:
+        source_isolation_causal_boundary_contract = (
+            trainer.validate_stage4_epoch_worst_sample_class_reference_feature_structure_replay(
+                inactive
+            )
+        )
+    per_class_worst_reference_feature_structure_contract = inactive.get(
+        "training", {}
+    ).get("stage4PerClassWorstSampleReferenceFeatureStructureObligation")
+    if per_class_worst_reference_feature_structure_contract is not None:
+        per_class_worst_reference_feature_structure_contract = (
+            trainer.validate_stage4_per_class_worst_sample_reference_feature_structure_obligation(
+                inactive
+            )
+        )
     inactive_source_identity = inactive.get("training", {}).get(
         "stage4ReferenceFeatureStructureSmokeInactiveSourceIdentity"
     )
-    inactive_source_identity_expected = reference_feature_structure_contract is not None
+    inactive_source_identity_expected = (
+        reference_feature_structure_contract is not None
+        and isinstance(inactive_source_identity, dict)
+    )
     if inactive_source_identity_expected:
         source_binding = inactive_source_identity.get("sourceArchitectureConfig", {})
         source_identity_path = resolve(Path(source_binding.get("path", "")))
@@ -9924,7 +9963,14 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
         value = {
             "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-smoke-execution-authorization-v1",
             "requestId": (
-                f"owner-authorized-stage4-per-class-final-visible-reference-feature-structure-30-epoch-model-smoke-{name}"
+                f"owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-30-epoch-model-smoke-{name}"
+                if per_class_worst_sample_final_visible_luminance_structure_contract is not None
+                else f"owner-authorized-stage4-per-class-worst-sample-reference-feature-structure-30-epoch-model-smoke-{name}"
+                if per_class_worst_reference_feature_structure_contract is not None
+                else
+                f"owner-authorized-stage4-reference-feature-source-isolation-causal-boundary-30-epoch-model-smoke-{name}"
+                if source_isolation_causal_boundary_contract is not None
+                else f"owner-authorized-stage4-per-class-final-visible-reference-feature-structure-30-epoch-model-smoke-{name}"
                 if reference_feature_structure_contract is not None
                 else
                 f"owner-authorized-stage4-worst-sample-class-reference-luminance-30-epoch-model-smoke-{name}"
@@ -9932,7 +9978,14 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
                 else f"owner-authorized-stage4-full-rollout-per-class-luminance-30-epoch-model-smoke-{name}"
             ),
             "commandRef": (
-                f"owner-authorized-stage4-per-class-final-visible-reference-feature-structure-30-epoch-model-smoke-{name}"
+                f"owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-30-epoch-model-smoke-{name}"
+                if per_class_worst_sample_final_visible_luminance_structure_contract is not None
+                else f"owner-authorized-stage4-per-class-worst-sample-reference-feature-structure-30-epoch-model-smoke-{name}"
+                if per_class_worst_reference_feature_structure_contract is not None
+                else
+                f"owner-authorized-stage4-reference-feature-source-isolation-causal-boundary-30-epoch-model-smoke-{name}"
+                if source_isolation_causal_boundary_contract is not None
+                else f"owner-authorized-stage4-per-class-final-visible-reference-feature-structure-30-epoch-model-smoke-{name}"
                 if reference_feature_structure_contract is not None
                 else
                 f"owner-authorized-stage4-worst-sample-class-reference-luminance-30-epoch-model-smoke-{name}"
@@ -9947,7 +10000,14 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
                 "modeId": "fact_conditioned_semantic_mixture_stage4_smoke",
                 "architecture": "stage4_fact_conditioned_semantic_mixture_decoder_v1",
                 "trainingObjectiveContractId": (
-                    trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+                    trainer.STAGE4_PER_CLASS_WORST_SAMPLE_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
+                    if per_class_worst_sample_final_visible_luminance_structure_contract is not None
+                    else trainer.STAGE4_PER_CLASS_WORST_SAMPLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+                    if per_class_worst_reference_feature_structure_contract is not None
+                    else
+                    trainer.STAGE4_EPOCH_WORST_REFERENCE_FEATURE_STRUCTURE_REPLAY_ID
+                    if source_isolation_causal_boundary_contract is not None
+                    else trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
                     if reference_feature_structure_contract is not None
                     else
                     trainer.STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID
@@ -9969,6 +10029,10 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
                 "objectSemanticChannels": ["object_footprints", "object_tree", "object_rock", "object_vegetation"],
                 "pyramidScales": [1, 0.5, 0.25],
                 "diagnosticManifestFields": diagnostic_fields.copy(),
+                **({
+                    "sourceIsolationCausalBoundaryContractId":
+                        "stage4_reference_feature_source_isolation_causal_boundary_v1",
+                } if source_isolation_causal_boundary_contract is not None else {}),
             },
             "bindings": deepcopy(bindings),
             "codeBindings": {
@@ -10000,7 +10064,14 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
             [
                 "node", str(resolve(runner_path)),
                 (
-                    "--stage4-per-class-final-visible-reference-feature-structure-model-smoke"
+                    "--stage4-per-class-worst-sample-final-visible-luminance-structure-model-smoke"
+                    if per_class_worst_sample_final_visible_luminance_structure_contract is not None
+                    else "--stage4-per-class-worst-sample-reference-feature-structure-model-smoke"
+                    if per_class_worst_reference_feature_structure_contract is not None
+                    else
+                    "--stage4-reference-feature-source-isolation-causal-boundary-model-smoke"
+                    if source_isolation_causal_boundary_contract is not None
+                    else "--stage4-per-class-final-visible-reference-feature-structure-model-smoke"
                     if reference_feature_structure_contract is not None
                     else "--stage4-fact-conditioned-semantic-mixture-model-smoke"
                 ),
@@ -10060,7 +10131,16 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
     ) -> subprocess.CompletedProcess:
         command = [
             "node", str(resolve(runner_path)),
-            "--stage4-per-class-final-visible-reference-feature-structure-model-smoke",
+            (
+                "--stage4-per-class-worst-sample-final-visible-luminance-structure-model-smoke"
+                if per_class_worst_sample_final_visible_luminance_structure_contract is not None
+                else "--stage4-per-class-worst-sample-reference-feature-structure-model-smoke"
+                if per_class_worst_reference_feature_structure_contract is not None
+                else
+                "--stage4-reference-feature-source-isolation-causal-boundary-model-smoke"
+                if source_isolation_causal_boundary_contract is not None
+                else "--stage4-per-class-final-visible-reference-feature-structure-model-smoke"
+            ),
             "--gpu-authorization", project_path(path_value),
             "--gpu-authorization-sha256", sha256_file(path_value),
         ]
@@ -10220,7 +10300,11 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
         mixed_source_node = run_node(mixed_source_path)
     partial = deepcopy(inactive)
     objective_key = (
-        "stage4PerClassFinalVisibleReferenceFeatureStructureObligation"
+        "stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation"
+        if per_class_worst_sample_final_visible_luminance_structure_contract is not None
+        else "stage4EpochWorstSampleClassReferenceFeatureStructureReplay"
+        if source_isolation_causal_boundary_contract is not None
+        else "stage4PerClassFinalVisibleReferenceFeatureStructureObligation"
         if reference_feature_structure_contract is not None
         else "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation"
         if worst_sample_class_contract is not None
@@ -10230,7 +10314,15 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
     partial_contract["activationGate"]["trainingNow"] = True
     partial_rejected = False
     try:
-        if reference_feature_structure_contract is not None:
+        if per_class_worst_sample_final_visible_luminance_structure_contract is not None:
+            trainer.validate_stage4_per_class_worst_sample_final_visible_luminance_structure_obligation(
+                partial
+            )
+        elif source_isolation_causal_boundary_contract is not None:
+            trainer.validate_stage4_epoch_worst_sample_class_reference_feature_structure_replay(
+                partial
+            )
+        elif reference_feature_structure_contract is not None:
             trainer.validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
                 partial
             )
@@ -10244,7 +10336,15 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
     changed["training"][objective_key]["contractId"] = "old_contract"
     changed_rejected = False
     try:
-        if reference_feature_structure_contract is not None:
+        if per_class_worst_sample_final_visible_luminance_structure_contract is not None:
+            trainer.validate_stage4_per_class_worst_sample_final_visible_luminance_structure_obligation(
+                changed
+            )
+        elif source_isolation_causal_boundary_contract is not None:
+            trainer.validate_stage4_epoch_worst_sample_class_reference_feature_structure_replay(
+                changed
+            )
+        elif reference_feature_structure_contract is not None:
             trainer.validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
                 changed
             )
@@ -10344,7 +10444,11 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
         == "stage4_fact_conditioned_semantic_mixture_cpu_contract_valid_inactive",
         "historicalSourceExecutionLineageNotReused": historical_source_lineage_not_reused,
         "newObjectiveInactiveAndExact": (
-            reference_feature_structure_contract.get("status") == "cpu_support_verified_inactive"
+            per_class_worst_sample_final_visible_luminance_structure_contract.get("status") == "cpu_support_verified_inactive"
+            if per_class_worst_sample_final_visible_luminance_structure_contract is not None
+            else source_isolation_causal_boundary_contract.get("status") == "cpu_support_verified_inactive"
+            if source_isolation_causal_boundary_contract is not None
+            else reference_feature_structure_contract.get("status") == "cpu_support_verified_inactive"
             if reference_feature_structure_contract is not None
             else worst_sample_class_contract.get("status") == "cpu_support_verified_inactive"
             if worst_sample_class_contract is not None
@@ -10368,7 +10472,19 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
             )
         ),
         "modeRegistrySupportsCurrentObjective": (
-            reference_feature_structure_contract is None
+            per_class_worst_sample_final_visible_luminance_structure_contract is not None
+            and fact_conditioned_semantic_mixture_smoke_supports_objective(
+                trainer.STAGE4_PER_CLASS_WORST_SAMPLE_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
+            )
+            or per_class_worst_reference_feature_structure_contract is not None
+            and fact_conditioned_semantic_mixture_smoke_supports_objective(
+                trainer.STAGE4_PER_CLASS_WORST_SAMPLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+            )
+            or source_isolation_causal_boundary_contract is not None
+            and fact_conditioned_semantic_mixture_smoke_supports_objective(
+                trainer.STAGE4_EPOCH_WORST_REFERENCE_FEATURE_STRUCTURE_REPLAY_ID
+            )
+            or reference_feature_structure_contract is None
             or fact_conditioned_semantic_mixture_smoke_supports_objective(
                 trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
             )

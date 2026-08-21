@@ -146,6 +146,9 @@ def compile_config(
         "stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation",
         "stage4FullRolloutWorstSampleClassReferenceLuminanceObligation",
         "stage4PerClassFinalVisibleReferenceFeatureStructureObligation",
+        "stage4EpochWorstSampleClassReferenceFeatureStructureReplay",
+        "stage4PerClassWorstSampleReferenceFeatureStructureObligation",
+        "stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation",
     ):
         contract = training.get(name)
         if contract:
