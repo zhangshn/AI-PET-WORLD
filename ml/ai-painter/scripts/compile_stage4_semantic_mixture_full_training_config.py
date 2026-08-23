@@ -149,11 +149,32 @@ def compile_config(
         "stage4EpochWorstSampleClassReferenceFeatureStructureReplay",
         "stage4PerClassWorstSampleReferenceFeatureStructureObligation",
         "stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation",
+        "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity",
+        "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay",
     ):
         contract = training.get(name)
         if contract:
             contract["status"] = "training_loss_active_owner_authorized"
             contract["activationGate"] = active_gate(contract["activationGate"], smoke_key="smokeNow")
+
+    conflict_aware = training.get("stage4ConflictAwareExistingGradientAggregation")
+    if conflict_aware:
+        conflict_aware["status"] = "training_paradigm_active_owner_authorized"
+        conflict_aware["activationGate"] = active_gate(
+            conflict_aware["activationGate"], smoke_key="smokeNow"
+        )
+
+    controlled_structure = training.get("stage4ControlledStructureThreeArm")
+    if controlled_structure:
+        if config.get("stage4ControlledStructureArm") not in {
+            "condition_fusion_only_final_direct_residual_23_64_12",
+            "capacity_only_base_width_64_to_existing_level1_128",
+        }:
+            raise ValueError("only an Owner-adjudicated controlled structure arm may enter full training")
+        controlled_structure["status"] = "structure_active_owner_authorized"
+        controlled_structure["activationGate"] = active_gate(
+            controlled_structure["activationGate"], smoke_key="smokeNow"
+        )
 
     status = STATUSES[stage]
     training["ownerTrainingAuthorization"] = {

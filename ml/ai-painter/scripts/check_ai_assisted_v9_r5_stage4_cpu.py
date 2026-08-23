@@ -217,6 +217,10 @@ def main() -> int:
     parser.add_argument("--reference-feature-source-isolation-causal-boundary-smoke-entry-contract", action="store_true")
     parser.add_argument("--per-class-worst-sample-reference-feature-structure-smoke-entry-contract", action="store_true")
     parser.add_argument("--per-class-worst-sample-final-visible-luminance-structure-smoke-entry-contract", action="store_true")
+    parser.add_argument("--epoch-complete-per-class-worst-luminance-selection-smoke-entry-contract", action="store_true")
+    parser.add_argument("--epoch-complete-per-class-worst-reference-feature-shared-replay-smoke-entry-contract", action="store_true")
+    parser.add_argument("--conflict-aware-existing-gradient-aggregation-smoke-entry-contract", action="store_true")
+    parser.add_argument("--controlled-structure-smoke-entry-contract", action="store_true")
     parser.add_argument(
         "--object-reference-multiscale-early-convergence-smoke-lineage-contract",
         action="store_true",
@@ -249,7 +253,15 @@ def main() -> int:
     parser.add_argument("--historical-baseline-input", type=Path)
     parser.add_argument("--new-baseline-output", type=Path)
     args = parser.parse_args()
+    if args.controlled_structure_smoke_entry_contract:
+        return run_controlled_structure_smoke_entry_regression(args)
+    if args.conflict_aware_existing_gradient_aggregation_smoke_entry_contract:
+        return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
     if args.reference_feature_source_isolation_causal_boundary_smoke_entry_contract:
+        return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
+    if args.epoch_complete_per_class_worst_reference_feature_shared_replay_smoke_entry_contract:
+        return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
+    if args.epoch_complete_per_class_worst_luminance_selection_smoke_entry_contract:
         return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
     if args.per_class_worst_sample_final_visible_luminance_structure_smoke_entry_contract:
         return run_full_rollout_per_class_luminance_smoke_entry_regression(args)
@@ -9732,6 +9744,255 @@ def project_path(path: Path) -> str:
     return compiler.project_path(path)
 
 
+def run_controlled_structure_smoke_entry_regression(args) -> int:
+    if args.inactive_config is None or args.report is None:
+        raise ValueError("controlled structure Smoke CPU paths are incomplete")
+    report_path = resolve(args.report)
+    if report_path.exists():
+        raise ValueError("controlled structure Smoke CPU report already exists")
+    config = read_json(resolve(args.inactive_config))
+    positive = {}
+    negative = {}
+    contract = trainer.validate_stage4_controlled_structure_three_arm_contract(config)
+    arm = config.get("stage4ControlledStructureArm")
+    runner_source = resolve(SMOKE_RUNNER_PATH).read_text(encoding="utf-8")
+    positive["known_arm_is_registered"] = (
+        arm in trainer.CONTROLLED_STRUCTURE_SMOKE_ARMS
+        and trainer.fact_conditioned_semantic_mixture_smoke_supports_controlled_structure_arm(arm)
+    )
+    positive["inactive_contract_is_exact"] = (
+        contract.get("status") == "cpu_support_verified_inactive"
+        and not any(contract.get("activationGate", {}).values())
+    )
+    positive["model_dimensions_are_uniquely_derived"] = (
+        config.get("conditionChannels") == 23
+        and config.get("latentChannels") == 12
+        and config.get("denoiserBaseChannels")
+        == (128 if arm.startswith("capacity_only_") else 64)
+    )
+    positive["model_factory_cpu_output_shape_preserved"] = False
+    torch.manual_seed(20263722)
+    system = build_complete_world_system(config)
+    denoiser = system.denoiser
+    latent = torch.zeros(1, 12, 8, 8)
+    conditions = torch.zeros(1, 23, 64, 64)
+    timestep = torch.zeros(1, dtype=torch.long)
+    with torch.no_grad():
+        output = denoiser(latent, timestep, conditions)
+    positive["model_factory_cpu_output_shape_preserved"] = tuple(output.shape) == (1, 12, 8, 8)
+    positive["preflight_root_and_trainer_output_are_separated"] = all(
+        marker in runner_source
+        for marker in (
+            'const expectedTrainingOutput = `${expectedOutput}/training-output`',
+            "execution.trainingOutputDirectory !== expectedTrainingOutput",
+            "fs.existsSync(controlledSmokeRoot) || fs.existsSync(outputDir)",
+            "existing.some((name) => !allowedExisting.has(name))",
+        )
+    )
+    positive["trainer_output_is_created_only_by_trainer"] = (
+        '"--output-dir", context.outputDir' in runner_source
+        and "fs.mkdirSync(context.outputDir" not in runner_source
+        and "fs.mkdirSync(outputDir" not in runner_source
+    )
+    positive["compiled_root_artifacts_are_materialized_immutably"] = all(
+        marker in runner_source
+        for marker in (
+            "function materializeControlledStructureTrainerArtifacts",
+            "function materializeControlledStructureFinalizationArtifacts",
+            "fs.constants.COPYFILE_EXCL",
+            "controlled_structure_materialized_artifact_hash_mismatch",
+        )
+    )
+    positive["fresh_run_id_is_bound_from_authorization_and_contract"] = (
+        "const expectedRunId = authorization.runId" in runner_source
+        and "compiled.futureAuthorizationTemplate?.reservedRunId !== expectedRunId" in runner_source
+    )
+    positive["training_resource_telemetry_is_sealed_and_materialized"] = all(
+        marker in runner_source
+        for marker in (
+            "stage4-controlled-smoke-immutable-training-resource-telemetry-v1",
+            "runner_training_process_heartbeat_only",
+            "writeImmutableJson(telemetryPath, telemetry)",
+            'path.join(context.outputDir, "resource-telemetry.json")',
+            'path.join(context.controlledSmokeRoot, "resource-telemetry.json")',
+            "function validateControlledStructureResourceTelemetry",
+        )
+    )
+
+    expected_run_id = "20990101-000000001"
+    started = "2099-01-01T00:00:00.000Z"
+    telemetry_fixture = {
+        "schemaVersion": "stage4-controlled-smoke-immutable-training-resource-telemetry-v1",
+        "status": "sealed_training_runtime_resource_telemetry",
+        "arm": arm,
+        "runId": expected_run_id,
+        "source": "runner_training_process_heartbeat_only",
+        "heartbeatIntervalMs": 20000,
+        "trainingProcessStartedAtUtc": started,
+        "trainingProcessExitedAtUtc": "2099-01-01T00:00:40.000Z",
+        "trainerExitCode": 0,
+        "trainerSignal": None,
+        "preflightSampleExcluded": True,
+        "consoleOutputAcceptedAsEvidence": False,
+        "sampleCount": 2,
+        "samples": [
+            {"kind": "semantic-mixture_stage4_smoke_heartbeat", "epoch": 1, "gpuMemoryUsedMiB": 1024, "gpuUtilizationPercent": 50, "recordedAtUtc": "2099-01-01T00:00:20.000Z"},
+            {"kind": "semantic-mixture_stage4_smoke_heartbeat", "epoch": 2, "gpuMemoryUsedMiB": 1536, "gpuUtilizationPercent": 75, "recordedAtUtc": "2099-01-01T00:00:40.000Z"},
+        ],
+        "peakGpuMemoryMiB": 1536,
+        "peakGpuMemoryBytes": 1536 * 1024 * 1024,
+        "peakGpuUtilizationPercent": 75,
+    }
+
+    def telemetry_valid(value):
+        if not isinstance(value, dict):
+            return False
+        samples = value.get("samples")
+        if (
+            value.get("schemaVersion") != "stage4-controlled-smoke-immutable-training-resource-telemetry-v1"
+            or value.get("status") != "sealed_training_runtime_resource_telemetry"
+            or value.get("arm") != arm
+            or value.get("runId") != expected_run_id
+            or value.get("source") != "runner_training_process_heartbeat_only"
+            or value.get("preflightSampleExcluded") is not True
+            or value.get("consoleOutputAcceptedAsEvidence") is not False
+            or not isinstance(samples, list)
+            or not samples
+            or value.get("sampleCount") != len(samples)
+        ):
+            return False
+        try:
+            started_at = datetime.fromisoformat(value["trainingProcessStartedAtUtc"].replace("Z", "+00:00"))
+            for row in samples:
+                recorded_at = datetime.fromisoformat(row["recordedAtUtc"].replace("Z", "+00:00"))
+                if (
+                    row.get("kind") != "semantic-mixture_stage4_smoke_heartbeat"
+                    or not isinstance(row.get("epoch"), int)
+                    or not 1 <= row["epoch"] <= 30
+                    or not isinstance(row.get("gpuMemoryUsedMiB"), (int, float))
+                    or not math.isfinite(row["gpuMemoryUsedMiB"])
+                    or row["gpuMemoryUsedMiB"] < 0
+                    or not isinstance(row.get("gpuUtilizationPercent"), (int, float))
+                    or not math.isfinite(row["gpuUtilizationPercent"])
+                    or row["gpuUtilizationPercent"] < 0
+                    or recorded_at < started_at
+                ):
+                    return False
+        except (KeyError, TypeError, ValueError):
+            return False
+        peak_memory = max(row["gpuMemoryUsedMiB"] for row in samples)
+        peak_utilization = max(row["gpuUtilizationPercent"] for row in samples)
+        return (
+            value.get("peakGpuMemoryMiB") == peak_memory
+            and value.get("peakGpuMemoryBytes") == peak_memory * 1024 * 1024
+            and value.get("peakGpuUtilizationPercent") == peak_utilization
+        )
+
+    positive["valid_training_resource_telemetry_passes"] = telemetry_valid(telemetry_fixture)
+
+    def rejected(mutator):
+        candidate = deepcopy(config)
+        mutator(candidate)
+        try:
+            trainer.validate_stage4_controlled_structure_three_arm_contract(candidate)
+        except (ValueError, KeyError, TypeError):
+            return True
+        return False
+
+    controlled = lambda value: value["training"]["stage4ControlledStructureThreeArm"]
+    negative["unknown_arm_rejected"] = rejected(
+        lambda value: value.__setitem__("stage4ControlledStructureArm", "unknown")
+    )
+    negative["cross_arm_identity_rejected"] = rejected(
+        lambda value: controlled(value).__setitem__(
+            "armId",
+            "capacity_only_base_width_64_to_existing_level1_128"
+            if arm.startswith("condition_fusion")
+            else "condition_fusion_only_final_direct_residual_23_64_12",
+        )
+    )
+    negative["free_width_rejected"] = rejected(
+        lambda value: controlled(value).__setitem__("denoiserBaseChannels", 96)
+    )
+    negative["partial_activation_rejected"] = rejected(
+        lambda value: controlled(value)["activationGate"].__setitem__("gpuUseNow", True)
+    )
+    negative["unknown_gate_rejected"] = rejected(
+        lambda value: controlled(value)["activationGate"].__setitem__("unknownNow", False)
+    )
+    negative["historical_controlled_run_ids_not_hardcoded"] = (
+        '"20260823-032730362"' not in runner_source
+        and '"20260823-032730363"' not in runner_source
+        and '"20260823-040636572"' not in runner_source
+        and '"20260823-040636573"' not in runner_source
+    )
+    negative["root_path_cannot_be_reused_as_trainer_output"] = (
+        "execution.trainingOutputDirectory !== expectedOutput" not in runner_source
+    )
+    negative["cross_root_source_and_destination_are_rejected"] = all(
+        marker in runner_source
+        for marker in (
+            "controlled_structure_${label}_outside_training_output",
+            "controlled_structure_${label}_outside_smoke_root",
+        )
+    )
+    negative["materialized_artifacts_cannot_overwrite_existing_files"] = (
+        "fs.constants.COPYFILE_EXCL" in runner_source
+    )
+    negative["missing_training_telemetry_rejected"] = not telemetry_valid(None)
+    changed_telemetry = deepcopy(telemetry_fixture)
+    changed_telemetry["peakGpuMemoryBytes"] += 1
+    negative["forged_peak_gpu_memory_rejected"] = not telemetry_valid(changed_telemetry)
+    changed_telemetry = deepcopy(telemetry_fixture)
+    changed_telemetry["source"] = "preflight_resource_snapshot"
+    negative["preflight_memory_substitution_rejected"] = not telemetry_valid(changed_telemetry)
+    changed_telemetry = deepcopy(telemetry_fixture)
+    changed_telemetry["arm"] = (
+        "capacity_only_base_width_64_to_existing_level1_128"
+        if arm.startswith("condition_fusion")
+        else "condition_fusion_only_final_direct_residual_23_64_12"
+    )
+    negative["cross_arm_resource_telemetry_rejected"] = not telemetry_valid(changed_telemetry)
+    changed_telemetry = deepcopy(telemetry_fixture)
+    changed_telemetry["runId"] = "20260823-040636572"
+    negative["historical_run_resource_telemetry_rejected"] = not telemetry_valid(changed_telemetry)
+    negative["optimizer_not_created"] = True
+    negative["backward_not_executed"] = True
+    negative["gpu_not_started"] = not torch.cuda.is_initialized()
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "stage4-controlled-structure-smoke-entry-cpu-regression-v1",
+        "status": "stage4_controlled_structure_smoke_entry_cpu_regression_passed"
+        if not failed_positive and not failed_negative
+        else "stage4_controlled_structure_smoke_entry_cpu_regression_failed_closed",
+        **timestamps("recordedAt"),
+        "arm": arm,
+        "positive": positive,
+        "negative": negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "inactiveConfig": binding(args.inactive_config),
+        "checkpointRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    print(json.dumps({
+        "status": report["status"],
+        "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+        "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+        "report": binding(args.report),
+    }, ensure_ascii=False, indent=2))
+    return 1 if failed_positive or failed_negative else 0
+
+
 def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
     required = {
         "report": args.report,
@@ -9774,6 +10035,35 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
     if per_class_worst_sample_final_visible_luminance_structure_contract is not None:
         per_class_worst_sample_final_visible_luminance_structure_contract = (
             trainer.validate_stage4_per_class_worst_sample_final_visible_luminance_structure_obligation(
+                inactive
+            )
+        )
+    epoch_complete_per_class_worst_luminance_selection_contract = inactive.get(
+        "training", {}
+    ).get(
+        "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity"
+    )
+    if epoch_complete_per_class_worst_luminance_selection_contract is not None:
+        epoch_complete_per_class_worst_luminance_selection_contract = (
+            trainer.validate_stage4_epoch_complete_per_class_worst_luminance_selection(
+                inactive
+            )
+        )
+    epoch_complete_per_class_worst_reference_feature_shared_replay_contract = inactive.get(
+        "training", {}
+    ).get(
+        "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay"
+    )
+    if epoch_complete_per_class_worst_reference_feature_shared_replay_contract is not None:
+        epoch_complete_per_class_worst_reference_feature_shared_replay_contract = (
+            trainer.validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay(
+                inactive
+            )
+        )
+    conflict_aware_existing_gradient_aggregation_contract = None
+    if args.conflict_aware_existing_gradient_aggregation_smoke_entry_contract:
+        conflict_aware_existing_gradient_aggregation_contract = (
+            trainer.validate_stage4_conflict_aware_existing_gradient_aggregation(
                 inactive
             )
         )
@@ -9960,38 +10250,68 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
     def authorization(name: str) -> tuple[Path, dict]:
         root = fixtures / name
         root.mkdir(parents=True, exist_ok=False)
+        if conflict_aware_existing_gradient_aggregation_contract is not None:
+            request_identity = (
+                "owner-authorized-stage4-conflict-aware-existing-gradient-"
+                f"aggregation-30-epoch-model-smoke-{name}"
+            )
+            objective_identity = (
+                trainer.STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_ID
+            )
+        elif epoch_complete_per_class_worst_reference_feature_shared_replay_contract is not None:
+            request_identity = (
+                "owner-authorized-stage4-epoch-complete-per-class-worst-reference-"
+                f"feature-shared-replay-30-epoch-model-smoke-{name}"
+            )
+            objective_identity = (
+                trainer.STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_ID
+            )
+        elif epoch_complete_per_class_worst_luminance_selection_contract is not None:
+            request_identity = (
+                "owner-authorized-stage4-epoch-complete-per-class-worst-luminance-"
+                f"selection-30-epoch-model-smoke-{name}"
+            )
+            objective_identity = trainer.STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_LUMINANCE_SELECTION_ID
+        elif per_class_worst_sample_final_visible_luminance_structure_contract is not None:
+            request_identity = (
+                "owner-authorized-stage4-per-class-worst-sample-final-visible-"
+                f"luminance-structure-30-epoch-model-smoke-{name}"
+            )
+            objective_identity = trainer.STAGE4_PER_CLASS_WORST_SAMPLE_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
+        elif per_class_worst_reference_feature_structure_contract is not None:
+            request_identity = (
+                "owner-authorized-stage4-per-class-worst-sample-reference-feature-"
+                f"structure-30-epoch-model-smoke-{name}"
+            )
+            objective_identity = trainer.STAGE4_PER_CLASS_WORST_SAMPLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+        elif source_isolation_causal_boundary_contract is not None:
+            request_identity = (
+                "owner-authorized-stage4-reference-feature-source-isolation-causal-"
+                f"boundary-30-epoch-model-smoke-{name}"
+            )
+            objective_identity = trainer.STAGE4_EPOCH_WORST_REFERENCE_FEATURE_STRUCTURE_REPLAY_ID
+        elif reference_feature_structure_contract is not None:
+            request_identity = (
+                "owner-authorized-stage4-per-class-final-visible-reference-feature-"
+                f"structure-30-epoch-model-smoke-{name}"
+            )
+            objective_identity = trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+        elif worst_sample_class_contract is not None:
+            request_identity = (
+                "owner-authorized-stage4-worst-sample-class-reference-luminance-"
+                f"30-epoch-model-smoke-{name}"
+            )
+            objective_identity = trainer.STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID
+        else:
+            request_identity = (
+                "owner-authorized-stage4-full-rollout-per-class-luminance-"
+                f"30-epoch-model-smoke-{name}"
+            )
+            objective_identity = trainer.STAGE4_FULL_ROLLOUT_PER_CLASS_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
         value = {
             "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-smoke-execution-authorization-v1",
-            "requestId": (
-                f"owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-30-epoch-model-smoke-{name}"
-                if per_class_worst_sample_final_visible_luminance_structure_contract is not None
-                else f"owner-authorized-stage4-per-class-worst-sample-reference-feature-structure-30-epoch-model-smoke-{name}"
-                if per_class_worst_reference_feature_structure_contract is not None
-                else
-                f"owner-authorized-stage4-reference-feature-source-isolation-causal-boundary-30-epoch-model-smoke-{name}"
-                if source_isolation_causal_boundary_contract is not None
-                else f"owner-authorized-stage4-per-class-final-visible-reference-feature-structure-30-epoch-model-smoke-{name}"
-                if reference_feature_structure_contract is not None
-                else
-                f"owner-authorized-stage4-worst-sample-class-reference-luminance-30-epoch-model-smoke-{name}"
-                if worst_sample_class_contract is not None
-                else f"owner-authorized-stage4-full-rollout-per-class-luminance-30-epoch-model-smoke-{name}"
-            ),
-            "commandRef": (
-                f"owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-30-epoch-model-smoke-{name}"
-                if per_class_worst_sample_final_visible_luminance_structure_contract is not None
-                else f"owner-authorized-stage4-per-class-worst-sample-reference-feature-structure-30-epoch-model-smoke-{name}"
-                if per_class_worst_reference_feature_structure_contract is not None
-                else
-                f"owner-authorized-stage4-reference-feature-source-isolation-causal-boundary-30-epoch-model-smoke-{name}"
-                if source_isolation_causal_boundary_contract is not None
-                else f"owner-authorized-stage4-per-class-final-visible-reference-feature-structure-30-epoch-model-smoke-{name}"
-                if reference_feature_structure_contract is not None
-                else
-                f"owner-authorized-stage4-worst-sample-class-reference-luminance-30-epoch-model-smoke-{name}"
-                if worst_sample_class_contract is not None
-                else f"owner-authorized-stage4-full-rollout-per-class-luminance-30-epoch-model-smoke-{name}"
-            ),
+            "requestId": request_identity,
+            "commandRef": request_identity,
             "scope": "one_stage4_fact_conditioned_semantic_mixture_sample194_30_epoch_model_smoke_only",
             "status": "resolved_owner_authorized_not_consumed",
             "executionActions": execution_actions.copy(),
@@ -9999,21 +10319,7 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
             "taskIdentity": {
                 "modeId": "fact_conditioned_semantic_mixture_stage4_smoke",
                 "architecture": "stage4_fact_conditioned_semantic_mixture_decoder_v1",
-                "trainingObjectiveContractId": (
-                    trainer.STAGE4_PER_CLASS_WORST_SAMPLE_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
-                    if per_class_worst_sample_final_visible_luminance_structure_contract is not None
-                    else trainer.STAGE4_PER_CLASS_WORST_SAMPLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
-                    if per_class_worst_reference_feature_structure_contract is not None
-                    else
-                    trainer.STAGE4_EPOCH_WORST_REFERENCE_FEATURE_STRUCTURE_REPLAY_ID
-                    if source_isolation_causal_boundary_contract is not None
-                    else trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
-                    if reference_feature_structure_contract is not None
-                    else
-                    trainer.STAGE4_FULL_ROLLOUT_WORST_SAMPLE_CLASS_REFERENCE_LUMINANCE_OBLIGATION_ID
-                    if worst_sample_class_contract is not None
-                    else trainer.STAGE4_FULL_ROLLOUT_PER_CLASS_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
-                ),
+                "trainingObjectiveContractId": objective_identity,
                 "sampleId": SAMPLE_ID,
                 "sampleSplit": "validation",
                 "seed": 20263722,
@@ -10064,7 +10370,13 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
             [
                 "node", str(resolve(runner_path)),
                 (
-                    "--stage4-per-class-worst-sample-final-visible-luminance-structure-model-smoke"
+                    "--stage4-conflict-aware-existing-gradient-aggregation-model-smoke"
+                    if conflict_aware_existing_gradient_aggregation_contract is not None
+                    else "--stage4-epoch-complete-per-class-worst-reference-feature-shared-replay-model-smoke"
+                    if epoch_complete_per_class_worst_reference_feature_shared_replay_contract is not None
+                    else "--stage4-epoch-complete-per-class-worst-luminance-selection-model-smoke"
+                    if epoch_complete_per_class_worst_luminance_selection_contract is not None
+                    else "--stage4-per-class-worst-sample-final-visible-luminance-structure-model-smoke"
                     if per_class_worst_sample_final_visible_luminance_structure_contract is not None
                     else "--stage4-per-class-worst-sample-reference-feature-structure-model-smoke"
                     if per_class_worst_reference_feature_structure_contract is not None
@@ -10132,7 +10444,13 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
         command = [
             "node", str(resolve(runner_path)),
             (
-                "--stage4-per-class-worst-sample-final-visible-luminance-structure-model-smoke"
+                "--stage4-conflict-aware-existing-gradient-aggregation-model-smoke"
+                if conflict_aware_existing_gradient_aggregation_contract is not None
+                else "--stage4-epoch-complete-per-class-worst-reference-feature-shared-replay-model-smoke"
+                if epoch_complete_per_class_worst_reference_feature_shared_replay_contract is not None
+                else "--stage4-epoch-complete-per-class-worst-luminance-selection-model-smoke"
+                if epoch_complete_per_class_worst_luminance_selection_contract is not None
+                else "--stage4-per-class-worst-sample-final-visible-luminance-structure-model-smoke"
                 if per_class_worst_sample_final_visible_luminance_structure_contract is not None
                 else "--stage4-per-class-worst-sample-reference-feature-structure-model-smoke"
                 if per_class_worst_reference_feature_structure_contract is not None
@@ -10300,7 +10618,13 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
         mixed_source_node = run_node(mixed_source_path)
     partial = deepcopy(inactive)
     objective_key = (
-        "stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation"
+        "stage4ConflictAwareExistingGradientAggregation"
+        if conflict_aware_existing_gradient_aggregation_contract is not None
+        else "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay"
+        if epoch_complete_per_class_worst_reference_feature_shared_replay_contract is not None
+        else "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity"
+        if epoch_complete_per_class_worst_luminance_selection_contract is not None
+        else "stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation"
         if per_class_worst_sample_final_visible_luminance_structure_contract is not None
         else "stage4EpochWorstSampleClassReferenceFeatureStructureReplay"
         if source_isolation_causal_boundary_contract is not None
@@ -10314,7 +10638,19 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
     partial_contract["activationGate"]["trainingNow"] = True
     partial_rejected = False
     try:
-        if per_class_worst_sample_final_visible_luminance_structure_contract is not None:
+        if conflict_aware_existing_gradient_aggregation_contract is not None:
+            trainer.validate_stage4_conflict_aware_existing_gradient_aggregation(
+                partial
+            )
+        elif epoch_complete_per_class_worst_reference_feature_shared_replay_contract is not None:
+            trainer.validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay(
+                partial
+            )
+        elif epoch_complete_per_class_worst_luminance_selection_contract is not None:
+            trainer.validate_stage4_epoch_complete_per_class_worst_luminance_selection(
+                partial
+            )
+        elif per_class_worst_sample_final_visible_luminance_structure_contract is not None:
             trainer.validate_stage4_per_class_worst_sample_final_visible_luminance_structure_obligation(
                 partial
             )
@@ -10336,7 +10672,19 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
     changed["training"][objective_key]["contractId"] = "old_contract"
     changed_rejected = False
     try:
-        if per_class_worst_sample_final_visible_luminance_structure_contract is not None:
+        if conflict_aware_existing_gradient_aggregation_contract is not None:
+            trainer.validate_stage4_conflict_aware_existing_gradient_aggregation(
+                changed
+            )
+        elif epoch_complete_per_class_worst_reference_feature_shared_replay_contract is not None:
+            trainer.validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay(
+                changed
+            )
+        elif epoch_complete_per_class_worst_luminance_selection_contract is not None:
+            trainer.validate_stage4_epoch_complete_per_class_worst_luminance_selection(
+                changed
+            )
+        elif per_class_worst_sample_final_visible_luminance_structure_contract is not None:
             trainer.validate_stage4_per_class_worst_sample_final_visible_luminance_structure_obligation(
                 changed
             )
@@ -10428,6 +10776,171 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
             )
     trainer_source = resolve(TRAINER_PATH).read_text(encoding="utf-8")
     runner_source = resolve(runner_path).read_text(encoding="utf-8")
+    replay_telemetry_positive = True
+    replay_telemetry_negative = {}
+    epoch_complete_full_validation_ledger_valid = True
+    epoch_complete_insufficient_validation_rejected = True
+    if epoch_complete_per_class_worst_luminance_selection_contract is not None:
+        def fresh_replay_telemetry(name: str) -> Path:
+            target = fixtures / f"{name}-stage4-step-telemetry.json"
+            write_json_exclusive(target, {
+                "schemaVersion": "stage4-bounded-repair-smoke-step-telemetry-v1",
+                "status": "initialized_before_model_device_placement",
+                "events": [], "state": {}, "latestStep": None,
+                "latestStatus": None,
+            })
+            return target
+
+        exact_details = {
+            "epoch": 2,
+            "batch": 1,
+            "replayPass": 1,
+            "sampleId": SAMPLE_ID,
+            "classIdentity": "footprints",
+            "selectionScore": 1.25,
+        }
+        positive_telemetry_path = fresh_replay_telemetry("positive")
+        try:
+            trainer.record_stage4_step(
+                positive_telemetry_path,
+                "epoch_complete_per_class_selected_luminance_replay",
+                "completed",
+                **exact_details,
+            )
+            recorded_event = read_json(positive_telemetry_path)["events"][-1]
+            replay_telemetry_positive = (
+                recorded_event["step"]
+                == "epoch_complete_per_class_selected_luminance_replay"
+                and recorded_event["status"] == "completed"
+                and all(recorded_event.get(key) == value for key, value in exact_details.items())
+            )
+        except ValueError:
+            replay_telemetry_positive = False
+
+        telemetry_mutations = {
+            "missingReplayTelemetryFieldRejected": lambda value: value.pop("selectionScore"),
+            "unknownReplayTelemetryFieldRejected": lambda value: value.__setitem__("unknownField", True),
+            "invalidReplayTelemetryClassRejected": lambda value: value.__setitem__("classIdentity", "route"),
+        }
+        for name, mutate in telemetry_mutations.items():
+            changed_details = deepcopy(exact_details)
+            mutate(changed_details)
+            rejected = False
+            try:
+                trainer.record_stage4_step(
+                    fresh_replay_telemetry(name),
+                    "epoch_complete_per_class_selected_luminance_replay",
+                    "completed",
+                    **changed_details,
+                )
+            except ValueError:
+                rejected = True
+            replay_telemetry_negative[name] = rejected
+        unknown_step_rejected = False
+        try:
+            trainer.record_stage4_step(
+                fresh_replay_telemetry("unknown-step"),
+                "epoch_complete_unknown_replay",
+                "completed",
+                **exact_details,
+            )
+        except ValueError:
+            unknown_step_rejected = True
+        replay_telemetry_negative["unknownReplayTelemetryStepRejected"] = (
+            unknown_step_rejected
+        )
+        try:
+            full_validation_ledger = (
+                trainer.stage4_epoch_complete_per_class_selection_ledger(
+                    inactive, "validation", 16,
+                )
+            )
+            epoch_complete_full_validation_ledger_valid = (
+                full_validation_ledger["population"] == "validation"
+                and full_validation_ledger["expectedIdentityCount"] == 16
+            )
+        except ValueError:
+            epoch_complete_full_validation_ledger_valid = False
+        epoch_complete_insufficient_validation_rejected = False
+        try:
+            trainer.stage4_epoch_complete_per_class_selection_ledger(
+                inactive, "validation", 2,
+            )
+        except ValueError:
+            epoch_complete_insufficient_validation_rejected = True
+    conflict_aware_shared_replacement_valid = True
+    conflict_aware_missing_shared_gradient_rejected = True
+    if conflict_aware_existing_gradient_aggregation_contract is not None:
+        class_order = tuple(
+            conflict_aware_existing_gradient_aggregation_contract["classOrder"]
+        )
+        raw_gradients = {
+            class_order[0]: (torch.tensor([1.0, -2.0]), torch.tensor([0.5])),
+            class_order[1]: (torch.tensor([-2.0, 1.0]), torch.tensor([-0.25])),
+            class_order[2]: (torch.tensor([0.5, 0.75]), torch.tensor([1.0])),
+            class_order[3]: (torch.tensor([0.25, -0.5]), torch.tensor([0.75])),
+        }
+        aggregation = trainer.stage4_conflict_aware_existing_gradient_aggregation(
+            raw_gradients, inactive
+        )
+        shared_parameters = (
+            torch.nn.Parameter(torch.zeros(2)),
+            torch.nn.Parameter(torch.zeros(1)),
+        )
+        other_loss_gradients = (torch.tensor([3.0, -4.0]), torch.tensor([2.0]))
+        for parameter_index, parameter in enumerate(shared_parameters):
+            original_class_sum = sum(
+                aggregation["originalWeightedGradients"][identity][parameter_index]
+                for identity in class_order
+            )
+            parameter.grad = other_loss_gradients[parameter_index] + original_class_sum
+        nonshared_parameter = torch.nn.Parameter(torch.zeros(2))
+        nonshared_parameter.grad = torch.tensor([7.0, -9.0])
+        nonshared_before = nonshared_parameter.grad.clone()
+        replacement_evidence = (
+            trainer.stage4_apply_conflict_aware_existing_gradient_replacement(
+                shared_parameters, aggregation
+            )
+        )
+        def dtype_derived_equivalent(left, right):
+            if left.dtype != right.dtype or left.shape != right.shape:
+                return False
+            absolute_difference = float((left - right).abs().max().detach())
+            scale = max(
+                1.0,
+                float(left.abs().max().detach()),
+                float(right.abs().max().detach()),
+            )
+            derived_tolerance = float(torch.finfo(left.dtype).eps) * scale
+            return math.isfinite(absolute_difference) and (
+                absolute_difference <= derived_tolerance
+            )
+        conflict_aware_shared_replacement_valid = (
+            replacement_evidence["additionalBackwardCalls"] == 0
+            and replacement_evidence["additionalOptimizerSteps"] == 0
+            and replacement_evidence["nonSharedParametersTouched"] is False
+            and all(
+                dtype_derived_equivalent(
+                    parameter.grad,
+                    other_loss_gradients[parameter_index]
+                    + aggregation["aggregatedSharedGradients"][parameter_index],
+                )
+                for parameter_index, parameter in enumerate(shared_parameters)
+            )
+            and torch.equal(nonshared_parameter.grad, nonshared_before)
+        )
+        missing_gradient_parameters = (
+            torch.nn.Parameter(torch.zeros(2)),
+            torch.nn.Parameter(torch.zeros(1)),
+        )
+        missing_gradient_parameters[0].grad = torch.zeros(2)
+        try:
+            trainer.stage4_apply_conflict_aware_existing_gradient_replacement(
+                missing_gradient_parameters, aggregation
+            )
+            conflict_aware_missing_shared_gradient_rejected = False
+        except ValueError:
+            conflict_aware_missing_shared_gradient_rejected = True
     terminal_snapshot_before_best_restore = (
         trainer_source.index("terminal_qualification_state = deepcopy")
         < trainer_source.index("model.denoiser.load_state_dict(best_denoiser_state)")
@@ -10444,7 +10957,13 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
         == "stage4_fact_conditioned_semantic_mixture_cpu_contract_valid_inactive",
         "historicalSourceExecutionLineageNotReused": historical_source_lineage_not_reused,
         "newObjectiveInactiveAndExact": (
-            per_class_worst_sample_final_visible_luminance_structure_contract.get("status") == "cpu_support_verified_inactive"
+            conflict_aware_existing_gradient_aggregation_contract.get("status") == "cpu_support_verified_inactive"
+            if conflict_aware_existing_gradient_aggregation_contract is not None
+            else epoch_complete_per_class_worst_reference_feature_shared_replay_contract.get("status") == "cpu_support_verified_inactive"
+            if epoch_complete_per_class_worst_reference_feature_shared_replay_contract is not None
+            else epoch_complete_per_class_worst_luminance_selection_contract.get("status") == "cpu_support_verified_inactive"
+            if epoch_complete_per_class_worst_luminance_selection_contract is not None
+            else per_class_worst_sample_final_visible_luminance_structure_contract.get("status") == "cpu_support_verified_inactive"
             if per_class_worst_sample_final_visible_luminance_structure_contract is not None
             else source_isolation_causal_boundary_contract.get("status") == "cpu_support_verified_inactive"
             if source_isolation_causal_boundary_contract is not None
@@ -10472,7 +10991,19 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
             )
         ),
         "modeRegistrySupportsCurrentObjective": (
-            per_class_worst_sample_final_visible_luminance_structure_contract is not None
+            conflict_aware_existing_gradient_aggregation_contract is not None
+            and fact_conditioned_semantic_mixture_smoke_supports_objective(
+                trainer.STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_ID
+            )
+            or epoch_complete_per_class_worst_reference_feature_shared_replay_contract is not None
+            and fact_conditioned_semantic_mixture_smoke_supports_objective(
+                trainer.STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_ID
+            )
+            or epoch_complete_per_class_worst_luminance_selection_contract is not None
+            and fact_conditioned_semantic_mixture_smoke_supports_objective(
+                trainer.STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_LUMINANCE_SELECTION_ID
+            )
+            or per_class_worst_sample_final_visible_luminance_structure_contract is not None
             and fact_conditioned_semantic_mixture_smoke_supports_objective(
                 trainer.STAGE4_PER_CLASS_WORST_SAMPLE_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID
             )
@@ -10497,12 +11028,43 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
         # an impossible fixture because its multiscale and full-rollout parents
         # must become active in the same immutable execution config.
         "activeObjectiveContractValid": positive_node.returncode == 0,
+        "conflictAwareSharedGradientReplacementPreservesOtherLossAndNonSharedGradients": (
+            conflict_aware_shared_replacement_valid
+        ),
         "diagnosticRegistryHasNoInactiveFixedEpochs": (
             "fixedEpochs" not in inactive["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]
             or historical_source_lineage_not_reused
         ),
         "realNodeCpuContractPassed": positive_node.returncode == 0
         and "semantic_mixture_stage4_smoke_node_to_trainer_contract_valid_cpu_only" in positive_node.stdout,
+        "epochCompleteSmokeUsesImmutableFullTrainPopulation": (
+            epoch_complete_per_class_worst_luminance_selection_contract is None
+            or 'epoch_complete_train_dataset=datasets["train"]' in trainer_source
+        ),
+        "epochCompleteSmokeUsesFullValidationPopulation": (
+            epoch_complete_per_class_worst_luminance_selection_contract is None
+            or 'datasets["validation"]' in trainer_source
+            and "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity"
+            in trainer_source
+        ),
+        "epochCompleteSmokeReusesExistingTwoReplayPasses": (
+            epoch_complete_per_class_worst_luminance_selection_contract is None
+            or epoch_complete_per_class_worst_luminance_selection_contract[
+                "trainingSelection"
+            ]["additionalOptimizerSteps"] == 0
+            and epoch_complete_per_class_worst_luminance_selection_contract[
+                "sourceContracts"
+            ]["replayPassesPerObservedPrimaryBatch"] == 2
+        ),
+        "epochCompleteReplayTelemetryExactFieldsAccepted": replay_telemetry_positive,
+        "epochCompleteFullValidationIdentityLedgerPreserved": (
+            epoch_complete_full_validation_ledger_valid
+        ),
+        "checkpointBoundPreviewExplicitlyBypassesFullValidationLedger": (
+            epoch_complete_per_class_worst_luminance_selection_contract is None
+            or "epoch_complete_per_class_luminance_active\n            and not force_checkpoint_bound_preview"
+            in trainer_source
+        ),
         "cpuTrainerContractFormalExecutionPathsRemainAbsent": (
             positive_formal_execution_paths_absent
             and '"formalExecutionPathsCreated": false' in positive_node.stdout
@@ -10566,6 +11128,13 @@ def run_full_rollout_per_class_luminance_smoke_entry_regression(args) -> int:
             for name, process in ownership_negative_nodes.items()
         },
         **identity_contract_negative_rejections,
+        **replay_telemetry_negative,
+        "insufficientFormalValidationIdentityCountRejected": (
+            epoch_complete_insufficient_validation_rejected
+        ),
+        "missingConflictAwareSharedGradientRejected": (
+            conflict_aware_missing_shared_gradient_rejected
+        ),
         "checkpointWeightContentNotRead": True,
         "optimizerNotCreated": True,
         "backwardNotExecuted": True,

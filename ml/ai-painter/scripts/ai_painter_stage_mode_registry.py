@@ -46,6 +46,33 @@ CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_SMOKE_STATUS = (
 FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_INACTIVE_STATUS = (
     "stage4_fact_conditioned_semantic_mixture_decoder_cpu_supported_inactive"
 )
+CONTROLLED_STRUCTURE_BASELINE_STAGE4_INACTIVE_STATUS = (
+    "stage4_controlled_structure_baseline_cpu_supported_inactive"
+)
+CONTROLLED_STRUCTURE_FUSION_STAGE4_INACTIVE_STATUS = (
+    "stage4_controlled_structure_condition_fusion_cpu_supported_inactive"
+)
+CONTROLLED_STRUCTURE_CAPACITY_STAGE4_INACTIVE_STATUS = (
+    "stage4_controlled_structure_capacity_cpu_supported_inactive"
+)
+STAGE4_TERRAIN_ROUTE_HYDROLOGY_COMPONENT_INACTIVE_STATUS = (
+    "stage4_terrain_route_hydrology_component_cpu_supported_inactive"
+)
+STAGE4_PER_CLASS_OBJECT_SEMANTIC_COMPONENT_INACTIVE_STATUS = (
+    "stage4_per_class_object_semantic_component_cpu_supported_inactive"
+)
+STAGE4_GLOBAL_VISUAL_NATIVE_DECODE_COMPONENT_INACTIVE_STATUS = (
+    "stage4_global_visual_native_decode_component_cpu_supported_inactive"
+)
+STAGE4_TERRAIN_ROUTE_HYDROLOGY_COMPONENT_SMOKE_STATUS = (
+    "owner_authorized_stage4_terrain_route_hydrology_component_single_sample_gpu_smoke"
+)
+STAGE4_PER_CLASS_OBJECT_SEMANTIC_COMPONENT_SMOKE_STATUS = (
+    "owner_authorized_stage4_per_class_object_semantic_component_single_sample_gpu_smoke"
+)
+STAGE4_GLOBAL_VISUAL_NATIVE_DECODE_COMPONENT_SMOKE_STATUS = (
+    "owner_authorized_stage4_global_visual_native_decode_component_single_sample_gpu_smoke"
+)
 FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS = (
     "owner_authorized_stage4_fact_conditioned_semantic_mixture_single_sample_gpu_smoke"
 )
@@ -61,11 +88,29 @@ STAGE4_PER_CLASS_WORST_SAMPLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID = (
 STAGE4_PER_CLASS_WORST_SAMPLE_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID = (
     "stage4_per_class_worst_sample_final_visible_luminance_structure_obligation_v1"
 )
+STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_LUMINANCE_SELECTION_ID = (
+    "stage4_epoch_complete_per_class_worst_sample_final_visible_luminance_"
+    "selection_and_checkpoint_identity_v1"
+)
+STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_ID = (
+    "stage4_epoch_complete_per_class_worst_sample_reference_feature_structure_"
+    "selection_and_shared_replay_v1"
+)
+STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_ID = (
+    "stage4_conflict_aware_existing_gradient_aggregation_v1"
+)
+CONTROLLED_STRUCTURE_SMOKE_ARMS = frozenset({
+    "condition_fusion_only_final_direct_residual_23_64_12",
+    "capacity_only_base_width_64_to_existing_level1_128",
+})
 FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_OBJECTIVE_CONTRACT_IDS = frozenset({
     STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID,
     STAGE4_EPOCH_WORST_REFERENCE_FEATURE_STRUCTURE_REPLAY_ID,
     STAGE4_PER_CLASS_WORST_SAMPLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID,
     STAGE4_PER_CLASS_WORST_SAMPLE_FINAL_VISIBLE_LUMINANCE_STRUCTURE_OBLIGATION_ID,
+    STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_LUMINANCE_SELECTION_ID,
+    STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_ID,
+    STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_ID,
 })
 FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE0_FULL_TRAINING_STATUS = (
     "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage0_full_training"
@@ -212,6 +257,96 @@ FORMAL_MODE_REGISTRY = ModeRegistry(
             False,
         ),
         ModeSpec(
+            "controlled_structure_baseline_stage4_inactive",
+            CONTROLLED_STRUCTURE_BASELINE_STAGE4_INACTIVE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "cpu_inactive",
+            "controlled_structure_baseline_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "controlled_structure_fusion_stage4_inactive",
+            CONTROLLED_STRUCTURE_FUSION_STAGE4_INACTIVE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "cpu_inactive",
+            "controlled_structure_fusion_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "controlled_structure_capacity_stage4_inactive",
+            CONTROLLED_STRUCTURE_CAPACITY_STAGE4_INACTIVE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "cpu_inactive",
+            "controlled_structure_capacity_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "stage4_terrain_route_hydrology_component_inactive",
+            STAGE4_TERRAIN_ROUTE_HYDROLOGY_COMPONENT_INACTIVE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "cpu_inactive",
+            "stage4_terrain_route_hydrology_component_adapter",
+            None,
+            False,
+        ),
+        ModeSpec(
+            "stage4_per_class_object_semantic_component_inactive",
+            STAGE4_PER_CLASS_OBJECT_SEMANTIC_COMPONENT_INACTIVE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "cpu_inactive",
+            "stage4_per_class_object_semantic_component_adapter",
+            None,
+            False,
+        ),
+        ModeSpec(
+            "stage4_global_visual_native_decode_component_inactive",
+            STAGE4_GLOBAL_VISUAL_NATIVE_DECODE_COMPONENT_INACTIVE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "cpu_inactive",
+            "stage4_global_visual_native_decode_component_adapter",
+            None,
+            False,
+        ),
+        ModeSpec(
+            "stage4_terrain_route_hydrology_component_smoke",
+            STAGE4_TERRAIN_ROUTE_HYDROLOGY_COMPONENT_SMOKE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "single_sample_smoke",
+            "stage4_isolated_responsibility_component_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "stage4_per_class_object_semantic_component_smoke",
+            STAGE4_PER_CLASS_OBJECT_SEMANTIC_COMPONENT_SMOKE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "single_sample_smoke",
+            "stage4_isolated_responsibility_component_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "stage4_global_visual_native_decode_component_smoke",
+            STAGE4_GLOBAL_VISUAL_NATIVE_DECODE_COMPONENT_SMOKE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "single_sample_smoke",
+            "stage4_isolated_responsibility_component_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
             "fact_conditioned_semantic_mixture_stage4_smoke",
             FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS,
             _FACT_CONDITIONED_SEMANTIC_MIXTURE,
@@ -266,6 +401,13 @@ def resolve_stage_mode(config) -> ModeSpec:
 def fact_conditioned_semantic_mixture_smoke_supports_objective(contract_id: str) -> bool:
     """Declare bounded objective variants supported by the existing Smoke ModeSpec."""
     return contract_id in FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_OBJECTIVE_CONTRACT_IDS
+
+
+def fact_conditioned_semantic_mixture_smoke_supports_controlled_structure_arm(
+    arm_id: str,
+) -> bool:
+    """Declare the two Owner-designed controlled structure Smoke variants."""
+    return arm_id in CONTROLLED_STRUCTURE_SMOKE_ARMS
 
 
 def build_synthetic_extension_registry() -> ModeRegistry:

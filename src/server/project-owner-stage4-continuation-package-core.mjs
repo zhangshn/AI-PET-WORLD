@@ -33,13 +33,36 @@ export function verifyStage4ContinuationPackage({ root = process.cwd(), packageP
   if (!safeId(value.packageId) || value.commandRef !== value.packageId || value.scope !== "ai-painter:stage4:stage0-to-80-continuation") fail("Package identity is invalid.", "continuation_package_identity_invalid")
   if (!bindingValid(projectRoot, value.sourceExecutionPlan) || value.sourceExecutionPlan.sha256 !== value.planSha256) fail("Source plan identity is invalid.", "continuation_package_plan_binding_invalid")
   const plan = readJson(path.resolve(projectRoot, value.sourceExecutionPlan.path), "continuation_plan_invalid")
-  auditStage4Stage0To80ContinuationPlan(plan, { root: projectRoot })
+  auditStage4Stage0To80ContinuationPlan(plan, { root: projectRoot, packageId: value.packageId })
   if (JSON.stringify(value.candidateIdentity) !== JSON.stringify(plan.candidateIdentity) || JSON.stringify(value.qualificationTerminal) !== JSON.stringify(plan.qualificationTerminal)) fail("Package candidate or qualification differs from plan.", "continuation_package_lineage_mismatch")
+  if (JSON.stringify(value.hostExecution) !== JSON.stringify(plan.hostExecution)) fail("Package host execution contract differs from plan.", "continuation_package_host_execution_mismatch")
+  if (value.hostExecution?.mechanism !== "wmi_win32_process_create" || value.hostExecution?.codexProcessTreeIndependent !== true || value.hostExecution?.stopOnCodexExit !== false || value.hostExecution?.automaticRetry !== false || value.hostExecution?.requiresFreshPackageAndOutput !== true) fail("Package host execution contract invalid.", "continuation_package_host_execution_invalid")
+  for (const key of ["launcher", "worker", "starter", "disconnectCpuReport"]) if (!bindingValid(projectRoot, value.hostExecution?.[key])) fail(`Package host execution ${key} binding invalid.`, "continuation_package_host_execution_binding_invalid")
+  verifyStaleFormalLockRecovery(projectRoot, value)
   if (JSON.stringify(value.steps?.map((step) => step.role)) !== JSON.stringify(ROLES)) fail("Package step order invalid.", "continuation_package_step_order_invalid")
   const packageRoot = path.dirname(absolutePackagePath)
   const steps = value.steps.map((step, index) => verifyStep({ root: projectRoot, packageRoot, contract, planStep: plan.steps[index], step, trustRegistryPath, trustRegistrySha256, now }))
   const coordinator = verifyCoordinator({ root: projectRoot, packageRoot, contract, value, steps, trustRegistryPath, trustRegistrySha256, now })
   return { ...value, steps, coordinator, packagePath: relativePackagePath, packageSha256: packageSha256.toLowerCase(), packageRoot: projectPath(projectRoot, packageRoot), contract }
+}
+
+function verifyStaleFormalLockRecovery(root, packageValue) {
+  const recovery = packageValue.hostExecution?.staleFormalLockRecovery
+  if (recovery?.enabled !== true || recovery?.quarantineRootTemplate !== ".runtime/ai-painter/stage4-stale-formal-lock-quarantines/{{PACKAGE_ID}}") fail("Stale formal lock recovery contract invalid.", "continuation_stale_lock_recovery_invalid")
+  for (const key of ["repairer", "cpuReport", "interruptionTerminal"]) if (!bindingValid(root, recovery[key])) fail(`Stale lock ${key} binding invalid.`, "continuation_stale_lock_recovery_binding_invalid")
+  if (recovery.sourceState === "prior_quarantine_verified") {
+    if (!bindingValid(root, recovery.priorQuarantineTerminal) || !bindingValid(root, recovery.priorQuarantinedLock)) fail("Prior stale lock quarantine binding invalid.", "continuation_prior_quarantine_binding_invalid")
+    const terminal = readJson(path.resolve(root, recovery.priorQuarantineTerminal.path), "continuation_stale_lock_terminal_invalid")
+    if (terminal.status !== "stale_formal_stage_lock_quarantined_closed" || terminal.staleLock?.originalPath !== recovery.lock.path || terminal.staleLock?.quarantinedPath !== recovery.priorQuarantinedLock.path || terminal.staleLock?.sha256 !== recovery.lock.sha256 || recovery.priorQuarantinedLock.sha256 !== recovery.lock.sha256) fail("Prior stale lock quarantine evidence invalid.", "continuation_prior_quarantine_evidence_invalid")
+    return
+  }
+  if (bindingValid(root, recovery.lock)) return
+  const quarantineRoot = recovery.quarantineRootTemplate.replace("{{PACKAGE_ID}}", packageValue.packageId)
+  const terminalPath = path.resolve(root, quarantineRoot, "phase-terminal.json")
+  const lockPath = path.resolve(root, quarantineRoot, "stale-formal-stage.lock.json")
+  if (!fs.existsSync(terminalPath) || !fs.existsSync(lockPath)) fail("Stale lock source or quarantine evidence missing.", "continuation_stale_lock_recovery_evidence_missing")
+  const terminal = readJson(terminalPath, "continuation_stale_lock_terminal_invalid")
+  if (terminal.status !== "stale_formal_stage_lock_quarantined_closed" || terminal.packageId !== packageValue.packageId || terminal.staleLock?.originalPath !== recovery.lock.path || terminal.staleLock?.sha256 !== recovery.lock.sha256 || sha256File(lockPath) !== recovery.lock.sha256) fail("Stale lock quarantine evidence invalid.", "continuation_stale_lock_recovery_evidence_invalid")
 }
 
 function verifyStep({ root, packageRoot, contract, planStep, step, trustRegistryPath, trustRegistrySha256, now }) {
@@ -80,7 +103,7 @@ export function buildCoordinatorExpectation(value, steps = value.steps) {
     method: "EXEC",
     route: "scripts/run-ai-painter-stage4-stage0-to-80-continuation.mjs",
     target: { packageId: value.packageId, candidateIdentity: value.candidateIdentity, qualificationTerminal: value.qualificationTerminal, baselineProgress: value.baselineProgress, targetProgress: value.targetProgress },
-    payload: { stepAuthorizations: steps.map((step) => ({ role: step.role, path: step.authorization.path, sha256: step.authorization.sha256 })), stepOrder: ROLES, automaticRetry: false, smokeRerunAuthorized: false, updateUniquePlanOnStage2Success: true },
+    payload: { stepAuthorizations: steps.map((step) => ({ role: step.role, path: step.authorization.path, sha256: step.authorization.sha256 })), stepOrder: ROLES, automaticRetry: false, smokeRerunAuthorized: false, updateUniquePlanOnStage2Success: true, hostExecution: value.hostExecution },
   }
 }
 

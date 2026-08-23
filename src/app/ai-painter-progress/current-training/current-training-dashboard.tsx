@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type {
   CurrentTrainingDashboardSnapshot,
   StrictValidationBatch,
@@ -276,8 +276,12 @@ function TrainingMission({
 }: {
   snapshot: CurrentTrainingDashboardSnapshot;
 }) {
+  const [liveOutputOpen, setLiveOutputOpen] = useState(false);
   const activity = snapshot.activity;
   const isTraining = activity.localAiProcessActive;
+  const activeProgressStage = [...snapshot.execution.stages]
+    .reverse()
+    .find((stage) => stage.runId === activity.progress.runId) ?? null;
   const stageChain = [0, 1, 2].map(
     (index) =>
       [...snapshot.execution.stages]
@@ -290,6 +294,14 @@ function TrainingMission({
   const gpuMemoryPercent = snapshot.gpu.memoryTotalMiB
     ? (snapshot.gpu.memoryUsedMiB / snapshot.gpu.memoryTotalMiB) * 100
     : 0;
+  useEffect(() => {
+    if (!liveOutputOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setLiveOutputOpen(false);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [liveOutputOpen]);
   return (
     <section
       className={styles.missionBoard}
@@ -297,6 +309,36 @@ function TrainingMission({
       data-testid="execution-actor-board"
       data-training={isTraining}
     >
+      <button
+        aria-expanded={liveOutputOpen}
+        aria-haspopup="dialog"
+        aria-live="polite"
+        className={styles.executionSafetyNotice}
+        data-active={isTraining}
+        data-stalled={activity.stalled}
+        data-testid="training-continuation-notice"
+        onClick={() => setLiveOutputOpen(true)}
+        title="点击查看只读实时训练输出"
+        type="button"
+      >
+        <strong>
+          {isTraining
+            ? "● 训练持续执行中｜请勿重复启动"
+            : activity.stalled
+              ? "● 训练心跳异常｜请先查看证据，不要重复启动"
+              : "● 当前未检测到训练进程"}
+        </strong>
+        <span>
+          {isTraining
+            ? `${activity.progress.stageLabel ?? "训练阶段"} · Epoch ${activity.progress.epoch ?? "—"}/${activity.progress.epochTarget ?? "—"} · 优化步 ${activity.progress.optimizerStep ?? "—"}/${activity.progress.optimizerStepTarget ?? "—"}`
+            : activity.lifecycleLabelZh}
+        </span>
+        <small>
+          {isTraining
+            ? `最新落盘心跳：${formatDetailedTimestamp(activity.lastHeartbeatAtAsiaShanghai ?? activity.lastHeartbeatAtUtc)}；点击查看实时输出，刷新或关闭本页面不会中断训练。`
+            : "点击查看只读状态；本提示不会启动、暂停或修改训练。"}
+        </small>
+      </button>
       <div className={styles.missionIdentity}>
         <div className={styles.trainingBeacon}>
           <i />
@@ -474,7 +516,166 @@ function TrainingMission({
           )}
         </small>
       </div>
+      {liveOutputOpen ? (
+        <LiveTrainingOutputDialog
+          onClose={() => setLiveOutputOpen(false)}
+          snapshot={snapshot}
+          stage={activeProgressStage}
+        />
+      ) : null}
     </section>
+  );
+}
+
+function LiveTrainingOutputDialog({
+  snapshot,
+  stage,
+  onClose,
+}: {
+  snapshot: CurrentTrainingDashboardSnapshot;
+  stage: TrainingStageDetail | null;
+  onClose: () => void;
+}) {
+  const [followLatest, setFollowLatest] = useState(true);
+  const outputStreamRef = useRef<HTMLDivElement>(null);
+  const activity = snapshot.activity;
+  const progress = activity.progress;
+  const epochHistory = stage?.metrics ?? [];
+  const recentMetrics = [...epochHistory].reverse().slice(0, 8);
+  const eventHistory = snapshot.events
+    .filter((event) => !progress.runId || event.runId === progress.runId)
+    .reverse();
+  const heartbeatTimestamp = formatDetailedTimestamp(
+    activity.lastHeartbeatAtAsiaShanghai ?? activity.lastHeartbeatAtUtc,
+  );
+  useEffect(() => {
+    if (!followLatest) return;
+    const frame = window.requestAnimationFrame(() => {
+      const output = outputStreamRef.current;
+      if (output) output.scrollTop = output.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [followLatest, progress.optimizerStep, epochHistory.length, eventHistory.length]);
+
+  function resumeFollowingLatest() {
+    setFollowLatest(true);
+    window.requestAnimationFrame(() => {
+      const output = outputStreamRef.current;
+      if (output) output.scrollTop = output.scrollHeight;
+    });
+  }
+  return (
+    <div
+      className={styles.modalBackdrop}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      role="presentation"
+    >
+      <section
+        aria-label="只读实时训练输出"
+        aria-modal="true"
+        className={styles.liveOutputDialog}
+        data-testid="live-training-output-dialog"
+        role="dialog"
+      >
+        <header>
+          <div>
+            <span>LOCAL READ-ONLY TRAINING OUTPUT</span>
+            <h2>实时训练输出</h2>
+            <p>本窗口约每2秒读取本地进度证据，不会控制或修改训练。</p>
+          </div>
+          <button
+            aria-label="关闭实时训练输出"
+            data-testid="live-training-output-close"
+            onClick={onClose}
+            type="button"
+          >
+            ×
+          </button>
+        </header>
+
+        <div className={styles.liveOutputStatusGrid}>
+          <Definition label="运行状态" value={`${activity.lifecycleLabelZh} · ${activity.process.childAlive ? "训练进程存活" : "未检测到训练子进程"}`} />
+          <Definition label="当前阶段" value={`${progress.stageLabel ?? "—"} · ${progress.resolution ?? "—"}`} />
+          <Definition label="Epoch / Batch" value={`${progress.epoch ?? "—"}/${progress.epochTarget ?? "—"} · ${progress.batch ?? "—"}/${progress.batchTarget ?? "—"}`} />
+          <Definition label="优化步" value={`${progress.optimizerStep ?? "—"}/${progress.optimizerStepTarget ?? "—"}`} />
+          <Definition label="阶段进度" value={`${(progress.percentage ?? 0).toFixed(2)}%`} />
+          <Definition label="动态 ETA" value={progress.etaSeconds === null ? "—" : formatUptime(progress.etaSeconds)} />
+          <Definition label="当前 Loss" value={formatMetric(progress.trainCompositeLoss)} />
+          <Definition label="训练速度" value={progress.optimizerStepsPerSecond === null ? "—" : `${progress.optimizerStepsPerSecond.toFixed(3)} step/s`} />
+        </div>
+
+        <div className={styles.liveOutputProgressBar}>
+          <span style={{ width: `${progress.percentage ?? 0}%` }} />
+        </div>
+
+        <section className={styles.liveOutputConsolePanel}>
+          <header>
+            <div>
+              <strong>本次运行输出历史</strong>
+              <small>已落盘 {epochHistory.length} 个Epoch · 最新内容在底部</small>
+            </div>
+            <button
+              data-following={followLatest}
+              onClick={resumeFollowingLatest}
+              type="button"
+            >
+              {followLatest ? "正在跟随最新" : "回到最新"}
+            </button>
+          </header>
+          <div
+            className={styles.liveOutputConsole}
+            data-testid="live-training-output-stream"
+            onScroll={(event) => {
+              const output = event.currentTarget;
+              const atBottom =
+                output.scrollHeight - output.scrollTop - output.clientHeight < 24;
+              setFollowLatest(atBottom);
+            }}
+            ref={outputStreamRef}
+          >
+            <code>[RUN] {progress.runId ?? activity.taskId ?? "no-active-run"}</code>
+            <code>[SOURCE] {activity.sourcePath ?? activity.source}</code>
+            {eventHistory.map((event) => (
+              <code key={`event-${event.id}`}>[{formatDetailedTimestamp(event.timestamp)}] EVENT {event.status} · {event.title}</code>
+            ))}
+            {epochHistory.map((metric) => (
+              <code key={`epoch-${metric.epoch}`}>
+                [{formatDetailedTimestamp(metric.recordedAtAsiaShanghai ?? metric.recordedAtUtc)}] EPOCH {metric.epoch} completed · trainLoss={formatMetric(metric.trainCompositeLoss)} · validation={formatMetric(metric.validationCompositeScore)} · checkpoint={formatMetric(metric.validationCheckpointScore)}
+              </code>
+            ))}
+            <code>[{heartbeatTimestamp}] HEARTBEAT received</code>
+            <code>[PHASE] {formatLivePhase(progress.phase)}</code>
+            <code>[PROGRESS] Epoch {progress.epoch ?? "—"}/{progress.epochTarget ?? "—"} · Batch {progress.batch ?? "—"}/{progress.batchTarget ?? "—"} · Step {progress.optimizerStep ?? "—"}/{progress.optimizerStepTarget ?? "—"}</code>
+            <code>[GPU] utilization={snapshot.gpu.utilizationPercent}% memory={snapshot.gpu.memoryUsedMiB}/{snapshot.gpu.memoryTotalMiB} MiB</code>
+          </div>
+        </section>
+
+        <section className={styles.liveOutputEpochs}>
+          <header>
+            <strong>最近完成的 Epoch</strong>
+            <small>{recentMetrics.length ? `显示 ${recentMetrics.length} 条最新记录` : "正在等待首个Epoch落盘"}</small>
+          </header>
+          <div>
+            {recentMetrics.map((metric) => (
+              <article key={metric.epoch}>
+                <strong>Epoch {metric.epoch}</strong>
+                <span>训练Loss {formatMetric(metric.trainCompositeLoss)}</span>
+                <span>验证分 {formatMetric(metric.validationCompositeScore)}</span>
+                <span>Checkpoint分 {formatMetric(metric.validationCheckpointScore)}</span>
+                <small>{formatDetailedTimestamp(metric.recordedAtAsiaShanghai ?? metric.recordedAtUtc)}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <footer className={styles.liveOutputFooter}>
+          <span>聊天定时推送已关闭；此窗口由本地监控台持续更新。</span>
+          <code>{progress.runId ?? "no-active-run"}</code>
+        </footer>
+      </section>
+    </div>
   );
 }
 

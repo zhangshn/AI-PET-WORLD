@@ -51,7 +51,9 @@ from ai_painter_stage_mode_registry import (
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE0_FULL_TRAINING_STATUS,
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE1_FULL_TRAINING_STATUS,
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE2_FULL_TRAINING_STATUS,
+    CONTROLLED_STRUCTURE_SMOKE_ARMS,
     fact_conditioned_semantic_mixture_smoke_supports_objective,
+    fact_conditioned_semantic_mixture_smoke_supports_controlled_structure_arm,
     resolve_stage_mode,
 )
 
@@ -268,6 +270,31 @@ FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS = (
 STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_OBLIGATION_ID = (
     "stage4_per_class_final_visible_rgb_obligation_v1"
 )
+STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_ID = (
+    "stage4_conflict_aware_existing_gradient_aggregation_v1"
+)
+STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_EVIDENCE_BINDINGS = {
+    "diagnosticTerminal": {
+        "path": ".runtime/ai-painter/stage4-current-model-multisample-capacity-gradient-interference-diagnostics/20260822-130905113/phase-terminal.json",
+        "sha256": "f4ec93aaf924a8e8bc21483c09a14fedfd52e05436ec7f0014d9334b6f843e4e",
+    },
+    "gpuReport": {
+        "path": ".runtime/ai-painter/stage4-current-model-multisample-capacity-gradient-interference-diagnostics/20260822-130905113/gpu-report.json",
+        "sha256": "040f8a721bc8b54d2237787ecb714a8ec9fc35cb5eda4d7fab8c4ba69b421e62",
+    },
+    "analysisReport": {
+        "path": ".runtime/ai-painter/stage4-current-model-multisample-capacity-gradient-interference-diagnostics/20260822-130905113/multisample-capacity-gradient-interference-analysis.json",
+        "sha256": "f37e0f5637f03ea45ca87474efdc09755893e27502cf5a9c5d56d27a7edfacc9",
+    },
+    "adjudication": {
+        "path": ".runtime/ai-painter/stage4-current-model-multisample-capacity-gradient-interference-diagnostics/20260822-130905113/adjudication.json",
+        "sha256": "adbd2e1e1113c497630d4de091f6af787ab365e4ac7dfcb582dbea038a51fb10",
+    },
+    "inactiveTrainingParadigmContract": {
+        "path": ".runtime/ai-painter/stage4-current-model-multisample-capacity-gradient-interference-diagnostics/20260822-130905113/inactive-contract-or-owner-request.json",
+        "sha256": "f81c8a776a3a8b68d99fb15df61515174df85377db71e840e5f3a9722ff78153",
+    },
+}
 STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_OBLIGATION_ID = (
     "stage4_distribution_aware_visible_spatial_semantic_obligation_v1"
 )
@@ -504,6 +531,69 @@ STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_LUMINANCE_SELECTION_IMPLEMENTATION_AUTHORI
         "implementation-authorization.json"
     ),
     "authorizationSha256": "91cfb1b6ee64d314461a201d8f398d5213f368ae6a08fc7e9a4327a44ed6456f",
+}
+STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_ID = (
+    "stage4_epoch_complete_per_class_worst_sample_reference_feature_structure_"
+    "selection_and_shared_replay_v1"
+)
+STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_EVIDENCE_BINDINGS = {
+    "terminal": {
+        "path": (
+            ".runtime/ai-painter/stage4-three-class-supervision-identifiability-"
+            "reviews/20260822-071517942/phase-terminal.json"
+        ),
+        "sha256": "c489842ee9e3c11f6b16f108a740e4ed7f11bf02569a170fc264c892e335ed13",
+    },
+    "designReport": {
+        "path": (
+            ".runtime/ai-painter/stage4-three-class-supervision-identifiability-"
+            "reviews/20260822-071517942/supervision-design-report.json"
+        ),
+        "sha256": "7055d987ed0350994f973ede746d957ee3af78e8498ed6fda6687f407c4a7aa8",
+    },
+    "decision": {
+        "path": (
+            ".runtime/ai-painter/stage4-three-class-supervision-identifiability-"
+            "reviews/20260822-071517942/adjudication.json"
+        ),
+        "sha256": "6a253fa55e96dfe97f44ca0122f36896b7c993721fc91867b4c5eaed4abbac15",
+    },
+    "inactiveTrainingObjectiveContract": {
+        "path": (
+            ".runtime/ai-painter/stage4-three-class-supervision-identifiability-"
+            "reviews/20260822-071517942/inactive-training-objective-contract.json"
+        ),
+        "sha256": "aa22e17d80b5103d2682cebe395e45b546aa18fb132faf3a318dedc8c8779d81",
+    },
+    "dataSupervisionAudit": {
+        "path": (
+            ".runtime/ai-painter/stage4-three-class-supervision-identifiability-"
+            "reviews/20260822-071517942/data-supervision-audit.json"
+        ),
+        "sha256": "e7c0a704d6a80074f2614ce82ab3f57119fb62344aca64888a29b41194c50338",
+    },
+    "supervisionCoverageAudit": {
+        "path": (
+            ".runtime/ai-painter/stage4-three-class-supervision-identifiability-"
+            "reviews/20260822-071517942/supervision-coverage-audit.json"
+        ),
+        "sha256": "16e7a1bf4022e0a1ce94399ce43a4d15c19739727ebfa81e10000cf8f99b92ff",
+    },
+    "cpuReport": {
+        "path": (
+            ".runtime/ai-painter/stage4-three-class-supervision-identifiability-"
+            "reviews/20260822-071517942/cpu-report.json"
+        ),
+        "sha256": "a82574a7dfffce00c9aa2b8f95e67667061a573dba500bc24507d0b79899516f",
+    },
+}
+STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_IMPLEMENTATION_AUTHORIZATION = {
+    "authorizationPath": (
+        ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-epoch-"
+        "complete-per-class-worst-reference-feature-shared-replay-cpu-"
+        "20260822-072101387/implementation-authorization.json"
+    ),
+    "authorizationSha256": "e022f4339324ae3a3f64e5548072f42fb2ce6d754d38d73351cf8079eaf62f0a",
 }
 STAGE4_OBJECT_REFERENCE_MULTISCALE_EARLY_CONVERGENCE_STABILIZATION_ID = (
     "stage4_object_reference_multiscale_two_lane_early_convergence_stabilization_v1"
@@ -773,10 +863,15 @@ def main() -> int:
     parser.add_argument("--stage-control-authorization", type=Path)
     parser.add_argument("--stage-control-authorization-sha256")
     parser.add_argument("--authorization-lineage-preflight", action="store_true")
+    parser.add_argument("--stage4-responsibility-component-smoke", action="store_true")
+    parser.add_argument("--stage4-predecessor-output-identity", type=Path)
     args = parser.parse_args()
 
     config = read_json(args.config)
     package = read_json(args.dataset_package)
+    if args.stage4_responsibility_component_smoke:
+        from train_stage4_isolated_responsibility_component_smoke import run as run_component_smoke
+        return run_component_smoke(args, config, package)
     training_identity = config.get("training", {})
     structure_smoke_owner = training_identity.get("ownerTrainingAuthorization", {})
     structure_smoke_registered = (
@@ -1480,10 +1575,16 @@ def main() -> int:
             on_batch_progress,
             step_telemetry_path,
             epoch_complete_selection_state=epoch_complete_selection_state,
-            epoch_complete_train_dataset=optimization_datasets["train"],
+            # A bounded single-sample Smoke keeps sample 194 as its primary
+            # optimization/preview identity, while this contract's detached
+            # selector must still observe the immutable 48-record train split.
+            epoch_complete_train_dataset=datasets["train"],
         )
         epoch_complete_train_result = epoch_complete_selection_state.get(
             "priorEpochResult"
+        )
+        epoch_complete_reference_feature_train_result = (
+            epoch_complete_selection_state.get("priorReferenceFeatureEpochResult")
         )
         evaluate_this_epoch = (
             not args.single_sample_overfit_smoke
@@ -1511,6 +1612,12 @@ def main() -> int:
                 row[
                     "trainEpochCompletePerClassWorstSampleFinalVisibleLuminanceSelections"
                 ] = deepcopy(epoch_complete_train_result["perClassSelections"])
+            if epoch_complete_reference_feature_train_result is not None:
+                row[
+                    "trainEpochCompletePerClassWorstSampleReferenceFeatureStructureSelections"
+                ] = deepcopy(
+                    epoch_complete_reference_feature_train_result["perClassSelections"]
+                )
             register_v9_stage4_diagnostic_manifest_fields(row, train_metrics, epoch + 1, config)
             metrics.append(row)
             latest_live_progress = build_live_progress(
@@ -1562,7 +1669,14 @@ def main() -> int:
             ):
                 rollout_validation = evaluate_deterministic_rollout_rgb_quality_v7(
                     model,
-                    optimization_datasets["validation"],
+                    (
+                        datasets["validation"]
+                        if config.get("training", {}).get(
+                            "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity",
+                            {},
+                        ).get("status") == "training_loss_active_owner_authorized"
+                        else optimization_datasets["validation"]
+                    ),
                     diffusion,
                     latent_normalization,
                     device,
@@ -1578,7 +1692,14 @@ def main() -> int:
                     with stage4_fixed_preview_determinism_scope(True):
                         repeated_metrics = evaluate_deterministic_rollout_rgb_quality_v7(
                             model,
-                            optimization_datasets["validation"],
+                            (
+                                datasets["validation"]
+                                if config.get("training", {}).get(
+                                    "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity",
+                                    {},
+                                ).get("status") == "training_loss_active_owner_authorized"
+                                else optimization_datasets["validation"]
+                            ),
                             diffusion,
                             latent_normalization,
                             device,
@@ -1639,6 +1760,12 @@ def main() -> int:
             row[
                 "trainEpochCompletePerClassWorstSampleFinalVisibleLuminanceSelections"
             ] = deepcopy(epoch_complete_train_result["perClassSelections"])
+        if epoch_complete_reference_feature_train_result is not None:
+            row[
+                "trainEpochCompletePerClassWorstSampleReferenceFeatureStructureSelections"
+            ] = deepcopy(
+                epoch_complete_reference_feature_train_result["perClassSelections"]
+            )
         for key, value in validation.items():
             if key not in {"compositeConditionQualityScore", "velocityPredictionMse", "cleanLatentMae", "fixedTimesteps"}:
                 row[f"validationFixedGrid{upper_camel(key)}"] = value
@@ -2295,10 +2422,42 @@ def record_stage4_step(telemetry_path, step, status, **details):
         "backward",
         "optimizer_step",
         "epoch_worst_sample_class_replay",
+        "epoch_complete_per_class_selected_luminance_replay",
+        "epoch_complete_per_class_selected_reference_feature_replay",
         "checkpoint_write",
     }
     if step not in allowed_steps or status not in {"started", "completed", "failed"}:
         raise ValueError("Stage4 step telemetry event is invalid")
+    if step in {
+        "epoch_complete_per_class_selected_luminance_replay",
+        "epoch_complete_per_class_selected_reference_feature_replay",
+    }:
+        required_detail_fields = {
+            "epoch", "batch", "replayPass", "sampleId", "classIdentity",
+            "selectionScore",
+        }
+        integer_fields_valid = all(
+            isinstance(details.get(name), int)
+            and not isinstance(details.get(name), bool)
+            and details[name] > 0
+            for name in ("epoch", "batch", "replayPass")
+        )
+        selection_score = details.get("selectionScore")
+        if (
+            status != "completed"
+            or set(details) != required_detail_fields
+            or not integer_fields_valid
+            or not isinstance(details.get("sampleId"), str)
+            or not details["sampleId"]
+            or details.get("classIdentity")
+            not in FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+            or not isinstance(selection_score, (int, float))
+            or isinstance(selection_score, bool)
+            or not math.isfinite(float(selection_score))
+        ):
+            raise ValueError(
+                "Stage4 epoch-complete replay telemetry details are invalid"
+            )
     telemetry = read_json(telemetry_path)
     events = telemetry.get("events", [])
     event = {
@@ -4629,6 +4788,17 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
         in training
     ):
         validate_stage4_epoch_complete_per_class_worst_luminance_selection(config)
+    if (
+        "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay"
+        in training
+    ):
+        validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay(
+            config
+        )
+    if "stage4ConflictAwareExistingGradientAggregation" in training:
+        validate_stage4_conflict_aware_existing_gradient_aggregation(config)
+    if "stage4ControlledStructureThreeArm" in training:
+        validate_stage4_controlled_structure_three_arm_contract(config)
     if "stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization" in training:
         validate_stage4_object_reference_multiscale_early_convergence_stabilization(
             config
@@ -5349,6 +5519,7 @@ def validate_stage4_object_reference_multiscale_early_convergence_stabilization(
     elif status == "training_loss_active_owner_authorized":
         mode = resolve_stage_mode(config).mode_id
         if mode not in {
+            "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
             "fact_conditioned_semantic_mixture_stage1_full_training",
             "fact_conditioned_semantic_mixture_stage2_full_training",
@@ -6480,6 +6651,214 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
             "stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation", {}
         ).get("status") == "cpu_support_verified_inactive"
     )
+    epoch_complete_per_class_worst_luminance_selection_qualification = (
+        terminal.get("status")
+        == "stage4_epoch_complete_per_class_worst_luminance_readonly_gpu_qualification_succeeded_closed"
+        and terminal.get("automaticRetryStarted") is False
+        and terminal.get("laterExecutionStarted") is False
+        and diagnostic.get("status")
+        == "passed_epoch_complete_per_class_worst_luminance_readonly_gpu_qualification"
+        and diagnostic.get("taskIdentity", {}).get("contractId")
+        == STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_LUMINANCE_SELECTION_ID
+        and diagnostic.get("taskIdentity", {}).get("trainPopulation")
+        == "all_48_train_records_in_source_index_order"
+        and diagnostic.get("taskIdentity", {}).get("validationPopulation")
+        == "all_8_validation_records_all_existing_rollout_seeds"
+        and diagnostic.get("taskIdentity", {}).get("seed") == 20263722
+        and diagnostic.get("taskIdentity", {}).get("rolloutSteps") == 50
+        and diagnostic.get("taskIdentity", {}).get("gradientTailSteps") == 5
+        and diagnostic.get("trainSelection", {}).get("identityCount") == 48
+        and len(diagnostic.get("trainSelection", {}).get("perClassSelections", [])) == 4
+        and diagnostic.get("validationCheckpointIdentity", {}).get("identityCount") == 16
+        and len(diagnostic.get("validationCheckpointIdentity", {}).get("perClassSelections", [])) == 4
+        and len(diagnostic.get("selectedGradientEvidence", {})) == 4
+        and all(
+            value.get("selectionScoreExactlyReproduced") is True
+            and value.get("decodedRgbGradientFinite") is True
+            and value.get("insideMaskGradientAbsSum", 0) > 0
+            and value.get("outsideMaskGradientAbsSum") == 0
+            and value.get("denoiserGradientAbsSum", 0) > 0
+            for value in diagnostic.get("selectedGradientEvidence", {}).values()
+        )
+        and diagnostic.get("stateHashes", {}).get("denoiserBefore")
+        == diagnostic.get("stateHashes", {}).get("denoiserAfter")
+        and diagnostic.get("stateHashes", {}).get("autoencoderBefore")
+        == diagnostic.get("stateHashes", {}).get("autoencoderAfter")
+        and diagnostic.get("safety", {}).get("optimizerCreated") is False
+        and diagnostic.get("safety", {}).get("backwardExecuted") is False
+        and diagnostic.get("safety", {}).get("modelWeightsModified") is False
+        and diagnostic.get("safety", {}).get("checkpointWritten") is False
+        and diagnostic.get("safety", {}).get("trainingStarted") is False
+        and cpu_report.get("status")
+        == "passed_stage4_epoch_complete_per_class_worst_luminance_readonly_gpu_cpu_gate"
+        and cpu_report.get("positivePassed") == cpu_report.get("positiveTotal")
+        and cpu_report.get("negativePassed") == cpu_report.get("negativeTotal")
+        and identity.get("trainingObjectiveContractId")
+        == STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_LUMINANCE_SELECTION_ID
+        and fact_conditioned_semantic_mixture_smoke_supports_objective(
+            identity.get("trainingObjectiveContractId", "")
+        )
+        and source.get("training", {}).get(
+            "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity",
+            {},
+        ).get("contractId")
+        == STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_LUMINANCE_SELECTION_ID
+        and source.get("training", {}).get(
+            "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity",
+            {},
+        ).get("status") == "cpu_support_verified_inactive"
+    )
+    epoch_complete_per_class_worst_reference_feature_shared_replay_qualification = (
+        terminal.get("status")
+        == "stage4_reference_feature_shared_replay_readonly_gpu_qualification_succeeded_closed"
+        and terminal.get("automaticRetryStarted") is False
+        and terminal.get("laterExecutionStarted") is False
+        and diagnostic.get("status")
+        == "passed_stage4_reference_feature_shared_replay_readonly_gpu_qualification"
+        and diagnostic.get("taskIdentity", {}).get("contractId")
+        == STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_ID
+        and diagnostic.get("taskIdentity", {}).get("trainPopulation")
+        == "all_48_train_records_in_source_index_order"
+        and diagnostic.get("taskIdentity", {}).get("validationPopulation")
+        == "all_8_validation_records_all_existing_rollout_seeds"
+        and diagnostic.get("taskIdentity", {}).get("seed") == 20263722
+        and diagnostic.get("taskIdentity", {}).get("rolloutSteps") == 50
+        and diagnostic.get("taskIdentity", {}).get("gradientTailSteps") == 5
+        and diagnostic.get("trainSelection", {}).get("identityCount") == 48
+        and len(diagnostic.get("trainSelection", {}).get("perClassSelections", [])) == 4
+        and diagnostic.get("validationCheckpointIdentity", {}).get("identityCount") == 16
+        and len(diagnostic.get("validationCheckpointIdentity", {}).get("perClassSelections", [])) == 4
+        and len(diagnostic.get("selectedGradientEvidence", {})) == 4
+        and all(
+            value.get("numericallyEquivalent") is True
+            and value.get("gradientFinite") is True
+            and value.get("insideMaskGradientAbsSum", 0) > 0
+            and value.get("outsideMaskGradientAbsSum") == 0
+            and value.get("denoiserGradientAbsSum", 0) > 0
+            for value in diagnostic.get("selectedGradientEvidence", {}).values()
+        )
+        and len(diagnostic.get("sharedReplaySchedule", [])) == 8
+        and diagnostic.get("stateHashes", {}).get("denoiserBefore")
+        == diagnostic.get("stateHashes", {}).get("denoiserAfter")
+        and diagnostic.get("stateHashes", {}).get("autoencoderBefore")
+        == diagnostic.get("stateHashes", {}).get("autoencoderAfter")
+        and diagnostic.get("safety", {}).get("optimizerCreated") is False
+        and diagnostic.get("safety", {}).get("backwardExecuted") is False
+        and diagnostic.get("safety", {}).get("modelWeightsModified") is False
+        and diagnostic.get("safety", {}).get("checkpointWritten") is False
+        and diagnostic.get("safety", {}).get("trainingStarted") is False
+        and cpu_report.get("status")
+        == "passed_stage4_reference_feature_shared_replay_readonly_gpu_cpu_gate"
+        and cpu_report.get("positivePassed") == cpu_report.get("positiveTotal")
+        and cpu_report.get("negativePassed") == cpu_report.get("negativeTotal")
+        and identity.get("trainingObjectiveContractId")
+        == STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_ID
+        and fact_conditioned_semantic_mixture_smoke_supports_objective(
+            identity.get("trainingObjectiveContractId", "")
+        )
+        and source.get("training", {}).get(
+            "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay",
+            {},
+        ).get("contractId")
+        == STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_ID
+        and source.get("training", {}).get(
+            "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay",
+            {},
+        ).get("status") == "cpu_support_verified_inactive"
+    )
+    conflict_aware_existing_gradient_aggregation_qualification = (
+        terminal.get("status")
+        == "stage4_conflict_aware_existing_gradient_aggregation_readonly_gpu_succeeded_closed"
+        and terminal.get("optimizerCreated") is False
+        and terminal.get("backwardExecuted") is False
+        and terminal.get("trainingStarted") is False
+        and diagnostic.get("status")
+        == "stage4_conflict_aware_existing_gradient_aggregation_readonly_gpu_qualification_passed"
+        and diagnostic.get("contractId")
+        == STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_ID
+        and diagnostic.get("population") == {"train": 48, "validation": 8}
+        and diagnostic.get("sourceOrderPreserved") is True
+        and diagnostic.get("classIdentityOrder")
+        == ["footprints", "tree", "rock", "vegetation"]
+        and diagnostic.get("totalNegativeProjectionCount", 0) > 0
+        and diagnostic.get("totalNonNegativeUnchangedCount", 0) > 0
+        and len(diagnostic.get("sampleDiagnostics", [])) == 56
+        and all(
+            value.get("negativeProjectionCount", 0)
+            + value.get("nonNegativeUnchangedCount", 0) == 12
+            and value.get("aggregatedSharedGradientFiniteNonZero") is True
+            and value.get("nonSharedGradientContractUnchanged") is True
+            and value.get("additionalOptimizerSteps") == 0
+            and value.get("additionalReplayPasses") == 0
+            for value in diagnostic.get("sampleDiagnostics", [])
+        )
+        and diagnostic.get("executionBudget", {}).get("additionalOptimizerSteps") == 0
+        and diagnostic.get("executionBudget", {}).get("additionalReplayPasses") == 0
+        and diagnostic.get("executionBudget", {}).get("freeNumericalToleranceUsed") is False
+        and diagnostic.get("stateHashes", {}).get("denoiserBefore")
+        == diagnostic.get("stateHashes", {}).get("denoiserAfter")
+        and diagnostic.get("stateHashes", {}).get("autoencoderBefore")
+        == diagnostic.get("stateHashes", {}).get("autoencoderAfter")
+        and diagnostic.get("safety", {}).get("optimizerCreated") is False
+        and diagnostic.get("safety", {}).get("backwardExecuted") is False
+        and diagnostic.get("safety", {}).get("modelWeightsModified") is False
+        and diagnostic.get("safety", {}).get("checkpointWritten") is False
+        and diagnostic.get("safety", {}).get("trainingStarted") is False
+        and cuda_telemetry.get("status") == "completed"
+        and cpu_report.get("status") == "passed"
+        and cpu_report.get("positive", {}).get("passed")
+        == cpu_report.get("positive", {}).get("total")
+        and cpu_report.get("negative", {}).get("passed")
+        == cpu_report.get("negative", {}).get("total")
+        and identity.get("trainingObjectiveContractId")
+        == STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_ID
+        and fact_conditioned_semantic_mixture_smoke_supports_objective(
+            identity.get("trainingObjectiveContractId", "")
+        )
+        and source.get("training", {}).get(
+            "stage4ConflictAwareExistingGradientAggregation", {}
+        ).get("contractId")
+        == STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_ID
+        and source.get("training", {}).get(
+            "stage4ConflictAwareExistingGradientAggregation", {}
+        ).get("status") == "cpu_support_verified_inactive"
+    )
+    controlled_structure_arm = source.get("stage4ControlledStructureArm")
+    controlled_structure_qualification = (
+        fact_conditioned_semantic_mixture_smoke_supports_controlled_structure_arm(
+            controlled_structure_arm or ""
+        )
+        and terminal.get("status")
+        == "controlled_structure_arm_readonly_gpu_qualification_succeeded"
+        and terminal.get("arm") == controlled_structure_arm
+        and diagnostic.get("status")
+        == "controlled_structure_arm_readonly_gpu_qualification_succeeded"
+        and diagnostic.get("arm") == controlled_structure_arm
+        and diagnostic.get("conditionChannelCount") == 23
+        and diagnostic.get("latentChannelCount") == 12
+        and diagnostic.get("gradientEvidence", {}).get(
+            "conditionGradientFiniteNonZero"
+        ) is True
+        and diagnostic.get("stateHashes", {}).get("denoiserUnchanged") is True
+        and diagnostic.get("stateHashes", {}).get("autoencoderUnchanged") is True
+        and diagnostic.get("safety", {}).get("optimizerCreated") is False
+        and diagnostic.get("safety", {}).get("backwardExecuted") is False
+        and diagnostic.get("safety", {}).get("modelWeightsModified") is False
+        and diagnostic.get("safety", {}).get("checkpointWritten") is False
+        and diagnostic.get("safety", {}).get("trainingStarted") is False
+        and cuda_telemetry.get("status") == "completed"
+        and cpu_report.get("status") == "passed"
+        and cpu_report.get("positive", {}).get("passed")
+        == cpu_report.get("positive", {}).get("total")
+        and cpu_report.get("negative", {}).get("passed")
+        == cpu_report.get("negative", {}).get("total")
+        and source.get("training", {}).get(
+            "stage4ControlledStructureThreeArm", {}
+        ).get("status") == "cpu_support_verified_inactive"
+        and source.get("training", {}).get(
+            "stage4ControlledStructureThreeArm", {}
+        ).get("armId") == controlled_structure_arm
+    )
     object_reference_multiscale_qualification = (
         terminal.get("status")
         == "stage4_object_reference_multiscale_phase0_passed_closed"
@@ -6555,8 +6934,16 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
         or implementation_consumption.get("authorizationSha256")
         != execution["implementationAuthorizationSha256"]
         or implementation_consumption.get("oneTimeConsumption") is not True
-        or attestation.get("status")
-        != "fact_conditioned_semantic_mixture_stage4_smoke_implementation_cpu_verified"
+        or not (
+            attestation.get("status")
+            == "fact_conditioned_semantic_mixture_stage4_smoke_implementation_cpu_verified"
+            or (
+                attestation.get("status")
+                == "stage4_controlled_structure_smoke_entry_implementation_cpu_verified"
+                and attestation.get("arm") == controlled_structure_arm
+                and controlled_structure_qualification
+            )
+        )
         or attestation.get("trainerSha256") != sha256_file(Path(__file__))
         or not (
             legacy_qualification
@@ -6570,6 +6957,10 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
             or source_isolation_causal_boundary_qualification
             or per_class_worst_reference_feature_structure_qualification
             or per_class_worst_sample_final_visible_luminance_structure_qualification
+            or epoch_complete_per_class_worst_luminance_selection_qualification
+            or epoch_complete_per_class_worst_reference_feature_shared_replay_qualification
+            or conflict_aware_existing_gradient_aggregation_qualification
+            or controlled_structure_qualification
             or epoch_worst_replay_qualification
             or object_visible_structure_qualification
             or object_reference_multiscale_qualification
@@ -10326,6 +10717,33 @@ def train_epoch(
         )
         else None
     )
+    configured_epoch_complete_reference_feature_contract = (
+        validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay(
+            config
+        )
+    )
+    epoch_complete_reference_feature_contract = (
+        configured_epoch_complete_reference_feature_contract
+        if (
+            enable_epoch_worst_replay
+            and configured_epoch_complete_reference_feature_contract is not None
+            and configured_epoch_complete_reference_feature_contract["status"]
+            == "training_loss_active_owner_authorized"
+        )
+        else None
+    )
+    configured_conflict_aware_gradient_contract = (
+        validate_stage4_conflict_aware_existing_gradient_aggregation(config)
+    )
+    conflict_aware_gradient_contract = (
+        configured_conflict_aware_gradient_contract
+        if (
+            configured_conflict_aware_gradient_contract is not None
+            and configured_conflict_aware_gradient_contract["status"]
+            == "training_paradigm_active_owner_authorized"
+        )
+        else None
+    )
     configured_early_convergence_contract = (
         validate_stage4_object_reference_multiscale_early_convergence_stabilization(
             config
@@ -10353,10 +10771,24 @@ def train_epoch(
         raise ValueError(
             "Stage 4 epoch-complete per-class selection requires epoch-worst replay"
         )
+    if (
+        epoch_complete_reference_feature_contract is not None
+        and (
+            epoch_complete_contract is None
+            or reference_feature_replay_contract is None
+            or epoch_worst_contract is None
+        )
+    ):
+        raise ValueError(
+            "Stage 4 reference-feature shared replay requires active luminance, "
+            "reference-feature and epoch-worst parent contracts"
+        )
     if epoch_worst_contract is not None and int(config["training"]["batchSize"]) != 1:
         raise ValueError("Stage 4 epoch-worst replay requires the locked batchSize=1 contract")
     epoch_complete_ledger = None
+    epoch_complete_reference_feature_ledger = None
     prior_epoch_complete_result = None
+    prior_epoch_complete_reference_feature_result = None
     epoch_complete_dataset_index = None
     if epoch_complete_contract is not None:
         if (
@@ -10381,14 +10813,27 @@ def train_epoch(
         prior_epoch_complete_result = epoch_complete_selection_state.get(
             "priorEpochResult"
         )
+        prior_epoch_complete_reference_feature_result = (
+            epoch_complete_selection_state.get("priorReferenceFeatureEpochResult")
+        )
         prior_epoch_number = epoch_complete_selection_state.get("priorEpochNumber")
         if epoch_index == 0:
-            if prior_epoch_complete_result is not None or prior_epoch_number is not None:
+            if (
+                prior_epoch_complete_result is not None
+                or prior_epoch_complete_reference_feature_result is not None
+                or prior_epoch_number is not None
+            ):
                 raise ValueError(
                     "Stage 4 epoch-complete selector carried cross-run state into Epoch 1"
                 )
         elif (
             not isinstance(prior_epoch_complete_result, dict)
+            or (
+                epoch_complete_reference_feature_contract is not None
+                and not isinstance(
+                    prior_epoch_complete_reference_feature_result, dict
+                )
+            )
             or int(prior_epoch_number or -1) != epoch_index
         ):
             raise ValueError(
@@ -10397,6 +10842,13 @@ def train_epoch(
         epoch_complete_ledger = stage4_epoch_complete_per_class_selection_ledger(
             config, "train", 48,
         )
+        if epoch_complete_reference_feature_contract is not None:
+            epoch_complete_reference_feature_ledger = (
+                stage4_epoch_complete_per_class_selection_ledger(
+                    config, "train", 48,
+                    objective_identity="reference_feature_structure",
+                )
+            )
     epoch_worst = None
     for batch_index, batch in enumerate(loader):
         if max_batches is not None and batch_index >= max_batches:
@@ -10514,7 +10966,7 @@ def train_epoch(
                 weighted_per_sample_class = full_rollout_metrics.get(
                     "stage4FullRolloutWeightedPerSampleClassLuminanceStructureTensor"
                 )
-                if epoch_complete_ledger is not None:
+                if epoch_complete_ledger is not None and len(loader.dataset) == 48:
                     stage4_collect_epoch_complete_per_class_selection_scores(
                         epoch_complete_ledger,
                         weighted_per_sample_class,
@@ -10563,6 +11015,19 @@ def train_epoch(
                 )
             )
             if (
+                epoch_complete_reference_feature_ledger is not None
+                and len(loader.dataset) == 48
+            ):
+                stage4_collect_epoch_complete_per_class_selection_scores(
+                    epoch_complete_reference_feature_ledger,
+                    full_rollout_metrics.get(
+                        "stage4PerClassFinalVisibleReferenceFeatureStructurePerSampleClassTensor"
+                    ),
+                    batch["sampleId"],
+                    config,
+                    objective_identity="reference_feature_structure",
+                )
+            if (
                 per_class_worst_contract is not None
                 and per_class_worst_contract["status"]
                 == "training_loss_active_owner_authorized"
@@ -10601,6 +11066,73 @@ def train_epoch(
                     ] = per_class_worst["perClassWorstTensors"][
                         selection["classIdentity"]
                     ]
+        conflict_aware_gradient_result = None
+        conflict_aware_shared_parameters = None
+        if conflict_aware_gradient_contract is not None:
+            per_sample_class = loss_metrics.get(
+                "stage4PerClassFinalVisibleReferenceFeatureStructurePerSampleClassTensor"
+            )
+            if (
+                not isinstance(per_sample_class, torch.Tensor)
+                or per_sample_class.ndim != 2
+                or per_sample_class.shape[1]
+                != len(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES) - 1
+            ):
+                raise ValueError(
+                    "Stage 4 conflict-aware per-class gradient source is unavailable"
+                )
+            conflict_aware_shared_parameters = tuple(model.denoiser.output.parameters())
+            if not conflict_aware_shared_parameters:
+                raise ValueError(
+                    "Stage 4 conflict-aware shared output parameter group is empty"
+                )
+            source_contract = validate_stage4_full_rollout_final_visible_consistency(
+                config
+            )
+            if source_contract is None:
+                raise ValueError(
+                    "Stage 4 conflict-aware full-rollout source contract is unavailable"
+                )
+            rollout_weight = float(source_contract["weight"])
+            per_class_gradients = {}
+            for class_index, identity in enumerate(
+                conflict_aware_gradient_contract["classOrder"]
+            ):
+                raw_class_loss = per_sample_class[:, class_index].mean() * rollout_weight
+                gradients = torch.autograd.grad(
+                    raw_class_loss,
+                    conflict_aware_shared_parameters,
+                    retain_graph=True,
+                    allow_unused=True,
+                )
+                per_class_gradients[identity] = tuple(
+                    torch.zeros_like(parameter) if gradient is None else gradient
+                    for parameter, gradient in zip(
+                        conflict_aware_shared_parameters, gradients
+                    )
+                )
+            conflict_aware_gradient_result = (
+                stage4_conflict_aware_existing_gradient_aggregation(
+                    per_class_gradients, config
+                )
+            )
+            negative_projection_count = sum(
+                1
+                for interaction in conflict_aware_gradient_result["interactions"]
+                if interaction["projected"] is True
+            )
+            nonnegative_unchanged_count = sum(
+                1
+                for interaction in conflict_aware_gradient_result["interactions"]
+                if interaction["projected"] is False
+            )
+            loss_metrics["stage4ConflictAwareNegativeProjectionCount"] = (
+                per_sample_class.new_tensor(float(negative_projection_count))
+            )
+            loss_metrics["stage4ConflictAwareNonNegativeUnchangedCount"] = (
+                per_sample_class.new_tensor(float(nonnegative_unchanged_count))
+            )
+            loss_metrics["stage4ConflictAwareApplied"] = per_sample_class.new_tensor(1.0)
         if epoch_worst_contract is not None:
             if reference_feature_replay_contract is not None:
                 reference_feature_tensor = loss_metrics.get(
@@ -10689,6 +11221,11 @@ def train_epoch(
             epoch=epoch_index + 1,
             batch=batch_index + 1,
         )
+        if conflict_aware_gradient_result is not None:
+            stage4_apply_conflict_aware_existing_gradient_replacement(
+                conflict_aware_shared_parameters,
+                conflict_aware_gradient_result,
+            )
         optimizer.step()
         record_stage4_step(
             step_telemetry_path,
@@ -10758,9 +11295,19 @@ def train_epoch(
                 raise ValueError("Stage 4 epoch-worst replay did not observe a training sample")
             for replay_index in range(epoch_worst_replay_passes):
                 epoch_complete_selection = (
-                    stage4_epoch_complete_per_class_replay_selection(
+                    stage4_epoch_complete_shared_replay_selection_for_epoch(
                         prior_epoch_complete_result,
-                        batch_index,
+                        prior_epoch_complete_reference_feature_result,
+                        epoch_complete_selection_state.get("priorEpochNumber"),
+                        epoch_index,
+                        epoch_index * len(loader) + batch_index,
+                        replay_index,
+                        config,
+                    )
+                    if epoch_complete_reference_feature_contract is not None
+                    else stage4_epoch_complete_per_class_replay_selection(
+                        prior_epoch_complete_result,
+                        epoch_index * len(loader) + batch_index,
                         replay_index,
                         config,
                     )
@@ -10788,8 +11335,20 @@ def train_epoch(
                         config,
                         epoch_complete_dataset_index[selected_sample_id],
                     )
+                    reference_feature_replay = (
+                        epoch_complete_selection.get("objectiveIdentity")
+                        == "reference_feature_structure"
+                    )
                     selected_loss = (
-                        stage4_epoch_complete_selected_luminance_replay_loss_from_tensor(
+                        stage4_epoch_complete_selected_reference_feature_replay_loss_from_tensor(
+                            selected_rollout.get(
+                                "stage4PerClassFinalVisibleReferenceFeatureStructurePerSampleClassTensor"
+                            ),
+                            epoch_complete_selection["classIdentity"],
+                            config,
+                        )
+                        if reference_feature_replay
+                        else stage4_epoch_complete_selected_luminance_replay_loss_from_tensor(
                             selected_rollout.get(
                                 "stage4FullRolloutWeightedPerSampleClassLuminanceStructureTensor"
                             ),
@@ -10800,16 +11359,23 @@ def train_epoch(
                     selected_loss.backward()
                     optimizer.step()
                     epoch_worst_replay_totals[
-                        "stage4EpochCompletePerClassSelectedLuminanceReplayLoss"
+                        "stage4EpochCompletePerClassSelectedReferenceFeatureReplayLoss"
+                        if reference_feature_replay
+                        else "stage4EpochCompletePerClassSelectedLuminanceReplayLoss"
                     ] = (
                         epoch_worst_replay_totals.get(
-                            "stage4EpochCompletePerClassSelectedLuminanceReplayLoss", 0.0,
+                            "stage4EpochCompletePerClassSelectedReferenceFeatureReplayLoss"
+                            if reference_feature_replay
+                            else "stage4EpochCompletePerClassSelectedLuminanceReplayLoss",
+                            0.0,
                         )
                         + float(selected_loss.detach())
                     )
                     record_stage4_step(
                         step_telemetry_path,
-                        "epoch_complete_per_class_selected_luminance_replay",
+                        "epoch_complete_per_class_selected_reference_feature_replay"
+                        if reference_feature_replay
+                        else "epoch_complete_per_class_selected_luminance_replay",
                         "completed",
                         epoch=epoch_index + 1,
                         batch=batch_index + 1,
@@ -10914,15 +11480,71 @@ def train_epoch(
             })
     if count == 0:
         raise ValueError("conditional denoiser training loader produced no batches")
+    if epoch_complete_ledger is not None and len(loader.dataset) != 48:
+        # Single-sample Smoke keeps the primary optimization identity fixed,
+        # but the selector is defined over the complete approved train split.
+        # This detached scan adds no optimizer step; selected identities are
+        # applied only through the existing two replay steps next epoch.
+        was_training = model.denoiser.training
+        model.denoiser.eval()
+        with torch.no_grad():
+            for selection_index in range(len(epoch_complete_train_dataset)):
+                selection_item = epoch_complete_train_dataset[selection_index]
+                selection_image = selection_item["image"].unsqueeze(0).to(device)
+                selection_conditions = selection_item["conditions"].unsqueeze(0).to(device)
+                selection_rollout = stage4_full_rollout_final_visible_consistency(
+                    model,
+                    selection_conditions,
+                    selection_image,
+                    diffusion["alphasCumulative"],
+                    latent_normalization,
+                    config,
+                    selection_index,
+                )
+                stage4_collect_epoch_complete_per_class_selection_scores(
+                    epoch_complete_ledger,
+                    selection_rollout[
+                        "stage4FullRolloutWeightedPerSampleClassLuminanceStructureTensor"
+                    ],
+                    [selection_item["sampleId"]],
+                    config,
+                )
+                if epoch_complete_reference_feature_ledger is not None:
+                    stage4_collect_epoch_complete_per_class_selection_scores(
+                        epoch_complete_reference_feature_ledger,
+                        selection_rollout[
+                            "stage4PerClassFinalVisibleReferenceFeatureStructurePerSampleClassTensor"
+                        ],
+                        [selection_item["sampleId"]],
+                        config,
+                        objective_identity="reference_feature_structure",
+                    )
+        if was_training:
+            model.denoiser.train()
     if epoch_complete_ledger is not None:
         finalized = stage4_finalize_epoch_complete_per_class_selection(
             epoch_complete_ledger, config,
         )
         epoch_complete_selection_state.clear()
-        epoch_complete_selection_state.update({
+        state_update = {
             "priorEpochNumber": epoch_index + 1,
             "priorEpochResult": finalized,
-        })
+        }
+        if epoch_complete_reference_feature_ledger is not None:
+            reference_feature_finalized = (
+                stage4_finalize_epoch_complete_per_class_selection(
+                    epoch_complete_reference_feature_ledger,
+                    config,
+                    objective_identity="reference_feature_structure",
+                )
+            )
+            state_update[
+                "priorReferenceFeatureEpochResult"
+            ] = reference_feature_finalized
+            totals[
+                "stage4EpochCompletePerClassReferenceFeatureSelectionIdentityCount"
+            ] = float(reference_feature_finalized["identityCount"]) * count
+        epoch_complete_selection_state.update(state_update)
         totals[
             "stage4EpochCompletePerClassSelectionIdentityCount"
         ] = float(finalized["identityCount"]) * count
@@ -11739,6 +12361,7 @@ def validate_stage4_epoch_complete_per_class_worst_luminance_selection(config):
     elif status == "training_loss_active_owner_authorized":
         mode = resolve_stage_mode(config).mode_id
         if mode not in {
+            "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
             "fact_conditioned_semantic_mixture_stage1_full_training",
             "fact_conditioned_semantic_mixture_stage2_full_training",
@@ -11749,8 +12372,13 @@ def validate_stage4_epoch_complete_per_class_worst_luminance_selection(config):
         active_fields = {
             "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
             "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
-            "trainingNow", "stage4FullTrainingNow",
+            "trainingNow",
         }
+        active_fields.add(
+            "smokeNow"
+            if mode == "fact_conditioned_semantic_mixture_stage4_smoke"
+            else "stage4FullTrainingNow"
+        )
     else:
         raise ValueError("Stage 4 epoch-complete selector status changed")
     gate = contract.get("activationGate", {})
@@ -11761,13 +12389,188 @@ def validate_stage4_epoch_complete_per_class_worst_luminance_selection(config):
     return contract
 
 
+def validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay(
+    config,
+):
+    """Validate the full-Epoch reference-feature selector and shared replay contract."""
+    training = config.get("training", {})
+    contract = training.get(
+        "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay",
+        {},
+    )
+    if not contract:
+        return None
+    expected_fields = {
+        "enabled", "status", "contractId", "sourceContracts",
+        "epochSelection", "sharedReplay", "checkpointQualification",
+        "legalSupervision", "compatibility", "evidenceBindings",
+        "ownerImplementationAuthorization", "activationGate",
+    }
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 reference-feature shared replay fields changed")
+    reference_source = (
+        validate_stage4_per_class_worst_sample_reference_feature_structure_obligation(
+            config
+        )
+    )
+    luminance_source = (
+        validate_stage4_epoch_complete_per_class_worst_luminance_selection(config)
+    )
+    if reference_source is None or luminance_source is None:
+        raise ValueError("Stage 4 reference-feature shared replay source is missing")
+    identities = list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:])
+    expected_source = {
+        "referenceFeatureContractId": (
+            STAGE4_PER_CLASS_WORST_SAMPLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID
+        ),
+        "luminanceSelectionContractId": (
+            STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_LUMINANCE_SELECTION_ID
+        ),
+        "perSampleClassTensorSource": (
+            "stage4_per_class_final_visible_reference_feature_structure_"
+            "obligation_losses.perSampleClassTensors"
+        ),
+        "derivedClassWeights": dict(
+            reference_source["sourceContracts"]["derivedClassWeights"]
+        ),
+        "rolloutWeight": float(
+            reference_source["sourceContracts"]["rolloutWeight"]
+        ),
+        "replayPassesPerObservedPrimaryBatch": int(
+            luminance_source["sourceContracts"]
+            ["replayPassesPerObservedPrimaryBatch"]
+        ),
+        "freeNumericalWeightSelectionAllowed": False,
+    }
+    if (
+        contract.get("enabled") is not True
+        or contract.get("contractId")
+        != STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_ID
+        or contract.get("sourceContracts") != expected_source
+        or contract.get("epochSelection") != {
+            "population": "all_48_train_records_in_one_completed_epoch",
+            "classIdentities": identities,
+            "scoreCollection": "detach_score_and_identity_only",
+            "selection": "one_maximum_per_class_with_lexicographic_sample_id_tie_break",
+            "firstEpochBehavior": "collect_identity_only_keep_existing_supervision",
+        }
+        or contract.get("sharedReplay") != {
+            "optimizerStepBudget": "reuse_existing_two_replay_passes_per_primary_batch",
+            "objectiveOrder": ["luminance", "reference_feature_structure"],
+            "classOrder": identities,
+            "schedule": "deterministic_class_major_objective_minor_round_robin",
+            "addsOptimizerSteps": False,
+            "addsReplayPasses": False,
+            "existingCompleteEpochLuminanceReplayPreserved": True,
+        }
+        or contract.get("checkpointQualification") != {
+            "population": "all_8_validation_records_all_existing_rollout_seeds",
+            "selection": "one_maximum_per_class_with_sample_id_then_seed_index_tie_break",
+            "requiredIdentityFields": [
+                "classIdentity", "sampleId", "seedIndex", "rawScore",
+                "weightedScore",
+            ],
+            "aggregation": "existing_derived_class_weights_and_rollout_weight",
+            "metric": "validationCheckpointSelectionScore",
+            "entersQualificationScore": True,
+        }
+    ):
+        raise ValueError("Stage 4 reference-feature shared replay identity changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "maskChannels": list(STAGE4_OBJECT_VISIBLE_STRUCTURE_CHANNELS),
+        "featureSource": "existing_frozen_project_autoencoder_unique_spatial_stages",
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 reference-feature shared replay supervision changed")
+    if contract.get("compatibility") != {
+        "modelArchitectureChanged": False,
+        "existingLossValuesOrWeightsChanged": False,
+        "optimizerStepBudgetChanged": False,
+        "datasetOrSplitChanged": False,
+        "conditionChannelOrderChanged": False,
+        "checkpointFormatChanged": False,
+        "reviewThresholdsChanged": False,
+        "oldModesWithoutContractPreserved": True,
+    }:
+        raise ValueError("Stage 4 reference-feature shared replay compatibility changed")
+    if (
+        contract.get("evidenceBindings")
+        != STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_EVIDENCE_BINDINGS
+        or contract.get("ownerImplementationAuthorization")
+        != STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_IMPLEMENTATION_AUTHORIZATION
+    ):
+        raise ValueError("Stage 4 reference-feature shared replay lineage changed")
+    gate_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    status = contract.get("status")
+    if status == "cpu_support_verified_inactive":
+        active_fields = set()
+    elif status == "training_loss_active_owner_authorized":
+        mode = resolve_stage_mode(config).mode_id
+        if mode not in {
+            "fact_conditioned_semantic_mixture_stage4_smoke",
+            "fact_conditioned_semantic_mixture_stage0_full_training",
+            "fact_conditioned_semantic_mixture_stage1_full_training",
+            "fact_conditioned_semantic_mixture_stage2_full_training",
+        }:
+            raise ValueError(
+                "Stage 4 reference-feature shared replay active mode is invalid"
+            )
+        if (
+            reference_source.get("status")
+            != "training_loss_active_owner_authorized"
+            or luminance_source.get("status")
+            != "training_loss_active_owner_authorized"
+        ):
+            raise ValueError(
+                "Stage 4 reference-feature shared replay active source is invalid"
+            )
+        active_fields = {
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow",
+        }
+        active_fields.add(
+            "smokeNow"
+            if mode == "fact_conditioned_semantic_mixture_stage4_smoke"
+            else "stage4FullTrainingNow"
+        )
+    else:
+        raise ValueError("Stage 4 reference-feature shared replay status changed")
+    gate = contract.get("activationGate", {})
+    if set(gate) != gate_fields or any(
+        gate.get(name) is not (name in active_fields) for name in gate_fields
+    ):
+        raise ValueError("Stage 4 reference-feature shared replay activation changed")
+    return contract
+
+
+def _stage4_epoch_complete_selection_contract(config, objective_identity):
+    if objective_identity == "luminance":
+        return validate_stage4_epoch_complete_per_class_worst_luminance_selection(
+            config
+        )
+    if objective_identity == "reference_feature_structure":
+        return validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay(
+            config
+        )
+    raise ValueError("Stage 4 epoch-complete selector objective changed")
+
+
 def stage4_epoch_complete_per_class_selection_ledger(
-    config, population, expected_identity_count,
+    config, population, expected_identity_count, objective_identity="luminance",
 ):
     """Create a score/identity-only ledger; tensors and sample pixels are never stored."""
-    contract = validate_stage4_epoch_complete_per_class_worst_luminance_selection(
-        config
-    )
+    contract = _stage4_epoch_complete_selection_contract(config, objective_identity)
     if contract is None:
         return None
     if population not in {"train", "validation"}:
@@ -11779,6 +12582,7 @@ def stage4_epoch_complete_per_class_selection_ledger(
     ):
         raise ValueError("Stage 4 epoch-complete selector population size changed")
     return {
+        "objectiveIdentity": objective_identity,
         "population": population,
         "expectedIdentityCount": expected,
         "classIdentities": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]),
@@ -11789,12 +12593,14 @@ def stage4_epoch_complete_per_class_selection_ledger(
 
 def stage4_collect_epoch_complete_per_class_selection_scores(
     ledger, weighted_per_sample_class_tensor, sample_ids, config, seed_indices=None,
+    objective_identity="luminance",
 ):
     """Collect detached scores and identities without retaining a computation graph."""
-    contract = validate_stage4_epoch_complete_per_class_worst_luminance_selection(
-        config
-    )
-    if contract is None or not isinstance(ledger, dict) or ledger.get("finalized"):
+    contract = _stage4_epoch_complete_selection_contract(config, objective_identity)
+    if (
+        contract is None or not isinstance(ledger, dict) or ledger.get("finalized")
+        or ledger.get("objectiveIdentity") != objective_identity
+    ):
         raise ValueError("Stage 4 epoch-complete selector ledger is unavailable")
     identities = list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:])
     if (
@@ -11855,12 +12661,15 @@ def stage4_collect_epoch_complete_per_class_selection_scores(
     return ledger
 
 
-def stage4_finalize_epoch_complete_per_class_selection(ledger, config):
+def stage4_finalize_epoch_complete_per_class_selection(
+    ledger, config, objective_identity="luminance",
+):
     """Finalize exactly one deterministic maximum for every formal object class."""
-    contract = validate_stage4_epoch_complete_per_class_worst_luminance_selection(
-        config
-    )
-    if contract is None or not isinstance(ledger, dict) or ledger.get("finalized"):
+    contract = _stage4_epoch_complete_selection_contract(config, objective_identity)
+    if (
+        contract is None or not isinstance(ledger, dict) or ledger.get("finalized")
+        or ledger.get("objectiveIdentity") != objective_identity
+    ):
         raise ValueError("Stage 4 epoch-complete selector cannot finalize")
     if len(ledger.get("entries", {})) != int(ledger.get("expectedIdentityCount", -1)):
         raise ValueError("Stage 4 epoch-complete selector population is incomplete")
@@ -11885,6 +12694,7 @@ def stage4_finalize_epoch_complete_per_class_selection(ledger, config):
             key: value for key, value in selected.items() if key != "selectionKey"
         })
     result = {
+        "objectiveIdentity": objective_identity,
         "population": ledger["population"],
         "identityCount": len(ledger["entries"]),
         "perClassSelections": selections,
@@ -11939,6 +12749,127 @@ def stage4_epoch_complete_selected_luminance_replay_loss_from_tensor(
         raise ValueError("Stage 4 epoch-complete replay tensor identity changed")
     value = weighted_per_sample_class_tensor[0, identities.index(selected_identity)]
     return value * float(contract["sourceContracts"]["rolloutWeight"])
+
+
+def stage4_epoch_complete_shared_replay_selection(
+    prior_luminance_result,
+    prior_reference_feature_result,
+    batch_index,
+    replay_index,
+    config,
+):
+    """Use the existing two replay lanes for both full-Epoch objectives."""
+    contract = (
+        validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay(
+            config
+        )
+    )
+    if contract is None:
+        return None
+    passes = int(contract["sourceContracts"]["replayPassesPerObservedPrimaryBatch"])
+    if batch_index < 0 or replay_index < 0 or replay_index >= passes:
+        raise ValueError("Stage 4 shared replay schedule changed")
+    objectives = list(contract["sharedReplay"]["objectiveOrder"])
+    identities = list(contract["sharedReplay"]["classOrder"])
+    cycle = [(identity, objective) for identity in identities for objective in objectives]
+    class_identity, objective_identity = cycle[
+        (int(batch_index) * passes + int(replay_index)) % len(cycle)
+    ]
+    source = (
+        prior_luminance_result
+        if objective_identity == "luminance"
+        else prior_reference_feature_result
+    )
+    if not isinstance(source, dict):
+        raise ValueError("Stage 4 shared replay prior-Epoch identity is missing")
+    expected_objective = (
+        "luminance"
+        if objective_identity == "luminance"
+        else "reference_feature_structure"
+    )
+    if source.get("objectiveIdentity", "luminance") != expected_objective:
+        raise ValueError("Stage 4 shared replay objective identity changed")
+    rows = source.get("perClassSelections", [])
+    if [row.get("classIdentity") for row in rows] != identities:
+        raise ValueError("Stage 4 shared replay class identity order changed")
+    selected = rows[identities.index(class_identity)]
+    return {
+        **selected,
+        "classIndex": identities.index(class_identity) + 1,
+        "objectiveIdentity": objective_identity,
+    }
+
+
+def stage4_epoch_complete_shared_replay_selection_for_epoch(
+    prior_luminance_result,
+    prior_reference_feature_result,
+    prior_epoch_number,
+    epoch_index,
+    batch_index,
+    replay_index,
+    config,
+):
+    """Start shared replay only after one complete Epoch produced both identities."""
+    contract = (
+        validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay(
+            config
+        )
+    )
+    if contract is None:
+        return None
+    epoch_index = int(epoch_index)
+    if epoch_index < 0:
+        raise ValueError("Stage 4 shared replay Epoch identity changed")
+    if epoch_index == 0:
+        if (
+            prior_luminance_result is not None
+            or prior_reference_feature_result is not None
+            or prior_epoch_number is not None
+        ):
+            raise ValueError(
+                "Stage 4 shared replay carried prior-Epoch identity into Epoch 1"
+            )
+        return None
+    if (
+        int(prior_epoch_number or -1) != epoch_index
+        or not isinstance(prior_luminance_result, dict)
+        or not isinstance(prior_reference_feature_result, dict)
+    ):
+        raise ValueError(
+            "Stage 4 shared replay complete prior-Epoch lifecycle identity is missing"
+        )
+    return stage4_epoch_complete_shared_replay_selection(
+        prior_luminance_result,
+        prior_reference_feature_result,
+        batch_index,
+        replay_index,
+        config,
+    )
+
+
+def stage4_epoch_complete_selected_reference_feature_replay_loss_from_tensor(
+    per_sample_class_tensor, selected_identity, config,
+):
+    """Recompute one selected reference-feature loss inside an existing replay lane."""
+    contract = (
+        validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay(
+            config
+        )
+    )
+    identities = list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:])
+    if (
+        contract is None
+        or not isinstance(per_sample_class_tensor, torch.Tensor)
+        or tuple(per_sample_class_tensor.shape) != (1, len(identities))
+        or selected_identity not in identities
+        or not bool(torch.isfinite(per_sample_class_tensor).all())
+    ):
+        raise ValueError("Stage 4 selected reference-feature replay tensor changed")
+    source = contract["sourceContracts"]
+    class_weight = float(source["derivedClassWeights"][selected_identity])
+    rollout_weight = float(source["rolloutWeight"])
+    value = per_sample_class_tensor[0, identities.index(selected_identity)]
+    return value * class_weight * rollout_weight
 
 
 def validate_stage4_per_class_final_visible_reference_feature_structure_obligation(
@@ -15211,7 +16142,10 @@ def validate_fact_conditioned_semantic_mixture_stage4_diagnostic_manifest_suppor
     config,
 ):
     resolved_mode = resolve_stage_mode(config)
-    smoke_active = resolved_mode.mode_id == "fact_conditioned_semantic_mixture_stage4_smoke"
+    smoke_active = resolved_mode.mode_id in {
+        "fact_conditioned_semantic_mixture_stage4_smoke",
+        "stage4_global_visual_native_decode_component_smoke",
+    }
     formal_stage_active = resolved_mode.mode_id in {
         "fact_conditioned_semantic_mixture_stage0_full_training",
         "fact_conditioned_semantic_mixture_stage1_full_training",
@@ -15640,7 +16574,11 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
         stage4_epoch_complete_per_class_selection_ledger(
             config, "validation", sample_count * seed_count,
         )
-        if epoch_complete_per_class_luminance_active else None
+        if (
+            epoch_complete_per_class_luminance_active
+            and not force_checkpoint_bound_preview
+        )
+        else None
     )
     reference_feature_structure_active = config.get("training", {}).get(
         "stage4PerClassFinalVisibleReferenceFeatureStructureObligation", {}
@@ -15648,6 +16586,23 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
     per_class_worst_reference_feature_active = config.get("training", {}).get(
         "stage4PerClassWorstSampleReferenceFeatureStructureObligation", {}
     ).get("status") == "training_loss_active_owner_authorized"
+    epoch_complete_reference_feature_active = config.get("training", {}).get(
+        "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay",
+        {},
+    ).get("status") == "training_loss_active_owner_authorized"
+    epoch_complete_reference_feature_validation_ledger = (
+        stage4_epoch_complete_per_class_selection_ledger(
+            config,
+            "validation",
+            sample_count * seed_count,
+            objective_identity="reference_feature_structure",
+        )
+        if (
+            epoch_complete_reference_feature_active
+            and not force_checkpoint_bound_preview
+        )
+        else None
+    )
     with torch.no_grad():
         for index in range(sample_count):
             row = dataset[index]
@@ -15733,6 +16688,28 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
                             for value in reference_feature_structure[
                                 "perSampleClassTensors"
                             ][:, class_index]
+                        )
+                    if epoch_complete_reference_feature_validation_ledger is not None:
+                        reference_feature_source = config["training"][
+                            "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay"
+                        ]["sourceContracts"]
+                        weighted_reference_feature_tensor = torch.stack(
+                            [
+                                reference_feature_structure["perSampleClassTensors"][:, class_index]
+                                * float(reference_feature_source["derivedClassWeights"][identity])
+                                for class_index, identity in enumerate(
+                                    FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+                                )
+                            ],
+                            dim=1,
+                        )
+                        stage4_collect_epoch_complete_per_class_selection_scores(
+                            epoch_complete_reference_feature_validation_ledger,
+                            weighted_reference_feature_tensor,
+                            [row["sampleId"]],
+                            config,
+                            seed_indices=[seed_index],
+                            objective_identity="reference_feature_structure",
                         )
                 gradient, laplacian = multiscale_latent_hierarchy_losses(predicted_rgb, target_rgb, config)
                 object_semantic = object_semantic_rgb_losses(predicted_rgb, target_rgb, conditions, config)
@@ -15868,11 +16845,31 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
                 )
             )
             source = per_class_worst_contract["sourceContracts"]
-            per_class_worst_checkpoint = sum(
-                max(reference_feature_structure_per_class_values[identity])
-                * float(source["derivedClassWeights"][identity])
-                for identity in FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
-            ) * float(source["rolloutWeight"])
+            if epoch_complete_reference_feature_validation_ledger is not None:
+                epoch_complete_reference_feature_checkpoint = (
+                    stage4_finalize_epoch_complete_per_class_selection(
+                        epoch_complete_reference_feature_validation_ledger,
+                        config,
+                        objective_identity="reference_feature_structure",
+                    )
+                )
+                per_class_worst_checkpoint = (
+                    epoch_complete_reference_feature_checkpoint[
+                        "checkpointQualificationScore"
+                    ]
+                )
+                result[
+                    "rolloutEpochCompletePerClassWorstSampleReferenceFeatureStructureCheckpointSelections"
+                ] = epoch_complete_reference_feature_checkpoint["perClassSelections"]
+                result[
+                    "rolloutEpochCompletePerClassWorstSampleReferenceFeatureStructureCheckpointIdentityCount"
+                ] = epoch_complete_reference_feature_checkpoint["identityCount"]
+            else:
+                per_class_worst_checkpoint = sum(
+                    max(reference_feature_structure_per_class_values[identity])
+                    * float(source["derivedClassWeights"][identity])
+                    for identity in FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
+                ) * float(source["rolloutWeight"])
             result[
                 "rolloutPerClassWorstSampleReferenceFeatureStructureCheckpointObligation"
             ] = per_class_worst_checkpoint
@@ -16685,6 +17682,300 @@ def set_seed(seed):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
+
+def validate_stage4_conflict_aware_existing_gradient_aggregation(config):
+    """Validate the inactive or explicitly Owner-activated aggregation contract."""
+    contract = config.get("training", {}).get(
+        "stage4ConflictAwareExistingGradientAggregation", {}
+    )
+    if not contract:
+        return None
+    expected_classes = list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:])
+    source = config.get("training", {}).get(
+        "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay",
+        {},
+    )
+    source_weights = source.get("sourceContracts", {}).get("derivedClassWeights", {})
+    expected_fields = {
+        "enabled", "status", "contractId", "classOrder", "gradientBoundary",
+        "sourceLossContract", "derivedClassWeights", "projection",
+        "optimizerBudget", "nonSharedParameters", "checkpointQualification",
+        "compatibility", "legalTargets", "evidenceBindings", "activationGate",
+    }
+    gate_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    status = contract.get("status")
+    inactive = status == "cpu_support_verified_inactive"
+    active = status == "training_paradigm_active_owner_authorized"
+    expected_smoke_active_gates = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow",
+    }
+    expected_formal_active_gates = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "stage4FullTrainingNow",
+    }
+    gate = contract.get("activationGate", {})
+    gate_valid = (
+        inactive and not any(gate.values())
+    ) or (
+        active
+        and {
+            key for key, value in gate.items() if value is True
+        } in (expected_smoke_active_gates, expected_formal_active_gates)
+        and all(isinstance(value, bool) for value in gate.values())
+    )
+    if (
+        set(contract) != expected_fields
+        or contract.get("enabled") is not True
+        or not (inactive or active)
+        or contract.get("contractId")
+        != STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_ID
+        or contract.get("classOrder") != expected_classes
+        or contract.get("gradientBoundary") != {
+            "parameterGroup": "current_denoiser_shared_final_output_path",
+            "scope": "shared_parameters_only",
+            "nonSharedParametersUseExistingGradient": True,
+        }
+        or contract.get("sourceLossContract") != {
+            "contractId": STAGE4_EPOCH_COMPLETE_PER_CLASS_WORST_REFERENCE_FEATURE_SHARED_REPLAY_ID,
+            "lossValuesChanged": False,
+            "lossWeightsChanged": False,
+        }
+        or contract.get("derivedClassWeights") != source_weights
+        or list(source_weights) != expected_classes
+        or contract.get("projection") != {
+            "condition": "strict_dot_product_less_than_zero",
+            "operation": "remove_current_gradient_component_along_conflicting_original_weighted_gradient",
+            "referenceGradient": "original_existing_weighted_gradient_in_formal_class_order",
+            "numericTolerance": None,
+            "nonNegativeDotProductBehavior": "bitwise_unchanged",
+            "finiteNonZeroGradientsRequired": True,
+        }
+        or contract.get("optimizerBudget") != {
+            "existingOptimizerStepsPreserved": True,
+            "additionalOptimizerSteps": 0,
+            "additionalReplayPasses": 0,
+        }
+        or contract.get("nonSharedParameters")
+        != "retain_existing_formal_weighted_gradient_sum_unchanged"
+        or contract.get("checkpointQualification") != {
+            "lossValuesChanged": False,
+            "validationMetricsChanged": False,
+            "selectionContractChanged": False,
+        }
+        or contract.get("compatibility") != {
+            "modelStructureChanged": False,
+            "datasetOrSplitChanged": False,
+            "conditionChannelOrderChanged": False,
+            "checkpointFormatChanged": False,
+            "reviewThresholdsChanged": False,
+            "oldModesWithoutContractPreserved": True,
+        }
+        or contract.get("legalTargets") != {
+            "failedPreviewPixelsUsedAsTargets": False,
+            "machineReviewThresholdsUsedAsTargets": False,
+            "machineReviewResultsUsedAsTargets": False,
+        }
+        or contract.get("evidenceBindings")
+        != STAGE4_CONFLICT_AWARE_EXISTING_GRADIENT_AGGREGATION_EVIDENCE_BINDINGS
+        or set(contract.get("activationGate", {})) != gate_fields
+        or not gate_valid
+    ):
+        raise ValueError("Stage 4 conflict-aware gradient aggregation contract changed")
+    return contract
+
+
+def validate_stage4_controlled_structure_three_arm_contract(config):
+    """Validate the Owner-bounded inactive, Smoke-active, or formal structure arm."""
+    training = config.get("training", {})
+    contract = training.get("stage4ControlledStructureThreeArm", {})
+    arm = config.get("stage4ControlledStructureArm")
+    expected_fields = {
+        "contractId", "status", "armId", "sourceThreeArmContract",
+        "architecture", "conditionChannels", "latentChannels",
+        "denoiserBaseChannels", "activationGate",
+    }
+    gate_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage1Now",
+        "stage2Now", "formalInferenceNow", "checkpointPromotionNow",
+        "runtimeFrameNow", "worldEntryNow",
+    }
+    smoke_gates = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow",
+    }
+    formal_gates = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "stage4FullTrainingNow",
+    }
+    gate = contract.get("activationGate", {})
+    status = contract.get("status")
+    active_keys = {key for key, value in gate.items() if value is True}
+    expected_width = 128 if arm == "capacity_only_base_width_64_to_existing_level1_128" else 64
+    if (
+        set(contract) != expected_fields
+        or contract.get("contractId")
+        != "stage4_controlled_structure_three_arm_cpu_inactive_support_v1"
+        or not fact_conditioned_semantic_mixture_smoke_supports_controlled_structure_arm(arm or "")
+        or contract.get("armId") != arm
+        or contract.get("architecture")
+        != "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+        or contract.get("conditionChannels") != 23
+        or contract.get("latentChannels") != 12
+        or contract.get("denoiserBaseChannels") != expected_width
+        or set(gate) != gate_fields
+        or not all(isinstance(value, bool) for value in gate.values())
+        or not (
+            (status == "cpu_support_verified_inactive" and not active_keys)
+            or (
+                status == "structure_active_owner_authorized"
+                and active_keys == smoke_gates
+                and training.get("trainingAuthorizationStatus")
+                == FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS
+            )
+            or (
+                status == "structure_active_owner_authorized"
+                and arm in {
+                    "condition_fusion_only_final_direct_residual_23_64_12",
+                    "capacity_only_base_width_64_to_existing_level1_128",
+                }
+                and active_keys == formal_gates
+                and training.get("trainingAuthorizationStatus") in {
+                    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE0_FULL_TRAINING_STATUS,
+                    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE1_FULL_TRAINING_STATUS,
+                    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE2_FULL_TRAINING_STATUS,
+                }
+            )
+        )
+    ):
+        raise ValueError("Stage 4 controlled structure arm contract changed")
+    return contract
+
+
+def stage4_conflict_aware_existing_gradient_aggregation(per_class_gradients, config):
+    """Project only strictly conflicting weighted gradients on the shared final path."""
+    contract = validate_stage4_conflict_aware_existing_gradient_aggregation(config)
+    if contract is None:
+        raise ValueError("Stage 4 conflict-aware gradient aggregation contract missing")
+    class_order = tuple(contract["classOrder"])
+    if tuple(per_class_gradients) != class_order:
+        raise ValueError("Stage 4 conflict-aware gradient class order changed")
+    parameter_count = None
+    originals = {}
+    weights = contract["derivedClassWeights"]
+    for identity in class_order:
+        tensors = tuple(per_class_gradients[identity])
+        if not tensors:
+            raise ValueError("Stage 4 conflict-aware gradient parameter group empty")
+        if parameter_count is None:
+            parameter_count = len(tensors)
+        if len(tensors) != parameter_count:
+            raise ValueError("Stage 4 conflict-aware gradient parameter count changed")
+        weighted = tuple(tensor * float(weights[identity]) for tensor in tensors)
+        if any(not bool(torch.isfinite(tensor).all()) for tensor in weighted):
+            raise ValueError("Stage 4 conflict-aware gradient contains NaN or Inf")
+        norm_squared = sum((tensor * tensor).sum() for tensor in weighted)
+        if not bool(torch.isfinite(norm_squared)) or float(norm_squared.detach()) <= 0.0:
+            raise ValueError("Stage 4 conflict-aware gradient must be finite and nonzero")
+        originals[identity] = weighted
+    reference_shapes = tuple(tensor.shape for tensor in originals[class_order[0]])
+    if any(
+        tuple(tensor.shape for tensor in originals[identity]) != reference_shapes
+        for identity in class_order[1:]
+    ):
+        raise ValueError("Stage 4 conflict-aware gradient parameter shapes changed")
+    projected = {}
+    interactions = []
+    for identity in class_order:
+        current = tuple(tensor.clone() for tensor in originals[identity])
+        for other_identity in class_order:
+            if other_identity == identity:
+                continue
+            reference = originals[other_identity]
+            dot = sum((left * right).sum() for left, right in zip(current, reference))
+            denominator = sum((tensor * tensor).sum() for tensor in reference)
+            if not bool(torch.isfinite(dot)) or not bool(torch.isfinite(denominator)):
+                raise ValueError("Stage 4 conflict-aware projection scalar is nonfinite")
+            conflicting = float(dot.detach()) < 0.0
+            if conflicting:
+                coefficient = dot / denominator
+                current = tuple(
+                    left - coefficient * right
+                    for left, right in zip(current, reference)
+                )
+            interactions.append({
+                "currentClass": identity,
+                "referenceClass": other_identity,
+                "dotProduct": float(dot.detach()),
+                "projected": conflicting,
+            })
+        projected[identity] = current
+    aggregated = tuple(
+        sum(projected[identity][parameter_index] for identity in class_order)
+        for parameter_index in range(parameter_count)
+    )
+    if any(not bool(torch.isfinite(tensor).all()) for tensor in aggregated):
+        raise ValueError("Stage 4 conflict-aware aggregate is nonfinite")
+    return {
+        "status": contract["status"],
+        "classOrder": list(class_order),
+        "originalWeightedGradients": originals,
+        "projectedWeightedGradients": projected,
+        "aggregatedSharedGradients": aggregated,
+        "interactions": interactions,
+        "additionalOptimizerSteps": 0,
+        "additionalReplayPasses": 0,
+        "freeNumericalToleranceUsed": False,
+    }
+
+
+def stage4_apply_conflict_aware_existing_gradient_replacement(
+    shared_parameters, aggregation_result,
+):
+    """Replace only the already-backpropagated four-class shared gradient sum."""
+    parameters = tuple(shared_parameters)
+    originals = aggregation_result.get("originalWeightedGradients", {})
+    class_order = tuple(aggregation_result.get("classOrder", ()))
+    replacement = tuple(aggregation_result.get("aggregatedSharedGradients", ()))
+    if (
+        not parameters
+        or not class_order
+        or tuple(originals) != class_order
+        or len(replacement) != len(parameters)
+        or any(len(originals[identity]) != len(parameters) for identity in class_order)
+    ):
+        raise ValueError("Stage 4 conflict-aware replacement identity changed")
+    for parameter_index, parameter in enumerate(parameters):
+        if parameter.grad is None:
+            raise ValueError(
+                "Stage 4 conflict-aware shared parameter gradient is missing"
+            )
+        original_sum = sum(
+            originals[identity][parameter_index] for identity in class_order
+        )
+        parameter.grad.add_(replacement[parameter_index] - original_sum)
+        if not bool(torch.isfinite(parameter.grad).all()):
+            raise ValueError("Stage 4 conflict-aware replaced gradient is nonfinite")
+    return {
+        "sharedParameterCount": len(parameters),
+        "otherLossGradientsPreserved": True,
+        "nonSharedParametersTouched": False,
+        "additionalBackwardCalls": 0,
+        "additionalOptimizerSteps": 0,
+    }
 
 
 def utc_now():

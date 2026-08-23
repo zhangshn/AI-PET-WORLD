@@ -1,6 +1,6 @@
 # AI Painter 训练数据完整保存锁定规格
 
-更新时间：2026-07-12 15:38:00 +08:00
+更新时间：2026-08-24 04:30:00 +08:00
 
 状态：active-training-data-persistence-contract
 
@@ -41,6 +41,7 @@
 | 第一版家园原图库 | `data/world-samples/original-image-library/natural-home-v1/` |
 | 正式样本登记 | `data/world-samples/registry/<dictionaryVersion>/` |
 | 不可变完整地图数据包 | `data/world-samples/dataset-packages/<packageId>/` |
+| AI辅助冷启动不可变数据包 | `data/world-samples/ai-assisted-cold-start-dataset-packages/<packageId>/` |
 | 本地推理目录 | `.runtime/ai-painter/*-inference/` |
 | bootstrap 完整地图候选 | `.runtime/ai-painter/complete-world-visual-bootstrap-inference/` |
 | bootstrap 机器审核与失败回写 | `.runtime/ai-painter/complete-world-visual-machine-reviews/` |
@@ -48,9 +49,14 @@
 | 本地 foundation 模型来源与文件 hash | `.runtime/ai-painter/local-foundation-models/manifest.json` |
 | 材料槽推理运行 | `.runtime/game-map-material-slot-inference-runs/` |
 | RuntimeFrame 候选 | `.runtime/game-map-runtime-frame-candidates/` |
+| RuntimeFrame 工作区 | `.runtime/game-map-runtime-frame-working/` |
+| RuntimeFrame 正式记录 | `.runtime/game-map-runtime-frame/` |
+| RuntimeFrame 拒绝记录 | `.runtime/game-map-rejected-runtime-frames/` |
 | Runtime 合成器输出 | `.runtime/game-map-runtime-compositor/` |
 | 当前完整视觉任务包 | `.runtime/ai-painter/world-visual-generation-task-packages/<taskId>/` |
 | 编译后模型条件 | `.runtime/ai-painter/world-visual-generation-task-packages/<taskId>/compiled-conditions/` |
+
+RuntimeFrame目录按`working -> candidates -> accepted frame / rejected frames`流转；页面不得把工作区或候选目录展示为已经进入世界的正式画面。两个数据包根目录按通用正式血缘与AI辅助冷启动血缘分工，活动训练只能读取配置精确绑定的路径、packageId和SHA-256。
 
 ## 4. 通过标准
 

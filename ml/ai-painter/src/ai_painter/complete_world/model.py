@@ -78,6 +78,76 @@ def build_complete_world_system(config: dict[str, object]):
     structure_fact_first_architecture = "stage4_structure_fact_first_dual_stage_generator_v1"
     semantic_renderer_architecture = "stage4_condition_preserving_semantic_renderer_v1"
     semantic_mixture_architecture = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+    controlled_structure_baseline_arm = "baseline_current_formal_structure"
+    controlled_structure_fusion_arm = (
+        "condition_fusion_only_final_direct_residual_23_64_12"
+    )
+    controlled_structure_capacity_arm = (
+        "capacity_only_base_width_64_to_existing_level1_128"
+    )
+    controlled_structure_arms = {
+        controlled_structure_baseline_arm,
+        controlled_structure_fusion_arm,
+        controlled_structure_capacity_arm,
+    }
+    controlled_structure_arm_explicit = "stage4ControlledStructureArm" in config
+    controlled_structure_arm = str(config.get(
+        "stage4ControlledStructureArm",
+        controlled_structure_baseline_arm,
+    ))
+    stage4_responsibility_component_roles = (
+        "terrain_route_hydrology_spatial_realization",
+        "per_class_object_semantic_realization",
+        "global_visual_harmonization_and_native_complete_rgb_decode",
+    )
+    stage4_responsibility_component_role_explicit = (
+        "stage4ResponsibilityComponentRole" in config
+    )
+    stage4_responsibility_component_role = str(config.get(
+        "stage4ResponsibilityComponentRole",
+        "",
+    ))
+    if stage4_responsibility_component_role_explicit:
+        if denoiser_architecture != semantic_mixture_architecture:
+            raise ValueError(
+                "Stage 4 isolated responsibility components require the existing fact-conditioned semantic mixture architecture"
+            )
+        if stage4_responsibility_component_role not in stage4_responsibility_component_roles:
+            raise ValueError(
+                f"unknown Stage 4 responsibility component role: {stage4_responsibility_component_role}"
+            )
+        if controlled_structure_arm_explicit:
+            raise ValueError(
+                "Stage 4 responsibility component role cannot be combined with a controlled structure arm"
+            )
+        if int(config.get("denoiserBaseChannels", 64)) != 64:
+            raise ValueError("Stage 4 responsibility components require base width 64")
+        if condition_channels != 23 or latent_channels != 12:
+            raise ValueError(
+                "Stage 4 responsibility components require exactly 23 condition and 12 latent channels"
+            )
+        if autoencoder_architecture != "residual_4x_latent_pixel_detail_v2" or latent_downsample_factor != 4:
+            raise ValueError(
+                "Stage 4 responsibility components require the frozen 4x 12-channel Autoencoder boundary"
+            )
+    if controlled_structure_arm_explicit:
+        if denoiser_architecture != semantic_mixture_architecture:
+            raise ValueError(
+                "stage4ControlledStructureArm is only available for the fact-conditioned semantic mixture architecture"
+            )
+        if controlled_structure_arm not in controlled_structure_arms:
+            raise ValueError(f"unknown Stage 4 controlled structure arm: {controlled_structure_arm}")
+        expected_base_channels = (
+            128 if controlled_structure_arm == controlled_structure_capacity_arm else 64
+        )
+        if int(config.get("denoiserBaseChannels", 64)) != expected_base_channels:
+            raise ValueError(
+                "Stage 4 controlled structure arm and denoiserBaseChannels are inconsistent"
+            )
+        if condition_channels != 23 or latent_channels != 12:
+            raise ValueError(
+                "Stage 4 controlled structure arms require exactly 23 condition and 12 latent channels"
+            )
     semantic_renderer_channels = (
         "object_footprints",
         "object_tree",
@@ -99,6 +169,13 @@ def build_complete_world_system(config: dict[str, object]):
         "rock",
         "vegetation",
     )
+    if stage4_responsibility_component_role_explicit:
+        if stage4_responsibility_component_role == stage4_responsibility_component_roles[0]:
+            semantic_mixture_types = ("route",)
+        elif stage4_responsibility_component_role == stage4_responsibility_component_roles[1]:
+            semantic_mixture_types = ("footprints", "tree", "rock", "vegetation")
+        else:
+            semantic_mixture_types = ()
     semantic_mixture_source_channels = {
         "route": "terrain_path_ground",
         "footprints": "object_footprints",
@@ -519,7 +596,7 @@ def build_complete_world_system(config: dict[str, object]):
                     nn.Conv2d(channels, latent_channels, 3, padding=1),
                 )
                 for name in semantic_mixture_types
-            }) if denoiser_architecture == semantic_mixture_architecture else None
+            }) if denoiser_architecture == semantic_mixture_architecture and semantic_mixture_types else None
             self.semantic_mixture_participation = nn.ModuleDict({
                 name: nn.Sequential(
                     nn.Conv2d(semantic_mixture_input_channels, channels, 3, padding=1),
@@ -528,7 +605,16 @@ def build_complete_world_system(config: dict[str, object]):
                     nn.Sigmoid(),
                 )
                 for name in semantic_mixture_types
-            }) if denoiser_architecture == semantic_mixture_architecture else None
+            }) if denoiser_architecture == semantic_mixture_architecture and semantic_mixture_types else None
+            self.final_condition_residual = nn.Sequential(
+                nn.Conv2d(23, 64, 3, padding=1, bias=True),
+                nn.SiLU(),
+                nn.Conv2d(64, 12, 3, padding=1, bias=True),
+            ) if (
+                denoiser_architecture == semantic_mixture_architecture
+                and controlled_structure_arm_explicit
+                and controlled_structure_arm == controlled_structure_fusion_arm
+            ) else None
 
         def forward(
             self,
@@ -713,6 +799,14 @@ def build_complete_world_system(config: dict[str, object]):
                     semantic_mixture_gated_contributions,
                     dim=0,
                 ).sum(dim=0)
+            if self.final_condition_residual is not None:
+                final_typed_conditions = resize_typed_conditions(
+                    conditions,
+                    predicted_velocity.shape[-2:],
+                )
+                predicted_velocity = predicted_velocity + self.final_condition_residual(
+                    final_typed_conditions
+                )
             if return_condition_reconstruction:
                 if self.condition_reconstruction is None:
                     raise ValueError("condition reconstruction is only available in the V4 denoiser")
@@ -915,4 +1009,66 @@ def build_complete_world_system(config: dict[str, object]):
         def stage4_semantic_mixture_identity_order(self):
             return self.denoiser.stage4_semantic_mixture_identity_order()
 
+    class ProjectOwnedStage4ResponsibilityComponentSystem(nn.Module):
+        """One CPU-inactive responsibility component with a role-bound parameter namespace."""
+
+        def __init__(self):
+            super().__init__()
+            self.autoencoder = ProjectOwnedAutoencoder()
+            self.autoencoder.eval()
+            for parameter in self.autoencoder.parameters():
+                parameter.requires_grad_(False)
+            self.stage4_responsibility_components = nn.ModuleDict({
+                stage4_responsibility_component_role: ProjectOwnedMultiscaleConditionUNet(),
+            })
+
+        @property
+        def denoiser(self):
+            return self.stage4_responsibility_components[
+                stage4_responsibility_component_role
+            ]
+
+        def predict_noise(self, noisy_latent, timestep, conditions):
+            return self.denoiser(noisy_latent, timestep, conditions)
+
+        def predict_velocity(self, noisy_latent, timestep, conditions):
+            return self.denoiser(noisy_latent, timestep, conditions)
+
+        def predict_velocity_with_stage4_semantic_mixture(self, noisy_latent, timestep, conditions):
+            return self.denoiser(
+                noisy_latent,
+                timestep,
+                conditions,
+                return_stage4_semantic_mixture=True,
+            )
+
+        def reconstruct_conditions_from_clean_latent(self, predicted_clean):
+            return self.denoiser.reconstruct_conditions_from_clean_latent(predicted_clean)
+
+        def prepare_typed_conditions(self, conditions, latent_size):
+            return self.denoiser.prepare_typed_conditions(conditions, latent_size)
+
+        def stage4_semantic_mixture_identity_order(self):
+            return self.denoiser.stage4_semantic_mixture_identity_order()
+
+        def stage4_responsibility_component_role(self):
+            return stage4_responsibility_component_role
+
+        def stage4_responsibility_parameter_namespace(self):
+            return (
+                "stage4_responsibility_components."
+                f"{stage4_responsibility_component_role}"
+            )
+
+        def decode_stage4_native_complete_rgb(self, latent):
+            if stage4_responsibility_component_role != (
+                "global_visual_harmonization_and_native_complete_rgb_decode"
+            ):
+                raise ValueError(
+                    "native complete RGB decode belongs only to the final Stage 4 responsibility component"
+                )
+            return self.autoencoder.decode(latent)
+
+    if stage4_responsibility_component_role_explicit:
+        return ProjectOwnedStage4ResponsibilityComponentSystem()
     return ProjectOwnedCompleteWorldSystem()

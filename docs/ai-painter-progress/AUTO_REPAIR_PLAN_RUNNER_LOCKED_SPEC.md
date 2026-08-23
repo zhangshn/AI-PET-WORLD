@@ -88,4 +88,4 @@ node scripts/run-game-map-material-slot-next-repair-plan.mjs --dry-run
 node scripts/run-current-game-map-material-slot-v46-runtime-pipeline.mjs --archive-existing
 ```
 
-失败保留步骤必须记录在 run-report 的 `failureRetention` 字段中。该字段只能表示失败数据已经尝试保留，不能把失败流程改写为成功流程，不能让未通过 MaterialQuality / VisualJudge / FormalVisualJudge / 项目所有者人工验收的画面进入 `/world`。
+失败保留步骤必须记录在 run-report 的 `failureRetention` 字段中。该字段只能表示失败数据已经尝试保留，不能把失败流程改写为成功流程，不能让未通过 MaterialQuality / VisualJudge / FormalVisualJudge / 能力版本与Runtime发布门的画面进入 `/world`。

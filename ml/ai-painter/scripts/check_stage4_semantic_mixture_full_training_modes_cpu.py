@@ -76,9 +76,11 @@ def compile_stage(
     source: dict,
     stage: int,
     case_root: Path,
-    implementation_authorization: Path = IMPLEMENTATION_AUTH,
-    implementation_consumption: Path = IMPLEMENTATION_CONSUMPTION,
+    implementation_authorization: Path | None = None,
+    implementation_consumption: Path | None = None,
 ) -> dict:
+    implementation_authorization = implementation_authorization or IMPLEMENTATION_AUTH
+    implementation_consumption = implementation_consumption or IMPLEMENTATION_CONSUMPTION
     auth, auth_sha, consumption, consumption_sha = make_identity(stage, case_root)
     return compile_config(
         source, stage, auth, auth_sha, consumption, consumption_sha,
@@ -131,6 +133,8 @@ def validate_current_candidate_activation_contract(config: dict) -> None:
         "stage4EpochWorstSampleClassReferenceFeatureStructureReplay",
         "stage4PerClassWorstSampleReferenceFeatureStructureObligation",
         "stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation",
+        "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity",
+        "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay",
     ):
         contract = training.get(name)
         if not isinstance(contract, dict):
@@ -152,10 +156,61 @@ def validate_current_candidate_activation_contract(config: dict) -> None:
             or any(gate.get(key) is not False for key in required_false)
         ):
             raise ValueError(f"current candidate formal activation is invalid: {name}")
+    conflict_aware = training.get("stage4ConflictAwareExistingGradientAggregation")
+    if not isinstance(conflict_aware, dict):
+        raise ValueError("current candidate contract is missing: stage4ConflictAwareExistingGradientAggregation")
+    conflict_gate = conflict_aware.get("activationGate", {})
+    required_true = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "stage4FullTrainingNow",
+    }
+    required_false = {
+        "smokeNow", "stage5Now", "formalInferenceNow", "checkpointPromotionNow",
+        "runtimeFrameNow", "worldEntryNow",
+    }
+    if (
+        conflict_aware.get("status") != "training_paradigm_active_owner_authorized"
+        or set(conflict_gate) != required_true | required_false
+        or any(conflict_gate.get(key) is not True for key in required_true)
+        or any(conflict_gate.get(key) is not False for key in required_false)
+    ):
+        raise ValueError("current candidate formal activation is invalid: stage4ConflictAwareExistingGradientAggregation")
+    controlled = training.get("stage4ControlledStructureThreeArm")
+    if controlled is not None:
+        controlled_arm = config.get("stage4ControlledStructureArm")
+        controlled_gate = controlled.get("activationGate", {})
+        controlled_required_true = {
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow", "stage4FullTrainingNow",
+        }
+        controlled_required_false = {
+            "smokeNow", "stage1Now", "stage2Now", "formalInferenceNow",
+            "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+        }
+        if (
+            controlled_arm not in {
+                "condition_fusion_only_final_direct_residual_23_64_12",
+                "capacity_only_base_width_64_to_existing_level1_128",
+            }
+            or controlled.get("status") != "structure_active_owner_authorized"
+            or controlled.get("armId") != controlled_arm
+            or controlled.get("denoiserBaseChannels")
+            != (128 if controlled_arm == "capacity_only_base_width_64_to_existing_level1_128" else 64)
+            or set(controlled_gate) != controlled_required_true | controlled_required_false
+            or any(controlled_gate.get(key) is not True for key in controlled_required_true)
+            or any(controlled_gate.get(key) is not False for key in controlled_required_false)
+        ):
+            raise ValueError("adjudicated controlled structure formal activation is invalid")
 
 
 def main() -> int:
-    run_id, source_path, output_root = parse_cli(sys.argv[1:])
+    global IMPLEMENTATION_ROOT, IMPLEMENTATION_AUTH, IMPLEMENTATION_CONSUMPTION
+    run_id, source_path, output_root, implementation_root = parse_cli(sys.argv[1:])
+    IMPLEMENTATION_ROOT = implementation_root
+    IMPLEMENTATION_AUTH = IMPLEMENTATION_ROOT / "implementation-authorization.json"
+    IMPLEMENTATION_CONSUMPTION = IMPLEMENTATION_ROOT / "implementation-consumption.json"
     run_root = output_root / run_id
     if run_root.exists():
         raise ValueError("new CPU runId directory must not exist")
@@ -164,6 +219,7 @@ def main() -> int:
     source = json.loads(source_path.read_text(encoding="utf-8"))
     package = json.loads(PACKAGE.read_text(encoding="utf-8"))
     trainer_source = Path(trainer.__file__).read_text(encoding="utf-8")
+    formal_runner_source = (ROOT / "scripts/run-stage4-semantic-mixture-formal-stage.mjs").read_text(encoding="utf-8")
     positives = {}
     negatives = {}
     configs = []
@@ -177,6 +233,13 @@ def main() -> int:
         "def should_save_epoch_preview" in trainer_source
         and 'policy.get("smoke", []) + policy.get("formalStage", [])' in trainer_source
     )
+    positives["formal_training_resource_telemetry_is_fileized"] = all(
+        marker in formal_runner_source
+        for marker in (
+            'resource-telemetry.json', 'training_heartbeat',
+            'peakGpuMemoryBytes', 'resourceTelemetry',
+        )
+    )
     for stage in (0, 1, 2):
         config = compile_stage(source, stage, run_root / f"stage-{stage}-positive")
         write(run_root / f"stage-{stage}-positive" / "active-config.json", config)
@@ -185,6 +248,17 @@ def main() -> int:
         grant = resolve_stage_execution_grant(config, project_root=ROOT, verify_owner_files=True)
         trainer.validate_training_inputs(config, package)
         validate_current_candidate_activation_contract(config)
+        controlled = config["training"].get("stage4ControlledStructureThreeArm")
+        positives[f"stage{stage}_adjudicated_controlled_structure_active"] = (
+            controlled is not None
+            and config.get("stage4ControlledStructureArm") in {
+                "condition_fusion_only_final_direct_residual_23_64_12",
+                "capacity_only_base_width_64_to_existing_level1_128",
+            }
+            and controlled.get("status") == "structure_active_owner_authorized"
+            and controlled["activationGate"]["stage4FullTrainingNow"] is True
+            and controlled["activationGate"]["smokeNow"] is False
+        )
         positives[f"stage{stage}_mode_registered"] = mode.stage == stage and mode.execution_kind == f"full_training_stage{stage}"
         positives[f"stage{stage}_only_its_action"] = all(
             grant.permits(action) is (index == stage)
@@ -394,6 +468,78 @@ def main() -> int:
                 )
             )
         )
+        epoch_complete_selection = config["training"].get(
+            "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity"
+        )
+        positives[f"stage{stage}_epoch_complete_per_class_selection_active"] = (
+            epoch_complete_selection is not None
+            and epoch_complete_selection["status"]
+            == "training_loss_active_owner_authorized"
+            and all(
+                epoch_complete_selection["activationGate"][key] is True
+                for key in (
+                    "configurationActiveNow", "checkpointReadNow",
+                    "optimizerCreationNow", "backwardExecutionNow",
+                    "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+                    "stage4FullTrainingNow",
+                )
+            )
+            and all(
+                epoch_complete_selection["activationGate"][key] is False
+                for key in (
+                    "smokeNow", "stage5Now", "formalInferenceNow",
+                    "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
+        epoch_complete_reference_feature_shared_replay = config["training"].get(
+            "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay"
+        )
+        positives[f"stage{stage}_epoch_complete_reference_feature_shared_replay_active"] = (
+            epoch_complete_reference_feature_shared_replay is not None
+            and epoch_complete_reference_feature_shared_replay["status"]
+            == "training_loss_active_owner_authorized"
+            and all(
+                epoch_complete_reference_feature_shared_replay["activationGate"][key] is True
+                for key in (
+                    "configurationActiveNow", "checkpointReadNow",
+                    "optimizerCreationNow", "backwardExecutionNow",
+                    "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+                    "stage4FullTrainingNow",
+                )
+            )
+            and all(
+                epoch_complete_reference_feature_shared_replay["activationGate"][key] is False
+                for key in (
+                    "smokeNow", "stage5Now", "formalInferenceNow",
+                    "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
+        conflict_aware = config["training"].get(
+            "stage4ConflictAwareExistingGradientAggregation"
+        )
+        positives[f"stage{stage}_conflict_aware_gradient_aggregation_active"] = (
+            conflict_aware is not None
+            and conflict_aware["status"]
+            == "training_paradigm_active_owner_authorized"
+            and all(
+                conflict_aware["activationGate"][key] is True
+                for key in (
+                    "configurationActiveNow", "checkpointReadNow",
+                    "optimizerCreationNow", "backwardExecutionNow",
+                    "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+                    "stage4FullTrainingNow",
+                )
+            )
+            and all(
+                conflict_aware["activationGate"][key] is False
+                for key in (
+                    "smokeNow", "stage5Now", "formalInferenceNow",
+                    "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+                )
+            )
+        )
         resolved_diagnostic_fields = (
             trainer.fact_conditioned_semantic_mixture_diagnostic_fields(config)
         )
@@ -588,6 +734,90 @@ def main() -> int:
     negatives["per_class_worst_final_visible_luminance_unknown_field_rejected"] = rejects(
         lambda: trainer.validate_training_inputs(bad, package)
     )
+    current_contract_name = (
+        "stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity"
+    )
+    bad = deepcopy(configs[0])
+    del bad["training"][current_contract_name]
+    negatives["epoch_complete_per_class_selection_missing_rejected"] = rejects(
+        lambda: validate_current_candidate_activation_contract(bad)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"][current_contract_name]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["epoch_complete_per_class_selection_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"][current_contract_name]["activationGate"]["smokeNow"] = True
+    negatives["epoch_complete_per_class_selection_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"][current_contract_name]["unknown"] = True
+    negatives["epoch_complete_per_class_selection_unknown_field_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    shared_replay_contract_name = (
+        "stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay"
+    )
+    bad = deepcopy(configs[0])
+    del bad["training"][shared_replay_contract_name]
+    negatives["epoch_complete_reference_feature_shared_replay_missing_rejected"] = rejects(
+        lambda: validate_current_candidate_activation_contract(bad)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"][shared_replay_contract_name]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["epoch_complete_reference_feature_shared_replay_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"][shared_replay_contract_name]["activationGate"]["smokeNow"] = True
+    negatives["epoch_complete_reference_feature_shared_replay_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"][shared_replay_contract_name]["unknown"] = True
+    negatives["epoch_complete_reference_feature_shared_replay_unknown_field_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    conflict_contract_name = "stage4ConflictAwareExistingGradientAggregation"
+    bad = deepcopy(configs[0])
+    del bad["training"][conflict_contract_name]
+    negatives["conflict_aware_gradient_aggregation_missing_rejected"] = rejects(
+        lambda: validate_current_candidate_activation_contract(bad)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"][conflict_contract_name]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["conflict_aware_gradient_aggregation_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"][conflict_contract_name]["activationGate"]["smokeNow"] = True
+    negatives["conflict_aware_gradient_aggregation_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"][conflict_contract_name]["unknown"] = True
+    negatives["conflict_aware_gradient_aggregation_unknown_field_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    controlled_contract_name = "stage4ControlledStructureThreeArm"
+    bad = deepcopy(configs[0])
+    bad["training"][controlled_contract_name]["activationGate"]["stage4FullTrainingNow"] = False
+    negatives["winning_controlled_structure_partial_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["training"][controlled_contract_name]["activationGate"]["smokeNow"] = True
+    negatives["winning_controlled_structure_smoke_residue_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
+    bad = deepcopy(configs[0])
+    bad["stage4ControlledStructureArm"] = "unknown_controlled_structure_arm"
+    bad["training"][controlled_contract_name]["armId"] = bad["stage4ControlledStructureArm"]
+    negatives["unknown_controlled_structure_formal_activation_rejected"] = rejects(
+        lambda: trainer.validate_training_inputs(bad, package)
+    )
 
     lineage_cases = {
         "implementation_status_alias_rejected": ({"status": "owner_authorized_unconsumed"}, {}),
@@ -642,27 +872,30 @@ def main() -> int:
     return 0 if report["status"].startswith("passed_") else 1
 
 
-def parse_cli(values: list[str]) -> tuple[str, Path, Path]:
+def parse_cli(values: list[str]) -> tuple[str, Path, Path, Path]:
     run_id = "manual"
     source_path = DEFAULT_SOURCE
     output_root = OUTPUT_ROOT
+    implementation_root = IMPLEMENTATION_ROOT
     index = 0
     if values and not values[0].startswith("--"):
         run_id = values[0]
         index = 1
     while index < len(values):
         name = values[index]
-        if name not in {"--source", "--output-root"} or index + 1 >= len(values):
+        if name not in {"--source", "--output-root", "--implementation-root"} or index + 1 >= len(values):
             raise ValueError(f"unknown or incomplete CPU checker argument: {name}")
         resolved = (ROOT / values[index + 1]).resolve()
         if name == "--source":
             source_path = resolved
-        else:
+        elif name == "--output-root":
             output_root = resolved
+        else:
+            implementation_root = resolved
         index += 2
     if not run_id or any(token in run_id for token in ("/", "\\", "..")):
         raise ValueError("CPU runId is invalid")
-    return run_id, source_path, output_root
+    return run_id, source_path, output_root, implementation_root
 
 
 if __name__ == "__main__":

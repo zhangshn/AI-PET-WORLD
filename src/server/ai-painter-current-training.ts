@@ -39,6 +39,7 @@ const modelSources = [
     relativeRoot:
       ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7",
     runPrefix: "ai-assisted-conditional-denoiser-v7-",
+    artifactDirectory: null,
   },
   {
     absoluteRoot: path.join(
@@ -50,6 +51,7 @@ const modelSources = [
     relativeRoot:
       ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r1",
     runPrefix: "ai-assisted-v7-repair-r1-stage-",
+    artifactDirectory: null,
   },
   {
     absoluteRoot: path.join(
@@ -61,6 +63,7 @@ const modelSources = [
     relativeRoot:
       ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r2",
     runPrefix: "ai-assisted-v7-repair-r2-",
+    artifactDirectory: null,
   },
   {
     absoluteRoot: path.join(
@@ -72,6 +75,7 @@ const modelSources = [
     relativeRoot:
       ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r3",
     runPrefix: "ai-assisted-v7-repair-r3-",
+    artifactDirectory: null,
   },
   {
     absoluteRoot: path.join(
@@ -83,6 +87,7 @@ const modelSources = [
     relativeRoot:
       ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4",
     runPrefix: "ai-assisted-v7-r5-stage4-full-training-",
+    artifactDirectory: null,
   },
   {
     absoluteRoot: path.join(
@@ -94,6 +99,19 @@ const modelSources = [
     relativeRoot:
       ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke",
     runPrefix: "ai-assisted-v7-r5-stage4-",
+    artifactDirectory: null,
+  },
+  {
+    absoluteRoot: path.join(
+      /* turbopackIgnore: true */ root,
+      ".runtime",
+      "ai-painter",
+      "stage4-semantic-mixture-formal-training",
+    ),
+    relativeRoot:
+      ".runtime/ai-painter/stage4-semantic-mixture-formal-training",
+    runPrefix: "",
+    artifactDirectory: "training-output",
   },
 ] as const;
 const configPath =
@@ -1440,8 +1458,12 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
     for (const entry of entries) {
       if (!entry.isDirectory() || !entry.name.startsWith(source.runPrefix))
         continue;
-      const relativeManifest = `${source.relativeRoot}/${entry.name}/manifest.json`;
-      const relativeProgress = `${source.relativeRoot}/${entry.name}/progress.json`;
+      const artifactSuffix = source.artifactDirectory
+        ? `/${source.artifactDirectory}`
+        : "";
+      const relativeArtifactRoot = `${source.relativeRoot}/${entry.name}${artifactSuffix}`;
+      const relativeManifest = `${relativeArtifactRoot}/manifest.json`;
+      const relativeProgress = `${relativeArtifactRoot}/progress.json`;
       const manifest = await readJson(relativeManifest);
       const progress = manifest ? null : await readJson(relativeProgress);
       const record = manifest ?? progress;
@@ -1450,8 +1472,8 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
       const tokenLedger = await readJson(tokenLedgerPath);
       const metrics = arrayObjects(record.metrics).map(toEpochMetric);
       const previewReviewCandidates = [
-        `${source.relativeRoot}/${entry.name}/fixed-preview-hard-gate-review.json`,
-        `${source.relativeRoot}/${entry.name}/fixed-preview-reviews.json`,
+        `${relativeArtifactRoot}/fixed-preview-hard-gate-review.json`,
+        `${relativeArtifactRoot}/fixed-preview-reviews.json`,
       ];
       const previewReviewEntries = await Promise.all(
         previewReviewCandidates.map(async (candidatePath) => ({
@@ -1468,6 +1490,7 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
         sourceAbsoluteRoot: source.absoluteRoot,
         sourceRelativeRoot: source.relativeRoot,
         runId: entry.name,
+        artifactDirectory: source.artifactDirectory,
         metrics,
         previewReview,
       });
@@ -2014,16 +2037,23 @@ async function readStagePreviews({
   sourceAbsoluteRoot,
   sourceRelativeRoot,
   runId,
+  artifactDirectory,
   metrics,
   previewReview,
 }: {
   sourceAbsoluteRoot: string;
   sourceRelativeRoot: string;
   runId: string;
+  artifactDirectory: string | null;
   metrics: TrainingEpochMetric[];
   previewReview: JsonObject | null;
 }): Promise<TrainingStagePreview[]> {
-  const previewRoot = path.join(sourceAbsoluteRoot, runId, "fixed-epoch-previews");
+  const previewRoot = path.join(
+    sourceAbsoluteRoot,
+    runId,
+    ...(artifactDirectory ? [artifactDirectory] : []),
+    "fixed-epoch-previews",
+  );
   const entries = await readdir(previewRoot, { withFileTypes: true }).catch(
     () => [],
   );
@@ -2036,7 +2066,8 @@ async function readStagePreviews({
       )
       .map(async (entry) => {
         const epoch = Number(entry.name.match(/^epoch-(\d+)/i)?.[1] ?? 0);
-        const relativePath = `${sourceRelativeRoot}/${runId}/fixed-epoch-previews/${entry.name}`;
+        const artifactSuffix = artifactDirectory ? `/${artifactDirectory}` : "";
+        const relativePath = `${sourceRelativeRoot}/${runId}${artifactSuffix}/fixed-epoch-previews/${entry.name}`;
         const review =
           reviews.find((row) => number(row.epoch) === epoch) ??
           reviews.find((row) => text(row.previewPath) === relativePath) ??
@@ -2204,7 +2235,7 @@ function toEpochMetric(row: JsonObject): TrainingEpochMetric {
 }
 
 function stageNumber(runId: string) {
-  const match = runId.match(/stage-(\d+)/);
+  const match = runId.match(/stage-?(\d+)/);
   return match ? Number(match[1]) : runId.includes("smoke") ? 0 : null;
 }
 

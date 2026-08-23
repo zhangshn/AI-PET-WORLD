@@ -1,6 +1,6 @@
 # AI Painter 训练控制台页面锁定规格
 
-更新时间：2026-08-03 09:23:45 +08:00
+更新时间：2026-08-24 04:30:00 +08:00
 
 状态：active-ai-painter-console-page-contract
 
@@ -12,13 +12,14 @@
 |---|---|
 | 页面性质 | AI Painter 训练控制台 |
 | 主页面 URL | `/ai-painter-progress` |
-| 当前训练入口 URL | `/ai-painter-progress/natural-home` |
+| 完整地图训练内容与历史 URL | `/ai-painter-progress/natural-home` |
+| 当前运行实时监控 URL | `/ai-painter-progress/current-training` |
 | 页面职责 | 读取并展示本地小模型程序已经自动保存的训练、推理、审核、失败、成功和归档数据 |
 | 页面禁止职责 | 不负责训练、不负责推理、不负责手工归档、不负责手工补存储、不负责替程序制造记录 |
 
 ## 1.1 页面固定运行规则
 
-`/ai-painter-progress/natural-home` 是现阶段完整世界地图训练内容入口。页面必须按时间读取程序自动保存的每一次训练、推理、审核和归档记录。
+`/ai-painter-progress/natural-home` 是完整世界地图训练内容与历史记录入口，必须按时间读取程序自动保存的训练、推理、审核和归档记录。`/ai-painter-progress/current-training`是当前运行的实时只读监控台，只投影当前或最近一次运行的进度、资源、心跳和终态。两者不得互相冒充“当前训练入口”。
 
 页面顶部必须提供按时间搜索训练内容的下拉框。下拉框中的每一项必须保留程序自动保存的原始目录名、原始版本名、记录类型、状态和修改时间。
 
@@ -38,6 +39,7 @@
 | foundation 自动候选批次 | `.runtime/ai-painter/complete-world-visual-foundation-batches/` |
 | 当前完整地图任务包 | `.runtime/ai-painter/world-visual-generation-task-packages/` |
 | 当前完整地图数据包 | `data/world-samples/dataset-packages/` |
+| AI辅助冷启动完整地图数据包 | `data/world-samples/ai-assisted-cold-start-dataset-packages/` |
 | 当前正式样本登记 | `data/world-samples/registry/<dictionaryVersion>/records/` |
 
 控制台页面如果看不到训练图，优先检查程序是否已经把图片写入上述目录；不得用聊天截图、手工复制图片或临时文件替代程序自动保存结果。
@@ -76,7 +78,7 @@ AI Painter 训练控制台
    └─ 聊天进度表只用于汇报，不替代项目数据
 ```
 
-## 3. 当前训练入口树
+## 3. 完整地图训练内容与历史入口树
 
 ```txt
 /ai-painter-progress/natural-home
@@ -113,7 +115,7 @@ AI Painter 训练控制台
 │  ├─ C4. 查看全部生成结果归档
 │  └─ C5. 查看自动训练日志
 │
-├─ D. 当前训练入口状态
+├─ D. 所选训练记录状态
 │  ├─ 原始训练集
 │  ├─ 图像质量闸门
 │  ├─ 清洁训练集
@@ -160,6 +162,7 @@ AI Painter 训练控制台
 
 | 编号 | 功能 | 固定入口 | 数据来源 | 是否允许页面写入 |
 |---|---|---|---|---|
+| F00 | 查看当前运行实时状态 | `/ai-painter-progress/current-training` | `/api/ai-painter/current-training` | 否 |
 | F01 | 查看当前训练状态 | `/ai-painter-progress` | `/api/ai-painter/training-progress` | 否 |
 | F02 | 查看完整世界地图训练 | `/ai-painter-progress/natural-home` | `.runtime/ai-painter/`、`.runtime/game-map-*` | 否 |
 | F03 | 查看训练图预览 | `/ai-painter-progress/natural-home` | 程序自动保存的 PNG/JPG/WebP | 否 |
@@ -192,10 +195,15 @@ AI Painter 训练控制台
 | AI Painter 训练、生成、审核、模型目录 | `.runtime/ai-painter/` |
 | 材料槽推理运行 | `.runtime/game-map-material-slot-inference-runs/` |
 | 完整地图 Runtime 合成输出 | `.runtime/game-map-runtime-compositor/` |
+| RuntimeFrame 工作记录 | `.runtime/game-map-runtime-frame-working/` |
 | RuntimeFrame 候选记录 | `.runtime/game-map-runtime-frame-candidates/` |
+| RuntimeFrame 正式记录 | `.runtime/game-map-runtime-frame/` |
+| RuntimeFrame 拒绝记录 | `.runtime/game-map-rejected-runtime-frames/` |
 | 训练过程总账 | `.runtime/ai-painter/training-process-ledger/` |
 | 训练运行档案 | `.runtime/ai-painter/training-run-archive/` |
 | 生成结果索引 | `.runtime/ai-painter/generated-results/` |
+
+页面必须按`working -> candidates -> accepted frame / rejected frames`解释RuntimeFrame状态；工作记录和候选记录不得显示为已经进入`/world`。
 
 ## 7. 禁止事项
 
@@ -232,7 +240,7 @@ AI Painter 训练控制台
 -> 控制台页面读取固定目录
 -> 控制台页面展示状态、目录、图、日志、审核
 -> 机器审核通过
--> 项目所有者人工最终确认
+-> 冷启动能力版本发布验收 / 已发布版本Runtime机器发布门
 -> ApprovedFrame 才能进入 /world
 ```
 

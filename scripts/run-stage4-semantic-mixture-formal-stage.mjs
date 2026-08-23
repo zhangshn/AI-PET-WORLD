@@ -39,10 +39,12 @@ const finalizationDir = path.join(runRoot, "finalization")
 const consumptionPath = path.join(path.dirname(authorizationPath), "execution-consumption.json")
 const configPath = path.join(runRoot, "active-config.json")
 const preflightPath = path.join(runRoot, "preflight-report.json")
+const resourceTelemetryPath = path.join(runRoot, "resource-telemetry.json")
 const lockPath = resolve(".runtime/ai-painter/stage4-semantic-mixture-formal-training/.formal-stage.lock")
 const parentTerminalPath = args.parentTerminal ? resolve(args.parentTerminal) : null
 let child = null
 let releaseLock = null
+let resourceTelemetry = null
 
 const preflight = validatePreflight()
 if (preflight.blockers.length) {
@@ -93,6 +95,24 @@ function validatePreflight() {
   expect(fileHash(DATASET, DATASET_SHA), "dataset_identity_invalid")
   expect(Boolean(SOURCE_CONFIG && SOURCE_CONFIG_SHA), "source_config_binding_missing")
   expect(fileHash(SOURCE_CONFIG, SOURCE_CONFIG_SHA), "source_config_identity_invalid")
+  const sourceConfig = read(SOURCE_CONFIG)
+  const controlledArm = authorization?.controlledStructureArm
+  if (controlledArm) {
+    expect(["condition_fusion_only_final_direct_residual_23_64_12", "capacity_only_base_width_64_to_existing_level1_128"].includes(controlledArm), "controlled_structure_adjudicated_arm_invalid")
+    expect(sourceConfig?.stage4ControlledStructureArm === controlledArm, "controlled_structure_source_arm_invalid")
+    expect(sourceConfig?.training?.stage4ControlledStructureThreeArm?.armId === controlledArm, "controlled_structure_source_contract_invalid")
+    expect(sourceConfig?.training?.stage4ControlledStructureThreeArm?.status === "cpu_support_verified_inactive", "controlled_structure_source_not_inactive")
+    expect(Object.values(sourceConfig?.training?.stage4ControlledStructureThreeArm?.activationGate ?? {}).every(value => value === false), "controlled_structure_source_gate_not_closed")
+    const crossArmDecisionBinding = authorization?.bindings?.crossArmDecision
+    expect(fileHash(crossArmDecisionBinding?.path, crossArmDecisionBinding?.sha256), "cross_arm_decision_identity_invalid")
+    expect(read(crossArmDecisionBinding?.path)?.outcome === "condition_fusion_only_priority", "cross_arm_controlled_comparison_identity_invalid")
+    if (controlledArm === "capacity_only_base_width_64_to_existing_level1_128") {
+      const routeDecisionBinding = authorization?.bindings?.routeDecision
+      expect(fileHash(routeDecisionBinding?.path, routeDecisionBinding?.sha256), "capacity_route_decision_identity_invalid")
+      const routeDecision = read(routeDecisionBinding?.path)
+      expect(routeDecision?.selectedCause === "C" && routeDecision?.status === "condition_fusion_multisample_semantic_capacity_insufficient_confirmed", "capacity_route_decision_invalid")
+    }
+  }
   expect(fileHash(AE, AE_SHA), "autoencoder_identity_invalid")
   expect(Boolean(QUALIFICATION && QUALIFICATION_SHA), "stage0_qualification_binding_missing")
   const qualification = read(QUALIFICATION)
@@ -144,6 +164,13 @@ function compileActiveConfig(consumption) {
   const command = [COMPILER, "--source", resolve(SOURCE_CONFIG), "--stage", String(stage), "--authorization", authorizationPath, "--authorization-sha256", args.authorizationSha256, "--consumption", consumptionPath, "--consumption-sha256", consumption.sha256, "--implementation-authorization", resolve(IMPLEMENTATION_AUTH), "--implementation-authorization-sha256", authorization.bindings.implementationAuthorization.sha256, "--implementation-consumption", resolve(IMPLEMENTATION_CONSUMPTION), "--implementation-consumption-sha256", authorization.bindings.implementationConsumption.sha256, "--output", configPath]
   const result = spawnSync(PYTHON, command, { cwd: ROOT, env: pythonEnv(), encoding: "utf8", windowsHide: true, maxBuffer: 16 * 1024 * 1024 })
   if (result.status !== 0) throw new Error(`active_config_compile_failed:${result.stderr || result.stdout}`)
+  const active = read(configPath)
+  if (authorization?.controlledStructureArm && (
+    active?.stage4ControlledStructureArm !== authorization.controlledStructureArm
+    || active?.training?.stage4ControlledStructureThreeArm?.status !== "structure_active_owner_authorized"
+    || active?.training?.stage4ControlledStructureThreeArm?.activationGate?.stage4FullTrainingNow !== true
+    || active?.training?.stage4ControlledStructureThreeArm?.activationGate?.smokeNow !== false
+  )) throw new Error("active_controlled_structure_identity_invalid")
 }
 
 function runLongProcess(command) {
@@ -152,11 +179,34 @@ function runLongProcess(command) {
     let stdout = "", stderr = ""
     child.stdout.on("data", chunk => { stdout += chunk.toString() })
     child.stderr.on("data", chunk => { stderr += chunk.toString(); process.stderr.write(chunk) })
-    const timer = setInterval(() => {
+    const samples = []
+    const capture = () => {
       const progress = read(path.join(outputDir, "progress.json"))
-      console.log(JSON.stringify({ kind: "stage4_formal_training_progress", runId: args.runId, stage, phase: progress?.liveProgress?.phase ?? progress?.status ?? "starting", epoch: progress?.liveProgress?.epoch ?? progress?.currentEpoch?.epoch ?? null, epochTarget: 40, gpu: hardwareSnapshot().gpu, recordedAtUtc: new Date().toISOString() }))
-    }, 20000)
-    child.on("close", (exitCode, signal) => { clearInterval(timer); child = null; done({ exitCode, signal, stdout, stderr }) })
+      const hardware = hardwareSnapshot()
+      const sample = { kind: "training_heartbeat", recordedAtUtc: new Date().toISOString(), epoch: progress?.liveProgress?.epoch ?? progress?.currentEpoch?.epoch ?? null, phase: progress?.liveProgress?.phase ?? progress?.status ?? "starting", gpuMemoryUsedMiB: hardware.gpu.memoryUsedMiB, gpuUtilizationPercent: hardware.gpu.utilizationPercent }
+      samples.push(sample)
+      console.log(JSON.stringify({ kind: "stage4_formal_training_progress", runId: args.runId, stage, phase: sample.phase, epoch: sample.epoch, epochTarget: 40, gpu: hardware.gpu, recordedAtUtc: sample.recordedAtUtc }))
+    }
+    capture()
+    const timer = setInterval(capture, 20000)
+    child.on("close", (exitCode, signal) => {
+      clearInterval(timer)
+      capture()
+      child = null
+      resourceTelemetry = {
+        schemaVersion: "stage4-formal-training-immutable-resource-telemetry-v1",
+        status: "formal_training_resource_telemetry_recorded",
+        stage, runId: args.runId, sampleKind: "training_heartbeat",
+        sampleCount: samples.length, samples,
+        peakGpuMemoryBytes: Math.max(...samples.map(sample => sample.gpuMemoryUsedMiB)) * 1024 * 1024,
+        preflightMemoryUsedAsTrainingPeak: false,
+        consoleTextUsedAsFormalEvidence: false,
+        recordedAtUtc: new Date().toISOString(),
+      }
+      const fd = fs.openSync(resourceTelemetryPath, "wx")
+      try { fs.writeFileSync(fd, `${JSON.stringify(resourceTelemetry, null, 2)}\n`, "utf8"); fs.fsyncSync(fd) } finally { fs.closeSync(fd) }
+      done({ exitCode, signal, stdout, stderr })
+    })
   })
 }
 
@@ -199,7 +249,7 @@ async function reviewPreviews(manifest) {
 function finalize(status, blockers, manifest, review) {
   fs.mkdirSync(finalizationDir, { recursive: true })
   const terminalPath = path.join(finalizationDir, "phase-terminal.json")
-  const terminal = { schemaVersion: "stage4-semantic-mixture-formal-stage-terminal-v1", status, stage, runId: args.runId, fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 }, blockers, authorization: { path: project(authorizationPath), sha256: args.authorizationSha256, consumptionPath: project(consumptionPath), consumptionSha256: fs.existsSync(consumptionPath) ? hash(consumptionPath) : null }, manifest: manifest ? { path: project(path.join(outputDir, "manifest.json")), sha256: hash(path.join(outputDir, "manifest.json")) } : null, checkpoint: manifest ? { path: manifest.checkpointPath, sha256: manifest.checkpointSha256 } : null, machineReview: review ? { path: review.path ?? project(path.join(outputDir, "fixed-preview-reviews.json")), sha256: review.sha256 ?? hash(path.join(outputDir, "fixed-preview-reviews.json")), passCount: review.previewPassCount, failCount: review.previewFailCount } : null, nextLegalAction: status.includes("completed") ? (stage < 2 ? `independently_authorized_stage_${stage + 1}_full_training` : "update_stage4_progress_to_4_of_5") : "owner_review_of_new_real_failure", automaticRetry: false, stage5Started: false, formalInferenceStarted: false, checkpointPromoted: false, runtimeFrameStarted: false, worldEntered: false, recordedAtUtc: new Date().toISOString(), recordedAtAsiaShanghai: formatShanghai(new Date().toISOString()) }
+  const terminal = { schemaVersion: "stage4-semantic-mixture-formal-stage-terminal-v1", status, stage, runId: args.runId, fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 }, blockers, authorization: { path: project(authorizationPath), sha256: args.authorizationSha256, consumptionPath: project(consumptionPath), consumptionSha256: fs.existsSync(consumptionPath) ? hash(consumptionPath) : null }, manifest: manifest ? { path: project(path.join(outputDir, "manifest.json")), sha256: hash(path.join(outputDir, "manifest.json")) } : null, checkpoint: manifest ? { path: manifest.checkpointPath, sha256: manifest.checkpointSha256 } : null, machineReview: review ? { path: review.path ?? project(path.join(outputDir, "fixed-preview-reviews.json")), sha256: review.sha256 ?? hash(path.join(outputDir, "fixed-preview-reviews.json")), passCount: review.previewPassCount, failCount: review.previewFailCount } : null, resourceTelemetry: fs.existsSync(resourceTelemetryPath) ? { path: project(resourceTelemetryPath), sha256: hash(resourceTelemetryPath), sampleCount: resourceTelemetry?.sampleCount ?? null, peakGpuMemoryBytes: resourceTelemetry?.peakGpuMemoryBytes ?? null } : null, nextLegalAction: status.includes("completed") ? (stage < 2 ? `independently_authorized_stage_${stage + 1}_full_training` : "update_stage4_progress_to_4_of_5") : "owner_review_of_new_real_failure", automaticRetry: false, stage5Started: false, formalInferenceStarted: false, checkpointPromoted: false, runtimeFrameStarted: false, worldEntered: false, recordedAtUtc: new Date().toISOString(), recordedAtAsiaShanghai: formatShanghai(new Date().toISOString()) }
   writeJsonAtomic(terminalPath, terminal)
   const capsulePath = path.join(finalizationDir, "local-task-capsule.json")
   writeJsonAtomic(capsulePath, { schemaVersion: "ai-painter-local-task-capsule-v1", module: "AI Painter R5", fixedTotalProgress: terminal.fixedTotalProgress, currentStage: `Stage4 formal Stage ${stage}`, candidateTerminal: { path: project(terminalPath), sha256: hash(terminalPath) }, latestBlocker: blockers[0] ?? null, nextLegalAction: terminal.nextLegalAction, forbiddenActions: ["automatic_retry", "stage5", "formal_inference", "checkpoint_promotion", "runtime_frame", "world_entry"], evidence: { manifest: terminal.manifest, checkpoint: terminal.checkpoint, machineReview: terminal.machineReview }, recordedAtUtc: terminal.recordedAtUtc })

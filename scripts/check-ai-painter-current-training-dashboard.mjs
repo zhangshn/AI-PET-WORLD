@@ -744,7 +744,24 @@ const checks = [
     source.page.includes('data-testid="execution-actor-board"') &&
       source.page.includes('data-testid="local-ai-active-indicator"') &&
       source.page.includes('data-testid="execution-heartbeat"') &&
-      source.page.includes('data-testid="execution-progress"'),
+      source.page.includes('data-testid="execution-progress"') &&
+      source.page.includes('data-testid="training-continuation-notice"') &&
+      source.page.includes('data-testid="live-training-output-dialog"') &&
+      source.page.includes('data-testid="live-training-output-stream"') &&
+      source.page.includes('aria-haspopup="dialog"') &&
+      source.page.includes("本窗口约每2秒读取本地进度证据") &&
+      source.page.includes("本次运行输出历史") &&
+      source.page.includes("回到最新") &&
+      source.page.includes("output.scrollTop = output.scrollHeight") &&
+      source.page.includes("训练持续执行中｜请勿重复启动") &&
+      source.page.includes("刷新或关闭本页面不会中断训练") &&
+      source.page.includes("聊天定时推送已关闭"),
+  ],
+  [
+    "live_activity_reads_current_formal_stage4_training_output",
+    source.server.includes("stage4-semantic-mixture-formal-training") &&
+      source.server.includes('artifactDirectory: "training-output"') &&
+      source.server.includes("relativeArtifactRoot"),
   ],
   [
     "live_activity_uses_heartbeat_pid_and_process_table",

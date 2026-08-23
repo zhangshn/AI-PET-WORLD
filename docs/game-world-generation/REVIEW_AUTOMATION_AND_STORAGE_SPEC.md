@@ -1,6 +1,6 @@
 # 审核、自动闭环与存储正式规格
 
-更新时间：2026-08-03 09:23:45 +08:00
+更新时间：2026-08-24 04:40:01 +08:00
 
 状态：active-long-term-review-automation-storage-contract
 
@@ -8,7 +8,7 @@
 
 ## 1. 规格范围
 
-本文定义 AI Painter 的机器审核、Owner 审核、失败学习、授权消费、训练记录、Token 账本、物理存储、SQLite 索引和只读状态投影。本文不保存某次训练、某张图、某个 Run、某个 Checkpoint 或临时阻断的结果。
+本文定义 AI Painter 的机器审核、能力版本发布验收、失败学习、内部任务票据、训练记录、Token 账本、物理存储、SQLite 索引和只读状态投影。本文不保存某次训练、某张图、某个 Run、某个 Checkpoint 或临时阻断的结果。
 
 正式系统记录由本地程序写入 `data/`、`.runtime/`和 SQLite。聊天、页面 GET、Codex 记忆和 Markdown 都不能成为运行状态、授权、审核决定或训练证据。
 
@@ -21,21 +21,22 @@
 -> VJ-2 世界事实与结构审核
 -> Professional Aesthetic 审核
 -> 全历史构图和语义拓扑审核
--> Owner 最终审核（合同要求时）
+-> 能力版本与Runtime发布门
 -> 资格登记
 ```
 
-任一机器硬门禁失败时，图片直接进入失败记录，固定 `ownerReviewStatus=not_reached_machine_failed`，不得伪造 Owner 拒绝。机器通过只取得进入 Owner 审核或对应机器委托终态的资格，不能自动成为训练样本、正式候选或 RuntimeFrame。
+任一机器硬门禁失败时，图片直接进入失败记录，不得伪造人工或能力发布否决。机器通过只取得当前能力版本声明的后续资格，不能自动成为训练样本；只有已发布能力版本且Runtime发布门通过的候选才能进入正式RuntimeFrame。
 
-Owner 审核状态固定为：
+能力版本发布验收状态固定为：
 
 ```text
-pending_review
-owner_approved
-owner_rejected
+not_required_released_capability
+pending_capability_release_review
+capability_release_approved
+capability_release_rejected
 ```
 
-Owner 拒绝覆盖同一图片的资格，但不能删除或改写机器审核。新图片不继承旧图片结论；同一图片复审必须生成新的不可变审核记录并保留原记录。
+冷启动或重大能力版本发布验收拒绝可以阻止该版本发布，但不能删除或改写机器审核。正式能力版本发布后，单次图片不重复人工审核；新图片不继承旧图片结论，同一图片复审必须生成新的不可变审核记录并保留原记录。
 
 ## 3. 完整地图机器硬门禁
 
@@ -92,7 +93,7 @@ createdAtUtc / createdAtAsiaShanghai
 parentReviewId（复审时）
 ```
 
-机器批量委托模式必须明确 `manualVisualInspectionPerformed=false`，不得伪造成逐张人工目视。批量范围只能来自当前有效 Owner 授权；范围外记录保持原状态。
+机器批量模式必须明确 `manualVisualInspectionPerformed=false`，不得伪造成逐张人工目视。批量范围必须来自当前能力版本和任务包；范围外记录保持原状态。
 
 ## 6. 失败学习
 
@@ -114,9 +115,9 @@ repairConstraints
 
 有界修复必须保持任务范围、WorldFacts、条件、图片和阈值等不变量；不得用降低门槛、删除证据或无上限重试制造通过。
 
-## 7. Owner 动作请求与授权
+## 7. Owner 异常升级与能力版本变更
 
-本地系统需要 Owner 决定时，先生成不可变 `owner-action-request`，至少包含：
+只有证据不能唯一裁决、需要改变业务范围或需要发布新的模型/数据/阈值能力版本时，本地系统才生成不可变 `owner-action-request`，至少包含：
 
 1. 任务和资产身份；
 2. 已知业务结论；
@@ -128,18 +129,18 @@ repairConstraints
 8. 证据路径；
 9. 获批后的有界执行链。
 
-请求不是授权。写操作必须验证不可变 Owner 授权文件、SHA-256、命令身份、范围和具体动作，并在任何业务写入前原子消费。训练、验证、正式推理、生成、RuntimeFrame 和世界运行分别授权；历史聊天中的“允许”“继续”不能重用。
+请求不是决定，也不是程序的常规运行入口。模型、Loss、数据、阈值、训练计划或正式能力版本变更必须绑定不可变版本、范围、程序和回归证据。已发布能力版本内的生成、固定验证、机器审核、失败关闭、RuntimeFrame发布或回退及终态记录由本地系统自主完成，不得在内部步骤之间再次请求人工操作。
 
-授权消费必须具备幂等身份。重复、过期、范围不符、动作不符、哈希不符或已消费授权必须在写入前失败，并保存拒绝证据。
+能力版本变更和内部任务票据都必须具备幂等身份。重复、范围不符、动作不符、哈希不符或已消费票据必须在写入前失败，并保存拒绝证据。
 
 ## 8. 自动闭环边界
 
-本地程序可以在已获授权的任务范围内自动执行：
+本地程序在正式能力版本和任务包范围内自主执行：
 
 ```text
 读取证据
 -> 预检
--> 执行获批动作
+-> 执行合同动作
 -> 自动保存
 -> 机器审核
 -> 失败分类或资格登记
@@ -148,14 +149,22 @@ repairConstraints
 
 程序必须停止的条件包括：
 
-- 需要 Owner 最终决定；
+- 证据不唯一或需要 Owner 业务决定；
 - 需要改变来源政策、模型路线、审核门槛、页面结构或任务范围；
 - 数据不足、来源不明、身份冲突或资源门禁失败；
 - 连续失败达到停止条件；
-- 授权缺失、无效或已消费；
-- 同一条件已有待审、通过或未获重试授权的失败记录。
+- 能力版本或任务票据缺失、无效或已消费；
+- 同一条件已有待审、通过或合同不允许重试的失败记录。
 
-完成一个动作不能自动获得下一动作权限。批量授权只在记录的范围、次数、重试和停止条件内有效。
+完成一个动作只能进入状态机声明的下一状态。执行包只在记录的能力版本、范围、次数、重试和停止条件内有效。
+
+### 8.1 包内自主判断与内部任务票据
+
+内部任务票据是能力版本内的幂等、防重、状态转换和证据记录，不是从Owner派生的权限。本地程序为合法的下一状态生成一次性任务票据；票据记录执行包、能力版本、输入证据、程序血缘、动作、状态转换、输出命名空间和消费身份，不能用聊天内容或`latest.json`替代。
+
+机器审核完成后，程序必须用冻结规则自动进入唯一的后续状态：通过则进入资格、发布或Finalization；真实视觉失败则失败关闭；基础设施失败只有在能力版本明确允许且恢复次数未耗尽时才能恢复；需要修改模型、数据、Loss、阈值、程序或业务路线时进入`waiting_owner_decision`。审核程序和确定性裁决程序负责正式结论，Codex只可提供技术建议。
+
+所有内部票据、决策报告、拒绝理由和状态转换保存到不可变运行目录并索引到SQLite。票据重放、跨包证据、状态跳跃、未登记的程序血缘变化、超出尝试上限或自由动作注入必须在写入前失败关闭。
 
 ## 9. 训练与验证记录
 
@@ -172,7 +181,7 @@ repairConstraints
 
 冒烟只证明程序与最小数据路径可运行；Stage 完成只证明该阶段训练完成；Checkpoint 保存只证明资产存在。它们都不能自动证明视觉能力、训练后验证、正式推理或 Runtime 资格。
 
-challenge 和 regression 的内容及指标不得在训练或 Checkpoint 选择期间读取。训练后验证使用独立授权和独立证据目录。
+challenge 和 regression 的内容及指标不得在训练或 Checkpoint 选择期间读取。阶段执行包已经声明的固定训练后validation、预览复现和机器审核由同包自动完成，并在同一包内使用隔离的子证据命名空间；challenge、regression、额外复审或新证据任务使用独立任务票据和独立证据目录。
 
 ## 10. Token 账本
 
@@ -246,19 +255,25 @@ D:\AI-PET-WORLD-DATA\migrations
 | 运行控制 | `.runtime/ai-painter/training-control/` |
 | 训练档案 | `.runtime/ai-painter/training-run-archive/` |
 | 训练 Token | `.runtime/ai-painter/training-token-ledgers/` |
-| Owner 动作请求 | `.runtime/ai-painter/owner-action-requests/` |
+| Owner 业务决策请求 | `.runtime/ai-painter/owner-action-requests/` |
 | 原图库 | `data/world-samples/original-image-library/natural-home-v1/` |
 | 样本 Registry | `data/world-samples/registry/<dictionaryVersion>/` |
 | 不可变数据包 | `data/world-samples/dataset-packages/<packageId>/` |
+| AI辅助冷启动数据包 | `data/world-samples/ai-assisted-cold-start-dataset-packages/<packageId>/` |
 | VisualFactManifest | `.runtime/ai-painter/world-visual-fact-manifests/` |
 | 视觉任务与条件 | `.runtime/ai-painter/world-visual-generation-task-packages/` |
 | 隔离验证 | `.runtime/ai-painter/ai-assisted-conditional-inference-validation/<runId>/` |
 | 正式推理候选 | `.runtime/ai-painter/complete-world-visual-inference/` |
 | 失败学习 | `.runtime/ai-painter/auto-visual-judge-learning/` |
 | Runtime 合成 | `.runtime/game-map-runtime-compositor/` |
-| RuntimeFrame | `.runtime/game-map-runtime-frame/` |
+| RuntimeFrame工作区 | `.runtime/game-map-runtime-frame-working/` |
+| RuntimeFrame候选 | `.runtime/game-map-runtime-frame-candidates/` |
+| RuntimeFrame正式记录 | `.runtime/game-map-runtime-frame/` |
+| RuntimeFrame拒绝记录 | `.runtime/game-map-rejected-runtime-frames/` |
 
 所有目录使用不可变身份；页面只读取明确文件或 SQLite 查询结果。
+
+RuntimeFrame生命周期固定为`working -> candidates -> accepted frame / rejected frames`。工作区和候选目录都不能被`/world`读取；只有来自已发布能力版本并完成机器审核与Runtime发布门的正式记录才能进入`.runtime/game-map-runtime-frame/`及正式晋级存储。冷启动能力版本在首次发布前另需项目级发布验收。
 
 ## 14. 控制台边界
 
@@ -266,20 +281,20 @@ D:\AI-PET-WORLD-DATA\migrations
 
 历史 Run 按 Run ID 独立查看。没有程序保存的预览、去噪节点或诊断图时，页面必须显示“无证据”，不得伪造图片或把训练原图冒充 Epoch 输出。
 
-GET 页面不得改变台账、更新时间、审核、训练资格或当前指针。任何按钮都只能向正式授权和执行程序提交 Owner 明确命令，组件不得直接写业务文件。
+GET 页面不得改变台账、更新时间、审核、训练资格或当前指针。控制台按钮只能向本地任务编排器提交任务或项目级决定，页面组件不得直接写业务文件。
 
 ## 15. 能力迁移记录
 
 本地自研 AI 能力迁移注册表保存每项能力的当前执行方、目标执行方、成熟度、测试证据、阻断和回退方案。控制台只读展示，不在页面内自动切换执行方。
 
-Codex 可以按 Owner 命令建设代码、编译测试和处理复杂诊断；已达到本地闭环验收的能力由本地系统执行，Codex 降为只读监控与证据核验。迁移不能改变 Owner 最终授权权力，也不能让 Codex 成为 Runtime 必要依赖。
+Codex 可以按项目任务建设代码、编译测试和处理复杂诊断；已达到本地闭环验收的能力由本地系统执行，Codex 降为只读监控与证据核验。迁移不能让 Codex 成为审核、发布或 Runtime 的必要依赖。
 
 ## 16. 验收标准
 
 审核、自动闭环与存储系统合格必须证明：
 
-1. 所有写操作在执行前验证并原子消费匹配授权。
-2. 机器审核、Owner 审核、训练资格和 Runtime 资格相互独立。
+1. 所有写操作在执行前验证能力版本、任务票据和输出边界，并原子登记。
+2. 机器审核、能力版本发布验收、训练资格和 Runtime 资格相互独立。
 3. 失败、复审和修复证据不可变且可按身份完整追溯。
 4. 训练、验证、Token、硬件、Checkpoint 和算法证据由程序自动保存。
 5. 实时状态来自最新合法机器证据，不被旧指针覆盖。

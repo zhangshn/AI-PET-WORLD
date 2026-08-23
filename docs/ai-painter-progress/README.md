@@ -1,6 +1,6 @@
 # AI Painter Progress 页面文档入口
 
-更新时间：2026-08-02 19:17:43 +08:00
+更新时间：2026-08-24 05:24:15 +08:00
 
 状态：active-ai-painter-progress-index
 
@@ -22,7 +22,9 @@
 
 局部材料修复、单次失败分析和按日期生成的阶段说明不再作为文档保存；相关运行事实必须由程序写入 `.runtime` 台账。
 
-本目录只定义页面和自动化契约，不定义 AI Painter 总业务或训练顺序。原图库页面中的五类入口是并行数据导航，不是五阶段训练计划；总路线必须返回 `../DOCUMENT_AUTHORITY_INDEX.md`、`../ARCHITECTURE.md` 和 `../game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md` 读取。
+本目录只定义页面和自动化契约，不定义 AI Painter 总业务或训练顺序。原图库页面中的五类入口是并行数据导航，不是五阶段训练计划；AI Painter主体从`../game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md`读取，当前候选从`../game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md`读取。
+
+页面是本地自研AI运行状态的只读投影，不是执行主体、授权机关或审核机关。训练、验证、机器审核、发布、回退和记录由后台本地程序完成；关闭页面、浏览器或Codex不得停止后台任务。
 
 ## 2. 修改前必须确认
 
@@ -34,14 +36,33 @@
 | 版本命名 | 原目录名显示，`v54` 就是 `v54` |
 | 阻断处理 | 发现页面读不到数据但磁盘存在时，先说明读取范围问题，再询问是否修 |
 
-## 3. 固定入口
+## 3. 页面与规格映射
+
+| 页面或页面组 | 固定职责 | 权威规格 |
+|---|---|---|
+| `/ai-painter-progress` | AI Painter总控制台与导航 | `AI_PAINTER_CONSOLE_PAGE_LOCKED_SPEC.md` |
+| `/ai-painter-progress/current-training` | 当前或最近运行的实时只读监控 | `CURRENT_TRAINING_BACKEND_CONSOLE_LOCKED_SPEC.md` |
+| `/ai-painter-progress/natural-home` | 完整地图训练内容与历史记录浏览 | `AI_PAINTER_CONSOLE_PAGE_LOCKED_SPEC.md` |
+| `/ai-painter-progress/generated-results` | 程序生成结果归档 | `GENERATED_RESULTS_PAGE_LOCKED_SPEC.md` |
+| `/ai-painter-progress/original-images` | 原始图片资料库 | `ORIGINAL_IMAGE_LIBRARY_LOCKED_SPEC.md` |
+| `/ai-painter-progress/training-directory`、`training-ledger`、`history`、`dataset-inventory` | 训练目录、事件账本、历史与数据清单 | `TRAINING_DATA_PERSISTENCE_LOCKED_SPEC.md`、`AI_PAINTER_ADMIN_BACKEND_LOCKED_SPEC.md` |
+| `/ai-painter-progress/trial-reviews` | 训练候选与视觉审核记录 | `AUTO_VISUAL_JUDGE_LEARNING_LOCKED_SPEC_20260709.md`及正式审核规格 |
+| `/ai-painter-progress/autonomous-training`、`training-expansion` | 本地AI自动训练、能力版本和扩展状态；页面只提交任务或项目级决定，不直接执行 | `AI_PAINTER_ADMIN_BACKEND_LOCKED_SPEC.md`、`AUTO_REPAIR_PLAN_RUNNER_LOCKED_SPEC.md` |
+| `/ai-painter-progress/bootstrap`、`asset-fit`、`component-readiness`、`discrete-assets`、`local-assets`、`multiscene`、`rgb-refiner`、`structure-guided` | 模型、资产和能力证据的只读页面组 | `AI_MODEL_TRAINING_ARCHITECTURE_ALIGNMENT.md`、`AI_PAINTER_CONSOLE_PAGE_LOCKED_SPEC.md` |
+| `/ai-painter-progress/task-console` | 本地任务与证据投影 | `AI_PAINTER_ADMIN_BACKEND_LOCKED_SPEC.md` |
+| `/ai-painter-progress/world-visual-dictionary` | 世界视觉数据字典查询 | `AI_PAINTER_CONSOLE_PAGE_LOCKED_SPEC.md`及字典README |
+
+`natural-home`与`current-training`必须保持不同职责：前者浏览完整地图训练内容和历史，后者显示当前运行实时进度。页面只能读取本地程序已经保存的数据，不得因打开页面而训练、验证、审核或补写记录。
+
+固定数据入口：
 
 | 内容 | 路径 |
 |---|---|
-| 页面源码 | `src/app/ai-painter-progress/generated-results/page.tsx` |
-| 页面 URL | `/ai-painter-progress/generated-results` |
+| 页面源码 | `src/app/ai-painter-progress/` |
+| 页面API | `src/app/api/ai-painter/` |
 | 自动保存目录 | `.runtime/ai-painter/` |
-| 材料推理目录 | `.runtime/game-map-material-slot-inference-runs/world-d0znz8/0/` |
+| 通用不可变数据包 | `data/world-samples/dataset-packages/` |
+| AI辅助冷启动数据包 | `data/world-samples/ai-assisted-cold-start-dataset-packages/` |
 | 生成结果索引 | `.runtime/ai-painter/generated-results/index.json` |
 
 ## 4. 固定检查

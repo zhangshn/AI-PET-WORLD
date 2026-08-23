@@ -1,6 +1,6 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-08-15 23:36:00 +08:00
+更新时间：2026-08-24 04:40:01 +08:00
 
 状态：long-term-architecture-reference
 
@@ -14,23 +14,22 @@
 
 ## 0. 本地智能核心与外部员工解耦架构
 
-本地系统是正式判断、授权请求、审核状态和长期记忆的唯一载体。世界事实、任务状态、机器结论、owner动作请求、owner决定、复审结果、容量登记和下一门禁必须全部以本地不可变文件为证据，并由本地SQLite提供查询索引。聊天和外部智能体记忆不属于系统状态。
+本地系统是正式判断、执行状态、审核状态、发布状态和长期记忆的唯一载体。世界事实、任务状态、机器结论、异常升级请求、业务决定、复审结果、容量登记和下一门禁必须全部以本地不可变文件为证据，并由本地SQLite提供查询索引。聊天和外部智能体记忆不属于系统状态。
 
-本地治理链固定为：
+正式运行链固定为：
 
 ```text
-本地证据读取
--> 本地门禁判断与冲突诊断
--> 本地生成owner-action-request
+本地事实与能力版本读取
+-> 本地任务规划与执行
+-> 自动验证、机器审核与失败分类
+-> 发布 / 回退 / 失败关闭
 -> 本地不可变保存、事件与SQLite索引
--> 项目所有者明确决定
--> 本地程序只执行获批范围
--> 本地复审、登记和下一状态
+-> 只有证据不足或业务范围变化时生成owner-action-request
 ```
 
 Codex只作为受控执行与检查员工。当前允许它在本地程序已经锁定任务、范围和门禁后执行受控冷启动RGB、代码修复或对应检查；它不得成为系统编排器、长期记忆、正式证据源或授权机关。目标架构中，本地小AI负责完整判断和流程编排，Codex仅在收到具体任务时运行相应检查并把证据交回本地系统；移除Codex或丢失聊天历史不得破坏本地流程连续性。
 
-机器可读长期合同固定为`data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json`。运行时owner动作请求固定保存到`.runtime/ai-painter/owner-action-requests/<requestId>/request.json`，同时写入训练过程事件总账和D盘SQLite索引；`latest.json`只是查询指针。
+机器可读长期合同固定为`data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json`。异常升级的owner动作请求保存到`.runtime/ai-painter/owner-action-requests/<requestId>/request.json`，同时写入训练过程事件总账和D盘SQLite索引；它不是正常运行的必经步骤。`latest.json`只是查询指针。
 
 ## 0.1 V7 容量架构
 
@@ -41,46 +40,74 @@ V7训练容量采用两级目标，不改变AI Painter、WorldFacts、World Dire
 | 首次MVP训练门槛 | 64 | `48/8/4/4` | 尽快启动第一轮正式MVP训练并验证本地模型闭环 |
 | 后续正式增强目标 | 128 | `96/16/8/8` | 扩大构图、季节、生态和挑战集覆盖，提高泛化稳定性 |
 
-64张门槛要求每条记录绑定独立完整地图世界事实、World Director、正式23通道、原生RGB、来源许可、机器审核、适用的项目所有者审核、hash和不可变存储；扩容目标不改变单条质量与完整地图门槛。实际容量、活动版本和split以不可变数据包及Dataset最终选择为准。
+64张门槛要求每条记录绑定独立完整地图世界事实、World Director、正式23通道、原生RGB、来源许可、机器审核、适用的冷启动能力发布验收、hash和不可变存储；扩容目标不改变单条质量与完整地图门槛。实际容量、活动版本和split以不可变数据包及Dataset最终选择为准。
 
-## 0.2 Owner写授权信任边界
+来源总索引与批准训练容量是两个不同身份。当前来源索引可以同时保存容量样本、历史来源和其他治理记录，因此顶层`sampleCount`不得被解释为批准训练数量；当前64份批准容量只能由容量子集身份及其独立计数字段确认，并继续按`48/8/4/4`使用。任何读取器都必须先验证顶层索引Schema，再从正式容量子集取样，禁止把顶层对象当作样本数组或把总索引数量硬编码为64。
 
-通用HTTP写入口与生产构建必须在首次写入前完成下列签名授权链：
+## 0.2 研发写操作与能力发布信任边界
 
-```text
-Owner离线Ed25519私钥签发
--> 项目内授权文件只保存公钥签名、精确动作、方法、路由、目标哈希和载荷哈希
--> 受信公钥注册表由部署环境提供固定SHA-256锚点
--> 程序验证签名、有效期、commandRef、scope与全部绑定字段
--> 使用wx建立不可变消费记录
--> 才允许执行写操作
-```
-
-请求者提供的授权文件路径或文件SHA只能证明读取对象未变化，不能证明Owner身份；通用门禁中的Owner身份只能由受信公钥注册表及其部署外哈希锚点证明。授权不得只绑定`world.create`一类粗粒度动作，必须同时绑定实际HTTP方法或`EXEC`、实际路由/脚本、具体world或资产目标以及规范化请求载荷。授权只允许一个动作并且只能消费一次；崩溃、重试、锁恢复和重新启动不得恢复授权额度。
-
-已有任务专用编排器在迁入通用签名门禁前，必须至少使用程序内固定授权文件SHA锚点，并核对commandRef、scope、具体动作和任务范围，同时在任何事件、配置、锁或训练写入前使用`wx`原子消费；不得接受调用方同时提供路径和哈希作为身份依据。该兼容边界不得扩展到新入口。
-
-生产构建属于写操作。构建程序必须先消费绑定`platform.production_build`与确定命令的授权，再在同一个`try/finally`保护范围内临时持有`.runtime`入口；任一中间步骤失败都必须恢复原Runtime身份。训练、验证、正式推理、RuntimeFrame和世界运行继续分别授权，任何一项都不能从构建或普通写授权推导。
-
-## 0.3 Stage4一次签署与连续执行架构
-
-Stage4允许项目所有者通过一次离线签署操作形成一个连续执行授权包，但不得改变“一个授权只绑定一个动作并消费一次”的信任原则。总包只承担不可变容器和顺序关系；协调器、Smoke、Stage 0、Stage 1和Stage 2仍分别使用`project-owner-write-authorization-v2`子授权、Ed25519签名和独立消费记录。
+模型、Loss、数据、阈值、训练计划、能力版本和生产构建等研发变更必须在首次高风险写入前完成可验证的变更控制链：
 
 ```text
-本地系统形成未签名精确执行计划
--> Owner离线批量签署器核对受信公钥、运行器SHA、任务身份和新输出目录
--> 一次Owner操作签出协调器 + Smoke + Stage 0 + Stage 1 + Stage 2独立授权
--> 持续执行器验证总包签名及全部子授权
--> 消费协调器授权并建立本地状态、日志、事件和SQLite记录
--> 当前阶段只读预检
--> 原子消费当前阶段授权
--> 长时等待运行器自然退出并验证正式终态
--> 成功才进入下一阶段；失败则关闭且保留后续授权未消费
+项目级能力变更决定
+-> 不可变变更包绑定范围、代码、数据、模型、阈值和回归
+-> 程序验证身份、版本、载荷和输出命名空间
+-> 建立不可覆盖的消费与执行记录
+-> 执行研发变更、验证和能力发布
 ```
 
-Stage 1和Stage 2签署时尚不知道前一阶段实际Checkpoint哈希，因此授权不得绑定模糊的“任意父Checkpoint”。它必须绑定精确前序Run ID、成功终态路径、要求状态和Checkpoint字段选择规则；执行器只允许从该不可变成功终态解析实际路径与SHA，并把解析结果随执行证据保存。任何调用方直接提供的其他Checkpoint、旧失败Run、`latest.json`或聊天内容均不得替代该派生关系。
+当前冷启动研发环境可以继续使用Ed25519签名和一次性消费保护高风险变更。路径或文件SHA只能证明对象未变化，不能单独证明变更决定身份；变更包必须绑定实际动作、程序、数据、模型、目标和规范化载荷。该机制不得扩展成正式能力版本每次生成、验证、审核、发布或记录都需要人工签名。
 
-离线批量签署器的可审查源代码保存在项目中，Owner侧安装副本保存在项目外私钥目录；两者必须SHA一致。Codex不得读取或调用私钥，签署器不得输出私钥。持续执行器不得使用Shell命令字符串，只能直接调用机器合同允许的Node运行器及参数数组；不得自动重试、恢复已消费额度或跨过机器审核。机器可读长期合同为`data/ai-painter/system-governance/stage4-continuous-execution-authorization-contract-v1.json`，AI Painter具体阶段验收见[正式实现规格](game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md#102-stage4连续授权包与顺序执行合同)。
+研发编排器必须核对commandRef、scope、具体动作和任务范围，并在训练或能力发布等高风险写入前原子登记。普通CPU检查、自动机器审核、只读分析、失败关闭、监控和治理记录属于系统自身职责，不得被错误归类为新的能力变更。
+
+生产构建和新能力发布必须有独立变更身份，任一中间步骤失败都保持上一正式版本。正式能力发布后，Runtime任务按版本化合同自主执行；不能从一次业务运行反向获得修改模型、数据或阈值的权限。
+
+## 0.3 AI Painter连续执行与后台运行架构
+
+AI Painter 长任务必须由独立于Codex窗口的本地持续执行器承担。研发期的一次训练计划可以打包Smoke、Stage 0、Stage 1和Stage 2；正式运行期的视觉任务可以打包生成、验证、审核、发布和回退。包内状态、次数、程序血缘和停止条件必须在启动前确定。
+
+```text
+本地系统物化精确执行计划与能力版本
+-> 持续执行器验证任务包、程序血缘、输入证据和新输出目录
+-> 建立本地状态、日志、事件和SQLite记录
+-> 当前阶段预检
+-> 执行训练或生成
+-> 同包自动执行固定复现、验证、机器审核与证据保存
+-> 写入Manifest、Finalization和唯一成功或失败终态
+-> 成功才进入下一阶段；失败则关闭并保持上一正式版本
+```
+
+固定验证、机器审核和终态记录属于当前阶段的完成条件，不是训练或生成完成后临时发起的新业务任务。程序不得在这些内部步骤间等待聊天确认。只有新的模型/数据/阈值/训练计划、真实失败路线重启或业务范围变化才进入能力版本变更流程。
+
+Stage 1和Stage 2在启动前尚不知道前一阶段实际Checkpoint哈希，因此执行计划不得绑定模糊的“任意父Checkpoint”。它必须绑定前序成功终态路径、要求状态和Checkpoint字段选择规则；执行器只允许从同一计划的不可变成功终态解析实际路径与SHA。旧失败Run、`latest.json`或聊天内容均不得替代该派生关系。
+
+持续执行器不得依赖Shell命令字符串或Codex会话，只能调用机器合同允许的运行器及参数数组；不得无限自动重试或跨过机器审核。冷启动签署工具仍可作为研发变更控制实现保留，但不构成长期业务架构。AI Painter具体边界见[正式主体规格](game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md)。
+
+## 0.4 AI Painter内部任务票据与自主裁决状态机
+
+内部任务票据是本地系统的幂等和证据机制，不是Owner授权的替代品或派生权限。票据必须绑定执行包ID与SHA、能力版本、状态图、输入证据SHA集合、程序血缘、动作身份、尝试序号和唯一输出目录，并以不可覆盖记录完成一次性消费。
+
+状态机固定为：
+
+```text
+package_materialized
+-> preflight
+-> executing
+-> validating
+-> reviewing
+-> adjudicating
+-> finalizing
+-> completed
+
+任一状态 -> failed_closed
+需要业务决定 -> waiting_owner_decision
+```
+
+内部票据覆盖：读取和核验证据、资源预检、进度与心跳、执行包声明的训练或生成、固定预览复现、机器审核、冻结规则因果裁决、Manifest/Finalization/终态、任务胶囊/事件账本/SQLite同步，以及能力版本合同允许的有限基础设施恢复。状态不得跳跃；票据不得补充执行包和能力版本没有的动作。
+
+模型、Loss、数据、划分、阈值、Checkpoint来源或选择规则变化，程序或依赖血缘变化，新模型家族、新业务路线以及裁决结果不唯一时，必须停止当前包并进入能力版本变更或Owner业务决策。已经由正式能力版本声明的生成、审核、发布和RuntimeFrame动作不应在每次运行时再次请求人工授权。
+
+自主裁决器初期以确定性规则引擎为正式门，本地模型可以提出候选解释，但必须由机器合同验证。每个裁决保存输入证据、规则版本、命中条件、被排除选项和唯一结果；不唯一时进入`waiting_owner_decision`。
 
 ## 1. 架构原则
 
@@ -96,7 +123,7 @@ Stage 1和Stage 2签署时尚不知道前一阶段实际Checkpoint哈希，因�
 | `/world` 只展示 RuntimeFrame | 训练图、候选图、失败图、局部图只进训练页和归档页。 |
 | 训练与正式隔离 | 训练产物不能绕过 RuntimeFrame 和 VisualJudge。 |
 | 禁止程序直绘最终画面 | 程序可以生成结构、Mask、校验、合成，不能手写玩家最终画面。 |
-| 机器审核不是最终通过 | VisualJudge 和 RuntimeFrame gate 只是前置闸门，最终必须由项目所有者人工确认达到正式游戏标准。 |
+| 机器审核是正式运行闸门 | 已发布能力版本由 VisualJudge 和 RuntimeFrame gate 决定单次候选是否可发布；项目所有者只对冷启动能力版本或重大版本变更做发布验收。 |
 | 参考图只定方向 | 当前最高局部图只作为质感基准，不能绕过 RuntimeFrame，也不能作为 `/world` 成果。 |
 | 第一版像素视觉契约 | 正式模型原生生成 `1024×768` 高分辨率像素风完整地图；禁止从低分辨率图、tile、sprite 或局部材料放大/拼接得到正式候选。 |
 
@@ -228,7 +255,7 @@ flowchart TD
   M --> N["FormalVisualJudge / Composite Quality"]
   N -->|"通过"| O["GameMapRuntimeFrame"]
   N -->|"失败"| P["失败归档 / 修正计划"]
-  O --> R["项目所有者人工最终验收"]
+  O --> R["能力版本与Runtime发布门"]
   R -->|"通过"| Q["/world 玩家主世界"]
   R -->|"否决"| P
 ```
@@ -261,7 +288,7 @@ flowchart LR
     FactManifest["VisualFactManifest"]
     Director["World Director Output"]
     Task["Complete World Visual Task Package"]
-    Model["Local Complete-World Model"]
+    Model["Local Staged Complete-World Visual System"]
     Output["Fresh Complete-Map Candidate"]
     Archive["Generated Results Archive"]
   end
@@ -275,7 +302,7 @@ flowchart LR
 
   subgraph Display["Display"]
     RF["GameMapRuntimeFrame"]
-    OwnerGate["Owner Final Acceptance"]
+    OwnerGate["Capability Release / Runtime Publish Gate"]
     WorldPage["/world"]
   end
 
@@ -309,11 +336,23 @@ flowchart LR
   TR --> Intake
   Intake --> Registry["正式样本 Registry"]
   Registry --> Package["统一不可变 Complete-World Dataset Package"]
-  Package --> Train["项目自有完整世界模型体系训练"]
-  Task["WorldFacts + Director + 23通道任务条件"] --> Inference["单一正式完整世界推理入口"]
+  Package --> Train["项目自有分阶段完整世界模型体系训练"]
+  Task["WorldFacts + Director + 23通道任务条件"] --> Inference["单一对外完整世界推理入口"]
   Train --> Inference
   Inference --> Candidate["Fresh Complete-Map Candidate"]
 ```
+
+“单一对外入口”不等于内部只能存在一个不可分辨模型。AI Painter 当前正式内部责任链固定为：
+
+```text
+authoritative_world_structure_binding                  [非训练权威绑定]
+-> terrain_route_hydrology_spatial_realization        [隔离训练组件]
+-> per_class_object_semantic_realization              [隔离训练组件]
+-> global_visual_harmonization_and_native_complete_rgb_decode [隔离训练组件]
+-> Fresh Complete-Map Candidate
+```
+
+四个责任阶段必须绑定同一 `worldId`、`regionId`、`tick`、`factHash`、`VisualFactManifest` 和23通道条件包。后三个训练组件拥有相互隔离的参数、Checkpoint、输出和终态身份；后一组件只能消费同一执行包前一阶段的成功终态与输出身份。该内部责任链不得与 `Stage 0/1/2` 的训练分辨率阶段混淆，也不得退化为 tile、patch、sprite、局部拼接、低分辨率放大或规则程序直绘。
 
 固定禁止关系：
 
@@ -396,6 +435,8 @@ D:\AI-PET-WORLD-DATA\migrations      迁移清单、数量/字节/hash校验和�
 
 ## 4. RuntimeFrame 数据结构边界
 
+RuntimeFrame运行证据按`working -> candidates -> accepted frame / rejected frames`流转。工作区只保存生成和合成中的身份，候选区只保存等待审核的记录；二者都不能被`/world`读取。已发布能力版本生成且通过机器审核与发布门的记录进入正式RuntimeFrame存储，失败记录进入不可变拒绝存储；冷启动能力版本发布前还需项目级发布验收。
+
 正式 GameMapRuntimeFrame 必须至少包含：
 
 | 层 | 作用 | 是否世界事实 |
@@ -410,7 +451,7 @@ D:\AI-PET-WORLD-DATA\migrations      迁移清单、数量/字节/hash校验和�
 | interactionLayer | 可查看、可点击、可建设、可采集区域 | 是 |
 | stateLayer | 生命周期、建造状态、资源状态、天气影响 | 是 |
 | audit | VisualJudge、hash、时间戳、模型版本、失败记录 | 否，但必须存在。 |
-| ownerAcceptance | 项目所有者人工最终验收记录 | 否，但正式展示前必须存在通过记录。 |
+| capabilityRelease | 能力版本发布身份；冷启动或重大版本变更包含项目级验收 | 是；单次RuntimeFrame不重复人工验收。 |
 
 ## 5. 关键对象
 
@@ -435,7 +476,11 @@ D:\AI-PET-WORLD-DATA\migrations      迁移清单、数量/字节/hash校验和�
 |---|---|
 | Dataset Builder | 准备训练图、Mask、来源记录、用途记录。 |
 | Training Runner | 本地训练，记录 GPU、耗时、loss、输出。 |
-| Inference Runner | 根据当前 VisualFactManifest、世界导演输出和完整任务包，使用本地模型生成本轮完整地图新候选；局部材料推理只可作为内部从属能力。 |
+| Authoritative World Structure Binding | 非训练地绑定 WorldFacts、VisualFactManifest、23通道条件和任务身份，不生成或修改世界事实。 |
+| Terrain / Route / Hydrology Component | 只承担地形、道路和水文空间实现，保存隔离输出与终态。 |
+| Per-Class Object Semantic Component | 只承担 footprints、tree、rock、vegetation 语义实现，不修改批准对象掩码。 |
+| Global Visual Harmonization Component | 只承担全局视觉协调和原生完整RGB解码，是唯一允许通过冻结Autoencoder形成最终RGB的内部组件。 |
+| Inference Runner | 对外只提供一个完整世界推理入口，按固定责任顺序编排同包组件并生成本轮完整地图新候选；局部材料推理只可作为内部从属能力。 |
 | Refiner | 细化局部视觉材料。 |
 | Candidate Store | 保存候选结果，不进入 `/world`。 |
 | Result Archive | 保存成功、失败、耗时、时间戳、GPU 信息、质量分数。 |
@@ -464,7 +509,7 @@ flowchart TD
   F -->|"否"| D
   F -->|"是"| G{"是否通过 composite quality"}
   G -->|"否"| D
-  G -->|"是"| H{"是否通过项目所有者人工最终验收"}
+  G -->|"是"| H{"能力版本已发布且Runtime发布门通过"}
   H -->|"否"| D
   H -->|"是"| I["展示正式游戏世界"]
 ```
@@ -479,7 +524,7 @@ flowchart TD
 | 局部素材 | 不是完整游戏地图。 |
 | 单张 ApprovedFrame | 只是视觉素材凭证，不是 RuntimeFrame。 |
 | 程序占位图 | 不是正式 AI 视觉结果。 |
-| 人工否决图 | 机器审核曾通过也不能展示，必须进入失败归档和修复链。 |
+| 能力发布或Runtime发布门否决图 | 即使部分审核通过也不能展示，必须进入失败归档和修复链。 |
 
 ## 8. 架构结论
 
@@ -492,14 +537,14 @@ VisualFactManifest + 世界导演 + 结构化游戏地图
 + 本地 AI Painter 本轮完整地图新候选
 + RuntimeFrame 结构与运行层绑定
 + VisualJudge / composite quality
-+ 项目所有者人工最终验收
++ 冷启动能力版本发布验收 / 已发布版本的Runtime发布门
 = /world 正式游戏世界
 ```
 
-缺少项目所有者人工最终验收，或人工验收明确否决时，不能把任何 RuntimeFrame 当成正式游戏成功结果。
+冷启动能力版本尚未通过项目级发布验收，或已发布版本的Runtime发布门否决时，不能把任何 RuntimeFrame 当成正式游戏成功结果。
 
 ## 9. 视觉模型实现关系
 
-V7是AI Painter视觉生产子系统中的完整地图条件去噪器：输入是正式世界事实、世界导演和23通道完整地图条件，输出仍须经过机器审核、项目所有者终审和RuntimeFrame绑定，不能生成或修改世界事实。
+V7是AI Painter视觉生产子系统中的一代完整地图条件去噪实现：输入是正式世界事实、世界导演和23通道完整地图条件，输出须经过机器审核、能力版本发布策略和RuntimeFrame绑定，不能生成或修改世界事实。V7及其后续候选属于可替换实现，不等同于AI Painter长期业务架构。
 
 代码合同、CPU回归、数据容量、GPU训练、Checkpoint、训练后验证、正式推理和游戏世界完成是相互独立的状态。任何前置状态都不能被描述为后续能力通过；实际模型状态只从训练、验证和资格机器证据读取。

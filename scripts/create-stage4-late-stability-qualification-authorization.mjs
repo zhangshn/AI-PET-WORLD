@@ -37,7 +37,12 @@ if (
   || cpuReport.positivePassed !== cpuReport.positiveTotal
   || cpuReport.negativePassed !== cpuReport.negativeTotal
   || cpuReport.decision?.qualificationRoute !== "strict_decrease_then_stable_zero"
-  || JSON.stringify(cpuReport.decision?.failureCounts) !== JSON.stringify([1, 0, 0])
+  || !Array.isArray(cpuReport.decision?.failureCounts)
+  || cpuReport.decision.failureCounts.length !== 3
+  || !(cpuReport.decision.failureCounts[0] > 0)
+  || cpuReport.decision.failureCounts[1] !== 0
+  || cpuReport.decision.failureCounts[2] !== 0
+  || cpuReport.decision?.strictDecreaseThenStableZero !== true
 ) throw new Error("bound CPU regression report is not eligible")
 
 const requestId = `owner-authorized-stage4-general-late-convergence-qualification-${runId}`

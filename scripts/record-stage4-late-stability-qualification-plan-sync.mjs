@@ -7,28 +7,25 @@ import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
 import { logicalProjectPath } from "./lib/ai-pet-world-storage.mjs"
 
 const root = process.cwd()
-const runId = "20260821-021100000"
-const output = path.join(
-  root,
-  ".runtime",
-  "ai-painter",
-  "stage4-terminal-pass-late-convergence-qualifications",
-  runId,
-)
+const argument = (name, fallback) => {
+  const index = process.argv.indexOf(name)
+  return index >= 0 && process.argv[index + 1] ? process.argv[index + 1] : fallback
+}
+const runId = argument("--run-id", "20260821-021100000")
+const output = path.resolve(root, argument(
+  "--qualification-root",
+  `.runtime/ai-painter/stage4-terminal-pass-late-convergence-qualifications/${runId}`,
+))
 const files = {
   terminal: path.join(output, "phase-terminal.json"),
   report: path.join(output, "timeline-qualification-report.json"),
   decision: path.join(output, "qualification-decision.json"),
   request: path.join(output, "stage0-owner-action-request.json"),
   capsule: path.join(output, "local-task-capsule.json"),
-  cpuRegression: path.join(
-    root,
-    ".runtime",
-    "ai-painter",
-    "stage4-terminal-pass-late-convergence-qualification-implementations",
-    "20260821-021000000",
-    "cpu-report.json",
-  ),
+  cpuRegression: path.resolve(root, argument(
+    "--cpu-regression-report",
+    ".runtime/ai-painter/stage4-terminal-pass-late-convergence-qualification-implementations/20260821-021000000/cpu-report.json",
+  )),
   checker: path.join(root, "scripts", "check-stage4-terminal-pass-late-convergence-qualification.mjs"),
   plan: path.join(root, "docs", "game-world-generation", "CURRENT_EXECUTION_GUIDE_20260710.md"),
   planSync: path.join(output, "plan-sync-record.json"),

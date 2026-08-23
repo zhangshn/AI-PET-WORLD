@@ -5,6 +5,8 @@ import { createHash } from "node:crypto"
 const root = process.cwd()
 const integrationRunId = process.argv[2]
 const executionRunId = process.argv[3]
+const epochCompleteSelectorMode = process.argv.includes("--epoch-complete-selector")
+const epochCompleteReferenceFeatureSharedReplayMode = process.argv.includes("--epoch-complete-reference-feature-shared-replay")
 if (!/^[0-9]{8}-[0-9]{9}$/.test(integrationRunId ?? "") || !/^[0-9]{8}-[0-9]{9}$/.test(executionRunId ?? "")) throw new Error("integration and execution runIds are required")
 const resolve = (value) => {
   const normalized = String(value).replaceAll("\\", "/")
@@ -27,12 +29,24 @@ const writeExclusive = (value, data) => {
   fs.writeFileSync(target, `${JSON.stringify(data, null, 2)}\n`, { encoding: "utf8", flag: "wx" })
 }
 
-const integration = `.runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-smoke-entry-integrations/${integrationRunId}`
+const integration = epochCompleteReferenceFeatureSharedReplayMode
+  ? `.runtime/ai-painter/stage4-epoch-complete-per-class-worst-reference-feature-shared-replay-smoke-entry-integrations/${integrationRunId}`
+  : epochCompleteSelectorMode
+  ? `.runtime/ai-painter/stage4-epoch-complete-per-class-worst-luminance-selection-smoke-entry-integrations/${integrationRunId}`
+  : `.runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-smoke-entry-integrations/${integrationRunId}`
 const inactiveConfig = `${integration}/inactive-smoke-config.json`
 const registryPath = `${integration}/registry.json`
 const cpuReport = `${integration}/cpu-report.json`
-const implementationAuthorization = ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-cpu-20260821-051855146/implementation-authorization.json"
-const implementationConsumption = ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-cpu-20260821-051855146/implementation-consumption.json"
+const implementationAuthorization = epochCompleteReferenceFeatureSharedReplayMode
+  ? ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-epoch-complete-per-class-worst-reference-feature-shared-replay-cpu-20260822-072101387/implementation-authorization.json"
+  : epochCompleteSelectorMode
+  ? ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-epoch-complete-per-class-worst-luminance-cpu-20260821-092701121/implementation-authorization.json"
+  : ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-cpu-20260821-051855146/implementation-authorization.json"
+const implementationConsumption = epochCompleteReferenceFeatureSharedReplayMode
+  ? ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-epoch-complete-per-class-worst-reference-feature-shared-replay-cpu-20260822-072101387/implementation-consumption.json"
+  : epochCompleteSelectorMode
+  ? ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-epoch-complete-per-class-worst-luminance-cpu-20260821-092701121/implementation-consumption.json"
+  : ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-cpu-20260821-051855146/implementation-consumption.json"
 for (const file of [inactiveConfig, registryPath, cpuReport, implementationAuthorization, implementationConsumption]) if (!fs.existsSync(resolve(file))) throw new Error(`bound source missing: ${file}`)
 const cpu = read(cpuReport)
 if (cpu.status !== "fact_conditioned_semantic_mixture_stage4_smoke_cpu_regression_passed" || cpu.positivePassed !== cpu.positiveTotal || cpu.negativePassed !== cpu.negativeTotal) throw new Error("CPU regression is not a complete pass")
@@ -42,7 +56,11 @@ const role = (name) => {
   if (registry.status !== "stage4_execution_evidence_eligibility_registered" || entry?.disposition !== "active_reusable_success_evidence") throw new Error(`canonical role invalid: ${name}`)
   return bind(entry.canonicalPath)
 }
-const requestId = `owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-30-epoch-model-smoke-${executionRunId}`
+const requestId = epochCompleteReferenceFeatureSharedReplayMode
+  ? `owner-authorized-stage4-epoch-complete-per-class-worst-reference-feature-shared-replay-30-epoch-model-smoke-${executionRunId}`
+  : epochCompleteSelectorMode
+  ? `owner-authorized-stage4-epoch-complete-per-class-worst-luminance-selection-30-epoch-model-smoke-${executionRunId}`
+  : `owner-authorized-stage4-per-class-worst-sample-final-visible-luminance-structure-30-epoch-model-smoke-${executionRunId}`
 const authorizationRoot = `.runtime/ai-painter/owner-action-requests/${requestId}`
 const attestationPath = `${authorizationRoot}/implementation-attestation.json`
 const authorizationPath = `${authorizationRoot}/gpu-execution-authorization.json`
@@ -71,7 +89,11 @@ writeExclusive(attestationPath, {
 })
 const config = read(inactiveConfig)
 const diagnosticFields = config.training.stage4FactConditionedSemanticMixture.diagnosticManifestRegistry.exactFields
-const executionRoot = `.runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-smokes/${executionRunId}`
+const executionRoot = epochCompleteReferenceFeatureSharedReplayMode
+  ? `.runtime/ai-painter/stage4-epoch-complete-per-class-worst-reference-feature-shared-replay-smokes/${executionRunId}`
+  : epochCompleteSelectorMode
+  ? `.runtime/ai-painter/stage4-epoch-complete-per-class-worst-luminance-selection-smokes/${executionRunId}`
+  : `.runtime/ai-painter/stage4-per-class-worst-sample-final-visible-luminance-structure-smokes/${executionRunId}`
 writeExclusive(authorizationPath, {
   schemaVersion: "ai-painter-stage4-fact-conditioned-semantic-mixture-smoke-execution-authorization-v1",
   requestId,
@@ -83,7 +105,11 @@ writeExclusive(authorizationPath, {
   taskIdentity: {
     modeId: "fact_conditioned_semantic_mixture_stage4_smoke",
     architecture: "stage4_fact_conditioned_semantic_mixture_decoder_v1",
-    trainingObjectiveContractId: "stage4_per_class_worst_sample_final_visible_luminance_structure_obligation_v1",
+    trainingObjectiveContractId: epochCompleteReferenceFeatureSharedReplayMode
+      ? "stage4_epoch_complete_per_class_worst_sample_reference_feature_structure_selection_and_shared_replay_v1"
+      : epochCompleteSelectorMode
+      ? "stage4_epoch_complete_per_class_worst_sample_final_visible_luminance_selection_and_checkpoint_identity_v1"
+      : "stage4_per_class_worst_sample_final_visible_luminance_structure_obligation_v1",
     sampleId: "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
     sampleSplit: "validation",
     seed: 20263722,
@@ -131,4 +157,11 @@ writeExclusive(authorizationPath, {
   oneTimeConsumptionRequired: true,
   failurePolicy: { stopImmediately: true, automaticRetry: false, preserveEvidence: true },
 })
-console.log(JSON.stringify({ status: "stage4_per_class_worst_sample_final_visible_luminance_structure_smoke_authorization_materialized_unconsumed", authorization: bind(authorizationPath), attestation: bind(attestationPath), executionRoot }, null, 2))
+console.log(JSON.stringify({
+  status: epochCompleteReferenceFeatureSharedReplayMode
+    ? "stage4_epoch_complete_per_class_worst_reference_feature_shared_replay_smoke_authorization_materialized_unconsumed"
+    : epochCompleteSelectorMode
+    ? "stage4_epoch_complete_per_class_worst_luminance_selection_smoke_authorization_materialized_unconsumed"
+    : "stage4_per_class_worst_sample_final_visible_luminance_structure_smoke_authorization_materialized_unconsumed",
+  authorization: bind(authorizationPath), attestation: bind(attestationPath), executionRoot,
+}, null, 2))

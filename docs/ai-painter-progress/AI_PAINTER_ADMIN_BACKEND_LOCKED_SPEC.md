@@ -1,6 +1,6 @@
 # AI Painter 后台管理自动化锁定规格
 
-更新时间：2026-07-10 19:50:04 +08:00
+更新时间：2026-08-24 04:30:00 +08:00
 
 状态：active-ai-painter-admin-backend-contract
 
@@ -13,7 +13,8 @@
 | 后台名称 | AI Painter 训练后台管理 |
 | 后台性质 | 本地小模型训练、推理、审核、存储、追溯的自动化管理后台 |
 | 管理页面入口 | `/ai-painter-progress` |
-| 当前训练入口 | `/ai-painter-progress/natural-home` |
+| 完整地图训练内容与历史入口 | `/ai-painter-progress/natural-home` |
+| 当前运行实时监控入口 | `/ai-painter-progress/current-training` |
 | 数据写入者 | 本地小模型程序 |
 | Codex 职责 | 规划、检查、修复读取展示、完善自动化脚本和校验，不替程序手工写训练数据 |
 | 禁止事项 | 禁止 Codex 手工补成功记录、手工归档训练图、手工改版本名、手工伪造审核状态 |
@@ -24,7 +25,8 @@
 AI Painter 后台管理
 ├─ A. 训练控制台页面
 │  ├─ 当前状态
-│  ├─ 当前训练入口
+│  ├─ 当前运行实时监控入口
+│  ├─ 完整地图训练内容与历史入口
 │  ├─ 训练图预览
 │  ├─ 训练数据目录
 │  ├─ 训练日志
@@ -76,10 +78,16 @@ AI Painter 后台管理
 │
 └─ F. ApprovedFrame 发布系统
    ├─ 机器审核通过
-   ├─ 项目所有者人工验收
+   ├─ 能力版本与Runtime发布门通过
    ├─ 写入 ApprovedFrame
    └─ `/world` 只读取 ApprovedFrame
 ```
+
+### 2.1 训练阶段自动闭环
+
+一个已启动训练阶段不得在训练进程结束时停留在“训练完成，等待验证”。同一执行包必须继续由本地程序完成固定预览复现、validation与Checkpoint身份验证、机器审核、失败隔离、Manifest、Finalization、唯一终态及本地治理记录。页面只投影这些机器记录，不触发人工操作，也不依赖Codex任务保持打开。
+
+能力版本和执行计划必须在启动前列明完整阶段动作链；程序分别验证并一次性消费内部任务身份。只有启动新的模型/数据/阈值/训练计划、重试真实失败路线或改变业务范围时，页面才显示项目级能力变更或Owner业务决策请求。
 
 ## 3. 后台固定功能列表
 
@@ -96,8 +104,8 @@ AI Painter 后台管理
 | B09 | 失败样本记录 | 程序 | failure codes / negative labels | 只展示 |
 | B10 | 训练总账记录 | 程序 | `events.jsonl`、`latest.json` | 只展示 |
 | B11 | 生成结果归档 | 程序 | generated-results index / images / summaries | 只展示 |
-| B12 | 人工最终验收 | 项目所有者触发，程序记录 | owner review record | 页面展示状态 |
-| B13 | ApprovedFrame 写入 | 程序 | approved frame record | `/world` 读取 |
+| B12 | 能力版本与Runtime发布门 | 本地程序执行；冷启动能力版本由项目级验收确认 | capability release / runtime publish record | 页面展示状态 |
+| B13 | ApprovedFrame 写入 | 本地程序 | approved frame record | `/world` 读取 |
 
 ## 4. 自动时间戳规则
 
@@ -110,8 +118,8 @@ AI Painter 后台管理
 | `finishedAt` | 训练/推理/审核结束时间 | ISO 8601 或 null |
 | `updatedAt` | 最近更新时间 | ISO 8601 |
 | `savedAt` | 图片、报告、归档写入时间 | ISO 8601 |
-| `reviewedAt` | 机器审核或人工审核时间 | ISO 8601 |
-| `ownerReviewedAt` | 项目所有者最终验收时间 | ISO 8601 或 null |
+| `reviewedAt` | 机器审核或能力版本发布验收时间 | ISO 8601 |
+| `capabilityReleaseReviewedAt` | 冷启动或重大能力版本发布验收时间 | ISO 8601 或 null |
 
 ## 5. 自动数据细节
 
@@ -176,10 +184,15 @@ codexGenerated = false
 | AI Painter 训练/生成/审核 | `.runtime/ai-painter/` |
 | 材料槽推理 | `.runtime/game-map-material-slot-inference-runs/` |
 | Runtime 合成输出 | `.runtime/game-map-runtime-compositor/` |
+| RuntimeFrame 工作区 | `.runtime/game-map-runtime-frame-working/` |
 | RuntimeFrame 候选 | `.runtime/game-map-runtime-frame-candidates/` |
+| RuntimeFrame 正式记录 | `.runtime/game-map-runtime-frame/` |
+| RuntimeFrame 拒绝记录 | `.runtime/game-map-rejected-runtime-frames/` |
 | 生成结果索引 | `.runtime/ai-painter/generated-results/` |
 | ApprovedFrame | `data/world-approved-frames/` |
 | 世界运行索引 | `data/world-runtime/` |
+
+后台必须保留`working -> candidates -> accepted frame / rejected frames`生命周期身份；任何自动索引和状态投影都不得把工作区或候选目录等同于正式RuntimeFrame。
 
 ## 8. 后台页面只读规则
 
@@ -219,8 +232,8 @@ codexGenerated = false
 -> Runtime 合成
 -> FormalVisualJudge
 -> 失败则自动记录失败原因和负样本
--> 通过则进入项目所有者人工验收
--> 人工验收通过后程序写入 ApprovedFrame
+-> 通过则进入能力版本与Runtime发布门
+-> 发布门通过后程序写入 ApprovedFrame
 -> /world 只读取 ApprovedFrame
 ```
 
@@ -233,5 +246,5 @@ codexGenerated = false
 | 失败记录 | 失败原因、失败码、失败图、失败目录可追溯 |
 | 成功记录 | 成功必须来自程序审核记录，不来自聊天 |
 | 版本名 | 页面原样显示目录名和版本号 |
-| 自动化归属 | 记录中能区分程序自动写入与人工审核 |
-| ApprovedFrame | 未经项目所有者最终确认不能进入 `/world` |
+| 自动化归属 | 记录中能区分程序自动写入、机器审核与项目级能力发布验收 |
+| ApprovedFrame | 未经机器审核、能力版本和Runtime发布门确认不能进入 `/world` |

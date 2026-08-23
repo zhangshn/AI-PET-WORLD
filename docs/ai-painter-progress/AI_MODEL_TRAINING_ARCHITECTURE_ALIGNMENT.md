@@ -1,6 +1,6 @@
 # AI Painter 模型架构与训练架构对齐规格
 
-更新时间：2026-08-03 09:23:45 +08:00
+更新时间：2026-08-24 04:30:00 +08:00
 
 状态：active-model-training-alignment-contract
 
@@ -18,9 +18,9 @@ AI Painter 的模型、训练、推理、审核和存储必须共同消费世界
 | 视觉字典 | 定义视觉目标、标签、失败码和审核规则 | 不直接生成图片 |
 | 世界导演 | 将事实和失败约束转成结构化计划 | 不新增世界事实，不只输出松散 prompt |
 | 任务包 | 将导演计划编译为模型输入 | 不缺字段、不跳过字典合同 |
-| 本地模型 | 学习并生成完整地图候选 | 不决定可玩性和最终通过 |
+| 本地分阶段视觉系统 | 按权威绑定、地形道路水文、对象语义、全局视觉与完整RGB责任链生成完整地图候选 | 不共享责任身份，不决定可玩性和最终通过 |
 | Runtime 合成 | 绑定候选与结构化运行层 | 不用程序直绘替代模型视觉 |
-| 审核 | 执行机器门禁和 Owner 终审 | 不把机器通过当最终通过 |
+| 审核与发布 | 执行机器门禁、能力版本和Runtime发布策略 | 不把部分指标通过当最终通过 |
 | 存储 | 自动保存输入、输出、模型、日志、Token 和失败 | 不依赖聊天或 Codex 手工归档 |
 
 ## 3. Generation Task Package 合同
@@ -105,7 +105,7 @@ safety
 | `singleMapEcologyFields` | 生态、季节、湿度和自然连续性 |
 | `singleMapMaterialFields` | 草、路、水、岸、石、植被等材料语义 |
 | `singleMapCompositionFields` | 入口/出口、通行、分区、边界和阅读层级 |
-| `singleMapAcceptance` | 机器与 Owner 验收标准 |
+| `singleMapAcceptance` | 机器审核、能力版本与Runtime发布标准 |
 | `drawingProcess` | 结构、层级、材质和接地过程约束 |
 | `artDirection` | 像素风、尺度、轮廓、光照和禁止项 |
 | `renderLayerRecipe` | Runtime 图层顺序和覆盖关系 |
@@ -122,15 +122,20 @@ WorldFacts
 -> Visual Director Output
 -> Generation Task Package
 -> 23-channel Condition Package
--> Local AI Painter Model
+-> Authoritative World Structure Binding
+-> Terrain / Route / Hydrology Spatial Realization
+-> Per-Class Object Semantic Realization
+-> Global Visual Harmonization and Native Complete RGB Decode
 -> Fresh Complete-Map Inference
 -> Runtime Structure Binding
 -> Machine Review
--> Owner Review
+-> Capability Release / Runtime Publish Gate
 -> Persistent Training Memory
 ```
 
-训练阶段可以渐进分辨率执行，但完整地图正式输出必须原生 `1024×768`。材料、对象和过渡能力是完整模型的内部能力，不得把局部材料拼接、旧图选择或低分辨率放大冒充完整推理。
+前三个生成责任阶段中的权威绑定为非训练阶段；其后的地形、对象、全局视觉三个组件必须使用隔离参数、Checkpoint、输出和终态身份，并按同包前序成功证据连接。该内部责任链不得与Stage 0/1/2训练分辨率阶段混淆。
+
+训练阶段可以渐进分辨率执行，但完整地图正式输出必须原生 `1024×768`。材料、对象和过渡能力是分阶段视觉系统的内部能力，不得把局部材料拼接、旧图选择或低分辨率放大冒充完整推理。
 
 完整推理必须保存任务包、模型版本、Checkpoint、seed、图片哈希、生成时间和 `reusedExistingImage=false`。历史第三方 bootstrap 固定隔离，不得进入正式模型或 `/world`。
 
@@ -143,8 +148,9 @@ WorldFacts
 - challenge 与 regression 未参与训练和 Checkpoint 选择；
 - 23 通道顺序、缩放方式和任务身份一致；
 - 后一 Stage 的父 Checkpoint 路径、哈希、架构和数据谱系一致；
+- 三个责任隔离组件的参数、Checkpoint、输出、终态和同包前序消费身份一致，且不存在跨组件可训练参数共享；
 - 第三方权重、激活或输出未进入独立权重链；
-- Owner 授权身份、范围、动作和消费状态有效。
+- 能力版本、执行包、内部任务票据、范围和消费状态有效。
 
 数据容量、代码回归、冒烟、Stage 完成、Checkpoint 保存、训练后验证和正式推理资格是不同状态，不能互相代替。
 
@@ -167,9 +173,9 @@ WorldFacts
 
 ## 9. 正式准入
 
-正式训练至少要求：字典合同、页面只读边界、训练数据持久化、文档治理、模型训练对齐、数据充分性、任务包、条件编译、授权和资源预检全部通过。
+正式训练至少要求：字典合同、页面只读边界、训练数据持久化、文档治理、模型训练对齐、数据充分性、任务包、条件编译、能力版本变更门和资源预检全部通过。
 
-正式推理还要求合格 Checkpoint、训练后验证、正式推理授权和当前任务包。RuntimeFrame 与 `/world` 继续使用独立门禁和 Owner 最终验收。
+正式推理还要求合格 Checkpoint、训练后验证、已发布能力版本和当前任务包。RuntimeFrame 与 `/world` 继续使用独立机器发布门；冷启动或重大能力版本变更另做项目级发布验收，单次画面不重复人工验收。
 
 ## 10. 验收标准
 
@@ -180,7 +186,7 @@ WorldFacts
 3. 数据、split、Checkpoint 与训练程序身份一致。
 4. 训练、验证、推理和审核自动保存不可变证据。
 5. 完整候选来自本地模型新推理，不是旧图、局部图或程序直绘。
-6. 机器审核和 Owner 审核保持独立。
-7. 程序在数据不足、资格失败、审核失败或 Owner 未批准时不能报告最终成功。
+6. 机器审核、能力版本发布验收和Runtime发布资格保持独立。
+7. 程序在数据不足、资格失败、审核失败、能力版本未发布或Runtime发布门未通过时不能报告最终成功。
 
 具体实现状态、缺口、Run ID、哈希和运行命令结果由机器检查器与唯一模块计划表提供，不写入本规格。

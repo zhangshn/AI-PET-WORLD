@@ -1,6 +1,6 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-08-02 20:16:35 +08:00
+更新时间：2026-08-24 04:40:01 +08:00
 
 状态：active-directory-reference
 
@@ -50,7 +50,7 @@ docs/
 | `docs/BUSINESS_SPEC.md` | 两大核心业务和长期业务边界。 |
 | `docs/ARCHITECTURE.md` | AI 管家与类地球世界的长期架构。 |
 | `docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md` | 本地自研AI能力建设、任务执行和Codex职能迁移主体架构。 |
-| `docs/game-world-generation/` | 完整世界地图架构、模型、审核和唯一模块计划表。 |
+| `docs/game-world-generation/` | AI Painter正式主体、数据来源、审核发布、补充合同和唯一模块计划表。 |
 | `docs/world-visual-data-dictionary/` | 分层视觉事实、对象、地形、过渡、失败码和训练标签。 |
 | `docs/ai-painter-progress/` | 后台页面、自动保存、模型对齐、诊断和修复契约。 |
 | `docs/ziwei/` | AI 管家人格数据子系统的稳定合同。 |
@@ -90,6 +90,23 @@ AI Painter 是类地球世界的视觉表达系统，不能决定世界事实：
 | `src/app/ai-painter-progress/` | 后台查看与控制入口。 |
 | `src/app/api/ai-painter/` | 训练状态、图片、归档和审核 API。 |
 | `.runtime/ai-painter/` | 程序自动保存的训练与推理证据。 |
+
+AI Painter包内自主判断使用以下逻辑目录。当前能力未激活时不提前创建运行目录：
+
+```text
+.runtime/ai-painter/
+├─ autonomous-package-executions/<packageId>/
+│  ├─ state.json
+│  ├─ progress.json
+│  └─ phase-terminal.json
+├─ autonomous-package-internal-capabilities/<packageId>/<ticketId>/
+│  ├─ internal-capability-ticket.json
+│  └─ consumption.json
+└─ autonomous-package-decision-records/<packageId>/<decisionId>/
+   └─ decision-report.json
+```
+
+`autonomous-package-executions`保存执行包状态机；`autonomous-package-internal-capabilities`保存一次一动作、不可重放的内部任务票据；`autonomous-package-decision-records`保存冻结规则、证据引用、排除选项和唯一裁决。三者都只能使用项目逻辑相对路径并映射到正式注册的`.runtime`物理目录，不得接受调用方提供的外部绝对路径。内部票据只承担幂等、防重、状态转换和证据追溯，不是从Owner派生的权限。
 
 第一版原始视觉来源目录固定为：
 
@@ -172,19 +189,23 @@ original-image-library/<五类并行来源>
  + owner-approved world-connectivity blueprint
 -> data/world-samples/registry/<dictionaryVersion>/
 -> data/world-samples/dataset-packages/<packageId>/
+   或 data/world-samples/ai-assisted-cold-start-dataset-packages/<packageId>/
 -> ml/ai-painter/ 项目自有训练器
 -> .runtime/ai-painter/ 自动训练与推理证据
 ```
 
-完整地图视觉运行目录固定分层：
+两个数据包根目录按血缘分工，不按新旧或优先级互相覆盖：`dataset-packages/`保存通用正式包，`ai-assisted-cold-start-dataset-packages/`保存AI辅助冷启动正式包。活动配置必须绑定精确路径、packageId和SHA-256，程序不得扫描两个目录后自行选择“最新”数据包。
+
+完整地图视觉运行目录按职责分层；下列目录是稳定公共命名空间，不是对`.runtime/ai-painter/`全部运行证据目录的穷举：
 
 ```text
 .runtime/ai-painter/
 ├─ local-foundation-models/                    # 已隔离历史第三方权重清单与文件 hash，不进入正式路线
 ├─ world-visual-generation-task-packages/      # 任务包与 23 通道条件
 ├─ complete-world-visual-bootstrap-inference/  # 每次完整候选、控制图和模型报告
-├─ complete-world-visual-machine-reviews/      # CLIP、VJ-0、VJ-1、VJ-2 审核
+├─ complete-world-visual-machine-reviews/      # CLIP、VJ-0、VJ-1、VJ-2正式机器审核
 ├─ complete-world-visual-foundation-batches/   # 自动多 seed 批次总账
+├─ autonomous-execution-packages/              # 能力版本、内部任务票据、状态转换与恢复证据
 └─ training-process-ledger/                    # 中英文程序事件
 ```
 
@@ -196,8 +217,14 @@ original-image-library/<五类并行来源>
 | 视觉字典导出 | `data/world-visual-data-dictionary/` | 由字典文档导出，供程序读取。 |
 | 正式训练样本 | `data/world-samples/registry/<dictionaryVersion>/` | 只能由登记程序写入，保存原图、来源、许可、hash、审核和标签。 |
 | 不可变训练数据包 | `data/world-samples/dataset-packages/<packageId>/` | 保存四类 split、来源索引、字典/导演/任务/条件/审核快照和审计。 |
+| AI辅助冷启动数据包 | `data/world-samples/ai-assisted-cold-start-dataset-packages/<packageId>/` | 保存冷启动正式血缘；与通用包目录分工，不可由程序猜测替换。 |
 | 训练与推理产物 | `.runtime/ai-painter/` | 成功、失败和中间结果全部自动保存。 |
-| RuntimeFrame | `.runtime/game-map-runtime-frame/` 及正式晋级存储 | 未通过全部闸门不得进入 `/world`。 |
+| RuntimeFrame工作区 | `.runtime/game-map-runtime-frame-working/` | 生成与合成中的临时工作身份，不得进入`/world`。 |
+| RuntimeFrame候选 | `.runtime/game-map-runtime-frame-candidates/` | 等待机器审核或能力版本发布门的候选，不得进入`/world`。 |
+| RuntimeFrame正式记录 | `.runtime/game-map-runtime-frame/` 及正式晋级存储 | 只有通过全部闸门的记录可供`/world`读取。 |
+| RuntimeFrame拒绝记录 | `.runtime/game-map-rejected-runtime-frames/` | 保存不可变拒绝证据，不得覆盖或晋级。 |
 | 被拒绝结果 | `.runtime` 对应失败归档 | 不删除，不作为正式画面。 |
 
-`/world` 只能展示通过机器审核和项目所有者最终验收的完整 RuntimeFrame；训练图、局部图、候选图、失败图和程序占位图不得进入正式世界。
+RuntimeFrame生命周期固定为`working -> candidates -> accepted frame / rejected frames`。`.runtime`在项目中的逻辑权威入口是`F:\ai-pet-world\.runtime`；Windows部署允许它解析到项目已注册的物理热层，但文档、配置和授权只能使用项目逻辑相对路径，不能把物理映射路径当作新的项目根或外部数据源。
+
+`/world` 只能展示由已发布能力版本生成并通过机器审核与Runtime发布门的完整 RuntimeFrame；冷启动能力版本发布前另需项目级发布验收。训练图、局部图、候选图、失败图和程序占位图不得进入正式世界。

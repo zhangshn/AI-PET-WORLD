@@ -10,6 +10,9 @@ const RESOLUTIONS = Object.freeze([{ width: 256, height: 192 }, { width: 512, he
 const RUNNER = "scripts/run-stage4-semantic-mixture-formal-stage.mjs"
 const QUALIFICATION_STATUS = "terminal_pass_with_late_convergence_evidence_qualified_closed"
 const STAGE_STATUS = "semantic_mixture_stage4_formal_stage_completed_closed"
+const LEGACY_CANDIDATE = "stage4_object_reference_multiscale_early_convergence"
+const CAPACITY_CANDIDATE = "stage4_capacity_only_base_width_64_to_existing_level1_128"
+const CAPACITY_ARM = "capacity_only_base_width_64_to_existing_level1_128"
 const PLACEHOLDERS = new Set([
   "RUNNER_AUTH_PATH", "RUNNER_AUTH_SHA256", "PREVIOUS_TERMINAL_PATH",
   "PREVIOUS_TERMINAL_SHA256", "PREVIOUS_CHECKPOINT_PATH",
@@ -17,14 +20,24 @@ const PLACEHOLDERS = new Set([
   "QUALIFICATION_TERMINAL_SHA256",
 ])
 
-export function auditStage4Stage0To80ContinuationPlan(plan, { root = process.cwd(), verifyFiles = true } = {}) {
+export function auditStage4Stage0To80ContinuationPlan(plan, { root = process.cwd(), verifyFiles = true, packageId = null } = {}) {
   const projectRoot = path.resolve(root)
   check(plan?.schemaVersion === "ai-painter-stage4-stage0-to-80-continuation-plan-v1", "plan_schema_invalid")
   check(plan?.status === "ready_for_owner_signature", "plan_status_invalid")
   check(plan?.baselineProgress?.completedStages === 3 && plan?.baselineProgress?.totalStages === 5 && plan?.baselineProgress?.percent === 60, "baseline_progress_invalid")
   check(plan?.targetProgress?.completedStages === 4 && plan?.targetProgress?.totalStages === 5 && plan?.targetProgress?.percent === 80, "target_progress_invalid")
   check(plan?.executionBoundary?.smokeRerunAuthorized === false && plan?.executionBoundary?.automaticRetry === false, "execution_boundary_invalid")
-  check(plan?.candidateIdentity?.candidateId === "stage4_object_reference_multiscale_early_convergence", "candidate_identity_invalid")
+  auditHostExecution(projectRoot, plan?.hostExecution, verifyFiles, packageId)
+  check([LEGACY_CANDIDATE, CAPACITY_CANDIDATE].includes(plan?.candidateIdentity?.candidateId), "candidate_identity_invalid")
+  if (plan.candidateIdentity.candidateId === CAPACITY_CANDIDATE) {
+    check(plan.candidateIdentity.controlledStructureArm === CAPACITY_ARM, "capacity_arm_identity_invalid")
+    check(bindingValid(projectRoot, plan?.routeDecision, verifyFiles), "capacity_route_decision_invalid")
+    check(bindingValid(projectRoot, plan?.crossArmDecision, verifyFiles), "capacity_cross_arm_decision_invalid")
+    if (verifyFiles) {
+      const routeDecision = readJson(path.resolve(projectRoot, plan.routeDecision.path))
+      check(routeDecision?.status === "condition_fusion_multisample_semantic_capacity_insufficient_confirmed", "capacity_route_status_invalid")
+    }
+  }
   check(bindingValid(projectRoot, plan?.candidateIdentity?.config, verifyFiles), "candidate_config_invalid")
   check(bindingValid(projectRoot, plan?.qualificationTerminal, verifyFiles), "qualification_binding_invalid")
   if (verifyFiles) {
@@ -43,6 +56,51 @@ export function auditStage4Stage0To80ContinuationPlan(plan, { root = process.cwd
     gpuStarted: false,
     trainingStarted: false,
   }
+}
+
+function auditHostExecution(root, value, verifyFiles, packageId) {
+  check(value?.schemaVersion === "ai-painter-stage4-background-host-execution-contract-v1", "host_execution_schema_invalid")
+  check(value?.mechanism === "wmi_win32_process_create" && value?.codexProcessTreeIndependent === true && value?.stopOnCodexExit === false, "host_execution_mechanism_invalid")
+  check(value?.automaticRetry === false && value?.requiresFreshPackageAndOutput === true, "host_execution_boundary_invalid")
+  for (const key of ["launcher", "worker", "starter", "disconnectCpuReport"]) check(bindingValid(root, value?.[key], verifyFiles), `host_execution_${key}_binding_invalid`)
+  const recovery = value?.staleFormalLockRecovery
+  check(recovery?.enabled === true && recovery?.quarantineRootTemplate === ".runtime/ai-painter/stage4-stale-formal-lock-quarantines/{{PACKAGE_ID}}", "stale_lock_recovery_contract_invalid")
+  for (const key of ["repairer", "cpuReport", "interruptionTerminal"]) check(bindingValid(root, recovery?.[key], verifyFiles), `stale_lock_recovery_${key}_binding_invalid`)
+  check(bindingShapeValid(recovery?.lock), "stale_lock_recovery_lock_binding_invalid")
+  const sourceState = recovery.sourceState ?? "original_lock_pending_quarantine"
+  check(["original_lock_pending_quarantine", "prior_quarantine_verified"].includes(sourceState), "stale_lock_recovery_source_state_invalid")
+  if (!verifyFiles) return
+  if (sourceState === "prior_quarantine_verified") {
+    check(priorQuarantineValid(root, recovery), "stale_lock_recovery_prior_quarantine_invalid")
+    return
+  }
+  if (bindingValid(root, recovery.lock, true)) return
+  check(currentPackageQuarantineValid(root, recovery, packageId), "stale_lock_recovery_lock_binding_invalid")
+}
+
+function currentPackageQuarantineValid(root, recovery, packageId) {
+  if (!safeId(packageId) || fs.existsSync(path.resolve(root, recovery.lock.path))) return false
+  const quarantineRoot = recovery.quarantineRootTemplate.replace("{{PACKAGE_ID}}", packageId)
+  return quarantineEvidenceValid(root, recovery, `${quarantineRoot}/phase-terminal.json`, `${quarantineRoot}/stale-formal-stage.lock.json`, packageId)
+}
+
+function priorQuarantineValid(root, recovery) {
+  if (fs.existsSync(path.resolve(root, recovery.lock.path))) return false
+  if (!bindingValid(root, recovery.priorQuarantineTerminal, true) || !bindingValid(root, recovery.priorQuarantinedLock, true)) return false
+  const terminal = readJson(path.resolve(root, recovery.priorQuarantineTerminal.path))
+  return quarantineEvidenceValid(root, recovery, recovery.priorQuarantineTerminal.path, recovery.priorQuarantinedLock.path, terminal.packageId)
+}
+
+function quarantineEvidenceValid(root, recovery, terminalPath, lockPath, packageId) {
+  try {
+    const terminal = readJson(path.resolve(root, terminalPath))
+    return terminal.status === "stale_formal_stage_lock_quarantined_closed"
+      && terminal.packageId === packageId
+      && terminal.staleLock?.originalPath === recovery.lock.path
+      && terminal.staleLock?.quarantinedPath === lockPath
+      && terminal.staleLock?.sha256 === recovery.lock.sha256
+      && sha256File(path.resolve(root, lockPath)) === recovery.lock.sha256
+  } catch { return false }
 }
 
 function auditStep(root, plan, step, index, verifyFiles) {
@@ -81,6 +139,11 @@ function auditRunnerAuthorization(root, plan, step, verifyFiles) {
   for (const key of ["sourceConfig", "implementationAuthorization", "implementationConsumption", "dataset", "autoencoder"]) check(bindingValid(root, value?.bindings?.[key], verifyFiles), `runner_binding_${key}_invalid`)
   auditResolvedImplementationLineage(root, plan, value?.bindings?.implementationAuthorization, value?.bindings?.implementationConsumption, verifyFiles)
   check(value?.bindings?.sourceConfig?.path === plan.candidateIdentity.config.path && value?.bindings?.sourceConfig?.sha256 === plan.candidateIdentity.config.sha256, "runner_config_binding_invalid")
+  if (plan.candidateIdentity.candidateId === CAPACITY_CANDIDATE) {
+    check(value?.controlledStructureArm === CAPACITY_ARM, "runner_capacity_arm_invalid")
+    check(value?.bindings?.routeDecision?.path === plan.routeDecision.path && value?.bindings?.routeDecision?.sha256 === plan.routeDecision.sha256, "runner_capacity_route_binding_invalid")
+    check(value?.bindings?.crossArmDecision?.path === plan.crossArmDecision.path && value?.bindings?.crossArmDecision?.sha256 === plan.crossArmDecision.sha256, "runner_capacity_cross_arm_binding_invalid")
+  }
   check(value?.taskIdentity?.stage === stage && sameObject(value?.taskIdentity?.resolution, RESOLUTIONS[stage]), "runner_task_stage_invalid")
   check(value?.taskIdentity?.epochs === 40 && same(value?.taskIdentity?.previewEpochs, [1, 5, 10, 20, 30, 40]), "runner_epoch_contract_invalid")
   check(value?.taskIdentity?.seed === 20263722 && value?.taskIdentity?.datasetCapacity === 64 && sameObject(value?.taskIdentity?.splitCounts, { train: 48, validation: 8, challenge: 4, regression: 4 }), "runner_dataset_contract_invalid")
@@ -115,10 +178,17 @@ function auditResolvedImplementationLineageValues(root, plan, authorizationBindi
   check(bindingValid(root, authorization.sourceAuthorization, true) && bindingValid(root, authorization.sourceConsumption, true), "resolved_implementation_source_binding_invalid")
   const sourceAuthorization = readJson(path.resolve(root, authorization.sourceAuthorization.path))
   const sourceConsumption = readJson(path.resolve(root, authorization.sourceConsumption.path))
-  check(sourceAuthorization.schemaVersion === "ai-painter-owner-stage4-multiscale-reference-luminance-variation-preserving-mask-fallback-v1", "resolved_implementation_source_schema_invalid")
-  check(sourceAuthorization.scope === "implement_cpu_audit_readonly_gpu_qualify_and_prepare_fresh_stage0_to_stage2_plan", "resolved_implementation_source_scope_invalid")
-  check(sourceAuthorization.status === "owner_authorized_unconsumed" && sourceAuthorization.requestId === sourceAuthorization.commandRef, "resolved_implementation_source_authorization_invalid")
-  check(sourceConsumption.status === "stage4_multiscale_reference_luminance_variation_preserving_mask_fallback_authorization_atomically_consumed", "resolved_implementation_source_consumption_status_invalid")
+  if (plan.candidateIdentity.candidateId === CAPACITY_CANDIDATE) {
+    check(sourceAuthorization.schemaVersion === "ai-painter-owner-stage4-condition-fusion-stage0-final-route-and-capacity-continuation-v1", "resolved_implementation_source_schema_invalid")
+    check(sourceAuthorization.scope === "cpu_readonly_condition_fusion_stage0_final_route_adjudication_capacity_formal_activation_and_unsigned_continuation_plan_compilation", "resolved_implementation_source_scope_invalid")
+    check(sourceAuthorization.status === "resolved_owner_authorized_not_consumed" && sourceAuthorization.requestId === sourceAuthorization.commandRef, "resolved_implementation_source_authorization_invalid")
+    check(sourceConsumption.status === "stage4_condition_fusion_stage0_final_route_authorization_atomically_consumed", "resolved_implementation_source_consumption_status_invalid")
+  } else {
+    check(sourceAuthorization.schemaVersion === "ai-painter-owner-stage4-multiscale-reference-luminance-variation-preserving-mask-fallback-v1", "resolved_implementation_source_schema_invalid")
+    check(sourceAuthorization.scope === "implement_cpu_audit_readonly_gpu_qualify_and_prepare_fresh_stage0_to_stage2_plan", "resolved_implementation_source_scope_invalid")
+    check(sourceAuthorization.status === "owner_authorized_unconsumed" && sourceAuthorization.requestId === sourceAuthorization.commandRef, "resolved_implementation_source_authorization_invalid")
+    check(sourceConsumption.status === "stage4_multiscale_reference_luminance_variation_preserving_mask_fallback_authorization_atomically_consumed", "resolved_implementation_source_consumption_status_invalid")
+  }
   check(sourceConsumption.requestId === sourceAuthorization.requestId && sourceConsumption.commandRef === sourceAuthorization.commandRef && sourceConsumption.scope === sourceAuthorization.scope, "resolved_implementation_source_identity_invalid")
   check(sourceConsumption.authorizationSha256 === authorization.sourceAuthorization.sha256 && sourceConsumption.oneTimeConsumption === true, "resolved_implementation_source_consumption_invalid")
   check(consumptionBinding.sha256 === sha256File(path.resolve(root, consumptionBinding.path)), "resolved_implementation_consumption_hash_invalid")
@@ -137,9 +207,10 @@ function assertPlaceholdersKnown(value) {
 }
 
 function bindingValid(root, value, verifyFiles) {
-  if (!value || typeof value.path !== "string" || !isSha256(value.sha256) || !safeProjectPath(value.path)) return false
+  if (!bindingShapeValid(value)) return false
   return !verifyFiles || (fs.existsSync(path.resolve(root, value.path)) && sha256File(path.resolve(root, value.path)) === value.sha256)
 }
+function bindingShapeValid(value) { return value && typeof value.path === "string" && isSha256(value.sha256) && safeProjectPath(value.path) }
 function safeProjectPath(value) { return !path.isAbsolute(value) && !value.startsWith("../") && !value.includes("/../") && !value.includes("\\") }
 function safeId(value) { return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{7,159}$/u.test(value) }
 function isSha256(value) { return typeof value === "string" && /^[a-f0-9]{64}$/u.test(value) }
@@ -167,6 +238,11 @@ if (path.resolve(process.argv[1] ?? "") === path.resolve(SCRIPT_PATH)) {
     unknown_action_rejected: reject(plan, (p) => p.steps[0].runnerAuthorization.executionActions.push("run_smoke")),
     auto_retry_rejected: reject(plan, (p) => p.executionBoundary.automaticRetry = true),
     smoke_rerun_rejected: reject(plan, (p) => p.executionBoundary.smokeRerunAuthorized = true),
+    host_execution_removed_rejected: reject(plan, (p) => delete p.hostExecution),
+    host_execution_mechanism_rejected: reject(plan, (p) => p.hostExecution.mechanism = "foreground_terminal"),
+    host_execution_hash_rejected: reject(plan, (p) => p.hostExecution.worker.sha256 = "invalid-host-worker-hash"),
+    stale_lock_recovery_removed_rejected: reject(plan, (p) => delete p.hostExecution.staleFormalLockRecovery),
+    stale_lock_recovery_path_rejected: reject(plan, (p) => p.hostExecution.staleFormalLockRecovery.quarantineRootTemplate = ".runtime/outside/{{PACKAGE_ID}}"),
     output_reuse_rejected: reject(plan, (p) => p.steps[1].outputNamespace = p.steps[0].outputNamespace),
     unknown_placeholder_rejected: reject(plan, (p) => p.steps[1].executeArgs.push("{{HISTORICAL_CHECKPOINT}}")),
     historical_resolved_lineage_rejected: reject(plan, (p) => p.steps[0].runnerAuthorization.bindings.implementationAuthorization.path = ".runtime/ai-painter/stage4-continuation-resolved-lineage-materializations/historical/resolved-implementation-authorization.json"),
