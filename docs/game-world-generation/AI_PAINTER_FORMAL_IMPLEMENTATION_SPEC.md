@@ -1,8 +1,14 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-08-24 05:56:04 +08:00
+更新时间：2026-08-24 06:09:33 +08:00
 
 状态：active-long-term-module-specification
+
+文档版本：`AI-PAINTER-SPEC-1.1`
+
+生效范围：AI-PET-WORLD 项目内部正式架构与能力合同
+
+兼容规则：稳定需求编号不得重用；破坏性变更必须提升主体规格版本并重新形成能力发布身份
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -71,16 +77,50 @@ modelCapabilityVersion
 
 缺失事实必须显式标记为不可用。AI Painter、审核器和 Runtime 均不得用提示词、历史图片、失败预览或模型猜测补全权威事实。
 
+稳定要求：
+
+- **AP-IN-001**：每次任务必须同时绑定上述世界、条件包、字典和能力版本身份；任一必需身份缺失时失败关闭。
+- **AP-IN-002**：`factHash`、`VisualFactManifest` 和条件包只能由权威世界数据链产生，RGB 不得反向修改它们。
+- **AP-IN-003**：条件包路径和 SHA-256 必须同时验证，路径相同但哈希变化视为新输入身份。
+- **AP-IN-004**：同一运行内不得跨 `worldId`、`regionId`、`tick`、样本或条件包消费证据。
+
 ## 4. 23 通道条件与空间身份
 
-正式条件包保持版本化的 23 通道顺序，并覆盖：
+**AP-COND-001**：当前能力版本的 23 通道权威顺序必须且只能从 [`complete-world-ai-assisted-cold-start-v7.json`](../../ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json) 的 `conditionChannelOrder` 读取：
 
-- terrain、water、route、shoreline、walkable、collision 与 depth；
-- 湿度、遮阴、密集边界、细节分布和生态过渡；
-- footprints、tree、rock、vegetation 的对象身份、掩码、接地、遮挡和空间关系；
-- camera、lighting、palette、material、edge 与 detail budget。
+```text
+01 terrain_grass
+02 terrain_water
+03 terrain_path_ground
+04 terrain_shoreline
+05 terrain_natural_boundary
+06 terrain_mud_patch
+07 terrain_tall_grass
+08 walkable
+09 collision
+10 object_footprints
+11 object_tree
+12 object_rock
+13 object_vegetation
+14 focal_area
+15 object_instance
+16 coordinate_x
+17 coordinate_y
+18 signed_distance_path
+19 signed_distance_water
+20 signed_distance_shoreline
+21 signed_distance_object_ground
+22 signed_distance_boundary
+23 moisture_proximity
+```
 
-离散条件按 nearest-neighbor 对齐，连续条件按 bilinear 对齐。任何尺寸变化都必须保持相同样本、相同条件通道身份和相同空间语义，不得通过重采样改变事实。
+**AP-COND-002**：同一配置的 `conditionChannelTypes` 是离散/连续属性的唯一当前实现定义；离散条件按 nearest-neighbor 对齐，连续条件按 bilinear 对齐，规则身份固定为 `discrete_nearest_continuous_bilinear_v1`。
+
+**AP-COND-003**：条件包必须使用 `complete-world-visual-condition-pack-v1`，清单必须使用 `complete-world-visual-condition-manifest-v1`；字段、文件存在性、通道数量和统计边界由 [`check-current-world-visual-conditions.mjs`](../../scripts/check-current-world-visual-conditions.mjs) 验证。缺失通道必须进入 `unavailableChannels`，不得静默填零或由模型猜测。
+
+**AP-COND-004**：任何尺寸变化都必须保持相同样本、相同通道身份和相同空间语义，不得通过重采样改变事实。23 通道的顺序、类型、数值语义、重采样或缺失值规则发生变化时，属于重大能力版本变更。
+
+上述 JSON 是“当前能力实现值”的唯一机器入口，不是永久锁死的业务结构；未来版本可以替换，但必须发布新的条件合同版本和能力身份，旧版本不得原地改写。
 
 ## 5. 正式输出合同
 
@@ -107,6 +147,11 @@ runtimeFrameCandidateIdentity
 
 训练阶段可使用 `256×192 -> 512×384 -> 1024×768` 的分辨率递进，但业务候选和 Runtime 只接受原生 `1024×768` 结果。
 
+- **AP-OUT-001**：正式候选必须是单张原生 `1024×768` RGB，并绑定输入证据、能力版本和机器审核报告。
+- **AP-OUT-002**：禁止局部拼接、放大冒充、规则程序绘图和历史 RGB 复用。
+- **AP-OUT-003**：候选未形成不可变 `runtimeFrameCandidateIdentity` 前不得进入发布链。
+- **AP-OUT-004**：机器审核失败的候选不得生成 `publishIdentity`。
+
 ## 6. 四个内部生成责任阶段
 
 AI Painter 的长期内部责任固定为四段；它们描述业务责任，不等同于 Stage 0、Stage 1、Stage 2 的训练分辨率。
@@ -128,6 +173,17 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 负责统一构图、光照、色彩、材质和像素风，并直接形成原生完整 RGB。它不得消除前序道路、水文或对象语义，也不得把前序结构退化成仅局部响应。
 
 四段必须绑定同一任务包。后一段只允许消费同包前一段的成功终态和输出身份，禁止跨 run、跨样本、跨条件包或使用历史失败产物。
+
+四段机器接口的最低约束如下；字段名是长期接口要求，具体 schema 版本由能力版本登记：
+
+| 要求编号 | 责任阶段 | `inputSchema` | `outputSchema` | `requiredIdentity` | `successTerminal` / `failureTerminal` | `allowedMutations` | `forbiddenMutations` | `checkpointIdentity` | `reviewContract` |
+|---|---|---|---|---|---|---|---|---|---|
+| AP-PHASE-001 | `authoritative_world_structure_binding` | 世界事实、Manifest、条件包 | 权威结构绑定证据 | world/region/tick/fact/condition/capability | 绑定成功 / 失败关闭 | 仅新增证据 | 修改世界事实、条件或 Manifest | 不适用 | schema、路径、哈希和身份一致性 |
+| AP-PHASE-002 | `terrain_route_hydrology_spatial_realization` | 同包结构绑定输出 | 地形、道路、水文空间输出 | 同包前序终态与输出 SHA-256 | 阶段成功 / 失败关闭 | 当前阶段参数与输出 | 修改权威拓扑、跨包消费 | 当前阶段独立身份 | 道路、水文、岸线、通行和边界 |
+| AP-PHASE-003 | `per_class_object_semantic_realization` | 同包地形阶段输出、批准对象掩码 | 逐类对象语义输出 | 同包前序终态、掩码和条件身份 | 阶段成功 / 失败关闭 | 当前阶段参数与输出 | 修改掩码、跨类替换、跨包消费 | 当前阶段独立身份 | footprints/tree/rock/vegetation 逐类语义 |
+| AP-PHASE-004 | `global_visual_harmonization_and_native_complete_rgb_decode` | 同包对象阶段输出 | 原生完整 RGB 候选 | 同包前序终态、输出和能力身份 | 阶段成功 / 失败关闭 | 当前阶段参数、RGB 与证据 | 消除前序语义、拼接、放大、改事实 | 当前阶段独立身份 | 专业画面、事实对齐和完整地图审核 |
+
+当前四阶段接口的 CPU 未激活实现证据保存在 `.runtime/ai-painter/stage4-staged-interface-evidence-support/`，它只证明某次实现，不是长期权威合同。正式程序物化接口时，必须从本节和能力版本生成一个版本化机器合同；不得引用某个历史 run 目录作为永久 schema。
 
 ## 7. 实现架构的可替换性
 
@@ -158,18 +214,22 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 
 数据来源、许可、样本身份、唯一性和哈希规则由 [训练数据与来源规则](TRAINING_DATA_AND_SOURCE_POLICY.md) 定义。
 
-## 9. 模型与训练的稳定合同
+## 9. 模型与训练合同
 
-长期稳定的训练边界包括：
+### 9.1 长期不可变合同
 
-- 23 通道条件输入；
-- 当前能力实现版本的潜变量通道、Autoencoder接口和空间关系必须由该能力版本精确登记；当前版本使用12通道潜变量，后续版本可通过能力版本变更替换，不改变AI Painter的23通道业务输入和原生完整RGB输出合同；
-- 项目 Autoencoder 的明确版本和冻结/可训练状态；
-- train、validation、challenge、regression 隔离；
-- 训练前后模型哈希、指标、资源、Checkpoint、Manifest 与终态证据；
-- 后一训练分辨率只能消费同一正式链前一阶段的成功 Checkpoint。
+- **AP-TRAIN-001**：正式业务输入保持版本化条件合同，正式业务输出保持原生完整 RGB 合同。
+- **AP-TRAIN-002**：train、validation、challenge、regression 的用途隔离不得被模型实现改变。
+- **AP-TRAIN-003**：训练必须保存模型前后哈希、指标、资源、Checkpoint、Manifest 与终态证据。
+- **AP-TRAIN-004**：后一训练分辨率只能消费同一正式链前一阶段的成功 Checkpoint。
 
-具体基础宽度、层数、条件融合方式、梯度聚合方式、回放策略、Epoch 数和 Smoke 样本属于能力实现版本，不应作为不可替换的业务规则。当前正式实验值由活动配置和唯一计划表管理。
+### 9.2 能力版本必须登记的可变参数
+
+潜变量通道、Autoencoder 身份及冻结/可训练状态、空间关系、模型家族、基础宽度、层数、条件融合、梯度聚合、回放策略、Epoch、Smoke 样本、优化器和资源计划都必须由能力版本精确登记。它们可以通过新能力版本替换，但不得被写成永久业务规则。
+
+### 9.3 当前活动实现值
+
+当前能力实现使用 12 通道潜变量、四倍 Autoencoder 空间关系和项目登记的 Autoencoder。具体活动值只从当前能力配置和机器证据读取；本文不固定当前基础宽度、模型候选或训练运行身份。
 
 失败 Checkpoint 只能保存身份和证据；除非新的正式变更范围明确批准，否则不得加载、复用、晋级或作为初始化。
 
@@ -231,7 +291,40 @@ Codex 可以在研发阶段承担代码建设、复杂诊断和有界修复，�
 
 这些变更必须形成独立版本、范围、回归、证据和发布决定。CPU 检查、只读分析、自动审核、失败记录、控制台显示和同一不可变证据上的幂等恢复不应被拆成重复人工授权。
 
+### 12.1 重大能力版本变更的机器判定
+
+以下任一变化都必须判定为重大变更，进入 `completed_waiting_capability_release`，不得由运行实例自动继续：
+
+- **AP-CHANGE-001**：模型家族、责任阶段划分、共享/隔离参数边界或输出瓶颈改变；
+- **AP-CHANGE-002**：23 通道的数量、顺序、名称、类型、数值语义、范围、重采样或缺失值规则改变；
+- **AP-CHANGE-003**：Autoencoder 身份、结构、潜变量合同或冻结状态改变；
+- **AP-CHANGE-004**：数据来源谱系、批准容量、split 用途或 `datasetReleaseIdentity` 改变；
+- **AP-CHANGE-005**：机器审核阈值被降低、重定义或审核器语义改变；
+- **AP-CHANGE-006**：原生输出分辨率、Checkpoint 兼容格式或 RuntimeFrame 接口改变；
+- **AP-CHANGE-007**：WorldFacts、VisualFactManifest、RegionGraph 或条件包的权威绑定方式改变。
+
+仅修正文案、监控显示、证据索引或不改变输入输出字节与合同语义的基础设施缺陷，不构成重大能力变更。无法由机器唯一分类时必须进入 `waiting_owner_decision`，不得自行按非重大变更处理。
+
 ## 13. 发布、RuntimeFrame 与回退
+
+### 13.1 正式身份链与基数
+
+```text
+datasetReleaseIdentity
+  1 -> N modelCapabilityVersion
+modelCapabilityVersion
+  1 -> 0..1 capabilityReleaseIdentity
+capabilityReleaseIdentity
+  1 -> N runtimeFrameCandidateIdentity
+runtimeFrameCandidateIdentity
+  1 -> 0..1 publishIdentity
+```
+
+- **AP-ID-001**：一个模型能力版本只能绑定一个不可变数据发布身份；同一数据版本可产生多个模型能力版本。
+- **AP-ID-002**：`capabilityReleaseIdentity` 绑定模型能力、数据、条件合同、审核合同和 Runtime 接口；其中任一身份变化都必须重新发布能力身份。
+- **AP-ID-003**：世界事实、条件任务或生成随机身份变化只生成新的候选身份，不自动改变能力发布身份。
+- **AP-ID-004**：候选 RGB、输入哈希或审核报告变化必须生成新的 `runtimeFrameCandidateIdentity`，不得原地修改旧候选。
+- **AP-ID-005**：只有通过当前能力发布合同全部门禁的候选才可形成唯一 `publishIdentity`；发布失败保持上一正式指针。
 
 机器审核全部通过后，本地程序形成不可变发布候选。发布链必须验证：
 
@@ -286,6 +379,16 @@ AI Painter 正式能力必须同时满足：
 - 失败不会进入 Runtime，历史正式版本可安全保持或回退；
 - 机器证据能够复现每次决定。
 
+最低可执行验收映射：
+
+| 要求编号 | 证明方式 | 阻断条件 | 正式证据 |
+|---|---|---|---|
+| AP-ACCEPT-001 | 条件清单、条件包、路径与 SHA-256 检查 | 任一身份、通道或文件缺失/替换 | 输入清单与条件检查报告 |
+| AP-ACCEPT-002 | 专业画面、事实对齐、道路、水文、岸线和四类对象机器审核 | 任一冻结审核项失败 | 版本化机器审核报告 |
+| AP-ACCEPT-003 | 原生尺寸、完整画幅、无拼接/放大检查 | 非 `1024×768` 原生完整 RGB | 候选 Manifest 与 RGB SHA-256 |
+| AP-ACCEPT-004 | 执行、验证、审核、裁决、发布和记录状态机回归 | 非法跳转、缺失终态或需聊天继续 | 任务胶囊、事件账本、SQLite、终态 |
+| AP-ACCEPT-005 | 能力、候选和发布身份链验证 | 跨版本、跨 run、历史失败证据注入 | 能力发布与候选发布记录 |
+
 ## 17. 文档与状态职责
 
 | 信息 | 唯一来源 |
@@ -298,3 +401,30 @@ AI Painter 正式能力必须同时满足：
 | 本地自研 AI 与 Codex 职责迁移 | `../LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md` |
 
 本文不保存 Run ID、单次 SHA-256、当前 Epoch、临时失败或逐命令历史。
+
+### 17.1 唯一机器合同登记
+
+| 合同角色 | 唯一路径 | 权威层级 |
+|---|---|---|
+| 完整地图与未来动态就绪业务合同 | [`data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json`](../../data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json) | 长期业务机器合同 |
+| 64 份地图语义拓扑差异合同 | [`data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json`](../../data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json) | 数据发布机器合同 |
+| 当前 23 通道顺序、类型和缩放合同 | [`ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json`](../../ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json) | 当前能力版本实现合同 |
+| 条件包与清单检查器 | [`scripts/check-current-world-visual-conditions.mjs`](../../scripts/check-current-world-visual-conditions.mjs) | 当前机器验证入口 |
+| 本地系统与外部执行边界 | [`data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json`](../../data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json) | 本地系统职责合同 |
+| 包内自主决策状态机 | [`data/ai-painter/system-governance/ai-painter-autonomous-package-decision-contract-v1.json`](../../data/ai-painter/system-governance/ai-painter-autonomous-package-decision-contract-v1.json) | CPU 支持、尚未正式激活 |
+
+单次 `.runtime` 文件、聊天内容和外部评审不能登记为长期机器合同；它们只能证明某次执行。合同路径发生替换时，必须按 12.1 判断是否形成新的能力发布身份。
+
+### 17.2 稳定需求编号与追踪规则
+
+| 编号范围 | 主题 | 最低追踪目标 |
+|---|---|---|
+| `AP-IN-*` / `AP-COND-*` | 权威输入与条件 | 条件合同、编译器、输入检查和运行证据 |
+| `AP-OUT-*` | 正式输出 | Manifest、候选身份、审核和发布记录 |
+| `AP-PHASE-*` | 四段责任接口 | 接口合同、组件实现、CPU/GPU 资格与阶段终态 |
+| `AP-TRAIN-*` | 模型与训练 | 配置、Trainer、回归、Checkpoint 和训练终态 |
+| `AP-CHANGE-*` | 重大变更 | 变更分类器、能力发布门和 Owner 决策记录 |
+| `AP-ID-*` | 身份链 | 发布注册表、候选记录和原子发布指针 |
+| `AP-ACCEPT-*` | 验收 | 审核器、测试、失败码和不可变证据 |
+
+需求编号一经发布不得改义、重排或复用；废止要求保留编号并标记 superseded。程序、JSON 合同、CPU 测试、GPU 资格和运行证据应引用同一编号，形成“文档要求 -> 机器合同 -> 程序实现 -> 测试 -> 运行证据”的追踪链。

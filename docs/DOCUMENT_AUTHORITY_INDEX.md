@@ -1,6 +1,6 @@
 # 项目文档权威索引
 
-更新时间：2026-08-24 05:24:15 +08:00
+更新时间：2026-08-24 06:09:33 +08:00
 
 状态：active-document-governance-index
 
@@ -14,7 +14,7 @@
 | 项目总体架构 | `docs/ARCHITECTURE.md` | 系统分层、数据流、Runtime、能力版本、内部任务票据和模块边界 |
 | 本地AI能力迁移架构 | `docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md` | 本地AI原生能力、自主裁决、MVP筛选、Codex职能迁移与治理 |
 | 唯一模块计划表 | `docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md` | 当前模块、模块目标、阻断、完成条件与下一模块 |
-| AI Painter正式主体规格 | `docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | 长期业务责任、输入输出、四段生成责任、自动审核、发布、回退和研发边界 |
+| AI Painter正式主体规格 | `docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | 长期业务责任、输入输出、四段机器接口、稳定需求编号、能力变更、身份链、自动审核、发布与回退边界 |
 | AI Painter数据与来源 | `docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md` | 来源、64份批准容量、split、数据包血缘和样本身份 |
 | AI Painter审核与存储 | `docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md` | 原生自动审核、自主裁决、内部任务票据、终态、发布、存储和RuntimeFrame生命周期 |
 | 页面与后台规格 | `docs/ai-painter-progress/` | 页面职责、只读/写入边界、API和自动化合同 |
@@ -37,7 +37,7 @@
 
 发生冲突时停止并报告冲突，不得自行选择更方便的解释。
 
-AI Painter的四个生成责任阶段由总体架构与AI Painter正式主体规格共同定义；一个模型、三个隔离组件或其他模型家族只是可替换实现。唯一计划表记录当前候选状态，不得把实验结构升级为长期业务架构。数据路径以数据与来源规则及目录结构为准，审核、发布与终态以审核与存储规格为准，页面文档不得重新定义业务或训练顺序。
+AI Painter的四个生成责任阶段、稳定需求编号、机器合同登记、重大能力变更和正式身份链由总体架构与AI Painter正式主体规格共同定义；一个模型、三个隔离组件或其他模型家族只是可替换实现。唯一计划表记录当前候选状态，不得把实验结构升级为长期业务架构。数据路径以数据与来源规则及目录结构为准，审核、发布与终态以审核与存储规格为准，页面文档不得重新定义业务或训练顺序。
 
 ## 3. 唯一计划表规则
 

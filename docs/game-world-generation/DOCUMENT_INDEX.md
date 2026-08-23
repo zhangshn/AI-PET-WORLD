@@ -1,6 +1,6 @@
 # 完整游戏世界生成正式文档索引
 
-更新时间：2026-08-24 05:24:15 +08:00
+更新时间：2026-08-24 06:09:33 +08:00
 
 状态：active-game-world-document-index
 
@@ -24,7 +24,7 @@ docs/game-world-generation/
 | 文档 | 权限 |
 |---|---|
 | `CURRENT_EXECUTION_GUIDE_20260710.md` | 项目唯一模块计划表；只在模块边界变化时更新 |
-| `AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | 定义AI Painter长期业务主体、输入输出、生成责任、自动审核、发布与研发边界 |
+| `AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | 定义AI Painter长期业务主体、输入输出、四段机器接口、稳定需求编号、重大变更、身份链、自动审核、发布与研发边界 |
 | `TRAINING_DATA_AND_SOURCE_POLICY.md` | 定义样本来源、数据合同和严格门槛 |
 | `REVIEW_AUTOMATION_AND_STORAGE_SPEC.md` | 定义本地自动审核、发布/回退、失败学习、内部任务票据、状态投影和存储 |
 | `FLOWING_WATER_CONNECTIVITY_AND_NOVELTY_SPEC.md` | 定义流动水体边界连接、相邻EdgePort和全历史骨架唯一性 |

@@ -1,6 +1,6 @@
 # 完整游戏世界生成文档入口
 
-更新时间：2026-08-02 23:10:00 +08:00
+更新时间：2026-08-24 06:09:33 +08:00
 
 状态：active-game-world-generation-index
 
@@ -20,7 +20,7 @@
 
 | 文件 | 稳定职责 |
 |---|---|
-| `AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | AI Painter视觉实现、条件编译和模型能力边界 |
+| `AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | AI Painter业务输入输出、四段机器接口、需求追踪、能力版本和模型实现边界 |
 | `TRAINING_DATA_AND_SOURCE_POLICY.md` | 训练样本、来源、数据包与审计规则 |
 | `REVIEW_AUTOMATION_AND_STORAGE_SPEC.md` | 审核、失败学习、自动写入和存储合同 |
 | `FLOWING_WATER_CONNECTIVITY_AND_NOVELTY_SPEC.md` | 流动水体端口、连通和全历史骨架唯一性 |
