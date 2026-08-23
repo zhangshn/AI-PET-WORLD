@@ -1,6 +1,6 @@
 # 训练数据与来源正式规则
 
-更新时间：2026-08-24 04:30:00 +08:00
+更新时间：2026-08-24 05:56:04 +08:00
 
 状态：active-long-term-data-and-provenance-contract
 
@@ -161,7 +161,10 @@ conditionPackPath / conditionHashes
 imagePath / imageSha256
 sourceType / sourcePath / sourceLicense
 modelVersion / checkpoint / seed（模型输出时）
-ownerReviewStatus / machineReviewStatus
+machineReviewStatus
+datasetReleaseIdentity
+capabilityReleaseIdentity（模型生成记录适用时）
+legacyOwnerReviewStatus（仅兼容历史记录，可选，不构成当前逐图审核要求）
 labels / failureCodes / affectedRegions
 trainingUsage / split
 createdAtUtc / createdAtAsiaShanghai

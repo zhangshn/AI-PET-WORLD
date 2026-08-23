@@ -1,6 +1,6 @@
 # 审核、自动闭环与存储正式规格
 
-更新时间：2026-08-24 04:40:01 +08:00
+更新时间：2026-08-24 05:56:04 +08:00
 
 状态：active-long-term-review-automation-storage-contract
 
@@ -222,9 +222,13 @@ reviewing
 archiving
 blocked
 failed
-completed_waiting_owner_review
-completed_waiting_separate_authorization
+completed_waiting_capability_release
+waiting_owner_decision
+waiting_capability_change
+completed
 ```
+
+状态语义固定为：`completed_waiting_capability_release`只表示冷启动或重大能力版本正在等待项目级发布验收；`waiting_owner_decision`只表示证据不能唯一裁决或存在真实业务路线选择；`waiting_capability_change`表示继续执行需要新的模型、数据、Loss、阈值、训练计划或程序版本；已发布能力版本内的正常生成、验证、审核、发布和记录不得进入上述等待状态，完成后直接进入`completed`或相应失败终态。
 
 状态投影比较任务身份、事件时间和终态优先级。旧 `latest.json` 不能覆盖更新的失败、阻断、暂停或完成证据；无法确定时显示 `unknown_or_stale`。
 

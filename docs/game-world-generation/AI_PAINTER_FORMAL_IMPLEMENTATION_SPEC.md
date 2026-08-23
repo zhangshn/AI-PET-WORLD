@@ -1,6 +1,6 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-08-24 05:24:15 +08:00
+更新时间：2026-08-24 05:56:04 +08:00
 
 状态：active-long-term-module-specification
 
@@ -163,7 +163,7 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 长期稳定的训练边界包括：
 
 - 23 通道条件输入；
-- 12 通道潜变量边界；
+- 当前能力实现版本的潜变量通道、Autoencoder接口和空间关系必须由该能力版本精确登记；当前版本使用12通道潜变量，后续版本可通过能力版本变更替换，不改变AI Painter的23通道业务输入和原生完整RGB输出合同；
 - 项目 Autoencoder 的明确版本和冻结/可训练状态；
 - train、validation、challenge、regression 隔离；
 - 训练前后模型哈希、指标、资源、Checkpoint、Manifest 与终态证据；

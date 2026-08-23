@@ -135,7 +135,7 @@ AI Painter 后台管理
 | 设备 | `deviceName`、`gpuMemoryTotal`、`gpuMemoryUsed`、`estimatedKwh` |
 | 输出 | `outputRoot`、`imageFiles`、`manifestPath`、`summaryPath` |
 | 指标 | `loss`、`bestLoss`、`score`、`edgeDensity`、`sharpness`、`colorRange` |
-| 审核 | `materialPassed`、`visualJudgePassed`、`formalJudgePassed`、`ownerReviewStatus` |
+| 审核与发布 | `materialPassed`、`visualJudgePassed`、`formalJudgePassed`、`datasetReleaseIdentity`、`capabilityReleaseIdentity`；`legacyOwnerReviewStatus`仅兼容历史记录 |
 | 失败 | `failureCodes`、`failedSlots`、`formalIssues`、`negativeSampleLabels` |
 | 归属 | `createdByProgram`、`manualEdited`、`codexGenerated` |
 
