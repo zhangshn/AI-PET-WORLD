@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "ai-painter-contract-supersession-index-v1",
+  "contractId": "ai-painter-contract-supersession-index-v1",
+  "status": "active",
+  "policy": {
+    "historicalContractBytesMustRemainImmutable": true,
+    "historicalContractsMayBeUsedToVerifyHistoricalRuns": true,
+    "historicalContractsMayNotAuthorizeNewWork": true,
+    "activeProgramsAndDocumentsMustUseSuccessorContracts": true
+  },
+  "supersessions": [
+    {
+      "historicalPath": "data/ai-painter/system-governance/ai-painter-autonomous-package-decision-contract-v1.json",
+      "historicalSha256": "38594b9ed27c7f70bacebda203eefe956d6ed48d6c4624a5884b9d7ab8e354a6",
+      "successorPath": "data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json",
+      "successorSha256": "dbaa11307d485ee4bf2e84f9fb1eaf126edd9399a148055b4107b87cce4b9118",
+      "supersededAt": "2026-08-24T07:05:44+08:00",
+      "executionStatus": "historical_read_only_not_valid_for_new_work"
+    },
+    {
+      "historicalPath": "data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json",
+      "historicalSha256": "013f5a2f930bcc43d85f29d8166db4a06deaf337fa38fd5b87f5f3d46f11d0e4",
+      "successorPath": "data/ai-painter/system-governance/complete-map-world-business-contract-v3.json",
+      "successorSha256": "02257d965fbcc46b8824de82759f65dc660d02663ac4a2f6e98cff44c89475d6",
+      "supersededAt": "2026-08-24T07:05:44+08:00",
+      "executionStatus": "historical_read_only_not_valid_for_new_work"
+    },
+    {
+      "historicalPath": "data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json",
+      "historicalSha256": "27b69bb4ffc51a31315b0b3711a23aa3d8a70a41b8f871ea5ac843458ff58010",
+      "successorPath": "data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json",
+      "successorSha256": "dbda4e6744352b8cc8afdf9367772684151d12266be607261af6321002d1221f",
+      "supersededAt": "2026-08-24T07:05:44+08:00",
+      "executionStatus": "historical_read_only_not_valid_for_new_work"
+    }
+  ]
+}

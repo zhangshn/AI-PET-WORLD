@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "ai-painter-capability-release-registry-v1",
+  "contractId": "ai-painter-capability-release-registry-v1",
+  "status": "active_no_capability_release",
+  "releaseRoot": "data/ai-painter/capability-releases",
+  "trustBoundary": {
+    "registryEntryRequired": true,
+    "releaseFileSha256MustBeRecomputed": true,
+    "ownerDecisionFileSha256MustBeRecomputed": true,
+    "allBoundArtifactSha256ValuesMustBeRecomputed": true,
+    "callerSuppliedVerificationFlagsAccepted": false,
+    "unknownReleaseRejected": true,
+    "revokedReleaseRejected": true
+  },
+  "releaseRecords": []
+}

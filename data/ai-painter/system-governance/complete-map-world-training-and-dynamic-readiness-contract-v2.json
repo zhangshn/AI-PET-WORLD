@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "complete-map-world-training-and-dynamic-readiness-contract-v2",
+  "status": "active_owner_authorized",
+  "effectiveAt": "2026-08-01T00:58:46+08:00",
+  "ownerAuthorizationId": "owner-authorized-thailand-rebuild64-full-world-dynamic-readiness-upgrade-20260731",
+  "businessIdentity": {
+    "product": "AI-PET-WORLD",
+    "visualSubsystem": "AI Painter",
+    "sampleRoles": [
+      "local_ai_training_original",
+      "future_game_world_visual_baseline",
+      "future_dynamic_world_rendering_baseline"
+    ],
+    "notAllowedInterpretations": [
+      "decorative_map_card",
+      "isolated_diorama",
+      "floating_map_island",
+      "single_use_static_illustration"
+    ]
+  },
+  "fullWorldFrame": {
+    "everyPixelMustRepresentWorld": true,
+    "worldMustFillRectangularFrameEdgeToEdge": true,
+    "naturalBoundarySemantic": "dense_in_world_edge_ecology_not_external_background",
+    "forbidden": [
+      "alpha_or_transparent_void",
+      "external_solid_color_backdrop",
+      "dark_green_matte_background",
+      "floating_map_cutout",
+      "decorative_polygon_or_diorama_edge",
+      "non_world_margin"
+    ]
+  },
+  "worldAndDynamicReadiness": {
+    "currentTarget": "static_complete_game_world_frame",
+    "futureTarget": "dynamic_persistent_game_world",
+    "requiredSemantics": [
+      "terrain_surface_identity",
+      "walkable_and_collision_identity",
+      "object_instance_identity",
+      "hydrology_identity_when_present",
+      "route_and_region_connection_identity",
+      "ecology_and_season_identity",
+      "future_motion_state_reservation"
+    ],
+    "conditionChannelCount": 23,
+    "rgbCannotReplaceStructuredWorldFacts": true
+  },
+  "routeBoundaryContract": {
+    "requiredBoundarySideMustBeVisiblyTouched": true,
+    "uncontractedBoundarySidesForbidden": true,
+    "mirrorFlipRotateToFakeComplianceForbidden": true
+  },
+  "capacity64Uniqueness": {
+    "targetCount": 64,
+    "pairCount": 2016,
+    "allPairsMustBeDistinct": true,
+    "forbiddenReuse": [
+      "same_skeleton",
+      "same_large_framework",
+      "same_construction_grammar",
+      "copy",
+      "mirror",
+      "rotation",
+      "minor_deformation",
+      "template_reuse"
+    ],
+    "sharedStyleDoesNotExemptContentUniqueness": true,
+    "semanticTopologyContract": "data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json",
+    "uniqueMeasurementWindowOrHashAloneDoesNotProveUniqueness": true,
+    "routeWaterShorelineAndCompleteSkeletonSemanticSignaturesRequired": true,
+    "sameMotifWithDifferentCoordinatesIsDuplicate": true,
+    "compareAgainstRejectedHistory": true
+  },
+  "machineGates": {
+    "conditionPackageRevision": "owner-authorized-thailand-rebuild64-full-world-dynamic-readiness-v3-20260731",
+    "conditionGuideSchema": "complete-world-condition-guide-v2",
+    "generationPromptConstruction": "full_rectangular_world_plus_future_dynamic_readiness_plus_world_facts_director_23_channels_v10",
+    "machineReviewer": "ai-assisted-cold-start-machine-review-v8-full-world-dynamic-readiness",
+    "worldFrameAudit": "complete-map-world-frame-integrity-v1",
+    "routeBoundaryAudit": "condition-route-boundary-contact-v2"
+  },
+  "failurePolicy": {
+    "anyHardViolationIsDirectFailure": true,
+    "ownerPassCannotBeInferred": true,
+    "failedOriginalMustBeRetained": true,
+    "failedOriginalMayOnlyBeNegativeLearningEvidence": true,
+    "failedOriginalMustNotCountAsPositiveTrainingCapacity": true
+  },
+  "executionGate": {
+    "conditionPackagesMayBeRebuiltAndAudited": true,
+    "rgbGenerationAuthorized": false,
+    "gpuTrainingAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldRouteAuthorized": false,
+    "rgbResumeRequiresNewExplicitOwnerAuthorization": true
+  }
+}

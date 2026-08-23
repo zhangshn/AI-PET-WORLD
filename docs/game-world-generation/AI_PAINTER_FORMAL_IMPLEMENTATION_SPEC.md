@@ -1,10 +1,16 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-08-24 06:45:28 +08:00
+更新时间：2026-08-24 07:35:09 +08:00
 
 状态：active-long-term-module-specification
 
-文档版本：`AI-PAINTER-SPEC-1.1`
+文档版本：`AI-PAINTER-SPEC-1.2`
+
+生效日期：`2026-08-24`
+
+替代版本：`AI-PAINTER-SPEC-1.1`
+
+批准状态：`active_internal_formal_standard`
 
 生效范围：AI-PET-WORLD 项目内部正式架构与能力合同
 
@@ -305,6 +311,69 @@ Codex 可以在研发阶段承担代码建设、复杂诊断和有界修复，�
 
 仅修正文案、监控显示、证据索引或不改变输入输出字节与合同语义的基础设施缺陷，不构成重大能力变更。无法由机器唯一分类时必须进入 `waiting_owner_decision`，不得自行按非重大变更处理。
 
+### 12.2 能力发布文件与受信注册规范
+
+能力发布由项目级研发决定产生，但正式运行只能相信本地不可变文件和受信注册表，不能相信聊天、调用方布尔字段、页面身份或外部智能体记忆。
+
+固定信任入口如下：
+
+| 角色 | 固定要求 |
+|---|---|
+| 受信注册表 | `data/ai-painter/system-governance/ai-painter-capability-release-registry-v1.json`；Schema必须为`ai-painter-capability-release-registry-v1` |
+| 能力发布根 | `data/ai-painter/capability-releases/<capabilityReleaseIdentity>/`；禁止绝对路径、父级越界和外部目录 |
+| 能力发布文件 | Schema必须为`ai-painter-capability-release-v1`且状态为`released` |
+| Owner发布决定 | Schema必须为`ai-painter-capability-release-owner-decision-v1`且状态为`approved` |
+| Runtime自治策略 | 必须绑定当前`ai-painter-capability-runtime-autonomy-contract-v2`路径及实际SHA-256 |
+
+能力发布文件必须包含：
+
+```text
+schemaVersion
+capabilityReleaseIdentity
+status
+modelCapabilityVersion
+runtimeAutonomyPolicy { contractId, path, sha256, allowedInternalActions, maxInfrastructureRecoveryAttempts }
+bindings
+ownerReleaseDecision { path, sha256 }
+programLineage
+outputRoot
+```
+
+`bindings`必须且只能包含以下五个角色，每个角色都必须登记`identity`、项目逻辑相对`path`和文件原始字节`sha256`：
+
+1. `datasetRelease`；
+2. `modelArtifact`；
+3. `reviewContract`；
+4. `runtimeInterfaceContract`；
+5. `conditionContract`。
+
+Owner发布决定必须绑定相同`capabilityReleaseIdentity`、五类绑定集合的规范化`approvedBindingSetSha256`及`approvedPolicyContractSha256`。受信注册记录必须再次绑定能力发布文件、Owner发布决定、策略合同和绑定集合SHA。任何身份、路径、原始字节或状态不一致都必须失败关闭。
+
+正式验证顺序固定为：
+
+```text
+读取固定受信注册表
+-> 唯一定位 capabilityReleasePath
+-> 重新计算能力发布文件SHA-256
+-> 验证Schema、released状态和发布身份
+-> 读取并重算Runtime自治策略SHA-256
+-> 逐项读取并重算数据、模型、审核、Runtime和条件合同SHA-256
+-> 读取并重算Owner发布决定SHA-256
+-> 验证Owner批准的绑定集合与策略SHA
+-> 签发一次性内部任务票据
+-> 消费时再次计算ticketSha256并重新核对发布注册表
+```
+
+发布、撤销、替代和回退规则：
+
+- 当前受信注册表状态为`active_no_capability_release`且`releaseRecords`为空，因此不存在可运行的正式AI Painter能力；
+- 发布记录只能追加新身份或形成新的受信注册状态，不得修改能力发布文件原始字节；
+- 撤销必须把对应身份登记为`revoked`并保存撤销决定，撤销后不得签发新票据；
+- 能力替代必须生成新的`capabilityReleaseIdentity`，不得原地改写旧发布；
+- 回退只能指向仍处于受信、未撤销状态的历史能力发布身份，并生成新的不可变回退决定和原子正式指针；
+- 已签发票据在消费时发现注册表、发布文件或策略身份变化必须失败关闭，不得继续使用旧缓存；
+- 调用方提供`capabilityReleaseVerified=true`、自报SHA或复制旧票据均不构成发布证明。
+
 ## 13. 发布、RuntimeFrame 与回退
 
 ### 13.1 正式身份链与基数
@@ -412,8 +481,12 @@ AI Painter 正式能力必须同时满足：
 | 条件包与清单检查器 | [`scripts/check-current-world-visual-conditions.mjs`](../../scripts/check-current-world-visual-conditions.mjs) | 当前机器验证入口 |
 | 本地系统与外部执行边界 | [`data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json`](../../data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json) | 本地系统正式职责合同 |
 | 已发布能力版本运行自治状态机 | [`data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json`](../../data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json) | 正式运行自治合同 |
+| 能力发布受信注册表 | [`data/ai-painter/system-governance/ai-painter-capability-release-registry-v1.json`](../../data/ai-painter/system-governance/ai-painter-capability-release-registry-v1.json) | 当前无正式能力发布；未来发布必须登记不可变文件、真实SHA和Owner发布决定 |
+| 历史合同替代索引 | [`data/ai-painter/system-governance/contract-supersession-index-v1.json`](../../data/ai-painter/system-governance/contract-supersession-index-v1.json) | 保留历史原始字节用于复核，禁止历史合同授权新工作 |
 
-单次 `.runtime` 文件、聊天内容和外部评审不能登记为长期机器合同；它们只能证明某次执行。合同路径发生替换时，必须按 12.1 判断是否形成新的能力发布身份。
+单次 `.runtime` 文件、聊天内容和外部评审不能登记为长期机器合同；它们只能证明某次执行。合同路径发生替换时，必须按 12.1 判断是否形成新的能力发布身份。调用方提供的`verified=true`或格式正确的64位字符串不能证明能力已经发布；机器必须读取受信发布注册表和不可变发布文件，重算发布、Owner决定以及数据、模型、审核、Runtime和条件合同的SHA-256。内部任务票据在消费时必须重新计算自身SHA-256。
+
+仓库内文档与机器合同的一致性由`npm run check:ai-painter-document-contracts`和`.github/workflows/ai-painter-document-contracts.yml`共同验证；该入口不得依赖本机`.runtime`、Checkpoint或GPU。完整23通道数据与缩放行为仍由本地`npm run check:ai-painter-contract-semantic-alignment`验证。两类检查均不得把“合同检查通过”解释为“能力已经发布”或“模型训练通过”。
 
 ### 17.2 稳定需求编号与追踪规则
 

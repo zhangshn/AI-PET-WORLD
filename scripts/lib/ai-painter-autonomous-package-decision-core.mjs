@@ -1,6 +1,16 @@
 import { createHash } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 
 export const RUNTIME_AUTONOMY_CONTRACT_ID = "ai-painter-capability-runtime-autonomy-contract-v2";
+export const TRUSTED_RELEASE_REGISTRY_SCHEMA = "ai-painter-capability-release-registry-v1";
+export const TRUSTED_RELEASE_REGISTRY_PATH = "data/ai-painter/system-governance/ai-painter-capability-release-registry-v1.json";
+export const RUNTIME_AUTONOMY_POLICY_PATH = "data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json";
+export const CAPABILITY_RELEASE_SCHEMA = "ai-painter-capability-release-v1";
+export const OWNER_RELEASE_DECISION_SCHEMA = "ai-painter-capability-release-owner-decision-v1";
+export const REQUIRED_BINDING_ROLES = Object.freeze([
+  "datasetRelease", "modelArtifact", "reviewContract", "runtimeInterfaceContract", "conditionContract",
+]);
 
 export const RUNTIME_STATES = Object.freeze([
   "capability_release_bound", "preflight", "generating", "validating", "reviewing",
@@ -55,6 +65,8 @@ export const CAPABILITY_CHANGE_ACTIONS = Object.freeze(new Set([
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const SAFE_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,159}$/;
 const SAFE_RUNTIME_NAMESPACE_PATTERN = /^\.runtime\/ai-painter\/[a-zA-Z0-9._/-]+$/;
+const ACTIVE_POLICY_STATUSES = new Set(["policy_active_no_capability_release", "policy_active_with_capability_release"]);
+const ACTIVE_REGISTRY_STATUSES = new Set(["active_no_capability_release", "active_with_capability_release"]);
 
 function invariant(condition, message) { if (!condition) throw new Error(message); }
 
@@ -66,10 +78,17 @@ function canonicalize(value) {
   return value;
 }
 
+function deepFreeze(value) {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+  for (const child of Object.values(value)) deepFreeze(child);
+  return Object.freeze(value);
+}
+
 export function canonicalJson(value) { return JSON.stringify(canonicalize(value)); }
 
 export function sha256Of(value) {
-  return createHash("sha256").update(typeof value === "string" ? value : canonicalJson(value), "utf8").digest("hex");
+  const input = Buffer.isBuffer(value) ? value : Buffer.from(typeof value === "string" ? value : canonicalJson(value), "utf8");
+  return createHash("sha256").update(input).digest("hex");
 }
 
 function validateSha256(value, field) {
@@ -78,6 +97,45 @@ function validateSha256(value, field) {
 
 function validateSafeId(value, field) {
   invariant(typeof value === "string" && SAFE_ID_PATTERN.test(value), `${field} is invalid`);
+}
+
+function validateProjectRelativePath(relativePath, field) {
+  invariant(typeof relativePath === "string" && relativePath.length > 0, `${field} is required`);
+  invariant(!path.isAbsolute(relativePath) && !/^[a-zA-Z]:[\\/]/.test(relativePath), `${field} must be project-relative`);
+  invariant(!relativePath.includes("\\") && !relativePath.split("/").includes(".."), `${field} must be normalized without traversal`);
+  invariant(path.posix.normalize(relativePath) === relativePath, `${field} must be a normalized logical path`);
+}
+
+function resolveImmutableProjectFile(projectRoot, relativePath, field) {
+  validateProjectRelativePath(relativePath, field);
+  const root = path.resolve(projectRoot);
+  const resolved = path.resolve(root, relativePath);
+  invariant(resolved.startsWith(`${root}${path.sep}`), `${field} escapes project root`);
+  invariant(fs.existsSync(resolved) && fs.statSync(resolved).isFile(), `${field} does not identify an existing file`);
+  const physicalRoot = fs.realpathSync(root);
+  const physicalFile = fs.realpathSync(resolved);
+  invariant(physicalFile.startsWith(`${physicalRoot}${path.sep}`), `${field} resolves outside project root`);
+  return resolved;
+}
+
+function readImmutableFile(projectRoot, relativePath, field, expectedSha256 = null) {
+  const absolutePath = resolveImmutableProjectFile(projectRoot, relativePath, field);
+  const bytes = fs.readFileSync(absolutePath);
+  const sha256 = sha256Of(bytes);
+  if (expectedSha256 !== null) {
+    validateSha256(expectedSha256, `${field} SHA-256`);
+    invariant(sha256 === expectedSha256, `${field} SHA-256 mismatch`);
+  }
+  return { relativePath, absolutePath, bytes, sha256 };
+}
+
+function readImmutableJson(projectRoot, relativePath, field, expectedSha256 = null) {
+  const evidence = readImmutableFile(projectRoot, relativePath, field, expectedSha256);
+  let value;
+  try { value = JSON.parse(evidence.bytes.toString("utf8")); }
+  catch { throw new Error(`${field} is not valid JSON`); }
+  invariant(value && typeof value === "object" && !Array.isArray(value), `${field} must be a JSON object`);
+  return { ...evidence, value };
 }
 
 function validateProgramLineage(lineage) {
@@ -94,8 +152,7 @@ function validateEvidence(inputEvidence) {
   const identities = new Set();
   for (const evidence of inputEvidence) {
     invariant(evidence && typeof evidence === "object", "evidence entry must be an object");
-    invariant(typeof evidence.path === "string" && evidence.path.length > 0, "evidence path is required");
-    invariant(!evidence.path.includes("..") && !/^[a-zA-Z]:[\\/]/.test(evidence.path), "evidence path must be project-relative without parent traversal");
+    validateProjectRelativePath(evidence.path, "evidence path");
     validateSha256(evidence.sha256, "evidence sha256");
     const identity = `${evidence.path}\u0000${evidence.sha256}`;
     invariant(!identities.has(identity), "duplicate evidence identity");
@@ -105,12 +162,18 @@ function validateEvidence(inputEvidence) {
 
 export function validateRuntimeAutonomyPolicy(policy) {
   invariant(policy?.contractId === RUNTIME_AUTONOMY_CONTRACT_ID, "unexpected policy contractId");
-  invariant(policy?.status === "active_released_capability_runtime_policy", "runtime policy is not active");
+  invariant(ACTIVE_POLICY_STATUSES.has(policy?.status), "runtime policy is not active");
   invariant(policy?.authorityBoundary?.rootAuthority === "released_capability_identity", "released capability authority is required");
   invariant(policy?.authorityBoundary?.perTaskOwnerAuthorizationRequired === false, "per-task Owner authorization must be false");
   invariant(policy?.authorityBoundary?.perCandidateOwnerReviewRequired === false, "per-candidate Owner review must be false");
   invariant(policy?.authorityBoundary?.mayEscalateReleasedCapabilityPrivilege === false, "capability privilege escalation must be forbidden");
   invariant(policy?.authorityBoundary?.codexIsRequiredAtRuntime === false, "Codex must not be a runtime dependency");
+  invariant(policy?.capabilityReleaseVerification?.trustedRegistrySchemaVersion === TRUSTED_RELEASE_REGISTRY_SCHEMA, "trusted release registry schema mismatch");
+  invariant(policy?.capabilityReleaseVerification?.trustedRegistryPath === TRUSTED_RELEASE_REGISTRY_PATH, "trusted release registry path mismatch");
+  invariant(policy?.capabilityReleaseVerification?.releaseSchemaVersion === CAPABILITY_RELEASE_SCHEMA, "capability release schema mismatch");
+  invariant(policy?.capabilityReleaseVerification?.callerSuppliedVerifiedBooleanTrusted === false, "caller verification flags must not be trusted");
+  invariant(policy?.capabilityReleaseVerification?.ticketSha256RecomputedAtConsumption === true, "ticket integrity recheck is required");
+  invariant(canonicalJson(policy?.capabilityReleaseVerification?.requiredBindingRoles) === canonicalJson(REQUIRED_BINDING_ROLES), "required release binding roles mismatch");
   invariant(policy?.decisionRules?.engine === "deterministic_frozen_rule_engine", "decision engine must be deterministic");
   invariant(policy?.decisionRules?.freeFormModelDecisionAllowed === false, "free-form model decisions must be forbidden");
   for (const action of ["formal_inference.start", "runtime_frame.create", "world.enter"]) {
@@ -120,20 +183,88 @@ export function validateRuntimeAutonomyPolicy(policy) {
   return true;
 }
 
-export function validateReleasedCapabilityBinding(release, policySha256) {
-  invariant(release && typeof release === "object", "capability release is required");
-  validateSafeId(release.capabilityReleaseIdentity, "capabilityReleaseIdentity");
-  validateSha256(release.capabilityReleaseSha256, "capabilityReleaseSha256");
-  invariant(release.capabilityReleaseVerified === true, "capability release must be verified");
-  invariant(release.runtimeAutonomyPolicy?.contractId === RUNTIME_AUTONOMY_CONTRACT_ID, "capability release lacks runtime policy binding");
-  invariant(release.runtimeAutonomyPolicy?.contractSha256 === policySha256, "runtime policy SHA mismatch");
-  invariant(Array.isArray(release.runtimeAutonomyPolicy?.allowedInternalActions), "allowedInternalActions is required");
-  invariant(Number.isInteger(release.runtimeAutonomyPolicy?.maxInfrastructureRecoveryAttempts), "recovery attempt limit is required");
-  invariant(release.runtimeAutonomyPolicy.maxInfrastructureRecoveryAttempts >= 0, "recovery attempt limit must be non-negative");
+export function loadAndValidateReleasedCapabilityBinding({ projectRoot, capabilityReleasePath, trustedReleaseRegistryPath }) {
+  invariant(typeof projectRoot === "string" && projectRoot.length > 0, "projectRoot is required");
+  invariant(trustedReleaseRegistryPath === TRUSTED_RELEASE_REGISTRY_PATH, "untrusted capability release registry path rejected");
+  const registryEvidence = readImmutableJson(projectRoot, trustedReleaseRegistryPath, "trusted capability release registry");
+  const registry = registryEvidence.value;
+  invariant(registry.schemaVersion === TRUSTED_RELEASE_REGISTRY_SCHEMA, "trusted release registry schema mismatch");
+  invariant(registry.contractId === TRUSTED_RELEASE_REGISTRY_SCHEMA, "trusted release registry contractId mismatch");
+  invariant(ACTIVE_REGISTRY_STATUSES.has(registry.status), "trusted release registry is not active");
+  invariant(registry.trustBoundary?.callerSuppliedVerificationFlagsAccepted === false, "trusted registry accepts caller verification flags");
+  invariant(Array.isArray(registry.releaseRecords), "trusted release records are required");
+  validateProjectRelativePath(capabilityReleasePath, "capabilityReleasePath");
+  invariant(capabilityReleasePath.startsWith(`${registry.releaseRoot}/`), "capability release is outside the trusted release root");
+
+  const matchingRecords = registry.releaseRecords.filter((entry) => entry?.releasePath === capabilityReleasePath);
+  invariant(matchingRecords.length === 1, "capability release must have exactly one trusted registry record");
+  const registryRecord = matchingRecords[0];
+  validateSafeId(registryRecord.capabilityReleaseIdentity, "trusted capabilityReleaseIdentity");
+  invariant(registryRecord.status === "released_trusted", "capability release is not trusted and released");
+
+  const releaseEvidence = readImmutableJson(projectRoot, capabilityReleasePath, "capability release", registryRecord.releaseSha256);
+  const release = releaseEvidence.value;
+  invariant(release.schemaVersion === CAPABILITY_RELEASE_SCHEMA, "capability release schema mismatch");
+  invariant(release.status === "released", "capability release status is not released");
+  invariant(release.capabilityReleaseIdentity === registryRecord.capabilityReleaseIdentity, "capability release identity differs from trusted registry");
+  validateSafeId(release.modelCapabilityVersion, "modelCapabilityVersion");
+
+  const policyBinding = release.runtimeAutonomyPolicy;
+  invariant(policyBinding?.contractId === RUNTIME_AUTONOMY_CONTRACT_ID, "capability release lacks runtime policy binding");
+  invariant(policyBinding?.path === RUNTIME_AUTONOMY_POLICY_PATH, "capability release references an untrusted runtime policy path");
+  const policyEvidence = readImmutableJson(projectRoot, policyBinding.path, "runtime autonomy policy", policyBinding.sha256);
+  validateRuntimeAutonomyPolicy(policyEvidence.value);
+  invariant(policyEvidence.sha256 === registryRecord.policyContractSha256, "trusted registry policy SHA mismatch");
+  invariant(Array.isArray(policyBinding.allowedInternalActions), "allowedInternalActions is required");
+  invariant(policyBinding.allowedInternalActions.every((action) => policyEvidence.value.internalActionClasses.includes(action)), "release contains an action outside runtime policy");
+  invariant(Number.isInteger(policyBinding.maxInfrastructureRecoveryAttempts) && policyBinding.maxInfrastructureRecoveryAttempts >= 0, "recovery attempt limit is invalid");
+
+  invariant(release.bindings && typeof release.bindings === "object" && !Array.isArray(release.bindings), "capability release bindings are required");
+  invariant(canonicalJson(Object.keys(release.bindings).sort()) === canonicalJson([...REQUIRED_BINDING_ROLES].sort()), "capability release binding roles mismatch");
+  const verifiedBindings = {};
+  for (const role of REQUIRED_BINDING_ROLES) {
+    const binding = release.bindings[role];
+    invariant(binding && typeof binding === "object", `${role} binding is required`);
+    validateSafeId(binding.identity, `${role}.identity`);
+    const evidence = readImmutableFile(projectRoot, binding.path, `${role} binding`, binding.sha256);
+    verifiedBindings[role] = { identity: binding.identity, path: binding.path, sha256: evidence.sha256 };
+  }
+  const bindingSetSha256 = sha256Of(release.bindings);
+  invariant(bindingSetSha256 === registryRecord.bindingSetSha256, "trusted registry binding set SHA mismatch");
+
+  const decisionBinding = release.ownerReleaseDecision;
+  invariant(decisionBinding && typeof decisionBinding === "object", "Owner release decision binding is required");
+  invariant(decisionBinding.path === registryRecord.ownerReleaseDecisionPath, "Owner release decision path differs from trusted registry");
+  invariant(decisionBinding.sha256 === registryRecord.ownerReleaseDecisionSha256, "Owner release decision SHA differs from trusted registry");
+  const decisionEvidence = readImmutableJson(projectRoot, decisionBinding.path, "Owner release decision", decisionBinding.sha256);
+  const decision = decisionEvidence.value;
+  invariant(decision.schemaVersion === OWNER_RELEASE_DECISION_SCHEMA, "Owner release decision schema mismatch");
+  invariant(decision.status === "approved", "Owner release decision is not approved");
+  invariant(decision.capabilityReleaseIdentity === release.capabilityReleaseIdentity, "Owner decision release identity mismatch");
+  invariant(decision.approvedBindingSetSha256 === bindingSetSha256, "Owner decision did not approve the bound artifact set");
+  invariant(decision.approvedPolicyContractSha256 === policyEvidence.sha256, "Owner decision did not approve the runtime policy");
+
   validateProgramLineage(release.programLineage);
   invariant(typeof release.outputRoot === "string" && SAFE_RUNTIME_NAMESPACE_PATTERN.test(release.outputRoot), "outputRoot must be a project runtime namespace");
   invariant(!release.outputRoot.includes("..") && !release.outputRoot.includes("\\"), "outputRoot must be normalized");
-  return true;
+
+  return deepFreeze({
+    verificationStatus: "verified_from_immutable_release_and_trusted_registry",
+    capabilityReleasePath,
+    capabilityReleaseSha256: releaseEvidence.sha256,
+    trustedReleaseRegistryPath,
+    trustedReleaseRegistrySha256: registryEvidence.sha256,
+    policyPath: policyBinding.path,
+    policySha256: policyEvidence.sha256,
+    release,
+    verifiedBindings,
+    ownerReleaseDecisionPath: decisionBinding.path,
+    ownerReleaseDecisionSha256: decisionEvidence.sha256,
+  });
+}
+
+export function validateReleasedCapabilityBinding(options) {
+  return loadAndValidateReleasedCapabilityBinding(options);
 }
 
 export function classifyActionAuthority(action, context = {}) {
@@ -146,10 +277,11 @@ export function classifyActionAuthority(action, context = {}) {
 }
 
 export function deriveRuntimeCapabilityTicket({
-  capabilityRelease, policySha256, action, currentState, targetState, inputEvidence,
-  programLineage, outputNamespace, attemptNumber = 1, context = {}, issuedAt,
+  projectRoot, capabilityReleasePath, trustedReleaseRegistryPath, action, currentState, targetState,
+  inputEvidence, programLineage, outputNamespace, attemptNumber = 1, context = {}, issuedAt,
 }) {
-  validateReleasedCapabilityBinding(capabilityRelease, policySha256);
+  const verified = loadAndValidateReleasedCapabilityBinding({ projectRoot, capabilityReleasePath, trustedReleaseRegistryPath });
+  const capabilityRelease = verified.release;
   invariant(classifyActionAuthority(action, context) === "released_capability_internal_action", `action ${action} requires capability change or is forbidden`);
   invariant(capabilityRelease.runtimeAutonomyPolicy.allowedInternalActions.includes(action), `action ${action} is outside released capability scope`);
   invariant(RUNTIME_STATES.includes(currentState) && RUNTIME_STATES.includes(targetState), "unknown runtime state");
@@ -171,9 +303,13 @@ export function deriveRuntimeCapabilityTicket({
     schemaVersion: "ai-painter-runtime-capability-ticket-v2",
     ticketId: `rct-${sha256Of({ release: capabilityRelease.capabilityReleaseIdentity, action, currentState, targetState, inputEvidence, attemptNumber, outputNamespace }).slice(0, 24)}`,
     capabilityReleaseIdentity: capabilityRelease.capabilityReleaseIdentity,
-    capabilityReleaseSha256: capabilityRelease.capabilityReleaseSha256,
+    capabilityReleasePath: verified.capabilityReleasePath,
+    capabilityReleaseSha256: verified.capabilityReleaseSha256,
+    trustedReleaseRegistryPath: verified.trustedReleaseRegistryPath,
+    trustedReleaseRegistrySha256: verified.trustedReleaseRegistrySha256,
     policyContractId: RUNTIME_AUTONOMY_CONTRACT_ID,
-    policyContractSha256: policySha256,
+    policyContractPath: verified.policyPath,
+    policyContractSha256: verified.policySha256,
     action, currentState, targetState,
     inputEvidence: canonicalize(inputEvidence),
     programLineage: canonicalize(programLineage),
@@ -182,18 +318,35 @@ export function deriveRuntimeCapabilityTicket({
     singleUse: true,
     status: "issued_not_consumed",
   };
-  return { ...ticketBody, ticketSha256: sha256Of(ticketBody) };
+  return deepFreeze({ ...ticketBody, ticketSha256: sha256Of(ticketBody) });
 }
 
-export function applyRuntimeStateTransition(ticket, executionState) {
-  invariant(ticket?.status === "issued_not_consumed", "ticket is not consumable");
+export function validateRuntimeCapabilityTicketIntegrity(ticket) {
+  invariant(ticket && typeof ticket === "object" && !Array.isArray(ticket), "ticket is required");
+  validateSha256(ticket.ticketSha256, "ticketSha256");
+  const { ticketSha256, ...ticketBody } = ticket;
+  invariant(sha256Of(ticketBody) === ticketSha256, "ticket SHA-256 mismatch");
+  invariant(ticket.status === "issued_not_consumed", "ticket is not consumable");
+  invariant(ticket.singleUse === true && ticket.noPrivilegeEscalation === true, "ticket safety flags are invalid");
+  return true;
+}
+
+export function applyRuntimeStateTransition(ticket, executionState, { projectRoot } = {}) {
+  validateRuntimeCapabilityTicketIntegrity(ticket);
+  const verified = loadAndValidateReleasedCapabilityBinding({
+    projectRoot,
+    capabilityReleasePath: ticket.capabilityReleasePath,
+    trustedReleaseRegistryPath: ticket.trustedReleaseRegistryPath,
+  });
+  invariant(verified.capabilityReleaseSha256 === ticket.capabilityReleaseSha256, "ticket release SHA no longer matches trusted release");
+  invariant(verified.trustedReleaseRegistrySha256 === ticket.trustedReleaseRegistrySha256, "ticket registry SHA no longer matches trusted registry");
+  invariant(verified.policySha256 === ticket.policyContractSha256, "ticket policy SHA no longer matches trusted policy");
   invariant(executionState?.capabilityReleaseIdentity === ticket.capabilityReleaseIdentity, "ticket capability release mismatch");
   invariant(executionState?.currentState === ticket.currentState, "ticket current state mismatch");
   invariant(executionState?.consumedTicketIds instanceof Set, "executionState consumedTicketIds must be a Set");
   invariant(!executionState.consumedTicketIds.has(ticket.ticketId), "ticket replay rejected");
   executionState.consumedTicketIds.add(ticket.ticketId);
   executionState.currentState = ticket.targetState;
-  ticket.status = "consumed_once";
   return Object.freeze({
     schemaVersion: "ai-painter-runtime-capability-consumption-v2",
     ticketId: ticket.ticketId,

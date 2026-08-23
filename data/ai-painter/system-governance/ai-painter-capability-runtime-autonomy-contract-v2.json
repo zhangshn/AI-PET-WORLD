@@ -1,7 +1,7 @@
 {
   "schemaVersion": "ai-painter-capability-runtime-autonomy-contract-v2",
   "contractId": "ai-painter-capability-runtime-autonomy-contract-v2",
-  "status": "active_released_capability_runtime_policy",
+  "status": "policy_active_no_capability_release",
   "authorityBoundary": {
     "rootAuthority": "released_capability_identity",
     "projectOwnerBoundary": "capability_release_breaking_change_and_business_choice_only",
@@ -10,6 +10,24 @@
     "mayEscalateReleasedCapabilityPrivilege": false,
     "historicalPackagesMayBeUpgraded": false,
     "codexIsRequiredAtRuntime": false
+  },
+  "capabilityReleaseVerification": {
+    "trustedRegistryPath": "data/ai-painter/system-governance/ai-painter-capability-release-registry-v1.json",
+    "trustedRegistrySchemaVersion": "ai-painter-capability-release-registry-v1",
+    "releaseSchemaVersion": "ai-painter-capability-release-v1",
+    "releaseStatusRequired": "released",
+    "ownerReleaseDecisionSchemaVersion": "ai-painter-capability-release-owner-decision-v1",
+    "ownerReleaseDecisionRequired": "approved",
+    "requiredBindingRoles": [
+      "datasetRelease",
+      "modelArtifact",
+      "reviewContract",
+      "runtimeInterfaceContract",
+      "conditionContract"
+    ],
+    "readImmutableFilesAndRecomputeSha256": true,
+    "callerSuppliedVerifiedBooleanTrusted": false,
+    "ticketSha256RecomputedAtConsumption": true
   },
   "states": [
     "capability_release_bound",
@@ -75,8 +93,12 @@
   "internalCapabilityTicketRequiredFields": [
     "ticketId",
     "capabilityReleaseIdentity",
+    "capabilityReleasePath",
     "capabilityReleaseSha256",
+    "trustedReleaseRegistryPath",
+    "trustedReleaseRegistrySha256",
     "policyContractId",
+    "policyContractPath",
     "policyContractSha256",
     "action",
     "currentState",

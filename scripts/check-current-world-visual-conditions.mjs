@@ -1,4 +1,5 @@
 import crypto from "node:crypto"
+import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import sharp from "sharp"
@@ -34,6 +35,28 @@ check(JSON.stringify([...configuredDiscrete, ...configuredContinuous].sort()) ==
 check(modelSource.includes("def resize_typed_conditions"), "typed condition resize implementation missing")
 check(modelSource.includes('mode="nearest"'), "discrete nearest resize implementation missing")
 check(modelSource.includes('mode="bilinear"'), "continuous bilinear resize implementation missing")
+
+const resizeBehaviorScript = resolveProjectPath("ml/ai-painter/scripts/check_typed_condition_resize_behavior.py")
+const projectPython = resolveProjectPath("ml/ai-painter/.venv/Scripts/python.exe")
+let resizeBehavior = null
+if (fs.existsSync(projectPython) && fs.existsSync(resizeBehaviorScript)) {
+  const behaviorRun = spawnSync(projectPython, [resizeBehaviorScript], {
+    cwd: ROOT,
+    encoding: "utf8",
+    windowsHide: true,
+    timeout: 120_000,
+  })
+  check(behaviorRun.status === 0, `typed condition resize behavior failed: ${(behaviorRun.stderr || behaviorRun.stdout).trim()}`)
+  if (behaviorRun.status === 0) {
+    try { resizeBehavior = JSON.parse(behaviorRun.stdout) }
+    catch { check(false, "typed condition resize behavior report is not valid JSON") }
+  }
+} else {
+  check(false, "typed condition resize behavior checker or project Python is missing")
+}
+check(resizeBehavior?.discreteIntroducedInterpolation === false, "discrete resize behavior introduced interpolation")
+check(resizeBehavior?.continuousBilinearIntermediateObserved === true, "continuous bilinear behavior was not observed")
+check(resizeBehavior?.invalidTypePartitionRejected === true, "invalid channel type partition was not rejected")
 
 if (task && manifest && conditionPack) {
   check(manifest.schemaVersion === "complete-world-visual-condition-manifest-v1", "invalid condition manifest schema")
@@ -124,6 +147,7 @@ const result = {
     discreteChannels: configuredDiscrete,
     continuousChannels: configuredContinuous,
     resizeContract: modelConfig?.conditionResizeContract ?? null,
+    resizeBehavior,
   },
   failures,
 }

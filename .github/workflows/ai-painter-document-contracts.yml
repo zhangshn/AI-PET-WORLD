@@ -1,0 +1,50 @@
+name: AI Painter document contracts
+
+on:
+  pull_request:
+    paths:
+      - "AGENTS.md"
+      - "README.md"
+      - "docs/**"
+      - "data/ai-painter/system-governance/**"
+      - "scripts/check-ai-painter-document-governance.mjs"
+      - "scripts/check-ai-painter-contract-semantic-alignment.mjs"
+      - "scripts/check-ai-painter-autonomous-package-decision-core.mjs"
+      - "scripts/check-documentation-policy.mjs"
+      - "scripts/check-source-encoding.mjs"
+      - "scripts/lib/ai-painter-autonomous-package-decision-core.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ai-painter-document-contracts.yml"
+  push:
+    branches: [main]
+    paths:
+      - "AGENTS.md"
+      - "README.md"
+      - "docs/**"
+      - "data/ai-painter/system-governance/**"
+      - "scripts/check-ai-painter-document-governance.mjs"
+      - "scripts/check-ai-painter-contract-semantic-alignment.mjs"
+      - "scripts/check-ai-painter-autonomous-package-decision-core.mjs"
+      - "scripts/check-documentation-policy.mjs"
+      - "scripts/check-source-encoding.mjs"
+      - "scripts/lib/ai-painter-autonomous-package-decision-core.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ai-painter-document-contracts.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run check:ai-painter-document-contracts

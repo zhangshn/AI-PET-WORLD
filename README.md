@@ -1,8 +1,14 @@
 # AI-PET-WORLD
 
-更新时间：2026-08-03 11:12:09 +08:00
+更新时间：2026-08-24 07:35:09 +08:00
 
 状态：active-project-navigation
+
+文档版本：`AI-PET-WORLD-NAVIGATION-1.0`
+
+生效日期：`2026-08-24`
+
+批准状态：`active_internal_navigation`
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -16,6 +22,8 @@
 4. [本地自研AI能力与Codex职能迁移主体架构](docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md)
 5. [唯一模块计划表](docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md)
 6. 当前模块对应的一份正式规格
+
+AI Painter 当前正式合同、历史合同替代关系和能力发布信任链统一由其正式主体规格登记。历史合同保留原始字节用于复核，但不得授权新工作；受信能力发布注册表当前没有正式发布记录，因此正式推理、RuntimeFrame和进入世界保持失败关闭。
 
 ## 主要目录
 
@@ -32,8 +40,9 @@
 
 ```text
 npm run check:documentation-policy
+npm run check:ai-painter-document-contracts
 npm run check:encoding
 npx tsc --noEmit --incremental false
 ```
 
-`npm run build`不是只读检查：它会写入`.next`并在受保护事务中临时持有`.runtime`入口，因此必须提供与本次构建目标和命令绑定的可信Owner签名授权，并在首次写入前原子消费。
+`npm run build`不是只读检查：它会写入`.next`并在受保护事务中临时持有`.runtime`入口，因此属于研发写操作，必须绑定与本次能力变更范围和命令一致的可信Owner身份，并在首次写入前原子消费。已发布能力版本的日常生成与审核不适用该研发构建规则。

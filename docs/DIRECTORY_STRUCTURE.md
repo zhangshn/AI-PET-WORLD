@@ -1,8 +1,16 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-08-24 04:40:01 +08:00
+更新时间：2026-08-24 07:35:09 +08:00
 
 状态：active-directory-reference
+
+文档版本：`AI-PET-WORLD-DIRECTORY-1.0`
+
+生效日期：`2026-08-24`
+
+替代版本：`未登记（首次建立显式版本号）`
+
+批准状态：`active_internal_formal_standard`
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -205,7 +213,10 @@ original-image-library/<五类并行来源>
 ├─ complete-world-visual-bootstrap-inference/  # 每次完整候选、控制图和模型报告
 ├─ complete-world-visual-machine-reviews/      # CLIP、VJ-0、VJ-1、VJ-2正式机器审核
 ├─ complete-world-visual-foundation-batches/   # 自动多 seed 批次总账
-├─ autonomous-execution-packages/              # 能力版本、内部任务票据、状态转换与恢复证据
+├─ autonomous-execution-packages/              # 历史父授权包证据，仅用于旧运行复核
+├─ capability-runtime-executions/              # 已发布能力版本的当前运行状态
+├─ capability-runtime-tickets/                 # 已发布能力内部一次性任务票据与消费证据
+├─ capability-runtime-decisions/               # 冻结规则裁决与异常升级证据
 └─ training-process-ledger/                    # 中英文程序事件
 ```
 
@@ -215,6 +226,8 @@ original-image-library/<五类并行来源>
 |---|---|---|
 | 世界事实 | `data/` 或世界 Runtime 存储 | 先于视觉存在。 |
 | 视觉字典导出 | `data/world-visual-data-dictionary/` | 由字典文档导出，供程序读取。 |
+| AI Painter当前治理合同 | `data/ai-painter/system-governance/` | 保存长期业务、职责、Runtime自治、受信能力发布注册表及历史合同替代索引；历史合同保留原始字节但不得授权新任务。 |
+| AI Painter能力发布文件 | `data/ai-painter/capability-releases/<capabilityReleaseIdentity>/` | 保存不可变能力发布文件、Owner发布决定及其绑定；只有受信注册表登记且全部SHA复核通过的身份可进入正式运行。 |
 | 正式训练样本 | `data/world-samples/registry/<dictionaryVersion>/` | 只能由登记程序写入，保存原图、来源、许可、hash、审核和标签。 |
 | 不可变训练数据包 | `data/world-samples/dataset-packages/<packageId>/` | 保存四类 split、来源索引、字典/导演/任务/条件/审核快照和审计。 |
 | AI辅助冷启动数据包 | `data/world-samples/ai-assisted-cold-start-dataset-packages/<packageId>/` | 保存冷启动正式血缘；与通用包目录分工，不可由程序猜测替换。 |
