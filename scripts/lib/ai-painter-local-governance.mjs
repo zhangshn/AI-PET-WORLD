@@ -3,9 +3,18 @@ import fs from "node:fs"
 import path from "node:path"
 
 export const LOCAL_GOVERNANCE_CONTRACT_PATH =
-  "data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json"
+  "data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json"
 
-const ALLOWED_REQUEST_STATUSES = new Set([
+const NEW_REQUEST_STATUSES = new Set([
+  "waiting_owner_decision",
+  "waiting_capability_change",
+  "completed_waiting_capability_release",
+  "resolved_owner_approved",
+  "resolved_owner_rejected",
+  "cancelled_by_newer_decision",
+])
+
+const LEGACY_STORED_REQUEST_STATUSES = new Set([
   "waiting_owner_authorization",
   "waiting_owner_review",
   "owner_authorized_pending_execution",
@@ -13,6 +22,8 @@ const ALLOWED_REQUEST_STATUSES = new Set([
   "resolved_owner_rejected",
   "cancelled_by_newer_authority",
 ])
+
+const STORED_REQUEST_STATUSES = new Set([...NEW_REQUEST_STATUSES, ...LEGACY_STORED_REQUEST_STATUSES])
 
 export function readLocalGovernanceContract(root = process.cwd()) {
   const contractPath = path.resolve(root, LOCAL_GOVERNANCE_CONTRACT_PATH)
@@ -26,16 +37,21 @@ export function readLocalGovernanceContract(root = process.cwd()) {
 }
 
 export function validateLocalGovernanceContract(contract) {
-  assert(contract?.schemaVersion === "ai-painter-local-system-responsibility-contract-v1", "local governance schema mismatch")
+  assert(contract?.schemaVersion === "ai-painter-local-system-operating-responsibility-contract-v2", "local governance schema mismatch")
   assert(contract?.status === "active", "local governance contract is not active")
   assert(contract?.systemOfRecord?.authority === "local_ai_pet_world_program", "local program must remain the system of record")
   assert(contract?.systemOfRecord?.chatIsFormalEvidence === false, "chat must not be formal evidence")
   assert(contract?.systemOfRecord?.externalAgentMemoryIsFormalEvidence === false, "external agent memory must not be formal evidence")
-  assert(contract?.ownerActionRequestContract?.mustBeStoredLocallyBeforeWaiting === true, "owner action requests must be stored locally")
-  assert(contract?.ownerActionRequestContract?.mustEmitLocalProgramEvent === true, "owner action requests must emit local events")
-  assert(contract?.ownerActionRequestContract?.mustBeIndexedInLocalSqlite === true, "owner action requests must be indexed locally")
-  assert(contract?.externalEmployeeBoundary?.currentRole === "bounded_execution_and_verification_employee", "external employee current role mismatch")
-  assert(contract?.externalEmployeeBoundary?.targetRole === "verification_employee_only", "external employee target role mismatch")
+  assert(contract?.normalAutonomousRuntimePath?.requiresReleasedCapabilityIdentity === true, "released capability identity is required")
+  assert(contract?.normalAutonomousRuntimePath?.perTaskOwnerAuthorizationRequired === false, "normal runtime must not require per-task Owner authorization")
+  assert(contract?.normalAutonomousRuntimePath?.perCandidateOwnerReviewRequired === false, "normal runtime must not require per-candidate Owner review")
+  assert(contract?.normalAutonomousRuntimePath?.codexRequired === false, "Codex must not be required at runtime")
+  assert(contract?.exceptionEscalationPath?.mustPersistRequestBeforeWaiting === true, "owner decisions must be stored locally")
+  assert(contract?.exceptionEscalationPath?.mustEmitLocalProgramEvent === true, "owner decisions must emit local events")
+  assert(contract?.exceptionEscalationPath?.mustIndexLocalSqlite === true, "owner decisions must be indexed locally")
+  assert(contract?.ownerActionRequestContract?.legacyStatusesMayBeCreated === false, "legacy Owner authorization statuses must not be created")
+  assert(contract?.externalEmployeeBoundary?.currentRole === "bounded_implementation_and_verification_employee", "external employee current role mismatch")
+  assert(contract?.externalEmployeeBoundary?.targetRole === "read_only_monitor_and_verification_only", "external employee target role mismatch")
 }
 
 export function normalizeOwnerActionRequest(input, {
@@ -44,7 +60,7 @@ export function normalizeOwnerActionRequest(input, {
 } = {}) {
   assert(input?.schemaVersion === "ai-painter-owner-action-request-input-v1", "owner action request input schema mismatch")
   assert(/^[a-z0-9][a-z0-9-]{7,127}$/.test(input.requestId ?? ""), "owner action request id is invalid")
-  assert(ALLOWED_REQUEST_STATUSES.has(input.status), "owner action request status is invalid")
+  assert(NEW_REQUEST_STATUSES.has(input.status), "new owner decision request status is invalid or legacy")
   for (const field of [
     "subsystem",
     "ownerVisibleConclusionZh",
@@ -110,7 +126,7 @@ export function validateStoredOwnerActionRequest(record, { root = process.cwd() 
   assert(record?.schemaVersion === "ai-painter-owner-action-request-v1", "stored owner action request schema mismatch")
   assert(record?.generatedBy === "local_ai_pet_world_program", "owner action request was not generated by the local system")
   assert(record?.systemOfRecord === "local_immutable_files_plus_sqlite_index", "owner action request local system-of-record mismatch")
-  assert(ALLOWED_REQUEST_STATUSES.has(record?.status), "stored owner action request status is invalid")
+  assert(STORED_REQUEST_STATUSES.has(record?.status), "stored owner action request status is invalid")
   assert(record?.externalEmployeeBoundary?.decisionAuthority === false, "external employee gained decision authority")
   assert(record?.externalEmployeeBoundary?.systemOfRecord === false, "external employee gained system-of-record authority")
   assert(record?.evidence?.length > 0, "stored owner action request has no evidence")

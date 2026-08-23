@@ -1,6 +1,6 @@
 # AI-PET-WORLD 业务规则说明
 
-更新时间：2026-08-24 04:40:01 +08:00
+更新时间：2026-08-24 06:45:28 +08:00
 
 状态：long-term-business-reference
 
@@ -12,7 +12,7 @@ AI Painter 的完整地图原图同时承担三种身份：本地 AI 的正向�
 
 当前先生成静态完整世界画面，但条件包必须同时保存地表、可行走/碰撞、对象实例、水文、道路连接、生态季节及未来运动状态所需身份。RGB 负责表达世界事实，不能代替结构化 WorldFacts 和 23 通道。64 张容量样本的共同画风可以一致，但大体骨架、构图框架、构造语法、道路、水文、生态分区和对象组织不得复制、镜像、旋转或轻微变形复用。
 
-机器可读正式合同为 `data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json`。任何违反完整画幅、边界连接、动态准备或 64 组唯一性的 RGB 直接进入未通过，只能保留为负向学习证据，不得计入正样本容量。合同的具体版本哈希由机器注册表保存，不复制进本文。
+机器可读长期合同为 `data/ai-painter/system-governance/complete-map-world-business-contract-v3.json`。任何违反完整画幅、边界连接、动态准备或 64 组唯一性的 RGB 直接进入未通过，只能保留为负向学习证据，不得计入正样本容量。合同的具体版本哈希由机器注册表保存，不复制进本文。
 
 > 本文定义整个项目的长期业务，不是任务清单。模块范围与状态只从 `docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md` 读取。紫微斗数可以独立开发和维护，但其正式业务输出必须通过人格映射契约服务于 AI 管家。
 

@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "ai-painter-capability-runtime-autonomy-contract-v2",
+  "contractId": "ai-painter-capability-runtime-autonomy-contract-v2",
+  "status": "active_released_capability_runtime_policy",
+  "authorityBoundary": {
+    "rootAuthority": "released_capability_identity",
+    "projectOwnerBoundary": "capability_release_breaking_change_and_business_choice_only",
+    "perTaskOwnerAuthorizationRequired": false,
+    "perCandidateOwnerReviewRequired": false,
+    "mayEscalateReleasedCapabilityPrivilege": false,
+    "historicalPackagesMayBeUpgraded": false,
+    "codexIsRequiredAtRuntime": false
+  },
+  "states": [
+    "capability_release_bound",
+    "preflight",
+    "generating",
+    "validating",
+    "reviewing",
+    "adjudicating",
+    "publishing",
+    "completed",
+    "failed_closed",
+    "waiting_owner_decision",
+    "waiting_capability_change"
+  ],
+  "terminalStates": [
+    "completed",
+    "failed_closed",
+    "waiting_owner_decision",
+    "waiting_capability_change"
+  ],
+  "allowedTransitions": {
+    "capability_release_bound": ["preflight", "failed_closed", "waiting_capability_change"],
+    "preflight": ["preflight", "generating", "failed_closed", "waiting_owner_decision", "waiting_capability_change"],
+    "generating": ["generating", "validating", "failed_closed"],
+    "validating": ["validating", "reviewing", "failed_closed"],
+    "reviewing": ["reviewing", "adjudicating", "failed_closed"],
+    "adjudicating": ["adjudicating", "publishing", "failed_closed", "waiting_owner_decision"],
+    "publishing": ["publishing", "completed", "failed_closed"]
+  },
+  "internalActionClasses": [
+    "preflight.verify",
+    "formal_inference.start",
+    "execution.observe",
+    "validation.fixed_evidence",
+    "review.machine",
+    "adjudication.deterministic",
+    "runtime_frame.create",
+    "world.enter",
+    "terminal.complete",
+    "terminal.fail_closed",
+    "governance.sync",
+    "infrastructure.recover_bounded",
+    "owner.wait",
+    "capability_change.wait"
+  ],
+  "capabilityChangeRequiredActionClasses": [
+    "training.start_or_retry",
+    "optimizer.create",
+    "weights.modify",
+    "checkpoint.read_initialize_or_promote",
+    "model.change",
+    "loss.change",
+    "data_or_split.change",
+    "review_threshold.change",
+    "checkpoint_selection.change",
+    "program_lineage.change",
+    "model_family.create",
+    "business_route.change",
+    "evidence_source.change",
+    "condition_contract.change",
+    "runtime_interface.change"
+  ],
+  "internalCapabilityTicketRequiredFields": [
+    "ticketId",
+    "capabilityReleaseIdentity",
+    "capabilityReleaseSha256",
+    "policyContractId",
+    "policyContractSha256",
+    "action",
+    "currentState",
+    "targetState",
+    "inputEvidence",
+    "programLineage",
+    "outputNamespace",
+    "attemptNumber",
+    "noPrivilegeEscalation",
+    "singleUse",
+    "status",
+    "ticketSha256"
+  ],
+  "decisionRules": {
+    "engine": "deterministic_frozen_rule_engine",
+    "requiresCompleteEvidence": true,
+    "requiresExactlyOneMatchedOption": true,
+    "ambiguousTargetState": "waiting_owner_decision",
+    "freeFormModelDecisionAllowed": false
+  },
+  "infrastructureRecoveryBoundary": {
+    "capabilityReleaseMustDeclareMaximumAttempts": true,
+    "programLineageMustRemainIdentical": true,
+    "inputEvidenceMustRemainIdentical": true,
+    "mayNotChangeModelLossDataThresholdOrRuntimeContract": true
+  },
+  "storage": {
+    "executionState": ".runtime/ai-painter/capability-runtime-executions/<capabilityReleaseIdentity>/<executionId>/state.json",
+    "internalCapability": ".runtime/ai-painter/capability-runtime-tickets/<capabilityReleaseIdentity>/<ticketId>/",
+    "decisionRecord": ".runtime/ai-painter/capability-runtime-decisions/<capabilityReleaseIdentity>/<decisionId>/",
+    "mustUseProjectLogicalRelativePath": true,
+    "mustCreateWithoutOverwrite": true,
+    "mustIndexSqlite": true
+  }
+}

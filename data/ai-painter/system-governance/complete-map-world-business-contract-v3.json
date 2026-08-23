@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "complete-map-world-business-contract-v3",
+  "contractId": "ai-painter-complete-map-world-business-v3",
+  "status": "active_long_term_business_contract",
+  "effectiveFrom": "2026-08-24T06:30:00+08:00",
+  "businessIdentity": {
+    "product": "AI-PET-WORLD",
+    "visualSubsystem": "AI Painter",
+    "businessGoal": "generate_review_publish_and_render_a_complete_game_world_frame_from_authoritative_world_facts",
+    "notAllowedInterpretations": [
+      "decorative_map_card",
+      "isolated_diorama",
+      "floating_map_island",
+      "single_use_static_illustration"
+    ]
+  },
+  "authoritativeInputs": {
+    "required": [
+      "worldId",
+      "regionId",
+      "tick",
+      "factHash",
+      "VisualFactManifest",
+      "conditionPackagePath",
+      "conditionPackageSha256",
+      "datasetReleaseIdentity",
+      "modelCapabilityVersion",
+      "capabilityReleaseIdentity"
+    ],
+    "rgbMayReplaceStructuredWorldFacts": false,
+    "missingFactsMayBeInferred": false
+  },
+  "fullWorldFrame": {
+    "nativeWidth": 1024,
+    "nativeHeight": 768,
+    "everyPixelMustRepresentWorld": true,
+    "worldMustFillRectangularFrameEdgeToEdge": true,
+    "naturalBoundarySemantic": "dense_in_world_edge_ecology_not_external_background",
+    "forbidden": [
+      "alpha_or_transparent_void",
+      "external_solid_color_backdrop",
+      "floating_map_cutout",
+      "non_world_margin",
+      "tile_patch_or_sprite_composition",
+      "low_resolution_upscale_as_native_output",
+      "rule_program_drawing_as_model_rgb"
+    ]
+  },
+  "worldAndDynamicReadiness": {
+    "requiredSemantics": [
+      "terrain_surface_identity",
+      "walkable_and_collision_identity",
+      "object_instance_identity",
+      "hydrology_identity_when_present",
+      "route_and_region_connection_identity",
+      "ecology_and_season_identity",
+      "future_motion_state_reservation"
+    ],
+    "conditionContractMustBeVersioned": true,
+    "runtimeFrameInterfaceMustBeVersioned": true
+  },
+  "routeBoundaryContract": {
+    "requiredBoundarySideMustBeVisiblyTouched": true,
+    "uncontractedBoundarySidesForbidden": true,
+    "mirrorFlipRotateToFakeComplianceForbidden": true
+  },
+  "capacity64Uniqueness": {
+    "targetCount": 64,
+    "pairCount": 2016,
+    "allPairsMustBeDistinct": true,
+    "semanticTopologyContract": "data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json",
+    "sharedStyleDoesNotExemptContentUniqueness": true,
+    "sameMotifWithDifferentCoordinatesIsDuplicate": true,
+    "compareAgainstRejectedHistory": true
+  },
+  "releasedCapabilityRuntime": {
+    "normalPath": [
+      "bind_released_capability",
+      "generate",
+      "validate",
+      "machine_review",
+      "deterministic_adjudication",
+      "publish_or_fail_closed",
+      "runtime_frame_projection",
+      "record_terminal_and_governance"
+    ],
+    "perCandidateOwnerAuthorizationRequired": false,
+    "ownerDecisionRequiredFor": [
+      "capability_release_or_breaking_change",
+      "business_scope_change",
+      "non_unique_evidence_decision"
+    ]
+  },
+  "failurePolicy": {
+    "anyHardViolationIsDirectFailure": true,
+    "failedCandidateMustBeRetainedAsEvidence": true,
+    "failedCandidateMustNotBePublished": true,
+    "lastPublishedRuntimeFrameMustRemainAvailable": true
+  }
+}

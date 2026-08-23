@@ -1,6 +1,6 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-08-24 04:40:01 +08:00
+更新时间：2026-08-24 06:45:28 +08:00
 
 状态：long-term-architecture-reference
 
@@ -29,7 +29,7 @@
 
 Codex只作为受控执行与检查员工。当前允许它在本地程序已经锁定任务、范围和门禁后执行受控冷启动RGB、代码修复或对应检查；它不得成为系统编排器、长期记忆、正式证据源或授权机关。目标架构中，本地小AI负责完整判断和流程编排，Codex仅在收到具体任务时运行相应检查并把证据交回本地系统；移除Codex或丢失聊天历史不得破坏本地流程连续性。
 
-机器可读长期合同固定为`data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json`。异常升级的owner动作请求保存到`.runtime/ai-painter/owner-action-requests/<requestId>/request.json`，同时写入训练过程事件总账和D盘SQLite索引；它不是正常运行的必经步骤。`latest.json`只是查询指针。
+机器可读长期合同固定为`data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json`。已发布能力版本内由本地程序自主执行生成、验证、审核、发布或失败关闭；异常升级的Owner决策请求保存到`.runtime/ai-painter/owner-action-requests/<requestId>/request.json`，同时写入训练过程事件总账和D盘SQLite索引，它不是正常运行的必经步骤。`latest.json`只是查询指针。
 
 ## 0.1 V7 容量架构
 

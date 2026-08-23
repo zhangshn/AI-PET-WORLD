@@ -1,122 +1,75 @@
 import { createHash } from "node:crypto";
 
-export const AUTONOMOUS_PACKAGE_DECISION_CONTRACT_ID =
-  "ai-painter-autonomous-package-decision-contract-v1";
+export const RUNTIME_AUTONOMY_CONTRACT_ID = "ai-painter-capability-runtime-autonomy-contract-v2";
 
-export const AUTONOMOUS_PACKAGE_STATES = Object.freeze([
-  "parent_authorized_pending",
-  "preflight",
-  "executing",
-  "validating",
-  "reviewing",
-  "adjudicating",
-  "finalizing",
-  "completed",
-  "failed_closed",
-  "waiting_owner_decision",
-]);
-
-export const TERMINAL_STATES = Object.freeze([
-  "completed",
-  "failed_closed",
-  "waiting_owner_decision",
+export const RUNTIME_STATES = Object.freeze([
+  "capability_release_bound", "preflight", "generating", "validating", "reviewing",
+  "adjudicating", "publishing", "completed", "failed_closed", "waiting_owner_decision",
+  "waiting_capability_change",
 ]);
 
 export const ALLOWED_TRANSITIONS = Object.freeze({
-  parent_authorized_pending: Object.freeze(["preflight", "failed_closed"]),
-  preflight: Object.freeze(["preflight", "executing", "failed_closed", "waiting_owner_decision"]),
-  executing: Object.freeze(["executing", "validating", "failed_closed", "waiting_owner_decision"]),
-  validating: Object.freeze(["validating", "reviewing", "failed_closed", "waiting_owner_decision"]),
-  reviewing: Object.freeze(["reviewing", "adjudicating", "failed_closed", "waiting_owner_decision"]),
-  adjudicating: Object.freeze(["adjudicating", "finalizing", "failed_closed", "waiting_owner_decision"]),
-  finalizing: Object.freeze(["finalizing", "completed", "failed_closed"]),
+  capability_release_bound: Object.freeze(["preflight", "failed_closed", "waiting_capability_change"]),
+  preflight: Object.freeze(["preflight", "generating", "failed_closed", "waiting_owner_decision", "waiting_capability_change"]),
+  generating: Object.freeze(["generating", "validating", "failed_closed"]),
+  validating: Object.freeze(["validating", "reviewing", "failed_closed"]),
+  reviewing: Object.freeze(["reviewing", "adjudicating", "failed_closed"]),
+  adjudicating: Object.freeze(["adjudicating", "publishing", "failed_closed", "waiting_owner_decision"]),
+  publishing: Object.freeze(["publishing", "completed", "failed_closed"]),
 });
 
 export const INTERNAL_ACTION_TARGETS = Object.freeze({
-  "preflight.verify": Object.freeze(["parent_authorized_pending:preflight"]),
-  "execution.observe": Object.freeze(["executing:executing"]),
-  "validation.fixed_evidence": Object.freeze(["executing:validating", "validating:validating"]),
+  "preflight.verify": Object.freeze(["capability_release_bound:preflight"]),
+  "formal_inference.start": Object.freeze(["preflight:generating"]),
+  "execution.observe": Object.freeze(["generating:generating"]),
+  "validation.fixed_evidence": Object.freeze(["generating:validating", "validating:validating"]),
   "review.machine": Object.freeze(["validating:reviewing", "reviewing:reviewing"]),
   "adjudication.deterministic": Object.freeze(["reviewing:adjudicating", "adjudicating:adjudicating"]),
-  "finalization.write": Object.freeze(["adjudicating:finalizing", "finalizing:finalizing"]),
-  "terminal.complete": Object.freeze(["finalizing:completed"]),
+  "runtime_frame.create": Object.freeze(["adjudicating:publishing"]),
+  "world.enter": Object.freeze(["publishing:completed"]),
+  "terminal.complete": Object.freeze(["publishing:completed"]),
   "terminal.fail_closed": Object.freeze([
-    "parent_authorized_pending:failed_closed",
-    "preflight:failed_closed",
-    "executing:failed_closed",
-    "validating:failed_closed",
-    "reviewing:failed_closed",
-    "adjudicating:failed_closed",
-    "finalizing:failed_closed",
+    "capability_release_bound:failed_closed", "preflight:failed_closed", "generating:failed_closed",
+    "validating:failed_closed", "reviewing:failed_closed", "adjudicating:failed_closed",
+    "publishing:failed_closed",
   ]),
   "governance.sync": Object.freeze([
-    "preflight:preflight",
-    "executing:executing",
-    "validating:validating",
-    "reviewing:reviewing",
-    "adjudicating:adjudicating",
-    "finalizing:finalizing",
+    "preflight:preflight", "generating:generating", "validating:validating",
+    "reviewing:reviewing", "adjudicating:adjudicating", "publishing:publishing",
   ]),
-  "infrastructure.recover_pre_risk": Object.freeze(["preflight:preflight"]),
-  "owner.wait": Object.freeze([
-    "preflight:waiting_owner_decision",
-    "executing:waiting_owner_decision",
-    "validating:waiting_owner_decision",
-    "reviewing:waiting_owner_decision",
-    "adjudicating:waiting_owner_decision",
+  "infrastructure.recover_bounded": Object.freeze(["preflight:preflight"]),
+  "owner.wait": Object.freeze(["preflight:waiting_owner_decision", "adjudicating:waiting_owner_decision"]),
+  "capability_change.wait": Object.freeze([
+    "capability_release_bound:waiting_capability_change", "preflight:waiting_capability_change",
   ]),
 });
 
-export const OWNER_ONLY_ACTIONS = Object.freeze(new Set([
-  "gpu.start_unlisted",
-  "training.start_unlisted",
-  "training.retry_after_risk_boundary",
-  "optimizer.create_unlisted",
-  "weights.modify_unlisted",
-  "checkpoint.read_or_initialize_unlisted",
-  "checkpoint.promote",
-  "model.change",
-  "loss.change",
-  "data.change",
-  "split.change",
-  "review_threshold.change",
-  "checkpoint_selection.change",
-  "program_lineage.change",
-  "model_family.create",
-  "business_route.change",
-  "evidence_source.change",
-  "formal_inference.start",
-  "runtime_frame.create",
-  "world.enter",
+export const CAPABILITY_CHANGE_ACTIONS = Object.freeze(new Set([
+  "training.start_or_retry", "optimizer.create", "weights.modify",
+  "checkpoint.read_initialize_or_promote", "model.change", "loss.change",
+  "data_or_split.change", "review_threshold.change", "checkpoint_selection.change",
+  "program_lineage.change", "model_family.create", "business_route.change",
+  "evidence_source.change", "condition_contract.change", "runtime_interface.change",
 ]));
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const SAFE_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,159}$/;
 const SAFE_RUNTIME_NAMESPACE_PATTERN = /^\.runtime\/ai-painter\/[a-zA-Z0-9._/-]+$/;
 
-function invariant(condition, message) {
-  if (!condition) throw new Error(message);
-}
+function invariant(condition, message) { if (!condition) throw new Error(message); }
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]),
-    );
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
   }
   return value;
 }
 
-export function canonicalJson(value) {
-  return JSON.stringify(canonicalize(value));
-}
+export function canonicalJson(value) { return JSON.stringify(canonicalize(value)); }
 
 export function sha256Of(value) {
-  return createHash("sha256").update(
-    typeof value === "string" ? value : canonicalJson(value),
-    "utf8",
-  ).digest("hex");
+  return createHash("sha256").update(typeof value === "string" ? value : canonicalJson(value), "utf8").digest("hex");
 }
 
 function validateSha256(value, field) {
@@ -129,9 +82,8 @@ function validateSafeId(value, field) {
 
 function validateProgramLineage(lineage) {
   invariant(lineage && typeof lineage === "object" && !Array.isArray(lineage), "programLineage must be an object");
-  const entries = Object.entries(lineage);
-  invariant(entries.length > 0, "programLineage must not be empty");
-  for (const [role, digest] of entries) {
+  invariant(Object.keys(lineage).length > 0, "programLineage must not be empty");
+  for (const [role, digest] of Object.entries(lineage)) {
     validateSafeId(role, "programLineage role");
     validateSha256(digest, `programLineage.${role}`);
   }
@@ -151,129 +103,107 @@ function validateEvidence(inputEvidence) {
   }
 }
 
-export function validateAutonomousPackagePolicy(policy) {
-  invariant(policy && typeof policy === "object", "policy is required");
-  invariant(policy.contractId === AUTONOMOUS_PACKAGE_DECISION_CONTRACT_ID, "unexpected policy contractId");
-  invariant(policy.status === "cpu_supported_inactive", "policy must remain cpu_supported_inactive");
-  invariant(policy.authorityBoundary?.rootAuthority === "project_owner_signed_parent_package", "Owner parent authority is required");
-  invariant(policy.authorityBoundary?.internalCapabilityIsOwnerAuthorization === false, "internal capability must not be Owner authorization");
-  invariant(policy.authorityBoundary?.mayEscalateParentPrivilege === false, "privilege escalation must be forbidden");
-  invariant(policy.authorityBoundary?.historicalPackagesMayBeUpgraded === false, "historical upgrade must be forbidden");
-  invariant(policy.decisionRules?.engine === "deterministic_frozen_rule_engine", "decision engine must be deterministic");
-  invariant(policy.decisionRules?.freeFormModelDecisionAllowed === false, "free-form model decisions must be forbidden");
-  for (const [name, active] of Object.entries(policy.activationGates ?? {})) {
-    invariant(active === false, `activation gate ${name} must be false`);
+export function validateRuntimeAutonomyPolicy(policy) {
+  invariant(policy?.contractId === RUNTIME_AUTONOMY_CONTRACT_ID, "unexpected policy contractId");
+  invariant(policy?.status === "active_released_capability_runtime_policy", "runtime policy is not active");
+  invariant(policy?.authorityBoundary?.rootAuthority === "released_capability_identity", "released capability authority is required");
+  invariant(policy?.authorityBoundary?.perTaskOwnerAuthorizationRequired === false, "per-task Owner authorization must be false");
+  invariant(policy?.authorityBoundary?.perCandidateOwnerReviewRequired === false, "per-candidate Owner review must be false");
+  invariant(policy?.authorityBoundary?.mayEscalateReleasedCapabilityPrivilege === false, "capability privilege escalation must be forbidden");
+  invariant(policy?.authorityBoundary?.codexIsRequiredAtRuntime === false, "Codex must not be a runtime dependency");
+  invariant(policy?.decisionRules?.engine === "deterministic_frozen_rule_engine", "decision engine must be deterministic");
+  invariant(policy?.decisionRules?.freeFormModelDecisionAllowed === false, "free-form model decisions must be forbidden");
+  for (const action of ["formal_inference.start", "runtime_frame.create", "world.enter"]) {
+    invariant(policy.internalActionClasses?.includes(action), `${action} must be an internal released-capability action`);
+    invariant(!policy.capabilityChangeRequiredActionClasses?.includes(action), `${action} must not require a per-task capability change`);
   }
   return true;
 }
 
-export function validateParentPackageBinding(parentPackage, policySha256) {
-  invariant(parentPackage && typeof parentPackage === "object", "parentPackage is required");
-  validateSafeId(parentPackage.packageId, "parentPackage.packageId");
-  validateSha256(parentPackage.packageSha256, "parentPackage.packageSha256");
-  invariant(parentPackage.ownerAuthorizationVerified === true, "Owner parent authorization must be verified");
-  invariant(parentPackage.autonomousDecisionPolicy?.contractId === AUTONOMOUS_PACKAGE_DECISION_CONTRACT_ID, "parent package lacks autonomous policy binding");
-  invariant(parentPackage.autonomousDecisionPolicy?.contractSha256 === policySha256, "parent package policy SHA mismatch");
-  invariant(Array.isArray(parentPackage.autonomousDecisionPolicy?.allowedInternalActions), "allowedInternalActions is required");
-  invariant(Number.isInteger(parentPackage.autonomousDecisionPolicy?.maxInfrastructureRecoveryAttempts), "recovery attempt limit is required");
-  invariant(parentPackage.autonomousDecisionPolicy.maxInfrastructureRecoveryAttempts >= 0, "recovery attempt limit must be non-negative");
-  validateProgramLineage(parentPackage.programLineage);
-  invariant(typeof parentPackage.outputRoot === "string" && SAFE_RUNTIME_NAMESPACE_PATTERN.test(parentPackage.outputRoot), "parent outputRoot must be a project runtime namespace");
-  invariant(!parentPackage.outputRoot.includes("..") && !parentPackage.outputRoot.includes("\\"), "parent outputRoot must be normalized");
+export function validateReleasedCapabilityBinding(release, policySha256) {
+  invariant(release && typeof release === "object", "capability release is required");
+  validateSafeId(release.capabilityReleaseIdentity, "capabilityReleaseIdentity");
+  validateSha256(release.capabilityReleaseSha256, "capabilityReleaseSha256");
+  invariant(release.capabilityReleaseVerified === true, "capability release must be verified");
+  invariant(release.runtimeAutonomyPolicy?.contractId === RUNTIME_AUTONOMY_CONTRACT_ID, "capability release lacks runtime policy binding");
+  invariant(release.runtimeAutonomyPolicy?.contractSha256 === policySha256, "runtime policy SHA mismatch");
+  invariant(Array.isArray(release.runtimeAutonomyPolicy?.allowedInternalActions), "allowedInternalActions is required");
+  invariant(Number.isInteger(release.runtimeAutonomyPolicy?.maxInfrastructureRecoveryAttempts), "recovery attempt limit is required");
+  invariant(release.runtimeAutonomyPolicy.maxInfrastructureRecoveryAttempts >= 0, "recovery attempt limit must be non-negative");
+  validateProgramLineage(release.programLineage);
+  invariant(typeof release.outputRoot === "string" && SAFE_RUNTIME_NAMESPACE_PATTERN.test(release.outputRoot), "outputRoot must be a project runtime namespace");
+  invariant(!release.outputRoot.includes("..") && !release.outputRoot.includes("\\"), "outputRoot must be normalized");
   return true;
 }
 
 export function classifyActionAuthority(action, context = {}) {
-  if (OWNER_ONLY_ACTIONS.has(action)) return "owner_required";
+  if (CAPABILITY_CHANGE_ACTIONS.has(action)) return "capability_change_required";
   if (!(action in INTERNAL_ACTION_TARGETS)) return "denied_unknown_action";
-  if (context.programLineageChanged) return "owner_required";
-  if (context.modelChanged || context.lossChanged || context.dataChanged || context.splitChanged || context.reviewThresholdChanged || context.checkpointRuleChanged) {
-    return "owner_required";
-  }
-  if (action === "infrastructure.recover_pre_risk" && (
-    context.gpuStarted || context.optimizerCreated || context.weightsModified || context.trainingStarted
-  )) return "owner_required";
-  return "internal_capability_allowed";
+  if (context.modelChanged || context.lossChanged || context.dataChanged || context.splitChanged ||
+      context.reviewThresholdChanged || context.conditionContractChanged || context.runtimeInterfaceChanged ||
+      context.programLineageChanged) return "capability_change_required";
+  return "released_capability_internal_action";
 }
 
-export function deriveInternalCapabilityTicket({
-  parentPackage,
-  policySha256,
-  action,
-  currentState,
-  targetState,
-  inputEvidence,
-  programLineage,
-  outputNamespace,
-  attemptNumber = 1,
-  context = {},
-  issuedAt,
+export function deriveRuntimeCapabilityTicket({
+  capabilityRelease, policySha256, action, currentState, targetState, inputEvidence,
+  programLineage, outputNamespace, attemptNumber = 1, context = {}, issuedAt,
 }) {
-  validateParentPackageBinding(parentPackage, policySha256);
-  invariant(classifyActionAuthority(action, context) === "internal_capability_allowed", `action ${action} requires Owner or is forbidden`);
-  invariant(parentPackage.autonomousDecisionPolicy.allowedInternalActions.includes(action), `action ${action} is outside parent scope`);
-  invariant(AUTONOMOUS_PACKAGE_STATES.includes(currentState), "unknown current state");
-  invariant(AUTONOMOUS_PACKAGE_STATES.includes(targetState), "unknown target state");
+  validateReleasedCapabilityBinding(capabilityRelease, policySha256);
+  invariant(classifyActionAuthority(action, context) === "released_capability_internal_action", `action ${action} requires capability change or is forbidden`);
+  invariant(capabilityRelease.runtimeAutonomyPolicy.allowedInternalActions.includes(action), `action ${action} is outside released capability scope`);
+  invariant(RUNTIME_STATES.includes(currentState) && RUNTIME_STATES.includes(targetState), "unknown runtime state");
   invariant(INTERNAL_ACTION_TARGETS[action].includes(`${currentState}:${targetState}`), `action ${action} cannot perform requested transition`);
   invariant(ALLOWED_TRANSITIONS[currentState]?.includes(targetState), "state transition is not allowed");
   validateEvidence(inputEvidence);
   validateProgramLineage(programLineage);
-  invariant(canonicalJson(programLineage) === canonicalJson(parentPackage.programLineage), "program lineage differs from parent package");
+  invariant(canonicalJson(programLineage) === canonicalJson(capabilityRelease.programLineage), "program lineage differs from capability release");
   invariant(Number.isInteger(attemptNumber) && attemptNumber >= 1, "attemptNumber must be a positive integer");
-  if (action === "infrastructure.recover_pre_risk") {
-    invariant(attemptNumber <= parentPackage.autonomousDecisionPolicy.maxInfrastructureRecoveryAttempts, "infrastructure recovery attempt limit exceeded");
-  } else {
-    invariant(attemptNumber === 1, "non-recovery internal actions are single-attempt");
-  }
+  if (action === "infrastructure.recover_bounded") {
+    invariant(attemptNumber <= capabilityRelease.runtimeAutonomyPolicy.maxInfrastructureRecoveryAttempts, "infrastructure recovery attempt limit exceeded");
+  } else invariant(attemptNumber === 1, "non-recovery internal actions are single-attempt");
   invariant(typeof outputNamespace === "string" && SAFE_RUNTIME_NAMESPACE_PATTERN.test(outputNamespace), "outputNamespace must be a project runtime namespace");
   invariant(!outputNamespace.includes("..") && !outputNamespace.includes("\\"), "outputNamespace must be normalized");
-  invariant(outputNamespace.startsWith(`${parentPackage.outputRoot}/`), "outputNamespace is outside parent outputRoot");
+  invariant(outputNamespace.startsWith(`${capabilityRelease.outputRoot}/`), "outputNamespace is outside capability release outputRoot");
   invariant(typeof issuedAt === "string" && !Number.isNaN(Date.parse(issuedAt)), "issuedAt must be an ISO timestamp");
 
   const ticketBody = {
-    schemaVersion: "ai-painter-internal-capability-ticket-v1",
-    ticketId: `ict-${sha256Of({ parent: parentPackage.packageId, action, currentState, targetState, inputEvidence, attemptNumber, outputNamespace }).slice(0, 24)}`,
-    parentPackageId: parentPackage.packageId,
-    parentPackageSha256: parentPackage.packageSha256,
-    policyContractId: AUTONOMOUS_PACKAGE_DECISION_CONTRACT_ID,
+    schemaVersion: "ai-painter-runtime-capability-ticket-v2",
+    ticketId: `rct-${sha256Of({ release: capabilityRelease.capabilityReleaseIdentity, action, currentState, targetState, inputEvidence, attemptNumber, outputNamespace }).slice(0, 24)}`,
+    capabilityReleaseIdentity: capabilityRelease.capabilityReleaseIdentity,
+    capabilityReleaseSha256: capabilityRelease.capabilityReleaseSha256,
+    policyContractId: RUNTIME_AUTONOMY_CONTRACT_ID,
     policyContractSha256: policySha256,
-    action,
-    currentState,
-    targetState,
+    action, currentState, targetState,
     inputEvidence: canonicalize(inputEvidence),
     programLineage: canonicalize(programLineage),
-    outputNamespace,
-    attemptNumber,
-    issuedAt,
+    outputNamespace, attemptNumber, issuedAt,
     noPrivilegeEscalation: true,
     singleUse: true,
     status: "issued_not_consumed",
   };
-  return Object.freeze({ ...ticketBody, ticketSha256: sha256Of(ticketBody) });
+  return { ...ticketBody, ticketSha256: sha256Of(ticketBody) };
 }
 
-export function consumeInternalCapabilityTicket(ticket, executionState) {
+export function applyRuntimeStateTransition(ticket, executionState) {
   invariant(ticket?.status === "issued_not_consumed", "ticket is not consumable");
-  invariant(executionState?.packageId === ticket.parentPackageId, "ticket package mismatch");
+  invariant(executionState?.capabilityReleaseIdentity === ticket.capabilityReleaseIdentity, "ticket capability release mismatch");
   invariant(executionState?.currentState === ticket.currentState, "ticket current state mismatch");
   invariant(executionState?.consumedTicketIds instanceof Set, "executionState consumedTicketIds must be a Set");
   invariant(!executionState.consumedTicketIds.has(ticket.ticketId), "ticket replay rejected");
   executionState.consumedTicketIds.add(ticket.ticketId);
+  executionState.currentState = ticket.targetState;
+  ticket.status = "consumed_once";
   return Object.freeze({
-    schemaVersion: "ai-painter-internal-capability-consumption-v1",
+    schemaVersion: "ai-painter-runtime-capability-consumption-v2",
     ticketId: ticket.ticketId,
     ticketSha256: ticket.ticketSha256,
-    parentPackageId: ticket.parentPackageId,
+    capabilityReleaseIdentity: ticket.capabilityReleaseIdentity,
     fromState: ticket.currentState,
     toState: ticket.targetState,
     status: "consumed_once",
+    resultingState: executionState.currentState,
   });
-}
-
-export function applyAutonomousStateTransition(ticket, executionState) {
-  const consumption = consumeInternalCapabilityTicket(ticket, executionState);
-  executionState.currentState = ticket.targetState;
-  return Object.freeze({ ...consumption, resultingState: executionState.currentState });
 }
 
 export function adjudicateBoundedDecision({ decisionSetId, ruleVersion, optionIds, matchedOptionIds, evidenceReferences, evidenceComplete }) {
@@ -283,26 +213,18 @@ export function adjudicateBoundedDecision({ decisionSetId, ruleVersion, optionId
   invariant(new Set(optionIds).size === optionIds.length, "decision options must be unique");
   invariant(Array.isArray(matchedOptionIds), "matchedOptionIds must be an array");
   validateEvidence(evidenceReferences);
-  const unknownMatches = matchedOptionIds.filter((id) => !optionIds.includes(id));
-  invariant(unknownMatches.length === 0, "matched option is outside bounded decision set");
+  invariant(matchedOptionIds.every((id) => optionIds.includes(id)), "matched option is outside bounded decision set");
   const uniqueMatches = [...new Set(matchedOptionIds)];
   if (evidenceComplete !== true || uniqueMatches.length !== 1) {
     return Object.freeze({
-      decisionSetId,
-      ruleVersion,
-      status: "waiting_owner_decision",
-      matchedOption: null,
-      rejectedOptions: [],
-      reason: evidenceComplete !== true ? "evidence_incomplete" : "decision_not_unique",
+      decisionSetId, ruleVersion, status: "waiting_owner_decision", matchedOption: null,
+      rejectedOptions: [], reason: evidenceComplete !== true ? "evidence_incomplete" : "decision_not_unique",
       evidenceReferences: canonicalize(evidenceReferences),
     });
   }
   const matchedOption = uniqueMatches[0];
   return Object.freeze({
-    decisionSetId,
-    ruleVersion,
-    status: "uniquely_adjudicated",
-    matchedOption,
+    decisionSetId, ruleVersion, status: "uniquely_adjudicated", matchedOption,
     rejectedOptions: optionIds.filter((id) => id !== matchedOption),
     reason: "exactly_one_frozen_rule_option_matched",
     evidenceReferences: canonicalize(evidenceReferences),

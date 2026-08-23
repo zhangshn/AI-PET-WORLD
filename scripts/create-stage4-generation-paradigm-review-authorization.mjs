@@ -13,7 +13,7 @@ const EVIDENCE = Object.freeze({
   projectCpuReport: { path: ".runtime/ai-painter/stage4-capacity-route-exit-project-route-decisions/20260823-141357146/cpu-report.json", sha256: "7eabbc3bf3d74dba77ef0112d348549b873751e1e297ea6e7e9c3d5d3506839e" },
   businessSpec: { path: "docs/BUSINESS_SPEC.md", sha256: "12e96f54851ff2557f5ea64e03c1663c30232f3f32f059e0aefa5a3c710dd0db" },
   formalSpec: { path: "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", sha256: "8fde748d02d42d304e9725c28f9d492778e3cffed5c3db5f9993bb5aa6a8a58f" },
-  worldContract: { path: "data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json", sha256: "013f5a2f930bcc43d85f29d8166db4a06deaf337fa38fd5b87f5f3d46f11d0e4" },
+  worldContract: { path: "data/ai-painter/system-governance/complete-map-world-business-contract-v3.json", sha256: "02257d965fbcc46b8824de82759f65dc660d02663ac4a2f6e98cff44c89475d6" },
   original64Terminal: { path: ".runtime/ai-painter/stage4-original-64-contract-correction-audits/20260822-122347271/phase-terminal.json", sha256: "347a66bc0dc379f8d2531cb4cc9f34fd131adf810e45ec98675039fc31861cc1" },
   autoencoderTerminal: { path: ".runtime/ai-painter/stage4-frozen-autoencoder-semantic-retention-audits/20260822-125730775/phase-terminal.json", sha256: "a943a7eca3f19e4c3e2f1c3aca32f8fa4a225aa0cf175b77bf8e390f2a43c449" },
   gradientTerminal: { path: ".runtime/ai-painter/stage4-current-model-multisample-capacity-gradient-interference-diagnostics/20260822-130905113/phase-terminal.json", sha256: "f4ec93aaf924a8e8bc21483c09a14fedfd52e05436ec7f0014d9334b6f843e4e" },

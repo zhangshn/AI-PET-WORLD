@@ -1,6 +1,6 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-08-24 06:09:33 +08:00
+更新时间：2026-08-24 06:45:28 +08:00
 
 状态：active-long-term-module-specification
 
@@ -406,12 +406,12 @@ AI Painter 正式能力必须同时满足：
 
 | 合同角色 | 唯一路径 | 权威层级 |
 |---|---|---|
-| 完整地图与未来动态就绪业务合同 | [`data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json`](../../data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json) | 长期业务机器合同 |
+| 完整地图与未来动态就绪业务合同 | [`data/ai-painter/system-governance/complete-map-world-business-contract-v3.json`](../../data/ai-painter/system-governance/complete-map-world-business-contract-v3.json) | 长期业务机器合同 |
 | 64 份地图语义拓扑差异合同 | [`data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json`](../../data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json) | 数据发布机器合同 |
 | 当前 23 通道顺序、类型和缩放合同 | [`ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json`](../../ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json) | 当前能力版本实现合同 |
 | 条件包与清单检查器 | [`scripts/check-current-world-visual-conditions.mjs`](../../scripts/check-current-world-visual-conditions.mjs) | 当前机器验证入口 |
-| 本地系统与外部执行边界 | [`data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json`](../../data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json) | 本地系统职责合同 |
-| 包内自主决策状态机 | [`data/ai-painter/system-governance/ai-painter-autonomous-package-decision-contract-v1.json`](../../data/ai-painter/system-governance/ai-painter-autonomous-package-decision-contract-v1.json) | CPU 支持、尚未正式激活 |
+| 本地系统与外部执行边界 | [`data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json`](../../data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json) | 本地系统正式职责合同 |
+| 已发布能力版本运行自治状态机 | [`data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json`](../../data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json) | 正式运行自治合同 |
 
 单次 `.runtime` 文件、聊天内容和外部评审不能登记为长期机器合同；它们只能证明某次执行。合同路径发生替换时，必须按 12.1 判断是否形成新的能力发布身份。
 

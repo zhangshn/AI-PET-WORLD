@@ -50,10 +50,10 @@ data/ai-painter/*
 !data/ai-painter/system-governance/
 data/ai-painter/system-governance/*
 !data/ai-painter/system-governance/project-owner-trust-registry-v1.json
-!data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json
+!data/ai-painter/system-governance/complete-map-world-business-contract-v3.json
 !data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json
-!data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json
-!data/ai-painter/system-governance/ai-painter-autonomous-package-decision-contract-v1.json
+!data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json
+!data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json
 !data/live-world/
 !data/live-world/**
 !data/world-visual-data-dictionary/

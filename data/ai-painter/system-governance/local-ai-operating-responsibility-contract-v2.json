@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "ai-painter-local-system-operating-responsibility-contract-v2",
+  "contractId": "ai-painter-local-system-operating-responsibility-v2",
+  "status": "active",
+  "systemOfRecord": {
+    "authority": "local_ai_pet_world_program",
+    "evidence": "local_immutable_files",
+    "queryIndex": "local_sqlite_catalog",
+    "chatIsFormalEvidence": false,
+    "externalAgentMemoryIsFormalEvidence": false
+  },
+  "normalAutonomousRuntimePath": {
+    "requiresReleasedCapabilityIdentity": true,
+    "steps": [
+      "read_authoritative_world_facts_and_conditions",
+      "select_compatible_released_capability",
+      "generate_candidate",
+      "validate_and_machine_review",
+      "deterministically_publish_or_fail_closed",
+      "project_runtime_frame_when_published",
+      "persist_terminal_events_evidence_and_sqlite"
+    ],
+    "perTaskOwnerAuthorizationRequired": false,
+    "perCandidateOwnerReviewRequired": false,
+    "codexRequired": false
+  },
+  "exceptionEscalationPath": {
+    "ownerDecisionRequiredFor": [
+      "new_or_breaking_capability_release",
+      "model_loss_data_threshold_or_training_plan_change",
+      "checkpoint_promotion_or_cross_release_reuse",
+      "business_scope_change",
+      "evidence_incomplete_or_non_unique"
+    ],
+    "mustFailClosedBeforeEscalation": true,
+    "mustPersistRequestBeforeWaiting": true,
+    "mustEmitLocalProgramEvent": true,
+    "mustIndexLocalSqlite": true
+  },
+  "localAiResponsibilities": [
+    "operate_released_ai_painter_capability_without_chat_dependency",
+    "validate_input_capability_candidate_review_and_publish_identities",
+    "execute_generation_validation_review_adjudication_publish_or_fail_closed",
+    "recover_bounded_non_business_infrastructure_failures",
+    "preserve_last_published_runtime_frame_on_failure",
+    "persist_progress_terminal_evidence_events_and_sqlite",
+    "escalate_only_breaking_changes_business_choices_or_non_unique_evidence"
+  ],
+  "ownerActionRequestContract": {
+    "newStatuses": [
+      "waiting_owner_decision",
+      "waiting_capability_change",
+      "completed_waiting_capability_release",
+      "resolved_owner_approved",
+      "resolved_owner_rejected",
+      "cancelled_by_newer_decision"
+    ],
+    "legacyStatusesReadOnly": [
+      "waiting_owner_authorization",
+      "waiting_owner_review",
+      "owner_authorized_pending_execution",
+      "resolved_owner_authorized",
+      "resolved_owner_rejected",
+      "cancelled_by_newer_authority"
+    ],
+    "legacyStatusesMayBeCreated": false,
+    "mustBeStoredLocallyBeforeWaiting": true,
+    "mustEmitLocalProgramEvent": true,
+    "mustBeIndexedInLocalSqlite": true
+  },
+  "externalEmployeeBoundary": {
+    "appliesTo": [
+      "codex",
+      "other_external_intelligent_execution_agents"
+    ],
+    "currentRole": "bounded_implementation_and_verification_employee",
+    "targetRole": "read_only_monitor_and_verification_only",
+    "decisionAuthority": false,
+    "systemOfRecordAuthority": false,
+    "runtimeDependencyAllowed": false
+  }
+}

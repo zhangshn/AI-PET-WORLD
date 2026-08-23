@@ -12,7 +12,7 @@ import {
 const ROOT = process.cwd()
 const LATEST_PATH = path.join(ROOT, ".runtime", "ai-painter", "owner-action-requests", "latest.json")
 const REQUIRED_DOCUMENT_TEXT = [
-  "本地系统是正式判断、授权请求、审核状态和长期记忆的唯一载体",
+  "已发布能力版本内由本地程序自主执行生成、验证、审核、发布或失败关闭",
   "Codex只作为受控执行与检查员工",
   "owner-action-request",
 ]

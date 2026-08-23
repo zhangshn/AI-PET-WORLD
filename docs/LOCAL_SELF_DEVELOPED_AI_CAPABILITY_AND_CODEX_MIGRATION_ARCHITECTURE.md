@@ -1,6 +1,6 @@
 # AI-PET-WORLD 本地自研AI能力演进、任务执行与Codex职能迁移主体架构
 
-更新时间：2026-08-24 05:56:04 +08:00
+更新时间：2026-08-24 06:45:28 +08:00
 
 状态：active-subsystem-architecture
 
@@ -490,7 +490,8 @@ AI Painter的完整RGB只是世界视觉生产链的一项资产，不是动态�
 现有机器可读基础包括：
 
 - `data/ai-painter/system-governance/local-ai-capability-migration-registry-v1.json`
-- `data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json`
+- `data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json`
+- `data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json`
 - `data/ai-painter/system-governance/ai-painter-current-training-dashboard-contract-v1.json`
 
 只有当现有文件无法承载一个已获批准的长期职责时，才建立新的下级实施规格。当前待补空白优先是：通用任务合同、软件工程执行器安全合同、构建测试证据合同、跨模块能力成熟度注册表和Codex退出验收合同。本文的建立本身不授权创建这些文件或实现对应功能。

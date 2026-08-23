@@ -5,6 +5,9 @@ import sharp from "sharp"
 
 const ROOT = process.cwd()
 const failures = []
+const modelConfig = readJson("ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json")
+const modelSourcePath = resolveProjectPath("ml/ai-painter/src/ai_painter/complete_world/model.py")
+const modelSource = fs.readFileSync(modelSourcePath, "utf8")
 const latestTask = readJson(".runtime/ai-painter/world-visual-generation-task-packages/latest.json")
 const task = latestTask?.taskPath ? readJson(latestTask.taskPath) : null
 const taskDir = latestTask?.taskPath ? path.dirname(resolveProjectPath(latestTask.taskPath)) : null
@@ -16,6 +19,21 @@ check(Boolean(latestTask), "latest task pointer missing")
 check(Boolean(task), "latest task package missing")
 check(Boolean(manifest), "compiled condition manifest missing")
 check(Boolean(conditionPack), "compiled condition pack missing")
+check(modelConfig?.schemaVersion === "project-owned-complete-world-model-config-v1", "V7 model config missing or invalid")
+check(modelConfig?.conditionChannels === 23, "V7 condition channel count must be 23")
+check(modelConfig?.conditionResizeContract === "discrete_nearest_continuous_bilinear_v1", "V7 condition resize contract mismatch")
+
+const configuredOrder = modelConfig?.conditionChannelOrder ?? []
+const configuredDiscrete = modelConfig?.conditionChannelTypes?.discrete ?? []
+const configuredContinuous = modelConfig?.conditionChannelTypes?.continuous ?? []
+check(configuredOrder.length === 23 && new Set(configuredOrder).size === 23, "V7 condition order must contain 23 unique channels")
+check(new Set(configuredDiscrete).size === configuredDiscrete.length, "V7 discrete channel types contain duplicates")
+check(new Set(configuredContinuous).size === configuredContinuous.length, "V7 continuous channel types contain duplicates")
+check(configuredDiscrete.every((id) => !configuredContinuous.includes(id)), "V7 discrete and continuous channel types overlap")
+check(JSON.stringify([...configuredDiscrete, ...configuredContinuous].sort()) === JSON.stringify([...configuredOrder].sort()), "V7 channel types do not cover the complete order")
+check(modelSource.includes("def resize_typed_conditions"), "typed condition resize implementation missing")
+check(modelSource.includes('mode="nearest"'), "discrete nearest resize implementation missing")
+check(modelSource.includes('mode="bilinear"'), "continuous bilinear resize implementation missing")
 
 if (task && manifest && conditionPack) {
   check(manifest.schemaVersion === "complete-world-visual-condition-manifest-v1", "invalid condition manifest schema")
@@ -49,26 +67,13 @@ if (task && manifest && conditionPack) {
   check(conditionPack.bootstrapInferenceGate?.independentTrainingEligible === false, "historical bootstrap must be excluded from independent training")
   check(Array.isArray(conditionPack.unavailableChannels), "unavailable channel evidence missing")
 
-  const requiredChannels = [
-    "terrain_grass",
-    "terrain_water",
-    "terrain_path_ground",
-    "terrain_shoreline",
-    "terrain_natural_boundary",
-    "walkable",
-    "collision",
-    "object_footprints",
-    "object_instance",
-    "coordinate_x",
-    "coordinate_y",
-    "signed_distance_path",
-    "signed_distance_water",
-    "signed_distance_shoreline",
-    "signed_distance_object_ground",
-    "moisture_proximity",
-  ]
+  const requiredChannels = configuredOrder
+  const channelOrder = conditionPack.channels?.map((channel) => channel.id) ?? []
   const channelIds = new Set(conditionPack.channels?.map((channel) => channel.id) ?? [])
   for (const id of requiredChannels) check(channelIds.has(id), `required condition channel missing: ${id}`)
+  check(JSON.stringify(channelOrder) === JSON.stringify(configuredOrder), "condition channel order differs from the V7 contract")
+  check(channelIds.size === conditionPack.channels?.length, "condition channel ids must be unique")
+  check(manifest.channelCount === 23, "condition manifest must declare exactly 23 channels")
   check(manifest.channelCount === conditionPack.channels?.length, "condition channel count mismatch")
 
   for (const channel of conditionPack.channels ?? []) {
@@ -81,9 +86,14 @@ if (task && manifest && conditionPack) {
     check(metadata.width === 1024 && metadata.height === 768, `condition channel size mismatch: ${channel.id}`)
     check(metadata.space === "b-w", `condition channel must be single-channel grayscale: ${channel.id}`)
     check(channel.dtype === "uint8", `condition channel dtype mismatch: ${channel.id}`)
+    check(JSON.stringify(channel.valueRange) === JSON.stringify([0, 255]), `condition channel value range mismatch: ${channel.id}`)
     check(JSON.stringify(channel.shape) === JSON.stringify([1, 768, 1024]), `condition channel shape mismatch: ${channel.id}`)
     check(Number.isInteger(channel.statistics?.minimum), `condition channel statistics missing: ${channel.id}`)
     check(Number.isInteger(channel.statistics?.maximum), `condition channel statistics missing: ${channel.id}`)
+    check(channel.statistics?.minimum >= 0 && channel.statistics?.minimum <= 255, `condition channel minimum out of range: ${channel.id}`)
+    check(channel.statistics?.maximum >= 0 && channel.statistics?.maximum <= 255, `condition channel maximum out of range: ${channel.id}`)
+    check(channel.statistics?.minimum <= channel.statistics?.maximum, `condition channel statistics are inverted: ${channel.id}`)
+    check(configuredDiscrete.includes(channel.id) || configuredContinuous.includes(channel.id), `condition channel type missing from V7 contract: ${channel.id}`)
   }
 
   for (const id of ["terrain_grass", "terrain_water", "terrain_path_ground", "terrain_shoreline", "walkable", "collision", "object_footprints"]) {
@@ -107,6 +117,14 @@ const result = {
   inferenceEligible: manifest?.inferenceEligible ?? false,
   inferenceBlockers: manifest?.inferenceBlockers ?? [],
   outputKind: manifest?.outputKind ?? null,
+  conditionContract: {
+    configPath: "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json",
+    channelCount: modelConfig?.conditionChannels ?? null,
+    channelOrder: configuredOrder,
+    discreteChannels: configuredDiscrete,
+    continuousChannels: configuredContinuous,
+    resizeContract: modelConfig?.conditionResizeContract ?? null,
+  },
   failures,
 }
 
