@@ -1,0 +1,119 @@
+{
+  "schemaVersion": "complete-map-semantic-topology-diversity-contract-v1",
+  "status": "active_owner_authorized",
+  "effectiveAt": "2026-08-01T12:00:00+08:00",
+  "ownerAuthorizationId": "owner-authorized-thailand-rebuild64-semantic-topology-diversity-upgrade-20260801",
+  "businessPurpose": [
+    "local_ai_training_original",
+    "future_game_world_visual_baseline",
+    "future_dynamic_world_topology_baseline"
+  ],
+  "coreRule": {
+    "uniqueMeasurementWindowIsNecessaryButNotSufficient": true,
+    "uniqueHashIsNecessaryButNotSufficient": true,
+    "differentCoordinatesDoNotProveDifferentTopology": true,
+    "sameSemanticMotifWithMinorDeformationIsDuplicate": true,
+    "all64MustBeSemanticallyDistinct": true,
+    "rejectedHistoryMustRemainDuplicateNegativeEvidence": true
+  },
+  "routeSignature": {
+    "requiredFields": [
+      "contracted_entry_side",
+      "boundary_contact_sequence",
+      "span_axis_class",
+      "origin_band_class",
+      "major_turn_sequence",
+      "major_bend_count",
+      "turning_direction_pattern",
+      "route_water_relation_sequence",
+      "route_topology_family"
+    ],
+    "forbiddenEquivalence": [
+      "same_signature_with_coordinate_jitter",
+      "same_signature_with_width_or_texture_change",
+      "mirror_or_rotation",
+      "minor_curve_deformation"
+    ]
+  },
+  "waterAndShorelineSignature": {
+    "requiredFields": [
+      "water_presence",
+      "boundary_inlet_outlet_pattern",
+      "main_channel_count",
+      "network_connection_mode",
+      "divergence_count",
+      "rejoin_count",
+      "divergence_rejoin_order",
+      "branch_side_sequence",
+      "island_count_and_shape_class",
+      "tributary_confluence_count",
+      "distributary_count",
+      "backwater_count_and_longitudinal_class",
+      "dominant_axis",
+      "major_bend_sequence",
+      "shoreline_enclosure_pattern"
+    ],
+    "minimumWaterSetRule": "when a 64-set contains multiple water maps, each water map must use a different semantic network connection mode; branch side or backwater count alone cannot make two anabranch-rejoin maps distinct"
+  },
+  "completeSkeletonSignature": {
+    "requiredFields": [
+      "route_signature",
+      "water_and_shoreline_signature",
+      "route_water_relationship",
+      "ecological_zone_adjacency",
+      "dominant_open_closed_space_arrangement",
+      "major_object_cluster_arrangement"
+    ],
+    "exactSignatureDuplicatesAllowed": false,
+    "sameLargeFrameworkWithDifferentSmallObjectsAllowed": false
+  },
+  "gates": {
+    "beforeRgb": [
+      "compare_with_all_current_64_condition_packages",
+      "compare_with_all_machine_rejected_and_owner_rejected_history",
+      "reject_exact_semantic_route_signature_duplicate",
+      "reject_exact_semantic_water_signature_duplicate",
+      "reject_same_water_network_mode_in_current_multi_water_set",
+      "reject_same_complete_skeleton_motif_even_when_pixel_iou_is_below_old_threshold"
+    ],
+    "afterRgb": [
+      "retain_pixel_and_style_novelty_checks",
+      "retain_semantic_topology_identity_check",
+      "direct_failure_on_any_hard_violation"
+    ]
+  },
+  "candidatePreflight": {
+    "mustUseCandidateSpecificConnectivity": true,
+    "mustUseCandidateSpecificWaterStartEndAndHalfWidths": true,
+    "mustAuditMainChannelAndEveryInternalBranch": true,
+    "mustAuditShorelineDerivedFromTheSameAcceptedWaterGeometry": true,
+    "mustAuditRouteAgainstTheCompleteAcceptedWaterAndShorelineGeometry": true,
+    "mustUseTheSameCompositionRevisionAsFormalBuild": true,
+    "fixedFallbackWaterStartEndOrWidthsAllowed": false,
+    "reuseCurrentSlotConnectivityForAnotherCandidateAllowed": false,
+    "mainChannelOnlyPreflightAllowed": false,
+    "formalBuildMustRetainUnchangedWaterAndRouteThresholds": true,
+    "candidateSearchCapacityMayExpandOnlyByMeasurementDerivedAnonymousFreeSpaceCandidates": true,
+    "candidateSearchExpansionMustNotRelaxCollisionBoundarySpanOrNaturalnessGates": true
+  },
+  "allHistoryComparison": {
+    "compareAgainstOwnOldRecordOnly": false,
+    "compareAgainstEveryChronologyEligibleCompleteMap": true,
+    "referenceClasses": [
+      "owner_approved",
+      "pending_review",
+      "machine_rejected",
+      "owner_rejected",
+      "owner_rejected_composition_duplicate"
+    ],
+    "aWindowPreviouslyUsedByAnotherRejectedSlotCanStillCauseDuplicate": true,
+    "zeroMatchedHistoricalRecordIdsRequired": true
+  },
+  "failurePolicy": {
+    "existingAffectedRgbMustEnterFailedGroup": true,
+    "failedRgbMustNotCountAsPositiveCapacity": true,
+    "failedRgbMustNotBeDeleted": true,
+    "correctedPackageMustUseDistinctRealMeasurementEvidence": true,
+    "rgbCannotStartUntilCorrectedPackagePassesAllPreflightGates": true
+  }
+}
