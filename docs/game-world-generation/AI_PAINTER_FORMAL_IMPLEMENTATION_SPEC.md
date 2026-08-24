@@ -1,16 +1,16 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-08-24 07:35:09 +08:00
+更新时间：2026-08-24 09:48:00 +08:00
 
 状态：active-long-term-module-specification
 
-文档版本：`AI-PAINTER-SPEC-1.2`
+文档版本：`AI-PAINTER-SPEC-1.3`
 
 生效日期：`2026-08-24`
 
-替代版本：`AI-PAINTER-SPEC-1.1`
+替代版本：`AI-PAINTER-SPEC-1.2`
 
-批准状态：`active_internal_formal_standard`
+文档状态：`active_internal_formal_standard`
 
 生效范围：AI-PET-WORLD 项目内部正式架构与能力合同
 
@@ -52,9 +52,9 @@ AI Painter 文档和程序必须明确区分以下三层：
 |---|---|---|
 | 业务能力层 | 根据世界事实生成、审核、发布完整地图 | 是 |
 | 能力实现层 | 模型家族、组件划分、训练范式、Checkpoint与资源策略 | 可版本化替换 |
-| 研发变更控制层 | 代码、模型、Loss、数据、阈值、训练和正式发布的测试门禁 | 只约束研发变更 |
+| 能力演进控制层 | 代码、模型、Loss、数据、审核、训练和正式发布的版本化机器门禁 | 约束本地AI自主演进，不表示人工审批 |
 
-正式业务运行不得依赖 Codex 会话、聊天历史或逐步骤人工授权。研发阶段对模型、数据、训练、阈值和发布版本的高风险变更仍受项目治理约束，但该约束不能被描述成 AI Painter 每生成一张地图都需要人工许可。
+正式业务运行和能力演进不得依赖 Codex 会话、聊天历史、Owner签名或逐步骤人工授权。本地AI对模型、数据、训练、审核实现和发布版本的变更仍必须通过隔离版本、回归、资源、安全和发布机器门，但机器治理不能被描述成人工许可。
 
 ## 3. 权威输入合同
 
@@ -172,7 +172,7 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 
 ### 6.3 per_class_object_semantic_realization
 
-负责 footprints、tree、rock、vegetation 的逐类空间语义、接地、遮挡、尺度和视觉可辨识性。不得改变批准对象掩码或跨类别替换来源。
+负责 footprints、tree、rock、vegetation 的逐类空间语义、接地、遮挡、尺度和视觉可辨识性。不得改变权威对象掩码或跨类别替换来源。
 
 ### 6.4 global_visual_harmonization_and_native_complete_rgb_decode
 
@@ -186,7 +186,7 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 |---|---|---|---|---|---|---|---|---|---|
 | AP-PHASE-001 | `authoritative_world_structure_binding` | 世界事实、Manifest、条件包 | 权威结构绑定证据 | world/region/tick/fact/condition/capability | 绑定成功 / 失败关闭 | 仅新增证据 | 修改世界事实、条件或 Manifest | 不适用 | schema、路径、哈希和身份一致性 |
 | AP-PHASE-002 | `terrain_route_hydrology_spatial_realization` | 同包结构绑定输出 | 地形、道路、水文空间输出 | 同包前序终态与输出 SHA-256 | 阶段成功 / 失败关闭 | 当前阶段参数与输出 | 修改权威拓扑、跨包消费 | 当前阶段独立身份 | 道路、水文、岸线、通行和边界 |
-| AP-PHASE-003 | `per_class_object_semantic_realization` | 同包地形阶段输出、批准对象掩码 | 逐类对象语义输出 | 同包前序终态、掩码和条件身份 | 阶段成功 / 失败关闭 | 当前阶段参数与输出 | 修改掩码、跨类替换、跨包消费 | 当前阶段独立身份 | footprints/tree/rock/vegetation 逐类语义 |
+| AP-PHASE-003 | `per_class_object_semantic_realization` | 同包地形阶段输出、权威对象掩码 | 逐类对象语义输出 | 同包前序终态、掩码和条件身份 | 阶段成功 / 失败关闭 | 当前阶段参数与输出 | 修改掩码、跨类替换、跨包消费 | 当前阶段独立身份 | footprints/tree/rock/vegetation 逐类语义 |
 | AP-PHASE-004 | `global_visual_harmonization_and_native_complete_rgb_decode` | 同包对象阶段输出 | 原生完整 RGB 候选 | 同包前序终态、输出和能力身份 | 阶段成功 / 失败关闭 | 当前阶段参数、RGB 与证据 | 消除前序语义、拼接、放大、改事实 | 当前阶段独立身份 | 专业画面、事实对齐和完整地图审核 |
 
 当前四阶段接口的 CPU 未激活实现证据保存在 `.runtime/ai-painter/stage4-staged-interface-evidence-support/`，它只证明某次实现，不是长期权威合同。正式程序物化接口时，必须从本节和能力版本生成一个版本化机器合同；不得引用某个历史 run 目录作为永久 schema。
@@ -205,7 +205,7 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 
 ## 8. 数据合同
 
-当前批准数据容量为 64 份，固定划分为：
+当前登记合格数据容量为 64 份，固定划分为：
 
 | split | 数量 | 用途 |
 |---|---:|---|
@@ -237,7 +237,7 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 
 当前能力实现使用 12 通道潜变量、四倍 Autoencoder 空间关系和项目登记的 Autoencoder。具体活动值只从当前能力配置和机器证据读取；本文不固定当前基础宽度、模型候选或训练运行身份。
 
-失败 Checkpoint 只能保存身份和证据；除非新的正式变更范围明确批准，否则不得加载、复用、晋级或作为初始化。
+失败 Checkpoint 只能保存身份和证据；不得加载、复用、晋级或作为初始化。只有从非失败父资产启动的全新隔离能力版本可以继续研发。
 
 ## 10. 自动验证与机器审核
 
@@ -258,13 +258,9 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 
 机器审核是已发布 AI Painter 能力版本的正式运行门，不是给 Owner 看的临时建议。审核规则、阈值和来源必须版本化、可复现、可追溯；审核器不得以自己的结果作为训练目标，也不得为通过而降低阈值。
 
-Owner 或项目治理只在以下层级介入：
+Owner只在以下层级介入：调整长期业务目标；暂停或紧急覆盖系统；处理外部许可、付费服务和不可恢复破坏性操作。本地AI自行提出和验证能力版本、模型家族、数据版本、审核实现与训练计划，并由机器发布门决定发布或回退。
 
-- 批准新的能力版本、模型家族、数据版本、阈值版本或业务范围；
-- 处理机器证据不能唯一裁决的真实业务选择；
-- 对冷启动阶段的能力发布进行阶段性验收。
-
-正式能力版本发布后，单次地图的生成、审核、发布、回退和记录不应依赖逐次人工授权。
+任何能力版本及单次地图的训练、生成、审核、发布、回退和记录都不得依赖逐次人工授权。证据不能唯一裁决时，当前路线失败关闭；本地系统只能进入合同已声明的替代路线，不能伪造结论。
 
 详细审核、存储和状态投影规则见 [审核、自动闭环与存储正式规格](REVIEW_AUTOMATION_AND_STORAGE_SPEC.md)。
 
@@ -279,7 +275,7 @@ AI Painter 的正常执行主体是本地自研 AI 与本地程序。其原生�
 - 在合同允许的次数和状态内恢复非业务性基础设施故障；
 - 发布合格候选，拒绝不合格候选并保持上一正式版本；
 - 写入任务胶囊、事件账本、SQLite、资源遥测和进度状态；
-- 在证据不足或涉及业务范围变化时升级为 Owner 决策。
+- 在证据不足时失败关闭当前路线；触及长期业务或外部边界时生成业务边界报告。
 
 内部任务票据只承担幂等、防重、状态转换和证据追溯，不代表从 Owner 借来的权限，也不能扩大当前能力版本的边界。
 
@@ -287,7 +283,7 @@ Codex 可以在研发阶段承担代码建设、复杂诊断和有界修复，�
 
 ## 12. 研发变更控制
 
-以下是能力版本变更，不是日常运行步骤：
+以下是独立能力版本变更，不是当前运行实例可以静默修改的参数：
 
 - 修改模型结构、Loss、权重策略或训练计划；
 - 修改 64 份数据、48/8/4/4 划分或来源资格；
@@ -295,35 +291,41 @@ Codex 可以在研发阶段承担代码建设、复杂诊断和有界修复，�
 - 启动新的训练路线、重试真实视觉失败训练或晋级 Checkpoint；
 - 改变 RuntimeFrame、正式推理或进入世界的发布边界。
 
-这些变更必须形成独立版本、范围、回归、证据和发布决定。CPU 检查、只读分析、自动审核、失败记录、控制台显示和同一不可变证据上的幂等恢复不应被拆成重复人工授权。
+这些变更必须形成独立版本、范围、回归、证据和机器发布决定。本地AI可以自主建立并执行该版本；CPU检查、只读分析、自动审核、失败记录、控制台显示和同一不可变证据上的幂等恢复更不得被拆成人工授权。
 
 ### 12.1 重大能力版本变更的机器判定
 
-以下任一变化都必须判定为重大变更，进入 `completed_waiting_capability_release`，不得由运行实例自动继续：
+以下任一变化都必须判定为重大变更，当前运行实例进入 `capability_change_required`；本地能力生命周期编排器必须建立隔离的新版本并重新完成全部机器资格，不得在原实例内继续：
 
 - **AP-CHANGE-001**：模型家族、责任阶段划分、共享/隔离参数边界或输出瓶颈改变；
 - **AP-CHANGE-002**：23 通道的数量、顺序、名称、类型、数值语义、范围、重采样或缺失值规则改变；
 - **AP-CHANGE-003**：Autoencoder 身份、结构、潜变量合同或冻结状态改变；
-- **AP-CHANGE-004**：数据来源谱系、批准容量、split 用途或 `datasetReleaseIdentity` 改变；
+- **AP-CHANGE-004**：数据来源谱系、登记容量、split 用途或 `datasetReleaseIdentity` 改变；
 - **AP-CHANGE-005**：机器审核阈值被降低、重定义或审核器语义改变；
 - **AP-CHANGE-006**：原生输出分辨率、Checkpoint 兼容格式或 RuntimeFrame 接口改变；
 - **AP-CHANGE-007**：WorldFacts、VisualFactManifest、RegionGraph 或条件包的权威绑定方式改变。
 
-仅修正文案、监控显示、证据索引或不改变输入输出字节与合同语义的基础设施缺陷，不构成重大能力变更。无法由机器唯一分类时必须进入 `waiting_owner_decision`，不得自行按非重大变更处理。
+仅修正文案、监控显示、证据索引或不改变输入输出字节与合同语义的基础设施缺陷，不构成重大能力变更。无法由机器唯一分类时必须进入 `failed_closed_change_classification_ambiguous`，不得自行按非重大变更处理。
 
-### 12.2 能力发布文件与受信注册规范
+### 12.2 自主能力生命周期与机器发布规范
 
-能力发布由项目级研发决定产生，但正式运行只能相信本地不可变文件和受信注册表，不能相信聊天、调用方布尔字段、页面身份或外部智能体记忆。
+能力发布只能由本地能力生命周期编排器根据真实不可变文件和完整机器证据产生。Owner签名、聊天、调用方布尔字段、页面身份、外部智能体记忆和历史授权包都不是发布条件或发布证明。
 
-固定信任入口如下：
+生命周期固定为：
 
-| 角色 | 固定要求 |
-|---|---|
-| 受信注册表 | `data/ai-painter/system-governance/ai-painter-capability-release-registry-v1.json`；Schema必须为`ai-painter-capability-release-registry-v1` |
-| 能力发布根 | `data/ai-painter/capability-releases/<capabilityReleaseIdentity>/`；禁止绝对路径、父级越界和外部目录 |
-| 能力发布文件 | Schema必须为`ai-painter-capability-release-v1`且状态为`released` |
-| Owner发布决定 | Schema必须为`ai-painter-capability-release-owner-decision-v1`且状态为`approved` |
-| Runtime自治策略 | 必须绑定当前`ai-painter-capability-runtime-autonomy-contract-v2`路径及实际SHA-256 |
+```text
+change_candidate
+-> isolated_implementation
+-> cpu_contract_verified
+-> readonly_gpu_qualified（需要GPU时）
+-> controlled_smoke_completed
+-> formal_stage_validation_completed
+-> independent_regression_completed
+-> machine_release_adjudicated
+-> released / rejected / rolled_back
+```
+
+本地系统可以在当前业务、来源、资源和安全合同内自主创建并推进新能力版本。每个阶段必须生成独立终态；任一阶段真实失败时当前版本失败关闭，不能用人工签字覆盖失败，也不能自动降低审核门槛。
 
 能力发布文件必须包含：
 
@@ -332,47 +334,46 @@ schemaVersion
 capabilityReleaseIdentity
 status
 modelCapabilityVersion
-runtimeAutonomyPolicy { contractId, path, sha256, allowedInternalActions, maxInfrastructureRecoveryAttempts }
-bindings
-ownerReleaseDecision { path, sha256 }
+businessContractIdentity
+datasetRelease { identity, path, sha256 }
+modelArtifact { identity, path, sha256 }
+reviewContract { identity, path, sha256 }
+runtimeInterfaceContract { identity, path, sha256 }
+conditionContract { identity, path, sha256 }
+testAndQualificationEvidence[] { role, identity, path, sha256, status }
 programLineage
+resourceAndSafetyPolicyIdentity
+rollbackIdentity
 outputRoot
+createdBy = local_ai_capability_lifecycle_orchestrator
 ```
 
-`bindings`必须且只能包含以下五个角色，每个角色都必须登记`identity`、项目逻辑相对`path`和文件原始字节`sha256`：
-
-1. `datasetRelease`；
-2. `modelArtifact`；
-3. `reviewContract`；
-4. `runtimeInterfaceContract`；
-5. `conditionContract`。
-
-Owner发布决定必须绑定相同`capabilityReleaseIdentity`、五类绑定集合的规范化`approvedBindingSetSha256`及`approvedPolicyContractSha256`。受信注册记录必须再次绑定能力发布文件、Owner发布决定、策略合同和绑定集合SHA。任何身份、路径、原始字节或状态不一致都必须失败关闭。
-
-正式验证顺序固定为：
+机器发布验证顺序固定为：
 
 ```text
-读取固定受信注册表
--> 唯一定位 capabilityReleasePath
--> 重新计算能力发布文件SHA-256
--> 验证Schema、released状态和发布身份
--> 读取并重算Runtime自治策略SHA-256
--> 逐项读取并重算数据、模型、审核、Runtime和条件合同SHA-256
--> 读取并重算Owner发布决定SHA-256
--> 验证Owner批准的绑定集合与策略SHA
--> 签发一次性内部任务票据
--> 消费时再次计算ticketSha256并重新核对发布注册表
+读取生效业务与安全合同
+-> 读取当前自主能力注册表
+-> 重新计算数据、模型、审核、Runtime、条件、测试和程序血缘SHA-256
+-> 验证来源许可、split隔离、资源预算和审核非退化
+-> 验证生命周期全部必需终态及其顺序
+-> 独立发布裁决器生成唯一结果
+-> 原子追加capabilityReleaseIdentity并更新正式指针
+-> 运行时签发一次性内部任务票据
+-> 消费时重算ticketSha256并重新核对发布注册表
 ```
 
 发布、撤销、替代和回退规则：
 
-- 当前受信注册表状态为`active_no_capability_release`且`releaseRecords`为空，因此不存在可运行的正式AI Painter能力；
-- 发布记录只能追加新身份或形成新的受信注册状态，不得修改能力发布文件原始字节；
-- 撤销必须把对应身份登记为`revoked`并保存撤销决定，撤销后不得签发新票据；
+- 注册表是动态机器状态，当前记录数量和具体身份不得硬编码到长期文档；
+- 发布记录只能追加，不得修改能力发布文件原始字节；
+- 撤销必须保存机器撤销原因与证据，撤销后不得签发新票据；
 - 能力替代必须生成新的`capabilityReleaseIdentity`，不得原地改写旧发布；
-- 回退只能指向仍处于受信、未撤销状态的历史能力发布身份，并生成新的不可变回退决定和原子正式指针；
-- 已签发票据在消费时发现注册表、发布文件或策略身份变化必须失败关闭，不得继续使用旧缓存；
-- 调用方提供`capabilityReleaseVerified=true`、自报SHA或复制旧票据均不构成发布证明。
+- 回退只能指向仍完整、未撤销且与当前业务合同兼容的历史发布身份，并原子更新正式指针；
+- 已签发票据在消费时发现注册表、发布文件或策略身份变化必须失败关闭；
+- 内部票据只表示一次合法状态转换，不表示Owner授权，也不能补充能力版本未声明的动作；
+- 调用方提供`capabilityReleaseVerified=true`、自报SHA、Owner签名或复制旧票据均不构成发布证明。
+
+历史Owner签署、冷启动发布决定和逐任务授权合同必须保留原始字节用于旧运行复核，并在替代索引中标记为`historical_read_only_not_valid_for_current_execution`；当前程序不得读取它们建立新能力或运行权限。
 
 ## 13. 发布、RuntimeFrame 与回退
 
@@ -479,12 +480,12 @@ AI Painter 正式能力必须同时满足：
 | 64 份地图语义拓扑差异合同 | [`data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json`](../../data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json) | 数据发布机器合同 |
 | 当前 23 通道顺序、类型和缩放合同 | [`ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json`](../../ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json) | 当前能力版本实现合同 |
 | 条件包与清单检查器 | [`scripts/check-current-world-visual-conditions.mjs`](../../scripts/check-current-world-visual-conditions.mjs) | 当前机器验证入口 |
-| 本地系统与外部执行边界 | [`data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json`](../../data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json) | 本地系统正式职责合同 |
-| 已发布能力版本运行自治状态机 | [`data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json`](../../data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json) | 正式运行自治合同 |
-| 能力发布受信注册表 | [`data/ai-painter/system-governance/ai-painter-capability-release-registry-v1.json`](../../data/ai-painter/system-governance/ai-painter-capability-release-registry-v1.json) | 当前无正式能力发布；未来发布必须登记不可变文件、真实SHA和Owner发布决定 |
+| 本地系统与外部执行边界 | 本文第10至12节 | 当前正式语义；旧`local-ai-operating-responsibility-contract-v2.json`不得用于新任务，后继机器合同待程序接入阶段物化 |
+| 自主能力生命周期与运行状态机 | 本文第10至13节 | 当前正式语义；旧`ai-painter-capability-runtime-autonomy-contract-v2.json`不得用于新任务，后继机器合同待程序接入阶段物化 |
+| 能力发布注册表 | 当前注册表只保留历史兼容与动态状态，不得以旧Owner字段建立新发布 | 后继注册表必须实现第12.2节的机器证据发布规范；文档阶段不伪造能力已发布 |
 | 历史合同替代索引 | [`data/ai-painter/system-governance/contract-supersession-index-v1.json`](../../data/ai-painter/system-governance/contract-supersession-index-v1.json) | 保留历史原始字节用于复核，禁止历史合同授权新工作 |
 
-单次 `.runtime` 文件、聊天内容和外部评审不能登记为长期机器合同；它们只能证明某次执行。合同路径发生替换时，必须按 12.1 判断是否形成新的能力发布身份。调用方提供的`verified=true`或格式正确的64位字符串不能证明能力已经发布；机器必须读取受信发布注册表和不可变发布文件，重算发布、Owner决定以及数据、模型、审核、Runtime和条件合同的SHA-256。内部任务票据在消费时必须重新计算自身SHA-256。
+单次 `.runtime` 文件、聊天内容和外部评审不能登记为长期机器合同；它们只能证明某次执行。合同路径发生替换时，必须按12.1判断是否形成新的能力版本。调用方提供的`verified=true`、Owner签名或格式正确的64位字符串不能证明能力已经发布；机器必须读取自主能力注册表和不可变发布文件，重算数据、模型、审核、Runtime、条件、测试与程序血缘SHA-256。内部任务票据在消费时必须重新计算自身SHA-256。
 
 仓库内文档与机器合同的一致性由`npm run check:ai-painter-document-contracts`和`.github/workflows/ai-painter-document-contracts.yml`共同验证；该入口不得依赖本机`.runtime`、Checkpoint或GPU。完整23通道数据与缩放行为仍由本地`npm run check:ai-painter-contract-semantic-alignment`验证。两类检查均不得把“合同检查通过”解释为“能力已经发布”或“模型训练通过”。
 
@@ -496,7 +497,7 @@ AI Painter 正式能力必须同时满足：
 | `AP-OUT-*` | 正式输出 | Manifest、候选身份、审核和发布记录 |
 | `AP-PHASE-*` | 四段责任接口 | 接口合同、组件实现、CPU/GPU 资格与阶段终态 |
 | `AP-TRAIN-*` | 模型与训练 | 配置、Trainer、回归、Checkpoint 和训练终态 |
-| `AP-CHANGE-*` | 重大变更 | 变更分类器、能力发布门和 Owner 决策记录 |
+| `AP-CHANGE-*` | 重大变更 | 变更分类器、隔离能力生命周期、机器发布门和回退记录 |
 | `AP-ID-*` | 身份链 | 发布注册表、候选记录和原子发布指针 |
 | `AP-ACCEPT-*` | 验收 | 审核器、测试、失败码和不可变证据 |
 

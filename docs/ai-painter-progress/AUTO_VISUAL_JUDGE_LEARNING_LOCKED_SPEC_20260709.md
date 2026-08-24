@@ -1,6 +1,6 @@
 # 自动视觉判断学习锁定规范
 
-更新时间：2026-08-02 15:41:57 +08:00
+更新时间：2026-08-24 09:48:00 +08:00
 
 状态：active-auto-visual-judge-learning-contract
 
@@ -23,7 +23,7 @@
 | 训练总账 | `.runtime/ai-painter/training-process-ledger/events.jsonl` |
 | 材料质量报告 | `material-quality-report.json` |
 | 完整地图机器评审 | `*-formal-visual-judge.json` |
-| 项目所有者审核 | `owner-review.json` |
+| 历史人工审核（只读兼容） | `owner-review.json` |
 | 机器漏判诊断 | `review-diagnosis.json` |
 
 ## 3. 自动输出
@@ -65,7 +65,7 @@
 
 `canEnterWorld` 默认必须是 `false`。
 
-程序只能把通过全部机器闸门、来自已发布能力版本且通过Runtime发布门的 RuntimeFrame 标记为最终游戏地图成功；冷启动能力版本发布前另需项目级发布验收。
+程序只能把通过全部机器闸门、来自机器发布能力版本且通过Runtime发布门的 RuntimeFrame 标记为最终游戏地图成功；第一版与后续能力使用同一机器发布规则。
 
 ## 6. 自动触发
 

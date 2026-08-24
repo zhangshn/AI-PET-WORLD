@@ -1,16 +1,16 @@
 # 审核、自动闭环与存储正式规格
 
-更新时间：2026-08-24 07:35:09 +08:00
+更新时间：2026-08-24 09:48:00 +08:00
 
 状态：active-long-term-review-automation-storage-contract
 
-文档版本：`AI-PAINTER-REVIEW-STORAGE-1.0`
+文档版本：`AI-PAINTER-REVIEW-STORAGE-1.1`
 
 生效日期：`2026-08-24`
 
-替代版本：`未登记（首次建立显式版本号）`
+替代版本：`AI-PAINTER-REVIEW-STORAGE-1.0`
 
-批准状态：`active_internal_formal_standard`
+文档状态：`active_internal_formal_standard`
 
 破坏性变更规则：审核语义、阈值、状态机、能力发布门、RuntimeFrame生命周期或正式存储身份改变时必须提升文档版本并重新形成能力发布身份。
 
@@ -18,7 +18,7 @@
 
 ## 1. 规格范围
 
-本文定义 AI Painter 的机器审核、能力版本发布验收、失败学习、内部任务票据、训练记录、Token 账本、物理存储、SQLite 索引和只读状态投影。本文不保存某次训练、某张图、某个 Run、某个 Checkpoint 或临时阻断的结果。
+本文定义 AI Painter 的机器审核、自主能力版本发布、失败学习、内部任务票据、训练记录、Token 账本、物理存储、SQLite 索引和只读状态投影。本文不保存某次训练、某张图、某个 Run、某个 Checkpoint 或临时阻断的结果。
 
 正式系统记录由本地程序写入 `data/`、`.runtime/`和 SQLite。聊天、页面 GET、Codex 记忆和 Markdown 都不能成为运行状态、授权、审核决定或训练证据。
 
@@ -37,16 +37,17 @@
 
 任一机器硬门禁失败时，图片直接进入失败记录，不得伪造人工或能力发布否决。机器通过只取得当前能力版本声明的后续资格，不能自动成为训练样本；只有已发布能力版本且Runtime发布门通过的候选才能进入正式RuntimeFrame。
 
-能力版本发布验收状态固定为：
+能力版本机器发布状态固定为：
 
 ```text
-not_required_released_capability
-pending_capability_release_review
-capability_release_approved
-capability_release_rejected
+capability_candidate
+capability_qualification_in_progress
+capability_release_machine_passed
+capability_release_machine_rejected
+capability_release_rolled_back
 ```
 
-冷启动或重大能力版本发布验收拒绝可以阻止该版本发布，但不能删除或改写机器审核。正式能力版本发布后，单次图片不重复人工审核；新图片不继承旧图片结论，同一图片复审必须生成新的不可变审核记录并保留原记录。
+第一版与重大能力版本使用同一机器发布门。机器发布拒绝阻止该版本发布，但不能删除或改写机器审核；不存在人工首发特例。新图片不继承旧图片结论，同一图片复审必须生成新的不可变审核记录并保留原记录。
 
 ## 3. 完整地图机器硬门禁
 
@@ -125,9 +126,9 @@ repairConstraints
 
 有界修复必须保持任务范围、WorldFacts、条件、图片和阈值等不变量；不得用降低门槛、删除证据或无上限重试制造通过。
 
-## 7. Owner 异常升级与能力版本变更
+## 7. 业务边界报告与能力版本变更
 
-只有证据不能唯一裁决、需要改变业务范围或需要发布新的模型/数据/阈值能力版本时，本地系统才生成不可变 `owner-action-request`，至少包含：
+证据不能唯一裁决时，本地系统失败关闭当前路线并保存不可变裁决报告；需要改变长期业务目标、使用许可不明确或付费外部资源、或者执行不可恢复操作时，才生成不可变 `business-boundary-report`，至少包含：
 
 1. 任务和资产身份；
 2. 已知业务结论；
@@ -137,9 +138,9 @@ repairConstraints
 6. 必须保持不变的内容；
 7. 禁止副作用；
 8. 证据路径；
-9. 获批后的有界执行链。
+9. 若业务目标被改变后的有界执行链。
 
-请求不是决定，也不是程序的常规运行入口。模型、Loss、数据、阈值、训练计划或正式能力版本变更必须绑定不可变版本、范围、程序和回归证据。已发布能力版本内的生成、固定验证、机器审核、失败关闭、RuntimeFrame发布或回退及终态记录由本地系统自主完成，不得在内部步骤之间再次请求人工操作。
+报告不是审批单，也不是程序的常规运行入口。模型、Loss、数据、审核实现、训练计划或正式能力版本变更必须绑定不可变版本、范围、程序和回归证据，并由本地能力生命周期自主推进。训练、生成、固定验证、机器审核、失败关闭、RuntimeFrame发布或回退及终态记录均不得在内部步骤之间请求人工操作。
 
 能力版本变更和内部任务票据都必须具备幂等身份。重复、范围不符、动作不符、哈希不符或已消费票据必须在写入前失败，并保存拒绝证据。
 
@@ -159,8 +160,8 @@ repairConstraints
 
 程序必须停止的条件包括：
 
-- 证据不唯一或需要 Owner 业务决定；
-- 需要改变来源政策、模型路线、审核门槛、页面结构或任务范围；
+- 证据不唯一且当前合同没有唯一替代路线；
+- 需要改变长期业务目标、来源许可、安全上限或使用付费/不可恢复外部动作；
 - 数据不足、来源不明、身份冲突或资源门禁失败；
 - 连续失败达到停止条件；
 - 能力版本或任务票据缺失、无效或已消费；
@@ -170,9 +171,9 @@ repairConstraints
 
 ### 8.1 包内自主判断与内部任务票据
 
-内部任务票据是能力版本内的幂等、防重、状态转换和证据记录，不是从Owner派生的权限。本地程序为合法的下一状态生成一次性任务票据；票据记录执行包、能力版本、输入证据、程序血缘、动作、状态转换、输出命名空间和消费身份，不能用聊天内容或`latest.json`替代。
+内部任务票据是能力版本内的幂等、防重、状态转换、资源配额和证据记录，不是从Owner派生的权限。本地程序为合法的下一状态生成一次性任务票据；票据记录执行包、能力版本、输入证据、程序血缘、动作、状态转换、输出命名空间和消费身份，不能用聊天内容或`latest.json`替代。
 
-机器审核完成后，程序必须用冻结规则自动进入唯一的后续状态：通过则进入资格、发布或Finalization；真实视觉失败则失败关闭；基础设施失败只有在能力版本明确允许且恢复次数未耗尽时才能恢复；需要修改模型、数据、Loss、阈值、程序或业务路线时进入`waiting_owner_decision`。审核程序和确定性裁决程序负责正式结论，Codex只可提供技术建议。
+机器审核完成后，程序必须用冻结规则自动进入唯一后续状态：通过则进入资格、发布或Finalization；真实视觉失败则失败关闭；基础设施失败只有在能力版本明确允许且恢复次数未耗尽时才能恢复；需要修改模型、数据、Loss、审核实现、程序或训练路线时进入`capability_change_required`并建立隔离新版本。审核程序和确定性裁决程序负责正式结论，Codex只可提供技术建议。
 
 所有内部票据、决策报告、拒绝理由和状态转换保存到不可变运行目录并索引到SQLite。票据重放、跨包证据、状态跳跃、未登记的程序血缘变化、超出尝试上限或自由动作注入必须在写入前失败关闭。
 
@@ -232,13 +233,13 @@ reviewing
 archiving
 blocked
 failed
-completed_waiting_capability_release
-waiting_owner_decision
-waiting_capability_change
+capability_change_required
+capability_release_machine_reviewing
+blocked_business_boundary
 completed
 ```
 
-状态语义固定为：`completed_waiting_capability_release`只表示冷启动或重大能力版本正在等待项目级发布验收；`waiting_owner_decision`只表示证据不能唯一裁决或存在真实业务路线选择；`waiting_capability_change`表示继续执行需要新的模型、数据、Loss、阈值、训练计划或程序版本；已发布能力版本内的正常生成、验证、审核、发布和记录不得进入上述等待状态，完成后直接进入`completed`或相应失败终态。
+状态语义固定为：`capability_change_required`表示当前运行实例不能静默改变模型、数据、Loss、审核实现、训练计划或程序版本，本地生命周期编排器需要建立隔离新版本；`capability_release_machine_reviewing`表示机器发布门正在核对证据；`blocked_business_boundary`只表示触及长期业务、许可、付费或不可恢复操作边界。上述状态均不是等待Owner日常批准。
 
 状态投影比较任务身份、事件时间和终态优先级。旧 `latest.json` 不能覆盖更新的失败、阻断、暂停或完成证据；无法确定时显示 `unknown_or_stale`。
 
@@ -269,7 +270,7 @@ D:\AI-PET-WORLD-DATA\migrations
 | 运行控制 | `.runtime/ai-painter/training-control/` |
 | 训练档案 | `.runtime/ai-painter/training-run-archive/` |
 | 训练 Token | `.runtime/ai-painter/training-token-ledgers/` |
-| Owner 业务决策请求 | `.runtime/ai-painter/owner-action-requests/` |
+| 业务边界报告 | `.runtime/ai-painter/business-boundary-reports/` |
 | 原图库 | `data/world-samples/original-image-library/natural-home-v1/` |
 | 样本 Registry | `data/world-samples/registry/<dictionaryVersion>/` |
 | 不可变数据包 | `data/world-samples/dataset-packages/<packageId>/` |
@@ -287,7 +288,7 @@ D:\AI-PET-WORLD-DATA\migrations
 
 所有目录使用不可变身份；页面只读取明确文件或 SQLite 查询结果。
 
-RuntimeFrame生命周期固定为`working -> candidates -> accepted frame / rejected frames`。工作区和候选目录都不能被`/world`读取；只有来自已发布能力版本并完成机器审核与Runtime发布门的正式记录才能进入`.runtime/game-map-runtime-frame/`及正式晋级存储。冷启动能力版本在首次发布前另需项目级发布验收。
+RuntimeFrame生命周期固定为`working -> candidates -> accepted frame / rejected frames`。工作区和候选目录都不能被`/world`读取；只有来自机器发布能力版本并完成机器审核与Runtime发布门的正式记录才能进入`.runtime/game-map-runtime-frame/`及正式晋级存储。第一版与后续能力版本使用同一机器发布规则。
 
 ## 14. 控制台边界
 

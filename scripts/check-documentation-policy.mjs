@@ -171,7 +171,7 @@ const currentGuide = fs.readFileSync(path.join(ROOT, "docs/game-world-generation
 for (const requiredText of [
   "AI-PET-WORLD 唯一模块计划表",
   "只记录模块级目标、边界、验收条件和阶段状态",
-  "表中状态不构成执行授权",
+  "表中状态不构成聊天授权",
   "平台可靠性与文档治理修复",
   "本地自研AI MVP能力迁移",
 ]) {

@@ -1,6 +1,6 @@
 # AI Painter 原图资料库页面锁定规格
 
-更新时间：2026-08-03 09:23:45 +08:00
+更新时间：2026-08-24 09:48:00 +08:00
 
 状态：active-original-image-library-page-contract
 
@@ -58,7 +58,7 @@ data/world-samples/original-image-library/
 ## 3. 数据边界
 
 1. 本目录保存原始视觉来源，不替代正式样本登记和不可变数据包。
-2. 通过来源、视觉、机器、owner 和 IP 审核后，程序才可通过正式登记入口复制留存到 `data/world-samples/registry/`。
+2. 通过来源、许可/IP、视觉和机器合同审核后，程序才可通过正式登记入口复制留存到 `data/world-samples/registry/`。
 3. 历史 `data/ai-painter-datasets/**/source-originals` 主要包含旧局部裁片，不自动迁入本目录，也不自动取得独立训练资格。
 4. OpenAI 或其他第三方生成模型输出必须如实标记，按当前来源政策固定不能成为独立训练样本。
 5. 页面没有显示的记录不能由页面补造；必须由原图接收或登记程序自动写入。
@@ -85,7 +85,7 @@ data/world-samples/original-image-library/
 
 | typeId | 页面名称 | 自动归类规则 |
 |---|---|---|
-| `autonomous-generation-training-originals` | 自主生成训练原图 | 当前活动、未拒绝且具有正式V7容量槽位或自主序号身份的记录；待审与通过状态必须明确区分 |
+| `autonomous-generation-training-originals` | 自主生成训练原图 | 当前活动、未拒绝且具有正式V7容量槽位或自主序号身份的记录；机器待审与机器合格状态必须明确区分 |
 | `foundational-complete-map-originals` | 冷启动基础完整地图原图 | `recordId` 以 `ai-cold-start-map-` 开头且未被拒绝的 001–022 基础知识记录 |
 | `condition-paired-history` | 条件配对历史原图 | 自主序列建立前通过审核的条件配对历史记录 |
 | `failed-records` | 失败与阻断记录 | `status=rejected` 的带图记录，以及尚未形成 `record.json` 的生成失败/生成前阻断记录 |
@@ -96,9 +96,9 @@ data/world-samples/original-image-library/
 
 一级显示分类数、原图记录总数、可用于训练数和阻断数。`complete-maps` 二级显示四个固定类型及各自实时数量；类型页显示按北京时间排序的下拉框，并只展开当前选中的原图或失败记录。记录详情显示原图、SHA-256、来源方法、权利人、第三方内容标记、世界绑定、分类状态和审核状态。
 
-页面的 GET 展示不执行审核、不改变训练资格、不晋级 RuntimeFrame，也不把任何原图直接送入 `/world`。“通过 / 拒绝”按钮只对 `machine_contract_passed_waiting_owner_visual_review + pending_review` 的单条记录显示，并只通过本机 POST 向正式审核程序提交项目所有者命令。页面组件不得直接写 `record.json`、索引、审核、失败学习、容量贡献或数据包。
+页面的 GET 展示不执行审核、不改变训练资格、不晋级 RuntimeFrame，也不把任何原图直接送入 `/world`。正式训练资格由本地审核程序自动形成。页面若保留“标记疑点 / 紧急拒绝”按钮，只能通过本机POST提交人工覆盖意图，不能形成正向资格；页面组件不得直接写`record.json`、索引、审核、失败学习、容量贡献或数据包。
 
-审核命令固定调用 `record-ai-assisted-cold-start-owner-review.mjs`。拒绝必须填写具体原因和修复目标；程序自动保存失败图引用、失败码、双时区时间、hash、不可变审核历史、双语事件和失败学习。V7容量槽位通过后，程序只在对应自动链合同允许时登记唯一容量贡献、执行贡献检查并重建数据包。该按钮不能自动批准机器未通过记录，不能覆盖历史结论，不能自动生成其他RGB、准备其他槽位、启动GPU训练、建立RuntimeFrame或进入`/world`。
+人工紧急拒绝必须填写具体原因和证据；程序自动保存失败图引用、失败码、双时区时间、hash、不可变审核历史和失败学习。机器审核通过后，程序按自动链合同登记唯一容量贡献、执行贡献检查并重建数据包。人工按钮不能覆盖或伪造机器结论，不能自动生成其他RGB、准备其他槽位、启动GPU训练、建立RuntimeFrame或进入`/world`。
 
 ## 6. 程序自动接收入口
 
@@ -110,7 +110,7 @@ npm run check:original-image-library
 
 ## 7. V7 原图目录实时归类与程序对账
 
-`autonomous-generation-training-originals` 类型页固定展示所有当前活动且未被拒绝的 V7 容量原图，包括 `pending_review` 和 `owner_approved`；`pending_review` 只表示 Owner 审核尚未完成，不授予训练正样本资格或 V7 容量贡献。项目所有者通过后，正式审核程序分配唯一 `autonomousGenerationTrainingOriginal.sequenceNumber`，并按自动链合同执行容量贡献、数据包和容量审计。
+`autonomous-generation-training-originals` 类型页固定展示所有当前活动且未被拒绝的 V7 容量原图，包括 `machine_review_pending` 和 `machine_qualified_positive`。待审状态不授予训练正样本资格或 V7 容量贡献；全部机器门通过后，正式审核程序分配唯一 `autonomousGenerationTrainingOriginal.sequenceNumber`，并按自动链合同执行容量贡献、数据包和容量审计。历史`pending_review`与`owner_approved`字段只读兼容，不参与当前资格判断。
 
 `status=rejected` 仍优先归入 `failed-records`，不得因具有 V7 槽位身份而进入自主生成训练原图页。`condition-paired-history` 只保留 V7 容量序列建立前的历史条件配对记录。以上归类只根据程序记录字段计算，不移动、不复制、不重命名真实目录，也不改变页面布局。
 
@@ -120,4 +120,4 @@ npm run check:original-image-library
 
 `build:original-image-intake-template` 必须一次生成五类并行接收模板和统一 `manifest.json`，不能只生成 `complete-maps` 模板。五类模板必须绑定同一个字典版本、生态档案、临时环境快照和并行知识目录；模板顺序仅用于 manifest 稳定显示，不表示接收或训练顺序。
 
-原图接收成功只代表 `intake`。第三方内容、第三方生成模型、复制既有作品或不明来源自动标记 `blocked`；无论哪一种状态，均不能绕过后续机器审核、owner 审核、IP 审核和正式样本登记。
+原图接收成功只代表 `intake`。第三方内容、第三方生成模型、复制既有作品或不明来源自动标记 `blocked`；无论哪一种状态，均不能绕过后续机器审核、许可/IP审核和正式样本登记。

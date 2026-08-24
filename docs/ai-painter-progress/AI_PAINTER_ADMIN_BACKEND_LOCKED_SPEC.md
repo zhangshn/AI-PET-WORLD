@@ -1,6 +1,6 @@
 # AI Painter 后台管理自动化锁定规格
 
-更新时间：2026-08-24 04:30:00 +08:00
+更新时间：2026-08-24 09:48:00 +08:00
 
 状态：active-ai-painter-admin-backend-contract
 
@@ -87,7 +87,7 @@ AI Painter 后台管理
 
 一个已启动训练阶段不得在训练进程结束时停留在“训练完成，等待验证”。同一执行包必须继续由本地程序完成固定预览复现、validation与Checkpoint身份验证、机器审核、失败隔离、Manifest、Finalization、唯一终态及本地治理记录。页面只投影这些机器记录，不触发人工操作，也不依赖Codex任务保持打开。
 
-能力版本和执行计划必须在启动前列明完整阶段动作链；程序分别验证并一次性消费内部任务身份。只有启动新的模型/数据/阈值/训练计划、重试真实失败路线或改变业务范围时，页面才显示项目级能力变更或Owner业务决策请求。
+能力版本和执行计划必须在启动前列明完整阶段动作链；程序分别验证并一次性消费内部任务身份。新的模型、数据、审核实现或训练计划由本地能力生命周期建立隔离版本并自动展示；只有触及长期业务、外部许可、付费或不可恢复操作时，页面才显示业务边界报告。
 
 ## 3. 后台固定功能列表
 
@@ -104,7 +104,7 @@ AI Painter 后台管理
 | B09 | 失败样本记录 | 程序 | failure codes / negative labels | 只展示 |
 | B10 | 训练总账记录 | 程序 | `events.jsonl`、`latest.json` | 只展示 |
 | B11 | 生成结果归档 | 程序 | generated-results index / images / summaries | 只展示 |
-| B12 | 能力版本与Runtime发布门 | 本地程序执行；冷启动能力版本由项目级验收确认 | capability release / runtime publish record | 页面展示状态 |
+| B12 | 能力版本与Runtime发布门 | 本地程序按完整机器证据自主执行 | capability release / runtime publish record | 页面展示状态 |
 | B13 | ApprovedFrame 写入 | 本地程序 | approved frame record | `/world` 读取 |
 
 ## 4. 自动时间戳规则
@@ -118,8 +118,8 @@ AI Painter 后台管理
 | `finishedAt` | 训练/推理/审核结束时间 | ISO 8601 或 null |
 | `updatedAt` | 最近更新时间 | ISO 8601 |
 | `savedAt` | 图片、报告、归档写入时间 | ISO 8601 |
-| `reviewedAt` | 机器审核或能力版本发布验收时间 | ISO 8601 |
-| `capabilityReleaseReviewedAt` | 冷启动或重大能力版本发布验收时间 | ISO 8601 或 null |
+| `reviewedAt` | 机器审核完成时间 | ISO 8601 |
+| `capabilityReleaseAdjudicatedAt` | 能力版本机器发布裁决时间 | ISO 8601 或 null |
 
 ## 5. 自动数据细节
 

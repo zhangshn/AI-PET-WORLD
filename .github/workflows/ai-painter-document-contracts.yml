@@ -15,6 +15,7 @@ on:
       - "scripts/lib/ai-painter-autonomous-package-decision-core.mjs"
       - "package.json"
       - "package-lock.json"
+      - ".gitattributes"
       - ".github/workflows/ai-painter-document-contracts.yml"
   push:
     branches: [main]
@@ -31,6 +32,7 @@ on:
       - "scripts/lib/ai-painter-autonomous-package-decision-core.mjs"
       - "package.json"
       - "package-lock.json"
+      - ".gitattributes"
       - ".github/workflows/ai-painter-document-contracts.yml"
 
 permissions:
@@ -38,7 +40,11 @@ permissions:
 
 jobs:
   verify:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4

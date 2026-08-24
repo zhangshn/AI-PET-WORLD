@@ -1,16 +1,16 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-08-24 07:35:09 +08:00
+更新时间：2026-08-24 09:48:00 +08:00
 
 状态：active-directory-reference
 
-文档版本：`AI-PET-WORLD-DIRECTORY-1.0`
+文档版本：`AI-PET-WORLD-DIRECTORY-1.1`
 
 生效日期：`2026-08-24`
 
-替代版本：`未登记（首次建立显式版本号）`
+替代版本：`AI-PET-WORLD-DIRECTORY-1.0`
 
-批准状态：`active_internal_formal_standard`
+文档状态：`active_internal_formal_standard`
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -188,7 +188,7 @@ data/world-samples/earth-geospatial/
 └─ <proposalId>/proposal.json
 ```
 
-该目录只保存自动提取的边界证据和待项目所有者选择的候选，不是正式 `blueprints/`。查看或生成候选不得修改世界事实，也不得自动批准邻居、道路出口或水文方向。
+该目录只保存自动提取的边界证据和待世界事实编译器裁决的候选，不是正式 `blueprints/`。查看或生成候选不得修改世界事实，也不得把未通过RegionGraph与连接合同的邻居、道路出口或水文方向登记为正式事实。
 
 正式数据流固定为：
 
@@ -226,8 +226,8 @@ original-image-library/<五类并行来源>
 |---|---|---|
 | 世界事实 | `data/` 或世界 Runtime 存储 | 先于视觉存在。 |
 | 视觉字典导出 | `data/world-visual-data-dictionary/` | 由字典文档导出，供程序读取。 |
-| AI Painter当前治理合同 | `data/ai-painter/system-governance/` | 保存长期业务、职责、Runtime自治、受信能力发布注册表及历史合同替代索引；历史合同保留原始字节但不得授权新任务。 |
-| AI Painter能力发布文件 | `data/ai-painter/capability-releases/<capabilityReleaseIdentity>/` | 保存不可变能力发布文件、Owner发布决定及其绑定；只有受信注册表登记且全部SHA复核通过的身份可进入正式运行。 |
+| AI Painter当前治理合同 | `data/ai-painter/system-governance/` | 保存长期业务、职责、自主能力生命周期、机器发布注册表及历史合同替代索引；历史Owner合同保留原始字节但不得启动新任务。 |
+| AI Painter能力发布文件 | `data/ai-painter/capability-releases/<capabilityReleaseIdentity>/` | 保存由本地系统根据数据、模型、审核、Runtime、条件、测试与程序血缘生成的不可变机器发布文件；全部SHA和生命周期终态复核通过后才可进入正式运行。 |
 | 正式训练样本 | `data/world-samples/registry/<dictionaryVersion>/` | 只能由登记程序写入，保存原图、来源、许可、hash、审核和标签。 |
 | 不可变训练数据包 | `data/world-samples/dataset-packages/<packageId>/` | 保存四类 split、来源索引、字典/导演/任务/条件/审核快照和审计。 |
 | AI辅助冷启动数据包 | `data/world-samples/ai-assisted-cold-start-dataset-packages/<packageId>/` | 保存冷启动正式血缘；与通用包目录分工，不可由程序猜测替换。 |
@@ -240,4 +240,4 @@ original-image-library/<五类并行来源>
 
 RuntimeFrame生命周期固定为`working -> candidates -> accepted frame / rejected frames`。`.runtime`在项目中的逻辑权威入口是`F:\ai-pet-world\.runtime`；Windows部署允许它解析到项目已注册的物理热层，但文档、配置和授权只能使用项目逻辑相对路径，不能把物理映射路径当作新的项目根或外部数据源。
 
-`/world` 只能展示由已发布能力版本生成并通过机器审核与Runtime发布门的完整 RuntimeFrame；冷启动能力版本发布前另需项目级发布验收。训练图、局部图、候选图、失败图和程序占位图不得进入正式世界。
+`/world` 只能展示由机器发布能力版本生成并通过机器审核与Runtime发布门的完整 RuntimeFrame；第一版与后续能力使用同一机器发布规则。训练图、局部图、候选图、失败图和程序占位图不得进入正式世界。
