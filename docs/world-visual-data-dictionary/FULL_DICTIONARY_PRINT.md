@@ -1,13 +1,17 @@
 # AI-PET-WORLD 世界视觉数据字典完整打印版
 
-更新时间：2026-07-11 13:18:45 +08:00
+更新时间：2026-08-26 10:54:39 +08:00
 
-状态：historical-read-only-world-visual-dictionary-export
-GeneratedAt: 2026-07-11T05:17:54.999Z
+状态：active-reference
+DictionaryVersionId: mvp-natural-home-v0.3
+DictionaryLifecycleStatus: draft
+GeneratedAt: 2026-07-28T09:47:56.220Z
 
-不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
-> 本文件是2026-07-11生成的历史打印快照，不是当前审核、训练或发布规则。其中`owner_*`标签和“项目所有者最终验收”描述只用于解释旧记录；当前资格必须按AI Painter正式主体规格、训练数据与来源规则以及审核与存储规格，由机器审核、数据版本和能力版本机器发布身份表达。程序不得从本历史打印版创建新的Owner等待状态。
+本打印版只说明视觉词汇和历史溯源，不定义授权、能力发布或运行状态机。当前Owner职责只采用docs/DOCUMENT_AUTHORITY_INDEX.md中的GOV-OWNER-001。
+
+源条目中的owner review、owner accepted、owner rejected及对应旧失败码或训练标签是历史兼容词汇，不具有当前执行效力；新任务不得生成或消费这些词汇作为当前状态。
 
 ## 1. 文档目录
 
@@ -47,20 +51,20 @@ GeneratedAt: 2026-07-11T05:17:54.999Z
 | 文档数 | 2 |
 | 字典条目 | 84 |
 | 分类数 | 26 |
-| 注册失败码 | 366 |
+| 注册失败码 | 376 |
 | Hard Failure | 345 |
 | 未注册 Hard Failure | 0 |
 | 训练标签 | 16 |
 | 缺失分类 | 0 |
 
-## 3. 出图状态字段
+## 3. 当前出图状态
 
 | 状态项 | 内容 |
 | --- | --- |
 | 字典状态 | dictionary_draw_ready |
 | 含义 | The dictionary contains the minimum structured fields to build a complete-map candidate generation task. This is not training-data sufficiency and not owner approval. |
 | 字典版本 | mvp-natural-home-v0.3 |
-| 注意 | dictionary_draw_ready 只代表可以组织完整候选图生成任务，不代表训练数据足够，不代表项目所有者验收通过。 |
+| 注意 | dictionary_draw_ready只代表可以组织完整候选图生成任务，不代表训练数据充分、能力已经发布或机器审核已经通过。 |
 
 ## 4. 完整地图出图绑定
 
@@ -827,268 +831,278 @@ GeneratedAt: 2026-07-11T05:17:54.999Z
 | 102 | shoreline_recipe_wall | Shoreline ignores transition recipe and becomes wall/strip. | `material-recipe/natural-home-material-recipes.md` |
 | 103 | detail_recipe_overload | Detail marks overpower gameplay structure. | `material-recipe/natural-home-material-recipes.md` |
 | 104 | composition_recipe_missing | Generation task has no composition recipe. | `composition-recipe/game-map-composition-recipe.md` |
-| 105 | read_order_failed | Player cannot read entrance, route, center, water and boundary in order. | `composition-recipe/game-map-composition-recipe.md` |
-| 106 | focal_hierarchy_failed | Decorative details beat the main route or center. | `composition-recipe/game-map-composition-recipe.md` |
-| 107 | negative_space_missing | Map has no readable open playable space. | `composition-recipe/game-map-composition-recipe.md` |
-| 108 | detail_rhythm_random | Detail distribution feels random rather than composed. | `composition-recipe/game-map-composition-recipe.md` |
-| 109 | render_layer_recipe_missing | Generation or compositor lacks render layer recipe. | `render-layer-recipe/runtime-render-layer-recipe.md` |
-| 110 | render_layer_order_broken | Layers are composed in an order that breaks readability. | `render-layer-recipe/runtime-render-layer-recipe.md` |
-| 111 | route_occluded_by_detail | Main route is hidden by details or objects. | `render-layer-recipe/runtime-render-layer-recipe.md` |
-| 112 | center_occluded_by_detail | Home center is hidden by texture or objects. | `render-layer-recipe/runtime-render-layer-recipe.md` |
-| 113 | object_without_contact_layer | Object appears without footprint/contact layer. | `render-layer-recipe/runtime-render-layer-recipe.md` |
-| 114 | debug_layer_visible | Debug/fallback/program layer is visible as final game art. | `render-layer-recipe/runtime-render-layer-recipe.md` |
-| 115 | quality_rubric_missing | Review did not use the professional map quality rubric. | `quality-rubric/professional-map-quality-rubric.md` |
-| 116 | quality_score_unstructured | Review result lacks category scores and structured failure codes. | `quality-rubric/professional-map-quality-rubric.md` |
-| 117 | machine_score_overrides_owner | Machine score incorrectly overrides owner rejection. | `quality-rubric/professional-map-quality-rubric.md` |
-| 118 | near_pass_without_fix_targets | Near-pass frame lacks next repair targets. | `quality-rubric/professional-map-quality-rubric.md` |
-| 119 | professional_score_below_gate | Frame score is below professional display gate. | `quality-rubric/professional-map-quality-rubric.md` |
-| 120 | task_missing_drawing_process | Task package lacks drawingProcess data. | `generation-task/task-package-schema.md` |
-| 121 | task_missing_art_direction | Task package lacks professional artDirection data. | `generation-task/task-package-schema.md` |
-| 122 | task_missing_material_recipes | Task package lacks required materialRecipes. | `generation-task/task-package-schema.md` |
-| 123 | task_missing_composition_recipe | Task package lacks compositionRecipe data. | `generation-task/task-package-schema.md` |
-| 124 | task_missing_render_layer_recipe | Task package lacks renderLayerRecipe data. | `generation-task/task-package-schema.md` |
-| 125 | task_missing_quality_rubric | Task package lacks qualityRubric data. | `generation-task/task-package-schema.md` |
-| 126 | director_missing_drawing_process_plan | Director output lacks drawingProcessPlan. | `director/director-output-schema.md` |
-| 127 | director_missing_art_direction_plan | Director output lacks artDirectionPlan. | `director/director-output-schema.md` |
-| 128 | director_missing_material_recipe_plan | Director output lacks materialRecipePlan. | `director/director-output-schema.md` |
-| 129 | director_missing_composition_recipe_plan | Director output lacks compositionRecipePlan. | `director/director-output-schema.md` |
-| 130 | director_missing_render_layer_recipe_plan | Director output lacks renderLayerRecipePlan. | `director/director-output-schema.md` |
-| 131 | director_missing_quality_rubric_plan | Director output lacks qualityRubricPlan. | `director/director-output-schema.md` |
-| 132 | entity_record_schema_missing_field | World entity record lacks required schema fields. | `world-ontology/world-entity-record-schema.md` |
-| 133 | runtime_entity_missing_source_fact | Runtime-only entity has no sourceFactId. | `world-ontology/world-entity-record-schema.md` |
-| 134 | visible_entity_missing_visual_entry | Visible entity has no allowed visual dictionary entry. | `world-ontology/world-entity-record-schema.md` |
-| 135 | visible_entity_missing_placement_domain | Visible entity has no placement domain. | `world-ontology/world-entity-record-schema.md` |
-| 136 | forbidden_entity_in_task | Forbidden entity appears in generation task or candidate frame. | `world-ontology/world-entity-record-schema.md` |
-| 137 | runtime_binding_schema_missing_field | Runtime frame state binding lacks required fields. | `runtime-state/runtime-frame-state-binding-schema.md` |
-| 138 | runtime_binding_missing_generation_trace | Binding lacks director or generation task id. | `runtime-state/runtime-frame-state-binding-schema.md` |
-| 139 | runtime_binding_missing_asset_trace | Binding lacks generated asset id or image hash link. | `runtime-state/runtime-frame-state-binding-schema.md` |
-| 140 | runtime_binding_missing_review_trace | Binding lacks review record id. | `runtime-state/runtime-frame-state-binding-schema.md` |
-| 141 | runtime_binding_missing_state_trace | Binding lacks sourceFactIds or stateDiffIds. | `runtime-state/runtime-frame-state-binding-schema.md` |
-| 142 | runtime_binding_world_gate_bypass | canEnterWorld is true without required review gates. | `runtime-state/runtime-frame-state-binding-schema.md` |
-| 143 | active_scope_player_feature_leak | Current single-map visual task includes player-character requirements. | `versions/current-single-map-visual-scope.md` |
-| 144 | active_scope_interaction_feature_leak | Current single-map visual task includes click, collect, build or inspect requirements. | `versions/current-single-map-visual-scope.md` |
-| 145 | active_scope_gameplay_gate_used | Current review fails or passes based on gameplay systems outside current scope. | `versions/current-single-map-visual-scope.md` |
-| 146 | active_scope_dynamic_tick_required | Current review requires multi-tick visual variation outside current scope. | `versions/current-single-map-visual-scope.md` |
-| 147 | single_map_ecology_fields_missing | Single-map generation task lacks required ecology fields. | `ecology/single-map-ecology-fields.md` |
-| 148 | moisture_map_unreadable | Dry/wet/shoreline/open grass zones cannot be read. | `ecology/single-map-ecology-fields.md` |
-| 149 | grass_growth_ignores_path | Grass density does not respond to the path. | `ecology/single-map-ecology-fields.md` |
-| 150 | shoreline_ecology_missing | Water edge lacks wet grass, reeds or natural transition cues. | `ecology/single-map-ecology-fields.md` |
-| 151 | boundary_vegetation_wall | Boundary vegetation becomes a flat wall instead of natural framing. | `ecology/single-map-ecology-fields.md` |
-| 152 | single_map_material_fields_missing | Single-map generation task lacks required material fields. | `material-recipe/single-map-material-field-schema.md` |
-| 153 | material_role_unclear | Material does not communicate its map role. | `material-recipe/single-map-material-field-schema.md` |
-| 154 | material_value_band_conflict | Material value range breaks route, center or water readability. | `material-recipe/single-map-material-field-schema.md` |
-| 155 | material_transition_missing | Material edge lacks required transition behavior. | `material-recipe/single-map-material-field-schema.md` |
-| 156 | material_detail_budget_exceeded | Material detail becomes uncontrolled noise. | `material-recipe/single-map-material-field-schema.md` |
-| 157 | single_map_composition_fields_missing | Single-map generation task lacks required composition fields. | `composition-recipe/single-map-composition-fields.md` |
-| 158 | entrance_route_center_not_composed | Entrance, route and center do not form one readable composition. | `composition-recipe/single-map-composition-fields.md` |
-| 159 | water_boundary_not_composed | Water and boundary placement do not support the map. | `composition-recipe/single-map-composition-fields.md` |
-| 160 | open_space_plan_missing | Map lacks planned open visual space. | `composition-recipe/single-map-composition-fields.md` |
-| 161 | composition_depends_on_player_or_ui | Map read depends on player character, marker or UI not in current scope. | `composition-recipe/single-map-composition-fields.md` |
-| 162 | single_map_acceptance_missing | Review did not use the current single-map acceptance standard. | `review/single-map-visual-acceptance.md` |
-| 163 | single_map_scope_failed | Candidate is not one complete map visual. | `review/single-map-visual-acceptance.md` |
-| 164 | reserved_player_gate_used | Review used player-character requirements in current scope. | `review/single-map-visual-acceptance.md` |
-| 165 | reserved_interaction_gate_used | Review used interaction mechanics in current scope. | `review/single-map-visual-acceptance.md` |
-| 166 | reserved_dynamic_gate_used | Review used multi-tick dynamic variation in current scope. | `review/single-map-visual-acceptance.md` |
-| 167 | task_missing_single_map_scope | Task package lacks current singleMapScope data. | `generation-task/task-package-schema.md` |
-| 168 | task_missing_single_map_ecology_fields | Task package lacks singleMapEcologyFields data. | `generation-task/task-package-schema.md` |
-| 169 | task_missing_single_map_material_fields | Task package lacks singleMapMaterialFields data. | `generation-task/task-package-schema.md` |
-| 170 | task_missing_single_map_composition_fields | Task package lacks singleMapCompositionFields data. | `generation-task/task-package-schema.md` |
-| 171 | task_missing_single_map_acceptance | Task package lacks singleMapAcceptance data. | `generation-task/task-package-schema.md` |
-| 172 | director_missing_single_map_scope_plan | Director output lacks singleMapScopePlan. | `director/director-output-schema.md` |
-| 173 | director_missing_single_map_ecology_plan | Director output lacks singleMapEcologyPlan. | `director/director-output-schema.md` |
-| 174 | director_missing_single_map_material_plan | Director output lacks singleMapMaterialPlan. | `director/director-output-schema.md` |
-| 175 | director_missing_single_map_composition_plan | Director output lacks singleMapCompositionPlan. | `director/director-output-schema.md` |
-| 176 | director_missing_single_map_acceptance_plan | Director output lacks singleMapAcceptancePlan. | `director/director-output-schema.md` |
-| 177 | arbitrary_path | Path exists visually but has no structure purpose. | `map-structure/main-path.md` |
-| 178 | asset_palette_mismatch | Objects have unrelated colors/style. | `visual-style/color.md` |
-| 179 | black_noise_rock | Rock reads as dark noise. | `objects/rock.md` |
-| 180 | boundary_collision_mismatch | Visual boundary contradicts collision data. | `map-structure/natural-boundary.md` |
-| 181 | boundary_noise | Boundary is unreadable dark/green noise. | `map-structure/natural-boundary.md` |
-| 182 | branch_dominates_map | Secondary path steals focus from main structure. | `map-structure/branch-path.md` |
-| 183 | brick_repetition | Path reads as repeated bricks/tiles instead of natural soil. | `terrain/dirt-path.md` |
-| 184 | broken_route | Path visually fails to connect entrance, center or branch target. | `terrain/dirt-path.md` |
-| 185 | broken_water_surface | Water breaks into unrelated blobs. | `terrain/water.md` |
-| 186 | center_as_noise | Center is buried under texture. | `map-structure/home-center.md` |
-| 187 | center_invasion | Boundary elements invade and hide the playable center. | `terrain/forest-edge.md` |
-| 188 | collapsed_layers | Terrain, details and objects visually merge into unreadable noise. | `composition/layer-order.md` |
-| 189 | collision_visual_conflict | Visual says walkable but collision says blocked, or the reverse. | `map-structure/walkable-area.md` |
-| 190 | color_band_path | Path looks like a pasted color band. | `terrain/dirt-path.md` |
-| 191 | conflicting_light | Different objects have different light directions. | `visual-style/light.md` |
-| 192 | db_binary_blob_first | Database stores large images directly before asset/file storage is planned. | `database/storage-plan.md` |
-| 193 | db_review_not_linked | Review records are not linked to dictionary version and model checkpoint. | `database/storage-plan.md` |
-| 194 | db_without_versioning | Database stores mutable rules without version identity. | `database/storage-plan.md` |
-| 195 | detail_noise | Detail becomes random surface noise. | `objects/grass-detail.md` |
-| 196 | disconnected_entrance | Entrance does not connect to main path. | `map-structure/entrance.md` |
-| 197 | disconnected_shore | Shoreline does not follow the water boundary. | `terrain/shoreline.md` |
-| 198 | docs_db_diverge | Documents and database disagree without a migration/export record. | `database/storage-plan.md` |
-| 199 | duplicate_meaning | Two files define the same object or rule with different names. | `schema/dictionary-entry.md` |
-| 200 | edge_blur | Edges are so blurred that structure is unreadable. | `visual-style/edge-treatment.md` |
-| 201 | electric_blue_noise | Water is neon, noisy or visually synthetic. | `terrain/water.md` |
-| 202 | excessive_bright_berries | Berry accents become noisy bright pixels. | `objects/berry-bush.md` |
-| 203 | false_obstacle | Pebbles look like major blockers. | `objects/pebble.md` |
-| 204 | floating_asset | Object lacks contact shadow/base. | `visual-style/object-grounding.md` |
-| 205 | floating_object | Object appears pasted without ground contact. | `baseline/earth.md` |
-| 206 | floating_resource | No ground contact. | `objects/berry-bush.md` |
-| 207 | floating_shrub | No base contact. | `objects/shrub.md` |
-| 208 | floating_tree | Tree appears to hover. | `objects/tree.md` |
-| 209 | full_frame_overgrowth | Tall grass covers the map and destroys readability. | `terrain/tall-grass.md` |
-| 210 | gameplay_confusion | Mud hides path or water boundary. | `terrain/mud-patch.md` |
-| 211 | green_blob | Shrub is only an unclear green blob. | `objects/shrub.md` |
-| 212 | green_noise_field | Grass reads as random noise or dirty texture. | `terrain/grass.md` |
-| 213 | hard_boundary_wall | Boundary looks artificial. | `map-structure/natural-boundary.md` |
-| 214 | hard_cut_edge | Edge is perfectly sharp or geometric. | `terrain/dirt-path.md` |
-| 215 | hard_cut_shore | Shoreline is a sharp mask edge. | `terrain/shoreline.md` |
-| 216 | hard_mask_edge | Terrain masks are visibly hard-cut. | `visual-style/edge-treatment.md` |
-| 217 | hidden_entrance | Player cannot tell where entry starts. | `map-structure/entrance.md` |
-| 218 | indistinct_resource | Cannot distinguish from random grass noise. | `objects/berry-bush.md` |
-| 219 | inference_not_saved | Model output was generated but not stored. | `training/automatic-storage.md` |
-| 220 | inland_reed | Reeds appear far from water without reason. | `objects/reed.md` |
-| 221 | invisible_collision | Movement is blocked with no visible reason. | `map-structure/collision-area.md` |
-| 222 | layer_order_conflict | Details cover important path/water/object edges in a way that breaks reading. | `composition/layer-order.md` |
-| 223 | low_detail_flatness | Large areas are flat and unfinished. | `visual-style/material-density.md` |
-| 224 | manual_only_memory | Result exists only in conversation and not in project data. | `schema/review-record.md` |
-| 225 | meaningless_branch | Branch path goes nowhere. | `map-structure/branch-path.md` |
-| 226 | missing_center | No readable center exists. | `map-structure/home-center.md` |
-| 227 | missing_complete_map_structure | Image does not show the full entrance/path/center/water/boundary composition. | `versions/mvp-natural-home.md` |
-| 228 | missing_failure_codes | Failed sample cannot train the model. | `schema/review-record.md` |
-| 229 | missing_image_path | Review record cannot prove what was judged. | `schema/review-record.md` |
-| 230 | missing_required_field | Dictionary item cannot be used by automation. | `schema/dictionary-entry.md` |
-| 231 | mixed_world_physics | Some elements behave like icons, others like 3D objects, breaking world consistency. | `baseline/earth.md` |
-| 232 | muddy_blur | Grass becomes an unclear brown-green smear. | `terrain/grass.md` |
-| 233 | muddy_map | Mud spreads across the full frame and makes grass dirty. | `terrain/mud-patch.md` |
-| 234 | muddy_palette | Whole map becomes brown-green sludge. | `visual-style/color.md` |
-| 235 | neon_noise | Saturated speckle artifacts dominate. | `visual-style/color.md` |
-| 236 | no_contact_shadow | Objects float due to missing shadow/base. | `visual-style/light.md` |
-| 237 | no_negative_memory | Failed outputs are not available for future training. | `training/automatic-storage.md` |
-| 238 | noisy_clumps | Clumps become random dark stains. | `terrain/tall-grass.md` |
-| 239 | noisy_dark_edge | Edge is a dark noise band. | `terrain/forest-edge.md` |
-| 240 | noisy_stripes | Reeds become dense line noise. | `objects/reed.md` |
-| 241 | non_earth_visual_logic | Water, soil, plant or stone no longer reads as Earth-like natural material. | `baseline/earth.md` |
-| 242 | obstructed_main_path | Path appears blocked by tree, rock, water or noise. | `map-structure/main-path.md` |
-| 243 | overbright_noise | Flowers create noisy bright speckles. | `objects/flower.md` |
-| 244 | overdark_scene | Shadows hide gameplay structure. | `visual-style/light.md` |
-| 245 | overgrown_path | Grass destroys path readability. | `terrain/grass.md` |
-| 246 | overwide_shore | Shoreline covers too much land or water. | `terrain/shoreline.md` |
-| 247 | page_bypasses_storage | Page shows training content without reading the stored record first. | `training/automatic-storage.md` |
-| 248 | pale_patch_flower | Flower cluster becomes large pale flat patch. | `objects/flower.md` |
-| 249 | pasted_edge | Objects or shoreline look pasted. | `visual-style/edge-treatment.md` |
-| 250 | pasted_wall_shore | Shoreline looks like a vertical pasted wall. | `terrain/shoreline.md` |
-| 251 | path_contamination | Tall grass hides or visually breaks the main path. | `terrain/tall-grass.md` |
-| 252 | path_pollution | Flowers hide or dirty the path. | `objects/flower.md` |
-| 253 | pebble_noise | Pebbles become salt-and-pepper noise. | `objects/pebble.md` |
-| 254 | perspective_mismatch | Tree camera conflicts with map camera. | `objects/tree.md` |
-| 255 | reed_wall | Reeds form a wall or block the water boundary. | `objects/reed.md` |
-| 256 | repeated_dot_pattern | Pebbles form a visible grid or repeated dot stamp. | `objects/pebble.md` |
-| 257 | repeated_material_stamp | Repeated tile or stamp is visible. | `visual-style/material-density.md` |
-| 258 | repeated_stamp | Same detail repeats visibly. | `objects/grass-detail.md` |
-| 259 | repeated_tile_grid | Repeated 64px/128px block pattern is visible. | `terrain/grass.md` |
-| 260 | review_not_saved | Review happened but cannot be found in project records. | `training/automatic-storage.md` |
-| 261 | scale_break | Object size breaks map scale. | `visual-style/object-grounding.md` |
-| 262 | scale_mismatch | Rock scale conflicts with tree/path. | `objects/rock.md` |
-| 263 | stain_noise | Mud looks like random stains. | `terrain/mud-patch.md` |
-| 264 | sticker_asset | Object has no integration with ground. | `visual-style/object-grounding.md` |
-| 265 | sticker_rock | No shadow or terrain contact. | `objects/rock.md` |
-| 266 | sticker_tree | Tree looks pasted from another image/style. | `objects/tree.md` |
-| 267 | structure_masking | Detail hides path, center or water boundary. | `objects/grass-detail.md` |
-| 268 | style_mismatch | Shrub does not match trees/grass style. | `objects/shrub.md` |
-| 269 | target_not_learned | Repeated outputs ignore this dictionary and require training/data adjustment. | `composition/professional-quality.md` |
-| 270 | tree_wall | Boundary becomes a repeated tree wall. | `terrain/forest-edge.md` |
-| 271 | unauthorized_building | Center becomes a building without world fact. | `map-structure/home-center.md` |
-| 272 | unreadable_depth | No shallow/deep relation can be read. | `terrain/water.md` |
-| 273 | unreadable_main_path | Main route cannot be recognized. | `map-structure/main-path.md` |
-| 274 | unreadable_map_camera | Camera makes walkable space unclear. | `visual-style/camera.md` |
-| 275 | unstored_training_content | Training content is visible or discussed but has no stored record. | `training/automatic-storage.md` |
-| 276 | vague_name | Name does not reveal the object or rule directly. | `schema/dictionary-entry.md` |
-| 277 | vertical_wall_water | Water edge looks like a pasted vertical wall or cliff strip. | `terrain/water.md` |
-| 278 | visible_blocker_no_collision | Object looks blocking but data allows walking through it. | `map-structure/collision-area.md` |
-| 279 | walkable_visual_blocked | Walkable area looks blocked. | `map-structure/walkable-area.md` |
-| 280 | water_edge_confusion | Player cannot tell land from water. | `map-structure/water-edge-zone.md` |
-| 281 | water_edge_wall | Edge looks like a wall or pasted strip. | `map-structure/water-edge-zone.md` |
-| 282 | artifact_suppression_failed | Obvious generation artifacts remain visible in a complete map. | `composition/complete-map-professional-readability-v2.md` |
-| 283 | dataset_package_missing_dictionary_snapshot | Dataset package is not bound to a dictionary snapshot. | `training/complete-map-dataset-readiness.md` |
-| 284 | dataset_package_missing_director_plan | Dataset package is not bound to director constraints. | `training/complete-map-dataset-readiness.md` |
-| 285 | dataset_package_missing_negative_labels | Negative samples exist but lack learnable labels. | `training/complete-map-dataset-readiness.md` |
-| 286 | dataset_package_missing_transition_labels | Transition samples exist but lack structured labels. | `training/complete-map-dataset-readiness.md` |
-| 287 | dataset_package_pretends_approved | Dataset claims approval without owner-approved complete-map positives. | `training/complete-map-dataset-readiness.md` |
-| 288 | director_plan_missing | Complete-map generation has no director plan. | `director/complete-map-layout-constraints.md` |
-| 289 | failure_code_missing | Negative sample lacks a registered failure code. | `review/complete-map-negative-sample-routing.md` |
-| 290 | failure_region_missing | Negative sample lacks full-frame or crop evidence. | `review/complete-map-negative-sample-routing.md` |
-| 291 | grass_slot_contaminated_by_object | Object fragments appear inside grass material. | `terrain/grass-purity-and-variation.md` |
-| 292 | grass_slot_contaminated_by_path | Path or dirt fragments appear inside grass material. | `terrain/grass-purity-and-variation.md` |
-| 293 | grass_slot_contaminated_by_water | Water fragments appear inside grass material. | `terrain/grass-purity-and-variation.md` |
-| 294 | grass_texture_flat_fill | Grass is flat and has no professional surface depth. | `terrain/grass-purity-and-variation.md` |
-| 295 | grass_texture_leaks_to_water | Grass pattern appears inside open water. | `transition/grass-to-water.md` |
-| 296 | grass_texture_random_noise | Grass is noisy without terrain organization. | `terrain/grass-purity-and-variation.md` |
-| 297 | grass_tile_grid_visible | Grass repeats as an obvious tile grid. | `terrain/grass-purity-and-variation.md` |
-| 298 | grass_to_path_transition_missing | Path and grass meet without terrain transition. | `transition/grass-to-path.md` |
-| 299 | grass_to_water_transition_missing | Land and water meet without shore transition. | `transition/grass-to-water.md` |
-| 300 | judge_gap_not_recorded | Machine pass and owner rejection gap was not retained. | `review/complete-map-negative-sample-routing.md` |
-| 301 | land_water_readability_failed | Land and water roles are unclear. | `composition/complete-map-professional-readability-v2.md` |
-| 302 | map_reads_as_material_sheet | Output reads as a material test sheet instead of a game map. | `director/complete-map-layout-constraints.md` |
-| 303 | negative_space_destroyed | Details destroy readable playable space. | `director/complete-map-layout-constraints.md` |
-| 304 | next_training_target_missing | Failure cannot inform the next training round. | `review/complete-map-negative-sample-routing.md` |
-| 305 | object_ground_transition_missing | Object appears without ground integration. | `transition/object-to-ground.md` |
-| 306 | object_hierarchy_failed | Objects dominate or disrupt the map structure. | `composition/complete-map-professional-readability-v2.md` |
-| 307 | object_lighting_mismatch | Object lighting conflicts with the ground. | `transition/object-to-ground.md` |
-| 308 | object_scale_mismatch | Object scale breaks the map. | `transition/object-to-ground.md` |
-| 309 | palette_coherence_failed | Color groups do not belong to one scene. | `composition/complete-map-professional-readability-v2.md` |
-| 310 | path_edge_hard_cut | Path edge is unnaturally hard. | `transition/grass-to-path.md` |
-| 311 | path_overlay_tape | Path looks pasted as tape. | `transition/grass-to-path.md` |
-| 312 | path_scale_unreadable | Path scale is too wide, too narrow, or unclear as a route. | `transition/grass-to-path.md` |
-| 313 | professional_readability_failed | Complete map cannot be read as a professional game screen. | `composition/complete-map-professional-readability-v2.md` |
-| 314 | rejected_frame_not_routed | Failed complete frame was not routed to negative samples. | `review/complete-map-negative-sample-routing.md` |
-| 315 | route_intent_missing | Path has no readable walkable purpose. | `director/complete-map-layout-constraints.md` |
-| 316 | route_readability_failed | Player route is unclear or visually broken. | `composition/complete-map-professional-readability-v2.md` |
-| 317 | scale_coherence_failed | Materials and objects use conflicting scales. | `composition/complete-map-professional-readability-v2.md` |
-| 318 | shoreline_hard_cut | Shore edge is an unnatural hard cut. | `transition/grass-to-water.md` |
-| 319 | sticker_cutout_object | Object edge reads like a sticker. | `transition/object-to-ground.md` |
-| 320 | terrain_ratio_uncontrolled | Grass, water, path and object ratios are not controlled. | `director/complete-map-layout-constraints.md` |
-| 321 | water_depth_unreadable | Water has no readable shallow-to-deep structure. | `transition/grass-to-water.md` |
-| 322 | water_intent_missing | Water is decorative noise instead of a coherent map region. | `director/complete-map-layout-constraints.md` |
-| 323 | water_texture_leaks_to_grass | Water contaminates grass material. | `transition/grass-to-water.md` |
-| 324 | camera_contract_mismatch | Object and terrain camera assumptions conflict. | `spatial-grid/complete-map-canvas-contract.md` |
-| 325 | canvas_contract_missing | Generation task has no canvas or camera contract. | `generation-task/complete-map-image-generation-contract.md` |
-| 326 | canvas_size_missing | Sample lacks canvas size. | `spatial-grid/complete-map-canvas-contract.md` |
-| 327 | center_space_unreadable | Center or resting space cannot be read. | `map-grammar/natural-home-complete-map-template.md` |
-| 328 | complete_map_template_missing | Generation has no complete-map spatial template. | `map-grammar/natural-home-complete-map-template.md` |
-| 329 | crop_source_missing | Crop cannot be traced to full image. | `spatial-grid/complete-map-canvas-contract.md` |
-| 330 | decoration_ratio_excessive | Small details dominate the complete map. | `map-grammar/natural-home-complete-map-template.md` |
-| 331 | detail_layer_blocks_playability | Detail layer hides route, water boundary or center. | `render-layer-recipe/complete-map-layer-stack-v2.md` |
-| 332 | draw_ready_confused_with_training_ready | Candidate draw readiness was mistaken for final training readiness. | `training/complete-map-drawability-readiness.md` |
-| 333 | drawability_canvas_failed | Canvas information is insufficient. | `review/complete-map-drawability-gate.md` |
-| 334 | drawability_gate_missing | No drawability gate exists before generation. | `review/complete-map-drawability-gate.md` |
-| 335 | drawability_materials_failed | Material tokens are insufficient. | `review/complete-map-drawability-gate.md` |
-| 336 | drawability_objects_failed | Object placement data is insufficient. | `review/complete-map-drawability-gate.md` |
-| 337 | drawability_review_failed | Review fields are insufficient. | `review/complete-map-drawability-gate.md` |
-| 338 | drawability_transitions_failed | Transition definitions are insufficient. | `review/complete-map-drawability-gate.md` |
-| 339 | final_unifying_pass_missing | Output lacks final palette and artifact integration. | `render-layer-recipe/complete-map-layer-stack-v2.md` |
-| 340 | generation_contract_missing | Complete-map generation lacks the required draw-ready package. | `generation-task/complete-map-image-generation-contract.md` |
-| 341 | grass_land_ratio_failed | Grass and walkable land are too low or too dominant. | `map-grammar/natural-home-complete-map-template.md` |
-| 342 | layer_stack_missing | Complete-map generation has no layer order. | `render-layer-recipe/complete-map-layer-stack-v2.md` |
-| 343 | material_contamination_unchecked | Material token has no contamination guard. | `material-recipe/complete-map-material-token-library.md` |
-| 344 | material_palette_out_of_family | Material color does not belong to natural-home palette. | `material-recipe/complete-map-material-token-library.md` |
-| 345 | material_plan_missing | Generation task has no explicit material plan. | `generation-task/complete-map-image-generation-contract.md` |
-| 346 | material_texture_scale_mismatch | Material texture scale conflicts with map scale. | `material-recipe/complete-map-material-token-library.md` |
-| 347 | material_token_missing | Required material is not declared. | `material-recipe/complete-map-material-token-library.md` |
-| 348 | material_token_role_conflict | One token is used for incompatible roles. | `material-recipe/complete-map-material-token-library.md` |
-| 349 | negative_constraints_missing | Generation task has no explicit failure constraints. | `generation-task/complete-map-image-generation-contract.md` |
-| 350 | object_anchor_missing | Object is not anchored to terrain. | `objects/complete-map-object-placement-library.md` |
-| 351 | object_blocks_main_route | Object blocks or hides the main route. | `objects/complete-map-object-placement-library.md` |
-| 352 | object_contact_layer_missing | Objects lack a grounding/contact layer. | `render-layer-recipe/complete-map-layer-stack-v2.md` |
-| 353 | object_density_uncontrolled | Object counts are uncontrolled. | `objects/complete-map-object-placement-library.md` |
-| 354 | object_plan_missing | Generation task has no object placement plan. | `generation-task/complete-map-image-generation-contract.md` |
-| 355 | object_placement_library_missing | Generation has no object placement library. | `objects/complete-map-object-placement-library.md` |
-| 356 | path_region_purposeless | Path exists but does not connect meaningful map areas. | `map-grammar/natural-home-complete-map-template.md` |
-| 357 | review_region_unaddressable | Review failure region cannot be mapped back to image coordinates. | `spatial-grid/complete-map-canvas-contract.md` |
-| 358 | shoreline_object_inland | Shoreline object appears far from water without purpose. | `objects/complete-map-object-placement-library.md` |
-| 359 | source_scale_missing | Crop or model output lacks source scale metadata. | `spatial-grid/complete-map-canvas-contract.md` |
-| 360 | task_binding_missing_canvas_contract | Task package does not bind canvas contract. | `training/complete-map-drawability-readiness.md` |
-| 361 | task_binding_missing_dictionary_version | Task package does not bind dictionary version. | `training/complete-map-drawability-readiness.md` |
-| 362 | task_binding_missing_drawability_gate | Task package does not bind drawability gate. | `training/complete-map-drawability-readiness.md` |
-| 363 | task_binding_missing_map_template | Task package does not bind complete-map template. | `training/complete-map-drawability-readiness.md` |
-| 364 | transition_layer_after_detail | Details are drawn before transitions and break edges. | `render-layer-recipe/complete-map-layer-stack-v2.md` |
-| 365 | transition_plan_missing | Generation task has no transition plan. | `generation-task/complete-map-image-generation-contract.md` |
-| 366 | water_region_fragmented | Water appears as scattered fragments instead of a coherent region. | `map-grammar/natural-home-complete-map-template.md` |
+| 105 | composition_duplicate | The complete-map subject framework or macro composition repeats an existing map. | `review/complete-map-negative-sample-routing.md` |
+| 106 | complete_map_composition_diversity_failed | A candidate reuses an owner-approved complete-map composition template. | `composition/complete-map-professional-readability-v2.md` |
+| 107 | historical_rejected_composition_duplicate | A candidate matches a complete-map composition previously rejected by the project owner. | `review/complete-map-negative-sample-routing.md` |
+| 108 | historical_approved_condition_guide_macro_composition_duplicate | A pre-RGB condition guide repeats the macro topology of an approved complete map. | `review/complete-map-drawability-gate.md` |
+| 109 | historical_complete_map_condition_guide_macro_composition_duplicate | A pre-RGB condition guide repeats the macro topology of another historical complete-map condition guide. | `review/complete-map-drawability-gate.md` |
+| 110 | condition_terrain_path_ground_coverage_mismatch | Rendered route coverage does not match the authoritative terrain_path_ground condition. | `spatial-grid/layer-record-schema.md` |
+| 111 | transform_derived_complete_map_skeleton_forbidden | A complete-map skeleton is derived by mirror, rotation, or another forbidden transform. | `review/complete-map-drawability-gate.md` |
+| 112 | preset_home_site_or_construction_clearing_forbidden | An initial natural map presets a home site, activity center, or construction clearing. | `director/complete-map-layout-constraints.md` |
+| 113 | local_scene_not_complete_map | The output is a local scene or enlarged ecological unit rather than a complete map. | `composition/complete-map-professional-readability-v2.md` |
+| 114 | owner_visual_quality_rejected | The project owner rejected the complete-map visual quality for a reason not covered by a more specific registered code. | `review/complete-map-negative-sample-routing.md` |
+| 115 | read_order_failed | Player cannot read entrance, route, center, water and boundary in order. | `composition-recipe/game-map-composition-recipe.md` |
+| 116 | focal_hierarchy_failed | Decorative details beat the main route or center. | `composition-recipe/game-map-composition-recipe.md` |
+| 117 | negative_space_missing | Map has no readable open playable space. | `composition-recipe/game-map-composition-recipe.md` |
+| 118 | detail_rhythm_random | Detail distribution feels random rather than composed. | `composition-recipe/game-map-composition-recipe.md` |
+| 119 | render_layer_recipe_missing | Generation or compositor lacks render layer recipe. | `render-layer-recipe/runtime-render-layer-recipe.md` |
+| 120 | render_layer_order_broken | Layers are composed in an order that breaks readability. | `render-layer-recipe/runtime-render-layer-recipe.md` |
+| 121 | route_occluded_by_detail | Main route is hidden by details or objects. | `render-layer-recipe/runtime-render-layer-recipe.md` |
+| 122 | center_occluded_by_detail | Home center is hidden by texture or objects. | `render-layer-recipe/runtime-render-layer-recipe.md` |
+| 123 | object_without_contact_layer | Object appears without footprint/contact layer. | `render-layer-recipe/runtime-render-layer-recipe.md` |
+| 124 | debug_layer_visible | Debug/fallback/program layer is visible as final game art. | `render-layer-recipe/runtime-render-layer-recipe.md` |
+| 125 | quality_rubric_missing | Review did not use the professional map quality rubric. | `quality-rubric/professional-map-quality-rubric.md` |
+| 126 | quality_score_unstructured | Review result lacks category scores and structured failure codes. | `quality-rubric/professional-map-quality-rubric.md` |
+| 127 | machine_score_overrides_owner | Machine score incorrectly overrides owner rejection. | `quality-rubric/professional-map-quality-rubric.md` |
+| 128 | near_pass_without_fix_targets | Near-pass frame lacks next repair targets. | `quality-rubric/professional-map-quality-rubric.md` |
+| 129 | professional_score_below_gate | Frame score is below professional display gate. | `quality-rubric/professional-map-quality-rubric.md` |
+| 130 | task_missing_drawing_process | Task package lacks drawingProcess data. | `generation-task/task-package-schema.md` |
+| 131 | task_missing_art_direction | Task package lacks professional artDirection data. | `generation-task/task-package-schema.md` |
+| 132 | task_missing_material_recipes | Task package lacks required materialRecipes. | `generation-task/task-package-schema.md` |
+| 133 | task_missing_composition_recipe | Task package lacks compositionRecipe data. | `generation-task/task-package-schema.md` |
+| 134 | task_missing_render_layer_recipe | Task package lacks renderLayerRecipe data. | `generation-task/task-package-schema.md` |
+| 135 | task_missing_quality_rubric | Task package lacks qualityRubric data. | `generation-task/task-package-schema.md` |
+| 136 | director_missing_drawing_process_plan | Director output lacks drawingProcessPlan. | `director/director-output-schema.md` |
+| 137 | director_missing_art_direction_plan | Director output lacks artDirectionPlan. | `director/director-output-schema.md` |
+| 138 | director_missing_material_recipe_plan | Director output lacks materialRecipePlan. | `director/director-output-schema.md` |
+| 139 | director_missing_composition_recipe_plan | Director output lacks compositionRecipePlan. | `director/director-output-schema.md` |
+| 140 | director_missing_render_layer_recipe_plan | Director output lacks renderLayerRecipePlan. | `director/director-output-schema.md` |
+| 141 | director_missing_quality_rubric_plan | Director output lacks qualityRubricPlan. | `director/director-output-schema.md` |
+| 142 | entity_record_schema_missing_field | World entity record lacks required schema fields. | `world-ontology/world-entity-record-schema.md` |
+| 143 | runtime_entity_missing_source_fact | Runtime-only entity has no sourceFactId. | `world-ontology/world-entity-record-schema.md` |
+| 144 | visible_entity_missing_visual_entry | Visible entity has no allowed visual dictionary entry. | `world-ontology/world-entity-record-schema.md` |
+| 145 | visible_entity_missing_placement_domain | Visible entity has no placement domain. | `world-ontology/world-entity-record-schema.md` |
+| 146 | forbidden_entity_in_task | Forbidden entity appears in generation task or candidate frame. | `world-ontology/world-entity-record-schema.md` |
+| 147 | runtime_binding_schema_missing_field | Runtime frame state binding lacks required fields. | `runtime-state/runtime-frame-state-binding-schema.md` |
+| 148 | runtime_binding_missing_generation_trace | Binding lacks director or generation task id. | `runtime-state/runtime-frame-state-binding-schema.md` |
+| 149 | runtime_binding_missing_asset_trace | Binding lacks generated asset id or image hash link. | `runtime-state/runtime-frame-state-binding-schema.md` |
+| 150 | runtime_binding_missing_review_trace | Binding lacks review record id. | `runtime-state/runtime-frame-state-binding-schema.md` |
+| 151 | runtime_binding_missing_state_trace | Binding lacks sourceFactIds or stateDiffIds. | `runtime-state/runtime-frame-state-binding-schema.md` |
+| 152 | runtime_binding_world_gate_bypass | canEnterWorld is true without required review gates. | `runtime-state/runtime-frame-state-binding-schema.md` |
+| 153 | active_scope_player_feature_leak | Current single-map visual task includes player-character requirements. | `versions/current-single-map-visual-scope.md` |
+| 154 | active_scope_interaction_feature_leak | Current single-map visual task includes click, collect, build or inspect requirements. | `versions/current-single-map-visual-scope.md` |
+| 155 | active_scope_gameplay_gate_used | Current review fails or passes based on gameplay systems outside current scope. | `versions/current-single-map-visual-scope.md` |
+| 156 | active_scope_dynamic_tick_required | Current review requires multi-tick visual variation outside current scope. | `versions/current-single-map-visual-scope.md` |
+| 157 | single_map_ecology_fields_missing | Single-map generation task lacks required ecology fields. | `ecology/single-map-ecology-fields.md` |
+| 158 | moisture_map_unreadable | Dry/wet/shoreline/open grass zones cannot be read. | `ecology/single-map-ecology-fields.md` |
+| 159 | grass_growth_ignores_path | Grass density does not respond to the path. | `ecology/single-map-ecology-fields.md` |
+| 160 | shoreline_ecology_missing | Water edge lacks wet grass, reeds or natural transition cues. | `ecology/single-map-ecology-fields.md` |
+| 161 | boundary_vegetation_wall | Boundary vegetation becomes a flat wall instead of natural framing. | `ecology/single-map-ecology-fields.md` |
+| 162 | single_map_material_fields_missing | Single-map generation task lacks required material fields. | `material-recipe/single-map-material-field-schema.md` |
+| 163 | material_role_unclear | Material does not communicate its map role. | `material-recipe/single-map-material-field-schema.md` |
+| 164 | material_value_band_conflict | Material value range breaks route, center or water readability. | `material-recipe/single-map-material-field-schema.md` |
+| 165 | material_transition_missing | Material edge lacks required transition behavior. | `material-recipe/single-map-material-field-schema.md` |
+| 166 | material_detail_budget_exceeded | Material detail becomes uncontrolled noise. | `material-recipe/single-map-material-field-schema.md` |
+| 167 | single_map_composition_fields_missing | Single-map generation task lacks required composition fields. | `composition-recipe/single-map-composition-fields.md` |
+| 168 | entrance_route_center_not_composed | Entrance, route and center do not form one readable composition. | `composition-recipe/single-map-composition-fields.md` |
+| 169 | water_boundary_not_composed | Water and boundary placement do not support the map. | `composition-recipe/single-map-composition-fields.md` |
+| 170 | open_space_plan_missing | Map lacks planned open visual space. | `composition-recipe/single-map-composition-fields.md` |
+| 171 | composition_depends_on_player_or_ui | Map read depends on player character, marker or UI not in current scope. | `composition-recipe/single-map-composition-fields.md` |
+| 172 | single_map_acceptance_missing | Review did not use the current single-map acceptance standard. | `review/single-map-visual-acceptance.md` |
+| 173 | single_map_scope_failed | Candidate is not one complete map visual. | `review/single-map-visual-acceptance.md` |
+| 174 | reserved_player_gate_used | Review used player-character requirements in current scope. | `review/single-map-visual-acceptance.md` |
+| 175 | reserved_interaction_gate_used | Review used interaction mechanics in current scope. | `review/single-map-visual-acceptance.md` |
+| 176 | reserved_dynamic_gate_used | Review used multi-tick dynamic variation in current scope. | `review/single-map-visual-acceptance.md` |
+| 177 | task_missing_single_map_scope | Task package lacks current singleMapScope data. | `generation-task/task-package-schema.md` |
+| 178 | task_missing_single_map_ecology_fields | Task package lacks singleMapEcologyFields data. | `generation-task/task-package-schema.md` |
+| 179 | task_missing_single_map_material_fields | Task package lacks singleMapMaterialFields data. | `generation-task/task-package-schema.md` |
+| 180 | task_missing_single_map_composition_fields | Task package lacks singleMapCompositionFields data. | `generation-task/task-package-schema.md` |
+| 181 | task_missing_single_map_acceptance | Task package lacks singleMapAcceptance data. | `generation-task/task-package-schema.md` |
+| 182 | director_missing_single_map_scope_plan | Director output lacks singleMapScopePlan. | `director/director-output-schema.md` |
+| 183 | director_missing_single_map_ecology_plan | Director output lacks singleMapEcologyPlan. | `director/director-output-schema.md` |
+| 184 | director_missing_single_map_material_plan | Director output lacks singleMapMaterialPlan. | `director/director-output-schema.md` |
+| 185 | director_missing_single_map_composition_plan | Director output lacks singleMapCompositionPlan. | `director/director-output-schema.md` |
+| 186 | director_missing_single_map_acceptance_plan | Director output lacks singleMapAcceptancePlan. | `director/director-output-schema.md` |
+| 187 | arbitrary_path | Path exists visually but has no structure purpose. | `map-structure/main-path.md` |
+| 188 | asset_palette_mismatch | Objects have unrelated colors/style. | `visual-style/color.md` |
+| 189 | black_noise_rock | Rock reads as dark noise. | `objects/rock.md` |
+| 190 | boundary_collision_mismatch | Visual boundary contradicts collision data. | `map-structure/natural-boundary.md` |
+| 191 | boundary_noise | Boundary is unreadable dark/green noise. | `map-structure/natural-boundary.md` |
+| 192 | branch_dominates_map | Secondary path steals focus from main structure. | `map-structure/branch-path.md` |
+| 193 | brick_repetition | Path reads as repeated bricks/tiles instead of natural soil. | `terrain/dirt-path.md` |
+| 194 | broken_route | Path visually fails to connect entrance, center or branch target. | `terrain/dirt-path.md` |
+| 195 | broken_water_surface | Water breaks into unrelated blobs. | `terrain/water.md` |
+| 196 | center_as_noise | Center is buried under texture. | `map-structure/home-center.md` |
+| 197 | center_invasion | Boundary elements invade and hide the playable center. | `terrain/forest-edge.md` |
+| 198 | collapsed_layers | Terrain, details and objects visually merge into unreadable noise. | `composition/layer-order.md` |
+| 199 | collision_visual_conflict | Visual says walkable but collision says blocked, or the reverse. | `map-structure/walkable-area.md` |
+| 200 | color_band_path | Path looks like a pasted color band. | `terrain/dirt-path.md` |
+| 201 | conflicting_light | Different objects have different light directions. | `visual-style/light.md` |
+| 202 | db_binary_blob_first | Database stores large images directly before asset/file storage is planned. | `database/storage-plan.md` |
+| 203 | db_review_not_linked | Review records are not linked to dictionary version and model checkpoint. | `database/storage-plan.md` |
+| 204 | db_without_versioning | Database stores mutable rules without version identity. | `database/storage-plan.md` |
+| 205 | detail_noise | Detail becomes random surface noise. | `objects/grass-detail.md` |
+| 206 | disconnected_entrance | Entrance does not connect to main path. | `map-structure/entrance.md` |
+| 207 | disconnected_shore | Shoreline does not follow the water boundary. | `terrain/shoreline.md` |
+| 208 | docs_db_diverge | Documents and database disagree without a migration/export record. | `database/storage-plan.md` |
+| 209 | duplicate_meaning | Two files define the same object or rule with different names. | `schema/dictionary-entry.md` |
+| 210 | edge_blur | Edges are so blurred that structure is unreadable. | `visual-style/edge-treatment.md` |
+| 211 | electric_blue_noise | Water is neon, noisy or visually synthetic. | `terrain/water.md` |
+| 212 | excessive_bright_berries | Berry accents become noisy bright pixels. | `objects/berry-bush.md` |
+| 213 | false_obstacle | Pebbles look like major blockers. | `objects/pebble.md` |
+| 214 | floating_asset | Object lacks contact shadow/base. | `visual-style/object-grounding.md` |
+| 215 | floating_object | Object appears pasted without ground contact. | `baseline/earth.md` |
+| 216 | floating_resource | No ground contact. | `objects/berry-bush.md` |
+| 217 | floating_shrub | No base contact. | `objects/shrub.md` |
+| 218 | floating_tree | Tree appears to hover. | `objects/tree.md` |
+| 219 | full_frame_overgrowth | Tall grass covers the map and destroys readability. | `terrain/tall-grass.md` |
+| 220 | gameplay_confusion | Mud hides path or water boundary. | `terrain/mud-patch.md` |
+| 221 | green_blob | Shrub is only an unclear green blob. | `objects/shrub.md` |
+| 222 | green_noise_field | Grass reads as random noise or dirty texture. | `terrain/grass.md` |
+| 223 | hard_boundary_wall | Boundary looks artificial. | `map-structure/natural-boundary.md` |
+| 224 | hard_cut_edge | Edge is perfectly sharp or geometric. | `terrain/dirt-path.md` |
+| 225 | hard_cut_shore | Shoreline is a sharp mask edge. | `terrain/shoreline.md` |
+| 226 | hard_mask_edge | Terrain masks are visibly hard-cut. | `visual-style/edge-treatment.md` |
+| 227 | hidden_entrance | Player cannot tell where entry starts. | `map-structure/entrance.md` |
+| 228 | indistinct_resource | Cannot distinguish from random grass noise. | `objects/berry-bush.md` |
+| 229 | inference_not_saved | Model output was generated but not stored. | `training/automatic-storage.md` |
+| 230 | inland_reed | Reeds appear far from water without reason. | `objects/reed.md` |
+| 231 | invisible_collision | Movement is blocked with no visible reason. | `map-structure/collision-area.md` |
+| 232 | layer_order_conflict | Details cover important path/water/object edges in a way that breaks reading. | `composition/layer-order.md` |
+| 233 | low_detail_flatness | Large areas are flat and unfinished. | `visual-style/material-density.md` |
+| 234 | manual_only_memory | Result exists only in conversation and not in project data. | `schema/review-record.md` |
+| 235 | meaningless_branch | Branch path goes nowhere. | `map-structure/branch-path.md` |
+| 236 | missing_center | No readable center exists. | `map-structure/home-center.md` |
+| 237 | missing_complete_map_structure | Image does not show the full entrance/path/center/water/boundary composition. | `versions/mvp-natural-home.md` |
+| 238 | missing_failure_codes | Failed sample cannot train the model. | `schema/review-record.md` |
+| 239 | missing_image_path | Review record cannot prove what was judged. | `schema/review-record.md` |
+| 240 | missing_required_field | Dictionary item cannot be used by automation. | `schema/dictionary-entry.md` |
+| 241 | mixed_world_physics | Some elements behave like icons, others like 3D objects, breaking world consistency. | `baseline/earth.md` |
+| 242 | muddy_blur | Grass becomes an unclear brown-green smear. | `terrain/grass.md` |
+| 243 | muddy_map | Mud spreads across the full frame and makes grass dirty. | `terrain/mud-patch.md` |
+| 244 | muddy_palette | Whole map becomes brown-green sludge. | `visual-style/color.md` |
+| 245 | neon_noise | Saturated speckle artifacts dominate. | `visual-style/color.md` |
+| 246 | no_contact_shadow | Objects float due to missing shadow/base. | `visual-style/light.md` |
+| 247 | no_negative_memory | Failed outputs are not available for future training. | `training/automatic-storage.md` |
+| 248 | noisy_clumps | Clumps become random dark stains. | `terrain/tall-grass.md` |
+| 249 | noisy_dark_edge | Edge is a dark noise band. | `terrain/forest-edge.md` |
+| 250 | noisy_stripes | Reeds become dense line noise. | `objects/reed.md` |
+| 251 | non_earth_visual_logic | Water, soil, plant or stone no longer reads as Earth-like natural material. | `baseline/earth.md` |
+| 252 | obstructed_main_path | Path appears blocked by tree, rock, water or noise. | `map-structure/main-path.md` |
+| 253 | overbright_noise | Flowers create noisy bright speckles. | `objects/flower.md` |
+| 254 | overdark_scene | Shadows hide gameplay structure. | `visual-style/light.md` |
+| 255 | overgrown_path | Grass destroys path readability. | `terrain/grass.md` |
+| 256 | overwide_shore | Shoreline covers too much land or water. | `terrain/shoreline.md` |
+| 257 | page_bypasses_storage | Page shows training content without reading the stored record first. | `training/automatic-storage.md` |
+| 258 | pale_patch_flower | Flower cluster becomes large pale flat patch. | `objects/flower.md` |
+| 259 | pasted_edge | Objects or shoreline look pasted. | `visual-style/edge-treatment.md` |
+| 260 | pasted_wall_shore | Shoreline looks like a vertical pasted wall. | `terrain/shoreline.md` |
+| 261 | path_contamination | Tall grass hides or visually breaks the main path. | `terrain/tall-grass.md` |
+| 262 | path_pollution | Flowers hide or dirty the path. | `objects/flower.md` |
+| 263 | pebble_noise | Pebbles become salt-and-pepper noise. | `objects/pebble.md` |
+| 264 | perspective_mismatch | Tree camera conflicts with map camera. | `objects/tree.md` |
+| 265 | reed_wall | Reeds form a wall or block the water boundary. | `objects/reed.md` |
+| 266 | repeated_dot_pattern | Pebbles form a visible grid or repeated dot stamp. | `objects/pebble.md` |
+| 267 | repeated_material_stamp | Repeated tile or stamp is visible. | `visual-style/material-density.md` |
+| 268 | repeated_stamp | Same detail repeats visibly. | `objects/grass-detail.md` |
+| 269 | repeated_tile_grid | Repeated 64px/128px block pattern is visible. | `terrain/grass.md` |
+| 270 | review_not_saved | Review happened but cannot be found in project records. | `training/automatic-storage.md` |
+| 271 | scale_break | Object size breaks map scale. | `visual-style/object-grounding.md` |
+| 272 | scale_mismatch | Rock scale conflicts with tree/path. | `objects/rock.md` |
+| 273 | stain_noise | Mud looks like random stains. | `terrain/mud-patch.md` |
+| 274 | sticker_asset | Object has no integration with ground. | `visual-style/object-grounding.md` |
+| 275 | sticker_rock | No shadow or terrain contact. | `objects/rock.md` |
+| 276 | sticker_tree | Tree looks pasted from another image/style. | `objects/tree.md` |
+| 277 | structure_masking | Detail hides path, center or water boundary. | `objects/grass-detail.md` |
+| 278 | style_mismatch | Shrub does not match trees/grass style. | `objects/shrub.md` |
+| 279 | target_not_learned | Repeated outputs ignore this dictionary and require training/data adjustment. | `composition/professional-quality.md` |
+| 280 | tree_wall | Boundary becomes a repeated tree wall. | `terrain/forest-edge.md` |
+| 281 | unauthorized_building | Center becomes a building without world fact. | `map-structure/home-center.md` |
+| 282 | unreadable_depth | No shallow/deep relation can be read. | `terrain/water.md` |
+| 283 | unreadable_main_path | Main route cannot be recognized. | `map-structure/main-path.md` |
+| 284 | unreadable_map_camera | Camera makes walkable space unclear. | `visual-style/camera.md` |
+| 285 | unstored_training_content | Training content is visible or discussed but has no stored record. | `training/automatic-storage.md` |
+| 286 | vague_name | Name does not reveal the object or rule directly. | `schema/dictionary-entry.md` |
+| 287 | vertical_wall_water | Water edge looks like a pasted vertical wall or cliff strip. | `terrain/water.md` |
+| 288 | visible_blocker_no_collision | Object looks blocking but data allows walking through it. | `map-structure/collision-area.md` |
+| 289 | walkable_visual_blocked | Walkable area looks blocked. | `map-structure/walkable-area.md` |
+| 290 | water_edge_confusion | Player cannot tell land from water. | `map-structure/water-edge-zone.md` |
+| 291 | water_edge_wall | Edge looks like a wall or pasted strip. | `map-structure/water-edge-zone.md` |
+| 292 | artifact_suppression_failed | Obvious generation artifacts remain visible in a complete map. | `composition/complete-map-professional-readability-v2.md` |
+| 293 | dataset_package_missing_dictionary_snapshot | Dataset package is not bound to a dictionary snapshot. | `training/complete-map-dataset-readiness.md` |
+| 294 | dataset_package_missing_director_plan | Dataset package is not bound to director constraints. | `training/complete-map-dataset-readiness.md` |
+| 295 | dataset_package_missing_negative_labels | Negative samples exist but lack learnable labels. | `training/complete-map-dataset-readiness.md` |
+| 296 | dataset_package_missing_transition_labels | Transition samples exist but lack structured labels. | `training/complete-map-dataset-readiness.md` |
+| 297 | dataset_package_pretends_approved | Dataset claims approval without owner-approved complete-map positives. | `training/complete-map-dataset-readiness.md` |
+| 298 | director_plan_missing | Complete-map generation has no director plan. | `director/complete-map-layout-constraints.md` |
+| 299 | failure_code_missing | Negative sample lacks a registered failure code. | `review/complete-map-negative-sample-routing.md` |
+| 300 | failure_region_missing | Negative sample lacks full-frame or crop evidence. | `review/complete-map-negative-sample-routing.md` |
+| 301 | grass_slot_contaminated_by_object | Object fragments appear inside grass material. | `terrain/grass-purity-and-variation.md` |
+| 302 | grass_slot_contaminated_by_path | Path or dirt fragments appear inside grass material. | `terrain/grass-purity-and-variation.md` |
+| 303 | grass_slot_contaminated_by_water | Water fragments appear inside grass material. | `terrain/grass-purity-and-variation.md` |
+| 304 | grass_texture_flat_fill | Grass is flat and has no professional surface depth. | `terrain/grass-purity-and-variation.md` |
+| 305 | grass_texture_leaks_to_water | Grass pattern appears inside open water. | `transition/grass-to-water.md` |
+| 306 | grass_texture_random_noise | Grass is noisy without terrain organization. | `terrain/grass-purity-and-variation.md` |
+| 307 | grass_tile_grid_visible | Grass repeats as an obvious tile grid. | `terrain/grass-purity-and-variation.md` |
+| 308 | grass_to_path_transition_missing | Path and grass meet without terrain transition. | `transition/grass-to-path.md` |
+| 309 | grass_to_water_transition_missing | Land and water meet without shore transition. | `transition/grass-to-water.md` |
+| 310 | judge_gap_not_recorded | Machine pass and owner rejection gap was not retained. | `review/complete-map-negative-sample-routing.md` |
+| 311 | land_water_readability_failed | Land and water roles are unclear. | `composition/complete-map-professional-readability-v2.md` |
+| 312 | map_reads_as_material_sheet | Output reads as a material test sheet instead of a game map. | `director/complete-map-layout-constraints.md` |
+| 313 | negative_space_destroyed | Details destroy readable playable space. | `director/complete-map-layout-constraints.md` |
+| 314 | next_training_target_missing | Failure cannot inform the next training round. | `review/complete-map-negative-sample-routing.md` |
+| 315 | object_ground_transition_missing | Object appears without ground integration. | `transition/object-to-ground.md` |
+| 316 | object_hierarchy_failed | Objects dominate or disrupt the map structure. | `composition/complete-map-professional-readability-v2.md` |
+| 317 | object_lighting_mismatch | Object lighting conflicts with the ground. | `transition/object-to-ground.md` |
+| 318 | object_scale_mismatch | Object scale breaks the map. | `transition/object-to-ground.md` |
+| 319 | palette_coherence_failed | Color groups do not belong to one scene. | `composition/complete-map-professional-readability-v2.md` |
+| 320 | path_edge_hard_cut | Path edge is unnaturally hard. | `transition/grass-to-path.md` |
+| 321 | path_overlay_tape | Path looks pasted as tape. | `transition/grass-to-path.md` |
+| 322 | path_scale_unreadable | Path scale is too wide, too narrow, or unclear as a route. | `transition/grass-to-path.md` |
+| 323 | professional_readability_failed | Complete map cannot be read as a professional game screen. | `composition/complete-map-professional-readability-v2.md` |
+| 324 | rejected_frame_not_routed | Failed complete frame was not routed to negative samples. | `review/complete-map-negative-sample-routing.md` |
+| 325 | route_intent_missing | Path has no readable walkable purpose. | `director/complete-map-layout-constraints.md` |
+| 326 | route_readability_failed | Player route is unclear or visually broken. | `composition/complete-map-professional-readability-v2.md` |
+| 327 | scale_coherence_failed | Materials and objects use conflicting scales. | `composition/complete-map-professional-readability-v2.md` |
+| 328 | shoreline_hard_cut | Shore edge is an unnatural hard cut. | `transition/grass-to-water.md` |
+| 329 | sticker_cutout_object | Object edge reads like a sticker. | `transition/object-to-ground.md` |
+| 330 | terrain_ratio_uncontrolled | Grass, water, path and object ratios are not controlled. | `director/complete-map-layout-constraints.md` |
+| 331 | water_depth_unreadable | Water has no readable shallow-to-deep structure. | `transition/grass-to-water.md` |
+| 332 | water_intent_missing | Water is decorative noise instead of a coherent map region. | `director/complete-map-layout-constraints.md` |
+| 333 | water_texture_leaks_to_grass | Water contaminates grass material. | `transition/grass-to-water.md` |
+| 334 | camera_contract_mismatch | Object and terrain camera assumptions conflict. | `spatial-grid/complete-map-canvas-contract.md` |
+| 335 | canvas_contract_missing | Generation task has no canvas or camera contract. | `generation-task/complete-map-image-generation-contract.md` |
+| 336 | canvas_size_missing | Sample lacks canvas size. | `spatial-grid/complete-map-canvas-contract.md` |
+| 337 | center_space_unreadable | Center or resting space cannot be read. | `map-grammar/natural-home-complete-map-template.md` |
+| 338 | complete_map_template_missing | Generation has no complete-map spatial template. | `map-grammar/natural-home-complete-map-template.md` |
+| 339 | crop_source_missing | Crop cannot be traced to full image. | `spatial-grid/complete-map-canvas-contract.md` |
+| 340 | decoration_ratio_excessive | Small details dominate the complete map. | `map-grammar/natural-home-complete-map-template.md` |
+| 341 | detail_layer_blocks_playability | Detail layer hides route, water boundary or center. | `render-layer-recipe/complete-map-layer-stack-v2.md` |
+| 342 | draw_ready_confused_with_training_ready | Candidate draw readiness was mistaken for final training readiness. | `training/complete-map-drawability-readiness.md` |
+| 343 | drawability_canvas_failed | Canvas information is insufficient. | `review/complete-map-drawability-gate.md` |
+| 344 | drawability_gate_missing | No drawability gate exists before generation. | `review/complete-map-drawability-gate.md` |
+| 345 | drawability_materials_failed | Material tokens are insufficient. | `review/complete-map-drawability-gate.md` |
+| 346 | drawability_objects_failed | Object placement data is insufficient. | `review/complete-map-drawability-gate.md` |
+| 347 | drawability_review_failed | Review fields are insufficient. | `review/complete-map-drawability-gate.md` |
+| 348 | drawability_transitions_failed | Transition definitions are insufficient. | `review/complete-map-drawability-gate.md` |
+| 349 | final_unifying_pass_missing | Output lacks final palette and artifact integration. | `render-layer-recipe/complete-map-layer-stack-v2.md` |
+| 350 | generation_contract_missing | Complete-map generation lacks the required draw-ready package. | `generation-task/complete-map-image-generation-contract.md` |
+| 351 | grass_land_ratio_failed | Grass and walkable land are too low or too dominant. | `map-grammar/natural-home-complete-map-template.md` |
+| 352 | layer_stack_missing | Complete-map generation has no layer order. | `render-layer-recipe/complete-map-layer-stack-v2.md` |
+| 353 | material_contamination_unchecked | Material token has no contamination guard. | `material-recipe/complete-map-material-token-library.md` |
+| 354 | material_palette_out_of_family | Material color does not belong to natural-home palette. | `material-recipe/complete-map-material-token-library.md` |
+| 355 | material_plan_missing | Generation task has no explicit material plan. | `generation-task/complete-map-image-generation-contract.md` |
+| 356 | material_texture_scale_mismatch | Material texture scale conflicts with map scale. | `material-recipe/complete-map-material-token-library.md` |
+| 357 | material_token_missing | Required material is not declared. | `material-recipe/complete-map-material-token-library.md` |
+| 358 | material_token_role_conflict | One token is used for incompatible roles. | `material-recipe/complete-map-material-token-library.md` |
+| 359 | negative_constraints_missing | Generation task has no explicit failure constraints. | `generation-task/complete-map-image-generation-contract.md` |
+| 360 | object_anchor_missing | Object is not anchored to terrain. | `objects/complete-map-object-placement-library.md` |
+| 361 | object_blocks_main_route | Object blocks or hides the main route. | `objects/complete-map-object-placement-library.md` |
+| 362 | object_contact_layer_missing | Objects lack a grounding/contact layer. | `render-layer-recipe/complete-map-layer-stack-v2.md` |
+| 363 | object_density_uncontrolled | Object counts are uncontrolled. | `objects/complete-map-object-placement-library.md` |
+| 364 | object_plan_missing | Generation task has no object placement plan. | `generation-task/complete-map-image-generation-contract.md` |
+| 365 | object_placement_library_missing | Generation has no object placement library. | `objects/complete-map-object-placement-library.md` |
+| 366 | path_region_purposeless | Path exists but does not connect meaningful map areas. | `map-grammar/natural-home-complete-map-template.md` |
+| 367 | review_region_unaddressable | Review failure region cannot be mapped back to image coordinates. | `spatial-grid/complete-map-canvas-contract.md` |
+| 368 | shoreline_object_inland | Shoreline object appears far from water without purpose. | `objects/complete-map-object-placement-library.md` |
+| 369 | source_scale_missing | Crop or model output lacks source scale metadata. | `spatial-grid/complete-map-canvas-contract.md` |
+| 370 | task_binding_missing_canvas_contract | Task package does not bind canvas contract. | `training/complete-map-drawability-readiness.md` |
+| 371 | task_binding_missing_dictionary_version | Task package does not bind dictionary version. | `training/complete-map-drawability-readiness.md` |
+| 372 | task_binding_missing_drawability_gate | Task package does not bind drawability gate. | `training/complete-map-drawability-readiness.md` |
+| 373 | task_binding_missing_map_template | Task package does not bind complete-map template. | `training/complete-map-drawability-readiness.md` |
+| 374 | transition_layer_after_detail | Details are drawn before transitions and break edges. | `render-layer-recipe/complete-map-layer-stack-v2.md` |
+| 375 | transition_plan_missing | Generation task has no transition plan. | `generation-task/complete-map-image-generation-contract.md` |
+| 376 | water_region_fragmented | Water appears as scattered fragments instead of a coherent region. | `map-grammar/natural-home-complete-map-template.md` |
 
 ## 7. 训练标签总表
 
@@ -1111,10 +1125,10 @@ GeneratedAt: 2026-07-11T05:17:54.999Z
 | negative_director_task_gap | Generation task failed because director inputs or fix hints were incomplete. | Yes, task-level negative |
 | negative_live_state_mismatch | Candidate does not preserve world identity, tick binding, or state continuity. | Yes, runtime negative |
 
-## 8. 字典覆盖缺口字段
+## 8. 适用边界
 
 | 缺口 | 说明 |
 | --- | --- |
 | 训练数据 | 字典已经具备完整候选图任务字段，但正负样本数量仍需由训练数据审计决定。 |
-| 项目验收 | 任何 RuntimeFrame 仍必须经过项目所有者人工最终验收。 |
+| 能力发布 | RuntimeFrame必须通过当前机器审核、能力发布和Runtime门；已发布能力内不等待逐次Owner验收。 |
 | 自动生成 | 下一步程序必须读取本字典版本生成候选图，并自动保存任务包、图片、审核记录和失败码。 |

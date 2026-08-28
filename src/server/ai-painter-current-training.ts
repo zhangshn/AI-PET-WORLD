@@ -24,7 +24,9 @@ import {
 } from "@/server/ai-painter-training-state";
 import { selectAuthoritativeTrainingEvidence } from "@/server/ai-painter-training-status-projection.mjs";
 import { selectLiveActivityState } from "@/server/ai-painter-live-activity-projection.mjs";
+import { readCurrentExecutionRegistry } from "@/server/ai-painter-current-execution-registry.mjs";
 import { projectR5Stage4TaskCapsule } from "@/server/ai-painter-task-capsule-projection.mjs";
+import { projectAutonomousStage4TaskCapsule } from "@/server/ai-painter-task-capsule-projection.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = process.cwd();
@@ -108,9 +110,80 @@ const modelSources = [
       "ai-painter",
       "stage4-semantic-mixture-formal-training",
     ),
-    relativeRoot:
-      ".runtime/ai-painter/stage4-semantic-mixture-formal-training",
+    relativeRoot: ".runtime/ai-painter/stage4-semantic-mixture-formal-training",
     runPrefix: "",
+    artifactDirectory: "training-output",
+  },
+  {
+    absoluteRoot: path.join(
+      /* turbopackIgnore: true */ root,
+      ".runtime",
+      "ai-painter",
+      "stage4-authoritative-semantic-carrier-formal-stage0",
+    ),
+    relativeRoot:
+      ".runtime/ai-painter/stage4-authoritative-semantic-carrier-formal-stage0",
+    runPrefix: "",
+    artifactDirectory: "training-output",
+  },
+  {
+    absoluteRoot: path.join(
+      /* turbopackIgnore: true */ root,
+      ".runtime",
+      "ai-painter",
+      "stage4-post-decode-object-rgb-formal-stage0",
+    ),
+    relativeRoot:
+      ".runtime/ai-painter/stage4-post-decode-object-rgb-formal-stage0",
+    runPrefix: "",
+    artifactDirectory: "training-output",
+  },
+  {
+    absoluteRoot: path.join(
+      /* turbopackIgnore: true */ root,
+      ".runtime",
+      "ai-painter",
+      "stage4-post-decode-full-condition-responsibility-formal-stage0",
+    ),
+    relativeRoot:
+      ".runtime/ai-painter/stage4-post-decode-full-condition-responsibility-formal-stage0",
+    runPrefix: "",
+    artifactDirectory: "training-output",
+  },
+  {
+    absoluteRoot: path.join(
+      /* turbopackIgnore: true */ root,
+      ".runtime",
+      "ai-painter",
+      "stage4-direct-clean-latent-formal-stage0",
+    ),
+    relativeRoot:
+      ".runtime/ai-painter/stage4-direct-clean-latent-formal-stage0",
+    runPrefix: "stage4-direct-clean-latent-stage0-",
+    artifactDirectory: "training-output",
+  },
+  {
+    absoluteRoot: path.join(
+      /* turbopackIgnore: true */ root,
+      ".runtime",
+      "ai-painter",
+      "stage4-direct-responsibility-residual-controlled-smokes",
+    ),
+    relativeRoot:
+      ".runtime/ai-painter/stage4-direct-responsibility-residual-controlled-smokes",
+    runPrefix: "stage4-direct-responsibility-residual-controlled-smoke-",
+    artifactDirectory: "training-output",
+  },
+  {
+    absoluteRoot: path.join(
+      /* turbopackIgnore: true */ root,
+      ".runtime",
+      "ai-painter",
+      "stage4-direct-responsibility-residual-formal-stage0",
+    ),
+    relativeRoot:
+      ".runtime/ai-painter/stage4-direct-responsibility-residual-formal-stage0",
+    runPrefix: "stage4-direct-responsibility-residual-stage0-",
     artifactDirectory: "training-output",
   },
 ] as const;
@@ -140,6 +213,8 @@ const stageControlConvergenceTerminalPath =
   ".runtime/ai-painter/stage-control-convergence/20260810-182526279/cycles/cycle-3-20260810-185600000/phase-terminal.json";
 const uniqueModulePlanPath =
   "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md";
+const autonomousStage4CandidatePointerPath =
+  ".runtime/ai-painter/stage4-post-carrier-bounded-candidate-recalculations/latest.json";
 const expectedSplits = {
   train: 48,
   validation: 8,
@@ -149,6 +224,20 @@ const expectedSplits = {
 const cacheTtlMs = 2_500;
 
 type JsonObject = Record<string, unknown>;
+type PostDecodeFormalExecutionProjection = {
+  runId: string;
+  statePath: string;
+  state: JsonObject;
+  terminalPath: string;
+  terminal: JsonObject | null;
+  reviewPath: string;
+  review: JsonObject | null;
+  reviewProgressPath: string;
+  reviewProgress: JsonObject | null;
+  progressPath: string;
+  progress: JsonObject | null;
+  occurredAtUtc: string | null;
+};
 type LocalProcessEvidence = {
   pid: number;
   parentPid: number | null;
@@ -188,7 +277,7 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     datasetPointer,
     control,
     runtimeStatus,
-    stages,
+    rawStages,
     gpu,
     hardware,
     ledger,
@@ -197,7 +286,7 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     validationReconciliationPointer,
     fullTrainingFinalization,
     localProcesses,
-    taskCapsule,
+    currentRegistry,
   ] = await Promise.all([
     readJson(configPath),
     readJson(datasetPointerPath),
@@ -212,8 +301,35 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     readJson(validationReconciliationPointerPath),
     readJson(fullTrainingFinalizationPath),
     readRelevantLocalProcesses(),
-    readCurrentR5Stage4TaskCapsule(),
+    readCurrentExecutionRegistry(root),
   ]);
+  const rawTaskCapsule = currentRegistry.ok
+    ? (currentRegistry.taskCapsule as AiPainterTaskCapsule)
+    : buildUnknownRegistryTaskCapsule(currentRegistry.errorCode);
+  const taskCapsule = {
+    ...rawTaskCapsule,
+    latestBlocker: rawTaskCapsule.latestBlocker ?? {
+      code: "no_active_blocker",
+      summaryZh:
+        rawTaskCapsule.nextAllowedAction?.labelZh ??
+        "当前任务已登记，等待本地程序推进下一动作。",
+    },
+    taskIdentity: rawTaskCapsule.taskIdentity ?? {
+      modelId: null,
+      sampleId: null,
+      conditionLabel: null,
+      sampleSplit: null,
+      seed: null,
+      requiredBoundarySides: [],
+    },
+  } satisfies AiPainterTaskCapsule;
+  const activeDirectCleanLatentExecution = currentRegistry.ok
+    ? await readActiveDirectCleanLatentStage0Execution(currentRegistry.registry)
+    : null;
+  const postDecodeFormalExecution = currentRegistry.ok
+    ? activeDirectCleanLatentExecution ??
+      (currentRegistry.latestTrainingExecution as PostDecodeFormalExecutionProjection | null)
+    : null;
   const validationReconciliationPath =
     text(validationReconciliationPointer?.reportPath) ?? "";
   const validationReconciliation = validationReconciliationPath
@@ -319,22 +435,72 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     : runtimeStatus.status;
   const hasActiveTraining =
     currentControlStatus === "running" || currentControlStatus === "training";
+  const stages = rawStages.map((stage) =>
+    !hasActiveTraining &&
+    localProcesses.length === 0 &&
+    (stage.status === "running" || stage.status === "starting")
+      ? {
+          ...stage,
+          status: "stale_historical_record_no_active_process",
+          verdict: "quarantined" as const,
+          error:
+            "历史记录未形成终态，但当前不存在对应训练进程；不得投影为当前运行任务。",
+        }
+      : stage,
+  );
   const currentStages = selectLatestRepairedStages(stages);
   const checkpointLineageValid = validateCheckpointLineage(currentStages);
+  const latestTrainingRunId = currentRegistry.ok
+    ? text(currentRegistry.registry.latestTrainingTerminal?.runId)
+    : null;
   const latestStage = currentStages.find(
-    (stage) => stage.resolutionStage === 2,
+    (stage) => stage.runId === latestTrainingRunId,
   );
-  const repairedTrainingComplete =
-    latestStage?.status ===
-    "conditional_denoiser_training_completed_pending_validation";
+  const formalTerminalStatus = text(postDecodeFormalExecution?.terminal?.status);
+  const formalStage0RealVisualFailure = isFormalStage0TerminalStatus(
+    formalTerminalStatus,
+    "real_visual_failure",
+  );
+  const formalStage0Completed = isFormalStage0TerminalStatus(
+    formalTerminalStatus,
+    "completed",
+  );
   const activeTaskIdentity = {
-    modelId: text(config?.modelId),
+    modelId: taskCapsule.taskIdentity.modelId ?? text(config?.modelId),
     datasetPackageId: text(datasetManifest?.packageId),
     checkpointSha256: latestStage?.checkpointSha256 ?? null,
     trainingChainId: null,
   };
   const projectedStatus = selectAuthoritativeTrainingEvidence(
     [
+      {
+        code: "current_registry_unknown_or_stale",
+        label: "当前执行登记无效，已禁止历史回退",
+        summary:
+          "唯一当前执行登记缺失、损坏或证据不一致；本地程序已失败关闭，绝不扫描历史Smoke猜测当前任务。",
+        currentStep: "repair_current_execution_registry_from_immutable_evidence",
+        source: "current_execution_registry",
+        occurredAtUtc: null,
+        terminalPriority: 130,
+        taskIdentity: { ...activeTaskIdentity },
+        valid: !currentRegistry.ok,
+      },
+      {
+        code: "candidate_planned",
+        label: "新候选已规划，等待CPU未激活实现",
+        summary:
+          taskCapsule.latestBlocker?.summaryZh ??
+          taskCapsule.nextAllowedAction.labelZh,
+        currentStep: taskCapsule.nextAllowedAction.code,
+        source: "current_execution_registry",
+        occurredAtUtc: taskCapsule.candidateTerminal.recordedAtUtc,
+        terminalPriority: 120,
+        taskIdentity: { ...activeTaskIdentity },
+        valid:
+          currentRegistry.ok &&
+          taskCapsule.integrity.status === "verified" &&
+          taskCapsule.candidateTerminal.status === "planned",
+      },
       {
         code: "blocked_dataset_binding",
         label: "已阻断：V7样本绑定错误",
@@ -400,38 +566,90 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
         valid: validationFailed,
       },
       {
-        code: "awaiting_validation",
-        label: "训练完成，等待验证",
-        summary: "训练已完成，但正式推理仍需独立的训练后验证授权和通过证据。",
-        currentStep: "training_completed_pending_validation",
-        source: "latest_stage_manifest",
-        occurredAtUtc: fullTrainingCompleted
-          ? text(fullTrainingFinalization?.createdAtUtc)
-          : (latestStage?.createdAtUtc ?? null),
-        terminalPriority: 60,
+        code: "formal_stage0_real_visual_failure",
+        label: "Stage 0验证完成，真实视觉失败",
+        summary: postDecodeFormalExecution?.review
+          ? `正式Stage 0自动机器审核已完成：${number(postDecodeFormalExecution.review.previewPassCount) ?? 0}/${number(postDecodeFormalExecution.review.previewCount) ?? 0}个固定节点通过；候选已失败关闭并保存证据。`
+          : "正式Stage 0自动机器审核失败，候选已失败关闭并保存证据。",
+        currentStep: "formal_stage0_failed_closed_after_machine_review",
+        source: "current_execution_registry_latest_training_terminal",
+        occurredAtUtc: text(postDecodeFormalExecution?.terminal?.recordedAtUtc),
+        terminalPriority: 110,
+        taskIdentity: { ...activeTaskIdentity },
+        valid: formalStage0RealVisualFailure,
+      },
+      {
+        code: "formal_stage0_completed",
+        label: "Stage 0训练与验证通过",
+        summary: "正式Stage 0训练、固定预览复现和六节点机器审核均已通过。",
+        currentStep: "autonomous_stage1_compilation",
+        source: "current_execution_registry_latest_training_terminal",
+        occurredAtUtc: text(postDecodeFormalExecution?.terminal?.recordedAtUtc),
+        terminalPriority: 110,
+        taskIdentity: { ...activeTaskIdentity },
+        valid: formalStage0Completed,
+      },
+      {
+        code: "formal_stage0_reviewing",
+        label: "Stage 0训练完成，机器验证中",
+        summary: `40 Epoch训练已完成；本地程序正在审核六个固定预览（${number(postDecodeFormalExecution?.reviewProgress?.completedPreviewCount) ?? 0}/${number(postDecodeFormalExecution?.reviewProgress?.previewCount) ?? 6}）并形成终态。`,
+        currentStep: "automatic_machine_review",
+        source: "stage4_post_decode_object_rgb_formal_stage0_execution_state",
+        occurredAtUtc: text(postDecodeFormalExecution?.state.updatedAtUtc),
+        terminalPriority: 20,
+        taskIdentity: { ...activeTaskIdentity },
+        valid:
+          text(postDecodeFormalExecution?.state.status) === "running" &&
+          text(postDecodeFormalExecution?.state.phase) === "automatic_machine_review",
+      },
+      {
+        code: "formal_stage0_running",
+        label: "Stage 0正式训练进行中",
+        summary: "本地程序正在执行40 Epoch正式Stage 0训练。",
+        currentStep: "formal_stage0_training",
+        source: "stage4_post_decode_object_rgb_formal_stage0_execution_state",
+        occurredAtUtc:
+          text(postDecodeFormalExecution?.state.updatedAtUtc) ??
+          text(postDecodeFormalExecution?.state.startedAtUtc),
+        terminalPriority: 10,
+        taskIdentity: { ...activeTaskIdentity },
+        valid:
+          text(postDecodeFormalExecution?.state.status) === "running" &&
+          text(postDecodeFormalExecution?.state.phase) === "training",
+      },
+      {
+        code: "controlled_smoke_qualified",
+        label: "Smoke验证通过，等待正式Stage 0",
+        summary:
+          taskCapsule.latestBlocker?.summaryZh ??
+          taskCapsule.nextAllowedAction.labelZh,
+        currentStep: taskCapsule.nextAllowedAction.code,
+        source: "stage4_post_decode_object_rgb_smoke_terminal",
+        occurredAtUtc: taskCapsule.candidateTerminal.recordedAtUtc,
+        terminalPriority: 92,
         taskIdentity: {
           ...activeTaskIdentity,
-          trainingChainId: fullTrainingCompleted
-            ? text(fullTrainingFinalization?.chainId)
-            : null,
         },
         valid:
-          repairedTrainingComplete &&
-          (!fullTrainingFinalization || fullTrainingCompleted),
+          taskCapsule.integrity.status === "verified" &&
+          taskCapsule.candidateTerminal.status === "qualified",
       },
       {
         code: "candidate_failed_closed",
-        label: "Stage4候选失败关闭",
-        summary: taskCapsule.latestBlocker.summaryZh,
-        currentStep: "stage4_candidate_failed_closed_waiting_owner_decision",
+        label:
+          taskCapsule.candidateTerminal.programStatus ===
+          "failed_closed_candidate_space_exhausted"
+            ? "验证已完成，候选已安全关闭"
+            : "Stage4候选失败关闭",
+        summary:
+          taskCapsule.latestBlocker?.summaryZh ??
+          taskCapsule.nextAllowedAction.labelZh,
+        currentStep: taskCapsule.nextAllowedAction.code,
         source: "r5_stage4_task_capsule",
         occurredAtUtc: taskCapsule.candidateTerminal.recordedAtUtc,
         terminalPriority: 95,
         taskIdentity: {
-          modelId: taskCapsule.taskIdentity.modelId,
-          datasetPackageId: activeTaskIdentity.datasetPackageId,
-          checkpointSha256: null,
-          trainingChainId: null,
+          ...activeTaskIdentity,
         },
         valid:
           taskCapsule.integrity.status === "verified" &&
@@ -455,6 +673,7 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     stages
       .map((stage) => stage.runId)
       .concat(
+        taskCapsule.candidateTerminal.runId ?? "",
         authorization.requestId ?? "",
         text(validationReconciliation?.reconciliationId) ?? "",
         text(object(validationReconciliation?.canonicalBatch)?.batchId) ?? "",
@@ -468,8 +687,7 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
         event.action === "run_ai_assisted_v7_post_training_validation" ||
         event.action === "reconcile_ai_assisted_v7_post_training_validation",
     )
-    .slice(-120)
-    .reverse()
+    .slice(0, 120)
     .map((event) => ({
       id: event.id,
       timestamp: event.timestamp,
@@ -477,26 +695,52 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
       action: event.action,
       kind: event.kind,
       status: event.status,
-      title: readableHumanText(event.titleZh) ?? text(event.title) ?? "未命名程序事件",
+      title:
+        readableHumanText(event.titleZh) ??
+        text(event.title) ??
+        "未命名程序事件",
       detail: readableHumanText(event.detailZh) ?? text(event.detail),
       currentStep: event.currentStep ?? null,
       evidencePath: event.evidencePath ?? null,
     }));
   const training = object(config?.training);
-  const activity = projectCurrentExecutionActivity({
+  const projectedActivity = projectCurrentExecutionActivity({
     control,
     runtimeStatus,
     stages,
     epochTarget: number(training?.denoiserEpochs),
     localProcesses,
   });
+  const activity = projectPostDecodeFormalExecutionActivity({
+    activity: projectedActivity,
+    execution: postDecodeFormalExecution,
+    stages,
+  });
+  const dashboardStatus =
+    activity.lifecycle === "running" && activity.progress
+      ? {
+          code: "formal_stage0_running",
+          label: "Stage 0正式训练进行中",
+          summary: `${activity.progress.stageLabel} ${activity.progress.epoch}/${activity.progress.epochTarget} Epoch，优化步 ${activity.progress.optimizerStep}/${activity.progress.optimizerStepTarget}；训练结束后由本地程序自动审核并形成终态。`,
+          currentStep: activity.progress.phase,
+          source: activity.source,
+          occurredAtUtc: activity.lastHeartbeatAtUtc,
+          terminalPriority: 10,
+          taskIdentity: {
+            modelId: null,
+            datasetPackageId: text(datasetManifest?.packageId),
+            checkpointSha256: null,
+            trainingChainId: activity.progress.runId,
+          },
+        }
+      : projectedStatus;
   return {
     schemaVersion: "ai-painter-current-training-dashboard-v1",
     generatedAtUtc: new Date().toISOString(),
     readOnly: true,
     taskCapsule,
     activity,
-    status: projectedStatus,
+    status: dashboardStatus,
     model: {
       modelId: text(config?.modelId),
       architectureVersion: text(config?.architectureVersion),
@@ -688,7 +932,81 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
   };
 }
 
+function buildUnknownRegistryTaskCapsule(
+  errorCode?: string,
+): AiPainterTaskCapsule {
+  return {
+    schemaVersion: "ai-painter-local-task-capsule-v1",
+    capsuleId: "current-execution-registry-unknown-or-stale",
+    generatedFrom: "program_saved_evidence",
+    readOnly: true,
+    module: { id: "ai-painter-r5-stage4", nameZh: "AI Painter R5 / Stage4" },
+    fixedOverallProgress: {
+      completedStages: null,
+      totalStages: null,
+      percent: null,
+      source: "current_execution_registry_failed_closed",
+    },
+    currentStage: {
+      number: 4,
+      total: 5,
+      labelZh: "当前执行登记失败关闭",
+      status: "unknown_or_stale",
+    },
+    candidateTerminal: {
+      runId: null,
+      status: "unknown_or_stale",
+      programStatus: errorCode ?? "current_execution_registry_unavailable",
+      previewMachineStatus: null,
+      modelQualificationStatus: "unknown_or_stale",
+      previewCount: null,
+      previewPassCount: null,
+      previewFailCount: null,
+      checkpointWritten: false,
+      modelWeightsModified: false,
+      recordedAtUtc: null,
+      recordedAtAsiaShanghai: null,
+    },
+    latestBlocker: {
+      code: errorCode ?? "current_execution_registry_unavailable",
+      summaryZh:
+        "唯一当前执行登记未通过不可变证据核验。系统已禁止从历史Smoke、历史时间戳或旧任务胶囊推断当前任务。",
+    },
+    nextAllowedAction: {
+      code: "repair_current_execution_registry_from_immutable_evidence",
+      labelZh: "仅可根据不可变证据修复唯一当前执行登记。",
+      ownerAuthorizationRequired: false,
+      automaticExecutionAllowed: true,
+      planEvidenceConfirmed: false,
+    },
+    forbiddenActions: [
+      "fallback_to_historical_smoke",
+      "select_current_by_timestamp",
+      "reuse_failed_checkpoint",
+      "start_training_without_verified_current_registry",
+    ],
+    taskIdentity: {
+      modelId: null,
+      sampleId: null,
+      conditionLabel: null,
+      sampleSplit: null,
+      seed: null,
+      requiredBoundarySides: [],
+    },
+    evidence: [],
+    integrity: {
+      status: "incomplete_or_mismatched",
+      requiredEvidencePresent: false,
+      boundEvidenceVerified: false,
+      identityMatches: false,
+      migrationRegistryStatus: "unknown_or_stale",
+    },
+  };
+}
+
 async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
+  const autonomousCapsule = await readCurrentAutonomousStage4TaskCapsule();
+  if (autonomousCapsule) return autonomousCapsule;
   const absoluteFinalizationRoot = resolveInsideRoot(
     r5Stage4FinalizationRootPath,
   );
@@ -708,8 +1026,8 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
         }),
     )
   )
-    .filter(
-      (item): item is { path: string; value: JsonObject } => Boolean(item.value),
+    .filter((item): item is { path: string; value: JsonObject } =>
+      Boolean(item.value),
     )
     .sort(
       (left, right) =>
@@ -732,7 +1050,9 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
   }
   const selectedTerminal = terminals[0] ?? { path: "", value: {} };
   const rawTerminal = selectedTerminal.value;
-  const derivedRunId = selectedTerminal.path.includes("model-smoke-20260810-validated-kernel")
+  const derivedRunId = selectedTerminal.path.includes(
+    "model-smoke-20260810-validated-kernel",
+  )
     ? "model-smoke-20260810-validated-kernel"
     : text(rawTerminal.runId);
   const terminal: JsonObject = {
@@ -758,16 +1078,16 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
         "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
       ? {
           runId: derivedRunId,
-          status: "machine_reviews_not_started_training_authorization_gate_failed_closed",
+          status:
+            "machine_reviews_not_started_training_authorization_gate_failed_closed",
           previewCount: 0,
           previewPassCount: 0,
           previewFailCount: 0,
           recordedAtUtc: rawTerminal.recordedAtUtc,
         }
       : {};
-  const executionConsumptionBinding = object(
-    object(rawFinalization.details)?.consumption,
-  ) ?? {};
+  const executionConsumptionBinding =
+    object(object(rawFinalization.details)?.consumption) ?? {};
   const authorizationPath =
     text(rawFinalization.authorizationPath) ??
     text(executionConsumptionBinding.authorizationPath) ??
@@ -794,15 +1114,18 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
   const migrationRegistry = (await readJson(migrationRegistryPath)) ?? {};
   const controlConvergence =
     (await readJson(stageControlConvergenceTerminalPath)) ?? {};
-  const planText = await readFile(resolveInsideRoot(uniqueModulePlanPath), "utf8").catch(
-    () => "",
-  );
+  const planText = await readFile(
+    resolveInsideRoot(uniqueModulePlanPath),
+    "utf8",
+  ).catch(() => "");
   const evidenceInput = [
     {
       kind: "stage4_terminal",
       labelZh: "R5 Stage4最新终态",
       path: selectedTerminal.path,
-      sha256: selectedTerminal.path ? await sha256(selectedTerminal.path) : null,
+      sha256: selectedTerminal.path
+        ? await sha256(selectedTerminal.path)
+        : null,
       expectedSha256: null,
       recordedAtUtc: text(terminal.recordedAtUtc),
       recordedAtAsiaShanghai: text(terminal.recordedAtAsiaShanghai),
@@ -908,6 +1231,136 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
   }) as AiPainterTaskCapsule;
 }
 
+async function readCurrentAutonomousStage4TaskCapsule(): Promise<AiPainterTaskCapsule | null> {
+  const pointer = await readJson(autonomousStage4CandidatePointerPath);
+  const terminalBinding = object(pointer?.terminal);
+  const terminalPath = text(terminalBinding?.path);
+  const expectedTerminalSha256 = text(terminalBinding?.sha256);
+  if (!terminalPath || !expectedTerminalSha256) return null;
+  const actualTerminalSha256 = await sha256(terminalPath);
+  if (actualTerminalSha256 !== expectedTerminalSha256) return null;
+  const terminal = await readJson(terminalPath);
+  if (
+    terminal?.schemaVersion !==
+      "stage4-post-carrier-bounded-candidate-terminal-v1" ||
+    terminal?.executionState !== "completed"
+  )
+    return null;
+  const runRoot = path.posix.dirname(terminalPath.replaceAll("\\", "/"));
+  const capsulePath = `${runRoot}/local-task-capsule.json`;
+  const savedCapsule = await readJson(capsulePath);
+  if (
+    savedCapsule?.schemaVersion !== "ai-painter-local-task-capsule-v2" ||
+    text(savedCapsule.runId) !== text(pointer?.runId) ||
+    text(object(savedCapsule.latestTerminal)?.sha256) !== actualTerminalSha256
+  )
+    return null;
+
+  const auditPath = text(object(terminal.evidenceAudit)?.path) ?? "";
+  const audit = auditPath ? await readJson(auditPath) : null;
+  const carrierFailureBinding = arrayObjects(audit?.immutableEvidence).find(
+    (item) => text(item.role) === "authoritativeCarrierFailureTerminal",
+  );
+  const carrierFailurePath = text(carrierFailureBinding?.path) ?? "";
+  const machineReviewPath = carrierFailurePath
+    ? `${path.posix.dirname(carrierFailurePath.replaceAll("\\", "/"))}/machine-review.json`
+    : "";
+  const machineReview = machineReviewPath
+    ? await readJson(machineReviewPath)
+    : null;
+  const reviews = arrayObjects(machineReview?.reviews);
+  const previewPassCount = reviews.filter(
+    (item) => item.passed === true,
+  ).length;
+  const previewCount = reviews.length;
+
+  const evidenceBindings = [
+    {
+      kind: "autonomous_latest_pointer",
+      labelZh: "本地AI当前终态指针",
+      path: autonomousStage4CandidatePointerPath,
+      expectedSha256: null,
+    },
+    {
+      kind: "stage4_terminal",
+      labelZh: "Stage4当前自主终态",
+      path: terminalPath,
+      expectedSha256: expectedTerminalSha256,
+    },
+    {
+      kind: "local_task_capsule",
+      labelZh: "本地任务胶囊",
+      path: capsulePath,
+      expectedSha256: null,
+    },
+    {
+      kind: "problem_report",
+      labelZh: "候选穷尽问题报告",
+      path: text(object(terminal.problemReport)?.path) ?? "",
+      expectedSha256: text(object(terminal.problemReport)?.sha256),
+    },
+    {
+      kind: "evidence_audit",
+      labelZh: "候选证据审计",
+      path: auditPath,
+      expectedSha256: text(object(terminal.evidenceAudit)?.sha256),
+    },
+    {
+      kind: "unique_decision",
+      labelZh: "候选唯一裁决",
+      path: text(object(terminal.uniqueDecision)?.path) ?? "",
+      expectedSha256: text(object(terminal.uniqueDecision)?.sha256),
+    },
+    {
+      kind: "policy_boundary",
+      labelZh: "自动失败关闭边界报告",
+      path: text(object(terminal.policyBoundaryReport)?.path) ?? "",
+      expectedSha256: text(object(terminal.policyBoundaryReport)?.sha256),
+    },
+    {
+      kind: "cpu_report",
+      labelZh: "CPU正反检查报告",
+      path: text(object(terminal.cpuReport)?.path) ?? "",
+      expectedSha256: text(object(terminal.cpuReport)?.sha256),
+    },
+    {
+      kind: "machine_review",
+      labelZh: "最近候选六节点机器审核",
+      path: machineReviewPath,
+      expectedSha256: null,
+    },
+    {
+      kind: "unique_module_plan",
+      labelZh: "唯一模块计划表",
+      path: uniqueModulePlanPath,
+      expectedSha256: null,
+    },
+  ];
+  const evidence = await Promise.all(
+    evidenceBindings.map(async (binding) => {
+      const actual = binding.path ? await sha256(binding.path) : null;
+      return {
+        ...binding,
+        sha256: actual,
+        sha256Verified: Boolean(
+          actual &&
+          (!binding.expectedSha256 || actual === binding.expectedSha256),
+        ),
+        recordedAtUtc: text(terminal.recordedAtUtc),
+        recordedAtAsiaShanghai: null,
+      };
+    }),
+  );
+  return projectAutonomousStage4TaskCapsule({
+    pointer,
+    terminal,
+    savedCapsule,
+    evidence,
+    previewCount,
+    previewPassCount,
+  }) as AiPainterTaskCapsule;
+}
+
 async function readStrictValidationBatches(): Promise<StrictValidationBatch[]> {
   try {
     const absoluteRoot = resolveInsideRoot(strictValidationRootPath);
@@ -958,8 +1411,7 @@ async function readStrictValidationBatches(): Promise<StrictValidationBatch[]> {
                   messageZh: text(issue.messageZh),
                   affectedRegion: text(issue.affectedRegion),
                   nextTrainingTarget:
-                    text(issue.nextFixTarget) ??
-                    text(issue.nextTrainingTarget),
+                    text(issue.nextFixTarget) ?? text(issue.nextTrainingTarget),
                 })),
                 validationTokenAccounting:
                   normalizeStrictValidationTokenAccounting(token, runTotals),
@@ -1022,8 +1474,7 @@ function normalizeStrictValidationTokenAccounting(
     latentChannelValues: number(totals.latentChannelValues) ?? 0,
     conditionScalarValues: number(totals.conditionScalarValues) ?? 0,
     decodedRgbFrames: number(totals.decodedRgbFrames) ?? 0,
-    decodedRgbPixelPredictions:
-      number(totals.decodedRgbPixelPredictions) ?? 0,
+    decodedRgbPixelPredictions: number(totals.decodedRgbPixelPredictions) ?? 0,
     externalApiTokens:
       number(root.externalApiTokens) ??
       number(object(root.externalApi)?.totalTokens) ??
@@ -1036,7 +1487,7 @@ async function readRelevantLocalProcesses(): Promise<LocalProcessEvidence[]> {
   const command = [
     "$rows = Get-CimInstance Win32_Process | Where-Object {",
     "  $_.Name -in @('python.exe','pythonw.exe','node.exe','cmd.exe') -and",
-    "  $_.CommandLine -match '(train_ai_assisted|run-ai-assisted-v7|run:ai-assisted|post-training-validation|strict-revalidation|single-sample-overfit|ai-painter-training-controller)' -and",
+    "  $_.CommandLine -match '(train_ai_assisted|run-ai-assisted-v7|run-ai-painter-stage4|run:ai-assisted|post-training-validation|strict-revalidation|single-sample-overfit|ai-painter-training-controller)' -and",
     "  $_.CommandLine -notmatch '(check-ai-painter|check:ai-painter)'",
     "} | Select-Object @{Name='pid';Expression={$_.ProcessId}}, @{Name='parentPid';Expression={$_.ParentProcessId}}, @{Name='name';Expression={$_.Name}}, @{Name='startedAtUtc';Expression={if ($_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}}, @{Name='commandLine';Expression={$_.CommandLine}}",
     "@($rows) | ConvertTo-Json -Compress",
@@ -1087,6 +1538,288 @@ async function readRelevantLocalProcesses(): Promise<LocalProcessEvidence[]> {
   }
 }
 
+function projectPostDecodeFormalExecutionActivity({
+  activity,
+  execution,
+  stages,
+}: {
+  activity: CurrentExecutionActivity;
+  execution: PostDecodeFormalExecutionProjection | null;
+  stages: TrainingStageDetail[];
+}): CurrentExecutionActivity {
+  if (!execution) return activity;
+  const stateStatus = text(execution.state.status);
+  const statePhase = text(execution.state.phase);
+  const terminalStatus = text(execution.terminal?.status);
+  const running = stateStatus === "running" && statePhase === "training";
+  const reviewing =
+    stateStatus === "running" && statePhase === "automatic_machine_review";
+  const failed = isFormalStage0TerminalStatus(
+    terminalStatus,
+    "real_visual_failure",
+  );
+  const completed = isFormalStage0TerminalStatus(terminalStatus, "completed");
+  if (!running && !reviewing && !failed && !completed) return activity;
+
+  const stage = stages.find((value) => value.runId === execution.runId) ?? null;
+  const live =
+    object(execution.progress?.liveProgress) ??
+    (execution.progress
+      ? directCleanLatentLiveProgress(execution.progress)
+      : null);
+  const reviewCompleted =
+    number(execution.reviewProgress?.completedPreviewCount) ??
+    number(execution.reviewProgress?.completedReviewCount) ??
+    0;
+  const reviewTotal =
+    number(execution.reviewProgress?.previewCount) ??
+    number(execution.reviewProgress?.targetReviewCount) ??
+    6;
+  const latestMetric = stage?.metrics.at(-1) ?? null;
+  const latestPreview = stage?.previews.at(-1) ?? null;
+  const timestamp =
+    text(execution.terminal?.recordedAtUtc) ??
+    text(execution.state.updatedAtUtc) ??
+    execution.occurredAtUtc;
+  const lifecycle: CurrentExecutionActivity["lifecycle"] = running
+    ? "running"
+    : reviewing
+      ? "reviewing"
+      : failed
+        ? "failed"
+        : "completed";
+  return {
+    ...activity,
+    actor: "local_program",
+    actorLabelZh: running ? "本地AI训练程序" : "本地AI审核程序",
+    lifecycle,
+    lifecycleLabelZh: running
+      ? "正式训练中"
+      : reviewing
+        ? "机器验证中"
+        : failed
+          ? "验证失败"
+          : "验证通过",
+    localAiProcessActive: running || reviewing,
+    taskId: execution.runId,
+    taskKind: running
+      ? "formal_stage0_training"
+      : reviewing
+        ? "automatic_machine_review"
+        : "machine_review_terminal",
+    taskLabelZh: running
+      ? "Stage 0正式训练进行中"
+      : reviewing
+        ? `正在自动审核固定预览 ${reviewCompleted}/${reviewTotal}`
+        : failed
+          ? "自动验证完成，候选失败关闭"
+          : "自动验证完成，Stage 0通过",
+    detailZh: running
+      ? "本地程序正在执行40 Epoch正式训练；完成后由同一执行器自动进入固定阈值机器审核和终态收口。"
+      : reviewing
+        ? `训练已经完成；本地程序正在执行固定阈值机器审核，当前已完成${reviewCompleted}/${reviewTotal}，并持续保存不可变进度。`
+        : failed
+          ? `机器审核已完成：${number(execution.review?.previewPassCount) ?? 0}/${number(execution.review?.previewCount) ?? 0}个固定节点通过；失败证据和裁决均已保存。`
+          : "训练、预览复现和机器审核已经通过，终态证据已保存。",
+    source: running || reviewing
+      ? "formal_stage0_execution_state"
+      : "formal_stage0_phase_terminal",
+    sourcePath: running
+      ? execution.progress
+        ? execution.progressPath
+        : execution.statePath
+      : reviewing
+        ? execution.reviewProgress
+          ? execution.reviewProgressPath
+          : execution.statePath
+        : execution.terminalPath,
+    startedAtUtc:
+      text(execution.progress?.startedAtUtc) ?? stage?.createdAtUtc ?? null,
+    startedAtAsiaShanghai:
+      text(execution.progress?.startedAtAsiaShanghai) ??
+      stage?.createdAtAsiaShanghai ??
+      null,
+    lastHeartbeatAtUtc: timestamp,
+    lastHeartbeatAtAsiaShanghai:
+      text(execution.progress?.updatedAtAsiaShanghai) ?? null,
+    heartbeatAgeSeconds: timestamp
+      ? Math.max(0, (Date.now() - Date.parse(timestamp)) / 1000)
+      : null,
+    stalled: false,
+    progress: {
+      ...activity.progress,
+      runId: execution.runId,
+      phase: running
+        ? "training"
+        : reviewing
+          ? "automatic_machine_review"
+          : "machine_review_completed",
+      stageIndex: 0,
+      stageLabel: "Stage 0",
+      resolution: stage?.resolution
+        ? `${stage.resolution.width}×${stage.resolution.height}`
+        : "256×192",
+      epoch: number(live?.epoch) ?? stage?.epochCount ?? 40,
+      epochTarget: number(live?.epochTarget) ?? 40,
+      batch: number(live?.batch) ?? 48,
+      batchTarget: number(live?.batchTarget) ?? 48,
+      optimizerStep: number(live?.optimizerStep) ?? 5760,
+      optimizerStepTarget: number(live?.optimizerStepTarget) ?? 5760,
+      percentage: number(live?.percentage) ?? 100,
+      elapsedSeconds: number(live?.elapsedSeconds),
+      etaSeconds: running ? number(live?.etaSeconds) : 0,
+      optimizerStepsPerSecond: number(live?.optimizerStepsPerSecond),
+      trainCompositeLoss:
+        number(live?.rollingEpochLoss) ?? latestMetric?.trainCompositeLoss ?? null,
+      validationCompositeScore:
+        number(live?.validationCompositeScore) ??
+        latestMetric?.validationCompositeScore ??
+        null,
+      checkpointScore:
+        number(live?.checkpointSelectionScore) ??
+        latestMetric?.validationCheckpointScore ??
+        null,
+      latestPreviewPath: latestPreview?.imagePath ?? null,
+      latestPreviewRecordedAtUtc: latestPreview?.recordedAtUtc ?? null,
+      latestPreviewRecordedAtAsiaShanghai:
+        latestPreview?.recordedAtAsiaShanghai ?? null,
+    },
+  };
+}
+
+function isFormalStage0TerminalStatus(
+  status: string | null,
+  outcome: "completed" | "real_visual_failure",
+) {
+  if (!status) return false;
+  const knownPrefixes = [
+    "post_decode_object_rgb",
+    "post_decode_full_condition_responsibility",
+    "authoritative_semantic_carrier",
+    "direct_clean_latent",
+  ];
+  return knownPrefixes.some(
+    (prefix) => status === `${prefix}_stage0_${outcome}`,
+  );
+}
+
+async function readActiveDirectCleanLatentStage0Execution(
+  registry: JsonObject,
+): Promise<PostDecodeFormalExecutionProjection | null> {
+  if (
+    text(registry.capabilityVersion) !==
+      "stage4-direct-condition-clean-latent-generator-change-candidate-v1" ||
+    text(registry.taskId) !== "compile_direct_condition_clean_latent_stage0"
+  )
+    return null;
+  const relativeRoot =
+    ".runtime/ai-painter/stage4-direct-clean-latent-formal-stage0";
+  const entries = await readdir(resolveInsideRoot(relativeRoot), {
+    withFileTypes: true,
+  }).catch(() => []);
+  const candidates: PostDecodeFormalExecutionProjection[] = [];
+  for (const entry of entries) {
+    if (
+      !entry.isDirectory() ||
+      !entry.name.startsWith("stage4-direct-clean-latent-stage0-")
+    )
+      continue;
+    const runRoot = `${relativeRoot}/${entry.name}`;
+    const statePath = `${runRoot}/execution-state.json`;
+    const state = await readJson(statePath);
+    if (
+      !state ||
+      text(state.status) !== "running" ||
+      text(state.runId) !== entry.name ||
+      text(state.capabilityVersion) !== text(registry.capabilityVersion)
+    )
+      continue;
+    const terminalPath = `${runRoot}/phase-terminal.json`;
+    const reviewPath = `${runRoot}/machine-review.json`;
+    const reviewProgressPath = `${runRoot}/review-progress.json`;
+    const progressPath = `${runRoot}/training-output/progress.json`;
+    const [terminal, review, reviewProgress, progress] = await Promise.all([
+      readJson(terminalPath),
+      readJson(reviewPath),
+      readJson(reviewProgressPath),
+      readJson(progressPath),
+    ]);
+    candidates.push({
+      runId: entry.name,
+      statePath,
+      state,
+      terminalPath,
+      terminal,
+      reviewPath,
+      review,
+      reviewProgressPath,
+      reviewProgress,
+      progressPath,
+      progress,
+      occurredAtUtc:
+        text(state.updatedAtUtc) ??
+        text(progress?.updatedAtUtc) ??
+        text(state.startedAtUtc),
+    });
+  }
+  if (candidates.length > 1)
+    throw new Error("multiple_active_direct_clean_latent_stage0_executions");
+  return candidates[0] ?? null;
+}
+
+async function readLatestPostDecodeFormalExecution(): Promise<PostDecodeFormalExecutionProjection | null> {
+  const relativeRoot =
+    ".runtime/ai-painter/stage4-post-decode-object-rgb-formal-stage0";
+  const absoluteRoot = resolveInsideRoot(relativeRoot);
+  const entries = await readdir(absoluteRoot, { withFileTypes: true }).catch(
+    () => [],
+  );
+  const candidates: PostDecodeFormalExecutionProjection[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const runRoot = `${relativeRoot}/${entry.name}`;
+    const statePath = `${runRoot}/execution-state.json`;
+    const state = await readJson(statePath);
+    if (!state) continue;
+    const terminalPath = `${runRoot}/phase-terminal.json`;
+    const reviewPath = `${runRoot}/machine-review.json`;
+    const reviewProgressPath = `${runRoot}/review-progress.json`;
+    const progressPath = `${runRoot}/training-output/progress.json`;
+    const [terminal, review, reviewProgress, progress] = await Promise.all([
+      readJson(terminalPath),
+      readJson(reviewPath),
+      readJson(reviewProgressPath),
+      readJson(progressPath),
+    ]);
+    const occurredAtUtc =
+      text(terminal?.recordedAtUtc) ??
+      text(state.completedAtUtc) ??
+      text(state.updatedAtUtc) ??
+      text(progress?.updatedAtUtc) ??
+      text(state.startedAtUtc);
+    candidates.push({
+      runId: entry.name,
+      statePath,
+      state,
+      terminalPath,
+      terminal,
+      reviewPath,
+      review,
+      reviewProgressPath,
+      reviewProgress,
+      progressPath,
+      progress,
+      occurredAtUtc,
+    });
+  }
+  candidates.sort(
+    (left, right) =>
+      Date.parse(right.occurredAtUtc ?? "") -
+      Date.parse(left.occurredAtUtc ?? ""),
+  );
+  return candidates[0] ?? null;
+}
+
 function projectCurrentExecutionActivity({
   control,
   runtimeStatus,
@@ -1101,7 +1834,8 @@ function projectCurrentExecutionActivity({
   localProcesses: LocalProcessEvidence[];
 }): CurrentExecutionActivity {
   const heartbeat = runtimeStatus.heartbeat;
-  const controllerPid = heartbeat?.controllerPid ?? control.controllerPid ?? null;
+  const controllerPid =
+    heartbeat?.controllerPid ?? control.controllerPid ?? null;
   const childPid = heartbeat?.childPid ?? control.childPid ?? null;
   const controllerAlive = isProcessAlive(controllerPid);
   const childAlive = isProcessAlive(childPid);
@@ -1121,7 +1855,8 @@ function projectCurrentExecutionActivity({
   const waitingForOwner =
     heartbeat?.status === "waiting_owner_review" && !runtimeStatus.stale;
   const recentFailure =
-    control.status === "failed" && isRecentTimestamp(control.finishedAt, 10 * 60);
+    control.status === "failed" &&
+    isRecentTimestamp(control.finishedAt, 10 * 60);
   const recentCompletion =
     control.status === "completed" &&
     isRecentTimestamp(control.finishedAt, 2 * 60);
@@ -1141,9 +1876,12 @@ function projectCurrentExecutionActivity({
   const localProcessActive =
     activityState.lifecycle === "running" ||
     activityState.lifecycle === "reviewing";
-  const activeStage = [...stages]
-    .reverse()
-    .find((stage) => stage.status === "running" || stage.status === "starting") ?? null;
+  const activeStage =
+    [...stages]
+      .reverse()
+      .find(
+        (stage) => stage.status === "running" || stage.status === "starting",
+      ) ?? null;
   const progressStage = localProcessActive ? activeStage : null;
   const liveProgress = progressStage?.liveProgress ?? null;
   const latestMetric = progressStage?.metrics.at(-1) ?? null;
@@ -1170,8 +1908,14 @@ function projectCurrentExecutionActivity({
     : null;
   const etaSeconds =
     liveProgress?.etaSeconds ??
-    (elapsedSeconds !== null && currentEpoch && targetEpoch && currentEpoch < targetEpoch
-      ? Math.max(0, (elapsedSeconds / currentEpoch) * (targetEpoch - currentEpoch))
+    (elapsedSeconds !== null &&
+    currentEpoch &&
+    targetEpoch &&
+    currentEpoch < targetEpoch
+      ? Math.max(
+          0,
+          (elapsedSeconds / currentEpoch) * (targetEpoch - currentEpoch),
+        )
       : null);
   const progressTimestampMs = Date.parse(liveProgress?.recordedAtUtc ?? "");
   const runtimeHeartbeatTimestampMs = Date.parse(heartbeat?.timestampUtc ?? "");
@@ -1181,124 +1925,127 @@ function projectCurrentExecutionActivity({
     (!Number.isFinite(runtimeHeartbeatTimestampMs) ||
       progressTimestampMs >= runtimeHeartbeatTimestampMs);
   const latestActivityAtUtc = useProgressHeartbeat
-    ? liveProgress?.recordedAtUtc ?? null
-    : heartbeat?.timestampUtc ?? null;
+    ? (liveProgress?.recordedAtUtc ?? null)
+    : (heartbeat?.timestampUtc ?? null);
   const latestActivityAtAsiaShanghai = useProgressHeartbeat
-    ? liveProgress?.recordedAtAsiaShanghai ?? null
-    : heartbeat?.timestampLocal ?? null;
+    ? (liveProgress?.recordedAtAsiaShanghai ?? null)
+    : (heartbeat?.timestampLocal ?? null);
   const heartbeatAgeSeconds = latestActivityAtUtc
     ? Math.max(0, (Date.now() - Date.parse(latestActivityAtUtc)) / 1000)
     : null;
   const tokenAccounting = progressStage?.tokenAccounting ?? null;
   const localTokenTotal = liveProgress?.localTrainingTokenCount ?? null;
-  const status = activityState.lifecycle === "stalled"
-    ? {
-        actor: "local_program" as const,
-        actorLabelZh: "本地训练程序",
-        lifecycle: "stalled" as const,
-        lifecycleLabelZh: "心跳中断",
-        taskLabelZh: "本地任务可能异常停止",
-        detailZh:
-          "心跳仍声称任务在执行，但心跳已过期或对应进程不存在；控制台不会把它显示为正常训练。",
-      }
-    : activityState.lifecycle === "running" ||
-        activityState.lifecycle === "reviewing"
+  const status =
+    activityState.lifecycle === "stalled"
       ? {
-          actor:
-            heartbeat?.status === "training" ||
-            heartbeat?.status === "inferencing" ||
-            discoveredProcess?.commandIdentity === "model_training" ||
-            discoveredProcess?.commandIdentity === "model_inference"
-              ? ("local_ai_model" as const)
-              : ("local_program" as const),
-          actorLabelZh:
-            heartbeat?.status === "training" ||
-            heartbeat?.status === "inferencing" ||
-            discoveredProcess?.commandIdentity === "model_training" ||
-            discoveredProcess?.commandIdentity === "model_inference"
-              ? "本地自研AI模型"
-              : "本地训练程序",
-          lifecycle:
-            heartbeat?.status === "reviewing"
-              ? ("reviewing" as const)
-              : ("running" as const),
-          lifecycleLabelZh:
-            heartbeat?.status === "reviewing" ? "审核运行中" : "运行中",
-          taskLabelZh:
-            livePhaseLabelZh(liveProgress?.phase) ??
-            (heartbeatClaimsExecution ? heartbeat?.activeStep : null) ??
-            "本地任务运行中",
+          actor: "local_program" as const,
+          actorLabelZh: "本地训练程序",
+          lifecycle: "stalled" as const,
+          lifecycleLabelZh: "心跳中断",
+          taskLabelZh: "本地任务可能异常停止",
           detailZh:
-            heartbeatClaimsExecution && !runtimeStatus.stale && childAlive
-              ? "PID与运行心跳均有效；下方进度、预览和计算量只显示本地程序已经保存的证据。"
-              : "Windows进程表发现项目训练任务，但未找到有效控制器心跳；控制台只展示能够核验的进程和落盘进度。",
+            "心跳仍声称任务在执行，但心跳已过期或对应进程不存在；控制台不会把它显示为正常训练。",
         }
-      : activityState.lifecycle === "waiting_authorization"
+      : activityState.lifecycle === "running" ||
+          activityState.lifecycle === "reviewing"
         ? {
-            actor: "owner" as const,
-            actorLabelZh: "项目所有者",
-            lifecycle: "waiting_authorization" as const,
-            lifecycleLabelZh: "等待授权",
-            taskLabelZh: heartbeat?.activeStep ?? "等待项目所有者决定",
-            detailZh: "本地程序已停止计算，正在等待独立Owner授权。",
+            actor:
+              heartbeat?.status === "training" ||
+              heartbeat?.status === "inferencing" ||
+              discoveredProcess?.commandIdentity === "model_training" ||
+              discoveredProcess?.commandIdentity === "model_inference"
+                ? ("local_ai_model" as const)
+                : ("local_program" as const),
+            actorLabelZh:
+              heartbeat?.status === "training" ||
+              heartbeat?.status === "inferencing" ||
+              discoveredProcess?.commandIdentity === "model_training" ||
+              discoveredProcess?.commandIdentity === "model_inference"
+                ? "本地自研AI模型"
+                : "本地训练程序",
+            lifecycle:
+              heartbeat?.status === "reviewing"
+                ? ("reviewing" as const)
+                : ("running" as const),
+            lifecycleLabelZh:
+              heartbeat?.status === "reviewing" ? "审核运行中" : "运行中",
+            taskLabelZh:
+              livePhaseLabelZh(liveProgress?.phase) ??
+              (heartbeatClaimsExecution ? heartbeat?.activeStep : null) ??
+              "本地任务运行中",
+            detailZh:
+              heartbeatClaimsExecution && !runtimeStatus.stale && childAlive
+                ? "PID与运行心跳均有效；下方进度、预览和计算量只显示本地程序已经保存的证据。"
+                : "Windows进程表发现项目训练任务，但未找到有效控制器心跳；控制台只展示能够核验的进程和落盘进度。",
           }
-        : activityState.lifecycle === "failed"
+        : activityState.lifecycle === "waiting_authorization"
           ? {
-              actor: "local_program" as const,
-              actorLabelZh: "本地训练程序",
-              lifecycle: "failed" as const,
-              lifecycleLabelZh: "执行失败",
-              taskLabelZh: control.currentStep ?? "本地任务执行失败",
-              detailZh:
-                control.error ??
-                "本地任务已失败停止；失败证据保留，当前没有模型进程在运行。",
+              actor: "owner" as const,
+              actorLabelZh: "项目所有者",
+              lifecycle: "waiting_authorization" as const,
+              lifecycleLabelZh: "等待授权",
+              taskLabelZh: heartbeat?.activeStep ?? "等待项目所有者决定",
+              detailZh: "本地程序已停止计算，正在等待独立Owner授权。",
             }
-          : activityState.lifecycle === "completed"
+          : activityState.lifecycle === "failed"
             ? {
                 actor: "local_program" as const,
                 actorLabelZh: "本地训练程序",
-                lifecycle: "completed" as const,
-                lifecycleLabelZh: "刚刚完成",
-                taskLabelZh: control.currentStep ?? "本地任务执行完成",
+                lifecycle: "failed" as const,
+                lifecycleLabelZh: "执行失败",
+                taskLabelZh: control.currentStep ?? "本地任务执行失败",
                 detailZh:
-                  "本地任务已经终止运行并保存结果；页面短暂保留完成提示，随后回到空闲。",
+                  control.error ??
+                  "本地任务已失败停止；失败证据保留，当前没有模型进程在运行。",
               }
-            : {
-            actor: "idle" as const,
-            actorLabelZh: "当前无人执行",
-            lifecycle: "idle" as const,
-            lifecycleLabelZh: "空闲",
-            taskLabelZh: "本地AI未运行",
-            detailZh:
-              "没有有效的本地训练子进程。历史Stage仍可查询，但不会被当成当前运行任务。",
-          };
+            : activityState.lifecycle === "completed"
+              ? {
+                  actor: "local_program" as const,
+                  actorLabelZh: "本地训练程序",
+                  lifecycle: "completed" as const,
+                  lifecycleLabelZh: "刚刚完成",
+                  taskLabelZh: control.currentStep ?? "本地任务执行完成",
+                  detailZh:
+                    "本地任务已经终止运行并保存结果；页面短暂保留完成提示，随后回到空闲。",
+                }
+              : {
+                  actor: "idle" as const,
+                  actorLabelZh: "当前无人执行",
+                  lifecycle: "idle" as const,
+                  lifecycleLabelZh: "空闲",
+                  taskLabelZh: "本地AI未运行",
+                  detailZh:
+                    "没有有效的本地训练子进程。历史Stage仍可查询，但不会被当成当前运行任务。",
+                };
   return {
     ...status,
     localAiProcessActive: activityState.localAiProcessActive,
-    taskId: localProcessActive || waitingForOwner
-      ? ((heartbeatClaimsExecution || waitingForOwner
-          ? heartbeat?.activeTaskId
-          : null) ??
-        progressStage?.runId ??
-        (discoveredProcess ? `process-${discoveredProcess.pid}` : null))
-      : null,
-    taskKind: localProcessActive || waitingForOwner
-      ? ((heartbeatClaimsExecution || waitingForOwner
-          ? heartbeat?.status
-          : null) ??
-        liveProgress?.phase ??
-        discoveredProcess?.commandIdentity ??
-        null)
-      : null,
+    taskId:
+      localProcessActive || waitingForOwner
+        ? ((heartbeatClaimsExecution || waitingForOwner
+            ? heartbeat?.activeTaskId
+            : null) ??
+          progressStage?.runId ??
+          (discoveredProcess ? `process-${discoveredProcess.pid}` : null))
+        : null,
+    taskKind:
+      localProcessActive || waitingForOwner
+        ? ((heartbeatClaimsExecution || waitingForOwner
+            ? heartbeat?.status
+            : null) ??
+          liveProgress?.phase ??
+          discoveredProcess?.commandIdentity ??
+          null)
+        : null,
     source: useProgressHeartbeat
       ? "training_progress_file"
       : heartbeatClaimsExecution || waitingForOwner
         ? runtimeStatus.statusSource
-      : discoveredProcess
-        ? "windows_process_table"
-      : "local_process_and_heartbeat_projection",
+        : discoveredProcess
+          ? "windows_process_table"
+          : "local_process_and_heartbeat_projection",
     sourcePath: useProgressHeartbeat
-      ? progressStage?.manifestPath ?? null
+      ? (progressStage?.manifestPath ?? null)
       : runtimeStatus.heartbeatPath &&
           (heartbeatClaimsExecution || waitingForOwner || stalled)
         ? projectRelativePath(runtimeStatus.heartbeatPath)
@@ -1355,10 +2102,8 @@ function projectCurrentExecutionActivity({
       percentage,
       elapsedSeconds,
       etaSeconds,
-      optimizerStepsPerSecond:
-        liveProgress?.optimizerStepsPerSecond ?? null,
-      lastBatchDurationSeconds:
-        liveProgress?.lastBatchDurationSeconds ?? null,
+      optimizerStepsPerSecond: liveProgress?.optimizerStepsPerSecond ?? null,
+      lastBatchDurationSeconds: liveProgress?.lastBatchDurationSeconds ?? null,
       samplesInBatch: liveProgress?.samplesInBatch ?? null,
       trainCompositeLoss:
         liveProgress?.batchLoss ??
@@ -1386,7 +2131,8 @@ function projectCurrentExecutionActivity({
           tokenAccounting?.terminology.localTrainingTokenUnit ??
           "latent_spatial_token",
         total: localTokenTotal,
-        source: progressStage?.tokenLedgerPath ?? progressStage?.manifestPath ?? null,
+        source:
+          progressStage?.tokenLedgerPath ?? progressStage?.manifestPath ?? null,
       },
       externalApi: {
         available: Boolean(tokenAccounting),
@@ -1468,10 +2214,15 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
       const progress = manifest ? null : await readJson(relativeProgress);
       const record = manifest ?? progress;
       if (!record) continue;
+      const executionTerminalPath = `${source.relativeRoot}/${entry.name}/phase-terminal.json`;
+      const executionTerminal = source.artifactDirectory
+        ? await readJson(executionTerminalPath)
+        : null;
       const tokenLedgerPath = `.runtime/ai-painter/training-token-ledgers/${entry.name}/ledger.json`;
       const tokenLedger = await readJson(tokenLedgerPath);
       const metrics = arrayObjects(record.metrics).map(toEpochMetric);
       const previewReviewCandidates = [
+        `${source.relativeRoot}/${entry.name}/machine-review.json`,
         `${relativeArtifactRoot}/fixed-preview-hard-gate-review.json`,
         `${relativeArtifactRoot}/fixed-preview-reviews.json`,
       ];
@@ -1484,7 +2235,8 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
       const selectedPreviewReview = previewReviewEntries.find(
         (candidate) => candidate.value,
       );
-      const previewReviewPath = selectedPreviewReview?.path ?? previewReviewCandidates[0];
+      const previewReviewPath =
+        selectedPreviewReview?.path ?? previewReviewCandidates[0];
       const previewReview = selectedPreviewReview?.value ?? null;
       const previews = await readStagePreviews({
         sourceAbsoluteRoot: source.absoluteRoot,
@@ -1495,17 +2247,26 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
         previewReview,
       });
       const splitMetrics = object(record.splitMetrics);
-      const resolution = object(record.resolutionStage);
-      const stageStatus = text(record.status) ?? "unknown";
+      const resolution = object(record.resolutionStage) ?? object(record.resolution);
+      const executionClosed = executionTerminal?.executionState === "completed";
+      const stageStatus = executionClosed
+        ? (text(executionTerminal?.status) ??
+          text(record.status) ??
+          "completed")
+        : (text(record.status) ?? "unknown");
       stages.push({
         runId: entry.name,
         kind: entry.name.includes("smoke") ? "smoke" : "stage",
         status: stageStatus,
-        verdict: manifest
-          ? trainingVerdict(manifest, entry.name, previewReview)
-          : stageStatus === "running" || stageStatus === "starting"
-            ? "running"
-            : "quarantined",
+        verdict:
+          executionClosed &&
+          /failure|failed|rejected|closed/iu.test(stageStatus)
+            ? "failed"
+            : manifest
+              ? trainingVerdict(manifest, entry.name, previewReview)
+              : stageStatus === "running" || stageStatus === "starting"
+                ? "running"
+                : "quarantined",
         resolutionStage: stageNumber(entry.name),
         resolution: resolution
           ? {
@@ -1518,7 +2279,10 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
           record.createdAtAsiaShanghai ?? record.startedAtAsiaShanghai,
         ),
         updatedAtUtc: text(
-          record.updatedAtUtc ?? record.completedAtUtc ?? record.createdAtUtc,
+          executionTerminal?.recordedAtUtc ??
+            record.updatedAtUtc ??
+            record.completedAtUtc ??
+            record.createdAtUtc,
         ),
         updatedAtAsiaShanghai: text(
           record.updatedAtAsiaShanghai ??
@@ -1550,7 +2314,9 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
           object(record.trainingTokenAccounting) ??
             object(tokenLedger?.trainingTokenAccounting),
         ),
-        liveProgress: normalizeLiveProgress(object(record.liveProgress)),
+        liveProgress: normalizeLiveProgress(
+          object(record.liveProgress) ?? directCleanLatentLiveProgress(record),
+        ),
         splitMetrics: Object.fromEntries(
           Object.entries(splitMetrics ?? {}).map(([key, value]) => {
             const row = object(value);
@@ -1563,7 +2329,9 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
             ];
           }),
         ),
-        blockers: strings(record.remainingBlockers),
+        blockers: executionClosed
+          ? [stageStatus]
+          : strings(record.remainingBlockers),
         metrics,
         previewReviewPath: previewReview ? previewReviewPath : null,
         previewReviewSha256: previewReview
@@ -1711,11 +2479,13 @@ async function readAuthorization() {
     text(r2Finalization?.status)?.endsWith("_stopped") === true;
   const blockerCode = text(request?.blockingReasonCode);
   const ownerMessageFallback =
-    blockerCode === "resolved_owner_authorized_v7_r2_smoke_record_closure_repair"
+    blockerCode ===
+    "resolved_owner_authorized_v7_r2_smoke_record_closure_repair"
       ? "R2 Smoke 现有训练记录闭环修复已获授权，正在补齐7张预览的审核、登记与控制台入口。"
       : "Owner动作请求已记录；中文说明损坏，控制台已改用安全回退文案。";
   const minimumActionFallback =
-    blockerCode === "resolved_owner_authorized_v7_r2_smoke_record_closure_repair"
+    blockerCode ===
+    "resolved_owner_authorized_v7_r2_smoke_record_closure_repair"
       ? "仅修复R2记录闭环并审核现有7张Epoch预览；不重新训练，不进入正式推理或世界。"
       : "请查看不可变请求文件和证据路径。";
   if (terminalMatchesRequest) {
@@ -2019,9 +2789,17 @@ function trainingVerdict(
     return "passed";
   if (
     runId.includes("single-sample-overfit-smoke") &&
-    manifest.status === "conditional_denoiser_single_sample_overfit_smoke_completed"
+    manifest.status ===
+      "conditional_denoiser_single_sample_overfit_smoke_completed"
   )
     return previewReview?.status === "passed" ? "passed" : "quarantined";
+  if (
+    manifest.status ===
+    "training_completed_pending_automatic_machine_review"
+  )
+    return previewReview?.status === "machine_reviews_passed"
+      ? "passed"
+      : "pending_validation";
   const repaired =
     number(manifest.actualLoadedConditionalSampleCount) === 64 &&
     number(manifest.actualLoadedV7CapacityCount) === 64 &&
@@ -2079,9 +2857,11 @@ async function readStagePreviews({
           recordedAtAsiaShanghai: metric?.recordedAtAsiaShanghai ?? null,
           imagePath: relativePath,
           imageSha256: await sha256(relativePath),
-          normalizedReviewImagePath: text(review?.normalizedReviewImagePath),
+          normalizedReviewImagePath: text(
+            review?.normalizedReviewImagePath ?? review?.normalizedPath,
+          ),
           normalizedReviewImageSha256: text(
-            review?.normalizedReviewImageSha256,
+            review?.normalizedReviewImageSha256 ?? review?.normalizedSha256,
           ),
           machineReviewPassed:
             typeof review?.passed === "boolean" ? review.passed : null,
@@ -2200,6 +2980,35 @@ function normalizeLiveProgress(
   };
 }
 
+function directCleanLatentLiveProgress(
+  value: JsonObject,
+): JsonObject | null {
+  if (
+    text(value.schemaVersion) !==
+    "stage4-direct-clean-latent-stage0-progress-v1"
+  )
+    return null;
+  const metric = object(value.latestMetric);
+  return {
+    schemaVersion: text(value.schemaVersion),
+    recordedAtUtc: text(value.updatedAtUtc),
+    phase: text(value.phase),
+    epoch: number(value.currentEpoch),
+    epochTarget: number(value.epochTarget),
+    batch: number(value.currentBatch),
+    batchTarget: number(value.batchTarget),
+    optimizerStep: number(value.optimizerStep),
+    optimizerStepTarget: number(value.optimizerStepTarget),
+    percentage: number(value.percent),
+    etaSeconds: number(value.etaSeconds),
+    rollingEpochLoss: number(metric?.trainingCompositeLoss),
+    validationCompositeScore: number(metric?.validationCompositeLoss),
+    checkpointSelectionScore: number(
+      metric?.validationCheckpointSelectionScore,
+    ),
+  };
+}
+
 function normalizeComputeCounts(value: JsonObject) {
   return {
     trainingSamplePresentations:
@@ -2222,9 +3031,12 @@ function toEpochMetric(row: JsonObject): TrainingEpochMetric {
     epoch: number(row.epoch) ?? 0,
     recordedAtUtc: text(row.recordedAtUtc),
     recordedAtAsiaShanghai: text(row.recordedAtAsiaShanghai),
-    trainCompositeLoss: number(row.trainCompositeLoss),
+    trainCompositeLoss: number(
+      row.trainCompositeLoss ?? row.trainingCompositeLoss,
+    ),
     validationCompositeScore: number(
-      row.validationFixedGridCompositeConditionQualityScore,
+      row.validationFixedGridCompositeConditionQualityScore ??
+        row.validationCompositeLoss,
     ),
     validationCheckpointScore: number(row.validationCheckpointSelectionScore),
     rolloutWorstTrajectoryScore: number(
@@ -2313,7 +3125,9 @@ function text(value: unknown) {
 function readableHumanText(value: unknown) {
   const candidate = text(value)?.trim() ?? null;
   if (!candidate) return null;
-  const questionMarkCount = [...candidate].filter((character) => character === "?").length;
+  const questionMarkCount = [...candidate].filter(
+    (character) => character === "?",
+  ).length;
   if (questionMarkCount / candidate.length >= 0.25) return null;
   return candidate;
 }

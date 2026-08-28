@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "ai-painter-capability-lifecycle-contract-v1",
+  "contractId": "ai-painter-capability-lifecycle-contract-v1",
+  "status": "active",
+  "authority": "local_ai_pet_world_program",
+  "ownerInLifecycle": false,
+  "perCapabilityOwnerApprovalRequired": false,
+  "states": [
+    "change_candidate",
+    "isolated_implementation",
+    "cpu_contract_verified",
+    "readonly_gpu_qualified",
+    "controlled_smoke_completed",
+    "formal_stage_validation_completed",
+    "independent_regression_completed",
+    "machine_release_adjudicated",
+    "released",
+    "rejected",
+    "rolled_back"
+  ],
+  "optionalReadonlyGpuQualification": true,
+  "terminalStates": ["rejected", "rolled_back"],
+  "releaseRequiresTrustedRegistryBinding": true,
+  "evidenceRequirements": {
+    "projectRelativePath": true,
+    "sha256Recomputed": true,
+    "immutableStageTerminal": true,
+    "appendOnlyTransitionLedger": true,
+    "sqliteTransaction": true
+  },
+  "forbidden": [
+    "owner_approval_wait",
+    "owner_action_request",
+    "historical_authorization_as_authority",
+    "skip_machine_release_adjudication",
+    "reuse_rejected_capability_identity"
+  ]
+}

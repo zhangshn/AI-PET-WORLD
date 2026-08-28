@@ -2,7 +2,7 @@ export const DECISIONS = Object.freeze({
   A: "three_component_responsibility_or_existing_supervision_semantically_insufficient",
   B: "predecessor_output_identity_or_component_consumption_wiring_defect",
   C: "final_visual_harmonization_erases_predecessor_spatial_or_object_semantics",
-  D: "evidence_insufficient_owner_route_choice_required",
+  D: "evidence_insufficient_failed_closed",
 })
 
 export function adjudicateThreeComponentSmokeFailure({ manifests, review, directWiringDefectEvidence = false, finalErasureComparisonEvidence = false }) {

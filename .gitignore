@@ -59,6 +59,13 @@ data/ai-painter/system-governance/*
 !data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json
 !data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json
 !data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json
+!data/ai-painter/system-governance/contract-supersession-index-v2.json
+!data/ai-painter/system-governance/ai-painter-capability-release-registry-v2.json
+!data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v3.json
+!data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v3.json
+!data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json
+!data/ai-painter/system-governance/ai-painter-autonomous-closed-loop-contract-v1.json
+!data/ai-painter/system-governance/ai-painter-capability-lifecycle-contract-v1.json
 !data/live-world/
 !data/live-world/**
 !data/world-visual-data-dictionary/

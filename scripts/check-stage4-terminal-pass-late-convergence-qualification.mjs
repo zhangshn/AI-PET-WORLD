@@ -65,18 +65,22 @@ const rejectsIdentity = (mutate) => {
 positive.bound_contract_valid = passes(() => validateBoundTimelineEvidence(input))
 const decision = adjudicateLateConvergence(input)
 const sustainedZeroInput = structuredClone(input)
-const sustainedZeroEpoch10 = sustainedZeroInput.review.reviews.find((row) => row.epoch === 10)
-sustainedZeroEpoch10.passed = true
-sustainedZeroEpoch10.issueCodes = []
-sustainedZeroInput.review.previewPassCount = 3
-sustainedZeroInput.review.previewFailCount = 2
+for (const row of sustainedZeroInput.review.reviews.filter((item) => [10, 20].includes(item.epoch))) {
+  row.passed = true
+  row.issueCodes = []
+}
+sustainedZeroInput.review.previewPassCount = sustainedZeroInput.review.reviews.filter((row) => row.passed === true).length
+sustainedZeroInput.review.previewFailCount = sustainedZeroInput.review.reviews.filter((row) => row.passed !== true).length
 const sustainedZeroDecision = adjudicateLateConvergence(sustainedZeroInput)
 const legacyStrictDecreaseInput = structuredClone(input)
 const legacyEpoch10 = legacyStrictDecreaseInput.review.reviews.find((row) => row.epoch === 10)
 legacyEpoch10.passed = false
 legacyEpoch10.issueCodes = ["condition_object_vegetation_reference_semantic_mismatch"]
-legacyStrictDecreaseInput.review.previewPassCount = 2
-legacyStrictDecreaseInput.review.previewFailCount = 3
+const legacyEpoch20 = legacyStrictDecreaseInput.review.reviews.find((row) => row.epoch === 20)
+legacyEpoch20.passed = true
+legacyEpoch20.issueCodes = []
+legacyStrictDecreaseInput.review.previewPassCount = legacyStrictDecreaseInput.review.reviews.filter((row) => row.passed === true).length
+legacyStrictDecreaseInput.review.previewFailCount = legacyStrictDecreaseInput.review.reviews.filter((row) => row.passed !== true).length
 const legacyStrictDecreaseDecision = adjudicateLateConvergence(legacyStrictDecreaseInput)
 positive.exact_late_sequence = decision.exactSequence
 positive.supported_late_convergence_route = decision.qualified

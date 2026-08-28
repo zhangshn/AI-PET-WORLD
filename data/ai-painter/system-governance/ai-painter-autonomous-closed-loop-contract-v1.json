@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "ai-painter-autonomous-closed-loop-contract-v1",
+  "contractId": "ai-painter-autonomous-closed-loop-contract-v1",
+  "status": "active",
+  "authority": "local_ai_pet_world_program",
+  "ownerInNormalStateMachine": false,
+  "perTaskOwnerAuthorizationRequired": false,
+  "perStageOwnerAuthorizationRequired": false,
+  "executionStates": [
+    "package_materialized",
+    "preflight",
+    "executing",
+    "validating",
+    "reviewing",
+    "adjudicating",
+    "finalizing",
+    "completed",
+    "failed_closed",
+    "blocked_policy_boundary"
+  ],
+  "normalPhaseOrder": [
+    "preflight",
+    "execute",
+    "validate",
+    "review",
+    "adjudicate",
+    "finalize"
+  ],
+  "requiredPackageBindings": [
+    "packageIdentity",
+    "packageSha256",
+    "capabilityVersion",
+    "programLineage",
+    "inputEvidence",
+    "phaseAdapters",
+    "outputRoot"
+  ],
+  "phaseAdapterRules": {
+    "projectRelativePathRequired": true,
+    "sha256BindingRequired": true,
+    "exportNameRequired": true,
+    "shellCommandAccepted": false,
+    "ownerAuthorizationAdapterAccepted": false,
+    "ownerRequestArtifactAccepted": false
+  },
+  "automaticPackageClosure": {
+    "trainingOrGeneration": true,
+    "validation": true,
+    "machineReview": true,
+    "deterministicAdjudication": true,
+    "finalization": true,
+    "taskCapsule": true,
+    "eventLedger": true,
+    "sqlite": true
+  },
+  "infrastructureRecovery": {
+    "allowedOnlyWhenAdapterDeclaresInfrastructureFailure": true,
+    "maximumAttemptsDerivedFromPackage": true,
+    "mayChangeBusinessOrModelSemantics": false,
+    "mayRestartCompletedTraining": false,
+    "ownerApprovalRequired": false
+  },
+  "terminalRules": {
+    "businessOrVisualFailure": "failed_closed",
+    "ambiguousEvidence": "failed_closed",
+    "policyBoundary": "blocked_policy_boundary",
+    "ownerWaitStateAllowed": false,
+    "ownerRequestArtifactAllowed": false
+  },
+  "persistence": {
+    "sqliteTransactionRequired": true,
+    "appendOnlyTransitionLedgerRequired": true,
+    "immutablePhaseEvidenceRequired": true,
+    "progressJsonRequired": true,
+    "heartbeatRequiredDuringLongExecution": true
+  }
+}

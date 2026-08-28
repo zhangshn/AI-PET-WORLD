@@ -1,18 +1,20 @@
 # AI-PET-WORLD 本地自研AI能力演进、任务执行与Codex职能迁移主体架构
 
-更新时间：2026-08-24 09:48:00 +08:00
+更新时间：2026-08-26 15:30:00 +08:00
 
 状态：active-subsystem-architecture
 
-文档版本：`LOCAL-AI-CAPABILITY-MIGRATION-1.1`
+文档版本：`LOCAL-AI-CAPABILITY-MIGRATION-1.4`
 
-生效日期：`2026-08-24`
+生效日期：`2026-08-26`
 
-替代版本：`LOCAL-AI-CAPABILITY-MIGRATION-1.0`
+替代版本：`LOCAL-AI-CAPABILITY-MIGRATION-1.3`
 
-文档状态：`active_internal_formal_standard`
+文档状态：`active_normative_target`
 
-不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+程序符合状态：`program_adoption_pending`
+
+Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
 文档类型：业务说明 + 本地自研AI能力建设与职能迁移主体架构  
 业务目标与紧急控制主体：项目所有者
@@ -111,7 +113,7 @@ AI Painter是第一套落地和验证本框架的业务模块，因为它已经�
 | 地图语义与动态运行 | 提供通行、碰撞、道路、水体、对象语义并推进时间、天气和生态 | 本地程序与游戏Runtime | 已发布能力版本与Runtime发布门约束，单次运行不逐次请求Owner授权 |
 | 人物—世界闭环 | 人物感知世界、自主行动、Runtime产生合法变化、记忆更新并继续决策 | 本地自研AI系统 + 游戏Runtime | 项目所有者监控与暂停 |
 | 状态持久化 | 保存人物、世界、时间、事件和恢复点 | 本地程序 | 项目所有者管理存档 |
-| 训练与验证 | 本地完成自研AI模型的数据选择、训练、Checkpoint保存、训练后验证、机器审核、失败隔离、Token统计和证据保存 | **本地自研AI训练系统（本地自研AI模型 + 本地训练、验证和审核程序）** | **项目所有者决定新的训练计划与能力版本发布；包内训练、验证、审核和记录由本地系统闭环** |
+| 训练与验证 | 本地完成自研AI模型的数据选择、训练、Checkpoint保存、训练后验证、机器审核、失败隔离、Token统计和证据保存 | **本地自研AI训练系统（本地自研AI模型 + 本地训练、验证和审核程序）** | **本地系统依据生效业务、安全、数据和资源合同自主形成训练计划、能力版本、机器发布或回退；Owner不参与逐次训练或版本审批** |
 | Owner观察与紧急控制 | 在本地后台查看状态、暂停或紧急覆盖；可以改变业务目标但不逐任务审批 | 本地控制台与证据系统 | 项目所有者 |
 
 当前MVP的完整游戏闭环固定为：
@@ -182,7 +184,7 @@ AI Painter 的长时间训练、生成和审核必须由独立于Codex窗口的�
 
 上图每个“终态检查”均包含训练、固定预览复现、验证、机器审核和终态落盘的同包闭环；它不是仅检查训练进程退出码。
 
-任何阶段真实失败、证据冲突或输出目录冲突时，本地执行器必须停止当前路线；不得无限重试、降级审核门槛或改用历史失败运行。它可以按合同选择另一条已声明的有界路线；触及长期业务、许可、付费或不可恢复边界时生成业务边界报告并等待业务方向。正式业务与验收合同见[AI Painter正式主体规格](game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md)。
+任何阶段真实失败、证据冲突或输出目录冲突时，本地执行器必须停止当前路线；不得无限重试、降级审核门槛或改用历史失败运行。它可以按合同选择另一条已声明的有界路线；触及长期业务、许可、付费或不可恢复边界时禁止越界动作、生成政策边界报告并选择安全替代路线或停止，不等待Owner响应。正式业务与验收合同见[AI Painter正式主体规格](game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md)。
 
 ### 0.10 AI Painter原生自主判断能力
 
@@ -242,7 +244,7 @@ AI Painter 的长时间训练、生成和审核必须由独立于Codex窗口的�
 
 ### 4.1 项目所有者
 
-项目所有者永久保留业务方向、暂停、紧急覆盖、外部付费/法律承诺和不可恢复破坏性操作的控制权。本地系统在生效业务、来源、资源和安全合同内自主选择数据、形成新能力版本、训练、验证、审核、发布、生成RuntimeFrame和运行世界；项目所有者不承担逐任务或逐版本操作员职责。
+项目所有者职责只由`DOCUMENT_AUTHORITY_INDEX.md`中的`GOV-OWNER-001`定义：Owner可以主动改变业务目标、观察、暂停或紧急停止，但不进入本地AI正常运行状态机。本地系统在生效业务、来源、资源和安全合同内自主选择数据、形成新能力版本、训练、验证、审核、发布、生成RuntimeFrame和运行世界；未定义外部付费、法律许可或不可恢复动作一律禁止并失败关闭，不生成Owner审批请求。
 
 ### 4.2 本地AI模型
 
@@ -378,6 +380,21 @@ AI辅助冷启动数据、程序生成数据和合成RGB都不自动获得正向
 - 使用原子锁、幂等身份和不可变记录避免重复执行动作。
 - 支持从明确恢复点继续，并能证明恢复前后环境和父资产一致。
 
+### 7.10 当前任务身份管理
+
+当前任务身份管理是本地系统的正式能力，不是控制台的展示逻辑。本地能力生命周期编排器是唯一写入主体，负责在每次合法任务转换后原子登记项目当前任务、活动执行和最近训练终态。
+
+本地系统必须：
+
+1. 将`currentProjectTask`、`activeExecution`、`latestTrainingTerminal`和`selectedHistoricalRun`分别建模；
+2. 对每次当前任务变更分配单调修订和事件序号；
+3. 在更新前重新核验能力版本、执行包、Run、终态或任务胶囊路径与SHA-256；
+4. 以同一个可恢复事务提交指针、追加事件和SQLite索引；
+5. 保留所有历史记录，但阻止它们因目录扫描、文件存在或来源类型优先级重新成为当前任务；
+6. 在指针、证据、修订或任务身份冲突时返回`unknown_or_stale`并保存冲突证据，不得选取旧记录伪造连续性。
+
+控制台只是该登记的只读投影。用户切换历史Run只改变查询上下文，不得改变当前项目任务、执行状态、恢复点或下一机器动作。
+
 ## 8. 本地任务操作台框架
 
 操作台是本地系统任务规划和Owner业务目标/紧急控制的入口，监控台不是写操作入口。
@@ -427,13 +444,13 @@ AI Painter的完整RGB只是世界视觉生产链的一项资产，不是动态�
 | L4 | 本地可执行、验证、记录、失败停止和恢复 |
 | L5 | 项目所有者可直接控制，本地系统独立闭环，外部智能体可完全离线 |
 
-每项能力登记：能力ID、当前等级、目标等级、本地实现、外部依赖、测试证据、最后复核时间、回退方案和所有者切换决定。
+每项能力登记：能力ID、当前等级、目标等级、本地实现、外部依赖、测试证据、最后复核时间、回退方案和机器迁移切换记录。Owner可通过控制台观察、暂停或紧急回退，但不产生日常切换批准状态。
 
 ## 14. 能力迁移顺序
 
 1. 本地记录：任务、状态、内部票据、决定和证据不依赖聊天。
 2. 本地知识：能够按权威资料解释项目和发现冲突。
-3. 本地计划：形成任务合同、风险和验收，但不自动执行。
+3. 本地计划：形成任务合同、风险和验收；规划器本身不跨越职责执行副作用，后续由已达标的本地执行能力按正式状态机自主执行。
 4. 本地只读检查：搜索、静态检查、数据核验和状态监控。
 5. 本地软件执行：有界文件修改、编译、测试、差异和回退。
 6. 本地训练运营：数据选择、训练编排、Token、资源和Checkpoint。
@@ -497,8 +514,14 @@ AI Painter的完整RGB只是世界视觉生产链的一项资产，不是动态�
 现有机器可读基础包括：
 
 - `data/ai-painter/system-governance/local-ai-capability-migration-registry-v1.json`
-- `data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v2.json`
-- `data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json`
+- `data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v3.json`
+- `data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v3.json`
+- `data/ai-painter/system-governance/ai-painter-capability-release-registry-v2.json`
+- `data/ai-painter/system-governance/ai-painter-capability-lifecycle-contract-v1.json`
+- `data/ai-painter/system-governance/ai-painter-autonomous-closed-loop-contract-v1.json`
+- `data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json`
+
+上述机器合同、CPU自治核心、能力生命周期、闭环执行器、独立后台启动器、政策边界记录和现行入口解析器已经建立。未来AI Painter训练包必须通过现行入口注册表物化，按`预检 -> 执行 -> 验证 -> 机器审核 -> 确定性裁决 -> 终态`自动闭环，并在SQLite、事件账本、任务胶囊、`progress.json`与心跳中同步；关闭Codex不终止后台进程。候选专属模型、训练、审核和Runtime适配器仍须随对应能力版本提供并绑定SHA，但不能再生成Owner等待状态。旧V1/V2合同和未登记历史运行器只能复核历史运行，不得进入新任务。
 - `data/ai-painter/system-governance/ai-painter-current-training-dashboard-contract-v1.json`
 
 只有当现有文件无法承载一个经机器一致性检查确认的长期职责时，才建立新的下级实施规格。当前待补空白优先是：通用任务合同、软件工程执行器安全合同、构建测试证据合同、跨模块能力成熟度注册表和Codex退出验收合同。本文只定义架构，不代表这些实现已经完成。

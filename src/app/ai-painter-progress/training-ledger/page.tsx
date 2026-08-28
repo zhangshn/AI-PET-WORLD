@@ -35,7 +35,7 @@ export default async function TrainingLedgerPage() {
           `.runtime/ai-painter/training-process-ledger/latest.json`。
         </p>
         <p className={styles.note}>
-          这里的“成功 / 失败”是程序事件统计，不是最终地图审核结论。命令成功只代表步骤完成；闸门失败代表质量检查阻断；最终游戏地图成功必须另有完整 RuntimeFrame 和项目所有者人工终审通过记录。
+          这里的“成功 / 失败”是程序事件统计，不是最终地图审核结论。命令成功只代表步骤完成；闸门失败代表质量检查阻断；最终游戏地图成功必须由本地程序保存完整 RuntimeFrame、机器审核、能力发布身份和世界写入事务。
         </p>
         <dl className={styles.metrics}>
           <div>
@@ -121,7 +121,7 @@ export default async function TrainingLedgerPage() {
                   <small>成功定义：{display.successMeaningZh}</small>
                   <small>失败定义：{display.failureMeaningZh}</small>
                   <small>最终地图结论：{display.finalGameMapMeaningZh}</small>
-                  <small>能否进入 /world：{display.canEnterWorld ? "可以作为机器通过候选展示，仍需人工终审" : "不可以作为玩家可见最终地图"}</small>
+                  <small>能否进入 /world：{display.canEnterWorld ? "本地机器发布门已确认可进入原子写入" : "不可以作为玩家可见最终地图"}</small>
                   <small>下一步：{display.nextActionZh}</small>
                   {display.evidenceRequirementZh ? <small>证据要求：{display.evidenceRequirementZh}</small> : null}
                   {event.errorZh ? <small className={styles.eventError}>错误代码：{event.errorZh}</small> : null}
@@ -205,7 +205,7 @@ function buildLedgerEventDisplay(event: {
   const resultScopeZh =
     event.resultScopeZh ??
     (text.includes("owner")
-      ? "项目所有者人工终审闸门"
+      ? "历史人工记录（非现行发布闸门）"
       : text.includes("FormalVisualJudge")
         ? "正式画面机器评审闸门"
         : text.includes("judge:game-map-material-quality") || text.includes("material-quality")
@@ -237,11 +237,11 @@ function buildLedgerEventDisplay(event: {
         : "如果该事件后续没有完成、阻断或失败记录，需要检查训练控制状态和证据文件。"),
     finalGameMapMeaningZh:
       event.finalGameMapMeaningZh ??
-      "不是最终地图结论。只有完整 RuntimeFrame 通过材料质量闸门、FormalVisualJudge、/world 写入闸门，并获得项目所有者人工终审明确通过，才算最终游戏地图成功。",
+      "不是最终地图结论。只有已发布能力版本内的完整 RuntimeFrame 通过材料质量闸门、FormalVisualJudge、能力发布身份重算和 /world 原子写入闸门，才算最终游戏地图成功；正常运行不设置Owner逐次终审。",
     canEnterWorld: event.canEnterWorld === true,
     evidenceRequirementZh:
       event.evidenceRequirementZh ??
-      "必须有持久证据文件，例如 run-report.json、material-quality-report.json、formal-visual-judge.json、归档图片或人工审核记录。",
+      "必须有持久证据文件，例如 run-report.json、material-quality-report.json、formal-visual-judge.json、能力发布身份、归档图片或世界写入事务。",
     nextActionZh:
       event.nextActionZh ??
       (isFailure

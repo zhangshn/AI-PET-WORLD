@@ -94,7 +94,34 @@ export function validateBoundTimelineEvidence({ terminal, finalization, manifest
 export function adjudicateLateConvergence({ terminal, finalization, manifest, review }) {
   validateBoundTimelineEvidence({ terminal, finalization, manifest, review })
   const qualificationIdentity = resolveLateQualificationIdentity(manifest)
-  const lateReviews = LATE_EPOCHS.map((epoch) => review.reviews.find((row) => row.epoch === epoch))
+  const trajectory = adjudicateLateReviewRows(review.reviews)
+  const passed = trajectory.qualified
+  return {
+    schemaVersion: "ai-painter-stage4-terminal-pass-late-convergence-adjudication-v1",
+    status: passed
+      ? "terminal_pass_with_late_convergence_evidence_qualified"
+      : "late_convergence_evidence_not_qualified",
+    ...trajectory,
+    qualificationIdentitySource: qualificationIdentity.source,
+    fixedPreviewReproduced: qualificationIdentity.previewSha256Matches === true,
+    modelStateIdentityReproduced: qualificationIdentity.denoiserStateIdentityMatches === true,
+    weightsChanged: manifest.modelStateHashEvidence.weightsChanged === true,
+    machineReviewThresholdsChanged: review.reviewThresholdsChanged,
+    interpretation: passed
+      ? trajectory.sustainedZeroFromFirstLateEpoch
+        ? "Epochs 1 and 5 remain immutable diagnostics; Epochs 10, 20 and 30 each have exactly zero failures and preserve that stable terminal pass without regression."
+        : "Epochs 1 and 5 remain immutable diagnostics; Epochs 10, 20 and 30 provide a non-increasing late trajectory with a real decrease and stable zero failures through the fully reproduced terminal pass."
+      : "The immutable evidence does not prove the required late convergence trajectory.",
+  }
+}
+
+export function adjudicateLateReviewRows(reviews, {
+  requiredEpochs = REQUIRED_EPOCHS,
+  lateEpochs = LATE_EPOCHS,
+} = {}) {
+  assert.ok(Array.isArray(reviews), "review rows are required")
+  assert.deepEqual(reviews.map((row) => row.epoch), requiredEpochs)
+  const lateReviews = lateEpochs.map((epoch) => reviews.find((row) => row.epoch === epoch))
   assert.ok(lateReviews.every(Boolean))
   // Qualification is result-neutral: the exact issue identities may differ by
   // candidate, but late failures must only disappear, never be introduced.
@@ -125,16 +152,12 @@ export function adjudicateLateConvergence({ terminal, finalization, manifest, re
     && finalReview.conditionAlignment?.passed === true
     && finalReview.conditionAlignment?.channelAudits?.every((item) => item.passed === true)
     && finalReview.conditionAlignment?.objectSemanticAudits?.every((item) => item.passed === true)
-  const passed = exactSequence && supportedLateConvergenceRoute && noRegression && finalConditionsPass
+  const qualified = exactSequence && supportedLateConvergenceRoute && noRegression && finalConditionsPass
   return {
-    schemaVersion: "ai-painter-stage4-terminal-pass-late-convergence-adjudication-v1",
-    status: passed
-      ? "terminal_pass_with_late_convergence_evidence_qualified"
-      : "late_convergence_evidence_not_qualified",
-    qualified: passed,
-    sourceEpochs: REQUIRED_EPOCHS,
+    qualified,
+    sourceEpochs: requiredEpochs,
     diagnosticEpochs: [1, 5],
-    qualificationEpochs: LATE_EPOCHS,
+    qualificationEpochs: lateEpochs,
     issueSequence: lateReviews.map((row) => ({ epoch: row.epoch, passed: row.passed, issueCodes: row.issueCodes })),
     failureCounts,
     exactSequence,
@@ -151,15 +174,5 @@ export function adjudicateLateConvergence({ terminal, finalization, manifest, re
     stableAfterZero,
     noRegression,
     finalConditionsPass,
-    qualificationIdentitySource: qualificationIdentity.source,
-    fixedPreviewReproduced: qualificationIdentity.previewSha256Matches === true,
-    modelStateIdentityReproduced: qualificationIdentity.denoiserStateIdentityMatches === true,
-    weightsChanged: manifest.modelStateHashEvidence.weightsChanged === true,
-    machineReviewThresholdsChanged: review.reviewThresholdsChanged,
-    interpretation: passed
-      ? sustainedZeroFromFirstLateEpoch
-        ? "Epochs 1 and 5 remain immutable diagnostics; Epochs 10, 20 and 30 each have exactly zero failures and preserve that stable terminal pass without regression."
-        : "Epochs 1 and 5 remain immutable diagnostics; Epochs 10, 20 and 30 provide a non-increasing late trajectory with a real decrease and stable zero failures through the fully reproduced terminal pass."
-      : "The immutable evidence does not prove the required late convergence trajectory.",
   }
 }

@@ -4,6 +4,6 @@
 
 状态：active-source-module-contract
 
-不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
 本目录负责把 WorldFacts 与 ChunkState 转换为版本化 `ChunkVisualInput`。转换器只能表达已有事实，不得让 AI Painter、提示词或 RGB 反向决定世界事实。

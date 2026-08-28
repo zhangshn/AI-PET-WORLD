@@ -106,7 +106,7 @@ export type AiPainterTaskCapsule = {
   };
   candidateTerminal: {
     runId: string | null;
-    status: "failed_closed" | "unknown_or_stale";
+    status: "qualified" | "failed_closed" | "planned" | "unknown_or_stale";
     programStatus: string | null;
     previewMachineStatus: string | null;
     modelQualificationStatus: string;
@@ -409,11 +409,17 @@ export type CurrentTrainingDashboardSnapshot = {
   status: {
     code:
       | "blocked_dataset_binding"
+      | "current_registry_unknown_or_stale"
+      | "candidate_planned"
       | "running"
       | "resource_blocked"
-      | "awaiting_validation"
       | "validation_failed"
       | "candidate_failed_closed"
+      | "controlled_smoke_qualified"
+      | "formal_stage0_real_visual_failure"
+      | "formal_stage0_completed"
+      | "formal_stage0_reviewing"
+      | "formal_stage0_running"
       | "idle";
     label: string;
     summary: string;

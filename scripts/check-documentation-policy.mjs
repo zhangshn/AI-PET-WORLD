@@ -3,7 +3,7 @@ import path from "node:path"
 
 const ROOT = process.cwd()
 const DOCS_ROOT = path.join(ROOT, "docs")
-const REQUIRED_SENTENCE = "不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。"
+const REQUIRED_SENTENCE = "Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。"
 const TIMESTAMP_PATTERN = /更新时间：\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \+08:00/
 const STATUS_PATTERN = /^状态：\S.+$/m
 
@@ -25,6 +25,8 @@ const REQUIRED_GOVERNED_DOCS = [
   "docs/game-world-generation/FLOWING_WATER_CONNECTIVITY_AND_NOVELTY_SPEC.md",
   "docs/game-world-generation/CROSS_MODAL_RGB_COLLAPSE_PREVENTION_SPEC.md",
   "docs/game-world-generation/CROSS_MODAL_RGB_GATE_THRESHOLD_ALIGNMENT_20260802.md",
+  "docs/ai-console/README.md",
+  "docs/ai-console/AI_CONSOLE_FORMAL_PRODUCT_AND_INFORMATION_ARCHITECTURE_SPEC.md",
   "docs/world-visual-data-dictionary/README.md",
   "docs/ai-painter-progress/README.md",
   "docs/ai-painter-progress/GENERATED_RESULTS_PAGE_LOCKED_SPEC.md",
@@ -62,6 +64,7 @@ const ROOT_CLASSIFICATION = new Map([
 
 const DIRECTORY_CLASSIFICATION = new Map([
   ["game-world-generation", "active-architecture"],
+  ["ai-console", "active-platform-console-specification"],
   ["world-visual-data-dictionary", "active-reference"],
   ["ai-painter-progress", "active-locks-or-automation-contracts"],
   ["ziwei", "separate-subsystem"],
@@ -115,7 +118,7 @@ for (const absolutePath of allGovernedMarkdown) {
   const text = fs.readFileSync(absolutePath, "utf8")
   if (!TIMESTAMP_PATTERN.test(text)) findings.push(`${relativePath}: missing detailed Asia/Shanghai timestamp`)
   if (!STATUS_PATTERN.test(text)) findings.push(`${relativePath}: missing status field`)
-  if (!text.includes(REQUIRED_SENTENCE)) findings.push(`${relativePath}: missing owner-control sentence`)
+  if (!text.includes(REQUIRED_SENTENCE)) findings.push(`${relativePath}: missing external-agent and local-autonomy boundary sentence`)
   if (relativePath.startsWith("docs/") && !classificationFor(relativePath)) findings.push(`${relativePath}: document is not covered by a governance classification`)
 
   for (const match of text.matchAll(/npm run ([A-Za-z0-9:_-]+)/g)) {

@@ -1,14 +1,26 @@
 # AI Painter 当前训练后端控制台锁定规格
 
-更新时间：2026-08-24 09:48:00 +08:00
+更新时间：2026-08-26 09:37:09 +08:00
 
 状态：active-training-monitor-console-contract
 
-不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+文档版本：`AI-PAINTER-CURRENT-TRAINING-CONSOLE-1.0`
+
+生效日期：`2026-08-26`
+
+文档状态：`active_normative_target`
+
+程序符合状态：`program_adoption_pending`
+
+Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
 ## 0. 状态投影不变量
 
 控制台必须把“训练程序状态”“固定预览机器状态”“正式模型资格”分成三个字段，不得用单一成功状态掩盖预览失败、资源阻断或资格未通过。训练执行期间按Stage 0→1→2展示真实Run、Epoch、父Checkpoint、Token与硬件状态；验证、正式推理、RuntimeFrame和进入世界分别读取各自证据，不得互相推导。
+
+控制台必须另行区分`currentProjectTask`、`activeExecution`、`latestTrainingTerminal`和`selectedHistoricalRun`。顶部“当前任务”只使用`currentProjectTask`；运行指示灯只使用`activeExecution`；最近训练结果只使用`latestTrainingTerminal`；下方历史证据工作区只使用`selectedHistoricalRun`。四者不得共享一个可被覆盖的`currentRun`字段。
+
+服务端快照不得从Smoke、Stage、验证、审核或裁决目录各自选择记录后组装为同一个“当前状态”。当前身份只能来自审核、自动闭环与存储规格第11节定义的当前执行登记。
 
 ## 1. 业务目的
 
@@ -50,12 +62,16 @@ data/ai-painter/system-governance/local-ai-model-data-dictionary-v1.json
 ## 3. 固定数据流
 
 ```text
-项目所有者点击“当前运行”
+操作人员打开“当前运行”
 -> current-training React 展示层
 -> GET /api/ai-painter/current-training
 -> read-only server aggregator
--> 程序保存的 config / dataset manifest / source-index / stage manifest /
-   failure / business-boundary-report / ledger + nvidia-smi + Windows只读硬件查询
+-> 校验 .runtime/ai-painter/current-execution-registry/current.json
+-> 以登记中的路径和SHA-256定向读取任务胶囊、活动执行、最近训练终态及其不可变证据
+-> 使用 events.jsonl 和 SQLite 核对登记修订、事件序号与事务身份
+-> 独立查询 selectedHistoricalRun 对应的历史证据
+-> 补充 config / dataset manifest / source-index / stage manifest /
+   policy-boundary-report / ledger + nvidia-smi + Windows只读硬件查询
 -> 统一只读快照
 ```
 
@@ -65,7 +81,7 @@ GET 页面和 GET API 不得写文件、改 SQLite、改训练状态、启动训
 
 当前监控台必须完整显示：
 
-1. 固定顶部训练任务总览：是否正在训练、当前任务/训练链/Run、模型、Dataset、Stage总进度、当前Epoch、目标Epoch、父子Checkpoint、资源、活动阻断和有效业务边界报告。即使当前没有训练，也必须明确显示“未在训练”及最新训练终态，不得只显示模糊失败句。
+1. 固定顶部任务总览必须分别显示项目当前任务、活动执行和最近训练终态。存在活动训练时，显示训练链、Run、模型、Dataset、Stage总进度、当前Epoch、目标Epoch、父子Checkpoint与资源；不存在活动训练时，明确显示“未在训练”，同时保留`currentProjectTask`和`latestTrainingTerminal`，不得把历史选择或最近训练终态冒充当前任务。
 2. CPU、内存、GPU负载、GPU显存四个自研环形仪表盘固定放在页面顶部标题与参数说明/当前终态之间的中部区域，不得隐藏到页签后才可见；仪表盘中心显示百分比，保留线程数、内存实际值、GPU型号和显存实际值，并按正常、偏高、危险三档变色。目标容量、登记容量、实际加载样本和实际 V7 样本继续在“模型与数据”工作区显示；不得引入外部图表库。
 3. 模型身份、训练架构、预测目标和23个条件通道。
 4. 目标、容量登记与实际 Python Dataset 均须显示 `48/8/4/4`，任一不一致立即显示阻断。
@@ -76,7 +92,7 @@ GET 页面和 GET API 不得写文件、改 SQLite、改训练状态、启动训
 9. 参数说明中心是本地自研AI模型的统一数据字典，不是页面私有提示词集合。字典必须机器可读，并覆盖模型身份、数据与条件、训练过程、Checkpoint与产物、严格复验、机器审核、Token与计算量、硬件与运行环境、能力版本与治理；每项至少保存中文名、英文代码、类别、字段类型、通俗说明、专业解释、阅读规则和权威数据源，并支持中文、英文代码、拒绝码和相关词模糊查询。Epoch表头可直接打开对应说明。
 10. 当前电脑硬件状态：CPU型号、负载、物理核心、逻辑线程、频率；内存总量、已用、可用和占用率；GPU型号、负载、温度、显存、驱动和计算进程；所有固定磁盘容量；所有物理网卡状态与链路速率；操作系统、版本、Build、架构、主机名和运行时长。
 11. 每个成功训练Run的本地计算账本：训练样本呈现、优化步、去噪样本前向、潜空间位置Token、潜空间通道值、23通道条件标量、验证轨迹、轨迹去噪步、RGB预测帧与像素。主监控台显示当前Run摘要，Stage详情显示该Run完整账本和每Epoch固定Token量。
-12. 所有程序生成的数据、Run、Stage、Epoch、授权、事件、Checkpoint/Manifest/Token证据和训练数据记录必须保存详细时间戳。正式格式至少包含UTC ISO-8601原值，并在可用时同时保存`Asia/Shanghai`值；页面统一显示北京时间到毫秒并保留UTC原值。旧证据未保存时间时必须明确显示“未记录”，禁止用页面刷新时间、文件扫描时间或推测时间补写。
+12. 所有程序生成的数据、Run、Stage、Epoch、内部任务票据、事件、Checkpoint/Manifest/Token证据和训练数据记录必须保存详细时间戳。历史Owner授权仅在旧运行证据区按原始身份显示，不得作为当前状态字段。正式格式至少包含UTC ISO-8601原值，并在可用时同时保存`Asia/Shanghai`值；页面统一显示北京时间到毫秒并保留UTC原值。旧证据未保存时间时必须明确显示“未记录”，禁止用页面刷新时间、文件扫描时间或推测时间补写。
 13. 本地能力迁移注册表：逐项展示执行方、目标执行方、迁移状态和准入门禁。页面只能监控，不能从卡片触发迁移、验证、推理或世界运行。
 14. 严格复验可视化审核入口：作为顶部一级工作区存在，按不可变复验批次选择；每批展示程序实际保存的全部轨迹图。当前8轨迹批次必须以8张独立卡片展示`conditionLabel`、`seed`、split、状态、耗时和机器拒绝码；点击卡片在当前页面打开`alertdialog`，展示1024×768原图、Record/Run身份、UTC与北京时间、VJ门禁、拒绝码中文解释、受影响区域、修复目标、输出图/审核/manifest/批次报告路径及SHA-256和本地验证Token。没有输出图的失败轨迹只能显示“未生成”，不得使用训练原图或其他轨迹代替。
 15. V7训练器必须在每个成功`optimizer.step`后形成Batch级实时事实，并以临时文件、`flush`、`fsync`和同卷原子替换写入当前Stage的`progress.json`。记录至少包含Run/Stage身份、阶段、Epoch/目标、Batch/目标、累计优化步/目标、完成百分比、已耗时、优化步速度、ETA、最新Batch Loss、滚动Epoch Loss、最新Batch耗时、实际Batch样本数、精确本地去噪前向次数、精确本地训练Token、UTC和`Asia/Shanghai`详细时间戳；写入可节流但Epoch末尾和终态必须强制落盘。页面只能展示程序已保存的数据，缺失值显示“未记录”，不得用轮询时间、GPU利用率或Codex Token推算训练进度。
@@ -101,10 +117,17 @@ V7是图像扩散模型，不使用NLP tokenizer。本项目将“一个去噪�
 
 ## 5. 状态数据源与投影规则
 
-本规格只定义长期页面合同，不保存某次训练的“当前事实”或运行结论。控制台必须直接读取本地机器证据，并按证据时间、任务身份和终态优先级生成状态投影。
+本规格只定义长期页面合同，不保存某次训练的“当前事实”或运行结论。项目当前任务的唯一查询入口为：
 
-状态来源至少包括：
+```text
+.runtime/ai-painter/current-execution-registry/current.json
+```
 
+该文件不是业务证据本体，而是由本地能力生命周期编排器原子维护的查询登记。控制台必须先验证其Schema、`registryRevision`、`eventSequence`、`writerIdentity`、`transactionId`、路径边界和SHA-256，再按登记路径定向读取不可变证据。`events.jsonl`和SQLite用于核对修订、事务和恢复状态。控制台不得通过扫描运行目录、比较文件修改时间、比较Run ID或设置Smoke/Stage/审核/裁决的固定来源优先级来决定当前任务。
+
+当前状态的定向证据至少包括：
+
+- 当前执行登记、追加事件和对应SQLite事务。
 - 训练控制状态与非过期运行心跳。
 - Dataset manifest、source index和实际加载证据。
 - Stage、Checkpoint及Token账本。
@@ -114,9 +137,31 @@ V7是图像扩散模型，不使用NLP tokenizer。本项目将“一个去噪�
 - 本地AI能力迁移注册表。
 - GPU、CPU、内存、磁盘和进程只读遥测。
 
-同一模型链存在多份证据时，必须先核对`modelId`、`datasetPackageId`、`checkpointSha256`和训练链/验证批次身份；任务不匹配的证据不得参与当前状态竞争。身份匹配后按证据时间选择更新事实，只有时间相同时才按终态优先级裁决；陈旧心跳不得覆盖更新的失败、阻断或终态。旧证据不得删除或改写。资源门禁、Owner紧急暂停、内部票据未消费、执行中、执行失败、验证失败、能力变更和机器发布审核必须使用不同状态码。缺少最新证据时显示`unknown_or_stale`，不得回退成旧结论或由页面猜测。
+服务端快照必须返回相互独立的字段：
 
-训练、验证、复核与失败归因程序必须在自身终态路径内自动写入不可变报告、最新状态指针、程序事件、SQLite索引、Token/资源账本和必要的业务边界报告。控制台GET接口保持只读；Codex不得作为运行时写入器、状态数据库或闭环依赖。
+```text
+currentProjectTask
+activeExecution
+latestTrainingTerminal
+selectedHistoricalRun
+stateProjectionIntegrity
+registryRevision
+eventSequence
+```
+
+`currentProjectTask`、`activeExecution`和`latestTrainingTerminal`只能来自已验证的当前执行登记及其指向证据。`selectedHistoricalRun`只能来自用户查询和历史索引，不得写回登记，也不得改变顶部任务、活动状态、下一动作或最近训练终态。下方历史工作区可以使用SQLite分页和模糊查询，但查询结果不参加当前身份竞争。
+
+同一模型链存在多份历史证据时，必须核对`modelId`、`datasetPackageId`、`checkpointSha256`和训练链或验证批次身份；任务不匹配的证据不得组合。登记无效、路径不存在、SHA不符、事件与SQLite不一致或事务未完成时，固定返回：
+
+```text
+currentProjectTask.status = unknown_or_stale
+activeExecution = null
+stateProjectionIntegrity = evidence_conflict
+```
+
+此时不得回退到旧Smoke、旧Stage或任一可读取历史记录。陈旧心跳不得覆盖更新的失败、阻断或终态，旧证据不得删除或改写。资源门禁、Owner主动紧急暂停、内部票据状态、执行失败、验证失败、能力变化和机器发布审核必须使用各自正式状态，不得压缩成单一“失败”或“等待验证”。
+
+训练、验证、复核与失败归因程序必须先在自身终态路径写入不可变报告，再由本地能力生命周期编排器通过审核、自动闭环与存储规格第11节定义的事务更新当前执行登记、程序事件和SQLite索引。Token、资源账本和政策边界报告分别保留独立证据。控制台GET接口保持只读；Codex、浏览器和React组件不得作为登记写入器、状态数据库或闭环依赖。
 
 ## 6. 验证门禁
 
@@ -127,4 +172,6 @@ npm run check:ai-painter-current-training-dashboard
 npx tsc --noEmit
 ```
 
-浏览器验证至少确认：入口唯一、顶部明确显示当前是否训练及训练任务详情、Stage记录与严格复验入口在顶部、选择Run或复验批次后只局部切换下方工作区、完整证据和复验图按钮均打开`alertdialog`且URL不变、弹窗可关闭并恢复原工作区、最新完整复验批次显示8张真实轨迹图、监控台文档无纵向滚动、各长内容框可独立滚动、训练记录可模糊查询、统一数据字典可按字段和拒绝码模糊查询、Run/Stage/Epoch/复验/事件/授权/64组记录显示程序保存的详细时间戳或明确的“未记录”、每个Run的epoch与证据一致、容量逐行可查、CPU/内存/GPU/磁盘/网卡/系统状态可见、无横向溢出、无浏览器 error/warning。生产构建不得打包 `.runtime` 训练产物。
+浏览器验证至少确认：入口唯一；顶部把项目当前任务、活动执行和最近训练终态分开显示；Stage记录与严格复验入口在顶部；选择Run或复验批次后只局部切换下方工作区；历史选择不改变顶部当前任务、活动状态和下一动作；完整证据和复验图按钮均打开`alertdialog`且URL不变；弹窗可关闭并恢复原工作区；最新完整复验批次显示8张真实轨迹图；监控台文档无纵向滚动；各长内容框可独立滚动；训练记录可模糊查询；统一数据字典可按字段和拒绝码模糊查询；Run/Stage/Epoch/复验/事件/内部票据/64组记录显示程序保存的详细时间戳或明确的“未记录”；每个Run的epoch与证据一致；容量逐行可查；CPU/内存/GPU/磁盘/网卡/系统状态可见；无横向溢出；无浏览器error或warning。生产构建不得打包`.runtime`训练产物。
+
+状态投影回归必须额外覆盖：旧Smoke、更新Stage 0训练终态和最新候选规划同时存在；历史Run切换；当前登记SHA不符；事务中断；旧`running`文件但PID或心跳无效；未登记新命名空间。预期结果必须与审核、自动闭环与存储规格第11.8节一致。任何以函数调用顺序、命名空间类型、目录修改时间或第一个非空结果决定当前任务的实现均不通过。

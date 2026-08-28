@@ -11,6 +11,7 @@ import type {
   TrainingStagePreview,
   TrainingStageDetail,
 } from "../_lib/current-training-dashboard-types";
+import { deriveSelectedRunValidationSummary } from "../_lib/selected-run-validation-summary.mjs";
 import { trainingParameterCatalog } from "../_lib/training-parameter-catalog";
 import { stageLabel } from "../_lib/training-stage-label";
 import {
@@ -50,6 +51,7 @@ export function CurrentTrainingDashboard() {
   const [error, setError] = useState("");
   const [activeView, setActiveView] = useState<WorkspaceView>("runs");
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const workspaceRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,10 +97,7 @@ export function CurrentTrainingDashboard() {
   }, []);
 
   const latestStage = useMemo(
-    () =>
-      snapshot
-        ? (snapshot.execution.stages.at(-1) ?? null)
-        : null,
+    () => (snapshot ? (snapshot.execution.stages.at(-1) ?? null) : null),
     [snapshot],
   );
   const activeStage = useMemo(
@@ -113,7 +112,16 @@ export function CurrentTrainingDashboard() {
         : null,
     [snapshot],
   );
-  const currentStage = activeStage ?? latestStage;
+  const activityStage = useMemo(
+    () =>
+      snapshot?.activity.taskId
+        ? (snapshot.execution.stages.find(
+            (stage) => stage.runId === snapshot.activity.taskId,
+          ) ?? null)
+        : null,
+    [snapshot],
+  );
+  const currentStage = activityStage ?? activeStage ?? latestStage;
 
   if (!snapshot)
     return (
@@ -141,6 +149,16 @@ export function CurrentTrainingDashboard() {
     setActiveView("runs");
   }
 
+  function openValidationWorkspace() {
+    setActiveView("validation");
+    window.requestAnimationFrame(() =>
+      workspaceRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      }),
+    );
+  }
+
   return (
     <div className={styles.monitorShell}>
       <header className={styles.header}>
@@ -148,7 +166,10 @@ export function CurrentTrainingDashboard() {
           <Link className={styles.back} href="/ai-painter-progress">
             ← 返回训练主控台
           </Link>
-          <Link className={styles.back} href="/ai-painter-progress/task-console">
+          <Link
+            className={styles.back}
+            href="/ai-painter-progress/task-console"
+          >
             本地AI任务操作台 →
           </Link>
           <p className={styles.kicker}>AI PAINTER / V7 LIVE MONITOR</p>
@@ -189,11 +210,19 @@ export function CurrentTrainingDashboard() {
         </section>
         <div className={styles.headerTools}>
           <ParameterHelpCenter compact />
-          <div className={styles.liveState} data-state={snapshot.status.code}>
+          <button
+            className={styles.liveState}
+            data-state={snapshot.status.code}
+            data-testid="validation-status-entry"
+            onClick={openValidationWorkspace}
+            title="点击查看实时验证过程、机器审核结果和历史证据"
+            type="button"
+          >
             <span>当前系统终态</span>
             <strong>{snapshot.status.label}</strong>
             <small>刷新于 {formatDate(snapshot.generatedAtUtc)}</small>
-          </div>
+            <small>点击查看验证过程与历史证据 →</small>
+          </button>
         </div>
       </header>
 
@@ -223,7 +252,11 @@ export function CurrentTrainingDashboard() {
         </div>
       </section>
 
-      <section className={styles.workspaceFrame} data-view={activeView}>
+      <section
+        className={styles.workspaceFrame}
+        data-view={activeView}
+        ref={workspaceRef}
+      >
         <header className={styles.workspaceHeader}>
           <div>
             <span>
@@ -245,7 +278,7 @@ export function CurrentTrainingDashboard() {
             />
           ) : null}
           {activeView === "validation" ? (
-            <ValidationWorkspace snapshot={snapshot} />
+            <ValidationWorkspace snapshot={snapshot} stage={selectedStage} />
           ) : null}
           {activeView === "overview" ? (
             <OverviewWorkspace snapshot={snapshot} />
@@ -278,10 +311,17 @@ function TrainingMission({
 }) {
   const [liveOutputOpen, setLiveOutputOpen] = useState(false);
   const activity = snapshot.activity;
-  const isTraining = activity.localAiProcessActive;
-  const activeProgressStage = [...snapshot.execution.stages]
-    .reverse()
-    .find((stage) => stage.runId === activity.progress.runId) ?? null;
+  const isReviewing = activity.lifecycle === "reviewing";
+  const isTraining =
+    activity.localAiProcessActive && activity.lifecycle === "running";
+  const isActive = isTraining || isReviewing;
+  const validationTerminal =
+    activity.taskKind === "machine_review_terminal" &&
+    (activity.lifecycle === "completed" || activity.lifecycle === "failed");
+  const activeProgressStage =
+    [...snapshot.execution.stages]
+      .reverse()
+      .find((stage) => stage.runId === activity.progress.runId) ?? null;
   const stageChain = [0, 1, 2].map(
     (index) =>
       [...snapshot.execution.stages]
@@ -308,35 +348,48 @@ function TrainingMission({
       data-lifecycle={activity.lifecycle}
       data-testid="execution-actor-board"
       data-training={isTraining}
+      data-reviewing={isReviewing}
     >
       <button
         aria-expanded={liveOutputOpen}
         aria-haspopup="dialog"
         aria-live="polite"
         className={styles.executionSafetyNotice}
-        data-active={isTraining}
+        data-active={isActive}
         data-stalled={activity.stalled}
         data-testid="training-continuation-notice"
         onClick={() => setLiveOutputOpen(true)}
-        title="点击查看只读实时训练输出"
+        title="点击查看只读实时执行状态"
         type="button"
       >
         <strong>
-          {isTraining
-            ? "● 训练持续执行中｜请勿重复启动"
+          {isReviewing
+            ? "● 机器验证持续执行中｜无需人工操作"
+            : isTraining
+              ? "● 训练持续执行中｜请勿重复启动"
+              : validationTerminal && activity.lifecycle === "failed"
+                ? "● 机器验证已完成｜候选失败关闭"
+                : validationTerminal
+                  ? "● 机器验证已完成｜候选通过"
             : activity.stalled
               ? "● 训练心跳异常｜请先查看证据，不要重复启动"
               : "● 当前未检测到训练进程"}
         </strong>
         <span>
-          {isTraining
+          {isReviewing
+            ? `${activity.progress.stageLabel ?? "验证阶段"} · ${activity.taskLabelZh}`
+            : isTraining
             ? `${activity.progress.stageLabel ?? "训练阶段"} · Epoch ${activity.progress.epoch ?? "—"}/${activity.progress.epochTarget ?? "—"} · 优化步 ${activity.progress.optimizerStep ?? "—"}/${activity.progress.optimizerStepTarget ?? "—"}`
             : activity.lifecycleLabelZh}
         </span>
         <small>
-          {isTraining
+          {isReviewing
+            ? `最新验证进度：${formatDetailedTimestamp(activity.lastHeartbeatAtAsiaShanghai ?? activity.lastHeartbeatAtUtc)}；页面自动刷新，关闭页面不会中断验证。`
+            : isTraining
             ? `最新落盘心跳：${formatDetailedTimestamp(activity.lastHeartbeatAtAsiaShanghai ?? activity.lastHeartbeatAtUtc)}；点击查看实时输出，刷新或关闭本页面不会中断训练。`
-            : "点击查看只读状态；本提示不会启动、暂停或修改训练。"}
+            : validationTerminal
+              ? "点击查看已保存的验证节点、失败项、图片与SHA-256；结果会长期保留。"
+              : "点击查看只读状态；本提示不会启动、暂停或修改训练。"}
         </small>
       </button>
       <div className={styles.missionIdentity}>
@@ -347,15 +400,15 @@ function TrainingMission({
             <strong>{activity.actorLabelZh}</strong>
           </div>
         </div>
-        <p>{activity.taskLabelZh} · {activity.lifecycleLabelZh}</p>
+        <p>
+          {activity.taskLabelZh} · {activity.lifecycleLabelZh}
+        </p>
         <strong
           className={styles.localAiIndicator}
           data-active={activity.localAiProcessActive}
           data-testid="local-ai-active-indicator"
         >
-          {activity.localAiProcessActive
-            ? "本地AI正在工作"
-            : "本地AI未运行"}
+          {activity.localAiProcessActive ? "本地AI正在工作" : "本地AI未运行"}
         </strong>
         <small>{activity.detailZh}</small>
       </div>
@@ -377,7 +430,9 @@ function TrainingMission({
         />
         <Definition
           label="最新心跳"
-          value={formatDetailedTimestamp(activity.lastHeartbeatAtAsiaShanghai ?? activity.lastHeartbeatAtUtc)}
+          value={formatDetailedTimestamp(
+            activity.lastHeartbeatAtAsiaShanghai ?? activity.lastHeartbeatAtUtc,
+          )}
         />
         <small
           className={styles.heartbeatLine}
@@ -393,7 +448,10 @@ function TrainingMission({
         <div className={styles.stageRail}>
           {stageChain.map((stage, index) => (
             <article
-              data-active={stage?.resolutionStage === activity.progress.stageIndex && isTraining}
+              data-active={
+                stage?.resolutionStage === activity.progress.stageIndex &&
+                isTraining
+              }
               data-complete={
                 stage?.status ===
                   "conditional_denoiser_training_completed_pending_validation" ||
@@ -432,7 +490,10 @@ function TrainingMission({
             />
           </span>
         </div>
-        <div className={styles.missionTelemetry} data-testid="execution-progress">
+        <div
+          className={styles.missionTelemetry}
+          data-testid="execution-progress"
+        >
           <span>
             阶段 <b>{formatLivePhase(activity.progress.phase)}</b>
           </span>
@@ -440,34 +501,61 @@ function TrainingMission({
             Loss <b>{formatMetric(activity.progress.trainCompositeLoss)}</b>
           </span>
           <span>
-            优化步 <b>{activity.progress.optimizerStep ?? "—"}/{activity.progress.optimizerStepTarget ?? "—"}</b>
+            优化步{" "}
+            <b>
+              {activity.progress.optimizerStep ?? "—"}/
+              {activity.progress.optimizerStepTarget ?? "—"}
+            </b>
           </span>
           <span>
-            速度 <b>{activity.progress.optimizerStepsPerSecond === null ? "—" : `${activity.progress.optimizerStepsPerSecond.toFixed(3)} step/s`}</b>
+            速度{" "}
+            <b>
+              {activity.progress.optimizerStepsPerSecond === null
+                ? "—"
+                : `${activity.progress.optimizerStepsPerSecond.toFixed(3)} step/s`}
+            </b>
           </span>
           <span>
-            ETA <b>{activity.progress.etaSeconds === null ? "—" : formatUptime(activity.progress.etaSeconds)}</b>
+            ETA{" "}
+            <b>
+              {activity.progress.etaSeconds === null
+                ? "—"
+                : formatUptime(activity.progress.etaSeconds)}
+            </b>
           </span>
           <span>
-            GPU <b>{snapshot.gpu.utilizationPercent}% / 显存 {Math.round(gpuMemoryPercent)}%</b>
+            GPU{" "}
+            <b>
+              {snapshot.gpu.utilizationPercent}% / 显存{" "}
+              {Math.round(gpuMemoryPercent)}%
+            </b>
           </span>
         </div>
       </div>
-      <div className={styles.missionAccounting} data-testid="token-source-boundaries">
+      <div
+        className={styles.missionAccounting}
+        data-testid="token-source-boundaries"
+      >
         <span>COMPUTE / TOKEN来源</span>
         <dl>
           <Definition
             label="本地模型计算量"
-            value={activity.accounting.localModel.available
-              ? `${formatInteger(activity.accounting.localModel.total ?? undefined)} ${activity.accounting.localModel.unit}`
-              : "当前任务未记录"}
+            value={
+              activity.accounting.localModel.available
+                ? `${formatInteger(activity.accounting.localModel.total ?? undefined)} ${activity.accounting.localModel.unit}`
+                : "当前任务未记录"
+            }
             mono
           />
           <Definition
             label="外部API Token"
-            value={activity.accounting.externalApi.available
-              ? formatInteger(activity.accounting.externalApi.totalTokens ?? undefined)
-              : "当前任务未使用/未记录"}
+            value={
+              activity.accounting.externalApi.available
+                ? formatInteger(
+                    activity.accounting.externalApi.totalTokens ?? undefined,
+                  )
+                : "当前任务未使用/未记录"
+            }
           />
           <Definition label="Codex Token" value="本地程序不可读取" />
         </dl>
@@ -500,11 +588,13 @@ function TrainingMission({
         </dl>
         <code>{snapshot.taskCapsule.latestBlocker.code}</code>
         <small>
-          禁止动作 {snapshot.taskCapsule.forbiddenActions.length} 项 · 样本 {snapshot.taskCapsule.taskIdentity.conditionLabel ?? "未记录"} · Seed {snapshot.taskCapsule.taskIdentity.seed ?? "未记录"}
+          禁止动作 {snapshot.taskCapsule.forbiddenActions.length} 项 · 样本{" "}
+          {snapshot.taskCapsule.taskIdentity.conditionLabel ?? "未记录"} · Seed{" "}
+          {snapshot.taskCapsule.taskIdentity.seed ?? "未记录"}
         </small>
       </div>
       <div className={styles.missionGate}>
-        <span>业务终态 / OWNER ACTION</span>
+        <span>业务终态 / LOCAL AI ACTION</span>
         <strong>{snapshot.taskCapsule.latestBlocker.summaryZh}</strong>
         <p>{snapshot.taskCapsule.nextAllowedAction.labelZh}</p>
         <code>{snapshot.taskCapsule.nextAllowedAction.code}</code>
@@ -555,7 +645,12 @@ function LiveTrainingOutputDialog({
       if (output) output.scrollTop = output.scrollHeight;
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [followLatest, progress.optimizerStep, epochHistory.length, eventHistory.length]);
+  }, [
+    followLatest,
+    progress.optimizerStep,
+    epochHistory.length,
+    eventHistory.length,
+  ]);
 
   function resumeFollowingLatest() {
     setFollowLatest(true);
@@ -596,14 +691,46 @@ function LiveTrainingOutputDialog({
         </header>
 
         <div className={styles.liveOutputStatusGrid}>
-          <Definition label="运行状态" value={`${activity.lifecycleLabelZh} · ${activity.process.childAlive ? "训练进程存活" : "未检测到训练子进程"}`} />
-          <Definition label="当前阶段" value={`${progress.stageLabel ?? "—"} · ${progress.resolution ?? "—"}`} />
-          <Definition label="Epoch / Batch" value={`${progress.epoch ?? "—"}/${progress.epochTarget ?? "—"} · ${progress.batch ?? "—"}/${progress.batchTarget ?? "—"}`} />
-          <Definition label="优化步" value={`${progress.optimizerStep ?? "—"}/${progress.optimizerStepTarget ?? "—"}`} />
-          <Definition label="阶段进度" value={`${(progress.percentage ?? 0).toFixed(2)}%`} />
-          <Definition label="动态 ETA" value={progress.etaSeconds === null ? "—" : formatUptime(progress.etaSeconds)} />
-          <Definition label="当前 Loss" value={formatMetric(progress.trainCompositeLoss)} />
-          <Definition label="训练速度" value={progress.optimizerStepsPerSecond === null ? "—" : `${progress.optimizerStepsPerSecond.toFixed(3)} step/s`} />
+          <Definition
+            label="运行状态"
+            value={`${activity.lifecycleLabelZh} · ${activity.process.childAlive ? "训练进程存活" : "未检测到训练子进程"}`}
+          />
+          <Definition
+            label="当前阶段"
+            value={`${progress.stageLabel ?? "—"} · ${progress.resolution ?? "—"}`}
+          />
+          <Definition
+            label="Epoch / Batch"
+            value={`${progress.epoch ?? "—"}/${progress.epochTarget ?? "—"} · ${progress.batch ?? "—"}/${progress.batchTarget ?? "—"}`}
+          />
+          <Definition
+            label="优化步"
+            value={`${progress.optimizerStep ?? "—"}/${progress.optimizerStepTarget ?? "—"}`}
+          />
+          <Definition
+            label="阶段进度"
+            value={`${(progress.percentage ?? 0).toFixed(2)}%`}
+          />
+          <Definition
+            label="动态 ETA"
+            value={
+              progress.etaSeconds === null
+                ? "—"
+                : formatUptime(progress.etaSeconds)
+            }
+          />
+          <Definition
+            label="当前 Loss"
+            value={formatMetric(progress.trainCompositeLoss)}
+          />
+          <Definition
+            label="训练速度"
+            value={
+              progress.optimizerStepsPerSecond === null
+                ? "—"
+                : `${progress.optimizerStepsPerSecond.toFixed(3)} step/s`
+            }
+          />
         </div>
 
         <div className={styles.liveOutputProgressBar}>
@@ -614,7 +741,9 @@ function LiveTrainingOutputDialog({
           <header>
             <div>
               <strong>本次运行输出历史</strong>
-              <small>已落盘 {epochHistory.length} 个Epoch · 最新内容在底部</small>
+              <small>
+                已落盘 {epochHistory.length} 个Epoch · 最新内容在底部
+              </small>
             </div>
             <button
               data-following={followLatest}
@@ -630,41 +759,75 @@ function LiveTrainingOutputDialog({
             onScroll={(event) => {
               const output = event.currentTarget;
               const atBottom =
-                output.scrollHeight - output.scrollTop - output.clientHeight < 24;
+                output.scrollHeight - output.scrollTop - output.clientHeight <
+                24;
               setFollowLatest(atBottom);
             }}
             ref={outputStreamRef}
           >
-            <code>[RUN] {progress.runId ?? activity.taskId ?? "no-active-run"}</code>
+            <code>
+              [RUN] {progress.runId ?? activity.taskId ?? "no-active-run"}
+            </code>
             <code>[SOURCE] {activity.sourcePath ?? activity.source}</code>
             {eventHistory.map((event) => (
-              <code key={`event-${event.id}`}>[{formatDetailedTimestamp(event.timestamp)}] EVENT {event.status} · {event.title}</code>
+              <code key={`event-${event.id}`}>
+                [{formatDetailedTimestamp(event.timestamp)}] EVENT{" "}
+                {event.status} · {event.title}
+              </code>
             ))}
             {epochHistory.map((metric) => (
               <code key={`epoch-${metric.epoch}`}>
-                [{formatDetailedTimestamp(metric.recordedAtAsiaShanghai ?? metric.recordedAtUtc)}] EPOCH {metric.epoch} completed · trainLoss={formatMetric(metric.trainCompositeLoss)} · validation={formatMetric(metric.validationCompositeScore)} · checkpoint={formatMetric(metric.validationCheckpointScore)}
+                [
+                {formatDetailedTimestamp(
+                  metric.recordedAtAsiaShanghai ?? metric.recordedAtUtc,
+                )}
+                ] EPOCH {metric.epoch} completed · trainLoss=
+                {formatMetric(metric.trainCompositeLoss)} · validation=
+                {formatMetric(metric.validationCompositeScore)} · checkpoint=
+                {formatMetric(metric.validationCheckpointScore)}
               </code>
             ))}
             <code>[{heartbeatTimestamp}] HEARTBEAT received</code>
             <code>[PHASE] {formatLivePhase(progress.phase)}</code>
-            <code>[PROGRESS] Epoch {progress.epoch ?? "—"}/{progress.epochTarget ?? "—"} · Batch {progress.batch ?? "—"}/{progress.batchTarget ?? "—"} · Step {progress.optimizerStep ?? "—"}/{progress.optimizerStepTarget ?? "—"}</code>
-            <code>[GPU] utilization={snapshot.gpu.utilizationPercent}% memory={snapshot.gpu.memoryUsedMiB}/{snapshot.gpu.memoryTotalMiB} MiB</code>
+            <code>
+              [PROGRESS] Epoch {progress.epoch ?? "—"}/
+              {progress.epochTarget ?? "—"} · Batch {progress.batch ?? "—"}/
+              {progress.batchTarget ?? "—"} · Step{" "}
+              {progress.optimizerStep ?? "—"}/
+              {progress.optimizerStepTarget ?? "—"}
+            </code>
+            <code>
+              [GPU] utilization={snapshot.gpu.utilizationPercent}% memory=
+              {snapshot.gpu.memoryUsedMiB}/{snapshot.gpu.memoryTotalMiB} MiB
+            </code>
           </div>
         </section>
 
         <section className={styles.liveOutputEpochs}>
           <header>
             <strong>最近完成的 Epoch</strong>
-            <small>{recentMetrics.length ? `显示 ${recentMetrics.length} 条最新记录` : "正在等待首个Epoch落盘"}</small>
+            <small>
+              {recentMetrics.length
+                ? `显示 ${recentMetrics.length} 条最新记录`
+                : "正在等待首个Epoch落盘"}
+            </small>
           </header>
           <div>
             {recentMetrics.map((metric) => (
               <article key={metric.epoch}>
                 <strong>Epoch {metric.epoch}</strong>
                 <span>训练Loss {formatMetric(metric.trainCompositeLoss)}</span>
-                <span>验证分 {formatMetric(metric.validationCompositeScore)}</span>
-                <span>Checkpoint分 {formatMetric(metric.validationCheckpointScore)}</span>
-                <small>{formatDetailedTimestamp(metric.recordedAtAsiaShanghai ?? metric.recordedAtUtc)}</small>
+                <span>
+                  验证分 {formatMetric(metric.validationCompositeScore)}
+                </span>
+                <span>
+                  Checkpoint分 {formatMetric(metric.validationCheckpointScore)}
+                </span>
+                <small>
+                  {formatDetailedTimestamp(
+                    metric.recordedAtAsiaShanghai ?? metric.recordedAtUtc,
+                  )}
+                </small>
               </article>
             ))}
           </div>
@@ -776,19 +939,25 @@ function RunWorkspace({
                 />
                 <Definition
                   label="实时速度"
-                  value={stage.liveProgress.optimizerStepsPerSecond === null
-                    ? "—"
-                    : `${stage.liveProgress.optimizerStepsPerSecond.toFixed(3)} step/s`}
+                  value={
+                    stage.liveProgress.optimizerStepsPerSecond === null
+                      ? "—"
+                      : `${stage.liveProgress.optimizerStepsPerSecond.toFixed(3)} step/s`
+                  }
                 />
                 <Definition
                   label="预计剩余"
-                  value={stage.liveProgress.etaSeconds === null
-                    ? "—"
-                    : formatUptime(stage.liveProgress.etaSeconds)}
+                  value={
+                    stage.liveProgress.etaSeconds === null
+                      ? "—"
+                      : formatUptime(stage.liveProgress.etaSeconds)
+                  }
                 />
                 <Definition
                   label="本地计算Token"
-                  value={formatInteger(stage.liveProgress.localTrainingTokenCount ?? undefined)}
+                  value={formatInteger(
+                    stage.liveProgress.localTrainingTokenCount ?? undefined,
+                  )}
                 />
                 <Definition
                   label="实时更新时间"
@@ -827,7 +996,9 @@ function RunWorkspace({
                     <Image
                       alt={`${stageLabel(stage)} Epoch ${preview.epoch} 训练预览`}
                       height={192}
-                      src={validationImageUrl(preview.normalizedReviewImagePath ?? preview.imagePath)}
+                      src={validationImageUrl(
+                        preview.normalizedReviewImagePath ?? preview.imagePath,
+                      )}
                       unoptimized
                       width={256}
                     />
@@ -835,7 +1006,8 @@ function RunWorkspace({
                       <strong>Epoch {preview.epoch}</strong>
                       <small>
                         {formatDetailedTimestamp(
-                          preview.recordedAtAsiaShanghai ?? preview.recordedAtUtc,
+                          preview.recordedAtAsiaShanghai ??
+                            preview.recordedAtUtc,
                         )}
                       </small>
                     </span>
@@ -994,157 +1166,440 @@ function RunWorkspace({
 
 function ValidationWorkspace({
   snapshot,
+  stage,
 }: {
   snapshot: CurrentTrainingDashboardSnapshot;
+  stage: TrainingStageDetail | null;
 }) {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [selectedTrajectory, setSelectedTrajectory] =
     useState<StrictValidationTrajectory | null>(null);
+  const [selectedPreview, setSelectedPreview] =
+    useState<TrainingStagePreview | null>(null);
   const batch =
     snapshot.validation.batches.find(
       (item) => item.batchId === selectedBatchId,
-    ) ?? snapshot.validation.batches.at(0) ?? null;
-
-  if (!batch)
-    return (
-      <p className={styles.empty} data-testid="strict-validation-workspace">
-        当前没有程序保存的严格复验批次。
-      </p>
-    );
+    ) ??
+    snapshot.validation.batches.at(0) ??
+    null;
+  const currentStage = stage ?? snapshot.execution.stages.at(-1) ?? null;
+  const {
+    reviewedPreviews,
+    expectedPreviewCount,
+    completedPreviewCount,
+    passedPreviewCount,
+    failedPreviewCount,
+    selectedRunMatchesCapsule,
+  } = deriveSelectedRunValidationSummary({
+    stage: currentStage,
+    candidateTerminal: snapshot.taskCapsule.candidateTerminal,
+  });
+  const reviewRunning =
+    snapshot.activity.lifecycle === "reviewing" &&
+    (!currentStage || snapshot.activity.taskId === currentStage.runId);
+  const reviewPercent = expectedPreviewCount
+    ? Math.min(100, (completedPreviewCount / expectedPreviewCount) * 100)
+    : reviewRunning
+      ? 5
+      : 100;
+  const reviewRunId =
+    currentStage?.runId ?? snapshot.taskCapsule.candidateTerminal.runId;
+  const reviewEvents = snapshot.events.filter(
+    (event) => event.runId === reviewRunId,
+  );
+  const selectedRunEvidence = currentStage
+    ? [
+        ...(currentStage.previewReviewPath
+          ? [
+              {
+                kind: "machine_review",
+                labelZh: "当前Run机器审核报告",
+                path: currentStage.previewReviewPath,
+                sha256: currentStage.previewReviewSha256,
+              },
+            ]
+          : []),
+        ...(currentStage.manifestPath
+          ? [
+              {
+                kind: "stage_manifest",
+                labelZh: "当前Run Manifest",
+                path: currentStage.manifestPath,
+                sha256: currentStage.manifestSha256,
+              },
+            ]
+          : []),
+      ]
+    : [];
+  const capsuleReviewEvidence = snapshot.taskCapsule.evidence.filter(
+    (item) =>
+      (!reviewRunId || item.path.includes(reviewRunId)) &&
+      [
+        "machine_review",
+        "unique_decision",
+        "stage4_terminal",
+        "local_task_capsule",
+        "policy_boundary",
+        "cpu_report",
+      ].includes(item.kind),
+  );
+  const reviewEvidence = [...selectedRunEvidence, ...capsuleReviewEvidence].filter(
+    (item, index, items) =>
+      items.findIndex((candidate) => candidate.path === item.path) === index,
+  );
+  const selectedRunEvidenceVerified = currentStage
+    ? Boolean(
+        currentStage.previewReviewPath &&
+          currentStage.previewReviewSha256 &&
+          expectedPreviewCount > 0 &&
+          completedPreviewCount === expectedPreviewCount &&
+          passedPreviewCount + failedPreviewCount === expectedPreviewCount,
+      )
+    : snapshot.taskCapsule.integrity.status === "verified";
+  const selectedRunTerminal = currentStage
+    ? currentStage.verdict === "failed" || currentStage.verdict === "passed"
+    : snapshot.taskCapsule.candidateTerminal.status === "qualified" ||
+      snapshot.taskCapsule.candidateTerminal.status === "failed_closed";
+  const candidateStatus = currentStage
+    ? currentStage.status
+    : snapshot.taskCapsule.candidateTerminal.status;
+  const validationStatusLabel = reviewRunning
+    ? "机器验证正在进行"
+    : currentStage?.verdict === "failed"
+      ? `${stageLabel(currentStage)}验证完成，真实视觉失败`
+      : currentStage?.verdict === "passed"
+        ? `${stageLabel(currentStage)}验证完成，候选通过`
+        : snapshot.status.label;
+  const reviewSteps = [
+    {
+      label: "输入与证据身份",
+      complete: selectedRunEvidenceVerified,
+    },
+    {
+      label: "固定预览与复现",
+      complete: expectedPreviewCount > 0,
+    },
+    {
+      label: "机器视觉审核",
+      complete:
+        expectedPreviewCount > 0 &&
+        completedPreviewCount >= expectedPreviewCount,
+    },
+    {
+      label: "确定性裁决",
+      complete:
+        reviewEvidence.some((item) => item.kind === "unique_decision") ||
+        reviewEvents.some((event) => /adjudicat|裁决/.test(event.action)),
+    },
+    {
+      label: "终态与治理记录",
+      complete: selectedRunTerminal,
+    },
+  ];
 
   return (
     <>
-      <div
-        className={styles.validationWorkspace}
-        data-testid="strict-validation-workspace"
+      <section
+        className={styles.validationMonitor}
+        data-running={reviewRunning}
+        data-testid="validation-live-monitor"
       >
-        <aside className={styles.validationBatchRail}>
+        <header className={styles.validationMonitorHeader}>
           <div>
-            <span>VALIDATION BATCH</span>
-            <h3>严格复验批次</h3>
-            <p>选择批次只切换本工作区，不离开训练监控台。</p>
+            <span>LOCAL READ-ONLY VALIDATION CENTER</span>
+            <h3>{reviewRunning ? "机器验证正在进行" : "机器验证过程与终态"}</h3>
+            <p>
+              {reviewRunning
+                ? "页面约每2秒读取本地程序保存的验证证据；关闭页面不会中断验证。"
+                : "验证完成后证据不会消失，可继续查看每个节点、失败项、图片和SHA-256。"}
+            </p>
           </div>
-          <select
-            aria-label="选择严格复验批次"
-            data-testid="strict-validation-batch-selector"
-            onChange={(event) => setSelectedBatchId(event.target.value)}
-            value={batch.batchId}
-          >
-            {snapshot.validation.batches.map((item) => (
-              <option key={item.batchId} value={item.batchId}>
-                {formatDetailedTimestamp(
-                  item.createdAtAsiaShanghai ?? item.createdAtUtc,
-                )} · {item.completedTrajectoryCount}/{item.plannedTrajectoryCount}
-              </option>
-            ))}
-          </select>
-          <dl className={styles.validationBatchSummary}>
-            <Definition label="状态" value={batch.status} mono />
-            <Definition
-              label="创建时间（北京时间）"
-              value={formatDetailedTimestamp(
-                batch.createdAtAsiaShanghai ?? batch.createdAtUtc,
-              )}
-            />
-            <Definition
-              label="完成时间（北京时间）"
-              value={formatDetailedTimestamp(
-                batch.completedAtAsiaShanghai ?? batch.completedAtUtc,
-              )}
-            />
-            <Definition
-              label="完成轨迹"
-              value={`${batch.completedTrajectoryCount}/${batch.plannedTrajectoryCount}`}
-            />
-            <Definition
-              label="机器通过 / 拒绝"
-              value={`${batch.machinePassedCount} / ${batch.machineRejectedCount}`}
-            />
-            <Definition
-              label="本地潜空间Token"
-              value={formatInteger(
-                batch.validationTokenAccounting.latentSpatialTokens,
-              )}
-            />
-            <Definition
-              label="重复输出Hash"
-              value={`${batch.duplicateOutputHashes.length}`}
-            />
-            <Definition
-              label="训练权重改动"
-              value={batch.trainingWeightsModified ? "是" : "否"}
-            />
-          </dl>
-          <div className={styles.validationEligibility}>
-            <StatusMark value={batch.formalInferenceEligible} /> 正式推理
-            <StatusMark value={batch.runtimeFrameEligible} /> RuntimeFrame
-            <StatusMark value={batch.canEnterWorld} /> 进入世界
+          <div className={styles.validationMonitorStatus}>
+            <strong>{validationStatusLabel}</strong>
+            <small>
+              刷新于 {formatDetailedTimestamp(snapshot.generatedAtUtc)}
+            </small>
+            <code>{reviewRunId ?? "当前没有验证runId"}</code>
           </div>
-          <EvidenceFile
-            label="批次报告"
-            path={batch.reportPath}
-            sha256={batch.reportSha256}
-          />
-        </aside>
+        </header>
 
-        <section className={styles.validationTrajectoryPanel}>
+        <div className={styles.validationProgressTrack}>
+          <div style={{ width: `${reviewPercent}%` }} />
+        </div>
+        <div className={styles.validationBatchSummary}>
+          <Definition
+            label="验证节点"
+            value={`${completedPreviewCount}/${expectedPreviewCount || "—"}`}
+          />
+          <Definition
+            label="通过 / 失败"
+            value={`${passedPreviewCount} / ${failedPreviewCount}`}
+          />
+          <Definition
+            label="候选状态"
+            value={candidateStatus}
+            mono
+          />
+          <Definition
+            label="证据完整性"
+            value={
+              selectedRunEvidenceVerified
+                ? "verified"
+                : selectedRunMatchesCapsule
+                  ? snapshot.taskCapsule.integrity.status
+                  : "incomplete_or_mismatched"
+            }
+            mono
+          />
+        </div>
+        <div className={styles.validationStepGrid}>
+          {reviewSteps.map((step, index) => (
+            <article data-complete={step.complete} key={step.label}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{step.label}</strong>
+              <small>
+                {step.complete
+                  ? "已形成不可变证据"
+                  : reviewRunning
+                    ? "等待本地程序推进"
+                    : "本候选未完成此节点"}
+              </small>
+            </article>
+          ))}
+        </div>
+
+        <section className={styles.validationCurrentPreviews}>
           <header>
             <div>
-              <span>VISUAL TRAJECTORY REVIEW</span>
-              <h3>{batch.trajectories.length} 张复验图</h3>
+              <span>CURRENT CANDIDATE REVIEW</span>
+              <h3>当前候选固定审核节点</h3>
             </div>
-            <p>点击图片查看条件、Seed、门禁、拒绝原因、Hash和Token。</p>
+            <small>点击图片查看失败项、源文件、审核文件和SHA-256。</small>
           </header>
-          <div className={styles.validationTrajectoryGrid}>
-            {batch.trajectories.map((trajectory, index) => (
-              <button
-                className={styles.validationTrajectoryCard}
-                data-status={trajectory.status}
-                data-testid={`strict-validation-trajectory-card-${index}`}
-                key={`${trajectory.runId}-${trajectory.seedIndex}`}
-                onClick={() => setSelectedTrajectory(trajectory)}
-                type="button"
-              >
-                <div className={styles.validationThumbnail}>
-                  {trajectory.outputImagePath ? (
-                    <Image
-                      alt={`${trajectory.conditionLabel} 严格复验图`}
-                      height={768}
-                      src={validationImageUrl(trajectory.outputImagePath)}
-                      unoptimized
-                      width={1024}
-                    />
-                  ) : (
-                    <span>本轨迹未生成图片</span>
-                  )}
-                  <b>{trajectory.status === "machine_passed" ? "通过" : "拒绝"}</b>
-                </div>
-                <div className={styles.validationCardBody}>
-                  <span>#{String(index + 1).padStart(2, "0")}</span>
-                  <strong>{trajectory.conditionLabel}</strong>
-                  <small>
-                    Seed {trajectory.seed} · {trajectory.split} ·{" "}
-                    {(trajectory.durationMs / 1000).toFixed(3)}秒
-                  </small>
-                  <div className={styles.validationIssueChips}>
-                    {trajectory.machineReviewIssueCodes.map((code) => (
-                      <code key={code}>{code}</code>
-                    ))}
-                    {!trajectory.machineReviewIssueCodes.length ? (
-                      <code>没有机器拒绝码</code>
+          {currentStage?.previews.length ? (
+            <div className={styles.validationCurrentPreviewGrid}>
+              {currentStage.previews.map((preview) => (
+                <button
+                  data-passed={preview.machineReviewPassed}
+                  key={`${currentStage.runId}-${preview.epoch}`}
+                  onClick={() => setSelectedPreview(preview)}
+                  type="button"
+                >
+                  <Image
+                    alt={`Epoch ${preview.epoch} 机器审核预览`}
+                    height={192}
+                    src={validationImageUrl(
+                      preview.normalizedReviewImagePath ?? preview.imagePath,
+                    )}
+                    unoptimized
+                    width={256}
+                  />
+                  <span>
+                    <strong>Epoch {preview.epoch}</strong>
+                    <b>
+                      {preview.machineReviewPassed === null
+                        ? "等待审核"
+                        : preview.machineReviewPassed
+                          ? "通过"
+                          : `失败 ${preview.machineReviewIssueCodes.length} 项`}
+                    </b>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.empty}>当前候选尚未保存固定审核预览。</p>
+          )}
+        </section>
+
+        <div className={styles.validationEvidenceTimeline}>
+          <section>
+            <PanelTitle eyebrow="VALIDATION EVENTS" title="验证事件" />
+            <div className={styles.inlineEvents}>
+              {reviewEvents.slice(0, 10).map((event) => (
+                <article key={event.id}>
+                  <span data-status={event.status}>{event.status}</span>
+                  <div>
+                    <strong>{event.title}</strong>
+                    <small>{formatDetailedTimestamp(event.timestamp)}</small>
+                    {event.evidencePath ? (
+                      <code>{event.evidencePath}</code>
                     ) : null}
                   </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-      </div>
-      {selectedTrajectory ? (
+                </article>
+              ))}
+              {!reviewEvents.length ? (
+                <p className={styles.empty}>当前尚无程序保存的验证事件。</p>
+              ) : null}
+            </div>
+          </section>
+          <section>
+            <PanelTitle eyebrow="IMMUTABLE EVIDENCE" title="验证证据" />
+            <div className={styles.evidenceDialogFiles}>
+              {reviewEvidence.map((item) => (
+                <EvidenceFile
+                  key={`${item.kind}-${item.path}`}
+                  label={item.labelZh}
+                  path={item.path}
+                  sha256={item.sha256}
+                />
+              ))}
+              {!reviewEvidence.length ? (
+                <p className={styles.empty}>当前尚无匹配的验证证据。</p>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      </section>
+
+      {batch ? (
+        <div
+          className={styles.validationWorkspace}
+          data-testid="strict-validation-workspace"
+        >
+          <aside className={styles.validationBatchRail}>
+            <div>
+              <span>VALIDATION HISTORY</span>
+              <h3>历史严格复验批次</h3>
+              <p>验证结束后仍可按批次回看图片、拒绝码和不可变报告。</p>
+            </div>
+            <select
+              aria-label="选择严格复验批次"
+              data-testid="strict-validation-batch-selector"
+              onChange={(event) => setSelectedBatchId(event.target.value)}
+              value={batch.batchId}
+            >
+              {snapshot.validation.batches.map((item) => (
+                <option key={item.batchId} value={item.batchId}>
+                  {formatDetailedTimestamp(
+                    item.createdAtAsiaShanghai ?? item.createdAtUtc,
+                  )}{" "}
+                  · {item.completedTrajectoryCount}/
+                  {item.plannedTrajectoryCount}
+                </option>
+              ))}
+            </select>
+            <dl className={styles.validationBatchSummary}>
+              <Definition label="状态" value={batch.status} mono />
+              <Definition
+                label="创建时间（北京时间）"
+                value={formatDetailedTimestamp(
+                  batch.createdAtAsiaShanghai ?? batch.createdAtUtc,
+                )}
+              />
+              <Definition
+                label="完成时间（北京时间）"
+                value={formatDetailedTimestamp(
+                  batch.completedAtAsiaShanghai ?? batch.completedAtUtc,
+                )}
+              />
+              <Definition
+                label="完成轨迹"
+                value={`${batch.completedTrajectoryCount}/${batch.plannedTrajectoryCount}`}
+              />
+              <Definition
+                label="机器通过 / 拒绝"
+                value={`${batch.machinePassedCount} / ${batch.machineRejectedCount}`}
+              />
+              <Definition
+                label="本地潜空间Token"
+                value={formatInteger(
+                  batch.validationTokenAccounting.latentSpatialTokens,
+                )}
+              />
+              <Definition
+                label="重复输出Hash"
+                value={`${batch.duplicateOutputHashes.length}`}
+              />
+              <Definition
+                label="训练权重改动"
+                value={batch.trainingWeightsModified ? "是" : "否"}
+              />
+            </dl>
+            <div className={styles.validationEligibility}>
+              <StatusMark value={batch.formalInferenceEligible} /> 正式推理
+              <StatusMark value={batch.runtimeFrameEligible} /> RuntimeFrame
+              <StatusMark value={batch.canEnterWorld} /> 进入世界
+            </div>
+            <EvidenceFile
+              label="批次报告"
+              path={batch.reportPath}
+              sha256={batch.reportSha256}
+            />
+          </aside>
+
+          <section className={styles.validationTrajectoryPanel}>
+            <header>
+              <div>
+                <span>VISUAL TRAJECTORY REVIEW</span>
+                <h3>{batch.trajectories.length} 张复验图</h3>
+              </div>
+              <p>点击图片查看条件、Seed、门禁、拒绝原因、Hash和Token。</p>
+            </header>
+            <div className={styles.validationTrajectoryGrid}>
+              {batch.trajectories.map((trajectory, index) => (
+                <button
+                  className={styles.validationTrajectoryCard}
+                  data-status={trajectory.status}
+                  data-testid={`strict-validation-trajectory-card-${index}`}
+                  key={`${trajectory.runId}-${trajectory.seedIndex}`}
+                  onClick={() => setSelectedTrajectory(trajectory)}
+                  type="button"
+                >
+                  <div className={styles.validationThumbnail}>
+                    {trajectory.outputImagePath ? (
+                      <Image
+                        alt={`${trajectory.conditionLabel} 严格复验图`}
+                        height={768}
+                        src={validationImageUrl(trajectory.outputImagePath)}
+                        unoptimized
+                        width={1024}
+                      />
+                    ) : (
+                      <span>本轨迹未生成图片</span>
+                    )}
+                    <b>
+                      {trajectory.status === "machine_passed" ? "通过" : "拒绝"}
+                    </b>
+                  </div>
+                  <div className={styles.validationCardBody}>
+                    <span>#{String(index + 1).padStart(2, "0")}</span>
+                    <strong>{trajectory.conditionLabel}</strong>
+                    <small>
+                      Seed {trajectory.seed} · {trajectory.split} ·{" "}
+                      {(trajectory.durationMs / 1000).toFixed(3)}秒
+                    </small>
+                    <div className={styles.validationIssueChips}>
+                      {trajectory.machineReviewIssueCodes.map((code) => (
+                        <code key={code}>{code}</code>
+                      ))}
+                      {!trajectory.machineReviewIssueCodes.length ? (
+                        <code>没有机器拒绝码</code>
+                      ) : null}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : (
+        <p className={styles.empty} data-testid="strict-validation-workspace">
+          当前没有历史严格复验批次；上方当前候选验证记录仍可正常查看。
+        </p>
+      )}
+      {selectedTrajectory && batch ? (
         <ValidationTrajectoryDialog
           batch={batch}
           onClose={() => setSelectedTrajectory(null)}
           trajectory={selectedTrajectory}
+        />
+      ) : null}
+      {selectedPreview && currentStage ? (
+        <RunPreviewDialog
+          onClose={() => setSelectedPreview(null)}
+          preview={selectedPreview}
+          stage={currentStage}
         />
       ) : null}
     </>
@@ -1178,7 +1633,9 @@ function RunPreviewDialog({
         <header>
           <div>
             <span>TRAINING PREVIEW EVIDENCE</span>
-            <h2>{stageLabel(stage)} · Epoch {preview.epoch}</h2>
+            <h2>
+              {stageLabel(stage)} · Epoch {preview.epoch}
+            </h2>
             <code>{stage.runId}</code>
           </div>
           <button
@@ -1196,14 +1653,19 @@ function RunPreviewDialog({
               alt={`${stageLabel(stage)} Epoch ${preview.epoch} 训练预览原图`}
               height={192}
               priority
-              src={validationImageUrl(preview.normalizedReviewImagePath ?? preview.imagePath)}
+              src={validationImageUrl(
+                preview.normalizedReviewImagePath ?? preview.imagePath,
+              )}
               unoptimized
               width={256}
             />
           </div>
           <div className={styles.validationDialogDetails}>
             <section>
-              <PanelTitle eyebrow="IDENTITY & TIME" title="Epoch、状态与详细时间戳" />
+              <PanelTitle
+                eyebrow="IDENTITY & TIME"
+                title="Epoch、状态与详细时间戳"
+              />
               <dl className={styles.definitionGrid}>
                 <Definition label="Epoch" value={`${preview.epoch}`} />
                 <Definition
@@ -1325,14 +1787,21 @@ function ValidationTrajectoryDialog({
             <section>
               <PanelTitle eyebrow="IDENTITY" title="条件、Seed与时间" />
               <dl className={styles.definitionGrid}>
-                <Definition label="Record ID" value={trajectory.recordId} mono />
+                <Definition
+                  label="Record ID"
+                  value={trajectory.recordId}
+                  mono
+                />
                 <Definition
                   label="Condition Label"
                   value={trajectory.conditionLabel}
                   mono
                 />
                 <Definition label="Split" value={trajectory.split} />
-                <Definition label="Seed Index" value={`${trajectory.seedIndex}`} />
+                <Definition
+                  label="Seed Index"
+                  value={`${trajectory.seedIndex}`}
+                />
                 <Definition label="Seed" value={`${trajectory.seed}`} mono />
                 <Definition
                   label="耗时"
@@ -1341,7 +1810,8 @@ function ValidationTrajectoryDialog({
                 <Definition
                   label="审核时间（北京时间）"
                   value={formatDetailedTimestamp(
-                    trajectory.reviewedAtAsiaShanghai ?? trajectory.reviewedAtUtc,
+                    trajectory.reviewedAtAsiaShanghai ??
+                      trajectory.reviewedAtUtc,
                   )}
                 />
                 <Definition
@@ -1386,10 +1856,13 @@ function ValidationTrajectoryDialog({
                           "机器审核未保存中文解释"}
                       </strong>
                       <p>
-                        {definition?.interpretation ?? evidence?.message ?? "--"}
+                        {definition?.interpretation ??
+                          evidence?.message ??
+                          "--"}
                       </p>
                       <small>
-                        区域：{evidence?.affectedRegion ?? "未记录"} · 修复目标：
+                        区域：{evidence?.affectedRegion ?? "未记录"} ·
+                        修复目标：
                         {evidence?.nextTrainingTarget ?? "未记录"}
                       </small>
                     </article>
@@ -1398,7 +1871,10 @@ function ValidationTrajectoryDialog({
               </div>
             </section>
             <section>
-              <PanelTitle eyebrow="TOKEN & FILES" title="本地计算与不可变文件" />
+              <PanelTitle
+                eyebrow="TOKEN & FILES"
+                title="本地计算与不可变文件"
+              />
               <dl className={styles.definitionGrid}>
                 <Definition
                   label="本地潜空间Token"

@@ -1,22 +1,24 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-08-24 09:48:00 +08:00
+更新时间：2026-08-26 15:30:00 +08:00
 
 状态：active-long-term-module-specification
 
-文档版本：`AI-PAINTER-SPEC-1.3`
+文档版本：`AI-PAINTER-SPEC-1.6`
 
-生效日期：`2026-08-24`
+生效日期：`2026-08-26`
 
-替代版本：`AI-PAINTER-SPEC-1.2`
+替代版本：`AI-PAINTER-SPEC-1.5`
 
-文档状态：`active_internal_formal_standard`
+文档状态：`active_normative_target`
+
+程序符合状态：`program_adoption_pending`
 
 生效范围：AI-PET-WORLD 项目内部正式架构与能力合同
 
 兼容规则：稳定需求编号不得重用；破坏性变更必须提升主体规格版本并重新形成能力发布身份
 
-不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
 > 本文定义 AI Painter 的长期业务责任、正式输入输出、内部生成责任、自动审核、发布和运行边界。当前候选模型、训练轮次、失败原因、临时修复和模块进度只进入唯一计划表及机器证据，不得反向成为长期架构。
 
@@ -258,7 +260,7 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 
 机器审核是已发布 AI Painter 能力版本的正式运行门，不是给 Owner 看的临时建议。审核规则、阈值和来源必须版本化、可复现、可追溯；审核器不得以自己的结果作为训练目标，也不得为通过而降低阈值。
 
-Owner只在以下层级介入：调整长期业务目标；暂停或紧急覆盖系统；处理外部许可、付费服务和不可恢复破坏性操作。本地AI自行提出和验证能力版本、模型家族、数据版本、审核实现与训练计划，并由机器发布门决定发布或回退。
+Owner职责只由`DOCUMENT_AUTHORITY_INDEX.md`中的`GOV-OWNER-001`定义。Owner可以主动调整长期业务目标、观察、暂停或紧急停止，但不介入本地AI正常状态机；未定义许可、付费或不可恢复动作由程序禁止并失败关闭，不生成审批请求。本地AI自行提出和验证能力版本、模型家族、数据版本、审核实现与训练计划，并由机器发布门决定发布或回退。
 
 任何能力版本及单次地图的训练、生成、审核、发布、回退和记录都不得依赖逐次人工授权。证据不能唯一裁决时，当前路线失败关闭；本地系统只能进入合同已声明的替代路线，不能伪造结论。
 
@@ -275,7 +277,7 @@ AI Painter 的正常执行主体是本地自研 AI 与本地程序。其原生�
 - 在合同允许的次数和状态内恢复非业务性基础设施故障；
 - 发布合格候选，拒绝不合格候选并保持上一正式版本；
 - 写入任务胶囊、事件账本、SQLite、资源遥测和进度状态；
-- 在证据不足时失败关闭当前路线；触及长期业务或外部边界时生成业务边界报告。
+- 在证据不足时失败关闭当前路线；触及长期业务或外部边界时禁止越界动作并生成政策边界报告，不等待Owner响应。
 
 内部任务票据只承担幂等、防重、状态转换和证据追溯，不代表从 Owner 借来的权限，也不能扩大当前能力版本的边界。
 
@@ -295,7 +297,7 @@ Codex 可以在研发阶段承担代码建设、复杂诊断和有界修复，�
 
 ### 12.1 重大能力版本变更的机器判定
 
-以下任一变化都必须判定为重大变更，当前运行实例进入 `capability_change_required`；本地能力生命周期编排器必须建立隔离的新版本并重新完成全部机器资格，不得在原实例内继续：
+以下任一变化都必须判定为重大变更：当前运行实例进入`failed_closed`并登记`failureCode=capability_change_required`，本地能力生命周期编排器建立新的`change_candidate`并重新完成全部机器资格，不得在原实例内继续：
 
 - **AP-CHANGE-001**：模型家族、责任阶段划分、共享/隔离参数边界或输出瓶颈改变；
 - **AP-CHANGE-002**：23 通道的数量、顺序、名称、类型、数值语义、范围、重采样或缺失值规则改变；
@@ -305,11 +307,11 @@ Codex 可以在研发阶段承担代码建设、复杂诊断和有界修复，�
 - **AP-CHANGE-006**：原生输出分辨率、Checkpoint 兼容格式或 RuntimeFrame 接口改变；
 - **AP-CHANGE-007**：WorldFacts、VisualFactManifest、RegionGraph 或条件包的权威绑定方式改变。
 
-仅修正文案、监控显示、证据索引或不改变输入输出字节与合同语义的基础设施缺陷，不构成重大能力变更。无法由机器唯一分类时必须进入 `failed_closed_change_classification_ambiguous`，不得自行按非重大变更处理。
+仅修正文案、监控显示、证据索引或不改变输入输出字节与合同语义的基础设施缺陷，不构成重大能力变更。无法由机器唯一分类时必须进入`failed_closed`并登记`failureCode=change_classification_ambiguous`，不得自行按非重大变更处理。
 
 ### 12.2 自主能力生命周期与机器发布规范
 
-能力发布只能由本地能力生命周期编排器根据真实不可变文件和完整机器证据产生。Owner签名、聊天、调用方布尔字段、页面身份、外部智能体记忆和历史授权包都不是发布条件或发布证明。
+能力发布只能由本地能力生命周期编排器根据真实不可变文件和完整机器证据产生。唯一写入主体为`local_ai_capability_release_orchestrator`，其程序血缘和操作系统写入身份必须由发布合同登记；训练器、审核器、控制台、调用方和外部智能体均不得直接写发布注册表或正式指针。Owner签名、聊天、调用方布尔字段、页面身份、外部智能体记忆和历史授权包都不是发布条件或发布证明。
 
 生命周期固定为：
 
@@ -357,20 +359,24 @@ createdBy = local_ai_capability_lifecycle_orchestrator
 -> 验证来源许可、split隔离、资源预算和审核非退化
 -> 验证生命周期全部必需终态及其顺序
 -> 独立发布裁决器生成唯一结果
--> 原子追加capabilityReleaseIdentity并更新正式指针
+-> 在单写者锁和SQLite事务内比较注册表版本并原子追加capabilityReleaseIdentity
+-> 写入同目录临时文件、刷新并原子改名后更新正式指针
 -> 运行时签发一次性内部任务票据
--> 消费时重算ticketSha256并重新核对发布注册表
+-> 消费时验证机器签名、重算ticketSha256并重新核对发布注册表
 ```
 
 发布、撤销、替代和回退规则：
 
 - 注册表是动态机器状态，当前记录数量和具体身份不得硬编码到长期文档；
+- 发布注册表使用单写者、追加式事件和单调`registryRevision`；写入必须执行compare-and-swap，修订号冲突时失败关闭，不得覆盖并发发布；
+- 发布文件、注册表追加事件、SQLite发布记录和正式指针更新必须由事务日志关联；进程中断后只能恢复到“全部未提交”或“发布记录完整但指针待幂等完成”，不得出现只有指针没有发布记录的状态；
 - 发布记录只能追加，不得修改能力发布文件原始字节；
 - 撤销必须保存机器撤销原因与证据，撤销后不得签发新票据；
 - 能力替代必须生成新的`capabilityReleaseIdentity`，不得原地改写旧发布；
 - 回退只能指向仍完整、未撤销且与当前业务合同兼容的历史发布身份，并原子更新正式指针；
 - 已签发票据在消费时发现注册表、发布文件或策略身份变化必须失败关闭；
-- 内部票据只表示一次合法状态转换，不表示Owner授权，也不能补充能力版本未声明的动作；
+- 内部票据只表示一次合法状态转换，不表示Owner授权，也不能补充能力版本未声明的动作；票据必须由操作系统保护的本地机器密钥签名，并绑定`ticketId`、`issuerIdentity`、`issuerKeyId`、`capabilityReleaseIdentity`、执行包、动作、attempt、nonce、有效期、输入证据和程序血缘；
+- 消费方必须在同一SQLite事务内验证机器签名、重新计算规范化载荷SHA，并以`ticketId + capabilityReleaseIdentity + action + attempt`唯一约束登记消费与事件；程序重启、PID变化或部分文件存在均不得重放；
 - 调用方提供`capabilityReleaseVerified=true`、自报SHA、Owner签名或复制旧票据均不构成发布证明。
 
 历史Owner签署、冷启动发布决定和逐任务授权合同必须保留原始字节用于旧运行复核，并在替代索引中标记为`historical_read_only_not_valid_for_current_execution`；当前程序不得读取它们建立新能力或运行权限。
@@ -436,6 +442,23 @@ world/frame identity
 
 训练和生成进程必须独立于 Codex 窗口。监控台只读投影本地 `progress.json`、终态和遥测；关闭浏览器或 Codex 不得停止后台执行。
 
+### 15.1 当前身份与状态投影合同
+
+AI Painter必须使用唯一当前执行登记，禁止由控制台或服务端聚合器通过扫描多个历史命名空间推断当前任务。稳定要求如下：
+
+以下条款是`AP-ACCEPT-004`的强制子条款，不增加新的顶层需求编号：
+
+- **AP-ACCEPT-004.a**：本地能力生命周期编排器是当前执行登记的唯一写入主体；训练器、审核器、控制台、GET聚合器和外部智能体不得直接改写。
+- **AP-ACCEPT-004.b**：`currentProjectTask`、`activeExecution`、`latestTrainingTerminal`和`selectedHistoricalRun`必须分别建模、分别返回；任一字段不得作为另一字段的替代。
+- **AP-ACCEPT-004.c**：每次合法转换必须使用单调`registryRevision`和`eventSequence`；时间戳只是审计字段，不得在并发或相同时间精度下取代序号。
+- **AP-ACCEPT-004.d**：当前登记必须绑定能力版本、执行包、任务、Run、生命周期阶段、执行状态、任务胶囊或终态路径与SHA-256；读取时必须重新计算并验证。
+- **AP-ACCEPT-004.e**：当前任务选择不得使用Smoke、Stage、审核、裁决或规划的固定来源优先级，也不得使用“第一个可读目录”或文件系统修改时间选择。
+- **AP-ACCEPT-004.f**：当前登记缺失、哈希不符、修订冲突或指向不可验证证据时，必须返回`unknown_or_stale`并保存冲突证据；不得扫描历史目录寻找替代结果。
+- **AP-ACCEPT-004.g**：历史Run选择只能改变只读查询上下文；不得改写全局当前任务、活动执行、最近训练终态、恢复点或下一动作。
+- **AP-ACCEPT-004.h**：当前登记文件、追加事件、SQLite索引和证据身份必须由同一个可恢复事务关联；中断恢复只能完成同一修订或回到上一完整修订，不得形成只更新指针而未登记证据的状态。
+
+训练失败后的合法机器裁决或候选规划应当成为新的`currentProjectTask`，原训练终态继续作为`latestTrainingTerminal`保留。没有活动进程时`activeExecution`必须为空，不得以历史`running`或GPU活动填充。详细Schema、事务、投影和恢复规则由`REVIEW_AUTOMATION_AND_STORAGE_SPEC.md`第11节定义。
+
 ## 16. 验收标准
 
 AI Painter 正式能力必须同时满足：
@@ -467,7 +490,7 @@ AI Painter 正式能力必须同时满足：
 | 数据与来源 | `TRAINING_DATA_AND_SOURCE_POLICY.md` |
 | 审核、发布、存储与状态投影 | `REVIEW_AUTOMATION_AND_STORAGE_SPEC.md` |
 | 当前候选、固定进度、阻断与下一动作 | `CURRENT_EXECUTION_GUIDE_20260710.md` |
-| 单次运行、哈希、授权、Checkpoint与失败事实 | `data/`、`.runtime/`、SQLite |
+| 单次运行、哈希、内部票据、历史授权证据、Checkpoint与失败事实 | `data/`、`.runtime/`、SQLite |
 | 本地自研 AI 与 Codex 职责迁移 | `../LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md` |
 
 本文不保存 Run ID、单次 SHA-256、当前 Epoch、临时失败或逐命令历史。
@@ -480,25 +503,60 @@ AI Painter 正式能力必须同时满足：
 | 64 份地图语义拓扑差异合同 | [`data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json`](../../data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json) | 数据发布机器合同 |
 | 当前 23 通道顺序、类型和缩放合同 | [`ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json`](../../ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json) | 当前能力版本实现合同 |
 | 条件包与清单检查器 | [`scripts/check-current-world-visual-conditions.mjs`](../../scripts/check-current-world-visual-conditions.mjs) | 当前机器验证入口 |
-| 本地系统与外部执行边界 | 本文第10至12节 | 当前正式语义；旧`local-ai-operating-responsibility-contract-v2.json`不得用于新任务，后继机器合同待程序接入阶段物化 |
-| 自主能力生命周期与运行状态机 | 本文第10至13节 | 当前正式语义；旧`ai-painter-capability-runtime-autonomy-contract-v2.json`不得用于新任务，后继机器合同待程序接入阶段物化 |
-| 能力发布注册表 | 当前注册表只保留历史兼容与动态状态，不得以旧Owner字段建立新发布 | 后继注册表必须实现第12.2节的机器证据发布规范；文档阶段不伪造能力已发布 |
-| 历史合同替代索引 | [`data/ai-painter/system-governance/contract-supersession-index-v1.json`](../../data/ai-painter/system-governance/contract-supersession-index-v1.json) | 保留历史原始字节用于复核，禁止历史合同授权新工作 |
+| 本地系统与外部执行边界 | 本文第10至12节及[`local-ai-operating-responsibility-contract-v3.json`](../../data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v3.json) | V3机器合同、CPU治理核心与政策边界记录程序已建立；不产生Owner等待状态 |
+| 自主能力运行与内部票据 | 本文第10至13节及[`ai-painter-capability-runtime-autonomy-contract-v3.json`](../../data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v3.json) | 机器发布核验、签名内部票据和持久防重放核心；不得解释为已发布模型能力 |
+| 自主能力生命周期 | [`ai-painter-capability-lifecycle-contract-v1.json`](../../data/ai-painter/system-governance/ai-painter-capability-lifecycle-contract-v1.json) | 本地能力候选、CPU/GPU资格、Smoke、正式验证、独立回归、机器发布裁决及发布/拒绝/回退状态合同 |
+| 单包自动闭环 | [`ai-painter-autonomous-closed-loop-contract-v1.json`](../../data/ai-painter/system-governance/ai-painter-autonomous-closed-loop-contract-v1.json) | 训练或生成、验证、机器审核、裁决、终态、任务胶囊、事件账本、SQLite、进度与心跳的现行闭环合同 |
+| 现行入口注册表 | [`ai-painter-current-entrypoint-registry-v1.json`](../../data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json) | 本地自主执行器只解析登记入口；旧脚本保留为历史证据但不能进入当前链 |
+| 能力发布注册表 | [`ai-painter-capability-release-registry-v2.json`](../../data/ai-painter/system-governance/ai-painter-capability-release-registry-v2.json) | 当前无已发布AI Painter能力；未来只能由机器发布单写者追加，不接受Owner布尔字段或签名作为发布证明 |
+| 历史合同替代索引 | [`data/ai-painter/system-governance/contract-supersession-index-v2.json`](../../data/ai-painter/system-governance/contract-supersession-index-v2.json) | 保留历史原始字节用于复核，禁止历史Owner等待合同授权新工作 |
 
 单次 `.runtime` 文件、聊天内容和外部评审不能登记为长期机器合同；它们只能证明某次执行。合同路径发生替换时，必须按12.1判断是否形成新的能力版本。调用方提供的`verified=true`、Owner签名或格式正确的64位字符串不能证明能力已经发布；机器必须读取自主能力注册表和不可变发布文件，重算数据、模型、审核、Runtime、条件、测试与程序血缘SHA-256。内部任务票据在消费时必须重新计算自身SHA-256。
 
-仓库内文档与机器合同的一致性由`npm run check:ai-painter-document-contracts`和`.github/workflows/ai-painter-document-contracts.yml`共同验证；该入口不得依赖本机`.runtime`、Checkpoint或GPU。完整23通道数据与缩放行为仍由本地`npm run check:ai-painter-contract-semantic-alignment`验证。两类检查均不得把“合同检查通过”解释为“能力已经发布”或“模型训练通过”。
+当前工作区的文档与机器合同一致性以本地`npm run check:ai-painter-document-contracts`为正式验收入口；该入口不得依赖本机`.runtime`、Checkpoint或GPU。`.github/workflows/ai-painter-document-contracts.yml`如被运行只是同一检查的远程镜像，不是本地文档基线生效的前置条件。完整23通道数据与缩放行为由本地`npm run check:ai-painter-contract-semantic-alignment`验证。两类检查均不得把“合同检查通过”解释为“能力已经发布”或“模型训练通过”。
 
-### 17.2 稳定需求编号与追踪规则
+### 17.2 37条稳定需求逐项追踪
 
-| 编号范围 | 主题 | 最低追踪目标 |
-|---|---|---|
-| `AP-IN-*` / `AP-COND-*` | 权威输入与条件 | 条件合同、编译器、输入检查和运行证据 |
-| `AP-OUT-*` | 正式输出 | Manifest、候选身份、审核和发布记录 |
-| `AP-PHASE-*` | 四段责任接口 | 接口合同、组件实现、CPU/GPU 资格与阶段终态 |
-| `AP-TRAIN-*` | 模型与训练 | 配置、Trainer、回归、Checkpoint 和训练终态 |
-| `AP-CHANGE-*` | 重大变更 | 变更分类器、隔离能力生命周期、机器发布门和回退记录 |
-| `AP-ID-*` | 身份链 | 发布注册表、候选记录和原子发布指针 |
-| `AP-ACCEPT-*` | 验收 | 审核器、测试、失败码和不可变证据 |
+符合状态只允许：`document_defined_program_pending`、`partial_legacy_implementation_not_certified`、`machine_conformant`或`superseded`。只有机器合同、程序实现、正反测试和本地运行证据四层同时存在且身份一致时，单项才可登记为`machine_conformant`；文档检查通过本身不能提升程序符合状态。
 
-需求编号一经发布不得改义、重排或复用；废止要求保留编号并标记 superseded。程序、JSON 合同、CPU 测试、GPU 资格和运行证据应引用同一编号，形成“文档要求 -> 机器合同 -> 程序实现 -> 测试 -> 运行证据”的追踪链。
+| 需求ID | 机器合同绑定 | 程序实现绑定 | 测试绑定 | 运行证据绑定 | 当前符合状态 |
+|---|---|---|---|---|---|
+| `AP-IN-001` | 后继权威输入合同待物化 | 输入包编译与执行门待迁移 | 身份完整性正反回归待建立 | 未来输入检查报告 | `document_defined_program_pending` |
+| `AP-IN-002` | `complete-map-world-business-contract-v3`与后继输入合同 | WorldFacts/Manifest只读绑定待迁移 | RGB不可反写事实回归待建立 | 未来事实绑定终态 | `document_defined_program_pending` |
+| `AP-IN-003` | 后继条件身份合同待物化 | 路径与SHA双重验证待迁移 | 同路径换哈希拒绝测试待建立 | 未来条件身份报告 | `document_defined_program_pending` |
+| `AP-IN-004` | 后继跨运行隔离合同待物化 | 执行器同包身份门待迁移 | world/region/tick/sample交叉注入测试待建立 | 未来执行终态 | `document_defined_program_pending` |
+| `AP-COND-001` | `complete-world-ai-assisted-cold-start-v7.json`当前值 | `check-current-world-visual-conditions.mjs`部分实现 | 完整23通道顺序检查存在，发布链回归待迁移 | 当前检查输出只作旧实现证据 | `partial_legacy_implementation_not_certified` |
+| `AP-COND-002` | 同一V7配置的类型与缩放值 | 条件缩放实现存在，统一资格绑定待迁移 | nearest/bilinear行为正反回归待补齐 | 未来缩放行为报告 | `partial_legacy_implementation_not_certified` |
+| `AP-COND-003` | 条件包/Manifest schema当前值 | 条件文件检查器部分实现 | 缺失、重复、乱序和静默填零测试待统一 | 未来条件包检查报告 | `partial_legacy_implementation_not_certified` |
+| `AP-COND-004` | 后继空间身份合同待物化 | 多分辨率身份保持待迁移 | 重采样不得改事实回归待建立 | 未来空间身份报告 | `document_defined_program_pending` |
+| `AP-OUT-001` | 后继完整RGB输出合同待物化 | 候选生成与身份门待迁移 | 原生1024×768及绑定检查待建立 | 未来候选Manifest | `document_defined_program_pending` |
+| `AP-OUT-002` | `complete-map-world-business-contract-v3` | 禁止拼接/放大/直绘门待迁移 | 负向图像来源测试待建立 | 未来输出来源报告 | `document_defined_program_pending` |
+| `AP-OUT-003` | 后继候选身份合同待物化 | Runtime候选登记器待迁移 | 无身份进入发布链拒绝测试待建立 | 未来候选登记记录 | `document_defined_program_pending` |
+| `AP-OUT-004` | 后继审核发布合同待物化 | 发布编排器待迁移 | 审核失败不得发布测试待建立 | 未来发布拒绝记录 | `document_defined_program_pending` |
+| `AP-PHASE-001` | 后继四段接口合同待物化 | 权威绑定CPU支持存在，正式接口待迁移 | CPU接口检查存在，统一回归待迁移 | 历史CPU证据不可证明现行符合 | `partial_legacy_implementation_not_certified` |
+| `AP-PHASE-002` | 后继四段接口合同待物化 | 地形责任组件实验实现存在 | 只读GPU资格为历史证据，正式回归待迁移 | 历史组件终态不可发布 | `partial_legacy_implementation_not_certified` |
+| `AP-PHASE-003` | 后继四段接口合同待物化 | 对象责任组件实验实现存在 | 只读GPU资格为历史证据，正式回归待迁移 | 历史组件终态不可发布 | `partial_legacy_implementation_not_certified` |
+| `AP-PHASE-004` | 后继四段接口合同待物化 | 最终RGB组件实验实现存在 | 只读GPU资格为历史证据，正式回归待迁移 | 历史Smoke 0/5失败证据 | `partial_legacy_implementation_not_certified` |
+| `AP-TRAIN-001` | 输入/输出合同后继版本待物化 | `train_ai_assisted_conditional_denoiser.py`为旧实现 | 新能力版本端到端回归待建立 | 历史训练证据不可晋级 | `partial_legacy_implementation_not_certified` |
+| `AP-TRAIN-002` | 数据用途合同已有文档定义 | Trainer split隔离存在旧实现 | 48/8/4/4读写隔离统一测试待迁移 | 历史训练Manifest | `partial_legacy_implementation_not_certified` |
+| `AP-TRAIN-003` | 后继训练证据合同待物化 | 模型哈希/指标/Checkpoint记录存在旧实现 | 完整终态字段测试待迁移 | 历史Manifest与Finalization | `partial_legacy_implementation_not_certified` |
+| `AP-TRAIN-004` | 后继阶段父Checkpoint合同待物化 | 连续执行器旧实现存在 | 同包父身份与失败注入回归待迁移 | 历史阶段记录不可复用 | `partial_legacy_implementation_not_certified` |
+| `AP-CHANGE-001` | 后继能力变更分类合同待物化 | 模型家族变更分类器待迁移 | 结构改变必须新版本测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
+| `AP-CHANGE-002` | 后继能力变更分类合同待物化 | 条件合同变更分类器待迁移 | 23通道任一语义改变测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
+| `AP-CHANGE-003` | 后继能力变更分类合同待物化 | Autoencoder边界分类器待迁移 | 身份/结构/冻结状态变化测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
+| `AP-CHANGE-004` | 后继能力变更分类合同待物化 | 数据谱系分类器待迁移 | 来源、容量、split变化测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
+| `AP-CHANGE-005` | 后继能力变更分类合同待物化 | 审核非退化分类器待迁移 | 阈值降低/重定义测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
+| `AP-CHANGE-006` | 后继能力变更分类合同待物化 | 输出/Checkpoint/Runtime分类器待迁移 | 接口变化测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
+| `AP-CHANGE-007` | 后继能力变更分类合同待物化 | 权威事实绑定分类器待迁移 | 绑定方式变化测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
+| `AP-ID-001` | 后继能力发布身份合同待物化 | 发布编排器待迁移 | dataset与model基数测试待建立 | 未来发布注册记录 | `document_defined_program_pending` |
+| `AP-ID-002` | 后继能力发布身份合同待物化 | 发布绑定核验器待迁移 | 任一依赖变化重发身份测试待建立 | 未来能力发布文件 | `document_defined_program_pending` |
+| `AP-ID-003` | 后继候选身份合同待物化 | 候选登记器待迁移 | 世界任务变化不改能力身份测试待建立 | 未来候选记录 | `document_defined_program_pending` |
+| `AP-ID-004` | 后继候选身份合同待物化 | 候选不可变写入器待迁移 | RGB/输入/审核变化生成新身份测试待建立 | 未来候选记录 | `document_defined_program_pending` |
+| `AP-ID-005` | 后继发布身份合同待物化 | 原子发布指针待迁移 | 失败保持上一指针测试待建立 | 未来发布事件与指针 | `document_defined_program_pending` |
+| `AP-ACCEPT-001` | 当前条件合同加后继输入合同 | 条件检查器部分实现 | 完整输入合同回归待迁移 | 当前输出不等于能力符合证据 | `partial_legacy_implementation_not_certified` |
+| `AP-ACCEPT-002` | 后继版本化审核合同待物化 | 多个旧审核器存在，统一正式入口待迁移 | 道路/水文/对象/专业审核回归待统一 | 历史审核报告不可发布 | `partial_legacy_implementation_not_certified` |
+| `AP-ACCEPT-003` | 完整RGB业务合同已有目标定义 | 输出来源与尺寸门待迁移 | 原生尺寸/无拼接/无放大测试待建立 | 未来候选Manifest与RGB哈希 | `document_defined_program_pending` |
+| `AP-ACCEPT-004` | `ai-painter-capability-lifecycle-contract-v1`、`ai-painter-autonomous-closed-loop-contract-v1`及本文第15.1节 | 能力生命周期、单包执行、审核状态、有限恢复、后台心跳和终态程序已建立；当前执行登记修订1、SQLite提交记录、控制台唯一读取链和四身份字段已接入 | 当前登记绑定SHA重算、篡改失败关闭、重复初始化拒绝、旧Smoke默认读取隔离及控制台回归已通过；后续生命周期自动修订与断电恢复注入仍须在形成下一修订前验证 | `.runtime/ai-painter/current-execution-registry/current.json`、同事务记录、SQLite索引及本地检查报告 | `partial_legacy_implementation_not_certified` |
+| `AP-ACCEPT-005` | 后继身份与发布合同待物化 | 发布注册表、票据消费和指针待迁移 | 跨版本/跨run/历史失败注入测试待建立 | 未来能力与候选发布记录 | `document_defined_program_pending` |
+
+需求编号一经发布不得改义、重排或复用；废止要求保留编号并标记`superseded`。机器合同、程序、CPU测试、GPU资格和运行证据必须直接登记需求ID；缺少任何一层只能保持待迁移或部分符合，不能由文档检查器、格式正确的SHA或历史成功证据提升为`machine_conformant`。

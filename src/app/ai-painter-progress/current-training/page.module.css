@@ -93,11 +93,22 @@
   align-items: stretch;
 }
 .liveState {
+  width: 100%;
   border: 1px solid #754136;
   background: #2b1512;
+  color: inherit;
+  font: inherit;
   padding: 11px 14px;
   display: grid;
   gap: 4px;
+  text-align: left;
+  cursor: pointer;
+}
+.liveState:hover,
+.liveState:focus-visible {
+  border-color: #ff8d7d;
+  outline: 1px solid #ff8d7d;
+  outline-offset: 2px;
 }
 .liveState span,
 .liveState small {
@@ -2407,6 +2418,189 @@
   min-width: 0;
 }
 
+.validationMonitor {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 10px;
+  border: 1px solid #3b7957;
+  background: #081d14;
+  padding: 11px;
+}
+.validationMonitor[data-running="true"] {
+  border-color: #5be38c;
+  box-shadow: inset 3px 0 #5be38c;
+}
+.validationMonitorHeader,
+.validationCurrentPreviews > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+.validationMonitorHeader span,
+.validationCurrentPreviews > header span {
+  color: #6bd991;
+  font: 700 9px/1.2 monospace;
+  letter-spacing: 1px;
+}
+.validationMonitorHeader h3,
+.validationCurrentPreviews h3 {
+  margin: 4px 0;
+  color: #f1fff5;
+  font-size: 17px;
+}
+.validationMonitorHeader p,
+.validationCurrentPreviews > header small {
+  margin: 0;
+  color: #87af98;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.validationMonitorStatus {
+  min-width: 260px;
+  border: 1px solid #3b6e50;
+  background: #0c291c;
+  padding: 8px;
+  text-align: right;
+}
+.validationMonitorStatus strong,
+.validationMonitorStatus small,
+.validationMonitorStatus code {
+  display: block;
+}
+.validationMonitorStatus strong {
+  color: #f4fff7;
+  font-size: 12px;
+}
+.validationMonitorStatus small,
+.validationMonitorStatus code {
+  margin-top: 3px;
+  color: #82ad94;
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+.validationProgressTrack {
+  height: 7px;
+  overflow: hidden;
+  border: 1px solid #2b5b42;
+  background: #03100b;
+}
+.validationProgressTrack > div {
+  height: 100%;
+  background: linear-gradient(90deg, #29bf67, #78eea2);
+  transition: width 280ms ease;
+}
+.validationStepGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+}
+.validationStepGrid article {
+  min-width: 0;
+  border: 1px solid #633e36;
+  background: #241512;
+  padding: 8px;
+}
+.validationStepGrid article[data-complete="true"] {
+  border-color: #397957;
+  background: #0c2a1c;
+}
+.validationStepGrid span,
+.validationStepGrid strong,
+.validationStepGrid small {
+  display: block;
+}
+.validationStepGrid span {
+  color: #72dc97;
+  font: 700 9px monospace;
+}
+.validationStepGrid strong {
+  margin-top: 4px;
+  color: #edfff3;
+  font-size: 11px;
+}
+.validationStepGrid small {
+  margin-top: 3px;
+  color: #80a58e;
+  font-size: 9px;
+}
+.validationCurrentPreviews {
+  min-width: 0;
+  border: 1px solid #28523d;
+  background: #091d15;
+  padding: 9px;
+}
+.validationCurrentPreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.validationCurrentPreviewGrid button {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #745047;
+  background: #102219;
+  color: #effff4;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.validationCurrentPreviewGrid button:hover,
+.validationCurrentPreviewGrid button:focus-visible {
+  border-color: #8cf0ad;
+  outline: none;
+}
+.validationCurrentPreviewGrid button[data-passed="true"] {
+  border-color: #47bd72;
+}
+.validationCurrentPreviewGrid button[data-passed="false"] {
+  border-color: #d86656;
+}
+.validationCurrentPreviewGrid img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+.validationCurrentPreviewGrid button > span {
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+}
+.validationCurrentPreviewGrid strong,
+.validationCurrentPreviewGrid b {
+  font-size: 9px;
+}
+.validationCurrentPreviewGrid b {
+  color: #eb9a8d;
+}
+.validationCurrentPreviewGrid button[data-passed="true"] b {
+  color: #81eda4;
+}
+.validationEvidenceTimeline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 7px;
+}
+.validationEvidenceTimeline > section {
+  min-width: 0;
+  border: 1px solid #28523d;
+  background: #091d15;
+  padding: 9px;
+}
+.validationEvidenceTimeline .inlineEvents {
+  max-height: 230px;
+  overflow: auto;
+}
+.validationEvidenceTimeline .inlineEvents code {
+  display: block;
+  margin-top: 3px;
+  color: #75a88a;
+  font-size: 8px;
+  overflow-wrap: anywhere;
+}
 .validationWorkspace {
   height: 100%;
   min-height: 0;
@@ -3062,8 +3256,16 @@
   .workspaceBar,
   .inlineRunWorkspace,
   .overviewWorkspace,
-  .accountingWorkspace {
+  .accountingWorkspace,
+  .validationWorkspace,
+  .validationEvidenceTimeline {
     grid-template-columns: 1fr;
+  }
+  .validationStepGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .validationCurrentPreviewGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .workspaceContent {
     min-height: 620px;

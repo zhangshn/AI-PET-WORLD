@@ -1,20 +1,22 @@
 # 训练数据与来源正式规则
 
-更新时间：2026-08-24 09:48:00 +08:00
+更新时间：2026-08-24 12:43:09 +08:00
 
 状态：active-long-term-data-and-provenance-contract
 
-文档版本：`AI-PAINTER-DATA-PROVENANCE-1.1`
+文档版本：`AI-PAINTER-DATA-PROVENANCE-1.2`
 
 生效日期：`2026-08-24`
 
-替代版本：`AI-PAINTER-DATA-PROVENANCE-1.0`
+替代版本：`AI-PAINTER-DATA-PROVENANCE-1.1`
 
-文档状态：`active_internal_formal_standard`
+文档状态：`active_normative_target`
+
+程序符合状态：`program_adoption_pending`
 
 破坏性变更规则：来源资格、64份容量身份、48/8/4/4用途、样本Schema或发布身份改变时必须提升文档版本并形成新的数据与能力发布身份。
 
-不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
 ## 1. 数据原则
 

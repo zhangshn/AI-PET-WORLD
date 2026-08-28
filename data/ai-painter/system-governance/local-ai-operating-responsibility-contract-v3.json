@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "ai-painter-local-system-operating-responsibility-contract-v3",
+  "contractId": "ai-painter-local-system-operating-responsibility-v3",
+  "status": "active",
+  "systemOfRecord": {
+    "authority": "local_ai_pet_world_program",
+    "evidence": "local_immutable_files",
+    "queryIndex": "local_sqlite_catalog",
+    "chatIsFormalEvidence": false,
+    "externalAgentMemoryIsFormalEvidence": false
+  },
+  "normalAutonomousPath": {
+    "ownerInStateMachine": false,
+    "perTaskOwnerAuthorizationRequired": false,
+    "perStageOwnerAuthorizationRequired": false,
+    "perCapabilityVersionOwnerAuthorizationRequired": false,
+    "perCandidateOwnerReviewRequired": false,
+    "codexRequired": false,
+    "steps": [
+      "materialize_change_candidate_when_needed",
+      "implement_within_frozen_business_and_safety_contracts",
+      "cpu_verify",
+      "readonly_gpu_qualify_when_required",
+      "controlled_smoke",
+      "formal_stage_validation",
+      "independent_regression",
+      "machine_release_adjudication",
+      "released_capability_runtime_generation",
+      "automatic_validation_and_machine_review",
+      "publish_or_fail_closed",
+      "persist_terminal_events_evidence_and_sqlite"
+    ]
+  },
+  "policyBoundaryPath": {
+    "mustFailClosed": true,
+    "mustPersistPolicyBoundaryReport": true,
+    "mustEmitLocalProgramEvent": true,
+    "mustIndexLocalSqlite": true,
+    "waitForOwnerResponse": false,
+    "ownerActionRequestGenerated": false,
+    "safeAlternativeMayBeSelectedByFrozenRules": true
+  },
+  "ownerBoundary": {
+    "normalApprovalRole": false,
+    "mayObserve": true,
+    "mayProactivelyChangeLongTermBusinessGoal": true,
+    "mayPause": true,
+    "mayEmergencyStop": true,
+    "programMayWaitForOwnerAuthorization": false
+  },
+  "forbiddenNormalRuntimeArtifacts": [
+    "waiting_owner_authorization",
+    "waiting_owner_review",
+    "waiting_owner_decision",
+    "waiting_capability_change",
+    "owner_action_request",
+    "owner_release_decision",
+    "owner_signature_required"
+  ],
+  "externalEmployeeBoundary": {
+    "appliesTo": ["codex", "other_external_intelligent_execution_agents"],
+    "currentRole": "owner_current_task_scoped_implementation_and_verification_employee",
+    "targetRole": "read_only_monitor_and_verification_only",
+    "decisionAuthority": false,
+    "systemOfRecordAuthority": false,
+    "runtimeDependencyAllowed": false,
+    "mayInheritLocalAiStandingAuthority": false
+  }
+}

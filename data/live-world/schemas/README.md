@@ -4,6 +4,6 @@
 
 状态：active-data-directory-contract
 
-不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
 本目录保存 Live World 的版本化 JSON Schema、Schema 索引和验证证据。TypeScript 合同与 JSON Schema 必须有明确版本映射；缺少 Schema 时不能伪造已验证状态。

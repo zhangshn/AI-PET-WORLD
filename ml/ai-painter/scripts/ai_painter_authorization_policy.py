@@ -71,6 +71,17 @@ _SEMANTIC_MIXTURE_FULL_TRAINING_MODE_IDS = frozenset({
     "fact_conditioned_semantic_mixture_stage1_full_training",
     "fact_conditioned_semantic_mixture_stage2_full_training",
 })
+_AUTHORITATIVE_SEMANTIC_CARRIER_SMOKE_MODE_ID = (
+    "authoritative_semantic_carrier_stage4_smoke"
+)
+_AUTHORITATIVE_SEMANTIC_CARRIER_LOCAL_MODE_IDS = frozenset({
+    _AUTHORITATIVE_SEMANTIC_CARRIER_SMOKE_MODE_ID,
+    "authoritative_semantic_carrier_stage0_full_training",
+    "post_decode_object_rgb_stage4_smoke",
+    "post_decode_object_rgb_stage0_full_training",
+    "post_decode_full_condition_responsibility_stage4_smoke",
+    "post_decode_full_condition_responsibility_stage0_full_training",
+})
 _STRUCTURE_SMOKE_PREFLIGHT_ACTIONS = frozenset(
     {
         ExecutionAction.SELECT_BOUND_SAMPLE,
@@ -383,6 +394,70 @@ def _validate_owner_training_authorization(
     }
 
 
+def _validate_local_ai_capability_ticket(
+    training: Mapping[str, Any],
+    spec: ModeSpec,
+    project_root: Path,
+) -> Mapping[str, Any]:
+    ticket_identity = training.get("localAiCapabilityTicket")
+    if not isinstance(ticket_identity, Mapping):
+        raise ValueError("local AI controlled Smoke requires an internal capability ticket")
+    required = {
+        "ticketId", "ticketPath", "ticketSha256", "consumptionPath",
+        "consumptionSha256", "executionState", "status", "executionActions",
+    }
+    if set(ticket_identity) != required:
+        raise ValueError("local AI capability ticket identity fields are invalid")
+    if (
+        spec.mode_id not in _AUTHORITATIVE_SEMANTIC_CARRIER_LOCAL_MODE_IDS
+        or ticket_identity.get("status") != spec.authorization_status
+        or ticket_identity.get("executionState") != "consumed"
+    ):
+        raise ValueError("local AI capability ticket mode or state is invalid")
+    ticket_path = _verify_bound_file(
+        project_root, str(ticket_identity.get("ticketPath")),
+        str(ticket_identity.get("ticketSha256")), "local AI capability ticket",
+    )
+    consumption_path = _verify_bound_file(
+        project_root, str(ticket_identity.get("consumptionPath")),
+        str(ticket_identity.get("consumptionSha256")), "local AI capability ticket consumption",
+    )
+    ticket = json.loads(ticket_path.read_text(encoding="utf-8"))
+    consumption = json.loads(consumption_path.read_text(encoding="utf-8"))
+    ticket_id = ticket_identity.get("ticketId")
+    actions = sorted(action.value for action in _actions_for_mode(spec))
+    if (
+        ticket.get("schemaVersion") != "ai-painter-local-internal-capability-ticket-v1"
+        or ticket.get("status") != "issued_not_consumed"
+        or ticket.get("ticketId") != ticket_id
+        or ticket.get("modeId") != spec.mode_id
+        or ticket.get("capabilityAuthority") != "local_ai_pet_world_program"
+        or ticket.get("ownerAuthorizationRequired") is not False
+        or sorted(ticket.get("executionActions", [])) != actions
+        or sorted(ticket_identity.get("executionActions", [])) != actions
+    ):
+        raise ValueError("local AI capability ticket immutable identity is invalid")
+    if (
+        consumption.get("schemaVersion") != "ai-painter-local-internal-capability-ticket-consumption-v1"
+        or consumption.get("ticketId") != ticket_id
+        or consumption.get("ticketSha256") != ticket_identity.get("ticketSha256")
+        or consumption.get("oneTimeConsumption") is not True
+        or consumption.get("state") != "consumed"
+    ):
+        raise ValueError("local AI capability ticket consumption is invalid")
+    return {
+        "ticketId": ticket_id,
+        "ticketPath": ticket_identity.get("ticketPath"),
+        "ticketSha256": ticket_identity.get("ticketSha256"),
+        "consumptionPath": ticket_identity.get("consumptionPath"),
+        "consumptionSha256": ticket_identity.get("consumptionSha256"),
+        "executionState": "consumed",
+        "status": spec.authorization_status,
+        "executionActions": actions,
+        "authority": "local_ai_pet_world_program",
+    }
+
+
 def resolve_stage_execution_grant(
     config: Mapping[str, Any],
     *,
@@ -392,10 +467,12 @@ def resolve_stage_execution_grant(
     root = Path(project_root or Path.cwd()).resolve()
     spec = resolve_stage_mode(config)
     training = config.get("training", {})
-    owner_identity = _validate_owner_training_authorization(
-        training, spec, root, verify_owner_files
+    owner_identity = (
+        _validate_local_ai_capability_ticket(training, spec, root)
+        if spec.mode_id in _AUTHORITATIVE_SEMANTIC_CARRIER_LOCAL_MODE_IDS
+        else _validate_owner_training_authorization(training, spec, root, verify_owner_files)
     )
-    smoke = training.get("structureFactFirstStage4SingleSampleSmokeContract") or training.get("v9Stage4SingleSampleSmokeContract") or training.get(
+    smoke = training.get("stage4PostDecodeFullConditionResponsibilitySmokeContract") or training.get("stage4PostDecodeObjectRgbSmokeContract") or training.get("stage4AuthoritativeSemanticCarrierSmokeContract") or training.get("structureFactFirstStage4SingleSampleSmokeContract") or training.get("v9Stage4SingleSampleSmokeContract") or training.get(
         "v8Stage4SingleSampleSmokeContract"
     ) or training.get("r5Stage4BoundedRepairSmokeContract") or {}
     sample_id = smoke.get("sampleId") or training.get("authorizedOverfitSampleId")

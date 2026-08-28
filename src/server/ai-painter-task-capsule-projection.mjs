@@ -158,6 +158,224 @@ export function projectR5Stage4TaskCapsule(input) {
   }
 }
 
+export function projectAutonomousStage4TaskCapsule(input) {
+  const pointer = record(input?.pointer)
+  const terminal = record(input?.terminal)
+  const savedCapsule = record(input?.savedCapsule)
+  const evidence = Array.isArray(input?.evidence) ? input.evidence.map(normalizeEvidence) : []
+  const progress = record(terminal.fixedTotalProgress)
+  const verified = Boolean(
+    terminal.executionState === "completed"
+    && terminal.status === "failed_closed_candidate_space_exhausted"
+    && terminal.selectedOutcome === "no_unique_bounded_candidate_remaining"
+    && savedCapsule.status === terminal.status
+    && savedCapsule.ownerAuthorizationRequired === false
+    && savedCapsule.ownerResponseRequired === false
+    && evidence.length >= 9
+    && evidence.every((item) => item.sha256Verified),
+  )
+  const previewCount = finiteNumber(input?.previewCount)
+  const previewPassCount = finiteNumber(input?.previewPassCount)
+  return {
+    schemaVersion: "ai-painter-local-task-capsule-v1",
+    capsuleId: stringValue(pointer.runId) ?? "stage4-autonomous-current",
+    generatedFrom: "program_saved_evidence",
+    readOnly: true,
+    module: { id: "ai-painter-r5-stage4", nameZh: "AI Painter R5 / Stage4" },
+    fixedOverallProgress: {
+      completedStages: finiteNumber(progress.completedStages),
+      totalStages: finiteNumber(progress.totalStages),
+      percent: finiteNumber(progress.percent),
+      source: "stage4_autonomous_terminal",
+    },
+    currentStage: {
+      number: 4,
+      total: 5,
+      labelZh: "Stage 0→1→2完整训练",
+      status: "failed_closed_not_completed",
+    },
+    candidateTerminal: {
+      runId: stringValue(pointer.runId),
+      status: verified ? "failed_closed" : "unknown_or_stale",
+      programStatus: stringValue(terminal.status),
+      previewMachineStatus: previewCount === 0 ? null : "machine_reviews_failed",
+      modelQualificationStatus: "not_qualified_no_unique_bounded_candidate_remaining",
+      previewCount,
+      previewPassCount,
+      previewFailCount: previewCount === null || previewPassCount === null ? null : previewCount - previewPassCount,
+      checkpointWritten: false,
+      modelWeightsModified: false,
+      recordedAtUtc: stringValue(terminal.recordedAtUtc),
+      recordedAtAsiaShanghai: null,
+    },
+    latestBlocker: {
+      code: "no_unique_bounded_candidate_remaining",
+      summaryZh: "机器验证与候选复算均已完成；当前合同内可唯一派生的Stage4候选已穷尽，程序已安全关闭且没有训练运行。",
+    },
+    nextAllowedAction: {
+      code: "remain_failed_closed_until_new_uniquely_derived_architecture_rule_exists",
+      labelZh: "本地程序保持失败关闭；只有形成不重复既有失败路线、且可由当前合同唯一派生的新架构规则后，才可自主重新进入能力生命周期。",
+      ownerAuthorizationRequired: false,
+      automaticExecutionAllowed: true,
+      planEvidenceConfirmed: true,
+    },
+    forbiddenActions: [
+      "repeat_exited_route",
+      "free_hyperparameter_selection",
+      "reuse_failed_checkpoint",
+      "lower_machine_review_threshold",
+      "start_stage1_or_stage2",
+    ],
+    taskIdentity: {
+      modelId: "stage4-authoritative-semantic-carrier",
+      sampleId: "194",
+      conditionLabel: "validation-194",
+      sampleSplit: "validation",
+      seed: 20263722,
+      requiredBoundarySides: ["west"],
+    },
+    evidence,
+    integrity: {
+      status: verified ? "verified" : "incomplete_or_mismatched",
+      requiredEvidencePresent: evidence.length >= 9,
+      boundEvidenceVerified: evidence.every((item) => item.sha256Verified),
+      identityMatches: stringValue(pointer.runId) === stringValue(savedCapsule.runId),
+      migrationRegistryStatus: "local_autonomous_runtime_active",
+    },
+  }
+}
+
+export function projectPostDecodeObjectRgbSmokeTaskCapsule(input) {
+  const terminal = record(input?.terminal)
+  const finalization = record(input?.finalization)
+  const review = record(input?.review)
+  const qualification = record(input?.qualification)
+  const lifecycle = record(input?.lifecycle)
+  const evidence = Array.isArray(input?.evidence) ? input.evidence.map(normalizeEvidence) : []
+  const progress = record(terminal.fixedTotalProgress)
+  const previewCount = finiteNumber(review.previewCount)
+  const previewPassCount = finiteNumber(review.previewPassCount)
+  const previewFailCount = finiteNumber(review.previewFailCount)
+  const identityMatches = Boolean(
+    terminal.capabilityVersion
+    && terminal.capabilityVersion === finalization.capabilityVersion
+    && finalization.capabilityVersion === lifecycle.capabilityVersion,
+  )
+  const qualified = Boolean(
+    terminal.executionState === "completed"
+    && terminal.status === "post_decode_object_rgb_controlled_smoke_qualified"
+    && finalization.status === terminal.status
+    && qualification.status === "qualified"
+    && qualification.qualified === true
+    && qualification.terminalRegression === false
+    && lifecycle.state === "controlled_smoke_completed"
+  )
+  const failedClosed = Boolean(
+    terminal.executionState === "completed"
+    && terminal.status === "post_decode_object_rgb_controlled_smoke_real_visual_failure"
+    && finalization.status === terminal.status
+    && qualification.qualified === false
+  )
+  const requiredEvidencePresent = evidence.length >= 7
+  const boundEvidenceVerified = requiredEvidencePresent && evidence.every((item) => item.sha256Verified)
+  const verified = identityMatches && boundEvidenceVerified && (qualified || failedClosed)
+  const candidateStatus = verified
+    ? qualified
+      ? "qualified"
+      : "failed_closed"
+    : "unknown_or_stale"
+
+  return {
+    schemaVersion: "ai-painter-local-task-capsule-v1",
+    capsuleId: stringValue(terminal.attemptId) ?? "stage4-post-decode-object-rgb-smoke",
+    generatedFrom: "program_saved_evidence",
+    readOnly: true,
+    module: { id: "ai-painter-r5-stage4", nameZh: "AI Painter R5 / Stage4" },
+    fixedOverallProgress: {
+      completedStages: finiteNumber(progress.completedStages),
+      totalStages: finiteNumber(progress.totalStages),
+      percent: finiteNumber(progress.percent),
+      source: "stage4_post_decode_object_rgb_smoke_terminal",
+    },
+    currentStage: {
+      number: 4,
+      total: 5,
+      labelZh: "Stage 0→1→2完整训练",
+      status: qualified
+        ? "controlled_smoke_qualified_formal_stage0_not_started"
+        : failedClosed
+          ? "controlled_smoke_failed_closed"
+          : "evidence_incomplete",
+    },
+    candidateTerminal: {
+      runId: stringValue(terminal.attemptId),
+      status: candidateStatus,
+      programStatus: stringValue(terminal.status),
+      previewMachineStatus: qualified
+        ? "late_stability_qualified"
+        : stringValue(review.status),
+      modelQualificationStatus: qualified
+        ? "qualified_for_formal_stage0_not_checkpoint_promotable"
+        : failedClosed
+          ? "not_qualified_real_visual_failure"
+          : "unknown_or_stale",
+      previewCount,
+      previewPassCount,
+      previewFailCount,
+      checkpointWritten: Boolean(record(finalization.checkpoint).path),
+      modelWeightsModified: true,
+      recordedAtUtc: stringValue(terminal.recordedAtUtc),
+      recordedAtAsiaShanghai: null,
+    },
+    latestBlocker: {
+      code: qualified
+        ? "formal_stage0_not_started_after_qualified_smoke"
+        : failedClosed
+          ? "controlled_smoke_real_visual_failure"
+          : "post_decode_smoke_evidence_incomplete",
+      summaryZh: qualified
+        ? "受控Smoke时间线为6→3→2→0→0，Epoch 20和30连续全部通过，后期稳定资格已通过；当前阻断是正式Stage 0尚未启动，不是终态六项失败。"
+        : failedClosed
+          ? "受控Smoke已保存真实视觉失败并关闭；早期失败不会被伪造为后期资格。"
+          : "解码后对象RGB候选的终态、审核、后期资格或生命周期证据不完整。",
+    },
+    nextAllowedAction: {
+      code: qualified
+        ? "local_ai_compile_and_execute_fresh_formal_stage0"
+        : "local_ai_close_or_select_next_bounded_route",
+      labelZh: qualified
+        ? "本地程序应使用同一候选的固定随机初始化编译并执行40 Epoch正式Stage 0；Smoke Checkpoint不得晋级或作为初始化。"
+        : "本地程序保存失败证据并按生效能力合同关闭或选择下一有界路线。",
+      ownerAuthorizationRequired: false,
+      automaticExecutionAllowed: qualified,
+      planEvidenceConfirmed: input?.planEvidenceConfirmed === true,
+    },
+    forbiddenActions: [
+      "promote_smoke_checkpoint",
+      "initialize_formal_stage0_from_smoke_checkpoint",
+      "lower_machine_review_threshold",
+      "start_stage1_before_formal_stage0_success",
+      "start_stage2_before_formal_stage1_success",
+    ],
+    taskIdentity: {
+      modelId: "ai-painter-stage4-post-decode-object-rgb-compositor-candidate",
+      sampleId: "194",
+      conditionLabel: "v7-complete-map-194",
+      sampleSplit: "validation",
+      seed: 20263722,
+      requiredBoundarySides: ["west"],
+    },
+    evidence,
+    integrity: {
+      status: verified ? "verified" : "incomplete_or_mismatched",
+      requiredEvidencePresent,
+      boundEvidenceVerified,
+      identityMatches,
+      migrationRegistryStatus: "local_autonomous_runtime_active",
+    },
+  }
+}
+
 function normalizeEvidence(value) {
   const row = record(value)
   const sha256 = stringValue(row.sha256)

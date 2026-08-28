@@ -1,18 +1,20 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-08-24 09:48:00 +08:00
+更新时间：2026-08-26 09:37:09 +08:00
 
 状态：long-term-architecture-reference
 
-文档版本：`AI-PET-WORLD-ARCHITECTURE-1.1`
+文档版本：`AI-PET-WORLD-ARCHITECTURE-1.3`
 
-生效日期：`2026-08-24`
+生效日期：`2026-08-26`
 
-替代版本：`AI-PET-WORLD-ARCHITECTURE-1.0`
+替代版本：`AI-PET-WORLD-ARCHITECTURE-1.2`
 
-文档状态：`active_internal_formal_standard`
+文档状态：`active_normative_target`
 
-不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+程序符合状态：`program_adoption_pending`
+
+Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
 > 本文保留长期产品架构。模块安排只记录在 `docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md`，不得从长期架构推导执行授权。紫微斗数是人格数据子系统，必须通过正式契约连接 AI 管家人格映射。
 
@@ -32,12 +34,12 @@
 -> 自动验证、机器审核与失败分类
 -> 发布 / 回退 / 失败关闭
 -> 本地不可变保存、事件与SQLite索引
--> 触及长期业务、许可或安全边界时生成business-boundary-report并失败关闭
+-> 触及长期业务、许可或安全边界时生成policy-boundary-report并失败关闭
 ```
 
 Codex只作为受控执行与检查员工。当前允许它在本地程序已经锁定任务、范围和门禁后执行受控冷启动RGB、代码修复或对应检查；它不得成为系统编排器、长期记忆、正式证据源或授权机关。目标架构中，本地小AI负责完整判断和流程编排，Codex仅在收到具体任务时运行相应检查并把证据交回本地系统；移除Codex或丢失聊天历史不得破坏本地流程连续性。
 
-机器可读长期合同由AI Painter正式主体规格登记。训练、能力版本变更、生成、验证、审核、发布、回退或失败关闭均由本地程序在生效合同内自主执行；触及长期业务、外部许可、付费资源或不可恢复操作时保存`business-boundary-report`并写入事件总账与SQLite。Owner可以改变业务方向或紧急停止，但不是执行链的审批节点。`latest.json`只是查询指针。
+机器可读长期合同由AI Painter正式主体规格登记。训练、能力版本变更、生成、验证、审核、发布、回退或失败关闭均由本地程序在生效合同内自主执行；触及长期业务、外部许可、付费资源或不可恢复操作时禁止越界动作，保存`policy-boundary-report`并写入事件总账与SQLite。Owner职责只由`GOV-OWNER-001`定义，不进入执行链。`latest.json`只是查询指针。
 
 ## 0.1 V7 容量架构
 
@@ -95,11 +97,31 @@ Stage 1和Stage 2在启动前尚不知道前一阶段实际Checkpoint哈希，�
 
 持续执行器不得依赖Shell命令字符串或Codex会话，只能调用机器合同允许的运行器及参数数组；不得无限自动重试或跨过机器审核。旧冷启动签署工具只用于历史运行复核，不得继续生成当前本地AI握手券。AI Painter具体边界见[正式主体规格](game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md)。
 
-## 0.4 AI Painter内部任务票据与自主裁决状态机
+## 0.4 AI Painter内部任务票据与三层自主状态机
 
-内部任务票据是本地系统的幂等和证据机制，不是Owner授权的替代品或派生权限。票据必须绑定执行包ID与SHA、能力版本、状态图、输入证据SHA集合、程序血缘、动作身份、尝试序号和唯一输出目录，并以不可覆盖记录完成一次性消费。
+内部任务票据是本地系统的幂等和证据机制，不是Owner授权的替代品或派生权限。票据必须绑定`ticketId`、签发程序身份、机器签发密钥身份、执行包ID与SHA、能力版本、状态图、输入证据SHA集合、程序血缘、动作身份、尝试序号、随机nonce、有效期和唯一输出目录。规范化票据载荷必须由操作系统保护的本地机器密钥签名；消费方必须验证签名并重新计算载荷SHA。Owner职责只由`DOCUMENT_AUTHORITY_INDEX.md`中的`GOV-OWNER-001`定义。
 
-状态机固定为：
+票据消费必须跨进程和重启持久防重放：执行器在同一SQLite事务中对`ticketId + capabilityReleaseIdentity + action + attempt`建立唯一消费记录、追加事件并登记目标输出身份，唯一约束冲突即失败关闭。文件证据先写入同目录临时文件、刷新后原子改名；进程中断时只能按事务日志恢复到未消费或已消费的唯一状态，不得根据内存、PID消失或文件部分存在重新消费。
+
+三个状态层级固定为：
+
+### 0.4.1 能力生命周期
+
+```text
+change_candidate
+-> isolated_implementation
+-> cpu_contract_verified
+-> readonly_gpu_qualified（需要GPU时）
+-> controlled_smoke_completed
+-> formal_stage_validation_completed
+-> independent_regression_completed
+-> machine_release_adjudicated
+-> released / rejected / rolled_back
+```
+
+能力生命周期回答“某个能力版本能否成为正式能力”。`rejected`和`rolled_back`都是不可变终态；新尝试必须建立新的能力版本身份。
+
+### 0.4.2 单次执行生命周期
 
 ```text
 package_materialized
@@ -112,14 +134,52 @@ package_materialized
 -> completed
 
 任一状态 -> failed_closed
-触及项目边界 -> blocked_business_boundary
+触及冻结政策边界 -> blocked_policy_boundary
 ```
+
+执行生命周期回答“某个执行包当前进行到哪里”。`failed_closed`和`blocked_policy_boundary`都不是等待Owner批准；前者终止当前执行，后者禁止越界动作并保存政策边界报告。
+
+### 0.4.3 机器审核生命周期
+
+```text
+review_pending
+-> review_running
+-> review_passed / review_failed / review_evidence_conflict
+```
+
+机器审核生命周期回答“当前候选证据是否满足冻结审核合同”。状态映射唯一为：
+
+| 审核终态 | 单次执行映射 | 能力生命周期映射 |
+|---|---|---|
+| `review_passed` | `reviewing -> adjudicating` | 允许继续后续机器资格，不直接等于`released` |
+| `review_failed` | `reviewing -> failed_closed` | 当前能力候选进入`rejected`或保持未发布 |
+| `review_evidence_conflict` | `reviewing -> failed_closed` | 不得形成发布裁决；新证据必须使用新执行身份 |
+| `blocked_policy_boundary` | 当前执行失败关闭并保存政策报告 | 能力保持上一正式版本，不产生Owner等待状态 |
 
 内部票据覆盖：读取和核验证据、资源预检、进度与心跳、执行包声明的训练或生成、固定预览复现、机器审核、冻结规则因果裁决、Manifest/Finalization/终态、任务胶囊/事件账本/SQLite同步，以及能力版本合同允许的有限基础设施恢复。状态不得跳跃；票据不得补充执行包和能力版本没有的动作。
 
-模型、Loss、数据、划分、阈值、Checkpoint来源或选择规则、程序或依赖血缘、新模型家族和新训练路线发生变化时，必须停止当前运行实例并形成新的隔离能力版本；本地系统可以自主进入该版本的设计、测试、训练和发布流程。裁决不唯一时失败关闭当前路线并保存证据，不得伪造唯一答案；只有触及长期业务、许可、付费或不可恢复操作边界时才等待业务方向。
+模型、Loss、数据、划分、阈值、Checkpoint来源或选择规则、程序或依赖血缘、新模型家族和新训练路线发生变化时，必须停止当前运行实例并形成新的隔离能力版本；本地系统可以自主进入该版本的设计、测试、训练和发布流程。裁决不唯一时失败关闭当前路线并保存证据，不得伪造唯一答案。触及长期业务、许可、付费或不可恢复操作边界时禁止越界动作、生成政策边界报告并选择合同内安全替代路线或停止，不得进入Owner等待状态。
 
-自主裁决器初期以确定性规则引擎为正式门，本地模型可以提出候选解释，但必须由机器合同验证。每个裁决保存输入证据、规则版本、命中条件、被排除选项和唯一结果；不唯一时当前路线进入`failed_closed_evidence_ambiguous`，本地系统只能选择合同已声明的替代路线或停止。
+自主裁决器初期以确定性规则引擎为正式门，本地模型可以提出候选解释，但必须由机器合同验证。每个裁决保存输入证据、规则版本、命中条件、被排除选项和唯一结果；不唯一时当前路线进入`failed_closed`并登记`failureCode=evidence_ambiguous`，本地系统只能选择合同已声明的替代路线或停止。
+
+## 0.5 当前执行身份与状态投影架构
+
+本地系统必须将运行事实与页面查询选择分离。下列四个身份属于不同状态空间，不得合并为一个“当前Run”：
+
+```text
+currentProjectTask       项目当前应继续推进的任务
+activeExecution          当前真实活动的执行实例
+latestTrainingTerminal   最近一次训练的不可变终态
+selectedHistoricalRun    只读界面当前选中的历史记录
+```
+
+`currentProjectTask`由本地能力生命周期编排器在合法状态转换成功后更新。训练失败后形成的审核、裁决或下一候选规划可以成为新的项目当前任务，但不改写该训练的失败终态。`activeExecution`必须同时满足任务锁、进程和心跳身份一致且未过期；不满足时为空。`selectedHistoricalRun`只是查询参数，不参与任何状态转换。
+
+当前执行登记采用单写者、追加事件和单调修订。每次更新必须绑定能力版本、执行包、任务、Run、状态、事件序号、终态或任务胶囊的路径与SHA-256。文件指针、追加事件和SQLite索引在同一个可恢复事务中提交；并发修订冲突必须失败关闭，不得覆盖。
+
+控制台和GET聚合器只读取已验证的当前执行登记及其指向的不可变证据。它们不得扫描Smoke、Stage、审核或裁决目录并使用代码顺序、目录名或来源类型优先级推测“当前”。指针不完整或证据不一致时必须返回`unknown_or_stale`并保存冲突证据，不得回退到某个可读取的历史命名空间。
+
+本节定义总体架构。字段、事务、排序、失效和控制台投影规则由`REVIEW_AUTOMATION_AND_STORAGE_SPEC.md`第11节定义。
 
 ## 1. 架构原则
 
@@ -229,7 +289,7 @@ RealEarthRegionSourcePackage
 -> 才能进入完整RGB生成门
 ```
 
-MVP区域来源为泰国Sakaerat / Wang Nam Khiao包。未来区域可以由本地系统在长期业务目标、来源许可、网络与资源预算内自主建立独立来源包；若需要新增付费来源、接受不明确许可或改变产品地区范围，必须失败关闭并生成业务边界报告。
+MVP区域来源为泰国Sakaerat / Wang Nam Khiao包。未来区域可以由本地系统在长期业务目标、来源许可、网络与资源预算内自主建立独立来源包；若需要未登记付费来源、接受不明确许可或改变产品地区范围，必须禁止越界动作、失败关闭并生成政策边界报告，不等待审批。
 
 ### 1.3 真实空间与游戏坐标关系
 

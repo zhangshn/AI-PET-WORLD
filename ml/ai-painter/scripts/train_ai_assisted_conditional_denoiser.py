@@ -51,6 +51,8 @@ from ai_painter_stage_mode_registry import (
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE0_FULL_TRAINING_STATUS,
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE1_FULL_TRAINING_STATUS,
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE2_FULL_TRAINING_STATUS,
+    AUTHORITATIVE_SEMANTIC_CARRIER_STAGE4_SMOKE_STATUS,
+    AUTHORITATIVE_SEMANTIC_CARRIER_STAGE0_FULL_TRAINING_STATUS,
     CONTROLLED_STRUCTURE_SMOKE_ARMS,
     fact_conditioned_semantic_mixture_smoke_supports_objective,
     fact_conditioned_semantic_mixture_smoke_supports_controlled_structure_arm,
@@ -865,6 +867,10 @@ def main() -> int:
     parser.add_argument("--authorization-lineage-preflight", action="store_true")
     parser.add_argument("--stage4-responsibility-component-smoke", action="store_true")
     parser.add_argument("--stage4-predecessor-output-identity", type=Path)
+    parser.add_argument("--stage4-direct-clean-latent-smoke", action="store_true")
+    parser.add_argument("--stage4-direct-clean-latent-smoke-contract", type=Path)
+    parser.add_argument("--stage4-direct-clean-latent-stage0", action="store_true")
+    parser.add_argument("--stage4-direct-clean-latent-stage0-contract", type=Path)
     args = parser.parse_args()
 
     config = read_json(args.config)
@@ -872,6 +878,12 @@ def main() -> int:
     if args.stage4_responsibility_component_smoke:
         from train_stage4_isolated_responsibility_component_smoke import run as run_component_smoke
         return run_component_smoke(args, config, package)
+    if args.stage4_direct_clean_latent_smoke:
+        from train_stage4_direct_clean_latent_smoke import run as run_direct_clean_latent_smoke
+        return run_direct_clean_latent_smoke(args, config, package)
+    if args.stage4_direct_clean_latent_stage0:
+        from train_stage4_direct_clean_latent_stage0 import run as run_direct_clean_latent_stage0
+        return run_direct_clean_latent_stage0(args, config, package)
     training_identity = config.get("training", {})
     structure_smoke_owner = training_identity.get("ownerTrainingAuthorization", {})
     structure_smoke_registered = (
@@ -916,6 +928,8 @@ def main() -> int:
             "fact_conditioned_semantic_mixture_stage0_full_training",
             "fact_conditioned_semantic_mixture_stage1_full_training",
             "fact_conditioned_semantic_mixture_stage2_full_training",
+            "authoritative_semantic_carrier_stage0_full_training",
+            "post_decode_full_condition_responsibility_stage0_full_training",
         }:
             if stage_execution_grant.dataset_constraints.get("selectedSplit") is not None:
                 stage_execution_grant.require(ExecutionAction.SELECT_BOUND_SAMPLE)
@@ -1201,6 +1215,154 @@ def main() -> int:
             raise ValueError("fact-conditioned semantic mixture model Smoke initialization or resolution is invalid")
         if smoke_contract.get("sampleSplit") != "validation" or smoke_contract.get("requiredBoundarySides") != ["west"]:
             raise ValueError("fact-conditioned semantic mixture model Smoke split or topology is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "authoritative_semantic_carrier_stage4_smoke_adapter":
+        training = config["training"]
+        smoke_contract = training.get("stage4AuthoritativeSemanticCarrierSmokeContract", {})
+        if phase0_mode or stage_mode.execution_kind != "single_sample_smoke":
+            raise ValueError("authoritative semantic carrier Smoke mode is invalid")
+        if training.get("localAiCapabilityTicket", {}).get("executionState") != "consumed":
+            raise ValueError("authoritative semantic carrier Smoke requires a consumed local capability ticket")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("authoritative semantic carrier Smoke forbids every parent Denoiser Checkpoint")
+        if args.single_sample_overfit_smoke is not True or args.smoke_test:
+            raise ValueError("authoritative semantic carrier authorization permits only the fixed single-sample Smoke")
+        if args.overfit_sample_id != smoke_contract.get("sampleId") or args.overfit_sample_id != training.get("authorizedOverfitSampleId"):
+            raise ValueError("authoritative semantic carrier fixed Smoke sample identity does not match")
+        if int(args.overfit_epochs or 0) != 30 or int(smoke_contract.get("epochCount", 0)) != 30:
+            raise ValueError("authoritative semantic carrier Smoke requires exactly 30 Epoch")
+        if int(args.overfit_evaluation_interval) != 5 or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]:
+            raise ValueError("authoritative semantic carrier Smoke preview schedule does not match")
+        if args.resolution_stage != 0 or training.get("authorizedInitialization") != "fixed_project_random_authoritative_semantic_carrier":
+            raise ValueError("authoritative semantic carrier Smoke initialization or resolution is invalid")
+        if smoke_contract.get("sampleSplit") != "validation" or smoke_contract.get("requiredBoundarySides") != ["west"]:
+            raise ValueError("authoritative semantic carrier Smoke split or topology is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "post_decode_object_rgb_stage4_smoke_adapter":
+        training = config["training"]
+        smoke_contract = training.get("stage4PostDecodeObjectRgbSmokeContract", {})
+        if phase0_mode or stage_mode.execution_kind != "single_sample_smoke":
+            raise ValueError("post-decode object RGB Smoke mode is invalid")
+        if training.get("localAiCapabilityTicket", {}).get("executionState") != "consumed":
+            raise ValueError("post-decode object RGB Smoke requires a consumed local capability ticket")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("post-decode object RGB Smoke forbids every parent Denoiser Checkpoint")
+        if args.single_sample_overfit_smoke is not True or args.smoke_test:
+            raise ValueError("post-decode object RGB Smoke permits only the fixed single-sample Smoke")
+        if (
+            args.overfit_sample_id != smoke_contract.get("sampleId")
+            or args.overfit_sample_id != training.get("authorizedOverfitSampleId")
+        ):
+            raise ValueError("post-decode object RGB fixed Smoke sample identity does not match")
+        if int(args.overfit_epochs or 0) != 30 or int(smoke_contract.get("epochCount", 0)) != 30:
+            raise ValueError("post-decode object RGB Smoke requires exactly 30 Epoch")
+        if (
+            int(args.overfit_evaluation_interval) != 5
+            or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]
+        ):
+            raise ValueError("post-decode object RGB Smoke preview schedule does not match")
+        if (
+            args.resolution_stage != 0
+            or training.get("authorizedInitialization")
+            != "fixed_project_random_post_decode_object_rgb"
+        ):
+            raise ValueError("post-decode object RGB Smoke initialization or resolution is invalid")
+        if (
+            smoke_contract.get("sampleSplit") != "validation"
+            or smoke_contract.get("requiredBoundarySides") != ["west"]
+        ):
+            raise ValueError("post-decode object RGB Smoke split or topology is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "post_decode_full_condition_responsibility_stage4_smoke_adapter":
+        training = config["training"]
+        smoke_contract = training.get("stage4PostDecodeFullConditionResponsibilitySmokeContract", {})
+        if phase0_mode or stage_mode.execution_kind != "single_sample_smoke":
+            raise ValueError("post-decode full-condition responsibility Smoke mode is invalid")
+        if training.get("localAiCapabilityTicket", {}).get("executionState") != "consumed":
+            raise ValueError("post-decode full-condition responsibility Smoke requires a consumed local capability ticket")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("post-decode full-condition responsibility Smoke forbids every parent Denoiser Checkpoint")
+        if args.single_sample_overfit_smoke is not True or args.smoke_test:
+            raise ValueError("post-decode full-condition responsibility Smoke permits only the fixed single-sample Smoke")
+        if (
+            args.overfit_sample_id != smoke_contract.get("sampleId")
+            or args.overfit_sample_id != training.get("authorizedOverfitSampleId")
+        ):
+            raise ValueError("post-decode full-condition responsibility fixed Smoke sample identity does not match")
+        if int(args.overfit_epochs or 0) != 30 or int(smoke_contract.get("epochCount", 0)) != 30:
+            raise ValueError("post-decode full-condition responsibility Smoke requires exactly 30 Epoch")
+        if (
+            int(args.overfit_evaluation_interval) != 5
+            or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]
+        ):
+            raise ValueError("post-decode full-condition responsibility Smoke preview schedule does not match")
+        if (
+            args.resolution_stage != 0
+            or training.get("authorizedInitialization")
+            != "fixed_project_random_post_decode_full_condition_responsibility"
+        ):
+            raise ValueError("post-decode full-condition responsibility Smoke initialization or resolution is invalid")
+        if (
+            smoke_contract.get("sampleSplit") != "validation"
+            or smoke_contract.get("requiredBoundarySides") != ["west"]
+        ):
+            raise ValueError("post-decode full-condition responsibility Smoke split or topology is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "post_decode_full_condition_responsibility_full_training_adapter":
+        training = config["training"]
+        formal_contract = training.get("stage4PostDecodeFullConditionResponsibilityFormalStageContract", {})
+        if stage_mode.execution_kind != "full_training_stage0" or stage_mode.stage != 0:
+            raise ValueError("post-decode full-condition responsibility formal Stage ModeSpec is invalid")
+        if phase0_mode or args.single_sample_overfit_smoke or args.smoke_test:
+            raise ValueError("post-decode full-condition responsibility Stage 0 cannot enter Phase0 or Smoke")
+        if args.overfit_sample_id is not None or args.overfit_epochs is not None:
+            raise ValueError("post-decode full-condition responsibility Stage 0 cannot carry single-sample arguments")
+        if training.get("localAiCapabilityTicket", {}).get("executionState") != "consumed":
+            raise ValueError("post-decode full-condition responsibility Stage 0 requires a consumed local capability ticket")
+        if args.resolution_stage != 0 or int(training.get("denoiserEpochs", 0)) != 40:
+            raise ValueError("post-decode full-condition responsibility Stage 0 resolution or Epoch contract is invalid")
+        if training.get("fixedEpochPreviewPolicy", {}).get("formalStage") != [1, 5, 10, 20, 30, 40]:
+            raise ValueError("post-decode full-condition responsibility Stage 0 preview schedule is invalid")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("post-decode full-condition responsibility Stage 0 must use fixed random initialization")
+        if formal_contract.get("initialization") != "fixed_project_random_post_decode_full_condition_responsibility":
+            raise ValueError("post-decode full-condition responsibility Stage 0 initialization identity is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "post_decode_object_rgb_full_training_adapter":
+        training = config["training"]
+        formal_contract = training.get("stage4PostDecodeObjectRgbFormalStageContract", {})
+        if stage_mode.execution_kind != "full_training_stage0" or stage_mode.stage != 0:
+            raise ValueError("post-decode object RGB formal Stage ModeSpec is invalid")
+        if phase0_mode or args.single_sample_overfit_smoke or args.smoke_test:
+            raise ValueError("post-decode object RGB Stage 0 cannot enter Phase0 or Smoke")
+        if args.overfit_sample_id is not None or args.overfit_epochs is not None:
+            raise ValueError("post-decode object RGB Stage 0 cannot carry single-sample arguments")
+        if training.get("localAiCapabilityTicket", {}).get("executionState") != "consumed":
+            raise ValueError("post-decode object RGB Stage 0 requires a consumed local capability ticket")
+        if args.resolution_stage != 0 or int(training.get("denoiserEpochs", 0)) != 40:
+            raise ValueError("post-decode object RGB Stage 0 resolution or Epoch contract is invalid")
+        if training.get("fixedEpochPreviewPolicy", {}).get("formalStage") != [1, 5, 10, 20, 30, 40]:
+            raise ValueError("post-decode object RGB Stage 0 preview schedule is invalid")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("post-decode object RGB Stage 0 must use fixed random initialization")
+        if formal_contract.get("initialization") != "fixed_project_random_post_decode_object_rgb":
+            raise ValueError("post-decode object RGB Stage 0 initialization identity is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "authoritative_semantic_carrier_full_training_adapter":
+        training = config["training"]
+        formal_contract = training.get("stage4AuthoritativeSemanticCarrierFormalStageContract", {})
+        if stage_mode.execution_kind != "full_training_stage0" or stage_mode.stage != 0:
+            raise ValueError("authoritative semantic carrier formal Stage ModeSpec is invalid")
+        if phase0_mode or args.single_sample_overfit_smoke or args.smoke_test:
+            raise ValueError("authoritative semantic carrier Stage 0 cannot enter Phase0 or Smoke")
+        if args.overfit_sample_id is not None or args.overfit_epochs is not None:
+            raise ValueError("authoritative semantic carrier Stage 0 cannot carry single-sample arguments")
+        if args.resolution_stage != 0 or int(training.get("denoiserEpochs", 0)) != 40:
+            raise ValueError("authoritative semantic carrier Stage 0 resolution or Epoch contract is invalid")
+        if training.get("fixedEpochPreviewPolicy", {}).get("formalStage") != [1, 5, 10, 20, 30, 40]:
+            raise ValueError("authoritative semantic carrier Stage 0 preview schedule is invalid")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("authoritative semantic carrier Stage 0 must use fixed random initialization")
+        if training.get("authorizedInitialization") != "fixed_project_random_authoritative_semantic_carrier":
+            raise ValueError("authoritative semantic carrier Stage 0 initialization contract is invalid")
+        if formal_contract.get("stage") != 0 or formal_contract.get("parentDenoiserCheckpointAllowed") is not False:
+            raise ValueError("authoritative semantic carrier Stage 0 parent lineage is invalid")
+        if training.get("localAiCapabilityTicket", {}).get("executionState") != "consumed":
+            raise ValueError("authoritative semantic carrier Stage 0 requires a consumed local capability ticket")
     if stage_mode is not None and stage_mode.adapter_binding == "fact_conditioned_semantic_mixture_full_training_adapter":
         training = config["training"]
         full_contract = training.get("factConditionedSemanticMixtureStage4FullTrainingContract", {})
@@ -1284,6 +1446,38 @@ def main() -> int:
         overfit_evidence,
     )
     if args.preflight_only:
+        preflight_epoch_count = (
+            int(args.overfit_epochs)
+            if args.single_sample_overfit_smoke
+            else (1 if args.smoke_test else int(config["training"]["denoiserEpochs"]))
+        )
+        preflight_token_accounting = build_training_token_accounting(
+            config,
+            datasets,
+            stage,
+            preflight_epoch_count,
+            bool(args.smoke_test or args.single_sample_overfit_smoke),
+            True,
+            preflight_epoch_count,
+        )
+        preflight_terminal_identity = (
+            validate_stage4_best_checkpoint_and_terminal_qualification_identity_separation(
+                config
+            )
+        )
+        preflight_failure_diagnostic_contract = (
+            validate_fact_conditioned_semantic_mixture_stage4_diagnostic_manifest_support_contract(
+                config
+            )
+            if is_fact_conditioned_semantic_mixture_stage4(config)
+            else None
+        )
+        preflight_formal_stage4_contract_bundle = (
+            validate_stage4_formal_training_contract_bundle(config)
+            if stage4_loss_contract_mode_id(config)
+            == "fact_conditioned_semantic_mixture_stage0_full_training"
+            else None
+        )
         print(json.dumps({
             "status": "conditional_denoiser_python_preflight_passed",
             "modelId": config["modelId"],
@@ -1296,6 +1490,15 @@ def main() -> int:
             "formalInferenceEligible": False,
             "singleSampleOverfitSmoke": overfit_evidence,
             "sampleBoundBoundaryProvenance": sample_bound_boundary_provenance,
+            "trainingTokenAccountingValidated": True,
+            "plannedOptimizerStepTarget": preflight_token_accounting.get("optimizerStepTarget"),
+            "terminalQualificationIdentityValidated": preflight_terminal_identity is not None,
+            "failureDiagnosticContractValidated": (
+                preflight_failure_diagnostic_contract is not None
+            ),
+            "formalStage4ContractBundleValidated": (
+                preflight_formal_stage4_contract_bundle is not None
+            ),
             "stageControlMode": stage_mode.mode_id if stage_mode else None,
             "stageControlExecutionGrant": stage_execution_grant.as_dict() if stage_execution_grant else None,
             "stageControlDryRun": bool(args.stage_control_dry_run),
@@ -2698,6 +2901,12 @@ def validate_training_inputs(config, package):
         validate_condition_preserving_semantic_renderer_stage4_cpu_contract(config, package)
     elif architecture == "stage4_fact_conditioned_semantic_mixture_decoder_v1":
         validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(config, package)
+    elif architecture == "stage4_authoritative_visual_semantic_carrier_decoder_v1":
+        validate_authoritative_semantic_carrier_stage4_smoke_contract(config, package)
+    elif architecture == "stage4_post_decode_authoritative_object_rgb_compositor_v1":
+        validate_post_decode_object_rgb_stage4_smoke_contract(config, package)
+    elif architecture == "stage4_post_decode_full_condition_route_object_responsibility_renderer_v1":
+        validate_post_decode_full_condition_responsibility_contract(config, package)
     else:
         raise ValueError("unsupported conditional denoiser architecture")
     if package.get("schemaVersion") != "ai-assisted-cold-start-dataset-package-v1":
@@ -5062,6 +5271,509 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
     }
 
 
+def validate_authoritative_semantic_carrier_stage4_smoke_contract(
+    config, package, project_root=None,
+):
+    root = Path(project_root or Path.cwd()).resolve()
+    training = config.get("training", {})
+    mode = resolve_stage_mode(config)
+    active_status_by_mode = {
+        "authoritative_semantic_carrier_stage4_smoke": AUTHORITATIVE_SEMANTIC_CARRIER_STAGE4_SMOKE_STATUS,
+        "authoritative_semantic_carrier_stage0_full_training": AUTHORITATIVE_SEMANTIC_CARRIER_STAGE0_FULL_TRAINING_STATUS,
+    }
+    if (
+        mode.mode_id not in active_status_by_mode
+        or training.get("trainingAuthorizationStatus") != active_status_by_mode.get(mode.mode_id)
+        or config.get("denoiserArchitecture")
+        != "stage4_authoritative_visual_semantic_carrier_decoder_v1"
+    ):
+        raise ValueError("authoritative semantic carrier Smoke mode identity is invalid")
+    if "ownerTrainingAuthorization" in training:
+        raise ValueError("authoritative semantic carrier autonomous execution cannot carry Owner authorization")
+    if "stage4ControlledStructureArm" in config or "stage4ResponsibilityComponentRole" in config:
+        raise ValueError("authoritative semantic carrier Smoke cannot reuse an exited structure route")
+    if (
+        config.get("conditionChannels") != 23
+        or config.get("latentChannels") != 12
+        or config.get("denoiserBaseChannels") != 64
+        or config.get("latentDownsampleFactor") != 4
+        or config.get("autoencoderArchitecture") != "residual_4x_latent_pixel_detail_v2"
+    ):
+        raise ValueError("authoritative semantic carrier derived dimensions changed")
+    carrier = training.get("stage4AuthoritativeSemanticCarrier", {})
+    expected_carriers = [
+        "terrain_grass", "terrain_water", "terrain_path_ground", "terrain_shoreline",
+        "terrain_natural_boundary", "terrain_mud_patch", "terrain_tall_grass",
+        "object_footprints", "object_tree", "object_rock", "object_vegetation",
+    ]
+    if (
+        carrier.get("contractId")
+        != "stage4-authoritative-visual-semantic-carrier-model-family-contract-v1"
+        or carrier.get("status")
+        != (
+            "active_local_ai_controlled_smoke"
+            if mode.mode_id == "authoritative_semantic_carrier_stage4_smoke"
+            else "active_local_ai_stage0_full_training"
+        )
+        or carrier.get("carrierIdentityOrder") != expected_carriers
+        or carrier.get("sourceGate") != "exact_resized_authoritative_discrete_condition_channel"
+        or carrier.get("learnedParticipationGateAllowed") is not False
+    ):
+        raise ValueError("authoritative semantic carrier active structure contract is invalid")
+    if mode.mode_id == "authoritative_semantic_carrier_stage4_smoke":
+        smoke = training.get("stage4AuthoritativeSemanticCarrierSmokeContract", {})
+        if smoke != {
+            "status": "active_local_ai_internal_capability",
+            "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+            "sampleSplit": "validation",
+            "seed": 20263722,
+            "requiredBoundarySides": ["west"],
+            "epochCount": 30,
+            "previewEpochs": [1, 5, 10, 20, 30],
+            "resolution": {"width": 256, "height": 192},
+            "initialization": "fixed_project_random_authoritative_semantic_carrier",
+            "automaticMachineReview": True,
+            "automaticLateStabilityQualification": True,
+            "automaticRetryAllowed": False,
+        } or "stage4AuthoritativeSemanticCarrierFormalStageContract" in training:
+            raise ValueError("authoritative semantic carrier Smoke execution contract is invalid")
+    else:
+        formal = training.get("stage4AuthoritativeSemanticCarrierFormalStageContract", {})
+        if formal != {
+            "status": "active_local_ai_internal_capability",
+            "stage": 0,
+            "seed": 20263722,
+            "epochCount": 40,
+            "previewEpochs": [1, 5, 10, 20, 30, 40],
+            "resolution": {"width": 256, "height": 192},
+            "datasetCapacity": 64,
+            "splitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4},
+            "initialization": "fixed_project_random_authoritative_semantic_carrier",
+            "parentDenoiserCheckpointAllowed": False,
+            "automaticMachineReview": True,
+            "automaticRetryAllowed": False,
+        } or "stage4AuthoritativeSemanticCarrierSmokeContract" in training:
+            raise ValueError("authoritative semantic carrier Stage 0 execution contract is invalid")
+    frozen = training.get("stage4AuthoritativeSemanticCarrierFrozenTrainingContract", {})
+    source_path = verify_config_bound_project_file(
+        root, frozen.get("sourceConfigPath"), frozen.get("sourceConfigSha256"),
+        "authoritative semantic carrier frozen training source",
+    )
+    source = read_json(source_path)
+    frozen_keys = (
+        "resolutionStages", "batchSize", "denoiserLearningRate",
+        "denoiserLossVersion", "denoiserLossWeights", "bestCheckpointMetric",
+        "bestCheckpointMetricWeights", "rolloutCheckpointMetricWeights",
+        "checkpointRolloutWeight", "checkpointRolloutCoverage",
+        "checkpointRolloutSeedsPerSample", "checkpointWorstTrajectoryWeight",
+        "checkpointSelectionSplit", "strictHeldOutInferenceSplit",
+    )
+    if any(training.get(key) != source.get("training", {}).get(key) for key in frozen_keys):
+        raise ValueError("authoritative semantic carrier execution changed the frozen training contract")
+    if training.get("seed") != 20263722 or training.get("batchSize") != 1:
+        raise ValueError("authoritative semantic carrier seed or batch size changed")
+    return {"status": f"{mode.mode_id}_contract_valid"}
+
+
+def validate_post_decode_object_rgb_stage4_smoke_contract(
+    config, package, project_root=None,
+):
+    root = Path(project_root or Path.cwd()).resolve()
+    training = config.get("training", {})
+    mode = resolve_stage_mode(config)
+    if mode.mode_id == "post_decode_object_rgb_stage0_full_training":
+        return validate_post_decode_object_rgb_stage0_contract(
+            config, package, project_root=project_root,
+        )
+    if (
+        mode.mode_id != "post_decode_object_rgb_stage4_smoke"
+        or mode.execution_kind != "single_sample_smoke"
+        or mode.active_execution is not True
+        or training.get("trainingAuthorizationStatus")
+        != "local_ai_post_decode_object_rgb_controlled_smoke_active"
+        or config.get("denoiserArchitecture")
+        != "stage4_post_decode_authoritative_object_rgb_compositor_v1"
+    ):
+        raise ValueError("post-decode object RGB Smoke mode identity is invalid")
+    if "ownerTrainingAuthorization" in training:
+        raise ValueError("post-decode object RGB autonomous Smoke cannot carry Owner authorization")
+    if "stage4ControlledStructureArm" in config or "stage4ResponsibilityComponentRole" in config:
+        raise ValueError("post-decode object RGB Smoke cannot reuse an exited structure route")
+    if (
+        config.get("conditionChannels") != 23
+        or config.get("latentChannels") != 12
+        or config.get("denoiserBaseChannels") != 64
+        or config.get("latentDownsampleFactor") != 4
+        or config.get("autoencoderArchitecture")
+        != "residual_4x_latent_pixel_detail_v2"
+        or config.get("postDecodeObjectRgbIdentityOrder")
+        != ["object_footprints", "object_tree", "object_rock", "object_vegetation"]
+        or config.get("postDecodeObjectRgbInputIdentity")
+        != "decoded_rgb_plus_same_class_mask"
+        or config.get("postDecodeObjectRgbMerge")
+        != "authoritative_mask_normalized_rgb_compositor_v1"
+    ):
+        raise ValueError("post-decode object RGB derived structure changed")
+    smoke = training.get("stage4PostDecodeObjectRgbSmokeContract", {})
+    if smoke != {
+        "status": "active_local_ai_internal_capability",
+        "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+        "sampleSplit": "validation",
+        "seed": 20263722,
+        "requiredBoundarySides": ["west"],
+        "epochCount": 30,
+        "previewEpochs": [1, 5, 10, 20, 30],
+        "resolution": {"width": 256, "height": 192},
+        "initialization": "fixed_project_random_post_decode_object_rgb",
+        "automaticMachineReview": True,
+        "automaticLateStabilityQualification": True,
+        "automaticRetryAllowed": False,
+    }:
+        raise ValueError("post-decode object RGB Smoke execution contract is invalid")
+    frozen = training.get("stage4PostDecodeObjectRgbFrozenTrainingContract", {})
+    source_path = verify_config_bound_project_file(
+        root,
+        frozen.get("sourceConfigPath"),
+        frozen.get("sourceConfigSha256"),
+        "post-decode object RGB frozen training source",
+    )
+    source = read_json(source_path)
+    frozen_keys = (
+        "resolutionStages", "batchSize", "denoiserLearningRate",
+        "denoiserLossVersion", "denoiserLossWeights", "bestCheckpointMetric",
+        "bestCheckpointMetricWeights", "rolloutCheckpointMetricWeights",
+        "checkpointRolloutWeight", "checkpointRolloutCoverage",
+        "checkpointRolloutSeedsPerSample", "checkpointWorstTrajectoryWeight",
+        "checkpointSelectionSplit", "strictHeldOutInferenceSplit",
+    )
+    if any(training.get(key) != source.get("training", {}).get(key) for key in frozen_keys):
+        raise ValueError("post-decode object RGB Smoke changed the frozen training contract")
+    if training.get("seed") != 20263722 or training.get("batchSize") != 1:
+        raise ValueError("post-decode object RGB Smoke seed or batch size changed")
+    return {"status": "post_decode_object_rgb_stage4_smoke_contract_valid"}
+
+
+def validate_post_decode_full_condition_responsibility_contract(
+    config, package=None, project_root=None,
+):
+    mode = resolve_stage_mode(config)
+    if mode.mode_id == "post_decode_full_condition_responsibility_stage4_smoke":
+        return validate_post_decode_full_condition_responsibility_smoke_contract(
+            config, package, project_root=project_root,
+        )
+    if mode.mode_id == "post_decode_full_condition_responsibility_stage0_full_training":
+        return validate_post_decode_full_condition_responsibility_stage0_contract(
+            config, package, project_root=project_root,
+        )
+    return validate_post_decode_full_condition_responsibility_cpu_contract(config)
+
+
+def validate_post_decode_full_condition_responsibility_cpu_contract(config):
+    mode = resolve_stage_mode(config)
+    training = config.get("training", {})
+    gates = config.get("activationGates", {})
+    expected_identities = [
+        "terrain_path_ground",
+        "object_footprints",
+        "object_tree",
+        "object_rock",
+        "object_vegetation",
+    ]
+    expected_condition_order = [
+        "terrain_grass", "terrain_water", "terrain_path_ground",
+        "terrain_shoreline", "terrain_natural_boundary", "terrain_mud_patch",
+        "terrain_tall_grass", "walkable", "collision", "object_footprints",
+        "object_tree", "object_rock", "object_vegetation", "focal_area",
+        "object_instance", "coordinate_x", "coordinate_y", "signed_distance_path",
+        "signed_distance_water", "signed_distance_shoreline",
+        "signed_distance_object_ground", "signed_distance_boundary",
+        "moisture_proximity",
+    ]
+    if (
+        mode.mode_id != "post_decode_full_condition_responsibility_stage4_inactive"
+        or mode.execution_kind != "cpu_inactive"
+        or mode.active_execution is not False
+        or training.get("trainingAuthorizationStatus")
+        != "stage4_post_decode_full_condition_route_object_responsibility_renderer_cpu_supported_inactive"
+    ):
+        raise ValueError("post-decode full-condition responsibility inactive mode is invalid")
+    if (
+        config.get("conditionChannels") != 23
+        or config.get("conditionChannelOrder") != expected_condition_order
+        or config.get("latentChannels") != 12
+        or config.get("denoiserBaseChannels") != 64
+        or config.get("latentDownsampleFactor") != 4
+        or config.get("autoencoderArchitecture")
+        != "residual_4x_latent_pixel_detail_v2"
+        or config.get("postDecodeResponsibilityIdentityOrder") != expected_identities
+        or config.get("postDecodeResponsibilityInputIdentity")
+        != "decoded_rgb_3_plus_complete_typed_conditions_23"
+        or config.get("postDecodeResponsibilityInputChannels") != 26
+        or config.get("postDecodeResponsibilityMerge")
+        != "authoritative_mask_normalized_full_condition_responsibility_rgb_v1"
+    ):
+        raise ValueError("post-decode full-condition responsibility structure changed")
+    if set(gates) != {
+        "configurationActiveNow", "gpuNow", "optimizerNow", "backwardNow",
+        "weightModificationNow", "smokeNow", "trainingNow", "formalInferenceNow",
+        "runtimeFrameNow", "worldEntryNow",
+    } or any(value is not False for value in gates.values()):
+        raise ValueError("post-decode full-condition responsibility inactive gates changed")
+    return {"status": "post_decode_full_condition_responsibility_cpu_contract_valid"}
+
+
+def validate_post_decode_full_condition_responsibility_smoke_contract(
+    config, package, project_root=None,
+):
+    root = Path(project_root or Path.cwd()).resolve()
+    training = config.get("training", {})
+    mode = resolve_stage_mode(config)
+    gates = config.get("activationGates", {})
+    expected_identities = [
+        "terrain_path_ground", "object_footprints", "object_tree",
+        "object_rock", "object_vegetation",
+    ]
+    if (
+        mode.mode_id != "post_decode_full_condition_responsibility_stage4_smoke"
+        or mode.execution_kind != "single_sample_smoke"
+        or mode.active_execution is not True
+        or training.get("trainingAuthorizationStatus")
+        != "local_ai_post_decode_full_condition_responsibility_controlled_smoke_active"
+        or config.get("denoiserArchitecture")
+        != "stage4_post_decode_full_condition_route_object_responsibility_renderer_v1"
+    ):
+        raise ValueError("post-decode full-condition responsibility Smoke mode identity is invalid")
+    if "ownerTrainingAuthorization" in training:
+        raise ValueError("post-decode full-condition responsibility autonomous Smoke cannot carry Owner authorization")
+    if "stage4ControlledStructureArm" in config or "stage4ResponsibilityComponentRole" in config:
+        raise ValueError("post-decode full-condition responsibility Smoke cannot reuse an exited route")
+    if (
+        config.get("conditionChannels") != 23
+        or config.get("latentChannels") != 12
+        or config.get("denoiserBaseChannels") != 64
+        or config.get("latentDownsampleFactor") != 4
+        or config.get("autoencoderArchitecture") != "residual_4x_latent_pixel_detail_v2"
+        or config.get("postDecodeResponsibilityIdentityOrder") != expected_identities
+        or config.get("postDecodeResponsibilityInputIdentity")
+        != "decoded_rgb_3_plus_complete_typed_conditions_23"
+        or config.get("postDecodeResponsibilityInputChannels") != 26
+        or config.get("postDecodeResponsibilityBranchWidth") != 64
+        or config.get("postDecodeResponsibilityOutputChannels") != 3
+        or config.get("postDecodeResponsibilityMerge")
+        != "authoritative_mask_normalized_full_condition_responsibility_rgb_v1"
+    ):
+        raise ValueError("post-decode full-condition responsibility Smoke structure changed")
+    expected_gates = {
+        "configurationActiveNow": True, "gpuNow": True,
+        "optimizerNow": True, "backwardNow": True,
+        "weightModificationNow": True, "smokeNow": True,
+        "trainingNow": True, "formalInferenceNow": False,
+        "runtimeFrameNow": False, "worldEntryNow": False,
+    }
+    if gates != expected_gates:
+        raise ValueError("post-decode full-condition responsibility Smoke activation gates changed")
+    smoke = training.get("stage4PostDecodeFullConditionResponsibilitySmokeContract", {})
+    if smoke != {
+        "status": "active_local_ai_internal_capability",
+        "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+        "sampleSplit": "validation",
+        "seed": 20263722,
+        "requiredBoundarySides": ["west"],
+        "epochCount": 30,
+        "previewEpochs": [1, 5, 10, 20, 30],
+        "resolution": {"width": 256, "height": 192},
+        "initialization": "fixed_project_random_post_decode_full_condition_responsibility",
+        "automaticMachineReview": True,
+        "automaticLateStabilityQualification": True,
+        "automaticRetryAllowed": False,
+    }:
+        raise ValueError("post-decode full-condition responsibility Smoke execution contract is invalid")
+    frozen = training.get("stage4PostDecodeFullConditionResponsibilityFrozenTrainingContract", {})
+    source_path = verify_config_bound_project_file(
+        root, frozen.get("sourceConfigPath"), frozen.get("sourceConfigSha256"),
+        "post-decode full-condition responsibility frozen training source",
+    )
+    source = read_json(source_path)
+    frozen_keys = (
+        "resolutionStages", "batchSize", "denoiserLearningRate",
+        "denoiserLossVersion", "denoiserLossWeights", "bestCheckpointMetric",
+        "bestCheckpointMetricWeights", "rolloutCheckpointMetricWeights",
+        "checkpointRolloutWeight", "checkpointRolloutCoverage",
+        "checkpointRolloutSeedsPerSample", "checkpointWorstTrajectoryWeight",
+        "checkpointSelectionSplit", "strictHeldOutInferenceSplit",
+    )
+    if any(training.get(key) != source.get("training", {}).get(key) for key in frozen_keys):
+        raise ValueError("post-decode full-condition responsibility Smoke changed the frozen training contract")
+    if training.get("seed") != 20263722 or training.get("batchSize") != 1:
+        raise ValueError("post-decode full-condition responsibility Smoke seed or batch size changed")
+    return {"status": "post_decode_full_condition_responsibility_stage4_smoke_contract_valid"}
+
+
+def validate_post_decode_full_condition_responsibility_stage0_contract(
+    config, package, project_root=None,
+):
+    root = Path(project_root or Path.cwd()).resolve()
+    training = config.get("training", {})
+    mode = resolve_stage_mode(config)
+    expected_identities = [
+        "terrain_path_ground", "object_footprints", "object_tree",
+        "object_rock", "object_vegetation",
+    ]
+    if (
+        mode.mode_id != "post_decode_full_condition_responsibility_stage0_full_training"
+        or mode.execution_kind != "full_training_stage0"
+        or mode.stage != 0
+        or mode.active_execution is not True
+        or training.get("trainingAuthorizationStatus")
+        != "local_ai_post_decode_full_condition_responsibility_stage0_full_training_active"
+        or config.get("denoiserArchitecture")
+        != "stage4_post_decode_full_condition_route_object_responsibility_renderer_v1"
+    ):
+        raise ValueError("post-decode full-condition responsibility Stage 0 mode identity is invalid")
+    if "ownerTrainingAuthorization" in training:
+        raise ValueError("post-decode full-condition responsibility autonomous Stage 0 cannot carry Owner authorization")
+    if "stage4ControlledStructureArm" in config or "stage4ResponsibilityComponentRole" in config:
+        raise ValueError("post-decode full-condition responsibility Stage 0 cannot reuse an exited route")
+    if (
+        config.get("conditionChannels") != 23
+        or config.get("latentChannels") != 12
+        or config.get("denoiserBaseChannels") != 64
+        or config.get("latentDownsampleFactor") != 4
+        or config.get("autoencoderArchitecture") != "residual_4x_latent_pixel_detail_v2"
+        or config.get("postDecodeResponsibilityIdentityOrder") != expected_identities
+        or config.get("postDecodeResponsibilityInputIdentity")
+        != "decoded_rgb_3_plus_complete_typed_conditions_23"
+        or config.get("postDecodeResponsibilityInputChannels") != 26
+        or config.get("postDecodeResponsibilityBranchWidth") != 64
+        or config.get("postDecodeResponsibilityOutputChannels") != 3
+        or config.get("postDecodeResponsibilityMerge")
+        != "authoritative_mask_normalized_full_condition_responsibility_rgb_v1"
+    ):
+        raise ValueError("post-decode full-condition responsibility Stage 0 structure changed")
+    expected_gates = {
+        "configurationActiveNow": True, "gpuNow": True,
+        "optimizerNow": True, "backwardNow": True,
+        "weightModificationNow": True, "smokeNow": False,
+        "trainingNow": True, "formalInferenceNow": False,
+        "runtimeFrameNow": False, "worldEntryNow": False,
+    }
+    if config.get("activationGates", {}) != expected_gates:
+        raise ValueError("post-decode full-condition responsibility Stage 0 activation gates changed")
+    formal = training.get("stage4PostDecodeFullConditionResponsibilityFormalStageContract", {})
+    if formal != {
+        "status": "active_local_ai_internal_capability",
+        "stage": 0,
+        "seed": 20263722,
+        "epochCount": 40,
+        "previewEpochs": [1, 5, 10, 20, 30, 40],
+        "resolution": {"width": 256, "height": 192},
+        "datasetCapacity": 64,
+        "splitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4},
+        "initialization": "fixed_project_random_post_decode_full_condition_responsibility",
+        "parentDenoiserCheckpointAllowed": False,
+        "automaticMachineReview": True,
+        "automaticFailureClassification": True,
+        "automaticRetryAllowed": False,
+    } or "stage4PostDecodeFullConditionResponsibilitySmokeContract" in training:
+        raise ValueError("post-decode full-condition responsibility Stage 0 execution contract is invalid")
+    frozen = training.get("stage4PostDecodeFullConditionResponsibilityFrozenTrainingContract", {})
+    source_path = verify_config_bound_project_file(
+        root, frozen.get("sourceConfigPath"), frozen.get("sourceConfigSha256"),
+        "post-decode full-condition responsibility Stage 0 frozen training source",
+    )
+    source = read_json(source_path)
+    frozen_keys = (
+        "resolutionStages", "batchSize", "denoiserLearningRate",
+        "denoiserLossVersion", "denoiserLossWeights", "bestCheckpointMetric",
+        "bestCheckpointMetricWeights", "rolloutCheckpointMetricWeights",
+        "checkpointRolloutWeight", "checkpointRolloutCoverage",
+        "checkpointRolloutSeedsPerSample", "checkpointWorstTrajectoryWeight",
+        "checkpointSelectionSplit", "strictHeldOutInferenceSplit",
+    )
+    if any(training.get(key) != source.get("training", {}).get(key) for key in frozen_keys):
+        raise ValueError("post-decode full-condition responsibility Stage 0 changed the frozen training contract")
+    if training.get("seed") != 20263722 or training.get("batchSize") != 1:
+        raise ValueError("post-decode full-condition responsibility Stage 0 seed or batch size changed")
+    if int(training.get("denoiserEpochs", 0)) != 40:
+        raise ValueError("post-decode full-condition responsibility Stage 0 epoch count changed")
+    return {"status": "post_decode_full_condition_responsibility_stage0_contract_valid"}
+
+
+def validate_post_decode_object_rgb_stage0_contract(
+    config, package, project_root=None,
+):
+    root = Path(project_root or Path.cwd()).resolve()
+    training = config.get("training", {})
+    mode = resolve_stage_mode(config)
+    if (
+        mode.mode_id != "post_decode_object_rgb_stage0_full_training"
+        or mode.execution_kind != "full_training_stage0"
+        or mode.stage != 0
+        or mode.active_execution is not True
+        or training.get("trainingAuthorizationStatus")
+        != "local_ai_post_decode_object_rgb_stage0_full_training_active"
+        or config.get("denoiserArchitecture")
+        != "stage4_post_decode_authoritative_object_rgb_compositor_v1"
+    ):
+        raise ValueError("post-decode object RGB Stage 0 mode identity is invalid")
+    if "ownerTrainingAuthorization" in training:
+        raise ValueError("post-decode object RGB autonomous Stage 0 cannot carry Owner authorization")
+    if "stage4ControlledStructureArm" in config or "stage4ResponsibilityComponentRole" in config:
+        raise ValueError("post-decode object RGB Stage 0 cannot reuse an exited structure route")
+    if (
+        config.get("conditionChannels") != 23
+        or config.get("latentChannels") != 12
+        or config.get("denoiserBaseChannels") != 64
+        or config.get("latentDownsampleFactor") != 4
+        or config.get("autoencoderArchitecture") != "residual_4x_latent_pixel_detail_v2"
+        or config.get("postDecodeObjectRgbIdentityOrder")
+        != ["object_footprints", "object_tree", "object_rock", "object_vegetation"]
+        or config.get("postDecodeObjectRgbInputIdentity")
+        != "decoded_rgb_plus_same_class_mask"
+        or config.get("postDecodeObjectRgbMerge")
+        != "authoritative_mask_normalized_rgb_compositor_v1"
+    ):
+        raise ValueError("post-decode object RGB Stage 0 derived structure changed")
+    formal = training.get("stage4PostDecodeObjectRgbFormalStageContract", {})
+    if formal != {
+        "status": "active_local_ai_internal_capability",
+        "stage": 0,
+        "seed": 20263722,
+        "epochCount": 40,
+        "previewEpochs": [1, 5, 10, 20, 30, 40],
+        "resolution": {"width": 256, "height": 192},
+        "datasetCapacity": 64,
+        "splitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4},
+        "initialization": "fixed_project_random_post_decode_object_rgb",
+        "parentDenoiserCheckpointAllowed": False,
+        "automaticMachineReview": True,
+        "automaticFailureClassification": True,
+        "automaticRetryAllowed": False,
+    }:
+        raise ValueError("post-decode object RGB Stage 0 execution contract is invalid")
+    frozen = training.get("stage4PostDecodeObjectRgbFrozenTrainingContract", {})
+    source_path = verify_config_bound_project_file(
+        root, frozen.get("sourceConfigPath"), frozen.get("sourceConfigSha256"),
+        "post-decode object RGB Stage 0 frozen training source",
+    )
+    source = read_json(source_path)
+    frozen_keys = (
+        "resolutionStages", "batchSize", "denoiserLearningRate",
+        "denoiserLossVersion", "denoiserLossWeights", "bestCheckpointMetric",
+        "bestCheckpointMetricWeights", "rolloutCheckpointMetricWeights",
+        "checkpointRolloutWeight", "checkpointRolloutCoverage",
+        "checkpointRolloutSeedsPerSample", "checkpointWorstTrajectoryWeight",
+        "checkpointSelectionSplit", "strictHeldOutInferenceSplit",
+    )
+    if any(training.get(key) != source.get("training", {}).get(key) for key in frozen_keys):
+        raise ValueError("post-decode object RGB Stage 0 changed the frozen training contract")
+    if training.get("seed") != 20263722 or training.get("batchSize") != 1:
+        raise ValueError("post-decode object RGB Stage 0 seed or batch size changed")
+    if int(training.get("denoiserEpochs", 0)) != 40:
+        raise ValueError("post-decode object RGB Stage 0 epoch count changed")
+    return {"status": "post_decode_object_rgb_stage0_contract_valid"}
+
+
 def derive_stage4_per_class_final_visible_rgb_weights(config):
     """Derive typed final-RGB weights without selecting a free value."""
     training = config.get("training", {})
@@ -5123,7 +5835,7 @@ def validate_stage4_per_class_final_visible_rgb_obligation(config):
     }
     if set(contract) != expected_fields:
         raise ValueError("Stage 4 final visible RGB obligation has missing or unknown fields")
-    formal_stage_active = resolve_stage_mode(config).mode_id in {
+    formal_stage_active = stage4_loss_contract_mode_id(config) in {
         "fact_conditioned_semantic_mixture_stage0_full_training",
         "fact_conditioned_semantic_mixture_stage1_full_training",
         "fact_conditioned_semantic_mixture_stage2_full_training",
@@ -5224,7 +5936,7 @@ def validate_stage4_distribution_aware_visible_spatial_semantic_obligation(confi
     }
     if set(contract) != expected_fields:
         raise ValueError("Stage 4 distribution-aware obligation has missing or unknown fields")
-    formal_stage_active = resolve_stage_mode(config).mode_id in {
+    formal_stage_active = stage4_loss_contract_mode_id(config) in {
         "fact_conditioned_semantic_mixture_stage0_full_training",
         "fact_conditioned_semantic_mixture_stage1_full_training",
         "fact_conditioned_semantic_mixture_stage2_full_training",
@@ -5358,7 +6070,7 @@ def validate_stage4_epoch_worst_sample_class_replay(config):
         "oldModesWithoutContractPreserved": True,
     }:
         raise ValueError("Stage 4 epoch-worst replay compatibility changed")
-    mode = resolve_stage_mode(config).mode_id
+    mode = stage4_loss_contract_mode_id(config)
     active = mode in {
         "fact_conditioned_semantic_mixture_stage0_full_training",
         "fact_conditioned_semantic_mixture_stage1_full_training",
@@ -5517,7 +6229,7 @@ def validate_stage4_object_reference_multiscale_early_convergence_stabilization(
     if status == "cpu_support_verified_inactive":
         expected_active = set()
     elif status == "training_loss_active_owner_authorized":
-        mode = resolve_stage_mode(config).mode_id
+        mode = stage4_loss_contract_mode_id(config)
         if mode not in {
             "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -5590,7 +6302,7 @@ def validate_stage4_object_visible_structure_supervision(config):
     if "stage4VegetationLuminanceSpatialStructureSupervision" in training:
         raise ValueError("Stage 4 single-object luminance contract must be replaced, not duplicated")
     derived = derive_stage4_object_visible_structure_weights(config)
-    mode = resolve_stage_mode(config).mode_id
+    mode = stage4_loss_contract_mode_id(config)
     active = mode in {
         "fact_conditioned_semantic_mixture_stage4_smoke",
         "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -5700,7 +6412,7 @@ def validate_stage4_object_reference_multiscale_luminance_structure_supervision(
     ):
         raise ValueError("Failed single-scale luminance contracts must be replaced, not reused")
     derived = derive_stage4_object_visible_structure_weights(config)
-    mode = resolve_stage_mode(config).mode_id
+    mode = stage4_loss_contract_mode_id(config)
     active = mode in {
         "fact_conditioned_semantic_mixture_stage4_smoke",
         "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -5822,7 +6534,7 @@ def validate_stage4_vegetation_final_visible_semantic_repair(config):
     if set(contract) != expected_fields:
         raise ValueError("Stage 4 vegetation semantic repair has missing or unknown fields")
     derived = derive_stage4_vegetation_final_visible_semantic_repair_weight(config)
-    formal_stage_active = resolve_stage_mode(config).mode_id in {
+    formal_stage_active = stage4_loss_contract_mode_id(config) in {
         "fact_conditioned_semantic_mixture_stage0_full_training",
         "fact_conditioned_semantic_mixture_stage1_full_training",
         "fact_conditioned_semantic_mixture_stage2_full_training",
@@ -5920,7 +6632,7 @@ def validate_stage4_vegetation_luminance_spatial_structure_supervision(config):
     derived = derive_stage4_vegetation_final_visible_semantic_repair_weight(config)
     if set(contract) != expected_fields:
         raise ValueError("Stage 4 vegetation luminance supervision has missing or unknown fields")
-    formal_stage_active = resolve_stage_mode(config).mode_id in {
+    formal_stage_active = stage4_loss_contract_mode_id(config) in {
         "fact_conditioned_semantic_mixture_stage0_full_training",
         "fact_conditioned_semantic_mixture_stage1_full_training",
         "fact_conditioned_semantic_mixture_stage2_full_training",
@@ -11613,22 +12325,23 @@ def validate_stage4_full_rollout_final_visible_consistency(config):
         "oldModesPreserved": True,
     }:
         raise ValueError("Stage 4 full-rollout compatibility changed")
-    active = training.get("trainingAuthorizationStatus") in {
-        "owner_authorized_stage4_fact_conditioned_semantic_mixture_single_sample_gpu_smoke",
-        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage0_full_training",
-        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage1_full_training",
-        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage2_full_training",
+    loss_contract_mode = stage4_loss_contract_mode_id(config)
+    active = loss_contract_mode in {
+        "fact_conditioned_semantic_mixture_stage4_smoke",
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
     }
     expected_true = {
         "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
         "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
     }
-    if active and "single_sample_gpu_smoke" in training.get("trainingAuthorizationStatus", ""):
+    if active and loss_contract_mode == "fact_conditioned_semantic_mixture_stage4_smoke":
         expected_true.add("smokeNow")
-    if active and training.get("trainingAuthorizationStatus") in {
-        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage0_full_training",
-        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage1_full_training",
-        "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage2_full_training",
+    if active and loss_contract_mode in {
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
     }:
         expected_true.add("stage4FullTrainingNow")
     gate = contract.get("activationGate", {})
@@ -11743,7 +12456,7 @@ def validate_stage4_full_rollout_per_class_final_visible_luminance_structure_obl
     if status == "cpu_support_verified_inactive":
         active_fields = set()
     elif status == "training_loss_active_owner_authorized":
-        mode = resolve_stage_mode(config).mode_id
+        mode = stage4_loss_contract_mode_id(config)
         if mode not in {
             "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -11919,7 +12632,7 @@ def validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligati
     if status == "cpu_support_verified_inactive":
         active_fields = set()
     elif status == "training_loss_active_owner_authorized":
-        mode = resolve_stage_mode(config).mode_id
+        mode = stage4_loss_contract_mode_id(config)
         if mode not in {
             "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -12125,7 +12838,7 @@ def validate_stage4_per_class_worst_sample_final_visible_luminance_structure_obl
     if status == "cpu_support_verified_inactive":
         active_fields = set()
     elif status == "training_loss_active_owner_authorized":
-        mode = resolve_stage_mode(config).mode_id
+        mode = stage4_loss_contract_mode_id(config)
         active_modes = {
             "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -12359,7 +13072,7 @@ def validate_stage4_epoch_complete_per_class_worst_luminance_selection(config):
     if status == "cpu_support_verified_inactive":
         active_fields = set()
     elif status == "training_loss_active_owner_authorized":
-        mode = resolve_stage_mode(config).mode_id
+        mode = stage4_loss_contract_mode_id(config)
         if mode not in {
             "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -12515,7 +13228,7 @@ def validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_repl
     if status == "cpu_support_verified_inactive":
         active_fields = set()
     elif status == "training_loss_active_owner_authorized":
-        mode = resolve_stage_mode(config).mode_id
+        mode = stage4_loss_contract_mode_id(config)
         if mode not in {
             "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -12990,7 +13703,7 @@ def validate_stage4_per_class_final_visible_reference_feature_structure_obligati
     if status == "cpu_support_verified_inactive":
         active_fields = set()
     elif status == "training_loss_active_owner_authorized":
-        mode = resolve_stage_mode(config).mode_id
+        mode = stage4_loss_contract_mode_id(config)
         if mode not in {
             "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -13138,7 +13851,7 @@ def validate_stage4_epoch_worst_sample_class_reference_feature_structure_replay(
     if status == "cpu_support_verified_inactive":
         active_fields = set()
     elif status == "training_loss_active_owner_authorized":
-        mode = resolve_stage_mode(config).mode_id
+        mode = stage4_loss_contract_mode_id(config)
         if mode not in {
             "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -13391,7 +14104,7 @@ def validate_stage4_per_class_worst_sample_reference_feature_structure_obligatio
     if status == "cpu_support_verified_inactive":
         active_fields = set()
     elif status == "training_loss_active_owner_authorized":
-        mode = resolve_stage_mode(config).mode_id
+        mode = stage4_loss_contract_mode_id(config)
         if mode not in {
             "fact_conditioned_semantic_mixture_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage0_full_training",
@@ -13676,7 +14389,7 @@ def validate_stage4_best_checkpoint_and_terminal_qualification_identity_separati
         raise ValueError(
             "Stage 4 best-checkpoint and terminal-qualification identity contract changed"
         )
-    if resolve_stage_mode(config).mode_id != "fact_conditioned_semantic_mixture_stage4_smoke":
+    if stage4_loss_contract_mode_id(config) != "fact_conditioned_semantic_mixture_stage4_smoke":
         raise ValueError("Stage 4 terminal qualification identity is Smoke-only")
     worst_sample = validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation(
         config
@@ -13743,8 +14456,11 @@ def stage4_full_rollout_final_visible_consistency(
             latent = deterministic_velocity_step(
                 latent, velocity, timestep_value, previous, alpha_bars,
             )
-    predicted_rgb = model.autoencoder.decode(
-        denormalize_latent(latent, latent_normalization)
+    predicted_rgb = decode_final_visible_rgb(
+        model,
+        denormalize_latent(latent, latent_normalization),
+        conditions,
+        config,
     ).clamp(0.0, 1.0)
     terms = contract["finalVisibleTerms"]
     water_rgb = masked_condition_rgb_loss(
@@ -13939,13 +14655,19 @@ def stage4_cross_domain_rollout_supervision(
         if stability_enabled and step_index >= len(inference_steps) - stability_tail_steps:
             stability_tail_latents.append(rollout_latent)
     predicted_rgb_steps = [
-        model.autoencoder.decode(
-            denormalize_latent(value, latent_normalization)
+        decode_final_visible_rgb(
+            model,
+            denormalize_latent(value, latent_normalization),
+            conditions,
+            config,
         ).clamp(0.0, 1.0)
         for value in stability_tail_latents
     ] if stability_enabled else []
-    predicted_rgb = predicted_rgb_steps[-1] if predicted_rgb_steps else model.autoencoder.decode(
-        denormalize_latent(rollout_latent, latent_normalization)
+    predicted_rgb = predicted_rgb_steps[-1] if predicted_rgb_steps else decode_final_visible_rgb(
+        model,
+        denormalize_latent(rollout_latent, latent_normalization),
+        conditions,
+        config,
     ).clamp(0.0, 1.0)
     result = stage4_cross_domain_visual_consistency_losses(
         predicted_rgb,
@@ -14645,9 +15367,12 @@ def short_trajectory_supervision(model, noisy_latent, clean_latent, timesteps, a
             for index in range(current_latent.shape[0])
         ]
         step_predicted_clean = torch.cat(recovered, dim=0)
-        predicted_rgb_steps.append(
-            model.autoencoder.decode(denormalize_latent(step_predicted_clean, latent_normalization))
-        )
+        predicted_rgb_steps.append(decode_final_visible_rgb(
+            model,
+            denormalize_latent(step_predicted_clean, latent_normalization),
+            conditions,
+            config,
+        ))
         if step_index + 1 == steps:
             predicted_clean = step_predicted_clean
             break
@@ -14938,7 +15663,12 @@ def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, time
         if is_v6_or_later(config):
             if target_image is None or latent_normalization is None:
                 raise ValueError("V6 decoded RGB supervision requires target image and latent normalization")
-            predicted_rgb = model.autoencoder.decode(denormalize_latent(predicted_clean, latent_normalization))
+            predicted_rgb = decode_final_visible_rgb(
+                model,
+                denormalize_latent(predicted_clean, latent_normalization),
+                conditions,
+                config,
+            )
             if is_fact_conditioned_semantic_mixture_stage4(config):
                 typed_counterfactual_rgb = {}
                 for identity, gated_contribution in zip(
@@ -14953,8 +15683,11 @@ def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, time
                         alpha.sqrt() * noisy_latent
                         - (1.0 - alpha).sqrt() * owned_velocity
                     )
-                    typed_counterfactual_rgb[identity] = model.autoencoder.decode(
-                        denormalize_latent(owned_clean, latent_normalization)
+                    typed_counterfactual_rgb[identity] = decode_final_visible_rgb(
+                        model,
+                        denormalize_latent(owned_clean, latent_normalization),
+                        conditions,
+                        config,
                     )
                 return composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
                     predicted_velocity,
@@ -15457,8 +16190,19 @@ def composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
         or participation.shape[1] != len(identities)
         or base_velocity is None
         or base_velocity.shape != predicted_velocity.shape
-        or mixture.get("compositorKind")
-        != "typed_fact_conditioned_gated_additive_mixture_v1"
+        or mixture.get("compositorKind") not in {
+            "typed_fact_conditioned_gated_additive_mixture_v1",
+            "authoritative_semantic_carrier_compatibility_v1",
+        }
+        or (
+            mixture.get("compositorKind")
+            == "authoritative_semantic_carrier_compatibility_v1"
+            and (
+                mixture.get("authoritativeGateKind")
+                != "immutable_source_condition_mask_multiplication_v1"
+                or mixture.get("learnedParticipationGatePresent") is not False
+            )
+        )
         or mixture.get("typedIdentityCollapsedBeforeOutput") is not False
         or tuple(typed_counterfactual_rgb) != identities
     ):
@@ -16064,7 +16808,7 @@ def validate_condition_preserving_semantic_renderer_stage4_diagnostic_manifest_s
     config,
 ):
     smoke_active = (
-        resolve_stage_mode(config).mode_id
+        stage4_loss_contract_mode_id(config)
         == "condition_preserving_semantic_renderer_stage4_smoke"
     )
     contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
@@ -16141,15 +16885,17 @@ def validate_condition_preserving_semantic_renderer_stage4_diagnostic_manifest_s
 def validate_fact_conditioned_semantic_mixture_stage4_diagnostic_manifest_support_contract(
     config,
 ):
-    resolved_mode = resolve_stage_mode(config)
-    smoke_active = resolved_mode.mode_id in {
+    loss_contract_mode = stage4_loss_contract_mode_id(config)
+    smoke_active = loss_contract_mode in {
         "fact_conditioned_semantic_mixture_stage4_smoke",
         "stage4_global_visual_native_decode_component_smoke",
     }
-    formal_stage_active = resolved_mode.mode_id in {
+    formal_stage_active = loss_contract_mode in {
         "fact_conditioned_semantic_mixture_stage0_full_training",
         "fact_conditioned_semantic_mixture_stage1_full_training",
         "fact_conditioned_semantic_mixture_stage2_full_training",
+        "post_decode_object_rgb_stage0_full_training",
+        "post_decode_full_condition_responsibility_stage0_full_training",
     }
     execution_active = smoke_active or formal_stage_active
     contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
@@ -16493,7 +17239,12 @@ def evaluate_deterministic_rollout_rgb_quality(model, dataset, diffusion, latent
                 velocity = model.predict_velocity(latent, timestep_batch, conditions)
                 previous = int(steps[step_index + 1].item()) if step_index + 1 < len(steps) else -1
                 latent = deterministic_velocity_step(latent, velocity, int(timestep.item()), previous, diffusion["alphasCumulative"])
-            predicted_rgb = model.autoencoder.decode(denormalize_latent(latent, latent_normalization))
+            predicted_rgb = decode_final_visible_rgb(
+                model,
+                denormalize_latent(latent, latent_normalization),
+                conditions,
+                config,
+            )
             gradient, laplacian = multiscale_latent_hierarchy_losses(predicted_rgb, target_rgb, config)
             sparse = sparse_region_rgb_loss(predicted_rgb, target_rgb, conditions, config)
             totals["rolloutRgbMae"] += float(torch.nn.functional.l1_loss(predicted_rgb, target_rgb))
@@ -16618,7 +17369,12 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
                     velocity = model.predict_velocity(latent, timestep_batch, conditions)
                     previous = int(steps[step_index + 1].item()) if step_index + 1 < len(steps) else -1
                     latent = deterministic_velocity_step(latent, velocity, int(timestep.item()), previous, diffusion["alphasCumulative"])
-                predicted_rgb = model.autoencoder.decode(denormalize_latent(latent, latent_normalization)).clamp(0.0, 1.0)
+                predicted_rgb = decode_final_visible_rgb(
+                    model,
+                    denormalize_latent(latent, latent_normalization),
+                    conditions,
+                    config,
+                ).clamp(0.0, 1.0)
                 if per_class_luminance_active:
                     per_class_luminance = (
                         stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_losses(
@@ -17329,7 +18085,103 @@ def is_condition_preserving_semantic_renderer_stage4(config):
 
 
 def is_fact_conditioned_semantic_mixture_stage4(config):
-    return config.get("denoiserArchitecture") == "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+    return config.get("denoiserArchitecture") in {
+        "stage4_fact_conditioned_semantic_mixture_decoder_v1",
+        "stage4_authoritative_visual_semantic_carrier_decoder_v1",
+        "stage4_post_decode_authoritative_object_rgb_compositor_v1",
+        "stage4_post_decode_full_condition_route_object_responsibility_renderer_v1",
+    }
+
+
+def is_direct_condition_clean_latent_stage4(config):
+    return config.get("denoiserArchitecture") in {
+        "stage4_direct_condition_clean_latent_generator_v1",
+        "stage4_direct_condition_clean_latent_responsibility_residual_v1",
+        "stage4_native_condition_encoder_clean_latent_generator_v1",
+        "stage4_native_condition_encoder_masked_responsibility_residual_v1",
+        "stage4_native_condition_shared_weight_route_counterfactual_compositor_v1",
+    }
+
+
+def direct_clean_latent_loss_metrics(model, image, conditions, config):
+    """Apply only the already-approved non-diffusion supervision to the direct path."""
+    with torch.no_grad():
+        target_clean_latent = model.autoencoder.encode(image)
+    predicted_clean_latent = model.predict_clean_latent(conditions)
+    predicted_rgb = model.decode_clean_latent(predicted_clean_latent)
+    target_conditions = model.prepare_typed_conditions(
+        conditions,
+        predicted_clean_latent.shape[-2:],
+    )
+    # The authoritative condition tensor is already the direct model input. Its
+    # existing output-binding slots therefore preserve structural identity;
+    # adding a reconstruction head here would change the qualified architecture.
+    predicted_conditions = target_conditions
+    diffusion_placeholder = torch.zeros_like(predicted_clean_latent)
+    metrics = composite_denoiser_losses_v6(
+        diffusion_placeholder,
+        diffusion_placeholder,
+        predicted_clean_latent,
+        target_clean_latent,
+        predicted_conditions,
+        target_conditions,
+        predicted_rgb,
+        image,
+        conditions,
+        config,
+    )
+    metrics["directCleanLatentConditionBindingIdentity"] = (
+        "authoritative_typed_condition_structural_identity"
+    )
+    metrics["directCleanLatentNoDiffusionPath"] = True
+    return metrics
+
+
+def is_post_decode_authoritative_object_rgb_compositor_stage4(config):
+    return (
+        config.get("denoiserArchitecture")
+        == "stage4_post_decode_authoritative_object_rgb_compositor_v1"
+    )
+
+
+def is_post_decode_full_condition_responsibility_stage4(config):
+    return (
+        config.get("denoiserArchitecture")
+        == "stage4_post_decode_full_condition_route_object_responsibility_renderer_v1"
+    )
+
+
+def decode_final_visible_rgb(model, denormalized_latent, conditions, config):
+    """Use the capability-version final RGB path without changing legacy decoders."""
+    if is_post_decode_authoritative_object_rgb_compositor_stage4(config):
+        return model.decode_stage4_post_decode_object_rgb(
+            denormalized_latent,
+            conditions,
+        )
+    if is_post_decode_full_condition_responsibility_stage4(config):
+        return model.decode_stage4_post_decode_full_condition_responsibility_rgb(
+            denormalized_latent,
+            conditions,
+        )
+    return model.autoencoder.decode(denormalized_latent)
+
+
+def stage4_loss_contract_mode_id(config):
+    """Map the new carrier Smoke onto the frozen semantic-mixture Loss activation lane only."""
+    mode = resolve_stage_mode(config).mode_id
+    if mode == "authoritative_semantic_carrier_stage4_smoke":
+        return "fact_conditioned_semantic_mixture_stage4_smoke"
+    if mode == "authoritative_semantic_carrier_stage0_full_training":
+        return "fact_conditioned_semantic_mixture_stage0_full_training"
+    if mode == "post_decode_object_rgb_stage4_smoke":
+        return "fact_conditioned_semantic_mixture_stage4_smoke"
+    if mode == "post_decode_object_rgb_stage0_full_training":
+        return "fact_conditioned_semantic_mixture_stage0_full_training"
+    if mode == "post_decode_full_condition_responsibility_stage4_smoke":
+        return "fact_conditioned_semantic_mixture_stage4_smoke"
+    if mode == "post_decode_full_condition_responsibility_stage0_full_training":
+        return "fact_conditioned_semantic_mixture_stage0_full_training"
+    return mode
 
 
 def is_registered_stage_control_config(config):
@@ -17348,7 +18200,10 @@ def uses_stage4_unified_preview_sampling_contract(config):
     return (
         execution_grant.preview_constraints.get("enabled") is True
         and contract.get("enabled") is True
-        and contract.get("status") == "active_owner_authorized_single_execution"
+        and contract.get("status") in {
+            "active_owner_authorized_single_execution",
+            "active_local_ai_internal_capability",
+        }
         and contract.get("samplingFunction") == "evaluate_deterministic_rollout_rgb_quality_v7"
         and contract.get("checkpointPreviewIdentityGate") == "byte_exact_best_epoch_reproduction"
     )
@@ -17362,6 +18217,7 @@ def uses_registered_v7_capacity_dataset(config):
         or is_structure_fact_first_stage4(config)
         or is_condition_preserving_semantic_renderer_stage4(config)
         or is_fact_conditioned_semantic_mixture_stage4(config)
+        or is_direct_condition_clean_latent_stage4(config)
     )
 
 
@@ -17975,6 +18831,41 @@ def stage4_apply_conflict_aware_existing_gradient_replacement(
         "nonSharedParametersTouched": False,
         "additionalBackwardCalls": 0,
         "additionalOptimizerSteps": 0,
+    }
+
+
+def validate_stage4_formal_training_contract_bundle(config):
+    """Validate every Stage 4 contract that the formal loss path can consume."""
+    training = config.get("training", {})
+    validators = (
+        ("stage4PerClassFinalVisibleRgbObligation", validate_stage4_per_class_final_visible_rgb_obligation),
+        ("stage4DistributionAwareVisibleSpatialSemanticObligation", validate_stage4_distribution_aware_visible_spatial_semantic_obligation),
+        ("stage4VegetationFinalVisibleSemanticRepair", validate_stage4_vegetation_final_visible_semantic_repair),
+        ("stage4VegetationLuminanceSpatialStructureSupervision", validate_stage4_vegetation_luminance_spatial_structure_supervision),
+        ("stage4FullRolloutFinalVisibleConsistency", validate_stage4_full_rollout_final_visible_consistency),
+        ("stage4EpochWorstSampleClassReplay", validate_stage4_epoch_worst_sample_class_replay),
+        ("stage4ObjectVisibleStructureSupervision", validate_stage4_object_visible_structure_supervision),
+        ("stage4ObjectReferenceMultiscaleLuminanceStructureSupervision", validate_stage4_object_reference_multiscale_luminance_structure_supervision),
+        ("stage4ObjectReferenceMultiscaleEarlyConvergenceStabilization", validate_stage4_object_reference_multiscale_early_convergence_stabilization),
+        ("stage4FullRolloutPerClassFinalVisibleLuminanceStructureObligation", validate_stage4_full_rollout_per_class_final_visible_luminance_structure_obligation),
+        ("stage4FullRolloutWorstSampleClassReferenceLuminanceObligation", validate_stage4_full_rollout_worst_sample_class_reference_luminance_obligation),
+        ("stage4PerClassFinalVisibleReferenceFeatureStructureObligation", validate_stage4_per_class_final_visible_reference_feature_structure_obligation),
+        ("stage4EpochWorstSampleClassReferenceFeatureStructureReplay", validate_stage4_epoch_worst_sample_class_reference_feature_structure_replay),
+        ("stage4PerClassWorstSampleReferenceFeatureStructureObligation", validate_stage4_per_class_worst_sample_reference_feature_structure_obligation),
+        ("stage4PerClassWorstSampleFinalVisibleLuminanceStructureObligation", validate_stage4_per_class_worst_sample_final_visible_luminance_structure_obligation),
+        ("stage4EpochCompletePerClassWorstSampleFinalVisibleLuminanceSelectionAndCheckpointIdentity", validate_stage4_epoch_complete_per_class_worst_luminance_selection),
+        ("stage4EpochCompletePerClassWorstSampleReferenceFeatureStructureSelectionAndSharedReplay", validate_stage4_epoch_complete_per_class_worst_reference_feature_shared_replay),
+        ("stage4ConflictAwareExistingGradientAggregation", validate_stage4_conflict_aware_existing_gradient_aggregation),
+    )
+    validated = []
+    for contract_name, validator in validators:
+        if contract_name in training:
+            validator(config)
+            validated.append(contract_name)
+    return {
+        "status": "stage4_formal_training_contract_bundle_valid",
+        "validatedContracts": validated,
+        "validatedContractCount": len(validated),
     }
 
 

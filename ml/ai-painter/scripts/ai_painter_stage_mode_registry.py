@@ -76,6 +76,66 @@ STAGE4_GLOBAL_VISUAL_NATIVE_DECODE_COMPONENT_SMOKE_STATUS = (
 FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS = (
     "owner_authorized_stage4_fact_conditioned_semantic_mixture_single_sample_gpu_smoke"
 )
+AUTHORITATIVE_SEMANTIC_CARRIER_STAGE4_INACTIVE_STATUS = (
+    "stage4_authoritative_semantic_carrier_cpu_supported_inactive"
+)
+AUTHORITATIVE_SEMANTIC_CARRIER_STAGE4_SMOKE_STATUS = (
+    "local_ai_authoritative_semantic_carrier_controlled_smoke_active"
+)
+AUTHORITATIVE_SEMANTIC_CARRIER_STAGE0_FULL_TRAINING_STATUS = (
+    "local_ai_authoritative_semantic_carrier_stage0_full_training_active"
+)
+POST_DECODE_OBJECT_RGB_STAGE4_SMOKE_STATUS = (
+    "local_ai_post_decode_object_rgb_controlled_smoke_active"
+)
+POST_DECODE_OBJECT_RGB_STAGE0_FULL_TRAINING_STATUS = (
+    "local_ai_post_decode_object_rgb_stage0_full_training_active"
+)
+POST_DECODE_FULL_CONDITION_RESPONSIBILITY_STAGE4_INACTIVE_STATUS = (
+    "stage4_post_decode_full_condition_route_object_responsibility_renderer_cpu_supported_inactive"
+)
+POST_DECODE_FULL_CONDITION_RESPONSIBILITY_STAGE4_SMOKE_STATUS = (
+    "local_ai_post_decode_full_condition_responsibility_controlled_smoke_active"
+)
+POST_DECODE_FULL_CONDITION_RESPONSIBILITY_STAGE0_FULL_TRAINING_STATUS = (
+    "local_ai_post_decode_full_condition_responsibility_stage0_full_training_active"
+)
+DIRECT_CLEAN_LATENT_STAGE4_INACTIVE_STATUS = (
+    "stage4_direct_condition_clean_latent_generator_cpu_supported_inactive"
+)
+DIRECT_CLEAN_LATENT_STAGE4_SMOKE_STATUS = (
+    "local_ai_direct_condition_clean_latent_controlled_smoke_active"
+)
+DIRECT_CLEAN_LATENT_STAGE0_FULL_TRAINING_STATUS = (
+    "local_ai_direct_condition_clean_latent_stage0_full_training_active"
+)
+DIRECT_RESPONSIBILITY_RESIDUAL_STAGE4_INACTIVE_STATUS = (
+    "stage4_direct_clean_latent_responsibility_residual_cpu_supported_inactive"
+)
+DIRECT_RESPONSIBILITY_RESIDUAL_STAGE4_SMOKE_STATUS = (
+    "local_ai_direct_clean_latent_responsibility_residual_controlled_smoke_active"
+)
+DIRECT_RESPONSIBILITY_RESIDUAL_STAGE0_FULL_TRAINING_STATUS = (
+    "local_ai_direct_clean_latent_responsibility_residual_stage0_full_training_active"
+)
+NATIVE_CONDITION_ENCODER_STAGE4_INACTIVE_STATUS = (
+    "stage4_native_condition_encoder_clean_latent_cpu_supported_inactive"
+)
+NATIVE_CONDITION_ENCODER_STAGE4_SMOKE_STATUS = (
+    "local_ai_native_condition_encoder_clean_latent_controlled_smoke_active"
+)
+NATIVE_RESPONSIBILITY_RESIDUAL_STAGE4_INACTIVE_STATUS = (
+    "stage4_native_condition_encoder_responsibility_residual_cpu_supported_inactive"
+)
+NATIVE_RESPONSIBILITY_RESIDUAL_STAGE4_SMOKE_STATUS = (
+    "local_ai_native_condition_encoder_responsibility_residual_controlled_smoke_active"
+)
+ROUTE_COUNTERFACTUAL_COMPOSITOR_STAGE4_INACTIVE_STATUS = (
+    "stage4_native_condition_shared_weight_route_counterfactual_compositor_cpu_supported_inactive"
+)
+ROUTE_COUNTERFACTUAL_COMPOSITOR_STAGE4_SMOKE_STATUS = (
+    "local_ai_native_route_counterfactual_compositor_controlled_smoke_active"
+)
 STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID = (
     "stage4_per_class_final_visible_reference_feature_structure_obligation_v1"
 )
@@ -179,6 +239,24 @@ _V9 = "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment"
 _STRUCTURE_FACT_FIRST = "stage4_structure_fact_first_dual_stage_generator_v1"
 _CONDITION_PRESERVING_SEMANTIC_RENDERER = "stage4_condition_preserving_semantic_renderer_v1"
 _FACT_CONDITIONED_SEMANTIC_MIXTURE = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+_AUTHORITATIVE_SEMANTIC_CARRIER = "stage4_authoritative_visual_semantic_carrier_decoder_v1"
+_POST_DECODE_OBJECT_RGB = "stage4_post_decode_authoritative_object_rgb_compositor_v1"
+_POST_DECODE_FULL_CONDITION_RESPONSIBILITY = (
+    "stage4_post_decode_full_condition_route_object_responsibility_renderer_v1"
+)
+_DIRECT_CLEAN_LATENT = "stage4_direct_condition_clean_latent_generator_v1"
+_DIRECT_RESPONSIBILITY_RESIDUAL = (
+    "stage4_direct_condition_clean_latent_responsibility_residual_v1"
+)
+_NATIVE_CONDITION_ENCODER = (
+    "stage4_native_condition_encoder_clean_latent_generator_v1"
+)
+_NATIVE_RESPONSIBILITY_RESIDUAL = (
+    "stage4_native_condition_encoder_masked_responsibility_residual_v1"
+)
+_ROUTE_COUNTERFACTUAL_COMPOSITOR = (
+    "stage4_native_condition_shared_weight_route_counterfactual_compositor_v1"
+)
 
 
 FORMAL_MODE_REGISTRY = ModeRegistry(
@@ -354,6 +432,206 @@ FORMAL_MODE_REGISTRY = ModeRegistry(
             "single_sample_smoke",
             "fact_conditioned_semantic_mixture_stage4_smoke_adapter",
             "validation",
+            True,
+        ),
+        ModeSpec(
+            "authoritative_semantic_carrier_stage4_inactive",
+            AUTHORITATIVE_SEMANTIC_CARRIER_STAGE4_INACTIVE_STATUS,
+            _AUTHORITATIVE_SEMANTIC_CARRIER,
+            4,
+            "cpu_inactive",
+            "authoritative_semantic_carrier_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "authoritative_semantic_carrier_stage4_smoke",
+            AUTHORITATIVE_SEMANTIC_CARRIER_STAGE4_SMOKE_STATUS,
+            _AUTHORITATIVE_SEMANTIC_CARRIER,
+            4,
+            "single_sample_smoke",
+            "authoritative_semantic_carrier_stage4_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "authoritative_semantic_carrier_stage0_full_training",
+            AUTHORITATIVE_SEMANTIC_CARRIER_STAGE0_FULL_TRAINING_STATUS,
+            _AUTHORITATIVE_SEMANTIC_CARRIER,
+            0,
+            "full_training_stage0",
+            "authoritative_semantic_carrier_full_training_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "post_decode_full_condition_responsibility_stage4_inactive",
+            POST_DECODE_FULL_CONDITION_RESPONSIBILITY_STAGE4_INACTIVE_STATUS,
+            _POST_DECODE_FULL_CONDITION_RESPONSIBILITY,
+            4,
+            "cpu_inactive",
+            "post_decode_full_condition_responsibility_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "direct_clean_latent_stage4_inactive",
+            DIRECT_CLEAN_LATENT_STAGE4_INACTIVE_STATUS,
+            _DIRECT_CLEAN_LATENT,
+            4,
+            "cpu_inactive",
+            "direct_clean_latent_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "direct_clean_latent_stage4_smoke",
+            DIRECT_CLEAN_LATENT_STAGE4_SMOKE_STATUS,
+            _DIRECT_CLEAN_LATENT,
+            4,
+            "single_sample_smoke",
+            "direct_clean_latent_stage4_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "direct_clean_latent_stage0_full_training",
+            DIRECT_CLEAN_LATENT_STAGE0_FULL_TRAINING_STATUS,
+            _DIRECT_CLEAN_LATENT,
+            0,
+            "full_training_stage0",
+            "direct_clean_latent_full_training_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "direct_responsibility_residual_stage4_inactive",
+            DIRECT_RESPONSIBILITY_RESIDUAL_STAGE4_INACTIVE_STATUS,
+            _DIRECT_RESPONSIBILITY_RESIDUAL,
+            4,
+            "cpu_inactive",
+            "direct_responsibility_residual_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "direct_responsibility_residual_stage4_smoke",
+            DIRECT_RESPONSIBILITY_RESIDUAL_STAGE4_SMOKE_STATUS,
+            _DIRECT_RESPONSIBILITY_RESIDUAL,
+            4,
+            "single_sample_smoke",
+            "direct_responsibility_residual_stage4_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "direct_responsibility_residual_stage0_full_training",
+            DIRECT_RESPONSIBILITY_RESIDUAL_STAGE0_FULL_TRAINING_STATUS,
+            _DIRECT_RESPONSIBILITY_RESIDUAL,
+            0,
+            "full_training_stage0",
+            "direct_responsibility_residual_full_training_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "native_condition_encoder_stage4_inactive",
+            NATIVE_CONDITION_ENCODER_STAGE4_INACTIVE_STATUS,
+            _NATIVE_CONDITION_ENCODER,
+            4,
+            "cpu_inactive",
+            "native_condition_encoder_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "native_condition_encoder_stage4_smoke",
+            NATIVE_CONDITION_ENCODER_STAGE4_SMOKE_STATUS,
+            _NATIVE_CONDITION_ENCODER,
+            4,
+            "single_sample_smoke",
+            "native_condition_encoder_stage4_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "native_responsibility_residual_stage4_inactive",
+            NATIVE_RESPONSIBILITY_RESIDUAL_STAGE4_INACTIVE_STATUS,
+            _NATIVE_RESPONSIBILITY_RESIDUAL,
+            4,
+            "cpu_inactive",
+            "native_responsibility_residual_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "native_responsibility_residual_stage4_smoke",
+            NATIVE_RESPONSIBILITY_RESIDUAL_STAGE4_SMOKE_STATUS,
+            _NATIVE_RESPONSIBILITY_RESIDUAL,
+            4,
+            "single_sample_smoke",
+            "native_responsibility_residual_stage4_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "route_counterfactual_compositor_stage4_inactive",
+            ROUTE_COUNTERFACTUAL_COMPOSITOR_STAGE4_INACTIVE_STATUS,
+            _ROUTE_COUNTERFACTUAL_COMPOSITOR,
+            4,
+            "cpu_inactive",
+            "route_counterfactual_compositor_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "route_counterfactual_compositor_stage4_smoke",
+            ROUTE_COUNTERFACTUAL_COMPOSITOR_STAGE4_SMOKE_STATUS,
+            _ROUTE_COUNTERFACTUAL_COMPOSITOR,
+            4,
+            "single_sample_smoke",
+            "route_counterfactual_compositor_stage4_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "post_decode_full_condition_responsibility_stage4_smoke",
+            POST_DECODE_FULL_CONDITION_RESPONSIBILITY_STAGE4_SMOKE_STATUS,
+            _POST_DECODE_FULL_CONDITION_RESPONSIBILITY,
+            4,
+            "single_sample_smoke",
+            "post_decode_full_condition_responsibility_stage4_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "post_decode_full_condition_responsibility_stage0_full_training",
+            POST_DECODE_FULL_CONDITION_RESPONSIBILITY_STAGE0_FULL_TRAINING_STATUS,
+            _POST_DECODE_FULL_CONDITION_RESPONSIBILITY,
+            0,
+            "full_training_stage0",
+            "post_decode_full_condition_responsibility_full_training_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "post_decode_object_rgb_stage4_smoke",
+            POST_DECODE_OBJECT_RGB_STAGE4_SMOKE_STATUS,
+            _POST_DECODE_OBJECT_RGB,
+            4,
+            "single_sample_smoke",
+            "post_decode_object_rgb_stage4_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "post_decode_object_rgb_stage0_full_training",
+            POST_DECODE_OBJECT_RGB_STAGE0_FULL_TRAINING_STATUS,
+            _POST_DECODE_OBJECT_RGB,
+            0,
+            "full_training_stage0",
+            "post_decode_object_rgb_full_training_adapter",
+            None,
             True,
         ),
         ModeSpec(

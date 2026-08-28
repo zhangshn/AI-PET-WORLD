@@ -2,7 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { selectAuthoritativeTrainingEvidence } from "../src/server/ai-painter-training-status-projection.mjs";
-import { projectR5Stage4TaskCapsule } from "../src/server/ai-painter-task-capsule-projection.mjs";
+import {
+  projectAutonomousStage4TaskCapsule,
+  projectPostDecodeObjectRgbSmokeTaskCapsule,
+  projectR5Stage4TaskCapsule,
+} from "../src/server/ai-painter-task-capsule-projection.mjs";
+import { deriveSelectedRunValidationSummary } from "../src/app/ai-painter-progress/_lib/selected-run-validation-summary.mjs";
 
 const root = process.cwd();
 const files = {
@@ -34,6 +39,8 @@ const files = {
     "scripts/run-ai-assisted-conditional-inference-validation.mjs",
   trainingRunner:
     "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+  formalStageRunner:
+    "scripts/run-ai-painter-stage4-authoritative-semantic-carrier-stage0.mjs",
   r2SmokeRunner:
     "scripts/run-ai-assisted-v7-bounded-repair-r2-overfit-smoke.mjs",
   r2SmokeReconciliation:
@@ -52,42 +59,80 @@ const pointer = JSON.parse(source.pointer);
 const contract = JSON.parse(source.contract);
 const parameterDictionary = JSON.parse(source.parameterDictionary);
 const migration = JSON.parse(source.migration);
-const sha256File = (relativePath) => createHash("sha256")
-  .update(fs.readFileSync(path.join(root, relativePath)))
-  .digest("hex");
+const sha256File = (relativePath) =>
+  createHash("sha256")
+    .update(fs.readFileSync(path.join(root, relativePath)))
+    .digest("hex");
 const r5Stage4FinalizationRoot = path.join(
   root,
   ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations",
 );
-const r5Stage4TerminalCandidates = fs.readdirSync(r5Stage4FinalizationRoot, {
-  withFileTypes: true,
-}).filter((entry) => entry.isDirectory()).map((entry) => {
-  const terminalPath = `.runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/${entry.name}/phase-terminal.json`;
-  if (!fs.existsSync(path.join(root, terminalPath))) return null;
-  return {
-    path: terminalPath,
-    value: JSON.parse(fs.readFileSync(path.join(root, terminalPath), "utf8")),
-  };
-}).filter(Boolean).sort((left, right) =>
-  Date.parse(right.value.recordedAtUtc ?? "") - Date.parse(left.value.recordedAtUtc ?? ""));
+const r5Stage4TerminalCandidates = fs
+  .readdirSync(r5Stage4FinalizationRoot, {
+    withFileTypes: true,
+  })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => {
+    const terminalPath = `.runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/${entry.name}/phase-terminal.json`;
+    if (!fs.existsSync(path.join(root, terminalPath))) return null;
+    return {
+      path: terminalPath,
+      value: JSON.parse(fs.readFileSync(path.join(root, terminalPath), "utf8")),
+    };
+  })
+  .filter(Boolean)
+  .sort(
+    (left, right) =>
+      Date.parse(right.value.recordedAtUtc ?? "") -
+      Date.parse(left.value.recordedAtUtc ?? ""),
+  );
 const r5Stage4TerminalRecord = r5Stage4TerminalCandidates[0];
 const r5Stage4Terminal = r5Stage4TerminalRecord.value;
 const r5Stage4Finalization = JSON.parse(
-  fs.readFileSync(path.join(root, r5Stage4Terminal.finalizationReportPath), "utf8"),
+  fs.readFileSync(
+    path.join(root, r5Stage4Terminal.finalizationReportPath),
+    "utf8",
+  ),
 );
 const r5Stage4Review = JSON.parse(
-  fs.readFileSync(path.join(root, r5Stage4Finalization.review.reviewPath), "utf8"),
+  fs.readFileSync(
+    path.join(root, r5Stage4Finalization.review.reviewPath),
+    "utf8",
+  ),
 );
 const r5Stage4Authorization = JSON.parse(
-  fs.readFileSync(path.join(root, r5Stage4Finalization.authorizationPath), "utf8"),
+  fs.readFileSync(
+    path.join(root, r5Stage4Finalization.authorizationPath),
+    "utf8",
+  ),
 );
 const r5TaskCapsuleEvidence = [
   ["stage4_terminal", r5Stage4TerminalRecord.path, null],
-  ["stage4_finalization", r5Stage4Terminal.finalizationReportPath, r5Stage4Terminal.finalizationReportSha256],
-  ["machine_review", r5Stage4Finalization.review.reviewPath, r5Stage4Finalization.review.reviewSha256],
-  ["owner_authorization", r5Stage4Finalization.authorizationPath, r5Stage4Finalization.authorizationSha256],
-  ["owner_implementation_consumption", r5Stage4Finalization.implementationConsumptionPath, r5Stage4Finalization.implementationConsumptionSha256],
-  ["owner_gpu_execution_consumption", r5Stage4Finalization.executionConsumptionPath, r5Stage4Finalization.executionConsumptionSha256],
+  [
+    "stage4_finalization",
+    r5Stage4Terminal.finalizationReportPath,
+    r5Stage4Terminal.finalizationReportSha256,
+  ],
+  [
+    "machine_review",
+    r5Stage4Finalization.review.reviewPath,
+    r5Stage4Finalization.review.reviewSha256,
+  ],
+  [
+    "owner_authorization",
+    r5Stage4Finalization.authorizationPath,
+    r5Stage4Finalization.authorizationSha256,
+  ],
+  [
+    "owner_implementation_consumption",
+    r5Stage4Finalization.implementationConsumptionPath,
+    r5Stage4Finalization.implementationConsumptionSha256,
+  ],
+  [
+    "owner_gpu_execution_consumption",
+    r5Stage4Finalization.executionConsumptionPath,
+    r5Stage4Finalization.executionConsumptionSha256,
+  ],
   ["unique_module_plan", files.plan, null],
   ["migration_registry", files.migration, null],
 ].map(([kind, evidencePath, expectedSha256]) => ({
@@ -105,30 +150,142 @@ const r5TaskCapsule = projectR5Stage4TaskCapsule({
   evidence: r5TaskCapsuleEvidence,
   migrationRegistryStatus: migration.status,
   planEvidenceConfirmed:
-    source.plan.includes("固定总进度为3/5（60%）")
-    && source.plan.includes("新的分析、候选或执行均需独立明确授权"),
+    source.plan.includes("固定总进度为3/5（60%）") &&
+    source.plan.includes("新的分析、候选或执行均需独立明确授权"),
 });
 const r5TaskCapsulePreviewEvidenceMatches =
-  (
-    r5Stage4Terminal.status === "stage4_continuous_closure_candidate_route_failed_closed"
-    && r5TaskCapsule.candidateTerminal.previewPassCount === 0
-    && r5TaskCapsule.candidateTerminal.previewCount === 0
-  )
-  || (
-    r5Stage4Terminal.status === "stage4_bounded_repair_single_sample_gpu_smoke_failed_stopped"
-    && r5TaskCapsule.candidateTerminal.previewPassCount === 1
-    && r5TaskCapsule.candidateTerminal.previewCount === 5
-  );
+  (r5Stage4Terminal.status ===
+    "stage4_continuous_closure_candidate_route_failed_closed" &&
+    r5TaskCapsule.candidateTerminal.previewPassCount === 0 &&
+    r5TaskCapsule.candidateTerminal.previewCount === 0) ||
+  (r5Stage4Terminal.status ===
+    "stage4_bounded_repair_single_sample_gpu_smoke_failed_stopped" &&
+    r5TaskCapsule.candidateTerminal.previewPassCount === 1 &&
+    r5TaskCapsule.candidateTerminal.previewCount === 5);
 const mismatchedCapsule = projectR5Stage4TaskCapsule({
   terminal: r5Stage4Terminal,
   finalization: r5Stage4Finalization,
   review: r5Stage4Review,
   authorization: r5Stage4Authorization,
-  evidence: r5TaskCapsuleEvidence.map((item) => item.kind === "machine_review"
-    ? { ...item, expectedSha256: "0".repeat(64) }
-    : item),
+  evidence: r5TaskCapsuleEvidence.map((item) =>
+    item.kind === "machine_review"
+      ? { ...item, expectedSha256: "0".repeat(64) }
+      : item,
+  ),
   migrationRegistryStatus: migration.status,
   planEvidenceConfirmed: true,
+});
+const autonomousEvidence = Array.from({ length: 9 }, (_, index) => ({
+  kind: `autonomous-${index}`,
+  labelZh: `自治证据${index}`,
+  path: `evidence/${index}.json`,
+  sha256: String(index).padStart(64, "0"),
+  expectedSha256: String(index).padStart(64, "0"),
+}));
+const autonomousTaskCapsule = projectAutonomousStage4TaskCapsule({
+  pointer: { runId: "stage4-post-carrier-current" },
+  terminal: {
+    executionState: "completed",
+    status: "failed_closed_candidate_space_exhausted",
+    selectedOutcome: "no_unique_bounded_candidate_remaining",
+    fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 },
+    recordedAtUtc: "2026-08-24T20:40:01.291Z",
+  },
+  savedCapsule: {
+    runId: "stage4-post-carrier-current",
+    status: "failed_closed_candidate_space_exhausted",
+    ownerAuthorizationRequired: false,
+    ownerResponseRequired: false,
+  },
+  evidence: autonomousEvidence,
+  previewCount: 6,
+  previewPassCount: 0,
+});
+const postDecodeEvidence = Array.from({ length: 7 }, (_, index) => ({
+  kind: `post-decode-${index}`,
+  labelZh: `解码后对象RGB证据${index}`,
+  path: `evidence/post-decode-${index}.json`,
+  sha256: String(index + 1).padStart(64, "0"),
+  expectedSha256: String(index + 1).padStart(64, "0"),
+}));
+const postDecodeQualifiedCapsule = projectPostDecodeObjectRgbSmokeTaskCapsule({
+  terminal: {
+    executionState: "completed",
+    status: "post_decode_object_rgb_controlled_smoke_qualified",
+    capabilityVersion: "stage4-post-decode-object-rgb-current",
+    attemptId: "stage4-post-decode-object-rgb-current-smoke",
+    fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 },
+    recordedAtUtc: "2026-08-25T04:47:57.581Z",
+  },
+  finalization: {
+    status: "post_decode_object_rgb_controlled_smoke_qualified",
+    capabilityVersion: "stage4-post-decode-object-rgb-current",
+    checkpoint: { path: "smoke/non-promotable.pt", promotable: false },
+  },
+  review: {
+    status: "machine_reviews_failed",
+    previewCount: 5,
+    previewPassCount: 2,
+    previewFailCount: 3,
+  },
+  qualification: {
+    status: "qualified",
+    qualified: true,
+    terminalRegression: false,
+  },
+  lifecycle: {
+    capabilityVersion: "stage4-post-decode-object-rgb-current",
+    state: "controlled_smoke_completed",
+  },
+  evidence: postDecodeEvidence,
+  planEvidenceConfirmed: true,
+});
+const postDecodeTamperedCapsule = projectPostDecodeObjectRgbSmokeTaskCapsule({
+  terminal: {
+    executionState: "completed",
+    status: "post_decode_object_rgb_controlled_smoke_qualified",
+    capabilityVersion: "stage4-post-decode-object-rgb-current",
+    attemptId: "stage4-post-decode-object-rgb-current-smoke",
+    fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 },
+  },
+  finalization: {
+    status: "post_decode_object_rgb_controlled_smoke_qualified",
+    capabilityVersion: "stage4-post-decode-object-rgb-current",
+    checkpoint: { path: "smoke/non-promotable.pt", promotable: false },
+  },
+  review: {
+    status: "machine_reviews_failed",
+    previewCount: 5,
+    previewPassCount: 2,
+    previewFailCount: 3,
+  },
+  qualification: {
+    status: "qualified",
+    qualified: true,
+    terminalRegression: false,
+  },
+  lifecycle: {
+    capabilityVersion: "stage4-post-decode-object-rgb-current",
+    state: "controlled_smoke_completed",
+  },
+  evidence: postDecodeEvidence.map((item, index) =>
+    index === 2 ? { ...item, expectedSha256: "f".repeat(64) } : item,
+  ),
+  planEvidenceConfirmed: true,
+});
+const selectedRunValidationSummary = deriveSelectedRunValidationSummary({
+  stage: {
+    runId: "latest-formal-stage0",
+    previews: Array.from({ length: 6 }, () => ({
+      machineReviewPassed: false,
+    })),
+  },
+  candidateTerminal: {
+    runId: "older-controlled-smoke",
+    previewCount: 5,
+    previewPassCount: 2,
+    previewFailCount: 3,
+  },
 });
 const reconciliationPointer = JSON.parse(
   fs.readFileSync(
@@ -343,36 +500,41 @@ const checks = [
   ],
   [
     "r5_stage4_task_capsule_positive_projection",
-    r5TaskCapsule.schemaVersion === "ai-painter-local-task-capsule-v1"
-      && r5TaskCapsule.integrity.status === "verified"
-      && r5TaskCapsule.fixedOverallProgress.percent === 60
-      && r5TaskCapsule.currentStage.number === 4
-      && r5TaskCapsule.candidateTerminal.status === "failed_closed"
-      && r5TaskCapsulePreviewEvidenceMatches
-      && r5TaskCapsule.taskIdentity.seed === 20263722
-      && r5TaskCapsule.taskIdentity.requiredBoundarySides.join(",") === "west",
+    r5TaskCapsule.schemaVersion === "ai-painter-local-task-capsule-v1" &&
+      r5TaskCapsule.integrity.status === "verified" &&
+      r5TaskCapsule.fixedOverallProgress.percent === 60 &&
+      r5TaskCapsule.currentStage.number === 4 &&
+      r5TaskCapsule.candidateTerminal.status === "failed_closed" &&
+      r5TaskCapsulePreviewEvidenceMatches &&
+      r5TaskCapsule.taskIdentity.seed === 20263722 &&
+      r5TaskCapsule.taskIdentity.requiredBoundarySides.join(",") === "west",
   ],
   [
     "r5_stage4_task_capsule_negative_hash_gate",
-    mismatchedCapsule.integrity.status === "incomplete_or_mismatched"
-      && mismatchedCapsule.integrity.boundEvidenceVerified === false
-      && mismatchedCapsule.candidateTerminal.status === "unknown_or_stale",
+    mismatchedCapsule.integrity.status === "incomplete_or_mismatched" &&
+      mismatchedCapsule.integrity.boundEvidenceVerified === false &&
+      mismatchedCapsule.candidateTerminal.status === "unknown_or_stale",
   ],
   [
-    "r5_stage4_task_capsule_is_in_existing_read_only_api",
-    source.server.includes("readCurrentR5Stage4TaskCapsule")
-      && source.server.includes("taskCapsule,")
-      && source.api.includes("readCurrentTrainingDashboard")
-      && !source.api.includes("export async function POST"),
+    "unique_current_execution_registry_is_in_existing_read_only_api",
+    source.server.includes("readCurrentExecutionRegistry(root)") &&
+      !between(
+        source.server,
+        "async function buildSnapshot()",
+        "async function readCurrentR5Stage4TaskCapsule()",
+      ).includes("readCurrentR5Stage4TaskCapsule()") &&
+      source.server.includes("taskCapsule,") &&
+      source.api.includes("readCurrentTrainingDashboard") &&
+      !source.api.includes("export async function POST"),
   ],
   [
     "r5_stage4_task_capsule_frontend_fields_visible",
-    source.page.includes('data-testid="local-task-capsule"')
-      && source.page.includes("固定总进度")
-      && source.page.includes("当前阶段")
-      && source.page.includes("候选终态")
-      && source.page.includes("证据完整性")
-      && source.page.includes("forbiddenActions"),
+    source.page.includes('data-testid="local-task-capsule"') &&
+      source.page.includes("固定总进度") &&
+      source.page.includes("当前阶段") &&
+      source.page.includes("候选终态") &&
+      source.page.includes("证据完整性") &&
+      source.page.includes("forbiddenActions"),
   ],
   [
     "server_aggregator_read_only",
@@ -445,7 +607,9 @@ const checks = [
     source.r2SmokeRunner.includes("run-start-registration.json") &&
       source.r2SmokeRunner.includes("run-terminal-registration.json") &&
       source.r2SmokeRunner.includes("previewReviewStatus") &&
-      source.r2SmokeReconciliation.includes("existing_saved_previews_only_no_retraining") &&
+      source.r2SmokeReconciliation.includes(
+        "existing_saved_previews_only_no_retraining",
+      ) &&
       source.r2SmokeReconciliation.includes("automaticStorage: true"),
   ],
   [
@@ -719,9 +883,9 @@ const checks = [
     "hardware_kpi_gauges_are_fixed_in_header_middle",
     source.page.includes('data-testid="header-hardware-dashboard"') &&
       source.page.indexOf("headerHardwareDashboard") >
-        source.page.indexOf('<header className={styles.header}>') &&
+        source.page.indexOf("<header className={styles.header}>") &&
       source.page.indexOf("headerHardwareDashboard") <
-        source.page.indexOf('<div className={styles.headerTools}>') &&
+        source.page.indexOf("<div className={styles.headerTools}>") &&
       source.styles.includes(".headerHardwareDashboard") &&
       source.contract.includes(
         "fixed_in_header_middle_between_title_and_status_tools",
@@ -760,8 +924,149 @@ const checks = [
   [
     "live_activity_reads_current_formal_stage4_training_output",
     source.server.includes("stage4-semantic-mixture-formal-training") &&
+      source.server.includes(
+        "stage4-authoritative-semantic-carrier-formal-stage0",
+      ) &&
+      source.server.includes(
+        "stage4-post-decode-full-condition-responsibility-formal-stage0",
+      ) &&
       source.server.includes('artifactDirectory: "training-output"') &&
       source.server.includes("relativeArtifactRoot"),
+  ],
+  [
+    "dashboard_projects_latest_autonomous_stage4_terminal",
+    source.server.includes(
+      "stage4-post-carrier-bounded-candidate-recalculations/latest.json",
+    ) &&
+      source.server.includes("projectAutonomousStage4TaskCapsule") &&
+      autonomousTaskCapsule.integrity.status === "verified" &&
+      autonomousTaskCapsule.candidateTerminal.status === "failed_closed" &&
+      autonomousTaskCapsule.candidateTerminal.previewPassCount === 0 &&
+      autonomousTaskCapsule.candidateTerminal.previewCount === 6 &&
+      autonomousTaskCapsule.nextAllowedAction.ownerAuthorizationRequired ===
+        false,
+  ],
+  [
+    "dashboard_projects_formal_stage0_training_review_and_terminal_states",
+    source.server.includes("readLatestPostDecodeFormalExecution") &&
+      source.server.includes("projectPostDecodeFormalExecutionActivity") &&
+      source.server.includes('code: "formal_stage0_running"') &&
+      source.server.includes('code: "formal_stage0_reviewing"') &&
+      source.server.includes('code: "formal_stage0_real_visual_failure"') &&
+      source.server.includes("review-progress.json") &&
+      source.server.includes("automatic_machine_review") &&
+      source.formalStageRunner.includes("completedPreviewCount") &&
+      source.formalStageRunner.includes("writeReviewProgress") &&
+      source.formalStageRunner.includes('status: "automatic_machine_review"') ===
+        false,
+  ],
+  [
+    "formal_stage0_terminal_projection_supports_all_registered_profiles",
+    source.server.includes("isFormalStage0TerminalStatus") &&
+      source.server.includes('"post_decode_full_condition_responsibility"') &&
+      source.server.includes('"post_decode_object_rgb"') &&
+      source.server.includes('"authoritative_semantic_carrier"') &&
+      source.server.includes(
+        'source: "current_execution_registry_latest_training_terminal"',
+      ),
+  ],
+  [
+    "formal_stage0_does_not_project_manual_waiting_validation",
+    !source.server.includes('code: "awaiting_validation"') &&
+      !source.server.includes("训练完成，等待验证") &&
+      !source.server.includes("独立的训练后验证授权") &&
+      !source.types.includes('"awaiting_validation"') &&
+      source.server.includes(
+        "stage.runId === latestTrainingRunId",
+      ),
+  ],
+  [
+    "formal_stage0_runner_atomically_registers_terminal_and_profile_identity",
+    source.formalStageRunner.includes("synchronizeCurrentExecutionRegistry") &&
+      source.formalStageRunner.includes("advanceCurrentExecutionRegistry") &&
+      source.formalStageRunner.includes(
+        "post_decode_full_condition_responsibility_multisample_semantic_capacity_insufficient_confirmed",
+      ) &&
+      source.formalStageRunner.includes("PROFILE.reviewWorkRoot") &&
+      source.formalStageRunner.includes("PROFILE.bestReviewWorkRoot"),
+  ],
+  [
+    "validation_workspace_follows_current_activity_run_identity",
+    source.page.includes("const activityStage = useMemo(") &&
+      source.page.includes("stage.runId === snapshot.activity.taskId") &&
+      source.page.includes(
+        "const currentStage = activityStage ?? activeStage ?? latestStage",
+      ),
+  ],
+  [
+    "validation_workspace_counts_only_the_selected_run",
+    selectedRunValidationSummary.source === "selected_training_run" &&
+      selectedRunValidationSummary.expectedPreviewCount === 6 &&
+      selectedRunValidationSummary.completedPreviewCount === 6 &&
+      selectedRunValidationSummary.passedPreviewCount === 0 &&
+      selectedRunValidationSummary.failedPreviewCount === 6 &&
+      selectedRunValidationSummary.selectedRunMatchesCapsule === false &&
+      source.page.includes("deriveSelectedRunValidationSummary") &&
+      source.page.includes("event.runId === reviewRunId"),
+  ],
+  [
+    "execution_notice_distinguishes_training_reviewing_and_review_terminal",
+    source.page.includes("机器验证持续执行中｜无需人工操作") &&
+      source.page.includes("机器验证已完成｜候选失败关闭") &&
+      source.page.includes("机器验证已完成｜候选通过") &&
+      source.page.includes('data-reviewing={isReviewing}') &&
+      source.page.includes("const validationTerminal ="),
+  ],
+  [
+    "dashboard_excludes_archived_smoke_from_current_and_default_records",
+    !between(source.server, "const modelSources = [", "] as const;").includes(
+      "stage4-post-decode-object-rgb-controlled-smokes",
+    ) &&
+      source.server.includes('code: "candidate_planned"') &&
+      source.server.includes('code: "current_registry_unknown_or_stale"') &&
+      source.server.includes("readCurrentExecutionRegistry(root)") &&
+      postDecodeQualifiedCapsule.integrity.status === "verified" &&
+      postDecodeQualifiedCapsule.candidateTerminal.status === "qualified" &&
+      postDecodeQualifiedCapsule.candidateTerminal.previewMachineStatus ===
+        "late_stability_qualified" &&
+      postDecodeQualifiedCapsule.candidateTerminal.previewPassCount === 2 &&
+      postDecodeQualifiedCapsule.candidateTerminal.previewFailCount === 3 &&
+      postDecodeQualifiedCapsule.nextAllowedAction.ownerAuthorizationRequired ===
+        false &&
+      postDecodeQualifiedCapsule.nextAllowedAction.automaticExecutionAllowed ===
+        true,
+  ],
+  [
+    "dashboard_rejects_tampered_post_decode_smoke_evidence",
+    postDecodeTamperedCapsule.integrity.status ===
+      "incomplete_or_mismatched" &&
+      postDecodeTamperedCapsule.candidateTerminal.status ===
+        "unknown_or_stale",
+  ],
+  [
+    "dashboard_does_not_present_owner_as_normal_next_action",
+    source.page.includes("业务终态 / LOCAL AI ACTION") &&
+      !source.page.includes("业务终态 / OWNER ACTION"),
+  ],
+  [
+    "terminal_status_opens_live_and_historical_validation_workspace",
+    source.page.includes('data-testid="validation-status-entry"') &&
+      source.page.includes("openValidationWorkspace") &&
+      source.page.includes('data-testid="validation-live-monitor"') &&
+      source.page.includes("机器验证过程与终态") &&
+      source.page.includes("验证完成后证据不会消失"),
+  ],
+  [
+    "current_candidate_machine_review_is_projected_into_preview_history",
+    source.server.includes("/machine-review.json") &&
+      source.server.includes("review?.normalizedPath") &&
+      source.server.includes("review?.normalizedSha256"),
+  ],
+  [
+    "dashboard_quarantines_historical_running_without_live_process",
+    source.server.includes("stale_historical_record_no_active_process") &&
+      source.server.includes("当前不存在对应训练进程") &&
+      source.server.includes("executionTerminal?.recordedAtUtc"),
   ],
   [
     "live_activity_uses_heartbeat_pid_and_process_table",
@@ -890,9 +1195,10 @@ const checks = [
       ) > source.singleValidationRunner.indexOf("if (args.preflightOnly)") &&
       source.singleValidationRunner.indexOf(
         "fs.mkdirSync(OUTPUT_ROOT, { recursive: true })",
-      ) < source.singleValidationRunner.indexOf(
-        "fs.mkdirSync(runDir, { recursive: false })",
-      ),
+      ) <
+        source.singleValidationRunner.indexOf(
+          "fs.mkdirSync(runDir, { recursive: false })",
+        ),
   ],
   [
     "validation_program_writes_per_trajectory_token_accounting",
@@ -929,3 +1235,11 @@ console.log(
     2,
   ),
 );
+
+function between(value, start, end) {
+  const startIndex = value.indexOf(start);
+  if (startIndex < 0) return "";
+  const endIndex = value.indexOf(end, startIndex + start.length);
+  if (endIndex < 0) return "";
+  return value.slice(startIndex, endIndex);
+}

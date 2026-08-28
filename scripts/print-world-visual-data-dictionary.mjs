@@ -79,10 +79,16 @@ lines.push("# AI-PET-WORLD 世界视觉数据字典完整打印版");
 lines.push("");
 lines.push(`更新时间：${localTimestamp()} +08:00`);
 lines.push("");
-lines.push(`状态：active-reference / ${dictionary.dictionaryVersionId} / ${dictionary.status}`);
+lines.push("状态：active-reference");
+lines.push(`DictionaryVersionId: ${dictionary.dictionaryVersionId}`);
+lines.push(`DictionaryLifecycleStatus: ${dictionary.status}`);
 lines.push(`GeneratedAt: ${dictionary.generatedAt}`);
 lines.push("");
-lines.push("不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。");
+lines.push("Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。");
+lines.push("");
+lines.push("本打印版只说明视觉词汇和历史溯源，不定义授权、能力发布或运行状态机。当前Owner职责只采用docs/DOCUMENT_AUTHORITY_INDEX.md中的GOV-OWNER-001。");
+lines.push("");
+lines.push("源条目中的owner review、owner accepted、owner rejected及对应旧失败码或训练标签是历史兼容词汇，不具有当前执行效力；新任务不得生成或消费这些词汇作为当前状态。");
 lines.push("");
 
 lines.push("## 1. 文档目录");
@@ -122,7 +128,7 @@ lines.push(table(
     ["字典状态", drawability?.status ?? "missing_drawability_summary"],
     ["含义", drawability?.drawabilityMeaning ?? "未生成完整地图出图摘要"],
     ["字典版本", dictionary.dictionaryVersionId],
-    ["注意", "dictionary_draw_ready 只代表可以组织完整候选图生成任务，不代表训练数据足够，不代表项目所有者验收通过。"],
+    ["注意", "dictionary_draw_ready只代表可以组织完整候选图生成任务，不代表训练数据充分、能力已经发布或机器审核已经通过。"],
   ],
 ));
 lines.push("");
@@ -203,20 +209,20 @@ lines.push(table(
 ));
 lines.push("");
 
-lines.push("## 8. 当前缺口");
+lines.push("## 8. 适用边界");
 lines.push("");
 lines.push(table(
   ["缺口", "说明"],
   [
     ["训练数据", "字典已经具备完整候选图任务字段，但正负样本数量仍需由训练数据审计决定。"],
-    ["项目验收", "任何 RuntimeFrame 仍必须经过项目所有者人工最终验收。"],
+    ["能力发布", "RuntimeFrame必须通过当前机器审核、能力发布和Runtime门；已发布能力内不等待逐次Owner验收。"],
     ["自动生成", "下一步程序必须读取本字典版本生成候选图，并自动保存任务包、图片、审核记录和失败码。"],
   ],
 ));
 lines.push("");
 
 await mkdir(path.dirname(printPath), { recursive: true });
-await writeFile(printPath, `${lines.join("\n")}\n`, "utf8");
+await writeFile(printPath, `${lines.join("\n").trimEnd()}\n`, "utf8");
 
 console.log(`World visual data dictionary print written: ${projectPath(printPath)}`);
 console.log(`dictionaryVersionId=${dictionary.dictionaryVersionId}`);

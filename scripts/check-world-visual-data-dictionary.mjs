@@ -39,7 +39,7 @@ assert(await fileExists(dictionaryPath), `missing dictionary export: ${latest.di
 const dictionary = await readJson(dictionaryPath);
 assert(dictionary.schemaVersion === "world-visual-data-dictionary-export-v1", "invalid dictionary export schema");
 assert(dictionary.dictionaryVersionId === latest.dictionaryVersionId, "dictionary version mismatch");
-assert(dictionary.status === "draft", "dictionary should remain draft until owner approval");
+assert(dictionary.status === "draft", "dictionary vocabulary status must remain draft until a machine-verified capability release binds it");
 assert(Array.isArray(dictionary.entries), "entries must be an array");
 assert(dictionary.entries.length >= 40, "dictionary should contain at least 40 entries after current expansion");
 assert(!hasDuplicate(dictionary.entries.map((entry) => entry.id)), "entry ids must be unique");

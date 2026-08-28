@@ -1,7 +1,7 @@
 const finalGameMapMeaningZh =
-  "不是最终地图结论。只有完整 RuntimeFrame 通过材料质量闸门、FormalVisualJudge、/world 写入闸门，并获得项目所有者人工终审明确通过，才算最终游戏地图成功。"
+  "不是最终地图结论。只有已发布能力版本内的完整 RuntimeFrame 通过材料质量闸门、FormalVisualJudge、能力发布身份重算和 /world 原子写入闸门，才算最终游戏地图成功；正常运行不设置Owner逐次终审。"
 const finalGameMapMeaning =
-  "This is not a final map verdict. A final game map only succeeds after the complete RuntimeFrame passes the material-quality gate, FormalVisualJudge, the /world write gate, and explicit project-owner final review."
+  "This is not a final map verdict. A final map succeeds only when a complete RuntimeFrame from a released capability passes the material-quality gate, FormalVisualJudge, recomputed capability-release identity, and the atomic /world write gate; normal operation has no per-run Owner review."
 
 export function enrichTrainingProcessLedgerEvent(event) {
   const scope = inferResultScope(event)
@@ -10,7 +10,7 @@ export function enrichTrainingProcessLedgerEvent(event) {
 
   return {
     ...event,
-    autoAnalysisVersion: "ai-painter-training-ledger-auto-analysis-v1",
+    autoAnalysisVersion: "ai-painter-training-ledger-auto-analysis-v2",
     resultScope: scope.value,
     resultScopeZh: scope.zh,
     successMeaning: meanings.success,
@@ -22,15 +22,15 @@ export function enrichTrainingProcessLedgerEvent(event) {
     finalGameMapMeaningZh,
     canEnterWorld,
     worldEntryMeaning: canEnterWorld
-      ? "The RuntimeFrame can be exposed as a machine-passed candidate, but it still needs owner final review."
+      ? "The local release pipeline recorded this RuntimeFrame as machine-verified and eligible for the atomic /world write transition."
       : "This event does not authorize the frame to enter /world as a visible player-facing map.",
     worldEntryMeaningZh: canEnterWorld
-      ? "该 RuntimeFrame 只能作为机器通过候选进入展示链路，仍需项目所有者人工终审。"
+      ? "本地发布流水线已将该 RuntimeFrame 登记为机器验证通过，可进入 /world 原子写入转换。"
       : "该事件不授权画面作为玩家可见地图进入 /world。",
     evidenceRequirement:
-      "The event must point to durable evidence such as run-report.json, material-quality-report.json, formal-visual-judge.json, an archived image, or an owner-review record.",
+      "The event must point to durable evidence such as run-report.json, material-quality-report.json, formal-visual-judge.json, capability-release identity, an archived image, or a world-write transaction.",
     evidenceRequirementZh:
-      "该事件必须指向持久证据，例如 run-report.json、material-quality-report.json、formal-visual-judge.json、归档图片或人工审核记录。",
+      "该事件必须指向持久证据，例如 run-report.json、material-quality-report.json、formal-visual-judge.json、能力发布身份、归档图片或世界写入事务。",
     nextAction: meanings.nextAction,
     nextActionZh: meanings.nextActionZh,
   }
@@ -41,7 +41,7 @@ function inferResultScope(event) {
   const step = `${event.currentStep ?? ""} ${event.detail ?? ""} ${event.detailZh ?? ""} ${event.title ?? ""}`
 
   if (/owner/i.test(step)) {
-    return { value: "owner_review_gate", zh: "项目所有者人工终审闸门" }
+    return { value: "legacy_owner_record", zh: "历史人工记录（非现行发布闸门）" }
   }
   if (/FormalVisualJudge|formal-visual-judge|formal_visual_judge/i.test(step)) {
     return { value: "formal_visual_judge_gate", zh: "正式画面机器评审闸门" }
