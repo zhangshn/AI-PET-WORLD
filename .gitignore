@@ -49,6 +49,7 @@ data/*
 data/ai-painter/*
 !data/ai-painter/system-governance/
 data/ai-painter/system-governance/*
+!data/ai-painter/system-governance/stage4-formal-diffusion-objective-and-checkpoint-contract-v1.json
 !data/ai-painter/system-governance/project-owner-trust-registry-v1.json
 !data/ai-painter/system-governance/ai-painter-autonomous-package-decision-contract-v1.json
 !data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json
