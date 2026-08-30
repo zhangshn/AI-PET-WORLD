@@ -1,6 +1,6 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-08-29 12:40:58 +08:00
+更新时间：2026-08-30 13:51:22 +08:00
 
 状态：long-term-architecture-reference
 
@@ -26,13 +26,7 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 
 本地系统是正式判断、执行状态、审核状态、发布状态和长期记忆的唯一载体。世界事实、任务状态、机器结论、异常升级请求、业务决定、复审结果、容量登记和下一门禁必须全部以本地不可变文件为证据，并由本地SQLite提供查询索引。聊天和外部智能体记忆不属于系统状态。
 
-统一AI控制台属于该本地系统的观察与有界控制入口，其具体产品、信息架构和接口由`docs/ai-console/`正式规格定义。V15运行发布登记负责完整资格发布激活、既有制品候选和机器审核通过后的正式未消费Frame；V16世界控制登记只在新控制台独立SQLite中追加Frame消费、发布暂停/恢复、合法祖先回退和视觉冻结状态。V16的“消费”不等于游戏世界已经消费，且不得读取或写入旧World Runtime、`/world`、WorldFacts、训练、审核或Checkpoint。控制台各登记均不能替代或调用AI Painter旧训练/审核页面，也不能从页面输入取得视觉生成、真实世界写入或历史结论改写权。
-
-V17本机观察层在一级和全部二级页面固定提供CPU、内存、磁盘、GPU、显存、温度、功耗与训练特征进程的直接观察，并在AP-03/AP-08提供同源专业仪表盘。直接观察只证明采样时刻的机器事实，不能单独建立`activeExecution`或训练身份；Run、Stage、Epoch、Batch、Loss、学习率、吞吐、ETA和Checkpoint只接受新平台独立训练遥测登记。该层不读取旧页面、旧API、旧训练目录或Stage4证据，不修改训练、验证、审核、Checkpoint、运行证据或状态机。
-
-V19控制台主题层以统一Token建立暖灰白Canvas、白色ApplicationShell和工作区、冷灰白导航/字段层、模块身份、Frame身份、运行状态和资源数据通道。明亮主题是平台默认，暗色不得成为主Canvas、导航或工作区基底。颜色只强化结构与事实，不改变业务、数据、控制、证据或运行合同，也不得成为状态的唯一表达。一级页、七类二级呈现、控制合同与实时观察面必须消费同一Token来源，禁止退化为单一“AI青色”或互相冲突的页面调色板。
-
-V20把新控制台本机观察升级为毫秒精度时间合同。统一快照必须保存单调采样序号、毫秒开始/完成时间、实际采样耗时、250毫秒目标刷新间隔及CPU、内存、磁盘、GPU、训练进程和训练遥测通道时间；固定状态条与AP-03/AP-08必须显示快照年龄和慢通道年龄。该合同用于如实表达数据新鲜度，不将操作系统或设备驱动计数器虚构为每1毫秒更新，也不改变V17训练遥测权威边界，不接入旧页面、旧API、旧训练目录或Stage4状态机。
+统一AI控制台属于该本地系统的观察与有界控制入口，其产品结构、页面层级、数据字典、时间语义、状态投影、人工控制边界和版本化接口只由`docs/ai-console/`正式规格定义。控制台不得成为任务身份、训练身份、审核结论或发布身份的权威来源；页面展示和人工输入不得改写WorldFacts、机器证据、Checkpoint或状态机，也不得把历史记录投影为当前任务。总体架构只规定这些边界，不保存控制台版本号、页面编号、刷新周期、主题Token或单次实现状态。
 
 正式运行链固定为：
 
@@ -45,7 +39,7 @@ V20把新控制台本机观察升级为毫秒精度时间合同。统一快照�
 -> 触及长期业务、许可或安全边界时生成policy-boundary-report并失败关闭
 ```
 
-Codex只作为受控执行与检查员工。当前允许它在本地程序已经锁定任务、范围和门禁后执行受控冷启动RGB、代码修复或对应检查；它不得成为系统编排器、长期记忆、正式证据源或授权机关。目标架构中，本地小AI负责完整判断和流程编排，Codex仅在收到具体任务时运行相应检查并把证据交回本地系统；移除Codex或丢失聊天历史不得破坏本地流程连续性。
+Codex只作为外部受控执行与检查员工，不得成为系统编排器、长期记忆、正式证据源或授权机关。它的具体任务范围由当前外部任务约束确定，不写入长期架构。本地自研AI负责正式判断和流程编排；移除Codex或丢失聊天历史不得破坏本地流程连续性。
 
 机器可读长期合同由AI Painter正式主体规格登记。训练、能力版本变更、生成、验证、审核、发布、回退或失败关闭均由本地程序在生效合同内自主执行；触及长期业务、外部许可、付费资源或不可恢复操作时禁止越界动作，保存`policy-boundary-report`并写入事件总账与SQLite。Owner职责只由`GOV-OWNER-001`定义，不进入执行链。`latest.json`只是查询指针。
 
@@ -422,17 +416,17 @@ flowchart LR
   Inference --> Candidate["Fresh Complete-Map Candidate"]
 ```
 
-“单一对外入口”不等于内部只能存在一个不可分辨模型。AI Painter 当前正式内部责任链固定为：
+“单一对外入口”不等于内部只能存在一个不可分辨模型。AI Painter 的长期内部责任顺序固定为：
 
 ```text
 authoritative_world_structure_binding                  [非训练权威绑定]
--> terrain_route_hydrology_spatial_realization        [隔离训练组件]
--> per_class_object_semantic_realization              [隔离训练组件]
--> global_visual_harmonization_and_native_complete_rgb_decode [隔离训练组件]
+-> terrain_route_hydrology_spatial_realization        [可训练责任边界]
+-> per_class_object_semantic_realization              [可训练责任边界]
+-> global_visual_harmonization_and_native_complete_rgb_decode [可训练责任边界]
 -> Fresh Complete-Map Candidate
 ```
 
-四个责任阶段必须绑定同一 `worldId`、`regionId`、`tick`、`factHash`、`VisualFactManifest` 和23通道条件包。后三个训练组件拥有相互隔离的参数、Checkpoint、输出和终态身份；后一组件只能消费同一执行包前一阶段的成功终态与输出身份。该内部责任链不得与 `Stage 0/1/2` 的训练分辨率阶段混淆，也不得退化为 tile、patch、sprite、局部拼接、低分辨率放大或规则程序直绘。
+四个责任阶段必须绑定同一 `worldId`、`regionId`、`tick`、`factHash`、`VisualFactManifest` 和23通道条件包。后三个可训练责任边界可以由一个模型、声明共享关系的共享底座或参数隔离组件实现；具体能力版本必须登记`responsibilityImplementationMode`，稳定值仅允许`single_model`、`declared_shared_substrate`或`parameter_isolated_components`，并登记每段责任对应的输入、输出、参数或共享映射、Checkpoint映射、审核和终态证据。共享实现不得伪装成参数隔离，单模型也不得省略逐责任可验证输出。后一责任只能消费同一执行包前序责任的成功证据和输出身份。该内部责任链不得与 `Stage 0/1/2` 的训练分辨率阶段混淆，也不得退化为 tile、patch、sprite、局部拼接、低分辨率放大或规则程序直绘。
 
 固定禁止关系：
 
@@ -557,10 +551,10 @@ RuntimeFrame运行证据按`working -> candidates -> accepted frame / rejected f
 | Dataset Builder | 准备训练图、Mask、来源记录、用途记录。 |
 | Training Runner | 本地训练，记录 GPU、耗时、loss、输出。 |
 | Authoritative World Structure Binding | 非训练地绑定 WorldFacts、VisualFactManifest、23通道条件和任务身份，不生成或修改世界事实。 |
-| Terrain / Route / Hydrology Component | 只承担地形、道路和水文空间实现，保存隔离输出与终态。 |
-| Per-Class Object Semantic Component | 只承担 footprints、tree、rock、vegetation 语义实现，不修改批准对象掩码。 |
-| Global Visual Harmonization Component | 只承担全局视觉协调和原生完整RGB解码，是唯一允许通过冻结Autoencoder形成最终RGB的内部组件。 |
-| Inference Runner | 对外只提供一个完整世界推理入口，按固定责任顺序编排同包组件并生成本轮完整地图新候选；局部材料推理只可作为内部从属能力。 |
+| Terrain / Route / Hydrology Responsibility Boundary | 承担地形、道路和水文空间实现；无论采用单模型、共享底座或隔离组件，都必须保存该责任的独立输出身份、审核证据和终态映射。 |
+| Per-Class Object Semantic Responsibility Boundary | 承担 footprints、tree、rock、vegetation 语义实现，不修改批准对象掩码；必须保存逐类输出与审核证据。 |
+| Global Visual Harmonization Responsibility Boundary | 承担全局视觉协调和原生完整RGB解码，是唯一允许通过能力版本登记的解码边界形成最终RGB的责任边界；不得消除前序责任语义。 |
+| Inference Runner | 对外只提供一个完整世界推理入口，按固定顺序编排同包责任边界及其登记实现并生成本轮完整地图新候选；局部材料推理只可作为内部从属能力。 |
 | Refiner | 细化局部视觉材料。 |
 | Candidate Store | 保存候选结果，不进入 `/world`。 |
 | Result Archive | 保存成功、失败、耗时、时间戳、GPU 信息、质量分数。 |

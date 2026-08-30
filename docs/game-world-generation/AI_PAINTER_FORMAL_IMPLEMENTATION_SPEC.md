@@ -1,6 +1,6 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-08-26 15:30:00 +08:00
+更新时间：2026-08-30 13:51:22 +08:00
 
 状态：active-long-term-module-specification
 
@@ -187,11 +187,11 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 | 要求编号 | 责任阶段 | `inputSchema` | `outputSchema` | `requiredIdentity` | `successTerminal` / `failureTerminal` | `allowedMutations` | `forbiddenMutations` | `checkpointIdentity` | `reviewContract` |
 |---|---|---|---|---|---|---|---|---|---|
 | AP-PHASE-001 | `authoritative_world_structure_binding` | 世界事实、Manifest、条件包 | 权威结构绑定证据 | world/region/tick/fact/condition/capability | 绑定成功 / 失败关闭 | 仅新增证据 | 修改世界事实、条件或 Manifest | 不适用 | schema、路径、哈希和身份一致性 |
-| AP-PHASE-002 | `terrain_route_hydrology_spatial_realization` | 同包结构绑定输出 | 地形、道路、水文空间输出 | 同包前序终态与输出 SHA-256 | 阶段成功 / 失败关闭 | 当前阶段参数与输出 | 修改权威拓扑、跨包消费 | 当前阶段独立身份 | 道路、水文、岸线、通行和边界 |
-| AP-PHASE-003 | `per_class_object_semantic_realization` | 同包地形阶段输出、权威对象掩码 | 逐类对象语义输出 | 同包前序终态、掩码和条件身份 | 阶段成功 / 失败关闭 | 当前阶段参数与输出 | 修改掩码、跨类替换、跨包消费 | 当前阶段独立身份 | footprints/tree/rock/vegetation 逐类语义 |
-| AP-PHASE-004 | `global_visual_harmonization_and_native_complete_rgb_decode` | 同包对象阶段输出 | 原生完整 RGB 候选 | 同包前序终态、输出和能力身份 | 阶段成功 / 失败关闭 | 当前阶段参数、RGB 与证据 | 消除前序语义、拼接、放大、改事实 | 当前阶段独立身份 | 专业画面、事实对齐和完整地图审核 |
+| AP-PHASE-002 | `terrain_route_hydrology_spatial_realization` | 同包结构绑定输出 | 地形、道路、水文空间输出 | 同包前序终态与输出 SHA-256 | 阶段成功 / 失败关闭 | 当前责任参数或已登记共享映射与输出 | 修改权威拓扑、跨包消费 | 能力版本登记的独立身份或共享Checkpoint责任映射 | 道路、水文、岸线、通行和边界 |
+| AP-PHASE-003 | `per_class_object_semantic_realization` | 同包地形阶段输出、权威对象掩码 | 逐类对象语义输出 | 同包前序终态、掩码和条件身份 | 阶段成功 / 失败关闭 | 当前责任参数或已登记共享映射与输出 | 修改掩码、跨类替换、跨包消费 | 能力版本登记的独立身份或共享Checkpoint责任映射 | footprints/tree/rock/vegetation 逐类语义 |
+| AP-PHASE-004 | `global_visual_harmonization_and_native_complete_rgb_decode` | 同包对象阶段输出 | 原生完整 RGB 候选 | 同包前序终态、输出和能力身份 | 阶段成功 / 失败关闭 | 当前责任参数或已登记共享映射、RGB与证据 | 消除前序语义、拼接、放大、改事实 | 能力版本登记的独立身份或共享Checkpoint责任映射 | 专业画面、事实对齐和完整地图审核 |
 
-当前四阶段接口的 CPU 未激活实现证据保存在 `.runtime/ai-painter/stage4-staged-interface-evidence-support/`，它只证明某次实现，不是长期权威合同。正式程序物化接口时，必须从本节和能力版本生成一个版本化机器合同；不得引用某个历史 run 目录作为永久 schema。
+四阶段的正式程序接口必须由本节、能力版本和版本化机器合同共同物化。单次运行目录、历史实验适配器和临时证据只能证明对应执行，不得成为永久Schema、现行能力身份或新任务输入。
 
 ## 7. 实现架构的可替换性
 
@@ -203,7 +203,9 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 - 任何新结构都经过 CPU 合同、只读 GPU 资格、受控 Smoke 和正式 Stage 验证；
 - 当前实验结构不得自动升级为永久业务标准。
 
-当前正在验证的具体模型或三组件实现只属于研发候选，其状态从唯一计划表和机器证据读取。
+`AP-PHASE-002`至`AP-PHASE-004`共同要求每个能力版本登记`responsibilityImplementationMode`。稳定机器枚举仅允许`single_model`、`declared_shared_substrate`或`parameter_isolated_components`，并必须保存三段可训练责任到参数或共享映射、Checkpoint、输出、审核和终态证据的完整关系。单模型或共享底座不要求伪造三份物理Checkpoint，但必须为每段责任提供不可混淆的映射与输出证据；隔离组件必须证明参数和Checkpoint没有共享。任何实现都不得用最终整图审核代替逐责任审核。该字段及映射的机器Schema尚待版本化合同物化，当前符合状态不得高于`document_defined_program_pending`。
+
+当前正在验证的具体模型或组件实现只属于研发候选，其状态从唯一计划表和机器证据读取。
 
 ## 8. 数据合同
 
@@ -533,14 +535,14 @@ AI Painter 正式能力必须同时满足：
 | `AP-OUT-002` | `complete-map-world-business-contract-v3` | 禁止拼接/放大/直绘门待迁移 | 负向图像来源测试待建立 | 未来输出来源报告 | `document_defined_program_pending` |
 | `AP-OUT-003` | 后继候选身份合同待物化 | Runtime候选登记器待迁移 | 无身份进入发布链拒绝测试待建立 | 未来候选登记记录 | `document_defined_program_pending` |
 | `AP-OUT-004` | 后继审核发布合同待物化 | 发布编排器待迁移 | 审核失败不得发布测试待建立 | 未来发布拒绝记录 | `document_defined_program_pending` |
-| `AP-PHASE-001` | 后继四段接口合同待物化 | 权威绑定CPU支持存在，正式接口待迁移 | CPU接口检查存在，统一回归待迁移 | 历史CPU证据不可证明现行符合 | `partial_legacy_implementation_not_certified` |
-| `AP-PHASE-002` | 后继四段接口合同待物化 | 地形责任组件实验实现存在 | 只读GPU资格为历史证据，正式回归待迁移 | 历史组件终态不可发布 | `partial_legacy_implementation_not_certified` |
-| `AP-PHASE-003` | 后继四段接口合同待物化 | 对象责任组件实验实现存在 | 只读GPU资格为历史证据，正式回归待迁移 | 历史组件终态不可发布 | `partial_legacy_implementation_not_certified` |
-| `AP-PHASE-004` | 后继四段接口合同待物化 | 最终RGB组件实验实现存在 | 只读GPU资格为历史证据，正式回归待迁移 | 历史Smoke 0/5失败证据 | `partial_legacy_implementation_not_certified` |
-| `AP-TRAIN-001` | 输入/输出合同后继版本待物化 | `train_ai_assisted_conditional_denoiser.py`为旧实现 | 新能力版本端到端回归待建立 | 历史训练证据不可晋级 | `partial_legacy_implementation_not_certified` |
-| `AP-TRAIN-002` | 数据用途合同已有文档定义 | Trainer split隔离存在旧实现 | 48/8/4/4读写隔离统一测试待迁移 | 历史训练Manifest | `partial_legacy_implementation_not_certified` |
-| `AP-TRAIN-003` | 后继训练证据合同待物化 | 模型哈希/指标/Checkpoint记录存在旧实现 | 完整终态字段测试待迁移 | 历史Manifest与Finalization | `partial_legacy_implementation_not_certified` |
-| `AP-TRAIN-004` | 后继阶段父Checkpoint合同待物化 | 连续执行器旧实现存在 | 同包父身份与失败注入回归待迁移 | 历史阶段记录不可复用 | `partial_legacy_implementation_not_certified` |
+| `AP-PHASE-001` | 后继四段接口合同待物化 | 权威绑定适配能力尚未形成统一正式接口 | 统一Schema与身份回归待建立 | 现行能力符合证据待生成 | `document_defined_program_pending` |
+| `AP-PHASE-002` | 后继四段接口合同待物化 | 地形/道路/水文责任映射尚未接入正式能力接口 | 实现模式、输出和审核映射回归待建立 | 现行能力符合证据待生成 | `document_defined_program_pending` |
+| `AP-PHASE-003` | 后继四段接口合同待物化 | 逐类对象责任映射尚未接入正式能力接口 | 掩码隔离、逐类输出和审核回归待建立 | 现行能力符合证据待生成 | `document_defined_program_pending` |
+| `AP-PHASE-004` | 后继四段接口合同待物化 | 全局协调与原生RGB责任映射尚未接入正式能力接口 | 前序语义保留与完整RGB回归待建立 | 现行能力符合证据待生成 | `document_defined_program_pending` |
+| `AP-TRAIN-001` | 输入/输出合同后继版本待物化 | 训练入口尚未形成现行能力统一实现 | 新能力版本端到端回归待建立 | 现行训练符合证据待生成 | `document_defined_program_pending` |
+| `AP-TRAIN-002` | 数据用途合同已有文档定义 | split用途隔离尚未接入统一训练门 | 48/8/4/4读写隔离统一测试待建立 | 现行训练符合证据待生成 | `document_defined_program_pending` |
+| `AP-TRAIN-003` | 后继训练证据合同待物化 | 模型哈希、指标、Checkpoint与终态记录待统一 | 完整终态字段测试待建立 | 现行训练符合证据待生成 | `document_defined_program_pending` |
+| `AP-TRAIN-004` | 后继阶段父Checkpoint合同待物化 | 同包阶段继承与失败关闭待统一 | 父身份、跨包注入和失败恢复回归待建立 | 现行训练符合证据待生成 | `document_defined_program_pending` |
 | `AP-CHANGE-001` | 后继能力变更分类合同待物化 | 模型家族变更分类器待迁移 | 结构改变必须新版本测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
 | `AP-CHANGE-002` | 后继能力变更分类合同待物化 | 条件合同变更分类器待迁移 | 23通道任一语义改变测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
 | `AP-CHANGE-003` | 后继能力变更分类合同待物化 | Autoencoder边界分类器待迁移 | 身份/结构/冻结状态变化测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
@@ -556,7 +558,7 @@ AI Painter 正式能力必须同时满足：
 | `AP-ACCEPT-001` | 当前条件合同加后继输入合同 | 条件检查器部分实现 | 完整输入合同回归待迁移 | 当前输出不等于能力符合证据 | `partial_legacy_implementation_not_certified` |
 | `AP-ACCEPT-002` | 后继版本化审核合同待物化 | 多个旧审核器存在，统一正式入口待迁移 | 道路/水文/对象/专业审核回归待统一 | 历史审核报告不可发布 | `partial_legacy_implementation_not_certified` |
 | `AP-ACCEPT-003` | 完整RGB业务合同已有目标定义 | 输出来源与尺寸门待迁移 | 原生尺寸/无拼接/无放大测试待建立 | 未来候选Manifest与RGB哈希 | `document_defined_program_pending` |
-| `AP-ACCEPT-004` | `ai-painter-capability-lifecycle-contract-v1`、`ai-painter-autonomous-closed-loop-contract-v1`及本文第15.1节 | 能力生命周期、单包执行、审核状态、有限恢复、后台心跳和终态程序已建立；当前执行登记修订1、SQLite提交记录、控制台唯一读取链和四身份字段已接入 | 当前登记绑定SHA重算、篡改失败关闭、重复初始化拒绝、旧Smoke默认读取隔离及控制台回归已通过；后续生命周期自动修订与断电恢复注入仍须在形成下一修订前验证 | `.runtime/ai-painter/current-execution-registry/current.json`、同事务记录、SQLite索引及本地检查报告 | `partial_legacy_implementation_not_certified` |
+| `AP-ACCEPT-004` | `ai-painter-capability-lifecycle-contract-v1`、`ai-painter-autonomous-closed-loop-contract-v1`及本文第15.1节 | 能力生命周期、单包执行、审核状态、有限恢复、后台心跳、终态程序、SQLite提交记录、控制台唯一读取链和四身份字段已接入；具体动态修订只从机器登记读取，不在正式规格硬编码 | 当前登记绑定SHA重算、篡改失败关闭、重复初始化拒绝、旧Smoke默认读取隔离及控制台回归已通过；审核失败后的合法`adjudicating`/`change_candidate`自动物化、正式枚举投影和断电恢复注入仍待完整机器符合证明 | `.runtime/ai-painter/current-execution-registry/current.json`、同事务记录、SQLite索引及本地检查报告 | `partial_legacy_implementation_not_certified` |
 | `AP-ACCEPT-005` | 后继身份与发布合同待物化 | 发布注册表、票据消费和指针待迁移 | 跨版本/跨run/历史失败注入测试待建立 | 未来能力与候选发布记录 | `document_defined_program_pending` |
 
 需求编号一经发布不得改义、重排或复用；废止要求保留编号并标记`superseded`。机器合同、程序、CPU测试、GPU资格和运行证据必须直接登记需求ID；缺少任何一层只能保持待迁移或部分符合，不能由文档检查器、格式正确的SHA或历史成功证据提升为`machine_conformant`。
