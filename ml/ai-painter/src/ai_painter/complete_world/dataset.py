@@ -168,6 +168,7 @@ class AiAssistedConditionalDenoiserDataset:
             "sampleId": row["sampleId"],
             "conditionLabel": row["conditionLabel"],
             "conditionPackPath": row["conditionPackPath"],
+            "monsoonSeason": row.get("classification", {}).get("monsoonSeason"),
             "image": self._torch.from_numpy(image).permute(2, 0, 1).float().div(255.0),
             "conditions": self._torch.stack([
                 self._torch.from_numpy(value).float().div(255.0) for value in condition_tensors

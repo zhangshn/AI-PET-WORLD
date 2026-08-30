@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 import hashlib
 import json
 from pathlib import Path
+import re
 from typing import Any, Mapping
 
 from ai_painter_execution_grant import (
@@ -81,7 +82,45 @@ _AUTHORITATIVE_SEMANTIC_CARRIER_LOCAL_MODE_IDS = frozenset({
     "post_decode_object_rgb_stage0_full_training",
     "post_decode_full_condition_responsibility_stage4_smoke",
     "post_decode_full_condition_responsibility_stage0_full_training",
+    "spatial_affine_decoder_stage4_readonly_gpu",
+    "spatial_affine_decoder_stage4_full_data_screen",
+    "spatial_affine_decoder_stage0_full_training",
 })
+_SPATIAL_AFFINE_LOCAL_MODE_IDS = frozenset({
+    "spatial_affine_decoder_stage4_inactive",
+    "spatial_affine_decoder_stage4_readonly_gpu",
+    "spatial_affine_decoder_stage4_full_data_screen",
+    "spatial_affine_decoder_stage0_full_training",
+    "full_backbone_spatial_affine_denoiser_stage4_inactive",
+    "full_backbone_spatial_affine_denoiser_stage4_readonly_gpu",
+    "full_backbone_spatial_affine_denoiser_stage4_smoke",
+    "joint_condition_local_transport_stage4_readonly_gpu",
+    "joint_condition_local_transport_stage4_smoke",
+    "joint_condition_local_transport_stage4_full_data_screen",
+})
+_LOCAL_CPU_INACTIVE_MODE_IDS = frozenset({
+    "spatial_affine_decoder_stage4_inactive",
+    "full_backbone_spatial_affine_denoiser_stage4_inactive",
+    "joint_condition_local_transport_stage4_inactive",
+})
+_LOCAL_TICKET_V2_IDENTITY_FIELDS = frozenset({
+    "ticketId", "ticketPath", "ticketSha256", "consumptionPath",
+    "consumptionSha256", "executionState", "status", "executionActions",
+    "boundConfigSha256", "datasetPackageId", "runId", "outputNamespace",
+})
+_FULL_BACKBONE_READONLY_GPU_MODE_ID = (
+    "full_backbone_spatial_affine_denoiser_stage4_readonly_gpu"
+)
+_FULL_BACKBONE_CONTROLLED_SMOKE_MODE_ID = (
+    "full_backbone_spatial_affine_denoiser_stage4_smoke"
+)
+_JOINT_CONDITION_LOCAL_TRANSPORT_CONTROLLED_SMOKE_MODE_ID = (
+    "joint_condition_local_transport_stage4_smoke"
+)
+_JOINT_CONDITION_LOCAL_TRANSPORT_FULL_DATA_SCREEN_MODE_ID = (
+    "joint_condition_local_transport_stage4_full_data_screen"
+)
+_SAFE_RUN_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{7,127}")
 _STRUCTURE_SMOKE_PREFLIGHT_ACTIONS = frozenset(
     {
         ExecutionAction.SELECT_BOUND_SAMPLE,
@@ -203,11 +242,572 @@ def _actions_for_mode(spec: ModeSpec) -> set[ExecutionAction]:
                 ExecutionAction.WRITE_SMOKE_CHECKPOINT,
             }
         )
+    elif spec.execution_kind == "readonly_gpu_qualification":
+        allowed.add(ExecutionAction.LOAD_AUTOENCODER)
+    elif spec.execution_kind == "full_data_screen":
+        allowed.update(
+            {
+                ExecutionAction.LOAD_AUTOENCODER,
+                ExecutionAction.CREATE_OPTIMIZER,
+                ExecutionAction.EXECUTE_BACKWARD,
+                ExecutionAction.MUTATE_MODEL_WEIGHTS,
+                ExecutionAction.WRITE_SMOKE_CHECKPOINT,
+            }
+        )
     elif spec.execution_kind == "phase0_engineering":
         allowed.update(_PHASE0_ALLOWED_ACTIONS)
     if spec.architecture == "multiscale_condition_unet_v7" and spec.execution_kind == "single_sample_smoke":
         allowed.add(ExecutionAction.LOAD_PARENT_DENOISER)
     return allowed
+
+
+def execution_action_values_for_stage_config(
+    config: Mapping[str, Any],
+) -> list[str]:
+    """Return the canonical internal capability actions for a registered mode.
+
+    Ticket issuers and CPU fixtures must use this function instead of copying
+    action lists.  The returned values are deterministic and do not grant or
+    consume any capability by themselves.
+    """
+
+    spec = resolve_stage_mode(config)
+    return sorted(action.value for action in _actions_for_mode(spec))
+
+
+def local_ai_ticket_bound_config_sha256(config: Mapping[str, Any]) -> str:
+    """Hash the immutable active config without its self-referential ticket."""
+
+    normalized = json.loads(json.dumps(dict(config), ensure_ascii=False))
+    training = normalized.get("training")
+    if not isinstance(training, dict):
+        raise ValueError("local AI capability config training identity is missing")
+    training.pop("localAiCapabilityTicket", None)
+    return sha256_json(normalized)
+
+
+def _validate_local_execution_binding(
+    project_root: Path,
+    *,
+    dataset_package_id: Any,
+    run_id: Any,
+    output_namespace: Any,
+) -> None:
+    if not isinstance(dataset_package_id, str) or not dataset_package_id:
+        raise ValueError("local AI ticket dataset package identity is invalid")
+    if not isinstance(run_id, str) or not _SAFE_RUN_ID.fullmatch(run_id):
+        raise ValueError("local AI ticket run identity is invalid")
+    if not isinstance(output_namespace, str):
+        raise ValueError("local AI ticket output namespace is invalid")
+    relative = Path(output_namespace)
+    if (
+        relative.is_absolute()
+        or not relative.parts
+        or any(part in {"", ".", ".."} for part in relative.parts)
+        or tuple(part.casefold() for part in relative.parts[:2])
+        != (".runtime", "ai-painter")
+        or relative.name != run_id
+    ):
+        raise ValueError("local AI ticket output namespace is outside the run boundary")
+    _resolve_project_file(project_root, output_namespace)
+
+
+def _validate_full_backbone_readonly_qualification_samples(
+    config: Mapping[str, Any],
+    project_root: Path,
+) -> dict[str, Any]:
+    evidence = config.get("evidenceBindings")
+    if not isinstance(evidence, Mapping):
+        raise ValueError("readonly GPU evidence bindings are missing")
+    selection = evidence.get("approved64Selection")
+    qualification = evidence.get("qualificationSamples")
+    if not isinstance(selection, Mapping) or not isinstance(
+        qualification, Mapping
+    ):
+        raise ValueError("readonly GPU fixed qualification samples are missing")
+    required_qualification_fields = {
+        "schemaVersion",
+        "selectionContract",
+        "preboundReadOnlySamples",
+        "freeSelectionAllowed",
+        "selectBoundSampleActionRequired",
+        "firstTrain",
+        "fixedValidation",
+        "identitySha256",
+    }
+    if (
+        set(qualification) != required_qualification_fields
+        or qualification.get("schemaVersion")
+        != (
+            "stage4-full-backbone-spatial-affine-readonly-gpu-"
+            "qualification-samples-v1"
+        )
+        or qualification.get("selectionContract")
+        != selection.get("selectionContract")
+        or qualification.get("preboundReadOnlySamples") is not True
+        or qualification.get("freeSelectionAllowed") is not False
+        or qualification.get("selectBoundSampleActionRequired") is not False
+    ):
+        raise ValueError("readonly GPU fixed-sample policy identity is invalid")
+    qualification_payload = {
+        key: json.loads(json.dumps(value, ensure_ascii=False))
+        for key, value in qualification.items()
+        if key != "identitySha256"
+    }
+    if sha256_json(qualification_payload) != qualification.get(
+        "identitySha256"
+    ):
+        raise ValueError("readonly GPU qualification sample digest is invalid")
+
+    source_index_path = _verify_bound_file(
+        project_root,
+        str(selection.get("sourceIndexPath", "")),
+        str(selection.get("sourceIndexSha256", "")),
+        "readonly GPU formal source index",
+    )
+    source_index = json.loads(source_index_path.read_text(encoding="utf-8"))
+    all_rows = source_index.get("samples")
+    if not isinstance(all_rows, list):
+        raise ValueError("readonly GPU formal source-index samples are missing")
+    selected_rows = [
+        row
+        for row in all_rows
+        if isinstance(row, Mapping)
+        and row.get("v7CapacityContributionRegistered") is True
+    ]
+    split_counts = {
+        split: sum(1 for row in selected_rows if row.get("split") == split)
+        for split in EXPECTED_SPLIT
+    }
+    if (
+        len(selected_rows) != 64
+        or split_counts != EXPECTED_SPLIT
+        or selection.get("selectedRecordCount") != 64
+        or selection.get("splitCounts") != EXPECTED_SPLIT
+    ):
+        raise ValueError("readonly GPU approved 64-record selection changed")
+
+    sample_fields = {
+        "role",
+        "sampleId",
+        "recordId",
+        "split",
+        "sourceIndexOrdinal",
+        "selectionOrdinal",
+        "splitOrdinal",
+        "v7CapacitySlotId",
+        "sourceRecordPath",
+        "sourceRecordSha256",
+        "conditionPackPath",
+        "conditionPackSha256",
+    }
+    role_contracts = (
+        ("firstTrain", "train", 0, 0, None),
+        ("fixedValidation", "validation", 48, 0, "v7-capacity-slot-194"),
+    )
+    for role, split, selection_ordinal, split_ordinal, slot_id in role_contracts:
+        sample = qualification.get(role)
+        if (
+            not isinstance(sample, Mapping)
+            or set(sample) != sample_fields
+            or sample.get("role") != role
+            or sample.get("split") != split
+            or sample.get("selectionOrdinal") != selection_ordinal
+            or sample.get("splitOrdinal") != split_ordinal
+            or sample.get("recordId") != sample.get("sampleId")
+            or (slot_id is not None and sample.get("v7CapacitySlotId") != slot_id)
+        ):
+            raise ValueError(f"readonly GPU {role} fixed identity is invalid")
+        source_ordinal = sample.get("sourceIndexOrdinal")
+        if (
+            not isinstance(source_ordinal, int)
+            or source_ordinal < 0
+            or source_ordinal >= len(all_rows)
+            or selected_rows[selection_ordinal] != all_rows[source_ordinal]
+        ):
+            raise ValueError(f"readonly GPU {role} source-index position changed")
+        split_rows = [row for row in selected_rows if row.get("split") == split]
+        row = all_rows[source_ordinal]
+        if split_rows[split_ordinal] != row:
+            raise ValueError(f"readonly GPU {role} split position changed")
+        for field in (
+            "sampleId",
+            "recordId",
+            "split",
+            "v7CapacitySlotId",
+            "sourceRecordPath",
+            "sourceRecordSha256",
+            "conditionPackPath",
+        ):
+            if sample.get(field) != row.get(field):
+                raise ValueError(f"readonly GPU {role} {field} changed")
+        _verify_bound_file(
+            project_root,
+            str(sample.get("sourceRecordPath", "")),
+            str(sample.get("sourceRecordSha256", "")),
+            f"readonly GPU {role} source record",
+        )
+        _verify_bound_file(
+            project_root,
+            str(sample.get("conditionPackPath", "")),
+            str(sample.get("conditionPackSha256", "")),
+            f"readonly GPU {role} condition pack",
+        )
+    return json.loads(json.dumps(dict(qualification), ensure_ascii=False))
+
+
+def _validate_full_backbone_controlled_smoke_identity(
+    config: Mapping[str, Any],
+    project_root: Path,
+) -> dict[str, Any]:
+    """Validate the fixed sample-194 Smoke boundary independently of callers."""
+
+    training = config.get("training")
+    evidence = config.get("evidenceBindings")
+    if not isinstance(training, Mapping) or not isinstance(evidence, Mapping):
+        raise ValueError("full-backbone controlled Smoke identity is missing")
+    smoke = training.get("stage4FullBackboneSpatialAffineSmokeContract")
+    if not isinstance(smoke, Mapping):
+        raise ValueError("full-backbone controlled Smoke contract is missing")
+    required_fields = {
+        "schemaVersion",
+        "status",
+        "compiledContract",
+        "sampleId",
+        "sampleSplit",
+        "seed",
+        "topology",
+        "requiredBoundarySides",
+        "resolutionStage",
+        "resolution",
+        "latentResolution",
+        "epochCount",
+        "previewEpochs",
+        "initialization",
+        "autoencoderFrozen",
+        "denoiserCheckpointPath",
+        "denoiserCheckpointReadAllowed",
+        "historicalCheckpointAllowed",
+        "failedCheckpointAllowed",
+        "crossRunArtifactAllowed",
+        "automaticTrainingRetryAllowed",
+    }
+    compiled = smoke.get("compiledContract")
+    if (
+        set(smoke) != required_fields
+        or smoke.get("schemaVersion")
+        != "stage4-full-backbone-spatial-affine-controlled-smoke-execution-contract-v1"
+        or smoke.get("status") != "active_bound_to_compiled_contract"
+        or not isinstance(compiled, Mapping)
+        or set(compiled)
+        != {"path", "sha256", "schemaVersion", "status", "compilationRunId"}
+        or not isinstance(compiled.get("path"), str)
+        or not isinstance(compiled.get("sha256"), str)
+        or re.fullmatch(r"[0-9a-f]{64}", compiled.get("sha256", "")) is None
+        or compiled.get("schemaVersion")
+        != "stage4-full-backbone-spatial-affine-controlled-smoke-contract-v1"
+        or compiled.get("status") != "compiled_not_started"
+        or not isinstance(compiled.get("compilationRunId"), str)
+        or smoke.get("sampleId")
+        != "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
+        or smoke.get("sampleSplit") != "validation"
+        or smoke.get("seed") != 20263722
+        or smoke.get("topology") != "west"
+        or smoke.get("requiredBoundarySides") != ["west"]
+        or smoke.get("resolutionStage") != 0
+        or smoke.get("resolution") != {"width": 256, "height": 192}
+        or smoke.get("latentResolution") != {"width": 64, "height": 48}
+        or smoke.get("epochCount") != 30
+        or smoke.get("previewEpochs") != [1, 5, 10, 20, 30]
+        or smoke.get("initialization")
+        != "fixed_random_denoiser_initialization_without_checkpoint"
+        or smoke.get("autoencoderFrozen") is not True
+        or smoke.get("denoiserCheckpointPath") is not None
+        or smoke.get("denoiserCheckpointReadAllowed") is not False
+        or smoke.get("historicalCheckpointAllowed") is not False
+        or smoke.get("failedCheckpointAllowed") is not False
+        or smoke.get("crossRunArtifactAllowed") is not False
+        or smoke.get("automaticTrainingRetryAllowed") is not False
+    ):
+        raise ValueError("full-backbone controlled Smoke immutable identity changed")
+    _verify_bound_file(
+        project_root,
+        str(compiled["path"]),
+        str(compiled["sha256"]),
+        "full-backbone compiled controlled Smoke contract",
+    )
+    qualification = _validate_full_backbone_readonly_qualification_samples(
+        config,
+        project_root,
+    )
+    fixed_validation = qualification["fixedValidation"]
+    if (
+        fixed_validation.get("sampleId") != smoke.get("sampleId")
+        or fixed_validation.get("split") != smoke.get("sampleSplit")
+    ):
+        raise ValueError("full-backbone controlled Smoke sample binding changed")
+    return json.loads(json.dumps(dict(smoke), ensure_ascii=False))
+
+
+def _validate_joint_condition_local_transport_controlled_smoke_identity(
+    config: Mapping[str, Any],
+    project_root: Path,
+) -> dict[str, Any]:
+    """Recompute the fixed joint-transport Smoke identity from bound evidence."""
+
+    training = config.get("training")
+    evidence = config.get("evidenceBindings")
+    if not isinstance(training, Mapping) or not isinstance(evidence, Mapping):
+        raise ValueError("joint local-transport controlled Smoke identity is missing")
+    smoke = training.get("stage4JointConditionLocalTransportSmokeContract")
+    required_fields = {
+        "schemaVersion", "status", "compiledContract", "capabilityVersion", "architectureId",
+        "sampleId", "sampleSplit", "seed", "topology",
+        "requiredBoundarySides", "resolutionStage", "resolution",
+        "latentResolution", "epochCount", "optimizerStepCount",
+        "previewEpochs", "initialization", "autoencoderFrozen",
+        "denoiserCheckpointPath", "denoiserCheckpointReadAllowed",
+        "historicalCheckpointAllowed", "failedCheckpointAllowed",
+        "crossRunArtifactAllowed", "crossCapabilityArtifactAllowed",
+        "automaticTrainingRetryAllowed", "objectiveReviewAlignmentClaimed",
+        "formalMachineReviewRemainsAuthoritative", "failureCanPromoteCheckpoint",
+    }
+    compiled = smoke.get("compiledContract") if isinstance(smoke, Mapping) else None
+    if (
+        not isinstance(smoke, Mapping)
+        or set(smoke) != required_fields
+        or smoke.get("schemaVersion")
+        != "stage4-joint-condition-local-transport-controlled-smoke-execution-contract-v1"
+        or smoke.get("status") != "active_fixed_identity_not_started"
+        or not isinstance(compiled, Mapping)
+        or set(compiled)
+        != {"path", "sha256", "schemaVersion", "status", "compilationRunId"}
+        or compiled.get("schemaVersion")
+        != "stage4-joint-condition-local-transport-controlled-smoke-contract-v1"
+        or compiled.get("status") != "compiled_not_started"
+        or re.fullmatch(r"[0-9a-f]{64}", str(compiled.get("sha256", ""))) is None
+        or smoke.get("capabilityVersion")
+        != "stage4_full_backbone_joint_condition_local_transport_denoiser_v1"
+        or smoke.get("architectureId")
+        != "stage4_full_backbone_joint_condition_local_transport_denoiser_v1"
+        or smoke.get("sampleId")
+        != "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
+        or smoke.get("sampleSplit") != "validation"
+        or smoke.get("seed") != 20263722
+        or smoke.get("topology") != "west"
+        or smoke.get("requiredBoundarySides") != ["west"]
+        or smoke.get("resolutionStage") != 0
+        or smoke.get("resolution") != {"width": 256, "height": 192}
+        or smoke.get("latentResolution") != {"width": 64, "height": 48}
+        or smoke.get("epochCount") != 30
+        or smoke.get("optimizerStepCount") != 30
+        or smoke.get("previewEpochs") != [1, 5, 10, 20, 30]
+        or smoke.get("initialization")
+        != "fixed_random_denoiser_initialization_without_checkpoint"
+        or smoke.get("autoencoderFrozen") is not True
+        or smoke.get("denoiserCheckpointPath") is not None
+        or smoke.get("denoiserCheckpointReadAllowed") is not False
+        or smoke.get("historicalCheckpointAllowed") is not False
+        or smoke.get("failedCheckpointAllowed") is not False
+        or smoke.get("crossRunArtifactAllowed") is not False
+        or smoke.get("crossCapabilityArtifactAllowed") is not False
+        or smoke.get("automaticTrainingRetryAllowed") is not False
+        or smoke.get("objectiveReviewAlignmentClaimed") is not False
+        or smoke.get("formalMachineReviewRemainsAuthoritative") is not True
+        or smoke.get("failureCanPromoteCheckpoint") is not False
+    ):
+        raise ValueError("joint local-transport controlled Smoke identity changed")
+    _verify_bound_file(
+        project_root,
+        str(compiled["path"]),
+        str(compiled["sha256"]),
+        "joint local-transport compiled controlled Smoke contract",
+    )
+    if evidence.get("compiledControlledSmokeContract") != dict(compiled):
+        raise ValueError("joint local-transport compiled Smoke binding changed")
+
+    approved = evidence.get("approvedDataset")
+    qualification = evidence.get("qualificationSamples")
+    readonly = evidence.get("readonlyGpuQualification")
+    if (
+        not isinstance(approved, Mapping)
+        or approved.get("splitCounts") != EXPECTED_SPLIT
+        or not isinstance(qualification, Mapping)
+        or not isinstance(readonly, Mapping)
+    ):
+        raise ValueError("joint local-transport Smoke evidence binding is incomplete")
+    source = approved.get("sourceIndex")
+    fixed = qualification.get("fixedValidation")
+    condition = fixed.get("conditionPack") if isinstance(fixed, Mapping) else None
+    reference = fixed.get("approvedReferenceRgb") if isinstance(fixed, Mapping) else None
+    if (
+        not isinstance(source, Mapping)
+        or not isinstance(fixed, Mapping)
+        or fixed.get("sampleId") != smoke.get("sampleId")
+        or fixed.get("split") != "validation"
+        or not isinstance(condition, Mapping)
+        or not isinstance(reference, Mapping)
+    ):
+        raise ValueError("joint local-transport Smoke sample binding changed")
+    _verify_bound_file(
+        project_root,
+        str(source.get("path", "")),
+        str(source.get("sha256", "")),
+        "joint local-transport approved source index",
+    )
+    _verify_bound_file(
+        project_root,
+        str(condition.get("path", "")),
+        str(condition.get("sha256", "")),
+        "joint local-transport fixed condition pack",
+    )
+    _verify_bound_file(
+        project_root,
+        str(reference.get("path", "")),
+        str(reference.get("sha256", "")),
+        "joint local-transport fixed reference RGB",
+    )
+    terminal_binding = readonly.get("terminal")
+    report_binding = readonly.get("report")
+    if not isinstance(terminal_binding, Mapping) or not isinstance(report_binding, Mapping):
+        raise ValueError("joint local-transport readonly GPU evidence is missing")
+    terminal_path = _verify_bound_file(
+        project_root,
+        str(terminal_binding.get("path", "")),
+        str(terminal_binding.get("sha256", "")),
+        "joint local-transport readonly GPU terminal",
+    )
+    report_path = _verify_bound_file(
+        project_root,
+        str(report_binding.get("path", "")),
+        str(report_binding.get("sha256", "")),
+        "joint local-transport readonly GPU report",
+    )
+    terminal = json.loads(terminal_path.read_text(encoding="utf-8"))
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if (
+        terminal.get("status")
+        != "stage4_joint_condition_local_transport_readonly_gpu_qualification_succeeded"
+        or terminal.get("capabilityVersion") != smoke.get("capabilityVersion")
+        or terminal.get("nextLegalAction")
+        != "compile_and_execute_stage4_joint_condition_local_transport_controlled_smoke"
+        or terminal.get("ownerAuthorizationRequired") is not False
+        or terminal.get("ownerResponseRequired") is not False
+        or terminal.get("trainingStarted") is not False
+        or terminal.get("qualificationReport") != dict(report_binding)
+        or report.get("status") != "passed"
+        or report.get("runId") != terminal.get("runId")
+        or report.get("capabilityVersion") != smoke.get("capabilityVersion")
+    ):
+        raise ValueError("joint local-transport readonly GPU evidence identity changed")
+    return json.loads(json.dumps(dict(smoke), ensure_ascii=False))
+
+
+def _validate_joint_condition_local_transport_full_data_screen_identity(
+    config: Mapping[str, Any],
+    project_root: Path,
+) -> dict[str, Any]:
+    """Recompute the fixed 24-Epoch joint-transport screen identity."""
+
+    training = config.get("training")
+    evidence = config.get("evidenceBindings")
+    screen = (
+        training.get("stage4JointConditionLocalTransportFullDataScreenContract")
+        if isinstance(training, Mapping)
+        else None
+    )
+    required_fields = {
+        "schemaVersion", "status", "inactiveContract", "capabilityVersion",
+        "architectureId", "seed", "resolutionStage", "resolution",
+        "latentResolution", "epochCount", "trainSampleCountPerEpoch",
+        "validationSampleCount", "challengeSampleCount", "regressionSampleCount",
+        "optimizerStepsPerEpoch", "optimizerStepCount", "diffusionStepCount",
+        "requiredUniqueTrainingTimestepCount", "inferenceTimestepCount",
+        "requiredExactInferenceOverlapCount", "previewEpochs", "initialization",
+        "autoencoderFrozen", "denoiserCheckpointPath",
+        "denoiserCheckpointReadAllowed", "historicalCheckpointAllowed",
+        "failedCheckpointAllowed", "crossRunArtifactAllowed",
+        "crossCapabilityArtifactAllowed", "automaticTrainingRetryAllowed",
+        "stage0Allowed", "formalMachineReviewRemainsAuthoritative",
+        "checkpointPromotionAllowed", "screenCheckpointStage0Eligible",
+    }
+    inactive = screen.get("inactiveContract") if isinstance(screen, Mapping) else None
+    if (
+        not isinstance(evidence, Mapping)
+        or not isinstance(screen, Mapping)
+        or set(screen) != required_fields
+        or screen.get("schemaVersion")
+        != "stage4-joint-condition-local-transport-24-epoch-full-data-screen-execution-contract-v1"
+        or screen.get("status") != "active_fixed_identity_not_started"
+        or not isinstance(inactive, Mapping)
+        or set(inactive) != {"path", "sha256", "schemaVersion", "status"}
+        or evidence.get("inactiveFullDataScreenContract") != dict(inactive)
+        or inactive.get("schemaVersion")
+        != "stage4-joint-condition-local-transport-24-epoch-full-data-screen-contract-v1"
+        or inactive.get("status")
+        != "cpu_compiled_inactive_not_authorized_for_gpu_or_training"
+        or re.fullmatch(r"[0-9a-f]{64}", str(inactive.get("sha256", ""))) is None
+        or screen.get("capabilityVersion")
+        != "stage4_full_backbone_joint_condition_local_transport_denoiser_v1"
+        or screen.get("architectureId")
+        != "stage4_full_backbone_joint_condition_local_transport_denoiser_v1"
+        or screen.get("seed") != 20263722
+        or screen.get("resolutionStage") != 0
+        or screen.get("resolution") != {"width": 256, "height": 192}
+        or screen.get("latentResolution") != {"width": 64, "height": 48}
+        or screen.get("epochCount") != 24
+        or screen.get("trainSampleCountPerEpoch") != 48
+        or screen.get("validationSampleCount") != 8
+        or screen.get("challengeSampleCount") != 4
+        or screen.get("regressionSampleCount") != 4
+        or screen.get("optimizerStepsPerEpoch") != 48
+        or screen.get("optimizerStepCount") != 1152
+        or screen.get("diffusionStepCount") != 1000
+        or screen.get("requiredUniqueTrainingTimestepCount") != 1000
+        or screen.get("inferenceTimestepCount") != 50
+        or screen.get("requiredExactInferenceOverlapCount") != 50
+        or screen.get("previewEpochs") != [5, 10, 15, 20, 24]
+        or screen.get("initialization")
+        != "fixed_random_denoiser_initialization_without_checkpoint"
+        or screen.get("autoencoderFrozen") is not True
+        or screen.get("denoiserCheckpointPath") is not None
+        or screen.get("denoiserCheckpointReadAllowed") is not False
+        or screen.get("historicalCheckpointAllowed") is not False
+        or screen.get("failedCheckpointAllowed") is not False
+        or screen.get("crossRunArtifactAllowed") is not False
+        or screen.get("crossCapabilityArtifactAllowed") is not False
+        or screen.get("automaticTrainingRetryAllowed") is not False
+        or screen.get("stage0Allowed") is not False
+        or screen.get("formalMachineReviewRemainsAuthoritative") is not True
+        or screen.get("checkpointPromotionAllowed") is not False
+        or screen.get("screenCheckpointStage0Eligible") is not False
+    ):
+        raise ValueError("joint local-transport full-data screen identity changed")
+    contract_path = _verify_bound_file(
+        project_root,
+        str(inactive.get("path", "")),
+        str(inactive.get("sha256", "")),
+        "joint local-transport inactive full-data screen contract",
+    )
+    contract = json.loads(contract_path.read_text(encoding="utf-8-sig"))
+    fixed = contract.get("fixedExecutionIdentity")
+    if (
+        contract.get("schemaVersion") != inactive.get("schemaVersion")
+        or contract.get("status") != inactive.get("status")
+        or contract.get("architectureId") != screen.get("architectureId")
+        or contract.get("capabilityVersion") != screen.get("capabilityVersion")
+        or not isinstance(fixed, Mapping)
+        or fixed.get("seed") != screen.get("seed")
+        or fixed.get("epochCount") != screen.get("epochCount")
+        or fixed.get("optimizerStepCount") != screen.get("optimizerStepCount")
+        or fixed.get("requiredUniqueTrainingTimestepCount")
+        != screen.get("requiredUniqueTrainingTimestepCount")
+        or fixed.get("requiredExactInferenceOverlapCount")
+        != screen.get("requiredExactInferenceOverlapCount")
+        or fixed.get("previewEpochs") != screen.get("previewEpochs")
+    ):
+        raise ValueError("joint local-transport inactive screen evidence changed")
+    return json.loads(json.dumps(dict(screen), ensure_ascii=False))
 
 
 def _validate_owner_training_authorization(
@@ -395,13 +995,118 @@ def _validate_owner_training_authorization(
 
 
 def _validate_local_ai_capability_ticket(
-    training: Mapping[str, Any],
+    config: Mapping[str, Any],
     spec: ModeSpec,
     project_root: Path,
 ) -> Mapping[str, Any]:
+    training = config.get("training", {})
     ticket_identity = training.get("localAiCapabilityTicket")
+    if spec.mode_id in _LOCAL_CPU_INACTIVE_MODE_IDS:
+        if ticket_identity is not None:
+            raise ValueError(
+                "spatial-affine inactive CPU support cannot carry an execution ticket"
+            )
+        return {
+            "requestId": f"local-ai-{spec.mode_id}-cpu-inactive-preflight",
+            "commandRef": f"local-ai-{spec.mode_id}-cpu-inactive-preflight",
+            "scope": "cpu_readonly_preflight",
+            "executionState": "cpu_supported_inactive",
+            "preflightOnly": True,
+            "executionActions": sorted(
+                action.value for action in _actions_for_mode(spec)
+            ),
+            "status": spec.authorization_status,
+            "authority": "local_ai_pet_world_program",
+        }
     if not isinstance(ticket_identity, Mapping):
-        raise ValueError("local AI controlled Smoke requires an internal capability ticket")
+        raise ValueError("local AI capability execution requires an internal capability ticket")
+    if spec.mode_id in _SPATIAL_AFFINE_LOCAL_MODE_IDS:
+        if set(ticket_identity) != set(_LOCAL_TICKET_V2_IDENTITY_FIELDS):
+            raise ValueError("local AI capability ticket v2 identity fields are invalid")
+        if (
+            ticket_identity.get("status") != spec.authorization_status
+            or ticket_identity.get("executionState") != "consumed"
+        ):
+            raise ValueError("local AI capability ticket v2 mode or state is invalid")
+        ticket_path = _verify_bound_file(
+            project_root,
+            str(ticket_identity.get("ticketPath")),
+            str(ticket_identity.get("ticketSha256")),
+            "local AI capability ticket v2",
+        )
+        consumption_path = _verify_bound_file(
+            project_root,
+            str(ticket_identity.get("consumptionPath")),
+            str(ticket_identity.get("consumptionSha256")),
+            "local AI capability ticket v2 consumption",
+        )
+        if ticket_path == consumption_path:
+            raise ValueError("local AI capability ticket v2 files are not isolated")
+        ticket = json.loads(ticket_path.read_text(encoding="utf-8"))
+        consumption = json.loads(consumption_path.read_text(encoding="utf-8"))
+        ticket_id = ticket_identity.get("ticketId")
+        actions = sorted(action.value for action in _actions_for_mode(spec))
+        binding = {
+            "boundConfigSha256": ticket_identity.get("boundConfigSha256"),
+            "datasetPackageId": ticket_identity.get("datasetPackageId"),
+            "runId": ticket_identity.get("runId"),
+            "outputNamespace": ticket_identity.get("outputNamespace"),
+        }
+        _validate_local_execution_binding(
+            project_root,
+            dataset_package_id=binding["datasetPackageId"],
+            run_id=binding["runId"],
+            output_namespace=binding["outputNamespace"],
+        )
+        if binding["boundConfigSha256"] != local_ai_ticket_bound_config_sha256(config):
+            raise ValueError("local AI capability ticket v2 config binding is invalid")
+        if (
+            set(ticket)
+            != {
+                "schemaVersion", "status", "ticketId", "modeId",
+                "capabilityAuthority", "ownerAuthorizationRequired",
+                "executionActions", "binding",
+            }
+            or ticket.get("schemaVersion")
+            != "ai-painter-local-internal-capability-ticket-v2"
+            or ticket.get("status") != "issued_not_consumed"
+            or ticket.get("ticketId") != ticket_id
+            or ticket.get("modeId") != spec.mode_id
+            or ticket.get("capabilityAuthority") != "local_ai_pet_world_program"
+            or ticket.get("ownerAuthorizationRequired") is not False
+            or sorted(ticket.get("executionActions", [])) != actions
+            or ticket.get("binding") != binding
+            or sorted(ticket_identity.get("executionActions", [])) != actions
+        ):
+            raise ValueError("local AI capability ticket v2 immutable identity is invalid")
+        if (
+            set(consumption)
+            != {
+                "schemaVersion", "ticketId", "ticketSha256",
+                "oneTimeConsumption", "state", "binding",
+            }
+            or consumption.get("schemaVersion")
+            != "ai-painter-local-internal-capability-ticket-consumption-v2"
+            or consumption.get("ticketId") != ticket_id
+            or consumption.get("ticketSha256")
+            != ticket_identity.get("ticketSha256")
+            or consumption.get("oneTimeConsumption") is not True
+            or consumption.get("state") != "consumed"
+            or consumption.get("binding") != binding
+        ):
+            raise ValueError("local AI capability ticket v2 consumption is invalid")
+        return {
+            **binding,
+            "ticketId": ticket_id,
+            "ticketPath": ticket_identity.get("ticketPath"),
+            "ticketSha256": ticket_identity.get("ticketSha256"),
+            "consumptionPath": ticket_identity.get("consumptionPath"),
+            "consumptionSha256": ticket_identity.get("consumptionSha256"),
+            "executionState": "consumed",
+            "status": spec.authorization_status,
+            "executionActions": actions,
+            "authority": "local_ai_pet_world_program",
+        }
     required = {
         "ticketId", "ticketPath", "ticketSha256", "consumptionPath",
         "consumptionSha256", "executionState", "status", "executionActions",
@@ -468,11 +1173,14 @@ def resolve_stage_execution_grant(
     spec = resolve_stage_mode(config)
     training = config.get("training", {})
     owner_identity = (
-        _validate_local_ai_capability_ticket(training, spec, root)
-        if spec.mode_id in _AUTHORITATIVE_SEMANTIC_CARRIER_LOCAL_MODE_IDS
+        _validate_local_ai_capability_ticket(config, spec, root)
+        if spec.mode_id in (
+            _AUTHORITATIVE_SEMANTIC_CARRIER_LOCAL_MODE_IDS
+            | _SPATIAL_AFFINE_LOCAL_MODE_IDS
+        )
         else _validate_owner_training_authorization(training, spec, root, verify_owner_files)
     )
-    smoke = training.get("stage4PostDecodeFullConditionResponsibilitySmokeContract") or training.get("stage4PostDecodeObjectRgbSmokeContract") or training.get("stage4AuthoritativeSemanticCarrierSmokeContract") or training.get("structureFactFirstStage4SingleSampleSmokeContract") or training.get("v9Stage4SingleSampleSmokeContract") or training.get(
+    smoke = training.get("stage4JointConditionLocalTransportFullDataScreenContract") or training.get("stage4JointConditionLocalTransportSmokeContract") or training.get("stage4FullBackboneSpatialAffineSmokeContract") or training.get("stage4PostDecodeFullConditionResponsibilitySmokeContract") or training.get("stage4PostDecodeObjectRgbSmokeContract") or training.get("stage4AuthoritativeSemanticCarrierSmokeContract") or training.get("structureFactFirstStage4SingleSampleSmokeContract") or training.get("v9Stage4SingleSampleSmokeContract") or training.get(
         "v8Stage4SingleSampleSmokeContract"
     ) or training.get("r5Stage4BoundedRepairSmokeContract") or {}
     sample_id = smoke.get("sampleId") or training.get("authorizedOverfitSampleId")
@@ -480,6 +1188,29 @@ def resolve_stage_execution_grant(
         smoke.get("requiredBoundarySides")
         or training.get("requiredBoundarySides")
         or (["west"] if spec.architecture.endswith("object_semantic_decoded_alignment") else [])
+    )
+    qualification_samples = (
+        _validate_full_backbone_readonly_qualification_samples(config, root)
+        if spec.mode_id == _FULL_BACKBONE_READONLY_GPU_MODE_ID
+        else None
+    )
+    controlled_smoke = (
+        _validate_full_backbone_controlled_smoke_identity(config, root)
+        if spec.mode_id == _FULL_BACKBONE_CONTROLLED_SMOKE_MODE_ID
+        else _validate_joint_condition_local_transport_controlled_smoke_identity(
+            config, root
+        )
+        if spec.mode_id
+        == _JOINT_CONDITION_LOCAL_TRANSPORT_CONTROLLED_SMOKE_MODE_ID
+        else None
+    )
+    full_data_screen = (
+        _validate_joint_condition_local_transport_full_data_screen_identity(
+            config, root
+        )
+        if spec.mode_id
+        == _JOINT_CONDITION_LOCAL_TRANSPORT_FULL_DATA_SCREEN_MODE_ID
+        else None
     )
     dataset_constraints = {
         "capacity": 64,
@@ -489,6 +1220,48 @@ def resolve_stage_execution_grant(
         "requiredBoundarySides": required_boundary_sides,
         "sampleMustRemainInRegisteredSplit": True,
     }
+    if qualification_samples is not None:
+        dataset_constraints.update({
+            "preboundReadOnlySamples": True,
+            "freeSampleSelectionAllowed": False,
+            "selectBoundSampleActionRequired": False,
+            "qualificationSamples": qualification_samples,
+        })
+    if controlled_smoke is not None:
+        dataset_constraints.update({
+            "fixedControlledSmoke": True,
+            "seed": controlled_smoke["seed"],
+            "topology": controlled_smoke["topology"],
+            "resolutionStage": controlled_smoke["resolutionStage"],
+            "resolution": controlled_smoke["resolution"],
+            "epochCount": controlled_smoke["epochCount"],
+            "previewEpochs": controlled_smoke["previewEpochs"],
+            "automaticTrainingRetryAllowed": False,
+        })
+    if full_data_screen is not None:
+        dataset_constraints.update({
+            "fixedFullDataScreen": True,
+            "seed": full_data_screen["seed"],
+            "resolutionStage": full_data_screen["resolutionStage"],
+            "resolution": full_data_screen["resolution"],
+            "epochCount": full_data_screen["epochCount"],
+            "trainSampleCountPerEpoch": full_data_screen["trainSampleCountPerEpoch"],
+            "validationSampleCount": full_data_screen["validationSampleCount"],
+            "challengeSampleCount": full_data_screen["challengeSampleCount"],
+            "regressionSampleCount": full_data_screen["regressionSampleCount"],
+            "optimizerStepsPerEpoch": full_data_screen["optimizerStepsPerEpoch"],
+            "optimizerStepCount": full_data_screen["optimizerStepCount"],
+            "diffusionStepCount": full_data_screen["diffusionStepCount"],
+            "requiredUniqueTrainingTimestepCount": (
+                full_data_screen["requiredUniqueTrainingTimestepCount"]
+            ),
+            "inferenceTimestepCount": full_data_screen["inferenceTimestepCount"],
+            "requiredExactInferenceOverlapCount": (
+                full_data_screen["requiredExactInferenceOverlapCount"]
+            ),
+            "previewEpochs": full_data_screen["previewEpochs"],
+            "automaticTrainingRetryAllowed": False,
+        })
     checkpoint_constraints = {
         "identityInspectionOnlyDuringCpuDryRun": True,
         "parentDenoiserAllowed": (
@@ -518,6 +1291,13 @@ def resolve_stage_execution_grant(
         "authorizationIdentity": dict(owner_identity),
     }
     mode_actions = _actions_for_mode(spec)
+    if (
+        qualification_samples is not None
+        and ExecutionAction.SELECT_BOUND_SAMPLE in mode_actions
+    ):
+        raise ValueError(
+            "readonly GPU prebound samples cannot open free sample selection"
+        )
     owner_actions = owner_identity.get("executionActions")
     if spec.mode_id in {
         _PHASE0_MODE_ID, _STRUCTURE_SMOKE_MODE_ID,

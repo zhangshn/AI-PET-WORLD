@@ -136,6 +136,39 @@ ROUTE_COUNTERFACTUAL_COMPOSITOR_STAGE4_INACTIVE_STATUS = (
 ROUTE_COUNTERFACTUAL_COMPOSITOR_STAGE4_SMOKE_STATUS = (
     "local_ai_native_route_counterfactual_compositor_controlled_smoke_active"
 )
+SPATIAL_AFFINE_DECODER_STAGE4_INACTIVE_STATUS = (
+    "stage4_multiscale_spatial_affine_conditioned_decoder_cpu_supported_inactive"
+)
+SPATIAL_AFFINE_DECODER_STAGE4_READONLY_GPU_STATUS = (
+    "local_ai_stage4_multiscale_spatial_affine_readonly_gpu_qualification_active"
+)
+SPATIAL_AFFINE_DECODER_STAGE4_FULL_DATA_SCREEN_STATUS = (
+    "local_ai_stage4_multiscale_spatial_affine_full_data_screen_active"
+)
+SPATIAL_AFFINE_DECODER_STAGE0_FULL_TRAINING_STATUS = (
+    "local_ai_stage4_multiscale_spatial_affine_stage0_full_training_active"
+)
+FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_STAGE4_INACTIVE_STATUS = (
+    "stage4_full_backbone_spatial_affine_conditioned_denoiser_cpu_supported_inactive"
+)
+FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_STAGE4_READONLY_GPU_STATUS = (
+    "local_ai_stage4_full_backbone_spatial_affine_readonly_gpu_qualification_active"
+)
+FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_STAGE4_SMOKE_STATUS = (
+    "local_ai_stage4_full_backbone_spatial_affine_controlled_smoke_active"
+)
+JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_INACTIVE_STATUS = (
+    "stage4_joint_condition_local_transport_cpu_supported_inactive"
+)
+JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_READONLY_GPU_STATUS = (
+    "local_ai_stage4_joint_condition_local_transport_readonly_gpu_qualification_active"
+)
+JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_SMOKE_STATUS = (
+    "local_ai_stage4_joint_condition_local_transport_controlled_smoke_active"
+)
+JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_FULL_DATA_SCREEN_STATUS = (
+    "local_ai_stage4_joint_condition_local_transport_full_data_screen_active"
+)
 STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID = (
     "stage4_per_class_final_visible_reference_feature_structure_obligation_v1"
 )
@@ -256,6 +289,15 @@ _NATIVE_RESPONSIBILITY_RESIDUAL = (
 )
 _ROUTE_COUNTERFACTUAL_COMPOSITOR = (
     "stage4_native_condition_shared_weight_route_counterfactual_compositor_v1"
+)
+_SPATIAL_AFFINE_DECODER = (
+    "stage4_multiscale_spatial_affine_conditioned_decoder_v1"
+)
+_FULL_BACKBONE_SPATIAL_AFFINE_DENOISER = (
+    "stage4_full_backbone_spatial_affine_conditioned_denoiser_v1"
+)
+_JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER = (
+    "stage4_full_backbone_joint_condition_local_transport_denoiser_v1"
 )
 
 
@@ -592,6 +634,116 @@ FORMAL_MODE_REGISTRY = ModeRegistry(
             "single_sample_smoke",
             "route_counterfactual_compositor_stage4_smoke_adapter",
             "validation",
+            True,
+        ),
+        ModeSpec(
+            "spatial_affine_decoder_stage4_inactive",
+            SPATIAL_AFFINE_DECODER_STAGE4_INACTIVE_STATUS,
+            _SPATIAL_AFFINE_DECODER,
+            4,
+            "cpu_inactive",
+            "spatial_affine_decoder_stage4_adapter",
+            None,
+            False,
+        ),
+        ModeSpec(
+            "spatial_affine_decoder_stage4_readonly_gpu",
+            SPATIAL_AFFINE_DECODER_STAGE4_READONLY_GPU_STATUS,
+            _SPATIAL_AFFINE_DECODER,
+            4,
+            "readonly_gpu_qualification",
+            "spatial_affine_decoder_stage4_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "spatial_affine_decoder_stage4_full_data_screen",
+            SPATIAL_AFFINE_DECODER_STAGE4_FULL_DATA_SCREEN_STATUS,
+            _SPATIAL_AFFINE_DECODER,
+            4,
+            "full_data_screen",
+            "spatial_affine_decoder_stage4_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "spatial_affine_decoder_stage0_full_training",
+            SPATIAL_AFFINE_DECODER_STAGE0_FULL_TRAINING_STATUS,
+            _SPATIAL_AFFINE_DECODER,
+            0,
+            "full_training_stage0",
+            "spatial_affine_decoder_stage4_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "full_backbone_spatial_affine_denoiser_stage4_inactive",
+            FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_STAGE4_INACTIVE_STATUS,
+            _FULL_BACKBONE_SPATIAL_AFFINE_DENOISER,
+            4,
+            "cpu_inactive",
+            "full_backbone_spatial_affine_denoiser_stage4_adapter",
+            None,
+            False,
+        ),
+        ModeSpec(
+            "full_backbone_spatial_affine_denoiser_stage4_readonly_gpu",
+            FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_STAGE4_READONLY_GPU_STATUS,
+            _FULL_BACKBONE_SPATIAL_AFFINE_DENOISER,
+            4,
+            "readonly_gpu_qualification",
+            "full_backbone_spatial_affine_denoiser_stage4_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "full_backbone_spatial_affine_denoiser_stage4_smoke",
+            FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_STAGE4_SMOKE_STATUS,
+            _FULL_BACKBONE_SPATIAL_AFFINE_DENOISER,
+            4,
+            "single_sample_smoke",
+            "full_backbone_spatial_affine_denoiser_stage4_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "joint_condition_local_transport_stage4_inactive",
+            JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_INACTIVE_STATUS,
+            _JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER,
+            4,
+            "cpu_inactive",
+            "joint_condition_local_transport_stage4_adapter",
+            None,
+            False,
+        ),
+        ModeSpec(
+            "joint_condition_local_transport_stage4_readonly_gpu",
+            JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_READONLY_GPU_STATUS,
+            _JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER,
+            4,
+            "readonly_gpu_qualification",
+            "joint_condition_local_transport_stage4_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "joint_condition_local_transport_stage4_smoke",
+            JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_SMOKE_STATUS,
+            _JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER,
+            4,
+            "single_sample_smoke",
+            "joint_condition_local_transport_stage4_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "joint_condition_local_transport_stage4_full_data_screen",
+            JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_FULL_DATA_SCREEN_STATUS,
+            _JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER,
+            4,
+            "full_data_screen",
+            "joint_condition_local_transport_stage4_full_data_screen_adapter",
+            None,
             True,
         ),
         ModeSpec(

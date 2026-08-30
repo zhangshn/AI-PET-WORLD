@@ -1,6 +1,0 @@
-import Link from "next/link"
-import styles from "../detail.module.css"
-
-export default function StructureGuidedPage() {
-  return <main className={styles.page}><header className={styles.header}><Link className={styles.back} href="/ai-painter-progress">← 返回训练主页</Link><p className={styles.kicker}>STAGE 03 / STRUCTURE SUPERVISION</p><h1>14通道显式结构监督</h1><p>本地模型同时生成 RGB 与14通道结构。RGB 必须经过预测结构融合，建筑、道路和水岸不能再被纹理模型忽略。</p><dl className={styles.metrics}><div><dt>训练</dt><dd>160 Epoch</dd></div><div><dt>输出</dt><dd>RGB + Mask</dd></div><div><dt>结构 IoU</dt><dd>89.0%</dd></div><div><dt>展示状态</dt><dd>继续阻断</dd></div></dl></header><section className={styles.resultGrid}><article className={styles.resultCard}><span className={styles.fail}>视觉审核未通过</span><h2>本地模型生成图</h2><p>结构位置明显改善，但 RGB 仍然模糊，不能进入世界画面。</p><img src="/api/ai-painter/structure-guided-inference/generated" alt="结构监督模型生成图" /></article><article className={styles.resultCard}><span className={styles.pass}>结构审核通过</span><h2>模型预测结构</h2><p>模型已较稳定地保留建筑、道路和区域边界，最佳 Structure IoU 为 89.0%。</p><img src="/api/ai-painter/structure-guided-inference/structure" alt="14通道预测结构预览" /></article></section><section className={styles.panel}><h2>下一步</h2><p>保留已经通过的结构头，下一模块只改 RGB 细节生成层。任何新画面仍需同时通过结构审核和视觉质量审核，才允许进入 `/world`。</p></section></main>
-}

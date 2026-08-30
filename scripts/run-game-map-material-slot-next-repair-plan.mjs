@@ -9,6 +9,7 @@ import {
   updateTrainingControlStep,
 } from "./lib/ai-painter-training-control.mjs"
 import { enrichTrainingProcessLedgerEvent } from "./lib/ai-painter-training-ledger-event-analysis.mjs"
+import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-store.mjs"
 import { refreshGameMapAutoVisualJudgeLearning } from "./lib/game-map-auto-visual-judge-learning.mjs"
 
 const cwd = process.cwd()
@@ -21,9 +22,6 @@ const outputRoot = path.resolve(".runtime/ai-painter/game-map-material-slot-next
 const packageJson = JSON.parse(fs.readFileSync(path.resolve("package.json"), "utf8"))
 const packageScripts = packageJson.scripts ?? {}
 const archiveExistingCommand = "node scripts/run-current-game-map-material-slot-v46-runtime-pipeline.mjs --archive-existing"
-const ledgerDir = path.resolve(".runtime/ai-painter/training-process-ledger")
-const ledgerPath = path.join(ledgerDir, "events.jsonl")
-const latestLedgerPath = path.join(ledgerDir, "latest.json")
 
 const allowedNpmScripts = new Set([
   "prepare:game-map-material-slot-v47-visual-delta",
@@ -70,37 +68,7 @@ function writeJson(filePath, value) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8")
 }
 
-function readLedgerEvents() {
-  if (!fs.existsSync(ledgerPath)) return []
-  const raw = fs.readFileSync(ledgerPath, "utf8").trim()
-  if (!raw) return []
-  return raw
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line))
-}
-
-function buildLedgerSummary(events) {
-  const summary = {
-    total: events.length,
-    running: 0,
-    success: 0,
-    failed: 0,
-    error: 0,
-    blocked: 0,
-    info: 0,
-    lastEvent: events.at(-1) ?? null,
-  }
-  for (const event of events) {
-    if (Object.prototype.hasOwnProperty.call(summary, event.status)) {
-      summary[event.status] += 1
-    }
-  }
-  return summary
-}
-
 function appendRepairRunnerLedgerEvent(event) {
-  fs.mkdirSync(ledgerDir, { recursive: true })
   const stampedEvent = enrichTrainingProcessLedgerEvent({
     id: randomUUID(),
     timestamp: nowIso(),
@@ -108,14 +76,7 @@ function appendRepairRunnerLedgerEvent(event) {
     script: "scripts/run-game-map-material-slot-next-repair-plan.mjs",
     ...event,
   })
-  fs.appendFileSync(ledgerPath, `${JSON.stringify(stampedEvent)}\n`, "utf8")
-  const events = readLedgerEvents()
-  writeJson(latestLedgerPath, {
-    schemaVersion: "ai-painter-training-process-ledger-v1",
-    updatedAt: events.at(-1)?.timestamp ?? null,
-    events: events.slice(-120).reverse(),
-    summary: buildLedgerSummary(events),
-  })
+  appendAiPainterProgramEvent(stampedEvent)
   refreshAutoVisualJudgeLearning(stampedEvent)
 }
 

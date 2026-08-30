@@ -20,6 +20,9 @@ import { getAiConsoleSystemProjectionAvailability } from "@/server/ai-console/sy
 import { getAiConsoleTaskProjectionAvailability } from "@/server/ai-console/task-projection"
 import { queryAiConsoleWorkspaceProjection } from "@/server/ai-console/workspace-projection"
 import styles from "./ai-console-workspace.module.css"
+import themeStyles from "./ai-console-theme.module.css"
+import { AiConsoleLiveStatus } from "./ai-console-live-status"
+import { AiConsoleObservabilityPanel } from "./ai-console-observability-panel"
 
 type AiConsoleWorkspacePageProps = {
   moduleSlug: string
@@ -101,6 +104,10 @@ export async function AiConsoleWorkspacePage({ moduleSlug, workspaceSlug }: AiCo
       : projectionAvailability === "unknown_or_stale"
         ? "UNKNOWN / STALE"
         : "NOT CONNECTED"
+  const boundedControlWorkspaces = ["tasks", "capabilities", "training", "reviews", "world"]
+  const writeCapabilityLabel = selectedWorkspace?.moduleSlug === "control"
+    ? boundedControlWorkspaces.includes(selectedWorkspace.slug) ? "BOUNDED" : "DISABLED"
+    : "NOT APPLICABLE"
   const initialProjection: WorkspaceQueryPayload | undefined = selectedWorkspace && initialProjectionResult
     ? {
         contractStatus: "ready",
@@ -112,7 +119,7 @@ export async function AiConsoleWorkspacePage({ moduleSlug, workspaceSlug }: AiCo
     : undefined
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${themeStyles.theme}`} data-framework={framework.id} data-module={consoleModule.slug}>
       <a className={styles.skipLink} href="#ai-console-workspace-main">跳到主工作区</a>
       <div className={styles.shell}>
         <header className={styles.topbar}>
@@ -139,7 +146,7 @@ export async function AiConsoleWorkspacePage({ moduleSlug, workspaceSlug }: AiCo
             </div>
             <nav aria-label="AI控制台一级模块">
               {aiConsoleFrameworks.map((navFramework) => (
-                <section key={navFramework.id}>
+                <section data-framework={navFramework.id} key={navFramework.id}>
                   <p>{navFramework.id} · {navFramework.title}</p>
                   {navFramework.moduleSlugs.map((slug) => {
                     const navModule = aiConsoleModules.find((candidate) => candidate.slug === slug)
@@ -147,6 +154,7 @@ export async function AiConsoleWorkspacePage({ moduleSlug, workspaceSlug }: AiCo
                     return (
                       <Link
                         className={slug === moduleSlug ? styles.primaryLinkActive : styles.primaryLink}
+                        data-module={navModule.slug}
                         href={navModule.route}
                         key={navModule.id}
                         aria-current={slug === moduleSlug ? "page" : undefined}
@@ -163,7 +171,7 @@ export async function AiConsoleWorkspacePage({ moduleSlug, workspaceSlug }: AiCo
             <div className={styles.readonlyNotice}>
               <span>页面边界</span>
               <strong>{consoleModule.plane === "control" ? "控制合同展示" : "只读观察投影"}</strong>
-              <p>{consoleModule.plane === "control" ? "当前不提供可执行控件。" : "只读显示受信来源，不改变运行状态。"}</p>
+              <p>{consoleModule.plane === "control" ? "仅已登记的有界执行器提供控件。" : "只读显示受信来源，不改变运行状态。"}</p>
             </div>
           </aside>
 
@@ -219,6 +227,9 @@ export async function AiConsoleWorkspacePage({ moduleSlug, workspaceSlug }: AiCo
                     ))}
                     <div className={styles.queryState}><span>数据投影</span><strong>{projectionLabel}</strong><small>{projectionAvailability === "not_connected" ? "不显示模拟记录" : projectionAvailability === "unknown_or_stale" ? "记录校验失败关闭" : "只读受信投影"}</small></div>
                   </div>
+                  {selectedWorkspace.moduleSlug === "system" && selectedWorkspace.slug === "resources" ? <AiConsoleObservabilityPanel mode="resources" /> : null}
+                  {selectedWorkspace.moduleSlug === "system" && selectedWorkspace.slug === "telemetry" ? <AiConsoleObservabilityPanel mode="telemetry" /> : null}
+                  {selectedWorkspace.moduleSlug === "training" && selectedWorkspace.slug === "overview" ? <AiConsoleObservabilityPanel mode="training" /> : null}
                   <AiConsoleWorkspaceWorkbench initialProjection={initialProjection} workspace={selectedWorkspace} />
                 </section>
 
@@ -260,7 +271,7 @@ export async function AiConsoleWorkspacePage({ moduleSlug, workspaceSlug }: AiCo
                     <div><span>统一字段合同</span><strong>READY</strong></div>
                     <div><span>页面查询合同</span><strong>READY</strong></div>
                     <div><span>权威数据投影</span><strong>{projectionMachineLabel}</strong></div>
-                    <div><span>写入能力</span><strong>{consoleModule.plane === "control" ? "DISABLED" : "NOT APPLICABLE"}</strong></div>
+                    <div><span>写入能力</span><strong>{writeCapabilityLabel}</strong></div>
                   </div>
                 </section>
               </div>
@@ -333,6 +344,7 @@ export async function AiConsoleWorkspacePage({ moduleSlug, workspaceSlug }: AiCo
           </aside>
         </div>
 
+        <AiConsoleLiveStatus />
         <footer className={styles.statusbar}>
           <span><i />二级内容层已接入</span><span>权威数据：{projectionLabel}</span><span>控制副作用：无</span><code>{selectedWorkspace?.route ?? consoleModule.route}</code>
         </footer>

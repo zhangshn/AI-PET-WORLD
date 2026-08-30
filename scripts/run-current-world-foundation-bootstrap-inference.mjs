@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import sharp from "sharp"
+import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-store.mjs"
 
 const ROOT = process.cwd()
 const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "complete-world-visual-bootstrap-inference")
@@ -10,7 +11,6 @@ const PYTHON = path.join(ROOT, "ml", "ai-painter", ".venv", "Scripts", "python.e
 const PYTHON_SCRIPT = path.join(ROOT, "ml", "ai-painter", "scripts", "infer_current_world_foundation_complete_map.py")
 const SOURCE_MANIFEST = path.join(ROOT, ".runtime", "ai-painter", "local-foundation-models", "manifest.json")
 const REVIEW_POINTER = path.join(ROOT, ".runtime", "ai-painter", "complete-world-visual-machine-reviews", "latest.json")
-const LEDGER_ROOT = path.join(ROOT, ".runtime", "ai-painter", "training-process-ledger")
 const taskPointer = readJson(".runtime/ai-painter/world-visual-generation-task-packages/latest.json")
 const task = readJson(taskPointer.taskPath)
 const conditionManifestPath = path.join(path.dirname(resolvePath(taskPointer.taskPath)), "compiled-conditions", "manifest.json")
@@ -152,9 +152,7 @@ function appendLedger(value, status) {
     error: status === "success" ? null : value.error,
     errorZh: status === "success" ? null : value.error,
   }
-  fs.mkdirSync(LEDGER_ROOT, { recursive: true })
-  fs.appendFileSync(path.join(LEDGER_ROOT, "events.jsonl"), `${JSON.stringify(event)}\n`)
-  writeJson(path.join(LEDGER_ROOT, "latest.json"), event)
+  appendAiPainterProgramEvent(event)
 }
 function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex") }
 function formatShanghai(iso) { return `${new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(iso)).replace(" ", "T")}+08:00` }

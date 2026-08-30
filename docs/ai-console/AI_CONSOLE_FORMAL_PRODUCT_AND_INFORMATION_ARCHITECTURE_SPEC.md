@@ -1,18 +1,18 @@
 # AI控制台正式产品、信息架构与统一数据字典规格
 
-更新时间：2026-08-28 19:30:00 +08:00
+更新时间：2026-08-30 12:26:57 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-1.7`
+文档版本：`AI-CONSOLE-2.5`
 
 生效日期：`2026-08-27`
 
-替代版本：`AI-CONSOLE-1.6`
+替代版本：`AI-CONSOLE-2.4`
 
 文档状态：`active_normative_target`
 
-程序符合状态：`v7_formal_evidence_index_connected`
+程序符合状态：`v21_current_execution_projection_and_legacy_ui_retirement_connected`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
@@ -41,7 +41,7 @@ AI控制台（本地自研AI平台入口）
 4. Codex及其他外部智能体不属于正式运行链、状态数据库、权限系统、审核器或发布器。
 5. 控制台不得把Markdown、浏览器状态、聊天内容、目录修改时间或格式正确的SHA字符串当作实时事实。
 6. 当前任务、活动执行、最近训练终态和用户选择的历史Run必须保持独立身份。
-7. 旧`/ai-painter-progress/`可以继续独立存在，但新AI控制台不得导航、嵌入、读取、调用或把它作为任何模块的下游内容。
+7. 旧`/ai-painter-progress/*`页面已经退役；旧网址只能由无状态兼容路由永久重定向到`/ai-console`，不得继续独立渲染、读取状态、调用接口或承载控制。旧页面资料不得作为当前任务、状态或权限来源。
 
 ## 3. 产品平面
 
@@ -155,9 +155,9 @@ AI控制台
 
 | 二级模块 | 路由 | 内容 |
 |---|---|---|
-| 训练总览 | `/ai-console/training/overview` | 当前训练、Stage、Epoch、Batch、优化步、Loss、ETA和资源。 |
-| 训练计划 | `/ai-console/training/plans` | 冻结配置、数据划分、种子、分辨率、Epoch和阶段依赖。 |
-| 模型结构 | `/ai-console/training/models` | 模型家族、组件、参数、输入输出、能力版本和状态哈希。 |
+| 训练总览 | `/ai-console/training/overview` | 新平台正式训练上报的Run、Stage、Epoch、Batch、优化步、Loss、学习率、吞吐、ETA、Checkpoint与资源；同时单独显示进程直接观测。 |
+| 训练计划 | `/ai-console/training/plans` | V13内容寻址登记的非活动计划、模型依赖、数据划分、种子、分辨率、Epoch预算、父终态、优化器和资源档案。 |
+| 模型结构 | `/ai-console/training/models` | V13内容寻址登记的模型家族、架构/源码摘要、输入输出Schema、参数量和不可变记录摘要。 |
 | Checkpoint | `/ai-console/training/checkpoints` | 身份、资格、来源Stage、选择分数、晋级和禁止复用状态。 |
 | 训练历史 | `/ai-console/training/runs` | Run、指标、预览、终态、Manifest、Finalization和资源遥测。 |
 
@@ -166,10 +166,10 @@ AI控制台
 | 二级模块 | 路由 | 内容 |
 |---|---|---|
 | 当前验证 | `/ai-console/reviews/current` | 验证阶段、节点、进度、审核器、输入身份和实时事件。 |
-| 审核结果 | `/ai-console/reviews/results` | 每节点通过/失败、失败码、区域、指标、阈值合同和终态。 |
+| 审核结果 | `/ai-console/reviews/results` | V14按冻结合同与机器观测值计算的唯一通过/失败终态、失败码、影响范围、指标与阈值快照。 |
 | 证据查看 | `/ai-console/reviews/evidence` | 原始预览、规范化副本、SHA-256、参考来源和复现关系。 |
-| 审核合同 | `/ai-console/reviews/contracts` | 审核器版本、指标定义、冻结阈值和适用能力域。 |
-| 失败分类 | `/ai-console/reviews/failures` | 视觉失败、身份冲突、基础设施故障、证据不足和政策边界。 |
+| 审核合同 | `/ai-console/reviews/contracts` | V14内容寻址登记的审核器身份/版本、指标定义、冻结阈值、证据要求、失败码、适用能力域与前序合同。 |
+| 失败分类 | `/ai-console/reviews/failures` | 只从V14失败关闭结果派生失败码、分类、影响范围、证据摘要和重新准入条件。 |
 
 ### AP-05 数据与条件中心
 
@@ -187,29 +187,29 @@ AI控制台
 |---|---|---|
 | 权威事实绑定 | `/ai-console/runtime/facts` | WorldFacts、VisualFactManifest、world/region/tick/factHash身份。 |
 | 生成任务 | `/ai-console/runtime/generations` | 能力版本、条件包、候选、推理进度和生成终态。 |
-| 候选审核 | `/ai-console/runtime/candidates` | 候选身份、机器审核、拒绝码和发布资格。 |
-| RuntimeFrame | `/ai-console/runtime/frames` | Frame候选、正式Frame、发布身份、回退和世界消费。 |
-| 世界运行 | `/ai-console/runtime/world` | 当前世界视觉版本、消费状态、暂停、冻结和恢复事实。 |
+| 候选审核 | `/ai-console/runtime/candidates` | V15绑定当前能力激活、WorldFacts、条件包、既有视觉制品与双摘要的待审核候选。 |
+| RuntimeFrame | `/ai-console/runtime/frames` | V15绑定V14通过结果登记的正式未消费Frame、能力激活、发布身份和前序Frame链。 |
+| 世界运行 | `/ai-console/runtime/world` | V16新平台登记的活动Frame、消费状态、发布暂停/恢复、合法回退和视觉冻结事实；不读取旧World Runtime。 |
 
 ### AP-07 证据与治理中心
 
 | 二级模块 | 路由 | 内容 |
 |---|---|---|
-| 证据浏览 | `/ai-console/evidence/artifacts` | 默认读取V7独立证据索引中的内容寻址身份、逻辑路径、原始字节摘要、来源修订、登记事务和哈希链；其他视图显示证据类型、不可变性、完整性与保留合同。 |
+| 证据浏览 | `/ai-console/evidence/artifacts` | 默认读取V7独立证据索引；V8按完整证据身份提供经摘要复核的受限UTF-8检查面板，SQLite保持二进制元数据模式；其他视图显示证据合同。 |
 | 事件账本 | `/ai-console/evidence/events` | 当前接入新控制台V5后安全命令的单调事件、状态转换、哈希因果链、事务身份和回执证据；不扫描旧运行目录。 |
-| 任务胶囊 | `/ai-console/evidence/capsules` | 任务目标、能力、输入、执行、终态和政策边界。 |
-| 数据库事务 | `/ai-console/evidence/transactions` | 默认展示V6后新控制台安全命令的SQLite控制提交事务；其他视图展示身份准备、文件、事件、SQLite、恢复和冲突门禁。 |
-| 政策边界 | `/ai-console/evidence/policies` | 长期目标、来源许可、外部费用、不可恢复操作、安全上限和审计真实性的禁止动作、失败关闭、保留要求与安全替代路线；真实报告只从独立报告索引读取。 |
+| 任务胶囊 | `/ai-console/evidence/capsules` | V9读取新平台独立终态任务胶囊库；四个视图分别展示任务目标、输入与能力、执行摘要、终态与边界。当前受验证正式库为空，不创建示例行。 |
+| 数据库事务 | `/ai-console/evidence/transactions` | 默认展示V6控制提交事务；“文件与事件”“SQLite一致性”使用V8正式对账记录，其他视图展示身份准备、恢复和冲突门禁。 |
+| 政策边界 | `/ai-console/evidence/policies` | 默认“正式边界报告”读取V10独立索引；其余页签展示长期目标、来源许可、外部费用、不可恢复操作、安全上限和审计真实性的禁止动作、失败关闭、保留要求与安全替代路线。 |
 
 ### AP-08 系统资源与后台服务
 
 | 二级模块 | 路由 | 内容 |
 |---|---|---|
-| 资源总览 | `/ai-console/system/resources` | CPU、内存、GPU、显存、磁盘和任务占用。 |
+| 资源总览 | `/ai-console/system/resources` | 250毫秒目标刷新CPU、内存、GPU、显存、温度、功耗、磁盘和训练特征进程；同时显示毫秒采样时间、序号、耗时、链路延迟与通道年龄。 |
 | 后台服务 | `/ai-console/system/services` | 服务身份、PID、启动方式、心跳、状态和最近错误。 |
 | 任务调度 | `/ai-console/system/scheduler` | 资源队列、优先级、时间窗口和容量策略。 |
 | 健康检查 | `/ai-console/system/health` | Python、CUDA、Node、数据库、磁盘和证据目录健康。 |
-| 遥测历史 | `/ai-console/system/telemetry` | 资源采样、峰值、趋势和异常，不以控制台文本替代证据。 |
+| 遥测历史 | `/ai-console/system/telemetry` | 浏览会话资源采样、峰值与趋势；会话曲线不得冒充持久机器证据。 |
 
 ### AP-09 历史归档与全局检索
 
@@ -225,11 +225,11 @@ AI控制台
 
 | 二级模块 | 路由 | 内容 |
 |---|---|---|
-| 任务控制 | `/ai-console/control/tasks` | 启动已登记任务、暂停/恢复队列、优先级和取消未启动任务。 |
-| 训练控制 | `/ai-console/control/training` | 启动合格训练、在安全点暂停、合法恢复、安全停止和时间窗口。 |
-| 验证控制 | `/ai-console/control/reviews` | 启动正式验证、重跑只读审核、重建投影和检查证据。 |
-| 能力控制 | `/ai-console/control/capabilities` | 激活合格能力、停用、合法回退和自动更新开关。 |
-| 世界控制 | `/ai-console/control/world` | 暂停/恢复Frame发布、回退正式Frame和冻结视觉更新。 |
+| 任务控制 | `/ai-console/control/tasks` | V11开放登记任务、调整未启动任务优先级和取消未启动任务；启动任务与暂停/恢复队列保持禁用。 |
+| 训练控制 | `/ai-console/control/training` | V13开放模型结构与非活动训练计划登记；启动、在安全点暂停、恢复、安全停止和时间窗口保持禁用。 |
+| 验证控制 | `/ai-console/control/reviews` | 开放主登记核验、冻结审核合同和机器观测终态登记；启动正式验证、审核重跑、投影重建和证据检查保持禁用。 |
+| 能力控制 | `/ai-console/control/capabilities` | V12开放候选、顺序资格与非活动发布登记；V15开放完整资格发布激活；停用、合法回退和自动更新开关保持禁用。 |
+| 世界控制 | `/ai-console/control/world` | V15开放既有视觉制品候选与机器审核通过的正式未消费Frame登记；V16开放消费、发布暂停/恢复、合法祖先回退和视觉冻结登记。全部只写新平台SQLite，不写游戏世界或WorldFacts。 |
 | 资源控制 | `/ai-console/control/resources` | 设置合同允许的资源窗口和上限、管理安全缓存与服务。 |
 | 紧急控制 | `/ai-console/control/emergency` | 紧急停止、冻结新任务、冻结世界发布并保存现场证据。 |
 
@@ -307,6 +307,8 @@ runtime_frame
 | `reviewRunId` | string | 机器审核运行身份。 |
 | `evidenceId` | string | 不可变证据身份。 |
 | `runtimeFrameCandidateIdentity` | string | 单次RuntimeFrame候选身份。 |
+| `activationId` | string | V15按能力域追加的能力发布激活身份。 |
+| `runtimeFrameIdentity` | string | 机器审核通过后登记、尚未被世界消费的正式Frame身份。 |
 | `publishIdentity` | string | 正式发布事务身份。 |
 | `commandId` | string | 人工控制命令身份。 |
 
@@ -426,7 +428,7 @@ resultEvidenceSha256
 failureCode
 ```
 
-AP-10二级页面当前接入29条正式命令定义、目标类型、角色、验证规则、参数Schema和安全边界。其中只为`verify_primary_registry`登记`ai_console_primary_registry_verifier_v1`安全执行器；它通过独立控制服务核验新平台主登记并写入不可变幂等回执。验证控制页允许按完整命令身份精确复核该回执，服务端重新验证固定字段、身份、终态组合和摘要后才返回完整性状态；不得扫描目录生成历史列表。其余命令的执行器身份为空，不创建提交控件、不排队命令、不改变本地状态。
+AP-10二级页面当前接入41条正式命令定义、目标类型、角色、验证规则、参数Schema和安全边界，其中19种绑定安全执行器。世界控制的候选和正式未消费Frame登记绑定V15运行发布执行器；消费、发布暂停/恢复、合法祖先回退和视觉冻结绑定`ai_console_world_control_executor_v1`。该执行器的“消费”和“控制”仅表示新平台登记事实，不等于游戏世界已执行。其余启动任务、队列调度、训练运行、主动验证、审核重跑、能力停用/回退、资源和紧急命令执行器身份为空，不创建提交控件、不排队命令、不改变对应本地状态。
 
 ## 9. 数据源与投影
 
@@ -444,6 +446,7 @@ AP-10二级页面当前接入29条正式命令定义、目标类型、角色、�
 ```text
 GET /api/ai-console/catalog
 GET /api/ai-console/workspaces/{moduleSlug}/{workspaceSlug}?view={workArea}
+GET /api/ai-console/observability/current-execution
 ```
 
 1. `catalog`只返回新平台能力域、四大框架、十个模块、52个工作页及目录完整性，不返回旧训练页面目录。
@@ -452,8 +455,9 @@ GET /api/ai-console/workspaces/{moduleSlug}/{workspaceSlug}?view={workArea}
 4. 权威业务投影未接入时固定使用`dataStatus=not_connected`、`records=null`和`total=null`，不得返回空数组或0冒充真实空结果。
 5. 未知模块、工作页或不属于当前工作页的视图必须返回4xx并保持无副作用。
 6. 此API不得导入、转发或调用`/api/ai-painter/`、`/ai-painter-progress/`或旧训练页面服务。
-7. AP-03、AP-04和AP-09只读取固定的新平台主登记；完整性通过后的真实空登记返回`connected · 0`，不得回退旧目录填充。
-8. AP-10命令定义可以由同一工作页查询API返回；执行器身份为空时必须返回部分接入且无写入能力。唯一安全执行器只能通过`/api/ai-console/control/`进入回环会话、同源、CSRF、目标修订与幂等校验链。
+7. AP-03模型结构与训练计划只读取固定V13训练设计登记；AP-04审核合同与自主裁决登记只读取固定V14审核裁决登记；AP-02发布活动状态与AP-06候选/Frame只读固定V15运行发布登记；AP-06世界运行只读固定V16世界控制登记。完整性通过后的真实空登记返回`connected · 0`，不得回退旧目录、旧World Runtime或旧页面填充。
+8. AP-10命令定义可以由同一工作页查询API返回；执行器身份为空时必须返回部分接入且无写入能力。所有已登记安全执行器只能通过`/api/ai-console/control/`进入回环会话、同源、CSRF、目标修订与幂等校验链，并严格限制到各自固定新平台存储。
+9. `observability/current-execution`是唯一允许读取AI Painter正式当前执行登记的查询入口。它必须使用正式读取器复核登记事务及绑定证据，严格分离当前任务、活动执行、最近训练终态和显式历史选择；不得调用旧页面API或扫描历史目录。
 
 ## 10. 一级页面视觉与交互标准
 
@@ -462,6 +466,7 @@ GET /api/ai-console/workspaces/{moduleSlug}/{workspaceSlug}?view={workArea}
 ```text
 产品标题与业务定位
 运行边界摘要
+跨页面固定实时状态条与页内展开面板
 能力域选择区
 四个业务大框架及其内部十个一级模块目录
 统一数据字典基础说明
@@ -480,6 +485,8 @@ GET /api/ai-console/workspaces/{moduleSlug}/{workspaceSlug}?view={workArea}
 5. 控制模块必须采用与观察模块可辨识的视觉样式；已登记执行器显示精确执行边界和结果回执，未登记命令明确显示执行器禁用。
 6. 页面必须支持桌面与小屏访问；文本、标签和状态不得依赖颜色作为唯一表达。
 7. 用户页面使用“本地自主闭环”和“本地独立运行”等业务语言，不显示Codex Token、聊天状态、外部授权或外部工具是否运行。
+8. 全局实时状态条必须在一级与全部二级页面持续显示CPU、内存、GPU、显存和训练上报摘要，页内展开后显示温度、功耗、磁盘与训练进程；用户查看训练时不得被迫切换工作页。
+9. AP-08与AP-03使用同一新平台本机观察服务。资源和进程是带采样时间的直接观察；Run、Epoch、Loss等训练语义只接受新平台训练遥测登记，缺失时显示未上报，不得由GPU占用或进程名推测。
 
 ### 10.3 二级页面业务工作台标准
 
@@ -531,6 +538,11 @@ src/app/ai-console/
 ├─ ai-console-workspace-interactions.tsx # 二级视图切换、字段筛选和页面查询合同连接
 ├─ ai-console-control-surface.tsx      # 已登记安全命令的独立控制面交互
 ├─ ai-console-workspace.module.css    # 二级工作页共用样式
+├─ ai-console-live-observability.ts   # 客户端单例轮询与会话趋势
+├─ ai-console-live-status.tsx         # 跨页面固定实时状态条
+├─ ai-console-live-status.module.css  # 实时条、抽屉与仪表盘样式
+├─ ai-console-observability-panel.tsx # AP-03/AP-08专业实时仪表盘
+├─ ai-console-current-execution-status.tsx # V21当前执行受信状态面板
 ├─ tasks/[[...view]]/page.tsx
 ├─ capabilities/[[...view]]/page.tsx
 ├─ training/[[...view]]/page.tsx
@@ -549,9 +561,16 @@ src/app/ai-console/
 src/app/api/ai-console/
 ├─ catalog/route.ts
 ├─ workspaces/[moduleSlug]/[workspaceSlug]/route.ts
+├─ observability/
+│  ├─ live/route.ts
+│  └─ current-execution/route.ts
 └─ control/
    ├─ session/route.ts
-   └─ commands/route.ts
+   ├─ commands/route.ts
+   ├─ tasks/route.ts
+   ├─ capabilities/route.ts
+   ├─ training/route.ts
+   └─ reviews/route.ts
 ```
 
 控制服务与结构检查固定为：
@@ -561,17 +580,33 @@ src/server/ai-console-control/
 ├─ operator-session.ts
 ├─ control-command-service.ts
 ├─ control-event-ledger.ts
-└─ control-transaction-store.ts
+├─ control-transaction-store.ts
+├─ task-registry-store.ts
+├─ task-command-service.ts
+├─ capability-lifecycle-store.ts
+├─ capability-command-service.ts
+├─ training-design-store.ts
+├─ training-design-command-service.ts
+├─ review-adjudication-store.ts
+└─ review-adjudication-command-service.ts
 
 scripts/check-ai-console-structure.mjs
 scripts/check-ai-console-control-service.mjs
 scripts/check-ai-console-control-event-ledger.mjs
 scripts/check-ai-console-control-transaction-store.mjs
+scripts/check-ai-console-task-registry-store.mjs
+scripts/check-ai-console-capability-lifecycle-store.mjs
+scripts/check-ai-console-training-design-store.mjs
+scripts/check-ai-console-review-adjudication-store.mjs
 
 .runtime/ai-console/control/command-receipts/{commandId}.json
 .runtime/ai-console/control/control-event-ledger-v1.jsonl
 .runtime/ai-console/control/control-event-ledger-head-v1.json
 .runtime/ai-console/control/control-transactions-v1.sqlite
+.runtime/ai-console/tasks/task-registry-v1.sqlite
+.runtime/ai-console/capabilities/capability-lifecycle-v1.sqlite
+.runtime/ai-console/training/training-design-registry-v1.sqlite
+.runtime/ai-console/reviews/review-adjudication-registry-v1.sqlite
 ```
 
 二级页面只允许在同一根目录下使用以下稳定一级路由段：
@@ -626,7 +661,7 @@ AI控制台
 | AIC-IA-001 | 一级入口固定为`/ai-console`，页面名称固定为“AI控制台”。 |
 | AIC-IA-002 | 一级目录固定为AP-01至AP-10，稳定路由不得随UI调整改变。 |
 | AIC-IA-003 | AP-01至AP-09和AP-10必须区分观察平面与控制平面。 |
-| AIC-IA-004 | 新AI控制台与旧训练页面完全解耦；AP-03不得提供旧页面入口。 |
+| AIC-IA-004 | `/ai-console`是唯一现行控制台；旧训练页面UI必须删除，旧网址只能永久重定向到该入口，AP-03不得提供旧页面入口或读取旧页面数据。 |
 | AIC-DATA-001 | 全平台字段必须引用统一数据字典，不得页面内另造同义字段。 |
 | AIC-DATA-002 | 统一数据字典必须定义类型、空值、单位、来源、写入器、更新语义和版本。 |
 | AIC-DATA-003 | 当前任务、活动执行、最近训练终态和历史选择必须使用独立身份。 |
@@ -647,13 +682,21 @@ AI控制台
 | AIC-QRY-001 | 新平台必须通过`/api/ai-console/`提供独立页面查询合同，未知工作页或非法视图失败关闭。 |
 | AIC-QRY-002 | 页面合同状态与权威数据状态必须分离；未接入数据源时返回`records=null`和`total=null`，不得伪造空结果。 |
 | AIC-QRY-003 | 新平台查询合同API不得导入、调用或转发旧AI Painter页面与API。 |
-| AIC-CTRL-005 | 当前唯一安全执行器只允许核验新平台主登记，必须通过回环会话、同源、CSRF、修订和幂等校验并形成不可变回执。 |
+| AIC-QRY-004 | AI Painter当前运行事实只能通过固定当前执行登记及其正式验证器投影；禁止历史目录扫描、Run优先级猜测和摘要冲突回退。 |
+| AIC-CTRL-005 | 当前七类安全执行器只允许主登记核验、任务登记、能力生命周期登记、训练设计登记、审核裁决登记、运行发布登记和世界控制登记；必须通过回环会话、同源、CSRF、修订和幂等校验并形成不可变回执。 |
 | AIC-CTRL-006 | 控制回执只允许按完整命令身份精确复核；服务端必须重新校验Schema、身份、终态和摘要，禁止目录扫描或最近文件推断。 |
+| AIC-CTRL-007 | 审核裁决登记不得接受调用方通过/失败结论；服务端必须从冻结合同阈值计算唯一终态，同一运行与合同不得重复裁决。 |
+| AIC-CTRL-008 | 世界控制只允许消费V15正式Frame、暂停/恢复发布、回退到同世界祖先Frame和冻结视觉更新；只写V16新平台登记，不得读写旧World Runtime、游戏世界或WorldFacts。 |
 | AIC-DATA-006 | 新控制台控制事件必须使用固定追加账本、单调序号、哈希链、确定性事务身份和Head索引；冲突失败关闭，不补扫旧回执。 |
 | AIC-DATA-007 | V6控制提交事务必须在独立SQLite中原子登记，绑定回执、事件和事件Head并维护元数据修订与事务哈希链；不得迁移旧数据库。 |
 | AIC-QA-001 | 确定性检查必须验证10模块、52工作页、7类呈现、路由包装和禁止外部工具话术。 |
 | AIC-SEC-001 | 路径、身份、事务和证据冲突必须失败关闭，不得回退旧记录。 |
 | AIC-EXT-001 | 新模态能力必须复用统一十模块架构，不得复制平行控制台。 |
+| AIC-OBS-001 | 一级与全部二级页面必须固定显示实时资源和训练摘要，展开观察不得要求页面跳转。 |
+| AIC-OBS-002 | CPU、内存、GPU、显存、温度、功耗、磁盘和训练进程必须来自带时间与探针身份的本机直接观察。 |
+| AIC-OBS-003 | 当前Run与执行身份可来自受验证当前执行登记；Epoch、Batch、Loss、学习率、吞吐、ETA和Checkpoint只接受与当前活动Run精确一致的新平台训练遥测，不得从历史终态、进程名或资源占用推测。 |
+| AIC-OBS-004 | 浏览会话实时曲线不得冒充持久机器证据，训练遥测登记与资源直接观察必须分层显示。 |
+| AIC-OBS-005 | V2快照必须记录单调采样序号、毫秒开始/完成时间、采样耗时、目标刷新间隔和逐通道时间；界面必须显示数据年龄，不得把缓存或慢探针伪装成刚刚采样。 |
 
 ## 15. 本轮实施与验收
 
@@ -662,11 +705,24 @@ AI控制台
 1. 保持`/ai-console`一级页面和AP-01至AP-10目录为平台总入口。
 2. 为十个一级模块建立包含上下游、证据和运行规则的模块总览，并实现52个内部二级内容工作页的稳定路由。
 3. 二级工作页按业务采用七类专业呈现，统一展示查询合同、可信空状态、记录详情、状态事实链、五维字段合同和安全边界。
-4. 观察平面保持只读；AP-10只为`verify_primary_registry`提供有界安全执行控件，其余命令只展示控制合同。
+4. 观察平面保持只读；AP-10只为十九种已登记安全命令提供有界执行控件，其余命令只展示控制合同。
 5. AP-03只承载新平台自身训练页面，不导航、不嵌入、不调用旧训练页面。
-6. 接通新平台自身的目录、工作页查询合同API和独立安全控制API；控制API只读核验新平台主登记并写入自身回执，不读取实时训练状态，不连接或修改旧训练控制台。
+6. 接通新平台自身的目录、工作页查询合同API和独立安全控制API；控制API仅写各自新平台固定登记与回执，训练设计API不读取实时训练状态，不连接或修改旧训练控制台。
 7. 页面必须显示页面合同与权威数据投影的不同连接状态。
 8. 建立AI控制台结构完整性检查，固定模块、工作页、呈现类型、查询合同与UI语言边界。
+9. 建立V9任务胶囊SQLite库、严格内部写入器和只读投影；仅未来新平台任务登记终态可以写入，不接收旧任务、目录扫描或外部执行记忆。
+10. 建立V10政策边界报告SQLite库、严格内部写入器和只读投影；仅固定新平台政策引擎的实际阻断可以写入，不接收规则占位、演示数据或旧平台报告。
+11. 建立V11任务SQLite登记、三种登记级安全命令与AP-01队列/平台任务记录投影；当前项目任务与活动执行不从该库推测，统一由V21当前执行桥接接入。
+12. 建立V12能力生命周期SQLite登记、三种登记级安全命令与AP-02投影；候选、资格结果、非活动发布和机器迁移评估只读新平台能力库，激活、停用、回退与迁移裁决不在本批伪造接入。
+13. 建立V13训练设计SQLite登记、两种登记级安全命令与AP-03模型/计划投影；模型结构与非活动训练计划只读新平台设计库，训练Run、Checkpoint、调度与执行不在本批伪造接入。
+14. 建立V14审核裁决SQLite登记、两种登记级安全命令与AP-04合同/结果/失败投影；审核终态由服务端按冻结阈值计算，验证运行、审核重跑和证据写入不在本批伪造接入。
+15. 建立V15运行发布SQLite登记、三段式安全命令、AP-02激活状态联合投影与AP-06候选/Frame投影；只登记完整资格发布激活、当前激活下既有制品候选和V14通过后的正式未消费Frame，不生成图片、不消费Frame、不写世界。
+16. 建立V16世界控制SQLite登记、五种安全命令和AP-06世界运行投影；只消费V15正式Frame、登记发布暂停/恢复、合法祖先回退和视觉冻结，不导入或写入旧World Runtime、游戏世界、WorldFacts及任何训练状态。
+17. 建立V17统一本机观察服务、实时GET、客户端单例轮询、全局固定实时条、AP-08资源/会话遥测仪表盘和AP-03训练实时仪表盘；固定只读探针读取本机资源和训练特征进程，新平台内部写入器追加训练语义遥测。该实时资源API不读取旧页面、旧API、训练目录或Stage4证据；Stage4当前身份只允许由V21独立桥接读取正式当前登记。
+18. 建立V19平台语义色系统：以明亮中性层级表达ApplicationShell、工作区和内嵌面板，以模块稳定身份色表达当前位置，以成功、等待、失败和人工控制语义色表达状态；CPU、内存、GPU、显存和温度使用可区分的数据通道色。颜色不得取代文字、图标、边框或数值状态。
+19. 建立V19明亮企业控制台主题：默认Canvas使用暖灰白，ApplicationShell和主内容使用白色，导航、字段及嵌套面板使用冷灰白明度层级；不得以暗色作为平台基底。深色只允许用于尺寸受控的局部高对比内容，不得形成页面主表面。模块、Frame、状态与数据通道继续使用语义Token，身份色不得大面积填充内容区。
+20. 建立V20毫秒精度实时观察合同：统一快照升级为V2，记录采样序号、开始时间、完成时间、采样耗时、目标刷新间隔和CPU、内存、磁盘、GPU、训练进程、训练遥测各通道的采样时间；客户端以250毫秒为目标轮询并显示快照年龄与HTTP往返耗时。毫秒时间戳表示测量和传输合同精度，不虚构操作系统或设备驱动每1毫秒都会产生新计数器。
+21. 建立V21当前执行受信桥接与旧页面退役：一级页、AP-01当前/活动、AP-03训练总览及AP-04当前/结果/证据读取同一受验证当前执行登记；绑定审核证据重新计算SHA-256。删除旧页面UI，所有旧网址永久重定向到`/ai-console`；保留运行证据和仍由其他业务使用的共享API。
 
 ### 15.2 验收条件
 
@@ -675,8 +731,8 @@ AI控制台
 3. 每个二级工作页使用匹配业务的专业呈现类型，并显示专属视图目录、主要实体、权威来源、更新语义、状态事实链、统一字段和严格边界。
 4. 查询服务未接入时只显示结构接入状态，不显示虚构运行数据。
 5. `/ai-console`及其所有子页面不存在指向`/ai-painter-progress/`的链接、嵌入或读取逻辑。
-6. AP-10只有主登记核验可产生POST并在`.runtime/ai-console/control/command-receipts/`创建不可变回执；不得启动进程、执行Shell、修改数据库、主登记或旧平台状态。
-7. 旧`/ai-painter-progress/current-training`代码和路由保持未修改，并且不属于新平台信息架构。
+6. AP-10只有主登记核验、V11任务登记、V12能力生命周期登记、V13训练设计登记、V14审核裁决登记、V15运行发布登记和V16世界控制登记可产生POST；七类执行器分别限制在各自固定新平台存储。V16只登记Frame消费和控制状态，不得启动进程、执行Shell、生成图像、启动训练/验证/审核、写入游戏世界、WorldFacts或改变旧平台状态。
+7. 旧`/ai-painter-progress`页面代码已经删除；仅保留覆盖全部旧子路径的永久重定向。重定向不得读取旧API、运行证据、训练状态或浏览器参数来决定目标。
 8. TypeScript检查、文档检查、路由遍历和浏览器响应式检查通过。
 9. 两类`/api/ai-console/`查询合同返回预期Schema；非法工作页和非法视图返回4xx，全部接口无旧平台耦合。
 10. 控制会话与命令API按合同拒绝缺少会话、同源、CSRF或非法参数的请求，并对相同幂等身份返回同一不可变回执。
@@ -684,6 +740,25 @@ AI控制台
 12. AP-07事件账本从固定JSONL和Head索引返回V5控制事件；序号、前序摘要、事件摘要、事务身份、回执证据和Head全部一致。
 13. AP-07“控制提交事务”从新平台固定SQLite返回V6事务；数据库完整性、Schema、元数据、事务链、回执、事件和Head全部一致。
 14. AP-07“正式证据记录”从固定V7 SQLite索引返回四类控制证据；索引Schema、元数据、登记批次、证据双哈希链、嵌入字节摘要、来源绑定和首次合格事务边界全部一致。
-15. `scripts/check-ai-console-structure.mjs`返回10个模块、52个工作页、七类呈现且无诊断错误；控制服务、事件账本、事务库与正式证据索引检查器验证安全执行边界和全链完整性。
+15. 精确证据详情按64位身份返回受验证记录；文本检查上限、截断状态、SQLite二进制隔离、回环Host边界和`nosniff`全部生效。
+16. “文件与事件”“SQLite一致性”按正式身份返回V8对账记录，文件、事件、Head、SQLite、索引和跨表面状态全部为`verified`；任一冲突失败关闭。
+17. AP-07任务胶囊四个视图从固定V9 SQLite读取；来源、Schema、元数据、单调序号、内容BLOB、输入/结果证据集、终态关系与记录哈希链全部验证，当前返回`connected · 0`。
+18. AP-07“正式边界报告”从固定V10 SQLite读取；来源、Schema、元数据、单调序号、内容BLOB、两类证据集、六类边界、阻断终态与报告哈希链全部验证，当前返回`connected · 0`。
+19. `scripts/check-ai-console-structure.mjs`返回10个模块、52个工作页、七类呈现且无诊断错误；控制服务、事件账本、事务库、正式证据索引、证据对账、任务胶囊、政策报告、任务登记、能力生命周期、训练设计、审核裁决、运行发布与世界控制检查器验证安全执行边界和全链完整性。
+20. AP-01队列和平台任务记录从固定V11 SQLite读取；元数据、创建BLOB、任务状态、事件与命令回执链全部验证。当前项目任务与活动执行从V21当前执行桥接读取，不得由队列或历史目录推测。AP-10三种任务登记操作继续通过会话、同源、CSRF、修订、幂等和终态门禁。
+21. AP-02候选、当前门禁、资格结果、发布和迁移评估从固定V12 SQLite读取；元数据、创建BLOB、候选状态、六级资格、发布、事件与命令回执链全部验证。AP-10三种能力登记操作通过会话、同源、CSRF、修订、幂等、门禁顺序和发布资格检查；当前正式库返回空集，资格图与迁移门禁继续显示版本化合同。
+22. AP-03模型结构与训练计划从固定V13 SQLite读取；元数据、创建BLOB、内容寻址身份、模型—计划关系、设计事件和命令回执链全部验证。AP-10两种训练设计登记通过会话、同源、CSRF、修订、幂等、重复内容和能力域检查；当前正式库返回空集，训练运行五种控制命令继续禁用。
+23. AP-04审核合同与自主裁决登记从固定V14 SQLite读取；当前验证、结果和证据从V21当前执行桥接显式绑定的机器审核时间线读取并重新计算SHA-256。AP-10两种审核登记通过会话、同源、CSRF、修订、幂等、合同与审核器身份检查；主动验证、审核重跑、投影重建和证据改写继续禁用。
+24. AP-02发布活动状态和AP-06候选/Frame从固定V15 SQLite读取；固定表列、元数据、创建BLOB、按能力域激活链、候选绑定、按世界Frame链、V12/V14外部摘要、事件与回执链全部验证。AP-10三种运行发布命令通过会话、同源、CSRF、修订、幂等、当前激活与审核准入检查；当前正式库返回空集，视觉生成继续禁用。
+25. AP-06世界运行从固定V16 SQLite读取并返回`connected · 0`；不得导入旧World Runtime Adapter或读取`data/world-runtime`。AP-10五种世界控制命令通过会话、同源、CSRF、全局/世界修订、幂等、V15正式发布、前序链、暂停状态和祖先回退检查；动态检查覆盖消费、幂等、失败关闭、暂停、回退、恢复和冻结，且没有游戏世界或WorldFacts写入。
+26. 全局实时条在`/ai-console`和全部二级壳中固定存在，以250毫秒为目标自动刷新，展开后不导航即可查看资源与训练摘要、采样序号、毫秒完成时间、快照年龄和链路延迟。
+27. AP-08资源页显示真实CPU、内存、GPU、显存、温度、功耗、磁盘、GPU身份与训练特征进程；GPU可用机器不得返回伪造空值。
+28. AP-03训练总览始终显示V21登记的当前任务Run或最近训练终态；只有训练遥测Run等于当前`activeExecution.runId`且心跳有效时才显示Epoch、Loss和ETA，否则明确显示无匹配活动遥测并继续显示硬件与进程直接观察。
+29. V20实时API和源码不得包含旧页面路由、旧API、旧训练目录读取或Stage4执行/证据写入；GET无文件、数据库或进程状态副作用。
+30. V19语义色Token必须由一级页、全部二级壳和实时观察面共同复用；十个模块身份色、四个Frame色、成功/等待/失败/控制色及五类资源指标色必须稳定且可检查，页面不得退回单一青色覆盖所有层级与数据系列。
+31. V19默认主题必须在一级页、七类二级呈现、控制合同、实时状态条和专业仪表盘中保持明亮表面；桌面及窄屏不得出现大面积暗色Canvas、暗色导航或暗色工作区，文字、输入控件、焦点态和状态必须达到清晰可辨且不只依赖颜色。
+32. V20快照必须使用`ai_console_live_observability_v2`并返回单调采样序号、毫秒开始/完成时间、实际采样耗时、250毫秒目标刷新间隔和逐通道采样时间；固定状态条及AP-03/AP-08仪表盘必须显示数据年龄，任何缓存或慢探针不得被表现为刚刚采样。
+33. V21当前执行接口、首页状态面板及AP-01/AP-03/AP-04工作页必须返回同一登记修订、任务、Run和审核计数；登记或证据冲突返回`unknown_or_stale`，不得扫描目录回退。
+34. `/ai-painter-progress`根路径、已知子路径和任意深层子路径必须308永久重定向到`/ai-console`；旧UI源码不得存在，AI Painter运行证据与其他业务仍使用的共享API不得被删除。
 
 真实查询与控制服务接入必须以本规格和二级工作页字段合同为信息架构来源增量实施，不得重新定义一级目录和核心字段语义。

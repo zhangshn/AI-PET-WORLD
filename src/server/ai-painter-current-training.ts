@@ -16,7 +16,7 @@ import type {
   StrictValidationBatch,
   StrictValidationTokenAccounting,
   V7CapacityRow,
-} from "@/app/ai-painter-progress/_lib/current-training-dashboard-types";
+} from "@/server/ai-painter-current-training-types";
 import {
   readTrainingControlState,
   readTrainingProcessLedger,

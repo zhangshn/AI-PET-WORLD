@@ -2,6 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { randomUUID } from "node:crypto"
 import { enrichTrainingProcessLedgerEvent } from "./lib/ai-painter-training-ledger-event-analysis.mjs"
+import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-store.mjs"
 import { refreshGameMapAutoVisualJudgeLearning } from "./lib/game-map-auto-visual-judge-learning.mjs"
 
 const latestRuntimeFramePath = path.resolve(
@@ -9,40 +10,10 @@ const latestRuntimeFramePath = path.resolve(
 )
 const ledgerDir = path.resolve(".runtime/ai-painter/training-process-ledger")
 const ledgerPath = path.join(ledgerDir, "events.jsonl")
-const latestLedgerPath = path.join(ledgerDir, "latest.json")
 const ownerReviewRoot = path.resolve(".runtime/game-map-owner-reviews")
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"))
-}
-
-function readLedgerEvents() {
-  if (!fs.existsSync(ledgerPath)) return []
-  return fs
-    .readFileSync(ledgerPath, "utf8")
-    .trim()
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line))
-}
-
-function buildLedgerSummary(events) {
-  const summary = {
-    total: events.length,
-    running: 0,
-    success: 0,
-    failed: 0,
-    error: 0,
-    blocked: 0,
-    info: 0,
-    lastEvent: events.at(-1) ?? null,
-  }
-  for (const event of events) {
-    if (Object.prototype.hasOwnProperty.call(summary, event.status)) {
-      summary[event.status] += 1
-    }
-  }
-  return summary
 }
 
 function main() {
@@ -77,17 +48,7 @@ function main() {
     archiveId: runtimeFrame.runtimeFrameId,
   })
 
-  fs.mkdirSync(ledgerDir, { recursive: true })
-  fs.appendFileSync(ledgerPath, JSON.stringify(event) + "\n", "utf8")
-
-  const events = readLedgerEvents()
-  const latestLedger = {
-    schemaVersion: "ai-painter-training-process-ledger-v1",
-    updatedAt: events.at(-1)?.timestamp ?? null,
-    events: events.slice(-80).reverse(),
-    summary: buildLedgerSummary(events),
-  }
-  fs.writeFileSync(latestLedgerPath, JSON.stringify(latestLedger, null, 2) + "\n", "utf8")
+  appendAiPainterProgramEvent(event)
   refreshAutoVisualJudgeLearning(event)
 
   const reviewDir = path.join(ownerReviewRoot, runId)

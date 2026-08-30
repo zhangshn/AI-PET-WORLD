@@ -3,11 +3,11 @@ import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import sharp from "sharp"
+import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-store.mjs"
 
 const ROOT = process.cwd()
 const INFERENCE_ROOT = path.join(ROOT, ".runtime", "ai-painter", "complete-world-visual-bootstrap-inference")
 const REVIEW_ROOT = path.join(ROOT, ".runtime", "ai-painter", "complete-world-visual-machine-reviews")
-const LEDGER_ROOT = path.join(ROOT, ".runtime", "ai-painter", "training-process-ledger")
 
 const inferencePointer = readJson(path.join(INFERENCE_ROOT, "latest.json"))
 const candidate = readJson(resolveProjectPath(inferencePointer.manifestPath))
@@ -292,9 +292,7 @@ function appendLedger(reportValue) {
     error: reportValue.passed ? null : reportValue.issues.map((issue) => issue.code).join(","),
     errorZh: reportValue.passed ? null : reportValue.issues.map((issue) => issue.messageZh).join("；"),
   }
-  fs.mkdirSync(LEDGER_ROOT, { recursive: true })
-  fs.appendFileSync(path.join(LEDGER_ROOT, "events.jsonl"), `${JSON.stringify(event)}\n`)
-  writeJson(path.join(LEDGER_ROOT, "latest.json"), event)
+  appendAiPainterProgramEvent(event)
 }
 
 function readJson(filePath) { return JSON.parse(fs.readFileSync(filePath, "utf8")) }

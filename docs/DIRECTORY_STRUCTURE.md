@@ -1,14 +1,14 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-08-28 19:30:00 +08:00
+更新时间：2026-08-30 12:26:57 +08:00
 
 状态：active-directory-reference
 
-文档版本：`AI-PET-WORLD-DIRECTORY-1.4`
+文档版本：`AI-PET-WORLD-DIRECTORY-1.10`
 
-生效日期：`2026-08-26`
+生效日期：`2026-08-30`
 
-替代版本：`AI-PET-WORLD-DIRECTORY-1.3`
+替代版本：`AI-PET-WORLD-DIRECTORY-1.9`
 
 文档状态：`active_normative_target`
 
@@ -70,7 +70,7 @@ docs/
 | `docs/game-world-generation/` | AI Painter正式主体、数据来源、审核发布、补充合同和唯一模块计划表。 |
 | `docs/ai-console/` | 新AI控制台的平台总纲、功能规格、系统架构、信息架构与UI标准、数据字典与API合同。 |
 | `docs/world-visual-data-dictionary/` | 分层视觉事实、对象、地形、过渡、失败码和训练标签。 |
-| `docs/ai-painter-progress/` | AI Painter训练与验证专用后台页面、自动保存、模型对齐、诊断和修复契约；不承担全平台AI控制台定义。 |
+| `docs/ai-painter-progress/` | 退役AI Painter页面的历史设计资料；只用于复核旧实现，不参与当前控制台、状态投影、任务选择或程序依赖。 |
 | `docs/ziwei/` | AI 管家人格数据子系统的稳定合同。 |
 
 项目唯一模块计划表：
@@ -106,17 +106,29 @@ AI Painter 是类地球世界的视觉表达系统，不能决定世界事实：
 |---|---|
 | `ml/ai-painter/` | 本地模型训练和推理。 |
 | `src/app/ai-console/` | 整个本地自研AI平台的固定应用壳、四个外层业务Frame、十个内层模块Frame和52个二级工作页。 |
-| `src/app/api/ai-console/` | 新平台自有的目录、工作页只读查询合同和独立控制API；控制面当前只允许主登记核验，不读取或转发旧AI Painter页面与API。 |
-| `src/server/ai-console/` | 新平台受信只读投影协议、固定主登记读取器与模块适配器；当前覆盖AP-01流程、AP-02能力、AP-03训练、AP-04验证审核、AP-05数据、AP-06 Runtime、AP-07证据治理、AP-08本机观察、AP-09归档和AP-10命令定义，只返回可证明的登记、产品合同或直接观察，不扫描旧页面状态及训练运行证据。 |
-| `src/server/ai-console-control/` | 新平台独立控制服务；负责回环操作员会话、同源与CSRF复核、命令校验、主登记修订核验、幂等身份和不可变回执，当前不包含训练或Runtime执行器。 |
-| `data/ai-console/` | 新平台独立主登记与Schema；当前固定登记AP-03、AP-04、AP-09共15个工作页记录集，使用`new_ai_console_only`来源边界、可信写入器、单调修订和SHA-256，不保存或迁移旧训练页面内容。 |
+| `src/app/ai-console/ai-console-theme.module.css` | V19明亮企业控制台主题；统一暖灰白Canvas、白色主体、冷灰白导航/字段层、十模块身份、四Frame身份、状态和资源数据通道，供一级页、七类二级呈现、控制合同与实时观察面共同继承。 |
+| `src/app/api/ai-console/` | 新平台自有的目录、工作页只读查询、精确证据详情和独立控制API；`observability/current-execution`是唯一AI Painter当前执行查询入口，只读取受验证当前登记，不调用旧页面API；控制面开放主登记核验与V11至V16固定新平台登记。 |
+| `src/server/ai-console/` | 新平台受信只读投影协议、固定主登记读取器与模块适配器；`ai-painter-current-execution-projection.ts`是唯一允许连接AI Painter运行事实的桥接器，只读取固定当前执行登记及其显式绑定证据，禁止历史目录扫描；其他模块继续读取各自固定新平台登记。 |
+| `src/server/ai-console-observability/` | V20新平台本机精确实时观察服务与V17训练遥测登记；固定只读探针采样CPU、内存、磁盘、GPU、显存、温度、功耗和训练特征进程，并输出序号、毫秒起止时间、采样耗时和逐通道时间。训练语义只读新平台独立遥测库。该目录不属于Stage4训练、验证或审核实现。 |
+| `src/server/ai-console-control/` | 新平台受控写入与持久化服务；负责回环操作员会话、同源与CSRF复核、任务登记、能力候选/资格/非活动发布登记、模型结构/非活动训练计划登记、主登记核验、幂等回执、控制事务、正式证据索引、终态任务胶囊库和政策边界报告库；当前不包含训练运行或Runtime执行器。 |
+| `data/ai-console/` | 新平台独立主登记与Schema；当前固定登记15个基础记录集，并定义控制、任务、能力生命周期、训练设计、审核裁决、证据、任务胶囊和政策边界报告Schema，使用`new_ai_console_only`来源边界、可信写入器、单调修订和SHA-256，不保存或迁移旧训练页面内容。 |
 | `.runtime/ai-console/control/command-receipts/` | 新控制台安全命令不可变回执；当前只保存`verify_primary_registry`结果，使用确定性命令身份、仅创建写入和回执SHA-256。 |
 | `.runtime/ai-console/control/control-event-ledger-v1.jsonl` | 新控制台V5后安全命令的追加式事件主表；事件使用单调序号、前序摘要、事务身份和回执证据绑定。 |
 | `.runtime/ai-console/control/control-event-ledger-head-v1.json` | 控制事件账本固定Head索引；保存单调修订、事件数和链头身份/摘要，只能由控制事件写入器原子替换。 |
 | `.runtime/ai-console/control/control-transactions-v1.sqlite` | 新控制台V6后安全命令的SQLite控制提交事务登记；原子绑定回执、事件、事件Head与事务哈希链，不连接旧平台数据库。 |
 | `.runtime/ai-console/evidence/formal-evidence-index-v1.sqlite` | 新控制台V7后正式证据索引；原子保存四个固定控制表面的内容寻址原始字节BLOB、来源绑定、证据链和登记批次链，不扫描或迁移旧平台目录。 |
-| `src/app/ai-painter-progress/` | 旧AI Painter训练与验证专用查看入口；与新AI控制台完全解耦，不属于AP-03、AP-04或任何新平台下游目录。 |
-| `src/app/api/ai-painter/` | 训练状态、图片、归档和审核 API。 |
+| `.runtime/ai-console/evidence/task-capsule-index-v1.sqlite` | 新控制台V9终态任务胶囊索引；只接受新平台任务登记来源，以内容寻址BLOB、任务唯一约束、单调序号和记录哈希链保存胶囊；当前为空库，不补录外部执行或旧训练任务。 |
+| `.runtime/ai-console/evidence/policy-boundary-report-index-v1.sqlite` | 新控制台V10政策边界报告索引；只接受固定新平台政策引擎的实际阻断，以内容寻址BLOB、事件唯一约束、单调序号、两类证据集和报告哈希链保存记录；当前为空库，不创建示例报告或迁移旧平台报告。 |
+| `.runtime/ai-console/tasks/task-registry-v1.sqlite` | 新控制台V11任务登记；以独立SQLite原子保存任务当前状态、追加式任务事件和不可变命令回执，当前为空库，不导入Codex任务、聊天任务、旧训练任务或目录扫描结果。 |
+| `.runtime/ai-console/capabilities/capability-lifecycle-v1.sqlite` | 新控制台V12能力生命周期登记；以独立SQLite原子保存候选当前状态、六级资格结果、非活动发布、预留迁移评估、生命周期事件和命令回执，当前为空库，不导入旧训练、审核、发布或Runtime记录。 |
+| `.runtime/ai-console/training/training-design-registry-v1.sqlite` | 新控制台V13训练设计登记；以独立SQLite原子保存不可变模型结构、非活动训练计划、设计事件和命令回执，当前为空库，不导入旧训练配置、Run、Stage、Checkpoint、审核或Runtime记录。 |
+| `.runtime/ai-console/reviews/review-adjudication-registry-v1.sqlite` | 新控制台V14审核裁决登记；以独立SQLite原子保存冻结审核合同、服务端阈值计算的机器审核终态、裁决事件和命令回执，当前为空库，不导入旧验证、审核、训练、Checkpoint、Runtime或证据目录。 |
+| `.runtime/ai-console/runtime/runtime-release-registry-v1.sqlite` | 新控制台V15运行发布登记；以独立SQLite原子保存V12合格能力激活、既有视觉制品Frame候选、绑定V14通过结果的正式未消费Frame、运行发布事件和命令回执，当前为空库，不导入旧发布、候选、Frame、世界运行或训练证据。 |
+| `.runtime/ai-console/runtime/world-control-registry-v1.sqlite` | 新控制台V16世界控制登记；以独立SQLite原子保存V15正式Frame消费、发布暂停/恢复、合法祖先回退、视觉冻结、事件和命令回执，当前为空库，不导入且不写入旧World Runtime、游戏世界、WorldFacts或训练状态。 |
+| `.runtime/ai-console/observability/training-telemetry-v1.sqlite` | 新控制台V17训练遥测登记；由新平台固定内部写入器追加Run、Execution、Stage、Epoch、Batch、Loss、学习率、吞吐、ETA、Checkpoint与心跳。旧AI Painter训练记录不迁移，浏览器GET不得创建该库。 |
+| `src/app/ai-painter-progress/` | 退役路由兼容层；目录只能保留`[[...legacyPath]]/page.tsx`，把全部旧网址永久重定向到`/ai-console`，不得包含旧UI、状态读取或训练控制。 |
+| `src/app/api/ai-painter/` | AI Painter共享后台API；仍由`ai-painter-lab`及其他非退役业务使用，不能随旧页面删除，也不得作为新AI控制台查询源。 |
+| `src/server/ai-painter-current-training-types.ts` | 后台训练证据聚合使用的中立共享类型；不得从退役页面目录导入服务端类型。 |
 | `.runtime/ai-painter/` | 程序自动保存的训练与推理证据。 |
 
 AI Painter现行自主执行使用以下逻辑目录。具体能力或执行未物化时不提前创建其身份目录：

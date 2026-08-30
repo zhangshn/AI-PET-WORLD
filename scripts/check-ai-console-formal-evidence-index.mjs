@@ -192,8 +192,9 @@ if (!fs.existsSync(indexPath)) {
 }
 
 if (fs.existsSync(evidenceRuntimeRoot)) {
+  const allowedEvidenceRuntimeEntries = new Set(["formal-evidence-index-v1.sqlite", "task-capsule-index-v1.sqlite", "policy-boundary-report-index-v1.sqlite"])
   for (const entry of fs.readdirSync(evidenceRuntimeRoot)) {
-    if (entry !== "formal-evidence-index-v1.sqlite") failures.push(`unexpected_evidence_runtime_entry:${entry}`)
+    if (!allowedEvidenceRuntimeEntries.has(entry)) failures.push(`unexpected_evidence_runtime_entry:${entry}`)
   }
 }
 

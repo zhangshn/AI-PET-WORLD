@@ -66,7 +66,7 @@ const DIRECTORY_CLASSIFICATION = new Map([
   ["game-world-generation", "active-architecture"],
   ["ai-console", "active-platform-console-specification"],
   ["world-visual-data-dictionary", "active-reference"],
-  ["ai-painter-progress", "active-locks-or-automation-contracts"],
+  ["ai-painter-progress", "historical-retired-page-reference"],
   ["ziwei", "separate-subsystem"],
 ])
 

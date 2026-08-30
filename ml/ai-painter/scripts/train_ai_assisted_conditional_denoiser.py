@@ -8,6 +8,7 @@ import math
 import os
 from pathlib import Path
 import random
+import subprocess
 import time
 from copy import deepcopy
 from types import MappingProxyType
@@ -21,6 +22,18 @@ from ai_painter_authorization_policy import (
     resolve_stage_execution_grant,
 )
 from ai_painter_execution_grant import ExecutionAction
+from ai_painter_full_backbone_spatial_affine_contract import (
+    validate_full_backbone_spatial_affine_controlled_smoke_config,
+)
+from ai_painter_joint_condition_local_transport_contract import (
+    validate_joint_condition_local_transport_controlled_smoke_config,
+    validate_joint_condition_local_transport_full_data_screen_config,
+)
+from ai_painter_spatial_affine_decoder_contract import (
+    compile_spatial_affine_decoder_cpu_inactive_config,
+    load_spatial_affine_formal_objective_contract,
+    validate_spatial_affine_decoder_config as validate_shared_spatial_affine_decoder_config,
+)
 from ai_painter_preview_reproduction import (
     fixed_preview_determinism_scope as stage4_fixed_preview_determinism_scope,
     state_dict_sha256,
@@ -53,6 +66,12 @@ from ai_painter_stage_mode_registry import (
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE2_FULL_TRAINING_STATUS,
     AUTHORITATIVE_SEMANTIC_CARRIER_STAGE4_SMOKE_STATUS,
     AUTHORITATIVE_SEMANTIC_CARRIER_STAGE0_FULL_TRAINING_STATUS,
+    SPATIAL_AFFINE_DECODER_STAGE4_INACTIVE_STATUS,
+    SPATIAL_AFFINE_DECODER_STAGE4_READONLY_GPU_STATUS,
+    SPATIAL_AFFINE_DECODER_STAGE4_FULL_DATA_SCREEN_STATUS,
+    SPATIAL_AFFINE_DECODER_STAGE0_FULL_TRAINING_STATUS,
+    FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_STAGE4_SMOKE_STATUS,
+    JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_FULL_DATA_SCREEN_STATUS,
     CONTROLLED_STRUCTURE_SMOKE_ARMS,
     fact_conditioned_semantic_mixture_smoke_supports_objective,
     fact_conditioned_semantic_mixture_smoke_supports_controlled_structure_arm,
@@ -70,6 +89,16 @@ from ai_painter.complete_world import (
     velocity_target,
 )
 from ai_painter.complete_world.dataset import AiAssistedConditionalDenoiserDataset
+from ai_painter.complete_world.stage4_checkpoint_boundary_gate import (
+    audit_route_boundary_from_rgb,
+    boundary_gate_contract_status,
+    build_boundary_validation_ledger,
+    build_checkpoint_candidate as build_stage4_boundary_checkpoint_candidate,
+    decide_checkpoint_replacement as decide_stage4_boundary_checkpoint_replacement,
+)
+from ai_painter.complete_world.stage4_formal_review_input import (
+    formal_review_boundary_inputs,
+)
 from ai_painter.complete_world.live_progress import (
     build_live_progress,
     write_json_atomic,
@@ -78,6 +107,18 @@ from ai_painter.complete_world.live_progress import (
 
 OWNERSHIP = "project_owned_architecture_ai_assisted_cold_start_weights"
 POLICY_VERSION = "owner-authorized-ai-assisted-cold-start-v1"
+STAGE4_FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_ARCHITECTURE = (
+    "stage4_full_backbone_spatial_affine_conditioned_denoiser_v1"
+)
+STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER_ARCHITECTURE = (
+    "stage4_full_backbone_joint_condition_local_transport_denoiser_v1"
+)
+STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_SMOKE_STATUS = (
+    "local_ai_stage4_joint_condition_local_transport_controlled_smoke_active"
+)
+STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_FULL_DATA_SCREEN_STATUS = (
+    JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_FULL_DATA_SCREEN_STATUS
+)
 V7_ACTIVE_TRAINING_AUTHORIZATION_STATUS = "owner_authorized_active_mvp64_gpu_training"
 V7_TRAINING_AUTHORIZATION_ID = "owner-approved-v7-mvp64-local-gpu-training-activation-20260802"
 V7_TRAINING_AUTHORIZATION_REQUEST_ID = "owner-action-request-v7-mvp64-gpu-training-activation-resolution-20260802"
@@ -841,6 +882,159 @@ FACT_CONDITIONED_SEMANTIC_MIXTURE_REGISTRATION_DECISION_BINDINGS = {
 }
 
 
+def validate_stage4_full_backbone_spatial_affine_inactive_cli_boundary(
+    config,
+    *,
+    preflight_only,
+):
+    """Keep inactive/readonly configs inert while admitting the one Smoke mode."""
+
+    if config.get("denoiserArchitecture") != (
+        STAGE4_FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_ARCHITECTURE
+    ):
+        return {
+            "architecture": config.get("denoiserArchitecture"),
+            "preflightOnly": preflight_only is True,
+        }
+    status = config.get("training", {}).get("trainingAuthorizationStatus")
+    controlled_smoke = (
+        status == FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_STAGE4_SMOKE_STATUS
+    )
+    if preflight_only is not True and not controlled_smoke:
+        raise ValueError(
+            "Stage4 full-backbone spatial-affine inactive configuration "
+            "requires --preflight-only"
+        )
+    return {
+        "architecture": config.get("denoiserArchitecture"),
+        "preflightOnly": preflight_only is True,
+        "controlledSmoke": controlled_smoke,
+    }
+
+
+def validate_stage4_joint_condition_local_transport_inactive_cli_boundary(
+    config,
+    *,
+    preflight_only,
+):
+    """Keep inactive/readonly local-transport configs out of Trainer execution."""
+
+    if config.get("denoiserArchitecture") != (
+        STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER_ARCHITECTURE
+    ):
+        return {
+            "architecture": config.get("denoiserArchitecture"),
+            "preflightOnly": preflight_only is True,
+            "controlledSmoke": False,
+        }
+    status = config.get("training", {}).get("trainingAuthorizationStatus")
+    controlled_smoke = (
+        status == STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_SMOKE_STATUS
+    )
+    full_data_screen = (
+        status == STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_FULL_DATA_SCREEN_STATUS
+    )
+    if preflight_only is not True and not (controlled_smoke or full_data_screen):
+        raise ValueError(
+            "Stage4 joint-condition local-transport inactive configuration "
+            "requires --preflight-only"
+        )
+    return {
+        "architecture": config.get("denoiserArchitecture"),
+        "preflightOnly": preflight_only is True,
+        "controlledSmoke": controlled_smoke,
+        "fullDataScreen": full_data_screen,
+    }
+
+
+def validate_stage4_joint_condition_local_transport_full_data_screen_cli_boundary(
+    config,
+    *,
+    preflight_only,
+    output_dir,
+    single_sample_overfit_smoke=False,
+    smoke_test=False,
+    phase0_mode=False,
+    overfit_sample_id=None,
+    overfit_epochs=None,
+):
+    """Separate ticket-free readonly preflight from the activated screen run."""
+
+    if not is_stage4_joint_condition_local_transport_full_data_screen(config):
+        return None
+    if (
+        single_sample_overfit_smoke
+        or smoke_test
+        or phase0_mode
+        or overfit_sample_id is not None
+        or overfit_epochs is not None
+    ):
+        raise ValueError(
+            "joint-condition local-transport full-data screen cannot use "
+            "Smoke, bound-sample, retry, or Stage0 execution"
+        )
+    training = config.get("training", {})
+    ticket = training.get("localAiCapabilityTicket")
+    root_gates = config.get("activationGates", {})
+    training_gates = training.get("activationGates", {})
+    if preflight_only is True:
+        if ticket is not None:
+            raise ValueError(
+                "joint-condition local-transport full-data screen readonly "
+                "preflight must precede internal ticket consumption"
+            )
+        if any(root_gates.values()) or any(training_gates.values()):
+            raise ValueError(
+                "joint-condition local-transport full-data screen readonly "
+                "preflight requires every activation gate to remain closed"
+            )
+        if Path(output_dir).exists():
+            raise ValueError(
+                "joint-condition local-transport full-data screen readonly "
+                "preflight must not reuse or create training-output"
+            )
+        return {
+            "preflightOnly": True,
+            "ticketConsumed": False,
+            "trainingOutputAbsent": True,
+        }
+    expected_active_gates = {
+        "optimizerNow",
+        "backwardNow",
+        "weightModificationNow",
+        "gpuNow",
+        "fullDataScreenNow",
+        "trainingNow",
+    }
+    if (
+        not isinstance(ticket, dict)
+        or ticket.get("executionState") != "consumed"
+        or {key for key, value in root_gates.items() if value}
+        != expected_active_gates
+        or {key for key, value in training_gates.items() if value}
+        != expected_active_gates
+    ):
+        raise ValueError(
+            "joint-condition local-transport full-data screen execution "
+            "requires one consumed ticket and the exact active training gates"
+        )
+    return {
+        "preflightOnly": False,
+        "ticketConsumed": True,
+        "trainingOutputAbsent": not Path(output_dir).exists(),
+    }
+
+
+def stage4_formal_training_requires_cuda(config):
+    """Return whether the active bounded execution is contractually CUDA-only."""
+
+    return bool(
+        is_stage4_full_backbone_controlled_smoke(config)
+        or is_stage4_joint_condition_local_transport_controlled_smoke(config)
+        or is_stage4_joint_condition_local_transport_full_data_screen(config)
+    )
+
+
 def main() -> int:
     parser = ArgumentParser(description="Train the project-owned 23-channel conditional complete-world denoiser.")
     parser.add_argument("--config", type=Path, required=True)
@@ -871,10 +1065,228 @@ def main() -> int:
     parser.add_argument("--stage4-direct-clean-latent-smoke-contract", type=Path)
     parser.add_argument("--stage4-direct-clean-latent-stage0", action="store_true")
     parser.add_argument("--stage4-direct-clean-latent-stage0-contract", type=Path)
+    parser.add_argument(
+        "--stage4-full-backbone-spatial-affine-smoke",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--stage4-full-backbone-spatial-affine-smoke-contract",
+        type=Path,
+    )
+    parser.add_argument(
+        "--stage4-joint-condition-local-transport-smoke",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--stage4-joint-condition-local-transport-smoke-contract",
+        type=Path,
+    )
+    parser.add_argument(
+        "--stage4-joint-condition-local-transport-full-data-screen",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--stage4-joint-condition-local-transport-full-data-screen-contract",
+        type=Path,
+    )
     args = parser.parse_args()
 
     config = read_json(args.config)
     package = read_json(args.dataset_package)
+    full_backbone_controlled_smoke = (
+        is_stage4_full_backbone_controlled_smoke(config)
+    )
+    joint_local_transport_controlled_smoke = (
+        is_stage4_joint_condition_local_transport_controlled_smoke(config)
+    )
+    joint_local_transport_full_data_screen = (
+        is_stage4_joint_condition_local_transport_full_data_screen(config)
+    )
+    if full_backbone_controlled_smoke and joint_local_transport_controlled_smoke:
+        raise ValueError(
+            "controlled Smoke architecture identities are mutually exclusive"
+        )
+    if args.stage4_full_backbone_spatial_affine_smoke is not (
+        full_backbone_controlled_smoke
+    ):
+        raise ValueError(
+            "full-backbone controlled Smoke config and dedicated CLI flag "
+            "must be selected together"
+        )
+    if args.stage4_full_backbone_spatial_affine_smoke is not (
+        args.stage4_full_backbone_spatial_affine_smoke_contract is not None
+    ):
+        raise ValueError(
+            "full-backbone controlled Smoke requires its dedicated immutable "
+            "contract argument"
+        )
+    if args.stage4_full_backbone_spatial_affine_smoke and any(
+        (
+            args.smoke_test,
+            args.single_sample_overfit_smoke,
+            args.stage4_joint_condition_local_transport_smoke,
+            args.stage4_joint_condition_local_transport_full_data_screen,
+            args.stage4_responsibility_component_smoke,
+            args.stage4_direct_clean_latent_smoke,
+            args.stage4_direct_clean_latent_stage0,
+            args.stage4_validation_kernel_phase0_update,
+            args.stage4_validation_kernel_phase0_reproduce,
+            args.stage4_structure_fact_first_phase0_c_reproduce,
+            args.stage4_structure_fact_first_phase0_causal,
+        )
+    ):
+        raise ValueError(
+            "full-backbone controlled Smoke CLI is mutually exclusive with "
+            "every other Smoke or Stage execution flag"
+        )
+    if args.stage4_full_backbone_spatial_affine_smoke:
+        # The dedicated entry owns the single-sample semantics.  Callers may
+        # not combine it with the legacy generic Smoke switch.
+        args.single_sample_overfit_smoke = True
+    if args.stage4_joint_condition_local_transport_smoke is not (
+        joint_local_transport_controlled_smoke
+    ):
+        raise ValueError(
+            "joint-condition local-transport controlled Smoke config and "
+            "dedicated CLI flag must be selected together"
+        )
+    if args.stage4_joint_condition_local_transport_smoke is not (
+        args.stage4_joint_condition_local_transport_smoke_contract is not None
+    ):
+        raise ValueError(
+            "joint-condition local-transport controlled Smoke requires its "
+            "dedicated immutable contract argument"
+        )
+    if args.stage4_joint_condition_local_transport_smoke and any(
+        (
+            args.smoke_test,
+            args.single_sample_overfit_smoke,
+            args.stage4_full_backbone_spatial_affine_smoke,
+            args.stage4_joint_condition_local_transport_full_data_screen,
+            args.stage4_responsibility_component_smoke,
+            args.stage4_direct_clean_latent_smoke,
+            args.stage4_direct_clean_latent_stage0,
+            args.stage4_validation_kernel_phase0_update,
+            args.stage4_validation_kernel_phase0_reproduce,
+            args.stage4_structure_fact_first_phase0_c_reproduce,
+            args.stage4_structure_fact_first_phase0_causal,
+        )
+    ):
+        raise ValueError(
+            "joint-condition local-transport controlled Smoke CLI is "
+            "mutually exclusive with every other Smoke or Stage flag"
+        )
+    if args.stage4_joint_condition_local_transport_smoke:
+        args.single_sample_overfit_smoke = True
+    if args.stage4_joint_condition_local_transport_full_data_screen is not (
+        joint_local_transport_full_data_screen
+    ):
+        raise ValueError(
+            "joint-condition local-transport full-data screen config and "
+            "dedicated CLI flag must be selected together"
+        )
+    if args.stage4_joint_condition_local_transport_full_data_screen is not (
+        args.stage4_joint_condition_local_transport_full_data_screen_contract
+        is not None
+    ):
+        raise ValueError(
+            "joint-condition local-transport full-data screen requires its "
+            "dedicated immutable contract argument"
+        )
+    if args.stage4_joint_condition_local_transport_full_data_screen and any((
+        args.smoke_test,
+        args.single_sample_overfit_smoke,
+        args.stage4_joint_condition_local_transport_smoke,
+        args.stage4_full_backbone_spatial_affine_smoke,
+        args.stage4_responsibility_component_smoke,
+        args.stage4_direct_clean_latent_smoke,
+        args.stage4_direct_clean_latent_stage0,
+        args.stage4_validation_kernel_phase0_update,
+        args.stage4_validation_kernel_phase0_reproduce,
+        args.stage4_structure_fact_first_phase0_c_reproduce,
+        args.stage4_structure_fact_first_phase0_causal,
+    )):
+        raise ValueError(
+            "joint-condition local-transport full-data screen is mutually "
+            "exclusive with every Smoke and Stage0 flag"
+        )
+    if full_backbone_controlled_smoke:
+        validate_full_backbone_spatial_affine_controlled_smoke_config(
+            config,
+            project_root=Path.cwd(),
+            require_execution_ticket=args.preflight_only is not True,
+        )
+        compiled_contract = config["training"][
+            "stage4FullBackboneSpatialAffineSmokeContract"
+        ]["compiledContract"]
+        actual_contract_path = (
+            args.stage4_full_backbone_spatial_affine_smoke_contract.resolve()
+        )
+        expected_contract_path = (
+            Path.cwd() / compiled_contract["path"]
+        ).resolve()
+        if (
+            actual_contract_path != expected_contract_path
+            or not actual_contract_path.is_file()
+            or sha256_file(actual_contract_path) != compiled_contract["sha256"]
+        ):
+            raise ValueError(
+                "full-backbone controlled Smoke CLI contract identity changed"
+            )
+    if joint_local_transport_controlled_smoke:
+        validate_joint_condition_local_transport_controlled_smoke_config(
+            config,
+            project_root=Path.cwd(),
+            require_execution_ticket=args.preflight_only is not True,
+        )
+        compiled_contract = config["training"][
+            "stage4JointConditionLocalTransportSmokeContract"
+        ]["compiledContract"]
+        actual_contract_path = (
+            args.stage4_joint_condition_local_transport_smoke_contract.resolve()
+        )
+        expected_contract_path = (
+            Path.cwd() / compiled_contract["path"]
+        ).resolve()
+        if (
+            actual_contract_path != expected_contract_path
+            or not actual_contract_path.is_file()
+            or sha256_file(actual_contract_path) != compiled_contract["sha256"]
+        ):
+            raise ValueError(
+                "joint-condition local-transport controlled Smoke CLI "
+                "contract identity changed"
+            )
+    if joint_local_transport_full_data_screen:
+        validate_joint_condition_local_transport_full_data_screen_config(
+            config,
+            project_root=Path.cwd(),
+            require_execution_ticket=args.preflight_only is not True,
+        )
+        inactive_contract = config["training"][
+            "stage4JointConditionLocalTransportFullDataScreenContract"
+        ]["inactiveContract"]
+        actual_contract_path = (
+            args.stage4_joint_condition_local_transport_full_data_screen_contract.resolve()
+        )
+        expected_contract_path = (Path.cwd() / inactive_contract["path"]).resolve()
+        if (
+            actual_contract_path != expected_contract_path
+            or not actual_contract_path.is_file()
+            or sha256_file(actual_contract_path) != inactive_contract["sha256"]
+        ):
+            raise ValueError(
+                "joint-condition local-transport full-data screen CLI contract "
+                "identity changed"
+            )
+    validate_stage4_full_backbone_spatial_affine_inactive_cli_boundary(
+        config,
+        preflight_only=args.preflight_only,
+    )
+    validate_stage4_joint_condition_local_transport_inactive_cli_boundary(
+        config,
+        preflight_only=args.preflight_only,
+    )
     if args.stage4_responsibility_component_smoke:
         from train_stage4_isolated_responsibility_component_smoke import run as run_component_smoke
         return run_component_smoke(args, config, package)
@@ -906,14 +1318,39 @@ def main() -> int:
     if args.authorization_lineage_preflight and not args.preflight_only:
         raise ValueError("Authorization lineage preflight requires --preflight-only")
     validate_training_inputs(config, package)
+    if config.get("denoiserArchitecture") in {
+        STAGE4_SPATIAL_AFFINE_DECODER_ARCHITECTURE,
+        STAGE4_FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_ARCHITECTURE,
+        STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER_ARCHITECTURE,
+    }:
+        if joint_local_transport_controlled_smoke or joint_local_transport_full_data_screen:
+            validate_stage4_joint_condition_local_transport_cli_source_bindings(
+                config,
+                package,
+                dataset_package_path=args.dataset_package,
+                autoencoder_checkpoint_path=args.autoencoder_checkpoint,
+                output_dir=args.output_dir,
+            )
+        else:
+            validate_stage4_spatial_affine_cli_source_bindings(
+                config,
+                package,
+                dataset_package_path=args.dataset_package,
+                autoencoder_checkpoint_path=args.autoencoder_checkpoint,
+                output_dir=args.output_dir,
+            )
     stage_mode = None
     stage_execution_grant = None
     try:
         stage_mode = resolve_stage_mode(config)
-        stage_execution_grant = resolve_stage_execution_grant(
-            config,
-            verify_owner_files=args.stage_control_dry_run,
-        )
+        if not (
+            (full_backbone_controlled_smoke or joint_local_transport_controlled_smoke or joint_local_transport_full_data_screen)
+            and args.preflight_only
+        ):
+            stage_execution_grant = resolve_stage_execution_grant(
+                config,
+                verify_owner_files=args.stage_control_dry_run,
+            )
     except ValueError:
         if is_registered_stage_control_config(config):
             raise
@@ -930,11 +1367,24 @@ def main() -> int:
             "fact_conditioned_semantic_mixture_stage2_full_training",
             "authoritative_semantic_carrier_stage0_full_training",
             "post_decode_full_condition_responsibility_stage0_full_training",
+            "spatial_affine_decoder_stage4_inactive",
+            "full_backbone_spatial_affine_denoiser_stage4_inactive",
+            "full_backbone_spatial_affine_denoiser_stage4_smoke",
+            "joint_condition_local_transport_stage4_inactive",
+            "joint_condition_local_transport_stage4_smoke",
+            "joint_condition_local_transport_stage4_full_data_screen",
         }:
-            if stage_execution_grant.dataset_constraints.get("selectedSplit") is not None:
-                stage_execution_grant.require(ExecutionAction.SELECT_BOUND_SAMPLE)
-            stage_execution_grant.require(ExecutionAction.INSPECT_AUTOENCODER_IDENTITY)
-            stage_execution_grant.require(ExecutionAction.INSPECT_CHECKPOINT_IDENTITY)
+            if stage_execution_grant is not None:
+                if stage_execution_grant.dataset_constraints.get("selectedSplit") is not None:
+                    stage_execution_grant.require(ExecutionAction.SELECT_BOUND_SAMPLE)
+                stage_execution_grant.require(ExecutionAction.INSPECT_AUTOENCODER_IDENTITY)
+                stage_execution_grant.require(ExecutionAction.INSPECT_CHECKPOINT_IDENTITY)
+            elif not (
+                full_backbone_controlled_smoke
+                or joint_local_transport_controlled_smoke
+                or joint_local_transport_full_data_screen
+            ):
+                raise ValueError("Stage control dry-run execution grant is missing")
         else:
             if args.stage_control_authorization is None or not args.stage_control_authorization_sha256:
                 raise ValueError("Stage control dry-run requires the immutable control authorization identity")
@@ -1107,6 +1557,228 @@ def main() -> int:
                 raise ValueError("V9 Stage 4 Smoke preview schedule does not match")
         if args.resolution_stage != 0 or training.get("authorizedInitialization") != "project_random_v9_denoiser":
             raise ValueError("V9 Stage 4 Smoke initialization or resolution is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "spatial_affine_decoder_stage4_adapter":
+        training = config["training"]
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("Stage4 spatial-affine candidate forbids historical or screen Checkpoints")
+        if stage_mode.execution_kind == "cpu_inactive":
+            if args.preflight_only is not True:
+                raise ValueError("Stage4 spatial-affine inactive configuration cannot execute")
+        elif stage_mode.execution_kind == "readonly_gpu_qualification":
+            if args.preflight_only is not True:
+                raise ValueError("read-only GPU qualification uses its isolated diagnostic entry")
+        elif stage_mode.execution_kind == "full_data_screen":
+            if args.preflight_only or args.single_sample_overfit_smoke or args.smoke_test:
+                raise ValueError("Stage4 spatial-affine full-data screen cannot use a Smoke shortcut")
+            if args.overfit_sample_id is not None or args.overfit_epochs is not None:
+                raise ValueError("Stage4 spatial-affine full-data screen cannot carry a bound sample")
+            if args.resolution_stage != 0 or int(training.get("denoiserEpochs", 0)) != 24:
+                raise ValueError("Stage4 spatial-affine screen requires Stage 0 resolution and 24 Epoch")
+            if training.get("localAiCapabilityTicket", {}).get("executionState") != "consumed":
+                raise ValueError("Stage4 spatial-affine screen requires a consumed internal ticket")
+        elif stage_mode.execution_kind == "full_training_stage0":
+            if args.preflight_only or args.single_sample_overfit_smoke or args.smoke_test:
+                raise ValueError("Stage4 spatial-affine formal Stage 0 cannot use a Smoke shortcut")
+            if args.overfit_sample_id is not None or args.overfit_epochs is not None:
+                raise ValueError("Stage4 spatial-affine formal Stage 0 cannot carry a bound sample")
+            if args.resolution_stage != 0 or int(training.get("denoiserEpochs", 0)) != 40:
+                raise ValueError("Stage4 spatial-affine formal Stage 0 requires 256x192 and 40 Epoch")
+            if training.get("localAiCapabilityTicket", {}).get("executionState") != "consumed":
+                raise ValueError("Stage4 spatial-affine Stage 0 requires a consumed internal ticket")
+        else:
+            raise ValueError("Stage4 spatial-affine execution kind is invalid")
+    if (
+        stage_mode is not None
+        and stage_mode.adapter_binding
+        == "full_backbone_spatial_affine_denoiser_stage4_adapter"
+    ):
+        training = config["training"]
+        smoke_contract = training.get(
+            "stage4FullBackboneSpatialAffineSmokeContract", {}
+        )
+        if stage_mode.mode_id != (
+            "full_backbone_spatial_affine_denoiser_stage4_smoke"
+        ) or stage_mode.execution_kind != "single_sample_smoke":
+            raise ValueError(
+                "full-backbone controlled Smoke entered an unsupported mode"
+            )
+        if args.stage4_full_backbone_spatial_affine_smoke is not True:
+            raise ValueError(
+                "full-backbone controlled Smoke requires its dedicated CLI"
+            )
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError(
+                "full-backbone controlled Smoke forbids every parent or "
+                "historical Denoiser Checkpoint"
+            )
+        if (
+            args.overfit_sample_id != smoke_contract.get("sampleId")
+            or smoke_contract.get("sampleSplit") != "validation"
+        ):
+            raise ValueError(
+                "full-backbone controlled Smoke sample identity does not match"
+            )
+        if (
+            int(args.overfit_epochs or 0) != 30
+            or int(smoke_contract.get("epochCount", 0)) != 30
+            or int(args.overfit_evaluation_interval) != 5
+            or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]
+        ):
+            raise ValueError(
+                "full-backbone controlled Smoke schedule is invalid"
+            )
+        if (
+            args.resolution_stage != 0
+            or smoke_contract.get("resolution")
+            != {"width": 256, "height": 192}
+            or smoke_contract.get("initialization")
+            != "fixed_random_denoiser_initialization_without_checkpoint"
+            or smoke_contract.get("autoencoderFrozen") is not True
+        ):
+            raise ValueError(
+                "full-backbone controlled Smoke initialization or resolution changed"
+            )
+        ticket = training.get("localAiCapabilityTicket")
+        if args.preflight_only:
+            if ticket is not None:
+                raise ValueError(
+                    "full-backbone preflight must precede internal ticket consumption"
+                )
+        elif (
+            not isinstance(ticket, dict)
+            or ticket.get("executionState") != "consumed"
+        ):
+            raise ValueError(
+                "full-backbone controlled Smoke training requires one consumed "
+                "internal ticket"
+            )
+    if (
+        stage_mode is not None
+        and stage_mode.adapter_binding
+        == "joint_condition_local_transport_stage4_adapter"
+        and stage_mode.execution_kind == "single_sample_smoke"
+    ):
+        training = config["training"]
+        smoke_contract = training.get(
+            "stage4JointConditionLocalTransportSmokeContract", {}
+        )
+        if (
+            stage_mode.mode_id
+            != "joint_condition_local_transport_stage4_smoke"
+            or stage_mode.sample_split != "validation"
+        ):
+            raise ValueError(
+                "joint-condition local-transport controlled Smoke entered "
+                "an unsupported mode"
+            )
+        if args.stage4_joint_condition_local_transport_smoke is not True:
+            raise ValueError(
+                "joint-condition local-transport controlled Smoke requires "
+                "its dedicated CLI"
+            )
+        if phase0_mode or args.smoke_test:
+            raise ValueError(
+                "joint-condition local-transport controlled Smoke cannot "
+                "enter Phase0 or generic Smoke"
+            )
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError(
+                "joint-condition local-transport controlled Smoke forbids "
+                "every parent or historical Denoiser Checkpoint"
+            )
+        if (
+            args.overfit_sample_id != smoke_contract.get("sampleId")
+            or smoke_contract.get("sampleSplit") != "validation"
+        ):
+            raise ValueError(
+                "joint-condition local-transport controlled Smoke sample "
+                "identity does not match"
+            )
+        if (
+            int(args.overfit_epochs or 0) != 30
+            or int(smoke_contract.get("epochCount", 0)) != 30
+            or int(args.overfit_evaluation_interval) != 5
+            or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]
+        ):
+            raise ValueError(
+                "joint-condition local-transport controlled Smoke schedule "
+                "is invalid"
+            )
+        if (
+            args.resolution_stage != 0
+            or smoke_contract.get("resolution")
+            != {"width": 256, "height": 192}
+            or smoke_contract.get("initialization")
+            != "fixed_random_denoiser_initialization_without_checkpoint"
+            or smoke_contract.get("autoencoderFrozen") is not True
+            or smoke_contract.get("requiredBoundarySides") != ["west"]
+        ):
+            raise ValueError(
+                "joint-condition local-transport controlled Smoke frozen "
+                "identity changed"
+            )
+        ticket = training.get("localAiCapabilityTicket")
+        if args.preflight_only:
+            if ticket is not None:
+                raise ValueError(
+                    "joint-condition local-transport preflight must precede "
+                    "internal ticket consumption"
+                )
+        elif (
+            not isinstance(ticket, dict)
+            or ticket.get("executionState") != "consumed"
+        ):
+            raise ValueError(
+                "joint-condition local-transport controlled Smoke training "
+                "requires one consumed internal ticket"
+            )
+    if (
+        stage_mode is not None
+        and stage_mode.adapter_binding
+        == "joint_condition_local_transport_stage4_full_data_screen_adapter"
+    ):
+        training = config["training"]
+        screen = training.get(
+            "stage4JointConditionLocalTransportFullDataScreenContract", {}
+        )
+        if (
+            stage_mode.mode_id
+            != "joint_condition_local_transport_stage4_full_data_screen"
+            or stage_mode.execution_kind != "full_data_screen"
+            or args.stage4_joint_condition_local_transport_full_data_screen is not True
+        ):
+            raise ValueError("joint-condition local-transport screen mode is invalid")
+        validate_stage4_joint_condition_local_transport_full_data_screen_cli_boundary(
+            config,
+            preflight_only=args.preflight_only,
+            output_dir=args.output_dir,
+            single_sample_overfit_smoke=args.single_sample_overfit_smoke,
+            smoke_test=args.smoke_test,
+            phase0_mode=phase0_mode,
+            overfit_sample_id=args.overfit_sample_id,
+            overfit_epochs=args.overfit_epochs,
+        )
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError(
+                "joint-condition local-transport full-data screen requires fresh "
+                "fixed random Denoiser initialization"
+            )
+        if (
+            args.resolution_stage != 0
+            or int(training.get("denoiserEpochs", 0)) != 24
+            or screen.get("optimizerStepsPerEpoch") != 48
+            or screen.get("optimizerStepCount") != 1152
+            or screen.get("previewEpochs") != [5, 10, 15, 20, 24]
+            or screen.get("requiredUniqueTrainingTimestepCount") != 1000
+            or screen.get("requiredExactInferenceOverlapCount") != 50
+            or screen.get("autoencoderFrozen") is not True
+            or screen.get("automaticTrainingRetryAllowed") is not False
+            or screen.get("stage0Allowed") is not False
+            or screen.get("checkpointPromotionAllowed") is not False
+        ):
+            raise ValueError(
+                "joint-condition local-transport full-data screen schedule changed"
+            )
     if stage_mode is not None and stage_mode.adapter_binding == "structure_fact_first_phase0_adapter":
         training = config["training"]
         phase0_contract = training.get("structureFactFirstPhase0Contract", {})
@@ -1444,6 +2116,10 @@ def main() -> int:
     sample_bound_boundary_provenance = validate_stage4_sample_bound_boundary_provenance(
         config,
         overfit_evidence,
+        execution_grant=stage_execution_grant,
+        allow_ticket_free_full_data_preflight=bool(
+            joint_local_transport_full_data_screen and args.preflight_only
+        ),
     )
     if args.preflight_only:
         preflight_epoch_count = (
@@ -1479,7 +2155,22 @@ def main() -> int:
             else None
         )
         print(json.dumps({
-            "status": "conditional_denoiser_python_preflight_passed",
+            "status": (
+                "joint_condition_local_transport_full_data_screen_trainer_"
+                "readonly_preflight_passed"
+                if joint_local_transport_full_data_screen
+                else (
+                    "joint_condition_local_transport_controlled_smoke_trainer_"
+                    "preflight_passed"
+                    if joint_local_transport_controlled_smoke
+                    else (
+                        "full_backbone_spatial_affine_controlled_smoke_trainer_"
+                        "preflight_passed"
+                        if full_backbone_controlled_smoke
+                        else "conditional_denoiser_python_preflight_passed"
+                    )
+                )
+            ),
             "modelId": config["modelId"],
             "architectureVersion": config["architectureVersion"],
             "resolutionStage": stage,
@@ -1505,6 +2196,24 @@ def main() -> int:
             "phase0ExecutionAuthorizationLineageValidated": bool(
                 phase0_mode and not args.stage_control_dry_run
             ),
+            "compiledControlledSmokeContract": (
+                deepcopy(
+                    config["training"][
+                        "stage4JointConditionLocalTransportSmokeContract"
+                    ]["compiledContract"]
+                )
+                if joint_local_transport_controlled_smoke
+                else None
+            ),
+            "inactiveFullDataScreenContract": (
+                deepcopy(
+                    config["training"][
+                        "stage4JointConditionLocalTransportFullDataScreenContract"
+                    ]["inactiveContract"]
+                )
+                if joint_local_transport_full_data_screen
+                else None
+            ),
         }, ensure_ascii=False, indent=2))
         return 0
 
@@ -1522,7 +2231,36 @@ def main() -> int:
     seed = int(config["training"]["seed"])
     set_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    controlled_smoke_resource_telemetry_recorder = None
+    if full_backbone_controlled_smoke:
+        controlled_smoke_resource_telemetry_recorder = (
+            record_full_backbone_spatial_affine_training_resource_telemetry
+        )
+    elif joint_local_transport_controlled_smoke:
+        controlled_smoke_resource_telemetry_recorder = (
+            record_joint_condition_local_transport_training_resource_telemetry
+        )
+    elif joint_local_transport_full_data_screen:
+        controlled_smoke_resource_telemetry_recorder = (
+            record_joint_condition_local_transport_full_data_screen_training_resource_telemetry
+        )
+    if stage4_formal_training_requires_cuda(config) and device.type != "cuda":
+        if full_backbone_controlled_smoke:
+            label = "full-backbone controlled Smoke"
+        elif joint_local_transport_controlled_smoke:
+            label = "joint-condition local-transport controlled Smoke"
+        else:
+            label = "joint-condition local-transport full-data screen"
+        raise ValueError(f"{label} formal training requires CUDA")
     args.output_dir.mkdir(parents=True, exist_ok=False)
+    controlled_smoke_resource_telemetry_path = (
+        args.output_dir / "resource-telemetry.json"
+        if controlled_smoke_resource_telemetry_recorder is not None
+        else None
+    )
+    controlled_smoke_resource_telemetry_rows = []
+    if controlled_smoke_resource_telemetry_recorder is not None:
+        torch.cuda.reset_peak_memory_stats(device)
     step_telemetry_path = initialize_stage4_step_telemetry(
         args.output_dir,
         config,
@@ -1532,7 +2270,11 @@ def main() -> int:
     started_at = utc_now()
     started_at_shanghai = asia_shanghai_now()
     started = time.perf_counter()
-    optimization_datasets = build_optimization_datasets(datasets, overfit_evidence)
+    optimization_datasets = build_optimization_datasets(
+        datasets,
+        overfit_evidence,
+        config=config,
+    )
     loaders = {
         split: torch.utils.data.DataLoader(
             dataset,
@@ -1555,6 +2297,14 @@ def main() -> int:
     model.autoencoder.eval()
     for parameter in model.autoencoder.parameters():
         parameter.requires_grad_(False)
+    if controlled_smoke_resource_telemetry_path is not None:
+        controlled_smoke_resource_telemetry_recorder(
+            controlled_smoke_resource_telemetry_path,
+            controlled_smoke_resource_telemetry_rows,
+            run_id=config["executionIdentity"]["runId"],
+            epoch=0,
+            phase="model_initialized_autoencoder_frozen",
+        )
     denoiser_initialization = "project_random_multiscale_denoiser"
     parent_denoiser_checkpoint = None
     r5_checkpoint_continuation = (
@@ -1655,6 +2405,11 @@ def main() -> int:
     best_epoch = None
     best_denoiser_state = None
     best_checkpoint_route_required_boundary_contact = None
+    spatial_affine_checkpoint_gate = stage4_spatial_affine_boundary_gate_contract(
+        config
+    )
+    best_spatial_affine_checkpoint_candidate = None
+    spatial_affine_checkpoint_restore_evidence = None
     terminal_identity_contract = (
         validate_stage4_best_checkpoint_and_terminal_qualification_identity_separation(
             config
@@ -1838,6 +2593,14 @@ def main() -> int:
                 local_training_token_count=latest_live_progress.get("localTrainingTokenCount"),
             )
             write_progress(args.output_dir, config, package, stage, started_at, started_at_shanghai, row, metrics, "running", True, live_progress=latest_live_progress)
+            if controlled_smoke_resource_telemetry_path is not None:
+                controlled_smoke_resource_telemetry_recorder(
+                    controlled_smoke_resource_telemetry_path,
+                    controlled_smoke_resource_telemetry_rows,
+                    run_id=config["executionIdentity"]["runId"],
+                    epoch=epoch + 1,
+                    phase="epoch_completed",
+                )
             continue
         latest_live_progress = build_live_progress(
             phase="validating_epoch",
@@ -1869,6 +2632,8 @@ def main() -> int:
         if uses_v7_rollout_validation(config):
             with stage4_fixed_preview_determinism_scope(
                 uses_stage4_unified_preview_sampling_contract(config)
+                or spatial_affine_checkpoint_gate is not None
+                or joint_local_transport_full_data_screen
             ):
                 rollout_validation = evaluate_deterministic_rollout_rgb_quality_v7(
                     model,
@@ -1888,7 +2653,17 @@ def main() -> int:
                     args.output_dir / "fixed-epoch-previews",
                     epoch + 1,
                 )
-            if uses_stage4_unified_preview_sampling_contract(config):
+            if (
+                uses_stage4_unified_preview_sampling_contract(config)
+                or is_stage4_spatial_affine_decoder(config)
+                or is_stage4_full_backbone_controlled_smoke(config)
+                or is_stage4_joint_condition_local_transport_controlled_smoke(
+                    config
+                )
+                or is_stage4_joint_condition_local_transport_full_data_screen(
+                    config
+                )
+            ):
                 preview_epoch = epoch + 1
                 if should_reproduce_stage4_fixed_epoch_preview(config, preview_epoch):
                     source_preview = rollout_validation.get("previewArtifact")
@@ -1997,6 +2772,63 @@ def main() -> int:
                 raise ValueError(
                     "Stage 4 terminal qualification Epoch 30 preview is not byte-exact"
                 )
+        spatial_affine_checkpoint_candidate = None
+        spatial_affine_checkpoint_decision = None
+        if spatial_affine_checkpoint_gate is not None:
+            if not isinstance(rollout_validation, dict):
+                raise ValueError(
+                    "Stage4 spatial-affine Checkpoint rollout evidence is missing"
+                )
+            boundary_ledger = rollout_validation.get(
+                "finalRgbBoundaryValidationLedger"
+            )
+            candidate_preview = rollout_validation.get(
+                "checkpointCandidateFormalPreviewArtifact"
+            )
+            if not isinstance(boundary_ledger, dict) or not isinstance(
+                candidate_preview, dict
+            ):
+                raise ValueError(
+                    "Stage4 spatial-affine Checkpoint boundary evidence is incomplete"
+                )
+            post_step_state_sha256 = state_dict_sha256(
+                model.denoiser.state_dict()
+            )
+            if (
+                candidate_preview.get("epoch") != epoch + 1
+                or candidate_preview.get("denoiserStateSha256")
+                != post_step_state_sha256
+            ):
+                raise ValueError(
+                    "Stage4 spatial-affine Checkpoint evidence is not bound to the post-step model"
+                )
+            spatial_affine_checkpoint_candidate = (
+                build_stage4_boundary_checkpoint_candidate(
+                    epoch=epoch + 1,
+                    optimizer_step=(epoch + 1) * optimizer_steps_per_epoch,
+                    denoiser_state_sha256=post_step_state_sha256,
+                    scalar_score=validation_loss,
+                    final_rgb_sha256=candidate_preview[
+                        "normalizedReviewRgbSha256"
+                    ],
+                    boundary_audit=boundary_ledger,
+                    preview_sha256=candidate_preview["sourcePreviewSha256"],
+                )
+            )
+            spatial_affine_checkpoint_decision = (
+                decide_stage4_boundary_checkpoint_replacement(
+                    spatial_affine_checkpoint_candidate,
+                    best_spatial_affine_checkpoint_candidate,
+                )
+            )
+            row["stage4FinalRgbBoundaryCheckpointCandidate"] = deepcopy(
+                spatial_affine_checkpoint_candidate
+            )
+            row["stage4FinalRgbBoundaryCheckpointDecision"] = (
+                stage4_spatial_affine_checkpoint_decision_evidence(
+                    spatial_affine_checkpoint_decision
+                )
+            )
         route_required_boundary_contact = validation.get(
             "stage4DiagnosticRouteRequiredBoundaryContactMinimum"
         )
@@ -2018,10 +2850,19 @@ def main() -> int:
             row["stage4CheckpointRouteWestBoundaryNonRegressionPassed"] = (
                 route_non_regression_passed
             )
-        if validation_loss < best_validation_loss and route_non_regression_passed:
+        scalar_and_boundary_selection_passed = (
+            spatial_affine_checkpoint_decision.eligible
+            if spatial_affine_checkpoint_decision is not None
+            else validation_loss < best_validation_loss
+        )
+        if scalar_and_boundary_selection_passed and route_non_regression_passed:
             best_validation_loss = validation_loss
             best_epoch = epoch + 1
             best_denoiser_state = deepcopy({key: value.detach().cpu() for key, value in model.denoiser.state_dict().items()})
+            if spatial_affine_checkpoint_candidate is not None:
+                best_spatial_affine_checkpoint_candidate = deepcopy(
+                    spatial_affine_checkpoint_candidate
+                )
             if worst_sample_class_contract_active:
                 best_checkpoint_route_required_boundary_contact = float(
                     route_required_boundary_contact
@@ -2047,6 +2888,14 @@ def main() -> int:
             local_training_token_count=latest_live_progress.get("localTrainingTokenCount"),
         )
         write_progress(args.output_dir, config, package, stage, started_at, started_at_shanghai, row, metrics, "running", run_is_smoke, live_progress=latest_live_progress)
+        if controlled_smoke_resource_telemetry_path is not None:
+            controlled_smoke_resource_telemetry_recorder(
+                controlled_smoke_resource_telemetry_path,
+                controlled_smoke_resource_telemetry_rows,
+                run_id=config["executionIdentity"]["runId"],
+                epoch=epoch + 1,
+                phase="epoch_completed_with_validation",
+            )
 
     if best_denoiser_state is None:
         raise ValueError("fixed validation did not produce a selectable checkpoint")
@@ -2103,11 +2952,88 @@ def main() -> int:
         if terminal_qualification_identity["previewSha256Matches"] is not True:
             raise ValueError("Stage 4 terminal qualification byte-exact preview mismatch")
     model.denoiser.load_state_dict(best_denoiser_state)
-    final_denoiser_state_sha256 = (
+    restored_denoiser_state_sha256 = (
         state_dict_sha256(model.denoiser.state_dict())
         if record_stage4_smoke_state_hashes
+        or spatial_affine_checkpoint_gate is not None
         else None
     )
+    final_denoiser_state_sha256 = restored_denoiser_state_sha256
+    if spatial_affine_checkpoint_gate is not None:
+        if not isinstance(best_spatial_affine_checkpoint_candidate, dict):
+            raise ValueError(
+                "Stage4 spatial-affine selected Checkpoint candidate is missing"
+            )
+        if (
+            best_spatial_affine_checkpoint_candidate.get(
+                "denoiserStateSha256"
+            )
+            != restored_denoiser_state_sha256
+        ):
+            raise ValueError(
+                "Stage4 spatial-affine selected post-step state was not restored"
+            )
+        with stage4_fixed_preview_determinism_scope(True):
+            restored_boundary_metrics = evaluate_deterministic_rollout_rgb_quality_v7(
+                model,
+                optimization_datasets["validation"],
+                diffusion,
+                latent_normalization,
+                device,
+                seed + 3000,
+                config,
+                args.output_dir / "checkpoint-boundary-restored-preview",
+                best_epoch,
+                force_checkpoint_bound_preview=True,
+            )
+        restored_boundary_ledger = restored_boundary_metrics.get(
+            "finalRgbBoundaryValidationLedger"
+        )
+        restored_boundary_preview = restored_boundary_metrics.get(
+            "checkpointCandidateFormalPreviewArtifact"
+        )
+        if (
+            restored_boundary_ledger
+            != best_spatial_affine_checkpoint_candidate.get("boundaryAudit")
+            or not isinstance(restored_boundary_preview, dict)
+            or restored_boundary_preview.get("denoiserStateSha256")
+            != restored_denoiser_state_sha256
+            or restored_boundary_preview.get("sourcePreviewSha256")
+            != best_spatial_affine_checkpoint_candidate.get("previewSha256")
+            or restored_boundary_preview.get("normalizedReviewRgbSha256")
+            != best_spatial_affine_checkpoint_candidate.get("finalRgbSha256")
+        ):
+            raise ValueError(
+                "Stage4 spatial-affine restored Checkpoint evidence is not byte-identical"
+            )
+        spatial_affine_checkpoint_restore_evidence = {
+            "schemaVersion": (
+                "stage4-post-step-boundary-checkpoint-restore-evidence-v1"
+            ),
+            "status": "selected_post_step_state_and_formal_preview_restored_exactly",
+            "bestEpoch": int(best_epoch),
+            "selectedDenoiserStateSha256": (
+                best_spatial_affine_checkpoint_candidate[
+                    "denoiserStateSha256"
+                ]
+            ),
+            "restoredDenoiserStateSha256": restored_denoiser_state_sha256,
+            "boundaryAuditSha256": best_spatial_affine_checkpoint_candidate[
+                "boundaryAuditSha256"
+            ],
+            "sourcePreviewSha256": restored_boundary_preview[
+                "sourcePreviewSha256"
+            ],
+            "normalizedReviewRgbSha256": restored_boundary_preview[
+                "normalizedReviewRgbSha256"
+            ],
+            "validationTrajectoryCount": restored_boundary_metrics[
+                "rolloutTrajectoryCount"
+            ],
+            "stateIdentityMatches": True,
+            "boundaryLedgerIdentityMatches": True,
+            "previewByteIdentityMatches": True,
+        }
     unified_preview_reproduction = None
     if uses_stage4_unified_preview_sampling_contract(config):
         best_row = next((row for row in metrics if row.get("epoch") == best_epoch), None)
@@ -2201,6 +3127,57 @@ def main() -> int:
         config,
     )
 
+    spatial_affine_screen = (
+        stage_mode is not None
+        and stage_mode.mode_id
+        == "spatial_affine_decoder_stage4_full_data_screen"
+    )
+    spatial_affine_stage0 = (
+        stage_mode is not None
+        and stage_mode.mode_id
+        == "spatial_affine_decoder_stage0_full_training"
+    )
+    full_backbone_spatial_affine_smoke = (
+        stage_mode is not None
+        and stage_mode.mode_id
+        == "full_backbone_spatial_affine_denoiser_stage4_smoke"
+    )
+    joint_condition_local_transport_smoke = (
+        stage_mode is not None
+        and stage_mode.mode_id
+        == "joint_condition_local_transport_stage4_smoke"
+    )
+    joint_condition_local_transport_full_data_screen = (
+        stage_mode is not None
+        and stage_mode.mode_id
+        == "joint_condition_local_transport_stage4_full_data_screen"
+    )
+    if joint_condition_local_transport_full_data_screen:
+        training_stage_identity = (
+            "stage4_joint_condition_local_transport_full_data_screen"
+        )
+    elif joint_condition_local_transport_smoke:
+        training_stage_identity = (
+            "stage4_joint_condition_local_transport_controlled_smoke"
+        )
+    elif full_backbone_spatial_affine_smoke:
+        training_stage_identity = (
+            "stage4_full_backbone_spatial_affine_controlled_smoke"
+        )
+    elif spatial_affine_screen:
+        training_stage_identity = "stage4_spatial_affine_full_data_screen"
+    elif spatial_affine_stage0:
+        training_stage_identity = "stage4_spatial_affine_formal_stage0"
+    else:
+        training_stage_identity = (
+            "conditional_denoiser_single_sample_overfit_smoke"
+            if args.single_sample_overfit_smoke
+            else (
+                "conditional_denoiser_smoke_test"
+                if args.smoke_test
+                else "conditional_denoiser_training"
+            )
+        )
     checkpoint_path = args.output_dir / "complete-world-ai-assisted-conditional-denoiser.pt"
     checkpoint = {
         "schemaVersion": config["requiredCheckpointProvenance"],
@@ -2221,10 +3198,20 @@ def main() -> int:
         "actualLoadedV7CapacityCount": dataset_binding_evidence.get("actualLoadedV7CapacityCount"),
         "actualLoadedSplitCounts": dataset_binding_evidence["actualSplitCounts"],
         "trainingTokenAccounting": training_token_accounting,
-        "trainingStage": "conditional_denoiser_single_sample_overfit_smoke" if args.single_sample_overfit_smoke else ("conditional_denoiser_smoke_test" if args.smoke_test else "conditional_denoiser_training"),
+        "trainingStage": training_stage_identity,
         "denoiserTrained": not args.smoke_test and not args.single_sample_overfit_smoke,
         "programValidated": True,
         "formalInferenceEligible": False,
+        "machineReviewPending": bool(
+            joint_condition_local_transport_smoke
+            or joint_condition_local_transport_full_data_screen
+            or full_backbone_spatial_affine_smoke
+            or spatial_affine_screen
+            or spatial_affine_stage0
+        ),
+        "checkpointPromotionEligible": False,
+        "stage0InitializationEligible": False,
+        "stage1InitializationEligible": False,
         "resolutionStage": stage,
         "seed": seed,
         "parentDenoiserCheckpointPath": project_path(args.initial_denoiser_checkpoint) if args.initial_denoiser_checkpoint else None,
@@ -2245,6 +3232,15 @@ def main() -> int:
     }
     if unified_preview_reproduction is not None:
         checkpoint["stage4UnifiedTrainingPreviewSampling"] = unified_preview_reproduction
+    if spatial_affine_checkpoint_restore_evidence is not None:
+        checkpoint["stage4FinalRgbBoundaryCheckpointSelection"] = {
+            "selectedCandidate": deepcopy(
+                best_spatial_affine_checkpoint_candidate
+            ),
+            "restoreEvidence": deepcopy(
+                spatial_affine_checkpoint_restore_evidence
+            ),
+        }
     if record_stage4_smoke_state_hashes:
         checkpoint["modelStateHashEvidence"] = {
             "algorithm": "sha256_sorted_tensor_bytes_v1",
@@ -2252,14 +3248,136 @@ def main() -> int:
             "finalDenoiserStateSha256": final_denoiser_state_sha256,
             "weightsChanged": initial_denoiser_state_sha256 != final_denoiser_state_sha256,
         }
+    if joint_condition_local_transport_smoke:
+        checkpoint["stage4JointConditionLocalTransportSmoke"] = {
+            "architectureId": config["denoiserArchitecture"],
+            "runId": config["executionIdentity"]["runId"],
+            "compiledContract": deepcopy(
+                config["training"][
+                    "stage4JointConditionLocalTransportSmokeContract"
+                ]["compiledContract"]
+            ),
+            "legacySpatialAffineIdentityReused": False,
+        }
+    if joint_condition_local_transport_full_data_screen:
+        checkpoint["stage4JointConditionLocalTransportFullDataScreen"] = {
+            "architectureId": config["denoiserArchitecture"],
+            "runId": config["executionIdentity"]["runId"],
+            "inactiveContract": deepcopy(
+                config["training"][
+                    "stage4JointConditionLocalTransportFullDataScreenContract"
+                ]["inactiveContract"]
+            ),
+            "optimizerStepCount": 1152,
+            "checkpointPromotionEligible": False,
+            "stage0InitializationEligible": False,
+            "legacySpatialAffineIdentityReused": False,
+        }
     record_stage4_step(step_telemetry_path, "checkpoint_write", "started")
     torch.save(checkpoint, checkpoint_path)
     record_stage4_step(step_telemetry_path, "checkpoint_write", "completed")
 
+    controlled_smoke_preview_manifest = None
+    controlled_smoke_resource_telemetry = None
+    if joint_condition_local_transport_full_data_screen:
+        controlled_smoke_preview_manifest = (
+            build_joint_condition_local_transport_full_data_screen_fixed_preview_manifest(
+                metrics,
+                config,
+            )
+        )
+        manifest_status = (
+            "stage4_joint_condition_local_transport_full_data_screen_training_"
+            "completed_awaiting_automatic_machine_review"
+        )
+        remaining_blockers = [
+            "automatic_machine_review_pending",
+            "full_data_screen_checkpoint_non_promotable",
+        ]
+    elif joint_condition_local_transport_smoke:
+        controlled_smoke_preview_manifest = (
+            build_joint_condition_local_transport_fixed_preview_manifest(
+                metrics,
+                config,
+            )
+        )
+    elif full_backbone_spatial_affine_smoke:
+        controlled_smoke_preview_manifest = (
+            build_full_backbone_spatial_affine_fixed_preview_manifest(
+                metrics,
+                config,
+            )
+        )
+    if controlled_smoke_resource_telemetry_path is not None:
+        controlled_smoke_resource_telemetry = (
+            controlled_smoke_resource_telemetry_recorder(
+                controlled_smoke_resource_telemetry_path,
+                controlled_smoke_resource_telemetry_rows,
+                run_id=config["executionIdentity"]["runId"],
+                epoch=epoch_count,
+                phase="training_completed_checkpoint_written",
+                status="completed",
+                append_row=False,
+            )
+        )
+
     created_at = utc_now()
+    if joint_condition_local_transport_smoke:
+        manifest_status = (
+            "stage4_joint_condition_local_transport_controlled_smoke_"
+            "training_completed_awaiting_automatic_machine_review"
+        )
+        remaining_blockers = [
+            "automatic_machine_review_pending",
+            "controlled_smoke_checkpoint_non_promotable",
+        ]
+    elif full_backbone_spatial_affine_smoke:
+        manifest_status = (
+            "stage4_full_backbone_spatial_affine_controlled_smoke_"
+            "training_completed_awaiting_automatic_machine_review"
+        )
+        remaining_blockers = [
+            "automatic_machine_review_pending",
+            "controlled_smoke_checkpoint_non_promotable",
+        ]
+    elif spatial_affine_screen:
+        manifest_status = (
+            "stage4_spatial_affine_screen_training_completed_"
+            "awaiting_automatic_machine_review"
+        )
+        remaining_blockers = [
+            "automatic_machine_review_pending",
+            "screen_checkpoint_non_promotable",
+        ]
+    elif spatial_affine_stage0:
+        manifest_status = (
+            "stage4_spatial_affine_stage0_training_completed_"
+            "awaiting_automatic_machine_review"
+        )
+        remaining_blockers = [
+            "automatic_machine_review_pending",
+            "formal_inference_validation_missing",
+        ]
+    else:
+        manifest_status = (
+            "conditional_denoiser_single_sample_overfit_smoke_completed"
+            if args.single_sample_overfit_smoke
+            else (
+                "conditional_denoiser_program_smoke_test_passed"
+                if args.smoke_test
+                else "conditional_denoiser_training_completed_pending_validation"
+            )
+        )
+        remaining_blockers = [
+            "conditional_denoiser_full_training_missing"
+            if (args.smoke_test or args.single_sample_overfit_smoke)
+            else "conditional_denoiser_validation_pending",
+            "formal_inference_validation_missing",
+            "owner_review_missing_identity",
+        ]
     manifest = {
         "schemaVersion": config["requiredCheckpointProvenance"],
-        "status": "conditional_denoiser_single_sample_overfit_smoke_completed" if args.single_sample_overfit_smoke else ("conditional_denoiser_program_smoke_test_passed" if args.smoke_test else "conditional_denoiser_training_completed_pending_validation"),
+        "status": manifest_status,
         "createdAtUtc": created_at,
         "createdAtAsiaShanghai": asia_shanghai_now(),
         "ownership": OWNERSHIP,
@@ -2290,6 +3408,10 @@ def main() -> int:
         "denoiserTrained": checkpoint["denoiserTrained"],
         "programValidated": True,
         "formalInferenceEligible": False,
+        "machineReviewPending": checkpoint["machineReviewPending"],
+        "checkpointPromotionEligible": False,
+        "stage0InitializationEligible": False,
+        "stage1InitializationEligible": False,
         "conditionChannels": int(config["conditionChannels"]),
         "conditionChannelOrder": list(config["conditionChannelOrder"]),
         "conditionBoundSampleCount": sum(len(dataset) for dataset in datasets.values()),
@@ -2322,11 +3444,7 @@ def main() -> int:
             "betaEnd": diffusion["betaEnd"],
             "predictionTarget": "velocity_v1",
         },
-        "remainingBlockers": [
-            "conditional_denoiser_full_training_missing" if (args.smoke_test or args.single_sample_overfit_smoke) else "conditional_denoiser_validation_pending",
-            "formal_inference_validation_missing",
-            "owner_review_missing_identity",
-        ],
+        "remainingBlockers": remaining_blockers,
         "durationSeconds": round(time.perf_counter() - started, 3),
         "device": str(device),
         "metrics": metrics,
@@ -2334,10 +3452,47 @@ def main() -> int:
     }
     if unified_preview_reproduction is not None:
         manifest["stage4UnifiedTrainingPreviewSampling"] = unified_preview_reproduction
+    if spatial_affine_checkpoint_restore_evidence is not None:
+        manifest["stage4FinalRgbBoundaryCheckpointSelection"] = deepcopy(
+            checkpoint["stage4FinalRgbBoundaryCheckpointSelection"]
+        )
     if terminal_qualification_identity is not None:
         manifest["stage4TerminalQualificationIdentity"] = terminal_qualification_identity
     if record_stage4_smoke_state_hashes:
         manifest["modelStateHashEvidence"] = deepcopy(checkpoint["modelStateHashEvidence"])
+    if joint_condition_local_transport_smoke:
+        manifest["stage4JointConditionLocalTransportSmoke"] = deepcopy(
+            checkpoint["stage4JointConditionLocalTransportSmoke"]
+        )
+    if joint_condition_local_transport_full_data_screen:
+        manifest["stage4JointConditionLocalTransportFullDataScreen"] = deepcopy(
+            checkpoint["stage4JointConditionLocalTransportFullDataScreen"]
+        )
+        manifest.update({
+            "actualLoadedSampleCount": dataset_binding_evidence[
+                "actualLoadedConditionalSampleCount"
+            ],
+            "splitCounts": deepcopy(dataset_binding_evidence["actualSplitCounts"]),
+            "epochCount": epoch_count,
+            "optimizerStepCount": optimizer_step_target,
+        })
+    if controlled_smoke_preview_manifest is not None:
+        manifest.update(controlled_smoke_preview_manifest)
+    if controlled_smoke_resource_telemetry is not None:
+        manifest["resourceTelemetryPath"] = project_path(
+            controlled_smoke_resource_telemetry_path
+        )
+        manifest["resourceTelemetrySha256"] = sha256_file(
+            controlled_smoke_resource_telemetry_path
+        )
+        manifest["resourceTelemetry"] = {
+            "schemaVersion": controlled_smoke_resource_telemetry["schemaVersion"],
+            "status": controlled_smoke_resource_telemetry["status"],
+            "rowCount": len(controlled_smoke_resource_telemetry["rows"]),
+            "peakGpuMemoryBytes": controlled_smoke_resource_telemetry[
+                "peakGpuMemoryBytes"
+            ],
+        }
     manifest_path = args.output_dir / "manifest.json"
     write_json(manifest_path, manifest)
     completed_live_progress = build_live_progress(
@@ -2378,6 +3533,15 @@ def build_single_sample_overfit_evidence(datasets, args, config, execution_grant
         raise ValueError("single-sample overfit smoke and program smoke-test are mutually exclusive")
     configured_split = "train"
     training = config.get("training", {})
+    full_backbone_smoke = is_stage4_full_backbone_controlled_smoke(config)
+    joint_local_transport_smoke = (
+        is_stage4_joint_condition_local_transport_controlled_smoke(config)
+    )
+    controlled_single_sample_smoke = (
+        full_backbone_smoke or joint_local_transport_smoke
+    )
+    if controlled_single_sample_smoke:
+        configured_split = "validation"
     if execution_grant is None and (
         is_v8_stage4_decoded_alignment(config)
         or is_v9_stage4_object_semantic_decoded_alignment(config)
@@ -2397,6 +3561,18 @@ def build_single_sample_overfit_evidence(datasets, args, config, execution_grant
         expected_sample_id = execution_grant.dataset_constraints.get("sampleId")
         if expected_sample_id and args.overfit_sample_id != expected_sample_id:
             raise ValueError("single-sample selection does not match ExecutionGrant dataset constraints")
+    elif controlled_single_sample_smoke:
+        smoke_contract = (
+            stage4_controlled_single_sample_smoke_contract(config) or {}
+        )
+        if (
+            smoke_contract.get("sampleSplit") != "validation"
+            or args.overfit_sample_id != smoke_contract.get("sampleId")
+        ):
+            raise ValueError(
+                "controlled Smoke preflight sample does not match its "
+                "immutable candidate contract"
+            )
     rows = datasets[configured_split].rows
     selected_index = 0
     if args.overfit_sample_id:
@@ -2418,22 +3594,65 @@ def build_single_sample_overfit_evidence(datasets, args, config, execution_grant
     }
 
 
-def validate_stage4_sample_bound_boundary_provenance(config, overfit_evidence):
+def validate_stage4_sample_bound_boundary_provenance(
+    config,
+    overfit_evidence,
+    *,
+    execution_grant=None,
+    allow_ticket_free_full_data_preflight=False,
+):
     training = config.get("training", {})
-    try:
-        execution_grant = resolve_stage_execution_grant(config)
-    except ValueError:
-        if is_registered_stage_control_config(config):
-            raise
-        execution_grant = None
-    if execution_grant is None or not execution_grant.permits(ExecutionAction.SELECT_BOUND_SAMPLE):
+    full_backbone_smoke = is_stage4_full_backbone_controlled_smoke(config)
+    joint_local_transport_smoke = (
+        is_stage4_joint_condition_local_transport_controlled_smoke(config)
+    )
+    controlled_single_sample_smoke = (
+        full_backbone_smoke or joint_local_transport_smoke
+    )
+    if allow_ticket_free_full_data_preflight:
+        if not is_stage4_joint_condition_local_transport_full_data_screen(config):
+            raise ValueError(
+                "ticket-free full-data preflight exception requires the exact "
+                "joint-condition local-transport screen identity"
+            )
+        if overfit_evidence.get("enabled") is True:
+            raise ValueError(
+                "joint-condition local-transport full-data preflight cannot "
+                "select a bound sample"
+            )
+        return {
+            "enabled": False,
+            "status": "not_applicable_full_data_screen_readonly_preflight",
+            "executionGrantResolved": False,
+        }
+    if execution_grant is None:
+        try:
+            execution_grant = resolve_stage_execution_grant(config)
+        except ValueError:
+            if (
+                is_registered_stage_control_config(config)
+                and not controlled_single_sample_smoke
+            ):
+                raise
+            execution_grant = None
+    if (
+        not controlled_single_sample_smoke
+        and (
+            execution_grant is None
+            or not execution_grant.permits(ExecutionAction.SELECT_BOUND_SAMPLE)
+        )
+    ):
         return {
             "enabled": False,
             "status": "not_applicable_non_stage4_bounded_smoke",
         }
     if overfit_evidence.get("enabled") is not True:
         raise ValueError("Stage4 sample-bound boundary provenance requires the fixed Smoke sample")
-    if is_structure_fact_first_stage4(config):
+    if controlled_single_sample_smoke:
+        smoke_contract = (
+            stage4_controlled_single_sample_smoke_contract(config) or {}
+        )
+    elif is_structure_fact_first_stage4(config):
         smoke_contract = training.get("structureFactFirstStage4SingleSampleSmokeContract") or training.get("structureFactFirstPhase0Contract", {})
     elif is_condition_preserving_semantic_renderer_stage4(config):
         smoke_contract = (
@@ -2453,9 +3672,15 @@ def validate_stage4_sample_bound_boundary_provenance(config, overfit_evidence):
         smoke_contract = training.get("r5Stage4BoundedRepairSmokeContract", {})
     sample_id = overfit_evidence.get("sampleId")
     condition_pack_path = overfit_evidence.get("conditionPackPath")
-    if sample_id != smoke_contract.get("sampleId") or sample_id != training.get("authorizedOverfitSampleId"):
+    if sample_id != smoke_contract.get("sampleId") or (
+        not controlled_single_sample_smoke
+        and sample_id != training.get("authorizedOverfitSampleId")
+    ):
         raise ValueError("Stage4 sample-bound boundary provenance sample identity mismatch")
-    if condition_pack_path != smoke_contract.get("conditionPackPath"):
+    if (
+        not controlled_single_sample_smoke
+        and condition_pack_path != smoke_contract.get("conditionPackPath")
+    ):
         raise ValueError("Stage4 sample-bound boundary provenance condition pack mismatch")
     condition_pack = read_json(condition_pack_path)
     if condition_pack.get("status") != "compiled_conditions_ready":
@@ -2482,7 +3707,13 @@ def validate_stage4_sample_bound_boundary_provenance(config, overfit_evidence):
     if len(set(source_side_values)) != 1:
         raise ValueError("Stage4 sample-bound boundary provenance source sides disagree")
     authoritative_sides = [source_side_values[0]]
-    configured_sides = list(training.get("authorizedBoundaryTopology", {}).get("requiredBoundarySides", []))
+    configured_sides = list(
+        smoke_contract.get("requiredBoundarySides", [])
+        if controlled_single_sample_smoke
+        else training.get("authorizedBoundaryTopology", {}).get(
+            "requiredBoundarySides", []
+        )
+    )
     if configured_sides != authoritative_sides:
         raise ValueError(
             "Stage4 sample-bound boundary provenance required sides do not match current sample: "
@@ -2694,10 +3925,298 @@ def record_stage4_step(telemetry_path, step, status, **details):
     write_json_atomic(telemetry_path, telemetry)
 
 
-def build_optimization_datasets(datasets, overfit_evidence):
+def query_nvidia_smi_training_snapshot(device_index):
+    completed = subprocess.run(
+        [
+            "nvidia-smi",
+            "--query-gpu=index,utilization.gpu,memory.used",
+            "--format=csv,noheader,nounits",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    for line in completed.stdout.splitlines():
+        fields = [field.strip() for field in line.split(",")]
+        if len(fields) == 3 and int(fields[0]) == int(device_index):
+            return {
+                "gpuUtilizationPercent": int(fields[1]),
+                "gpuMemoryUsedBytes": int(fields[2]) * 1024 * 1024,
+            }
+    raise ValueError("controlled Smoke nvidia-smi device row is missing")
+
+
+def record_controlled_smoke_training_resource_telemetry(
+    telemetry_path,
+    rows,
+    *,
+    run_id,
+    epoch,
+    phase,
+    schema_version,
+    error_label,
+    status="running",
+    append_row=True,
+):
+    """Persist actual CUDA observations owned by the formal Trainer."""
+
+    if not torch.cuda.is_available():
+        raise ValueError(f"{error_label} resource telemetry requires CUDA")
+    device_index = int(torch.cuda.current_device())
+    torch.cuda.synchronize(device_index)
+    if append_row:
+        device_snapshot = query_nvidia_smi_training_snapshot(device_index)
+        rows.append({
+            "recordedAtUtc": utc_now(),
+            "recordedAtAsiaShanghai": asia_shanghai_now(),
+            "epoch": int(epoch),
+            "phase": str(phase),
+            "deviceIndex": device_index,
+            "deviceName": torch.cuda.get_device_name(device_index),
+            **device_snapshot,
+            "memoryAllocatedBytes": int(torch.cuda.memory_allocated(device_index)),
+            "memoryReservedBytes": int(torch.cuda.memory_reserved(device_index)),
+            "peakMemoryAllocatedBytes": int(
+                torch.cuda.max_memory_allocated(device_index)
+            ),
+            "peakMemoryReservedBytes": int(
+                torch.cuda.max_memory_reserved(device_index)
+            ),
+        })
+    peak_gpu_memory_bytes = max(
+        (int(row["gpuMemoryUsedBytes"]) for row in rows),
+        default=0,
+    )
+    telemetry = {
+        "schemaVersion": schema_version,
+        "status": status,
+        "runId": run_id,
+        "source": "formal_trainer_cuda_runtime",
+        "preflightMemoryIsTrainingPeak": False,
+        "rows": list(rows),
+        "peakGpuMemoryBytes": peak_gpu_memory_bytes,
+        "peakGpuReservedMemoryBytes": max(
+            (int(row["peakMemoryReservedBytes"]) for row in rows),
+            default=0,
+        ),
+        "updatedAtUtc": utc_now(),
+    }
+    write_json_atomic(Path(telemetry_path), telemetry)
+    return telemetry
+
+
+def record_full_backbone_spatial_affine_training_resource_telemetry(
+    telemetry_path,
+    rows,
+    *,
+    run_id,
+    epoch,
+    phase,
+    status="running",
+    append_row=True,
+):
+    return record_controlled_smoke_training_resource_telemetry(
+        telemetry_path,
+        rows,
+        run_id=run_id,
+        epoch=epoch,
+        phase=phase,
+        schema_version=(
+            "stage4-full-backbone-spatial-affine-controlled-smoke-"
+            "training-resource-telemetry-v1"
+        ),
+        error_label="full-backbone controlled Smoke",
+        status=status,
+        append_row=append_row,
+    )
+
+
+def record_joint_condition_local_transport_training_resource_telemetry(
+    telemetry_path,
+    rows,
+    *,
+    run_id,
+    epoch,
+    phase,
+    status="running",
+    append_row=True,
+):
+    return record_controlled_smoke_training_resource_telemetry(
+        telemetry_path,
+        rows,
+        run_id=run_id,
+        epoch=epoch,
+        phase=phase,
+        schema_version=(
+            "stage4-joint-condition-local-transport-controlled-smoke-"
+            "training-resource-telemetry-v1"
+        ),
+        error_label="joint-condition local-transport controlled Smoke",
+        status=status,
+        append_row=append_row,
+    )
+
+
+def record_joint_condition_local_transport_full_data_screen_training_resource_telemetry(
+    telemetry_path,
+    rows,
+    *,
+    run_id,
+    epoch,
+    phase,
+    status="running",
+    append_row=True,
+):
+    return record_controlled_smoke_training_resource_telemetry(
+        telemetry_path,
+        rows,
+        run_id=run_id,
+        epoch=epoch,
+        phase=phase,
+        schema_version=(
+            "stage4-joint-condition-local-transport-full-data-screen-"
+            "training-resource-telemetry-v1"
+        ),
+        error_label="joint-condition local-transport full-data screen",
+        status=status,
+        append_row=append_row,
+    )
+
+
+def build_controlled_smoke_fixed_preview_manifest(
+    metrics,
+    config,
+    *,
+    contract_field,
+    error_label,
+):
+    """Project immutable preview evidence under the active candidate identity."""
+
+    smoke = config["training"][contract_field]
+    preview_epochs = [int(value) for value in smoke["previewEpochs"]]
+    if len(preview_epochs) != len(set(preview_epochs)):
+        raise ValueError(f"{error_label} fixed preview schedule contains duplicates")
+    observed_preview_epochs = []
+    for row in metrics:
+        if not isinstance(row, dict):
+            continue
+        source = row.get("validationPreviewArtifact")
+        reproduction = row.get("validationPreviewReproductionArtifact")
+        if (
+            isinstance(source, dict)
+            or (
+                isinstance(reproduction, dict)
+                and reproduction.get("scheduled") is True
+            )
+        ):
+            observed_preview_epochs.append(int(row.get("epoch", -1)))
+    if observed_preview_epochs != preview_epochs:
+        raise ValueError(
+            f"{error_label} fixed preview evidence has extra, missing, or "
+            "out-of-order Epoch identities"
+        )
+    rows_by_epoch = {int(row.get("epoch", -1)): row for row in metrics}
+    fixed_previews = []
+    for epoch in preview_epochs:
+        metric = rows_by_epoch.get(epoch)
+        source = (
+            metric.get("validationPreviewArtifact")
+            if isinstance(metric, dict)
+            else None
+        )
+        reproduction = (
+            metric.get("validationPreviewReproductionArtifact")
+            if isinstance(metric, dict)
+            else None
+        )
+        repeated = (
+            reproduction.get("repeatedPreview")
+            if isinstance(reproduction, dict)
+            else None
+        )
+        if (
+            not isinstance(source, dict)
+            or not isinstance(reproduction, dict)
+            or not isinstance(repeated, dict)
+            or reproduction.get("epoch") != epoch
+            or reproduction.get("scheduled") is not True
+            or not all(
+                reproduction.get(key) is True
+                for key in (
+                    "modelStateSha256Matches",
+                    "conditionTensorSha256Matches",
+                    "rgbTensorSha256Matches",
+                    "pngByteSha256Matches",
+                )
+            )
+            or source.get("epoch") != epoch
+            or repeated.get("epoch") != epoch
+            or source.get("previewSha256") != repeated.get("previewSha256")
+        ):
+            raise ValueError(
+                f"{error_label} Epoch {epoch} immutable preview evidence is "
+                "incomplete"
+            )
+        fixed_previews.append({
+            "epoch": epoch,
+            "path": source["previewPath"],
+            "sha256": source["previewSha256"],
+            "reproductionPath": repeated["previewPath"],
+            "reproductionSha256": repeated["previewSha256"],
+            "byteExactReproduced": True,
+        })
+    return {
+        "previewEpochs": preview_epochs,
+        "fixedPreviews": fixed_previews,
+    }
+
+
+def build_full_backbone_spatial_affine_fixed_preview_manifest(metrics, config):
+    return build_controlled_smoke_fixed_preview_manifest(
+        metrics,
+        config,
+        contract_field="stage4FullBackboneSpatialAffineSmokeContract",
+        error_label="full-backbone controlled Smoke",
+    )
+
+
+def build_joint_condition_local_transport_fixed_preview_manifest(metrics, config):
+    return build_controlled_smoke_fixed_preview_manifest(
+        metrics,
+        config,
+        contract_field="stage4JointConditionLocalTransportSmokeContract",
+        error_label="joint-condition local-transport controlled Smoke",
+    )
+
+
+def build_joint_condition_local_transport_full_data_screen_fixed_preview_manifest(
+    metrics,
+    config,
+):
+    return build_controlled_smoke_fixed_preview_manifest(
+        metrics,
+        config,
+        contract_field="stage4JointConditionLocalTransportFullDataScreenContract",
+        error_label="joint-condition local-transport full-data screen",
+    )
+
+
+def build_optimization_datasets(datasets, overfit_evidence, *, config=None):
     if not overfit_evidence.get("enabled"):
         return datasets
     source_split = overfit_evidence.get("selectedSplit", "train")
+    smoke = stage4_controlled_single_sample_smoke_contract(config or {})
+    if smoke is not None:
+        if (
+            source_split != "validation"
+            or overfit_evidence.get("sampleId") != smoke.get("sampleId")
+            or smoke.get("sampleSplit") != "validation"
+        ):
+            raise ValueError(
+                "controlled Smoke optimization dataset must be the bound "
+                "validation sample"
+            )
     selected = torch.utils.data.Subset(datasets[source_split], [int(overfit_evidence["selectedIndex"])])
     return {
         "train": selected,
@@ -2705,6 +4224,35 @@ def build_optimization_datasets(datasets, overfit_evidence):
         "challenge": selected,
         "regression": selected,
     }
+
+
+def dataset_source_rows(dataset):
+    """Return rows in the exact dataset/subset order used by rollout."""
+
+    rows = getattr(dataset, "rows", None)
+    if isinstance(rows, list):
+        return rows
+    if isinstance(dataset, torch.utils.data.Subset):
+        parent_rows = getattr(dataset.dataset, "rows", None)
+        if not isinstance(parent_rows, list):
+            return None
+        return [parent_rows[int(index)] for index in dataset.indices]
+    return None
+
+
+def stage4_spatial_affine_expected_boundary_validation_count(config):
+    """Keep bounded Smoke sample scope distinct from formal 8-row validation."""
+
+    if stage4_controlled_single_sample_smoke_contract(config) is not None:
+        return 1
+    count = int(
+        config["training"]["dataCapacityDecision"]["splitCounts"]["validation"]
+    )
+    if count != 8:
+        raise ValueError(
+            "formal spatial-affine boundary gate requires all 8 validation rows"
+        )
+    return count
 
 
 STRUCTURE_FACT_FIRST_PHASE0_CONDITION_CHANNEL_ORDER = (
@@ -2739,6 +4287,668 @@ STRUCTURE_FACT_FIRST_PHASE0_CONDITION_CHANNEL_ORDER = (
 FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER = (
     STRUCTURE_FACT_FIRST_PHASE0_CONDITION_CHANNEL_ORDER
 )
+
+STAGE4_SPATIAL_AFFINE_DECODER_ARCHITECTURE = (
+    "stage4_multiscale_spatial_affine_conditioned_decoder_v1"
+)
+STAGE4_SPATIAL_AFFINE_PARAMETER_COUNT = 159744
+STAGE4_SPATIAL_AFFINE_PARAMETER_TENSOR_COUNT = 8
+STAGE4_SPATIAL_AFFINE_SCREEN_EPOCHS = 24
+STAGE4_SPATIAL_AFFINE_SCREEN_REVIEW_EPOCHS = (5, 10, 15, 20, 24)
+STAGE4_SPATIAL_AFFINE_STAGE0_REVIEW_EPOCHS = (1, 5, 10, 20, 30, 40)
+
+
+def validate_stage4_full_backbone_spatial_affine_trainer_contract(
+    config,
+    package,
+):
+    """Bind the new architecture to the unchanged formal Trainer objective."""
+
+    training = config.get("training", {})
+    ticket_present = isinstance(training.get("localAiCapabilityTicket"), dict)
+    validate_full_backbone_spatial_affine_controlled_smoke_config(
+        config,
+        project_root=Path.cwd(),
+        require_execution_ticket=ticket_present,
+    )
+    baseline = compile_spatial_affine_decoder_cpu_inactive_config(
+        project_root=Path.cwd()
+    )
+    immutable_top_level = (
+        "ownership",
+        "trainingLane",
+        "trainingDataPolicyVersion",
+        "initialization",
+        "upstreamModelIds",
+        "thirdPartyWeightsAllowed",
+        "thirdPartyGeneratedTrainingOutputsAllowed",
+        "thirdPartyGeneratedTrainingOutputDependencyMustBeDeclared",
+        "datasetPackageModelId",
+        "autoencoderSourceModelId",
+        "autoencoderSourceArchitectureVersion",
+        "autoencoderRequiredCheckpointProvenance",
+        "conditionChannels",
+        "conditionChannelOrder",
+        "conditionChannelTypes",
+        "conditionResizeContract",
+        "imageSize",
+        "autoencoderArchitecture",
+        "conditionOutputBinding",
+        "predictionTarget",
+        "latentNormalization",
+        "latentChannels",
+        "latentDownsampleFactor",
+        "baseChannels",
+        "denoiserBaseChannels",
+        "diffusionSteps",
+        "inferenceSteps",
+        "formalInferenceEligible",
+        "capabilityCandidateOnly",
+        "formalLossSourceEvidence",
+        "requiredCheckpointProvenance",
+    )
+    if any(config.get(key) != baseline.get(key) for key in immutable_top_level):
+        raise ValueError(
+            "full-backbone controlled Smoke changed a frozen Trainer boundary"
+        )
+    baseline_training = baseline["training"]
+    immutable_training = (
+        "dataCapacityDecision",
+        "resolutionStages",
+        "batchSize",
+        "denoiserLearningRate",
+        "denoiserLossVersion",
+        "denoiserLossWeights",
+        "fixedValidationTimesteps",
+        "timestepSampling",
+        "quietRegionQuantile",
+        "quietRegionMargin",
+        "textureHierarchyScales",
+        "sparseRgbConditionChannels",
+        "semanticRgbConditionChannels",
+        "objectSemanticChannelWeights",
+        "pathBoundaryBandRatio",
+        "bestCheckpointMetric",
+        "bestCheckpointMetricWeights",
+        "rolloutCheckpointMetricWeights",
+        "checkpointRolloutWeight",
+        "checkpointRolloutCoverage",
+        "checkpointRolloutSeedsPerSample",
+        "checkpointWorstTrajectoryWeight",
+        "checkpointSelectionSplit",
+        "strictHeldOutInferenceSplit",
+        "seed",
+        "finalRgbBoundaryCheckpointNonRegressionGate",
+    )
+    if any(
+        training.get(key) != baseline_training.get(key)
+        for key in immutable_training
+    ):
+        raise ValueError(
+            "full-backbone controlled Smoke changed the existing Loss, "
+            "optimizer, data, or Checkpoint contract"
+        )
+    smoke = training.get(
+        "stage4FullBackboneSpatialAffineSmokeContract", {}
+    )
+    mode = resolve_stage_mode(config)
+    if (
+        config.get("denoiserArchitecture")
+        != STAGE4_FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_ARCHITECTURE
+        or mode.mode_id
+        != "full_backbone_spatial_affine_denoiser_stage4_smoke"
+        or mode.execution_kind != "single_sample_smoke"
+        or mode.sample_split != "validation"
+        or int(training.get("denoiserEpochs", 0)) != 30
+        or training.get("fixedEpochPreviewPolicy", {}).get("smoke")
+        != [1, 5, 10, 20, 30]
+        or smoke.get("sampleId")
+        != "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
+        or smoke.get("sampleSplit") != "validation"
+        or smoke.get("seed") != 20263722
+        or smoke.get("requiredBoundarySides") != ["west"]
+        or smoke.get("resolution") != {"width": 256, "height": 192}
+        or smoke.get("epochCount") != 30
+        or smoke.get("previewEpochs") != [1, 5, 10, 20, 30]
+        or smoke.get("denoiserCheckpointReadAllowed") is not False
+        or smoke.get("historicalCheckpointAllowed") is not False
+        or smoke.get("failedCheckpointAllowed") is not False
+        or smoke.get("automaticTrainingRetryAllowed") is not False
+    ):
+        raise ValueError(
+            "full-backbone controlled Smoke Trainer identity is invalid"
+        )
+    return {
+        "status": "full_backbone_controlled_smoke_trainer_contract_valid",
+        "packageId": package.get("packageId"),
+        "ticketPresent": ticket_present,
+    }
+
+
+def _validate_stage4_joint_condition_local_transport_smoke_trainer_contract(
+    config,
+    package,
+):
+    """Bind local transport to the existing objective without old identities."""
+
+    training = config.get("training", {})
+    ticket_present = isinstance(training.get("localAiCapabilityTicket"), dict)
+    validate_joint_condition_local_transport_controlled_smoke_config(
+        config,
+        project_root=Path.cwd(),
+        require_execution_ticket=ticket_present,
+    )
+    smoke = training.get(
+        "stage4JointConditionLocalTransportSmokeContract", {}
+    )
+    mode = resolve_stage_mode(config)
+    forbidden_legacy_fields = {
+        "stage4SpatialAffineConditioningContract",
+        "fullBackboneSpatialAffineContract",
+    }
+    if forbidden_legacy_fields.intersection(config):
+        raise ValueError(
+            "joint-condition local-transport Smoke reused a spatial-affine "
+            "model identity"
+        )
+    if "stage4FullBackboneSpatialAffineSmokeContract" in training:
+        raise ValueError(
+            "joint-condition local-transport Smoke reused an old Smoke "
+            "execution identity"
+        )
+    if (
+        config.get("denoiserArchitecture")
+        != STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER_ARCHITECTURE
+        or mode.mode_id != "joint_condition_local_transport_stage4_smoke"
+        or mode.execution_kind != "single_sample_smoke"
+        or mode.sample_split != "validation"
+        or tuple(config.get("conditionChannelOrder", ()))
+        != FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+        or config.get("conditionChannels") != 23
+        or config.get("latentChannels") != 12
+        or config.get("latentDownsampleFactor") != 4
+        or config.get("denoiserBaseChannels") != 64
+        or config.get("autoencoderArchitecture")
+        != "residual_4x_latent_pixel_detail_v2"
+        or config.get("diffusionSteps") != 1000
+        or config.get("inferenceSteps") != 50
+        or int(training.get("denoiserEpochs", 0)) != 30
+        or training.get("seed") != 20263722
+        or training.get("fixedEpochPreviewPolicy", {}).get("smoke")
+        != [1, 5, 10, 20, 30]
+        or smoke.get("sampleId")
+        != (
+            "ai-cold-start-v7-v7-capacity-slot-194-"
+            "wet-season-drainage-hollow-v6"
+        )
+        or smoke.get("sampleSplit") != "validation"
+        or smoke.get("seed") != 20263722
+        or smoke.get("topology") != "west"
+        or smoke.get("requiredBoundarySides") != ["west"]
+        or smoke.get("resolutionStage") != 0
+        or smoke.get("resolution") != {"width": 256, "height": 192}
+        or smoke.get("latentResolution") != {"width": 64, "height": 48}
+        or smoke.get("epochCount") != 30
+        or smoke.get("previewEpochs") != [1, 5, 10, 20, 30]
+        or smoke.get("initialization")
+        != "fixed_random_denoiser_initialization_without_checkpoint"
+        or smoke.get("autoencoderFrozen") is not True
+        or smoke.get("denoiserCheckpointReadAllowed") is not False
+        or smoke.get("historicalCheckpointAllowed") is not False
+        or smoke.get("failedCheckpointAllowed") is not False
+        or smoke.get("crossRunArtifactAllowed") is not False
+        or smoke.get("automaticTrainingRetryAllowed") is not False
+        or config.get("ownerAuthorizationRequired") is not False
+        or config.get("ownerResponseRequired") is not False
+    ):
+        raise ValueError(
+            "joint-condition local-transport controlled Smoke Trainer "
+            "identity is invalid"
+        )
+    transport = config.get("jointConditionLocalTransportContract", {})
+    if (
+        transport.get("architectureId")
+        != STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER_ARCHITECTURE
+        or transport.get("siteCount") != 12
+        or transport.get("parameterTensorCount") != 24
+        or transport.get("parameterCount") != 22_464
+        or transport.get("spatialAffineCoexistenceAllowed") is not False
+        or transport.get("objectiveReviewAlignmentClaimed") is not False
+    ):
+        raise ValueError(
+            "joint-condition local-transport parameter or objective boundary "
+            "changed"
+        )
+    if (
+        not isinstance(training.get("denoiserLossWeights"), dict)
+        or not training.get("denoiserLossVersion")
+        or not isinstance(training.get("bestCheckpointMetricWeights"), dict)
+        or not isinstance(config.get("formalLossSourceEvidence"), dict)
+    ):
+        raise ValueError(
+            "joint-condition local-transport existing Trainer objective is "
+            "incomplete"
+        )
+    return {
+        "status": (
+            "joint_condition_local_transport_controlled_smoke_"
+            "trainer_contract_valid"
+        ),
+        "packageId": package.get("packageId"),
+        "ticketPresent": ticket_present,
+        "legacySpatialAffineIdentityReused": False,
+    }
+
+
+def validate_stage4_joint_condition_local_transport_full_data_screen_trainer_contract(
+    config,
+    package,
+):
+    """Fail closed unless the exact 24-Epoch full-data screen is selected."""
+
+    training = config.get("training", {})
+    ticket_present = isinstance(training.get("localAiCapabilityTicket"), dict)
+    validate_joint_condition_local_transport_full_data_screen_config(
+        config,
+        project_root=Path.cwd(),
+        require_execution_ticket=ticket_present,
+    )
+    screen = training.get(
+        "stage4JointConditionLocalTransportFullDataScreenContract", {}
+    )
+    mode = resolve_stage_mode(config)
+    if (
+        config.get("denoiserArchitecture")
+        != STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER_ARCHITECTURE
+        or mode.mode_id
+        != "joint_condition_local_transport_stage4_full_data_screen"
+        or mode.execution_kind != "full_data_screen"
+        or mode.adapter_binding
+        != "joint_condition_local_transport_stage4_full_data_screen_adapter"
+        or mode.sample_split is not None
+        or tuple(config.get("conditionChannelOrder", ()))
+        != FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+        or config.get("conditionChannels") != 23
+        or config.get("latentChannels") != 12
+        or config.get("denoiserBaseChannels") != 64
+        or config.get("diffusionSteps") != 1000
+        or config.get("inferenceSteps") != 50
+        or training.get("dataCapacityDecision", {}).get("splitCounts")
+        != {"train": 48, "validation": 8, "challenge": 4, "regression": 4}
+        or int(training.get("denoiserEpochs", 0)) != 24
+        or training.get("seed") != 20263722
+        or training.get("fixedEpochPreviewPolicy", {}).get("smoke")
+        != [5, 10, 15, 20, 24]
+        or screen.get("optimizerStepCount") != 1152
+        or screen.get("requiredUniqueTrainingTimestepCount") != 1000
+        or screen.get("requiredExactInferenceOverlapCount") != 50
+        or screen.get("initialization")
+        != "fixed_random_denoiser_initialization_without_checkpoint"
+        or screen.get("autoencoderFrozen") is not True
+        or screen.get("denoiserCheckpointReadAllowed") is not False
+        or screen.get("automaticTrainingRetryAllowed") is not False
+        or screen.get("stage0Allowed") is not False
+        or screen.get("checkpointPromotionAllowed") is not False
+        or screen.get("screenCheckpointStage0Eligible") is not False
+        or config.get("ownerAuthorizationRequired") is not False
+        or config.get("ownerResponseRequired") is not False
+    ):
+        raise ValueError(
+            "joint-condition local-transport full-data screen Trainer identity is invalid"
+        )
+    forbidden = {
+        "stage4JointConditionLocalTransportSmokeContract",
+        "stage4FullBackboneSpatialAffineSmokeContract",
+        "fullDataScreenContract",
+        "formalStage0Contract",
+    }
+    if forbidden.intersection(training) or {
+        "stage4SpatialAffineConditioningContract",
+        "fullBackboneSpatialAffineContract",
+    }.intersection(config):
+        raise ValueError(
+            "joint-condition local-transport full-data screen reused an old identity"
+        )
+    if (
+        not isinstance(training.get("denoiserLossWeights"), dict)
+        or not training.get("denoiserLossVersion")
+        or not isinstance(training.get("bestCheckpointMetricWeights"), dict)
+        or not isinstance(config.get("formalLossSourceEvidence"), dict)
+    ):
+        raise ValueError("joint-condition local-transport frozen objective is incomplete")
+    return {
+        "status": "joint_condition_local_transport_full_data_screen_trainer_contract_valid",
+        "packageId": package.get("packageId"),
+        "ticketPresent": ticket_present,
+        "optimizerStepCount": 1152,
+        "checkpointStage0Eligible": False,
+        "legacySpatialAffineIdentityReused": False,
+    }
+
+
+def validate_stage4_joint_condition_local_transport_trainer_contract(config, package):
+    if is_stage4_joint_condition_local_transport_full_data_screen(config):
+        return validate_stage4_joint_condition_local_transport_full_data_screen_trainer_contract(
+            config, package
+        )
+    return _validate_stage4_joint_condition_local_transport_smoke_trainer_contract(
+        config, package
+    )
+
+
+def validate_stage4_spatial_affine_decoder_contract(config, package):
+    """Validate the isolated spatial-conditioning candidate without reviving an old arm."""
+    # The compiler, CPU checker, and formal Trainer must share the same exact
+    # machine-contract validator.  The checks below remain as Trainer-local
+    # defense in depth for package and execution-specific identities.
+    validate_shared_spatial_affine_decoder_config(
+        config,
+        project_root=Path.cwd(),
+    )
+    if config.get("denoiserArchitecture") != STAGE4_SPATIAL_AFFINE_DECODER_ARCHITECTURE:
+        raise ValueError("Stage4 spatial-affine architecture identity is invalid")
+    if tuple(config.get("conditionChannelOrder", ())) != FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER:
+        raise ValueError("Stage4 spatial-affine candidate changed the formal 23-channel order")
+    if (
+        config.get("conditionChannels") != 23
+        or config.get("latentChannels") != 12
+        or config.get("latentDownsampleFactor") != 4
+        or config.get("denoiserBaseChannels") != 64
+        or config.get("autoencoderArchitecture") != "residual_4x_latent_pixel_detail_v2"
+    ):
+        raise ValueError("Stage4 spatial-affine model boundary is invalid")
+    if config.get("diffusionSteps") != 1000 or config.get("inferenceSteps") != 50:
+        raise ValueError("Stage4 spatial-affine diffusion/rollout identity is invalid")
+    if config.get("conditionOutputBinding") != "predicted_clean_latent_and_decoded_rgb_v1":
+        raise ValueError("Stage4 spatial-affine final RGB output binding is invalid")
+    if "stage4ControlledStructureArm" in config or "stage4ResponsibilityComponentRole" in config:
+        raise ValueError("Stage4 spatial-affine candidate cannot reuse an exited structure arm")
+    if config.get("ownerAuthorizationRequired") is not False or config.get("ownerResponseRequired") is not False:
+        raise ValueError("Stage4 spatial-affine local capability cannot require Owner handshakes")
+
+    contract = config.get("stage4SpatialAffineConditioningContract", {})
+    expected_decoder_stages = [
+        {
+            "stage": "up1",
+            "featureChannels": 128,
+            "stage0SpatialWidth": 32,
+            "stage0SpatialHeight": 24,
+            "normalizationPoints": 2,
+            "conditionProjection": "conv2d_23_to_256_kernel3_padding1_bias_true",
+        },
+        {
+            "stage": "up0",
+            "featureChannels": 64,
+            "stage0SpatialWidth": 64,
+            "stage0SpatialHeight": 48,
+            "normalizationPoints": 2,
+            "conditionProjection": "conv2d_23_to_128_kernel3_padding1_bias_true",
+        },
+    ]
+    if (
+        contract.get("schemaVersion") != "stage4-spatial-affine-conditioning-contract-v1"
+        or contract.get("architectureId") != STAGE4_SPATIAL_AFFINE_DECODER_ARCHITECTURE
+        or contract.get("mergeFormula") != "normalized_feature_times_one_plus_gamma_plus_beta"
+        or contract.get("decoderStages") != expected_decoder_stages
+        or contract.get("parameterCount") != STAGE4_SPATIAL_AFFINE_PARAMETER_COUNT
+        or contract.get("parameterTensorCount") != STAGE4_SPATIAL_AFFINE_PARAMETER_TENSOR_COUNT
+        or contract.get("existingEncoderConditionFusionPreserved") is not True
+        or contract.get("legacyAdditiveDecoderAdaptersEnabled") is not False
+        or contract.get("newLossTermAdded") is not False
+        or contract.get("freeArchitectureParameterChosen") is not False
+    ):
+        raise ValueError("Stage4 spatial-affine conditioning contract is invalid")
+
+    checkpoint_gate = config.get("training", {}).get(
+        "finalRgbBoundaryCheckpointNonRegressionGate", {}
+    )
+    if (
+        checkpoint_gate.get("schemaVersion")
+        != "stage4-final-rgb-boundary-checkpoint-non-regression-gate-v1"
+        or checkpoint_gate.get("contractVersion")
+        != "stage4-final-rgb-boundary-checkpoint-non-regression-v1"
+        or checkpoint_gate.get("enabled") is not True
+        or checkpoint_gate.get("role") != "checkpoint_eligibility_gate_only"
+        or checkpoint_gate.get("reviewContractId")
+        != "condition-semantic-boundary-contact-v3"
+        or checkpoint_gate.get("metricOnly") is not True
+        or checkpoint_gate.get("trainingLossContribution") is not False
+        or checkpoint_gate.get("bestCheckpointMetricWeight") is not False
+        or checkpoint_gate.get("bestCheckpointMetricWeightAdded") is not False
+        or checkpoint_gate.get("auditBandPixels") != 6
+        or checkpoint_gate.get("minimumContactFormula")
+        != "max_6_round_expected_times_0_1"
+        or checkpoint_gate.get("missingContractDisposition")
+        != "fail_closed_not_numeric_zero"
+        or checkpoint_gate.get("selectionRule")
+        != "scalar_improves_and_required_contacts_non_regressing_and_no_new_missing_or_unexpected_side"
+        or checkpoint_gate.get("modelStateTiming")
+        != "post_optimizer_step_same_state_for_score_rgb_preview_and_checkpoint"
+    ):
+        raise ValueError("Stage4 final-RGB boundary Checkpoint gate is invalid")
+
+    training = config.get("training", {})
+    if set(training.get("dataCapacityDecision", {}).get("splitCounts", {})) != {
+        "train", "validation", "challenge", "regression"
+    } or training.get("dataCapacityDecision", {}).get("splitCounts") != V7_MVP64_SPLIT_COUNTS:
+        raise ValueError("Stage4 spatial-affine 48/8/4/4 split is invalid")
+    if int(training.get("seed", -1)) != 20263722:
+        raise ValueError("Stage4 spatial-affine fixed seed is invalid")
+    preview_policy = training.get("fixedEpochPreviewPolicy", {})
+    if (
+        preview_policy.get("smoke")
+        != list(STAGE4_SPATIAL_AFFINE_SCREEN_REVIEW_EPOCHS)
+        or preview_policy.get("formalStage")
+        != list(STAGE4_SPATIAL_AFFINE_STAGE0_REVIEW_EPOCHS)
+    ):
+        raise ValueError("Stage4 spatial-affine fixed preview policy is invalid")
+    mode = resolve_stage_mode(config)
+    if mode.mode_id == "spatial_affine_decoder_stage4_inactive":
+        gates = training.get("activationGates", {})
+        if not gates or any(gates.values()) or mode.active_execution:
+            raise ValueError("Stage4 spatial-affine inactive gates are open")
+    elif mode.mode_id == "spatial_affine_decoder_stage4_readonly_gpu":
+        if mode.execution_kind != "readonly_gpu_qualification":
+            raise ValueError("Stage4 spatial-affine read-only GPU ModeSpec is invalid")
+    elif mode.mode_id == "spatial_affine_decoder_stage4_full_data_screen":
+        screen = training.get("fullDataScreenContract", {})
+        if (
+            mode.execution_kind != "full_data_screen"
+            or int(training.get("denoiserEpochs", 0)) != STAGE4_SPATIAL_AFFINE_SCREEN_EPOCHS
+            or screen.get("reviewEpochs") != list(STAGE4_SPATIAL_AFFINE_SCREEN_REVIEW_EPOCHS)
+            or screen.get("trainWeightUpdateCount") != 48
+            or screen.get("validationReadOnlyCount") != 8
+            or screen.get("challengeHeldOutCount") != 4
+            or screen.get("regressionHeldOutCount") != 4
+            or screen.get("screenCheckpointStage0InitializationEligible") is not False
+            or screen.get("fixedPreviewByteReproductionRequired") is not True
+        ):
+            raise ValueError("Stage4 spatial-affine full-data screen contract is invalid")
+    elif mode.mode_id == "spatial_affine_decoder_stage0_full_training":
+        formal = training.get("formalStage0Contract", {})
+        if (
+            mode.execution_kind != "full_training_stage0"
+            or int(training.get("denoiserEpochs", 0)) != 40
+            or formal.get("previewEpochs") != list(STAGE4_SPATIAL_AFFINE_STAGE0_REVIEW_EPOCHS)
+            or formal.get("initialization") != "fixed_project_random_initialization_only"
+            or formal.get("screenCheckpointAllowed") is not False
+            or formal.get("historicalCheckpointAllowed") is not False
+            or formal.get("fixedPreviewByteReproductionRequired") is not True
+        ):
+            raise ValueError("Stage4 spatial-affine formal Stage 0 contract is invalid")
+    else:
+        raise ValueError("Stage4 spatial-affine Mode Registry binding is invalid")
+    return {
+        "status": "stage4_spatial_affine_decoder_contract_valid",
+        "modeId": mode.mode_id,
+        "architecture": mode.architecture,
+    }
+
+
+def validate_stage4_spatial_affine_cli_source_bindings(
+    config,
+    package,
+    *,
+    dataset_package_path,
+    autoencoder_checkpoint_path,
+    output_dir,
+):
+    """Bind the actual Trainer CLI sources to the verified formal contract."""
+
+    root = Path.cwd().resolve()
+    formal = load_spatial_affine_formal_objective_contract(root)
+    data = formal["data"]
+    model = formal["modelBoundary"]
+    actual_dataset = Path(dataset_package_path).resolve()
+    expected_dataset = (root / data["datasetManifestPath"]).resolve()
+    if (
+        actual_dataset != expected_dataset
+        or sha256_file(actual_dataset) != data["datasetManifestSha256"]
+        or package.get("packageId") != data["datasetPackageId"]
+        or package.get("sourceIndexPath") != data["sourceIndexPath"]
+    ):
+        raise ValueError("Stage4 spatial-affine actual dataset source is invalid")
+    source_index = (root / data["sourceIndexPath"]).resolve()
+    if (
+        not source_index.is_file()
+        or sha256_file(source_index) != data["sourceIndexSha256"]
+    ):
+        raise ValueError("Stage4 spatial-affine actual source-index identity is invalid")
+    actual_autoencoder = Path(autoencoder_checkpoint_path).resolve()
+    expected_autoencoder = (root / model["autoencoderCheckpointPath"]).resolve()
+    if (
+        actual_autoencoder != expected_autoencoder
+        or sha256_file(actual_autoencoder)
+        != model["autoencoderCheckpointSha256"]
+    ):
+        raise ValueError("Stage4 spatial-affine actual Autoencoder source is invalid")
+    if is_stage4_full_backbone_controlled_smoke(config):
+        output_path = Path(output_dir)
+        expected_output_parent = (
+            root / config["executionIdentity"]["outputNamespace"]
+        ).resolve()
+        if (
+            output_path.name != "training-output"
+            or output_path.resolve().parent != expected_output_parent
+        ):
+            raise ValueError(
+                "full-backbone controlled Smoke Trainer output must be the "
+                "isolated training-output child of its bound run namespace"
+            )
+    ticket = config.get("training", {}).get("localAiCapabilityTicket")
+    if ticket is not None:
+        bound_output_namespace = project_path(output_dir)
+        if is_stage4_full_backbone_controlled_smoke(config):
+            output_path = Path(output_dir)
+            if output_path.name != "training-output":
+                raise ValueError(
+                    "full-backbone controlled Smoke Trainer output must use "
+                    "the isolated training-output child"
+                )
+            bound_output_namespace = project_path(output_path.parent)
+        if (
+            ticket.get("datasetPackageId") != data["datasetPackageId"]
+            or ticket.get("outputNamespace") != bound_output_namespace
+            or ticket.get("runId")
+            != (
+                Path(output_dir).parent.name
+                if is_stage4_full_backbone_controlled_smoke(config)
+                else Path(output_dir).name
+            )
+        ):
+            raise ValueError("Stage4 spatial-affine execution namespace binding is invalid")
+    return {
+        "datasetPackageId": data["datasetPackageId"],
+        "datasetManifestSha256": data["datasetManifestSha256"],
+        "sourceIndexSha256": data["sourceIndexSha256"],
+        "autoencoderCheckpointSha256": model["autoencoderCheckpointSha256"],
+    }
+
+
+def validate_stage4_joint_condition_local_transport_cli_source_bindings(
+    config,
+    package,
+    *,
+    dataset_package_path,
+    autoencoder_checkpoint_path,
+    output_dir,
+):
+    """Bind new-candidate Trainer inputs without accepting an old Run source."""
+
+    if not (
+        is_stage4_joint_condition_local_transport_controlled_smoke(config)
+        or is_stage4_joint_condition_local_transport_full_data_screen(config)
+    ):
+        raise ValueError(
+            "joint-condition local-transport Trainer source binding requires "
+            "the dedicated controlled Smoke or full-data screen identity"
+        )
+    root = Path.cwd().resolve()
+    formal = load_spatial_affine_formal_objective_contract(root)
+    data = formal["data"]
+    model = formal["modelBoundary"]
+    actual_dataset = Path(dataset_package_path).resolve()
+    expected_dataset = (root / data["datasetManifestPath"]).resolve()
+    if (
+        actual_dataset != expected_dataset
+        or sha256_file(actual_dataset) != data["datasetManifestSha256"]
+        or package.get("packageId") != data["datasetPackageId"]
+        or package.get("sourceIndexPath") != data["sourceIndexPath"]
+    ):
+        raise ValueError(
+            "joint-condition local-transport actual dataset source is invalid"
+        )
+    source_index = (root / data["sourceIndexPath"]).resolve()
+    if (
+        not source_index.is_file()
+        or sha256_file(source_index) != data["sourceIndexSha256"]
+    ):
+        raise ValueError(
+            "joint-condition local-transport source-index identity is invalid"
+        )
+    actual_autoencoder = Path(autoencoder_checkpoint_path).resolve()
+    expected_autoencoder = (
+        root / model["autoencoderCheckpointPath"]
+    ).resolve()
+    if (
+        actual_autoencoder != expected_autoencoder
+        or sha256_file(actual_autoencoder)
+        != model["autoencoderCheckpointSha256"]
+    ):
+        raise ValueError(
+            "joint-condition local-transport Autoencoder source is invalid"
+        )
+    output_path = Path(output_dir)
+    expected_output_parent = (
+        root / config["executionIdentity"]["outputNamespace"]
+    ).resolve()
+    if (
+        output_path.name != "training-output"
+        or output_path.resolve().parent != expected_output_parent
+    ):
+        raise ValueError(
+            "joint-condition local-transport Trainer output must be the "
+            "isolated training-output child of its bound run namespace"
+        )
+    ticket = config.get("training", {}).get("localAiCapabilityTicket")
+    if ticket is not None and (
+        ticket.get("datasetPackageId") != data["datasetPackageId"]
+        or ticket.get("outputNamespace")
+        != project_path(output_path.parent)
+        or ticket.get("runId") != output_path.parent.name
+    ):
+        raise ValueError(
+            "joint-condition local-transport execution namespace binding "
+            "is invalid"
+        )
+    return {
+        "datasetPackageId": data["datasetPackageId"],
+        "datasetManifestSha256": data["datasetManifestSha256"],
+        "sourceIndexSha256": data["sourceIndexSha256"],
+        "autoencoderCheckpointSha256": model["autoencoderCheckpointSha256"],
+        "historicalRunSourceAccepted": False,
+        "historicalDenoiserCheckpointAccepted": False,
+    }
 
 
 def stage4_structure_fact_first_phase0_condition_sha256(tensor, config) -> str:
@@ -2907,6 +5117,18 @@ def validate_training_inputs(config, package):
         validate_post_decode_object_rgb_stage4_smoke_contract(config, package)
     elif architecture == "stage4_post_decode_full_condition_route_object_responsibility_renderer_v1":
         validate_post_decode_full_condition_responsibility_contract(config, package)
+    elif architecture == STAGE4_SPATIAL_AFFINE_DECODER_ARCHITECTURE:
+        validate_stage4_spatial_affine_decoder_contract(config, package)
+    elif architecture == STAGE4_FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_ARCHITECTURE:
+        validate_stage4_full_backbone_spatial_affine_trainer_contract(
+            config,
+            package,
+        )
+    elif architecture == STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER_ARCHITECTURE:
+        validate_stage4_joint_condition_local_transport_trainer_contract(
+            config,
+            package,
+        )
     else:
         raise ValueError("unsupported conditional denoiser architecture")
     if package.get("schemaVersion") != "ai-assisted-cold-start-dataset-package-v1":
@@ -17272,6 +19494,7 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
     epoch_number=None,
     *,
     force_checkpoint_bound_preview=False,
+    checkpoint_boundary_output_dir=None,
 ):
     was_training = model.denoiser.training
     model.denoiser.eval()
@@ -17292,6 +19515,55 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
     seed_count = int(config["training"].get("checkpointRolloutSeedsPerSample", 2))
     if sample_count == 0:
         raise ValueError("V7 rollout checkpoint validation has no validation samples")
+    checkpoint_boundary_gate = stage4_spatial_affine_boundary_gate_contract(config)
+    checkpoint_boundary_entries = []
+    checkpoint_boundary_preview_artifact = None
+    checkpoint_boundary_state_sha256 = None
+    if checkpoint_boundary_gate is not None:
+        controlled_smoke_contract = (
+            stage4_controlled_single_sample_smoke_contract(config)
+        )
+        expected_validation_count = (
+            stage4_spatial_affine_expected_boundary_validation_count(config)
+        )
+        if controlled_smoke_contract is None and expected_validation_count != 8:
+            raise ValueError(
+                "formal spatial-affine boundary gate requires all 8 validation rows"
+            )
+        if sample_count != expected_validation_count:
+            raise ValueError(
+                "Stage4 spatial-affine Checkpoint gate validation population changed"
+            )
+        if seed_count < 1:
+            raise ValueError(
+                "Stage4 spatial-affine Checkpoint gate requires rollout seeds"
+            )
+        if checkpoint_boundary_output_dir is None and preview_output_dir is not None:
+            checkpoint_boundary_output_dir = (
+                Path(preview_output_dir) / "formal-boundary-checkpoint-candidates"
+            )
+        if epoch_number is None or checkpoint_boundary_output_dir is None:
+            raise ValueError(
+                "Stage4 spatial-affine Checkpoint boundary evidence output is missing"
+            )
+        source_rows = dataset_source_rows(dataset)
+        if not isinstance(source_rows, list) or len(source_rows) != sample_count:
+            raise ValueError(
+                "Stage4 spatial-affine formal validation source rows are unavailable"
+            )
+        if controlled_smoke_contract is not None:
+            if (
+                source_rows[0].get("sampleId")
+                != controlled_smoke_contract.get("sampleId")
+                or controlled_smoke_contract.get("sampleSplit") != "validation"
+            ):
+                raise ValueError(
+                    "controlled Smoke boundary gate must audit its bound "
+                    "validation sample"
+                )
+        checkpoint_boundary_state_sha256 = state_dict_sha256(
+            model.denoiser.state_dict()
+        )
     trajectory_scores = []
     per_class_luminance_totals = {
         identity: 0.0 for identity in FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:]
@@ -17375,6 +19647,73 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
                     conditions,
                     config,
                 ).clamp(0.0, 1.0)
+                if checkpoint_boundary_gate is not None:
+                    source_row = source_rows[index]
+                    if source_row.get("sampleId") != row.get("sampleId"):
+                        raise ValueError(
+                            "Stage4 spatial-affine validation row identity changed"
+                        )
+                    trajectory_seed = seed + index * seed_count + seed_index
+                    review_inputs = formal_review_boundary_inputs(
+                        predicted_rgb[0],
+                        source_row,
+                        config,
+                        artifact_directory=(
+                            Path(checkpoint_boundary_output_dir)
+                            / f"epoch-{int(epoch_number):03d}"
+                        ),
+                        artifact_stem=(
+                            f"validation-{index:02d}-seed-{seed_index:02d}"
+                        ),
+                    )
+                    boundary_audit = audit_route_boundary_from_rgb(
+                        review_inputs["expected"],
+                        review_inputs["rgb"],
+                        int(review_inputs["width"]),
+                        int(review_inputs["height"]),
+                        season=review_inputs["season"],
+                    )
+                    checkpoint_boundary_entries.append(
+                        stage4_spatial_affine_boundary_ledger_entry(
+                            review_inputs,
+                            boundary_audit,
+                            seed_index=seed_index,
+                            seed=trajectory_seed,
+                        )
+                    )
+                    if index == 0 and seed_index == 0:
+                        identity = review_inputs["identity"]
+                        checkpoint_boundary_preview_artifact = {
+                            "schemaVersion": (
+                                "stage4-checkpoint-candidate-formal-preview-v1"
+                            ),
+                            "epoch": int(epoch_number),
+                            "sampleId": row["sampleId"],
+                            "sampleIndex": 0,
+                            "seedIndex": 0,
+                            "seed": int(trajectory_seed),
+                            "denoiserStateSha256": (
+                                checkpoint_boundary_state_sha256
+                            ),
+                            "sourcePreviewPath": identity["sourcePreviewPath"],
+                            "sourcePreviewSha256": identity[
+                                "sourcePreviewSha256"
+                            ],
+                            "normalizedReviewRgbPath": identity[
+                                "normalizedReviewRgbPath"
+                            ],
+                            "normalizedReviewRgbSha256": identity[
+                                "normalizedReviewRgbSha256"
+                            ],
+                            "conditionPackPath": identity["conditionPackPath"],
+                            "conditionPackSha256": identity[
+                                "conditionPackSha256"
+                            ],
+                            "conditionMaskPath": identity["conditionMaskPath"],
+                            "conditionMaskSha256": identity[
+                                "conditionMaskSha256"
+                            ],
+                        }
                 if per_class_luminance_active:
                     per_class_luminance = (
                         stage4_full_rollout_per_class_final_visible_luminance_structure_obligation_losses(
@@ -17639,6 +19978,22 @@ def evaluate_deterministic_rollout_rgb_quality_v7(
     result["rolloutSampleCount"] = sample_count
     result["rolloutSeedCountPerSample"] = seed_count
     result["rolloutTrajectoryCount"] = trajectory_count
+    if checkpoint_boundary_gate is not None:
+        expected_trajectory_count = sample_count * seed_count
+        if len(checkpoint_boundary_entries) != expected_trajectory_count:
+            raise ValueError(
+                "Stage4 spatial-affine boundary ledger does not cover every validation trajectory"
+            )
+        if checkpoint_boundary_preview_artifact is None:
+            raise ValueError(
+                "Stage4 spatial-affine checkpoint-candidate preview is missing"
+            )
+        result["finalRgbBoundaryValidationLedger"] = (
+            build_boundary_validation_ledger(checkpoint_boundary_entries)
+        )
+        result["checkpointCandidateFormalPreviewArtifact"] = (
+            checkpoint_boundary_preview_artifact
+        )
     if preview_artifact is not None:
         result["previewArtifact"] = preview_artifact
     return result
@@ -17912,11 +20267,50 @@ def forbidden_boundary_pair_rgb_l1(left_rgb, right_rgb, conditions, config):
 def should_save_epoch_preview(config, epoch_number):
     if epoch_number is None:
         return False
+    if is_stage4_joint_condition_local_transport_full_data_screen(config):
+        screen = config.get("training", {}).get(
+            "stage4JointConditionLocalTransportFullDataScreenContract", {}
+        )
+        return int(epoch_number) in [
+            int(value) for value in screen.get("previewEpochs", [])
+        ]
     policy = config.get("training", {}).get("fixedEpochPreviewPolicy", {})
+    if is_stage4_spatial_affine_decoder(config):
+        mode = resolve_stage_mode(config)
+        if mode.mode_id == "spatial_affine_decoder_stage4_full_data_screen":
+            return int(epoch_number) in [int(value) for value in policy.get("smoke", [])]
+        if mode.mode_id == "spatial_affine_decoder_stage0_full_training":
+            return int(epoch_number) in [int(value) for value in policy.get("formalStage", [])]
+    controlled_smoke_contract = stage4_controlled_single_sample_smoke_contract(
+        config
+    )
+    if controlled_smoke_contract is not None:
+        return int(epoch_number) in [
+            int(value)
+            for value in controlled_smoke_contract.get("previewEpochs", [])
+        ]
     return int(epoch_number) in [int(value) for value in policy.get("smoke", []) + policy.get("formalStage", [])]
 
 
 def should_reproduce_stage4_fixed_epoch_preview(config, epoch_number):
+    if is_stage4_joint_condition_local_transport_full_data_screen(config):
+        return should_save_epoch_preview(config, epoch_number)
+    if is_stage4_spatial_affine_decoder(config):
+        mode = resolve_stage_mode(config)
+        training = config.get("training", {})
+        if mode.mode_id == "spatial_affine_decoder_stage4_full_data_screen":
+            required = training.get("fullDataScreenContract", {}).get(
+                "fixedPreviewByteReproductionRequired"
+            )
+        elif mode.mode_id == "spatial_affine_decoder_stage0_full_training":
+            required = training.get("formalStage0Contract", {}).get(
+                "fixedPreviewByteReproductionRequired"
+            )
+        else:
+            required = False
+        return required is True and should_save_epoch_preview(config, epoch_number)
+    if stage4_controlled_single_sample_smoke_contract(config) is not None:
+        return should_save_epoch_preview(config, epoch_number)
     return uses_stage4_unified_preview_sampling_contract(config) and should_save_epoch_preview(config, epoch_number)
 
 
@@ -18076,6 +20470,158 @@ def is_v9_stage4_object_semantic_decoded_alignment(config):
     return config.get("denoiserArchitecture") == "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment"
 
 
+def is_stage4_spatial_affine_decoder(config):
+    return config.get("denoiserArchitecture") == STAGE4_SPATIAL_AFFINE_DECODER_ARCHITECTURE
+
+
+def is_stage4_full_backbone_spatial_affine(config):
+    return config.get("denoiserArchitecture") == (
+        STAGE4_FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_ARCHITECTURE
+    )
+
+
+def is_stage4_full_backbone_controlled_smoke(config):
+    if (
+        not is_stage4_full_backbone_spatial_affine(config)
+        or config.get("training", {}).get("trainingAuthorizationStatus")
+        != FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_STAGE4_SMOKE_STATUS
+    ):
+        return False
+    try:
+        mode = resolve_stage_mode(config)
+    except ValueError:
+        return False
+    return (
+        mode.mode_id == "full_backbone_spatial_affine_denoiser_stage4_smoke"
+        and mode.execution_kind == "single_sample_smoke"
+        and mode.sample_split == "validation"
+    )
+
+
+def is_stage4_joint_condition_local_transport(config):
+    return config.get("denoiserArchitecture") == (
+        STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER_ARCHITECTURE
+    )
+
+
+def is_stage4_joint_condition_local_transport_controlled_smoke(config):
+    if (
+        not is_stage4_joint_condition_local_transport(config)
+        or config.get("training", {}).get("trainingAuthorizationStatus")
+        != STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_SMOKE_STATUS
+    ):
+        return False
+    try:
+        mode = resolve_stage_mode(config)
+    except ValueError:
+        return False
+    return (
+        mode.mode_id == "joint_condition_local_transport_stage4_smoke"
+        and mode.execution_kind == "single_sample_smoke"
+        and mode.sample_split == "validation"
+        and mode.adapter_binding == "joint_condition_local_transport_stage4_adapter"
+    )
+
+
+def is_stage4_joint_condition_local_transport_full_data_screen(config):
+    if (
+        not is_stage4_joint_condition_local_transport(config)
+        or config.get("training", {}).get("trainingAuthorizationStatus")
+        != STAGE4_JOINT_CONDITION_LOCAL_TRANSPORT_FULL_DATA_SCREEN_STATUS
+    ):
+        return False
+    try:
+        mode = resolve_stage_mode(config)
+    except ValueError:
+        return False
+    return (
+        mode.mode_id == "joint_condition_local_transport_stage4_full_data_screen"
+        and mode.execution_kind == "full_data_screen"
+        and mode.sample_split is None
+        and mode.adapter_binding
+        == "joint_condition_local_transport_stage4_full_data_screen_adapter"
+    )
+
+
+def stage4_controlled_single_sample_smoke_contract(config):
+    """Return only the contract owned by the active controlled Smoke family."""
+
+    training = config.get("training", {})
+    if is_stage4_full_backbone_controlled_smoke(config):
+        return training.get("stage4FullBackboneSpatialAffineSmokeContract")
+    if is_stage4_joint_condition_local_transport_controlled_smoke(config):
+        return training.get("stage4JointConditionLocalTransportSmokeContract")
+    return None
+
+
+def stage4_spatial_affine_boundary_gate_contract(config):
+    """Return the active metric-only gate for the isolated candidate."""
+
+    if not (
+        is_stage4_spatial_affine_decoder(config)
+        or is_stage4_full_backbone_spatial_affine(config)
+        or is_stage4_joint_condition_local_transport(config)
+    ):
+        return None
+    contract = config.get("training", {}).get(
+        "finalRgbBoundaryCheckpointNonRegressionGate"
+    )
+    status = boundary_gate_contract_status(contract)
+    if status.get("applicable") is not True:
+        raise ValueError(
+            "Stage4 spatial-affine Checkpoint boundary gate is not applicable"
+        )
+    return contract
+
+
+def stage4_spatial_affine_boundary_ledger_entry(
+    review_inputs,
+    boundary_audit,
+    *,
+    seed_index,
+    seed,
+):
+    """Bind one formal sample/seed review without resized-training identities."""
+
+    identity = review_inputs.get("identity", {})
+    normalization = identity.get("normalization", {})
+    return {
+        "sampleId": identity.get("sampleId"),
+        "seedIndex": int(seed_index),
+        "seed": int(seed),
+        "conditionPackPath": identity.get("conditionPackPath"),
+        "conditionPackSha256": identity.get("conditionPackSha256"),
+        "conditionMaskPath": identity.get("conditionMaskPath"),
+        "conditionMaskSha256": identity.get("conditionMaskSha256"),
+        "season": review_inputs.get("season"),
+        "normalization": {
+            "width": int(review_inputs.get("width", 0)),
+            "height": int(review_inputs.get("height", 0)),
+            "resizeKernel": normalization.get("resizeKernel"),
+            "sourceQuantization": normalization.get("sourceQuantization"),
+        },
+        "sourcePreviewSha256": identity.get("sourcePreviewSha256"),
+        "normalizedReviewRgbSha256": identity.get(
+            "normalizedReviewRgbSha256"
+        ),
+        "boundaryAudit": boundary_audit,
+    }
+
+
+def stage4_spatial_affine_checkpoint_decision_evidence(decision):
+    return {
+        "schemaVersion": "stage4-final-rgb-boundary-checkpoint-decision-v1",
+        "eligible": bool(decision.eligible),
+        "reason": decision.reason,
+        "scalarImproved": bool(decision.scalar_improved),
+        "requiredContactNonRegressed": bool(
+            decision.required_contact_non_regressed
+        ),
+        "noNewMissingSide": bool(decision.no_new_missing_side),
+        "noNewUnexpectedSide": bool(decision.no_new_unexpected_side),
+    }
+
+
 def is_structure_fact_first_stage4(config):
     return config.get("denoiserArchitecture") == "stage4_structure_fact_first_dual_stage_generator_v1"
 
@@ -18218,6 +20764,9 @@ def uses_registered_v7_capacity_dataset(config):
         or is_condition_preserving_semantic_renderer_stage4(config)
         or is_fact_conditioned_semantic_mixture_stage4(config)
         or is_direct_condition_clean_latent_stage4(config)
+        or is_stage4_spatial_affine_decoder(config)
+        or is_stage4_full_backbone_spatial_affine(config)
+        or is_stage4_joint_condition_local_transport(config)
     )
 
 
@@ -18229,6 +20778,9 @@ def uses_v7_rollout_validation(config):
         or is_structure_fact_first_stage4(config)
         or is_condition_preserving_semantic_renderer_stage4(config)
         or is_fact_conditioned_semantic_mixture_stage4(config)
+        or is_stage4_spatial_affine_decoder(config)
+        or is_stage4_full_backbone_spatial_affine(config)
+        or is_stage4_joint_condition_local_transport(config)
     )
 
 
@@ -18249,6 +20801,9 @@ def is_v6_or_later(config):
         or is_structure_fact_first_stage4(config)
         or is_condition_preserving_semantic_renderer_stage4(config)
         or is_fact_conditioned_semantic_mixture_stage4(config)
+        or is_stage4_spatial_affine_decoder(config)
+        or is_stage4_full_backbone_spatial_affine(config)
+        or is_stage4_joint_condition_local_transport(config)
     )
 
 

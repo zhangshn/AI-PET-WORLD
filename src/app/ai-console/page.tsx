@@ -7,6 +7,9 @@ import {
   type AiConsoleModule,
 } from "./ai-console-catalog"
 import styles from "./page.module.css"
+import themeStyles from "./ai-console-theme.module.css"
+import { AiConsoleLiveStatus } from "./ai-console-live-status"
+import { AiConsoleCurrentExecutionStatus } from "./ai-console-current-execution-status"
 
 export const metadata: Metadata = {
   title: "AI控制台 | AI-PET-WORLD",
@@ -29,6 +32,7 @@ function ModuleFrame({ consoleModule }: { consoleModule: AiConsoleModule }) {
     <article
       aria-labelledby={titleId}
       className={consoleModule.plane === "control" ? styles.moduleFrameControl : styles.moduleFrame}
+      data-module={consoleModule.slug}
     >
       <header className={styles.moduleFrameHeader}>
         <span>{consoleModule.id}</span>
@@ -53,7 +57,7 @@ export default function AiConsolePage() {
   const currentCapability = aiCapabilityDomains.find((domain) => domain.status === "current")
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${themeStyles.theme}`}>
       <a className={styles.skipLink} href="#ai-console-main">跳到主工作区</a>
       <div className={styles.applicationShell}>
         <header className={styles.topbar}>
@@ -65,7 +69,7 @@ export default function AiConsolePage() {
             <div><span>运行模式</span><strong><i className={styles.liveDot} />本地自主闭环</strong></div>
             <div><span>当前能力域</span><strong>{currentCapability?.name}</strong></div>
             <div><span>平台目录</span><strong>4 Frame / 10 模块</strong></div>
-            <div><span>权威数据</span><strong className={styles.mutedValue}>等待受信投影</strong></div>
+            <div><span>权威数据</span><strong>当前执行动态核验</strong></div>
           </div>
         </header>
 
@@ -76,13 +80,13 @@ export default function AiConsolePage() {
             </div>
             <nav aria-label="AI控制台一级导航">
               {aiConsoleFrameworks.map((framework) => (
-                <section className={framework.plane === "control" ? styles.navGroupControl : styles.navGroup} key={framework.id}>
+                <section className={framework.plane === "control" ? styles.navGroupControl : styles.navGroup} data-framework={framework.id} key={framework.id}>
                   <div className={styles.navGroupHeading}><span>{framework.id.replace("FRAME-", "F")}</span><strong>{framework.title}</strong></div>
                   {framework.moduleSlugs.map((slug) => {
                     const consoleModule = aiConsoleModules.find((candidate) => candidate.slug === slug)
                     if (!consoleModule) return null
                     return (
-                      <Link className={consoleModule.plane === "control" ? styles.navItemControl : styles.navItem} href={consoleModule.route} key={consoleModule.id}>
+                      <Link className={consoleModule.plane === "control" ? styles.navItemControl : styles.navItem} data-module={consoleModule.slug} href={consoleModule.route} key={consoleModule.id}>
                         <span className={styles.navModuleId}>{consoleModule.id}</span><span className={styles.navModuleName}>{consoleModule.title}</span><span className={styles.navArrow}>›</span>
                       </Link>
                     )
@@ -103,11 +107,13 @@ export default function AiConsolePage() {
               <p>外层业务Frame固定平台责任，内层Module Frame承载一级模块；一级模块再进入独立二级工作页。</p>
             </header>
 
+            <AiConsoleCurrentExecutionStatus />
+
             <div className={styles.platformStats}>
               <div><span>业务框架</span><strong>04</strong><small>OUTER FRAMES</small></div>
               <div><span>一级模块</span><strong>10</strong><small>MODULE FRAMES</small></div>
               <div><span>二级页面</span><strong>52</strong><small>WORKSPACES</small></div>
-              <div><span>页面查询合同</span><strong>READY</strong><small>DATA NOT CONNECTED</small></div>
+              <div><span>页面查询合同</span><strong>LIVE</strong><small>DYNAMIC QUERY · FAIL CLOSED</small></div>
             </div>
 
             <div className={styles.operatingLoop} aria-label="平台主闭环">
@@ -121,6 +127,7 @@ export default function AiConsolePage() {
                   <section
                     aria-labelledby={`framework-${framework.id}-title`}
                     className={framework.plane === "control" ? styles.frameworkFrameControl : styles.frameworkFrame}
+                    data-framework={framework.id}
                     key={framework.id}
                   >
                     <header className={styles.frameworkFrameHeader}>
@@ -159,8 +166,9 @@ export default function AiConsolePage() {
           </aside>
         </div>
 
+        <AiConsoleLiveStatus />
         <footer className={styles.statusbar}>
-          <span><i className={styles.liveDot} />专业平台壳已接入</span><span>4个外层Frame / 10个内层Module Frame</span><span>权威数据：未接入</span><span>控制副作用：无</span><code>/ai-console</code>
+          <span><i className={styles.liveDot} />专业平台壳已接入</span><span>4个外层Frame / 10个内层Module Frame</span><span>当前执行注册表：动态核验</span><span>控制副作用：无</span><code>/ai-console</code>
         </footer>
       </div>
     </div>

@@ -1,14 +1,14 @@
 # AI-PET-WORLD 本地自研AI能力演进、任务执行与Codex职能迁移主体架构
 
-更新时间：2026-08-26 15:30:00 +08:00
+更新时间：2026-08-30 11:57:50 +08:00
 
 状态：active-subsystem-architecture
 
-文档版本：`LOCAL-AI-CAPABILITY-MIGRATION-1.4`
+文档版本：`LOCAL-AI-CAPABILITY-MIGRATION-1.5`
 
-生效日期：`2026-08-26`
+生效日期：`2026-08-30`
 
-替代版本：`LOCAL-AI-CAPABILITY-MIGRATION-1.3`
+替代版本：`LOCAL-AI-CAPABILITY-MIGRATION-1.4`
 
 文档状态：`active_normative_target`
 
@@ -506,10 +506,12 @@ AI Painter的完整RGB只是世界视觉生产链的一项资产，不是动态�
 | AI Painter模型与条件推理 | [AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md](game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md) |
 | 数据、来源与训练资格 | [TRAINING_DATA_AND_SOURCE_POLICY.md](game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md) |
 | 审核、失败学习与存储 | [REVIEW_AUTOMATION_AND_STORAGE_SPEC.md](game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md) |
-| 训练架构对齐 | [AI_MODEL_TRAINING_ARCHITECTURE_ALIGNMENT.md](ai-painter-progress/AI_MODEL_TRAINING_ARCHITECTURE_ALIGNMENT.md) |
-| 训练数据持久化 | [TRAINING_DATA_PERSISTENCE_LOCKED_SPEC.md](ai-painter-progress/TRAINING_DATA_PERSISTENCE_LOCKED_SPEC.md) |
-| 当前只读训练监控台 | [CURRENT_TRAINING_BACKEND_CONSOLE_LOCKED_SPEC.md](ai-painter-progress/CURRENT_TRAINING_BACKEND_CONSOLE_LOCKED_SPEC.md) |
-| AI Painter后台自动化 | [AI_PAINTER_ADMIN_BACKEND_LOCKED_SPEC.md](ai-painter-progress/AI_PAINTER_ADMIN_BACKEND_LOCKED_SPEC.md) |
+| 训练架构与实现边界 | [AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md](game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md) |
+| 训练数据与持久化 | [TRAINING_DATA_AND_SOURCE_POLICY.md](game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md)、[REVIEW_AUTOMATION_AND_STORAGE_SPEC.md](game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md) |
+| 统一训练观察与控制 | [AI控制台文档入口](ai-console/README.md)中的AP-03、AP-04、AP-07、AP-08与AP-10合同 |
+| 本地自主闭环 | [REVIEW_AUTOMATION_AND_STORAGE_SPEC.md](game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md)及现行机器合同登记 |
+
+`docs/ai-painter-progress/`中的页面规格已经退役，只能用于复核历史页面设计；当前程序不得从该目录取得路由、状态、授权、任务选择或运行依赖。旧`/ai-painter-progress/*`只保留到`/ai-console`的永久兼容重定向。
 
 现有机器可读基础包括：
 

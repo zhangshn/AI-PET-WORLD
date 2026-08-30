@@ -1,11 +1,11 @@
 import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
+import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-store.mjs"
 
 const ROOT = process.cwd()
 const SOURCE_PATH = path.join(ROOT, ".runtime", "ai-painter", "auto-visual-judge-learning", "latest.json")
 const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "visual-learning-feedback-consumption")
-const LEDGER_ROOT = path.join(ROOT, ".runtime", "ai-painter", "training-process-ledger")
 const createdAt = new Date().toISOString()
 const consumptionId = `visual-learning-feedback-${createdAt.replace(/[:.]/g, "-")}`
 
@@ -93,7 +93,6 @@ console.log(JSON.stringify({
 }, null, 2))
 
 function appendLedger(value, recordPath) {
-  fs.mkdirSync(LEDGER_ROOT, { recursive: true })
   const event = {
     schemaVersion: "ai-painter-training-process-ledger-event-v1",
     timestamp: value.createdAt,
@@ -111,8 +110,7 @@ function appendLedger(value, recordPath) {
     script: "scripts/consume-game-map-visual-learning-feedback.mjs",
     evidence: [projectPath(recordPath), value.source.learningPath],
   }
-  fs.appendFileSync(path.join(LEDGER_ROOT, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8")
-  writeJson(path.join(LEDGER_ROOT, "latest.json"), event)
+  appendAiPainterProgramEvent(event)
 }
 
 function writeJson(filePath, value) {

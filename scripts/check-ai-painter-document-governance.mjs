@@ -81,12 +81,12 @@ const implementationBearingDocuments = [
 ]
 
 const exactDocumentVersions = new Map([
-  ["docs/DOCUMENT_AUTHORITY_INDEX.md", "DOCUMENT-AUTHORITY-1.4"],
+  ["docs/DOCUMENT_AUTHORITY_INDEX.md", "DOCUMENT-AUTHORITY-1.5"],
   ["docs/DOCUMENTATION_POLICY.md", "DOCUMENTATION-POLICY-1.3"],
   ["docs/BUSINESS_SPEC.md", "AI-PET-WORLD-BUSINESS-1.3"],
-  ["docs/ARCHITECTURE.md", "AI-PET-WORLD-ARCHITECTURE-1.3"],
-  ["docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "LOCAL-AI-CAPABILITY-MIGRATION-1.4"],
-  ["docs/DIRECTORY_STRUCTURE.md", "AI-PET-WORLD-DIRECTORY-1.4"],
+  ["docs/ARCHITECTURE.md", "AI-PET-WORLD-ARCHITECTURE-1.6"],
+  ["docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "LOCAL-AI-CAPABILITY-MIGRATION-1.5"],
+  ["docs/DIRECTORY_STRUCTURE.md", "AI-PET-WORLD-DIRECTORY-1.10"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.6"],
   ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "AI-PAINTER-DATA-PROVENANCE-1.2"],
   ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "AI-PAINTER-REVIEW-STORAGE-1.4"],
@@ -152,7 +152,6 @@ for (const [relativePath, expected] of [
   ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "machine_qualified_positive"],
   ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "以上状态均不是等待Owner批准"],
   ["docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md", "固定进度3/5（60%）"],
-  ["docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md", "训练未运行"],
   ["docs/game-world-generation/DOCUMENT_INDEX.md", "自主能力生命周期"],
   ["docs/world-visual-data-dictionary/README.md", "旧Owner词汇不得授权、阻断、恢复、发布或回退当前任务"],
   ["docs/world-visual-data-dictionary/README.md", "当前Owner职责只采用`docs/DOCUMENT_AUTHORITY_INDEX.md`中的`GOV-OWNER-001`"],
@@ -191,7 +190,6 @@ for (const relativePath of [
   "docs/DOCUMENT_AUTHORITY_INDEX.md",
   "docs/ARCHITECTURE.md",
   "docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md",
-  "docs/ai-painter-progress/CURRENT_TRAINING_BACKEND_CONSOLE_LOCKED_SPEC.md",
 ]) {
   for (const identity of ["currentProjectTask", "activeExecution", "latestTrainingTerminal", "selectedHistoricalRun"]) {
     requireText(relativePath, identity)

@@ -8,6 +8,10 @@ import { queryAiConsoleRuntimeProjection } from "./runtime-projection"
 import { queryAiConsolePrimaryRegistryProjection } from "./registry-projection"
 import { queryAiConsoleSystemProjection } from "./system-projection"
 import { queryAiConsoleTaskProjection } from "./task-projection"
+import { queryAiConsoleTrainingDesignProjection } from "./training-design-projection"
+import { queryAiConsoleReviewAdjudicationProjection } from "./review-adjudication-projection"
+import { queryAiConsoleTrainingObservabilityProjection } from "./training-observability-projection"
+import { queryAiPainterCurrentReviewProjection } from "./ai-painter-current-execution-projection"
 
 export async function queryAiConsoleWorkspaceProjection(
   workspace: AiConsoleWorkspaceDefinition,
@@ -30,6 +34,18 @@ export async function queryAiConsoleWorkspaceProjection(
   }
   if (workspace.moduleSlug === "evidence") {
     return queryAiConsoleEvidenceProjection(workspace.slug, selectedView)
+  }
+  if (workspace.moduleSlug === "training" && (workspace.slug === "models" || workspace.slug === "plans")) {
+    return queryAiConsoleTrainingDesignProjection(workspace.slug, selectedView)
+  }
+  if (workspace.moduleSlug === "training" && workspace.slug === "overview") {
+    return queryAiConsoleTrainingObservabilityProjection()
+  }
+  if (workspace.moduleSlug === "reviews" && (workspace.slug === "current" || workspace.slug === "results" || workspace.slug === "evidence")) {
+    return queryAiPainterCurrentReviewProjection(workspace.slug)
+  }
+  if (workspace.moduleSlug === "reviews" && (workspace.slug === "contracts" || workspace.slug === "failures")) {
+    return queryAiConsoleReviewAdjudicationProjection(workspace.slug)
   }
   if (workspace.moduleSlug === "training" || workspace.moduleSlug === "reviews" || workspace.moduleSlug === "archive") {
     return queryAiConsolePrimaryRegistryProjection(workspace)

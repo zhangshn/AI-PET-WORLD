@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import type { AiPainterTaskCapsule } from "@/app/ai-painter-progress/_lib/current-training-dashboard-types";
+import type { AiPainterTaskCapsule } from "@/server/ai-painter-current-training-types";
 import { readCurrentTrainingDashboard } from "@/server/ai-painter-current-training";
 
 const catalogPath = path.join(

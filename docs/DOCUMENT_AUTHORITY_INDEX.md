@@ -1,14 +1,14 @@
 # 项目文档权威索引
 
-更新时间：2026-08-26 15:30:00 +08:00
+更新时间：2026-08-30 11:57:50 +08:00
 
 状态：active-document-governance-index
 
-文档版本：`DOCUMENT-AUTHORITY-1.4`
+文档版本：`DOCUMENT-AUTHORITY-1.5`
 
-生效日期：`2026-08-26`
+生效日期：`2026-08-30`
 
-替代版本：`DOCUMENT-AUTHORITY-1.3`
+替代版本：`DOCUMENT-AUTHORITY-1.4`
 
 文档状态：`active_normative_target`
 
@@ -33,7 +33,8 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 | AI控制台系统架构 | `docs/ai-console/AI_CONSOLE_ARCHITECTURE_SPEC.md` | 应用壳、查询/控制分层、依赖方向、本地运行、隔离与失败关闭 |
 | AI控制台信息架构与UI标准 | `docs/ai-console/AI_CONSOLE_INFORMATION_ARCHITECTURE_AND_UI_STANDARD.md` | 路由层级、固定主体壳、外层大Frame包含内层ModuleFrame、视觉与响应式验收 |
 | AI控制台数据与API合同 | `docs/ai-console/AI_CONSOLE_DATA_DICTIONARY_AND_API_CONTRACT.md` | 统一字段、连接状态、页面查询合同、空值与错误语义 |
-| 页面与后台规格 | `docs/ai-painter-progress/` | 页面职责、只读/写入边界、API和自动化合同 |
+| AI控制台页面与后台规格 | `docs/ai-console/` | 唯一现行控制台的产品、功能、架构、路由、UI、数据和API合同 |
+| 退役AI Painter页面资料 | `docs/ai-painter-progress/` | 仅复核旧页面设计；不得参与当前控制台、任务选择、状态投影或程序依赖解析 |
 | 项目目录结构 | `docs/DIRECTORY_STRUCTURE.md` | 逻辑目录职责、数据包根、运行证据和RuntimeFrame目录边界 |
 | 世界视觉数据字典 | `docs/world-visual-data-dictionary/` | 视觉事实、标签、失败码和机器审核语义 |
 | 人格数据子系统 | `docs/ziwei/` | 紫微斗数、八字与人格映射输入数据 |
@@ -116,7 +117,7 @@ DOCUMENT_AUTHORITY_INDEX
 
 阅读AI Painter时，先从`BUSINESS_SPEC.md`确认它只是本地自研AI的一项视觉能力，再从`ARCHITECTURE.md`读取业务运行、能力版本和Runtime边界，从本地AI能力迁移架构读取执行主体职责，最后进入AI Painter正式主体规格和唯一计划表。历史签名机制只用于复核旧研发运行，不是当前长期授权架构；连续执行、内部票据和自主判断合同只能实现上述业务规则，不能取代权威文档。
 
-阅读AI控制台时，先读取本文件和项目总体架构，再按`docs/ai-console/README.md`规定的顺序读取平台总纲、功能规格、系统架构、信息架构与UI标准、数据字典与API合同，最后核对`docs/DIRECTORY_STRUCTURE.md`。AI控制台覆盖整个本地自研AI平台；`docs/ai-painter-progress/`及`src/app/ai-painter-progress/`与新平台完全解耦，不得定义、承载或作为新平台一级、二级目录的下游页面。
+阅读AI控制台时，先读取本文件和项目总体架构，再按`docs/ai-console/README.md`规定的顺序读取平台总纲、功能规格、系统架构、信息架构与UI标准、数据字典与API合同，最后核对`docs/DIRECTORY_STRUCTURE.md`。AI控制台覆盖整个本地自研AI平台；`docs/ai-painter-progress/`仅为历史页面资料，`src/app/ai-painter-progress/`只允许保留到`/ai-console`的永久兼容重定向。二者均不得定义、承载、读取或作为新平台一级、二级目录及运行状态的来源。
 
 ## 6. 文档基线验收与程序符合状态
 

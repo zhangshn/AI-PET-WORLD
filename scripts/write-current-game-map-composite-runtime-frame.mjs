@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process"
 import { createRequire } from "node:module"
 import { randomUUID } from "node:crypto"
 import { enrichTrainingProcessLedgerEvent } from "./lib/ai-painter-training-ledger-event-analysis.mjs"
+import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-store.mjs"
 import { refreshGameMapAutoVisualJudgeLearning } from "./lib/game-map-auto-visual-judge-learning.mjs"
 
 const runtimeFrameRoot = path.resolve(process.argv[2] ?? ".runtime/game-map-runtime-frame")
@@ -17,7 +18,6 @@ const sourceDir = "src/world/game-map-frame"
 const approvedPackRoot = path.resolve(".runtime/game-map-approved-material-packs")
 const ledgerDir = path.resolve(".runtime/ai-painter/training-process-ledger")
 const ledgerPath = path.join(ledgerDir, "events.jsonl")
-const latestLedgerPath = path.join(ledgerDir, "latest.json")
 let resolvedMaterialPackPathForReport = materialPackPathArg
 
 function readJson(filePath) {
@@ -31,35 +31,6 @@ function writeReport(report) {
     report.ledgerWriteError = error instanceof Error ? error.message : String(error)
   }
   console.log(JSON.stringify(report, null, 2))
-}
-
-function readLedgerEvents() {
-  if (!fs.existsSync(ledgerPath)) return []
-  return fs
-    .readFileSync(ledgerPath, "utf8")
-    .trim()
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line))
-}
-
-function buildLedgerSummary(events) {
-  const summary = {
-    total: events.length,
-    running: 0,
-    success: 0,
-    failed: 0,
-    error: 0,
-    blocked: 0,
-    info: 0,
-    lastEvent: events.at(-1) ?? null,
-  }
-  for (const event of events) {
-    if (Object.prototype.hasOwnProperty.call(summary, event.status)) {
-      summary[event.status] += 1
-    }
-  }
-  return summary
 }
 
 function readFormalVisualJudgeSummary(formalVisualJudgePath) {
@@ -128,23 +99,7 @@ function appendCompositeRuntimeFrameLedgerEvent(report) {
     evidencePath: report.formalVisualJudgePath ?? report.outputPath ?? report.recordPath ?? null,
   })
 
-  fs.mkdirSync(ledgerDir, { recursive: true })
-  fs.appendFileSync(ledgerPath, JSON.stringify(event) + "\n", "utf8")
-  const events = readLedgerEvents()
-  fs.writeFileSync(
-    latestLedgerPath,
-    JSON.stringify(
-      {
-        schemaVersion: "ai-painter-training-process-ledger-v1",
-        updatedAt: events.at(-1)?.timestamp ?? null,
-        events: events.slice(-80).reverse(),
-        summary: buildLedgerSummary(events),
-      },
-      null,
-      2,
-    ) + "\n",
-    "utf8",
-  )
+  appendAiPainterProgramEvent(event)
   refreshAutoVisualJudgeLearning(event)
 }
 

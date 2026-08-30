@@ -1,4 +1,9 @@
-import { createNotConnectedProjection, createProjection, type AiConsoleProjectionResult } from "./projection-contract"
+import { createNotConnectedProjection, createProjection, createUnknownOrStaleProjection, type AiConsoleProjectionResult } from "./projection-contract"
+import { isAiConsoleTaskRegistryStoreInitialized, readAiConsoleTaskRegistryStore, type AiConsoleTaskRegistryEventRecord } from "@/server/ai-console-control/task-registry-store"
+import {
+  queryAiPainterActiveExecutionProjection,
+  queryAiPainterCurrentTaskProjection,
+} from "./ai-painter-current-execution-projection"
 
 type TaskFlowRecord = {
   flowDefinitionId: string
@@ -51,15 +56,20 @@ function flow(
   }
 }
 
-export function getAiConsoleTaskProjectionAvailability(workspaceSlug: string): "connected" | "not_connected" {
-  return workspaceSlug === "flows" ? "connected" : "not_connected"
+export function getAiConsoleTaskProjectionAvailability(workspaceSlug: string): "connected" | "partial" | "not_connected" {
+  if (workspaceSlug === "flows" || workspaceSlug === "current") return "connected"
+  if (workspaceSlug === "active") return "partial"
+  if (!isAiConsoleTaskRegistryStoreInitialized()) return "not_connected"
+  return "connected"
 }
 
 export async function queryAiConsoleTaskProjection(
   workspaceSlug: string,
   selectedView: string,
 ): Promise<AiConsoleProjectionResult> {
-  if (workspaceSlug !== "flows") return createNotConnectedProjection()
+  if (workspaceSlug === "current") return queryAiPainterCurrentTaskProjection()
+  if (workspaceSlug === "active") return queryAiPainterActiveExecutionProjection()
+  if (workspaceSlug !== "flows") return queryTaskRegistryProjection(workspaceSlug, selectedView)
   const records = taskFlowViews[selectedView]
   if (!records) return createNotConnectedProjection("task_flow_view_not_registered")
 
@@ -76,4 +86,71 @@ export async function queryAiConsoleTaskProjection(
     trustStatus: "verified_registry",
     records,
   })
+}
+
+function queryTaskRegistryProjection(workspaceSlug: string, selectedView: string): AiConsoleProjectionResult {
+  const storeRead = readAiConsoleTaskRegistryStore()
+  if (storeRead.status !== "connected") {
+    if (storeRead.status === "not_connected") return createNotConnectedProjection(storeRead.reasonCode)
+    return createUnknownOrStaleProjection({
+      sourceIdentity: "ai_console_task_registry_store_v1",
+      writerIdentity: "ai_console_task_registry_reader_v1",
+      reasonCode: storeRead.reasonCode,
+      evidenceReferences: storeRead.evidenceReferences,
+    })
+  }
+
+  const provenance = {
+    sourceIdentity: "ai_console_task_registry_store_v1",
+    writerIdentity: storeRead.metadata.writerIdentity,
+    observedAtUtc: storeRead.metadata.updatedAtUtc,
+    sourceRevision: storeRead.metadata.registryRevision,
+    evidenceReferences: storeRead.evidenceReferences,
+    trustStatus: "verified_registry" as const,
+  }
+  if (workspaceSlug === "queue") {
+    let tasks = [...storeRead.tasks]
+    if (selectedView !== "取消与过期记录") tasks = tasks.filter((task) => task.lifecycleStatus === "queued")
+    else tasks = tasks.filter((task) => task.lifecycleStatus === "cancelled")
+    tasks.sort((left, right) => right.priority - left.priority || left.taskSequence - right.taskSequence)
+    return createProjection({
+      ...provenance,
+      records: tasks.map((task) => ({
+        queueItemId: task.queueItemId,
+        taskId: task.taskId,
+        taskGoal: task.taskGoal,
+        capabilityDomain: task.capabilityDomain,
+        priority: task.priority,
+        resourceWaitReason: task.lifecycleStatus === "queued" ? "registered_executor_not_connected" : null,
+        queuedAtUtc: task.queuedAtUtc,
+        queueStatus: task.lifecycleStatus,
+        taskRevision: task.taskRevision,
+        registryRevision: storeRead.metadata.registryRevision,
+        taskRecordSha256: task.taskRecordSha256,
+      })),
+    })
+  }
+  if (workspaceSlug === "history") {
+    let events: readonly AiConsoleTaskRegistryEventRecord[] = storeRead.events
+    if (selectedView === "任务定义") events = events.filter((event) => event.eventType === "task_registered")
+    if (selectedView === "执行修订") events = events.filter((event) => event.eventType === "task_priority_updated")
+    if (selectedView === "终态记录") events = events.filter((event) => event.eventType === "task_cancelled")
+    return createProjection({
+      ...provenance,
+      records: events.map((event) => ({
+        taskEventId: event.taskEventId,
+        taskId: event.taskId,
+        eventType: event.eventType,
+        eventSequence: event.eventSequence,
+        commandId: event.commandId,
+        sourceLifecycleStatus: event.sourceLifecycleStatus,
+        targetLifecycleStatus: event.targetLifecycleStatus,
+        sourcePriority: event.sourcePriority,
+        targetPriority: event.targetPriority,
+        occurredAtUtc: event.occurredAtUtc,
+        eventRecordSha256: event.eventRecordSha256,
+      })),
+    })
+  }
+  return createNotConnectedProjection("task_registry_workspace_not_registered")
 }

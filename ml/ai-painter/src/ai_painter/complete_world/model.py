@@ -78,6 +78,15 @@ def build_complete_world_system(config: dict[str, object]):
     structure_fact_first_architecture = "stage4_structure_fact_first_dual_stage_generator_v1"
     semantic_renderer_architecture = "stage4_condition_preserving_semantic_renderer_v1"
     semantic_mixture_architecture = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+    spatial_affine_conditioned_decoder_architecture = (
+        "stage4_multiscale_spatial_affine_conditioned_decoder_v1"
+    )
+    full_backbone_spatial_affine_architecture = (
+        "stage4_full_backbone_spatial_affine_conditioned_denoiser_v1"
+    )
+    joint_condition_local_transport_architecture = (
+        "stage4_full_backbone_joint_condition_local_transport_denoiser_v1"
+    )
     authoritative_semantic_carrier_architecture = (
         "stage4_authoritative_visual_semantic_carrier_decoder_v1"
     )
@@ -169,6 +178,25 @@ def build_complete_world_system(config: dict[str, object]):
         "stage4ResponsibilityComponentRole",
         "",
     ))
+    if denoiser_architecture in {
+        spatial_affine_conditioned_decoder_architecture,
+        full_backbone_spatial_affine_architecture,
+        joint_condition_local_transport_architecture,
+    }:
+        if controlled_structure_arm_explicit or stage4_responsibility_component_role_explicit:
+            raise ValueError(
+                "Stage 4 full-backbone conditioning cannot reuse exited controlled arms or responsibility components"
+            )
+        if int(config.get("denoiserBaseChannels", 64)) != 64:
+            raise ValueError("Stage 4 full-backbone conditioning requires base width 64")
+        if condition_channels != 23 or latent_channels != 12:
+            raise ValueError(
+                "Stage 4 full-backbone conditioning requires exactly 23 condition and 12 latent channels"
+            )
+        if autoencoder_architecture != "residual_4x_latent_pixel_detail_v2" or latent_downsample_factor != 4:
+            raise ValueError(
+                "Stage 4 full-backbone conditioning requires the frozen 4x 12-channel Autoencoder boundary"
+            )
     if denoiser_architecture in {
         direct_clean_latent_architecture,
         direct_responsibility_residual_architecture,
@@ -329,6 +357,8 @@ def build_complete_world_system(config: dict[str, object]):
             structure_fact_first_architecture,
             semantic_renderer_architecture,
             semantic_mixture_architecture,
+            spatial_affine_conditioned_decoder_architecture,
+            full_backbone_spatial_affine_architecture,
             authoritative_semantic_carrier_architecture,
             post_decode_object_rgb_compositor_architecture,
             post_decode_full_condition_responsibility_architecture,
@@ -510,18 +540,173 @@ def build_complete_world_system(config: dict[str, object]):
             return embedding
 
     class TimeResidualBlock(nn.Module):
-        def __init__(self, channels: int, time_channels: int):
+        def __init__(
+            self,
+            channels: int,
+            time_channels: int,
+            spatial_condition_channels: int | None = None,
+            local_transport_condition_channels: int | None = None,
+        ):
             super().__init__()
+            if (
+                spatial_condition_channels is not None
+                and local_transport_condition_channels is not None
+            ):
+                raise ValueError(
+                    "spatial affine and joint-condition local transport are mutually exclusive"
+                )
             self.norm1 = nn.GroupNorm(group_count(channels), channels)
             self.conv1 = nn.Conv2d(channels, channels, 3, padding=1)
             self.time_projection = nn.Linear(time_channels, channels)
             self.norm2 = nn.GroupNorm(group_count(channels), channels)
             self.conv2 = nn.Conv2d(channels, channels, 3, padding=1)
+            self.spatial_affine_norm1 = (
+                nn.Conv2d(
+                    spatial_condition_channels,
+                    channels * 2,
+                    3,
+                    padding=1,
+                    bias=True,
+                )
+                if spatial_condition_channels is not None
+                else None
+            )
+            self.spatial_affine_norm2 = (
+                nn.Conv2d(
+                    spatial_condition_channels,
+                    channels * 2,
+                    3,
+                    padding=1,
+                    bias=True,
+                )
+                if spatial_condition_channels is not None
+                else None
+            )
+            self.local_transport_norm1 = (
+                nn.Conv2d(
+                    local_transport_condition_channels,
+                    9,
+                    3,
+                    padding=1,
+                    bias=True,
+                )
+                if local_transport_condition_channels is not None
+                else None
+            )
+            self.local_transport_norm2 = (
+                nn.Conv2d(
+                    local_transport_condition_channels,
+                    9,
+                    3,
+                    padding=1,
+                    bias=True,
+                )
+                if local_transport_condition_channels is not None
+                else None
+            )
 
-        def forward(self, value, time_embedding):
-            hidden = self.conv1(functional.silu(self.norm1(value)))
+        @staticmethod
+        def apply_spatial_affine(normalized, spatial_conditions, affine_projection):
+            if affine_projection is None:
+                return normalized
+            if spatial_conditions is None:
+                raise ValueError("spatial-affine decoder block requires resized typed conditions")
+            if spatial_conditions.shape[-2:] != normalized.shape[-2:]:
+                raise ValueError(
+                    "spatial-affine decoder conditions must match the normalized feature spatial size"
+                )
+            gamma, beta = affine_projection(spatial_conditions).chunk(2, dim=1)
+            return normalized * (1 + gamma) + beta
+
+        @staticmethod
+        def joint_condition_local_transport_weights(
+            normalized,
+            spatial_conditions,
+            transport_projection,
+        ):
+            if transport_projection is None:
+                return None
+            if spatial_conditions is None:
+                raise ValueError(
+                    "joint-condition local transport requires resized typed conditions"
+                )
+            if spatial_conditions.shape[-2:] != normalized.shape[-2:]:
+                raise ValueError(
+                    "joint-condition local transport conditions must match the normalized feature spatial size"
+                )
+            logits = transport_projection(spatial_conditions)
+            if logits.shape[1] != 9:
+                raise ValueError(
+                    "joint-condition local transport requires exactly nine row-major neighbor logits"
+                )
+            height, width = normalized.shape[-2:]
+            valid_neighbors = functional.unfold(
+                torch.ones(
+                    (1, 1, height, width),
+                    dtype=logits.dtype,
+                    device=logits.device,
+                ),
+                kernel_size=3,
+                padding=1,
+            ).reshape(1, 9, height, width) > 0
+            masked_logits = logits.masked_fill(
+                ~valid_neighbors,
+                torch.finfo(logits.dtype).min,
+            )
+            return torch.softmax(masked_logits, dim=1)
+
+        @classmethod
+        def apply_joint_condition_local_transport(
+            cls,
+            normalized,
+            spatial_conditions,
+            transport_projection,
+        ):
+            if transport_projection is None:
+                return normalized
+            weights = cls.joint_condition_local_transport_weights(
+                normalized,
+                spatial_conditions,
+                transport_projection,
+            )
+            batch, channels, height, width = normalized.shape
+            neighbor_values = functional.unfold(
+                normalized,
+                kernel_size=3,
+                padding=1,
+            ).reshape(batch, channels, 9, height, width)
+            return (neighbor_values * weights.unsqueeze(1)).sum(dim=2)
+
+        def requires_spatial_conditions(self):
+            return (
+                self.spatial_affine_norm1 is not None
+                or self.local_transport_norm1 is not None
+            )
+
+        def forward(self, value, time_embedding, spatial_conditions=None):
+            normalized1 = self.apply_spatial_affine(
+                self.norm1(value),
+                spatial_conditions,
+                self.spatial_affine_norm1,
+            )
+            normalized1 = self.apply_joint_condition_local_transport(
+                normalized1,
+                spatial_conditions,
+                self.local_transport_norm1,
+            )
+            hidden = self.conv1(functional.silu(normalized1))
             hidden = hidden + self.time_projection(time_embedding).view(-1, hidden.shape[1], 1, 1)
-            hidden = self.conv2(functional.silu(self.norm2(hidden)))
+            normalized2 = self.apply_spatial_affine(
+                self.norm2(hidden),
+                spatial_conditions,
+                self.spatial_affine_norm2,
+            )
+            normalized2 = self.apply_joint_condition_local_transport(
+                normalized2,
+                spatial_conditions,
+                self.local_transport_norm2,
+            )
+            hidden = self.conv2(functional.silu(normalized2))
             return value + hidden
 
     class ProjectOwnedMultiscaleConditionUNet(nn.Module):
@@ -543,25 +728,73 @@ def build_complete_world_system(config: dict[str, object]):
                 ResidualBlock(channels),
             )
             self.fuse0 = nn.Conv2d(channels * 2, channels, 1)
-            self.block0 = TimeResidualBlock(channels, time_channels)
+            full_backbone_spatial_affine_condition_channels = (
+                condition_channels
+                if denoiser_architecture == full_backbone_spatial_affine_architecture
+                else None
+            )
+            joint_condition_local_transport_channels = (
+                condition_channels
+                if denoiser_architecture == joint_condition_local_transport_architecture
+                else None
+            )
+            self.block0 = TimeResidualBlock(
+                channels,
+                time_channels,
+                full_backbone_spatial_affine_condition_channels,
+                joint_condition_local_transport_channels,
+            )
 
             self.latent_down1 = nn.Conv2d(channels, channels * 2, 4, stride=2, padding=1)
             self.condition_down1 = nn.Conv2d(channels, channels * 2, 4, stride=2, padding=1)
             self.fuse1 = nn.Conv2d(channels * 4, channels * 2, 1)
-            self.block1 = TimeResidualBlock(channels * 2, time_channels)
+            self.block1 = TimeResidualBlock(
+                channels * 2,
+                time_channels,
+                full_backbone_spatial_affine_condition_channels,
+                joint_condition_local_transport_channels,
+            )
 
             self.latent_down2 = nn.Conv2d(channels * 2, channels * 4, 4, stride=2, padding=1)
             self.condition_down2 = nn.Conv2d(channels * 2, channels * 4, 4, stride=2, padding=1)
             self.fuse2 = nn.Conv2d(channels * 8, channels * 4, 1)
-            self.middle1 = TimeResidualBlock(channels * 4, time_channels)
-            self.middle2 = TimeResidualBlock(channels * 4, time_channels)
+            self.middle1 = TimeResidualBlock(
+                channels * 4,
+                time_channels,
+                full_backbone_spatial_affine_condition_channels,
+                joint_condition_local_transport_channels,
+            )
+            self.middle2 = TimeResidualBlock(
+                channels * 4,
+                time_channels,
+                full_backbone_spatial_affine_condition_channels,
+                joint_condition_local_transport_channels,
+            )
 
             self.up1 = nn.ConvTranspose2d(channels * 4, channels * 2, 4, stride=2, padding=1)
             self.up_fuse1 = nn.Conv2d(channels * 4, channels * 2, 1)
-            self.up_block1 = TimeResidualBlock(channels * 2, time_channels)
+            spatial_affine_condition_channels = (
+                condition_channels
+                if denoiser_architecture in {
+                    spatial_affine_conditioned_decoder_architecture,
+                    full_backbone_spatial_affine_architecture,
+                }
+                else None
+            )
+            self.up_block1 = TimeResidualBlock(
+                channels * 2,
+                time_channels,
+                spatial_affine_condition_channels,
+                joint_condition_local_transport_channels,
+            )
             self.up0 = nn.ConvTranspose2d(channels * 2, channels, 4, stride=2, padding=1)
             self.up_fuse0 = nn.Conv2d(channels * 2, channels, 1)
-            self.up_block0 = TimeResidualBlock(channels, time_channels)
+            self.up_block0 = TimeResidualBlock(
+                channels,
+                time_channels,
+                spatial_affine_condition_channels,
+                joint_condition_local_transport_channels,
+            )
             self.output = nn.Sequential(
                 nn.GroupNorm(group_count(channels), channels),
                 nn.SiLU(),
@@ -588,6 +821,9 @@ def build_complete_world_system(config: dict[str, object]):
                 structure_fact_first_architecture,
                 semantic_renderer_architecture,
                 semantic_mixture_architecture,
+                spatial_affine_conditioned_decoder_architecture,
+                full_backbone_spatial_affine_architecture,
+                joint_condition_local_transport_architecture,
                 authoritative_semantic_carrier_architecture,
                 post_decode_object_rgb_compositor_architecture,
                 post_decode_full_condition_responsibility_architecture,
@@ -836,6 +1072,11 @@ def build_complete_world_system(config: dict[str, object]):
             level0 = self.block0(
                 self.fuse0(torch.cat((self.latent_stem(noisy_latent), condition0), dim=1)),
                 time_embedding,
+                (
+                    resized_conditions
+                    if self.block0.requires_spatial_conditions()
+                    else None
+                ),
             )
             condition1 = self.condition_down1(condition0)
             if structure_fact_layout is not None:
@@ -848,6 +1089,11 @@ def build_complete_world_system(config: dict[str, object]):
             level1 = self.block1(
                 self.fuse1(torch.cat((self.latent_down1(level0), condition1), dim=1)),
                 time_embedding,
+                (
+                    resize_typed_conditions(conditions, condition1.shape[-2:])
+                    if self.block1.requires_spatial_conditions()
+                    else None
+                ),
             )
             condition2 = self.condition_down2(condition1)
             if structure_fact_layout is not None:
@@ -858,7 +1104,20 @@ def build_complete_world_system(config: dict[str, object]):
                     )
                 )
             middle = self.fuse2(torch.cat((self.latent_down2(level1), condition2), dim=1))
-            middle = self.middle2(self.middle1(middle, time_embedding), time_embedding)
+            spatial_affine_middle_conditions = (
+                resize_typed_conditions(conditions, middle.shape[-2:])
+                if self.middle1.requires_spatial_conditions()
+                else None
+            )
+            middle = self.middle2(
+                self.middle1(
+                    middle,
+                    time_embedding,
+                    spatial_affine_middle_conditions,
+                ),
+                time_embedding,
+                spatial_affine_middle_conditions,
+            )
 
             decoded_up1 = self.up1(middle)
             v9_object_features_up1 = []
@@ -903,9 +1162,15 @@ def build_complete_world_system(config: dict[str, object]):
                     self.semantic_renderer_fusion_gate_up1(fusion_input_up1)
                     * self.semantic_renderer_fusion_up1(fusion_input_up1)
                 )
+            spatial_affine_up1_conditions = (
+                resize_typed_conditions(conditions, decoded_up1.shape[-2:])
+                if self.up_block1.requires_spatial_conditions()
+                else None
+            )
             up1 = self.up_block1(
                 self.up_fuse1(torch.cat((decoded_up1, level1), dim=1)),
                 time_embedding,
+                spatial_affine_up1_conditions,
             )
             decoded_up0 = self.up0(up1)
             if primary_up1 is not None:
@@ -945,9 +1210,15 @@ def build_complete_world_system(config: dict[str, object]):
                     self.semantic_renderer_fusion_gate_up0(fusion_input_up0)
                     * self.semantic_renderer_fusion_up0(fusion_input_up0)
                 )
+            spatial_affine_up0_conditions = (
+                resize_typed_conditions(conditions, decoded_up0.shape[-2:])
+                if self.up_block0.requires_spatial_conditions()
+                else None
+            )
             up0 = self.up_block0(
                 self.up_fuse0(torch.cat((decoded_up0, level0), dim=1)),
                 time_embedding,
+                spatial_affine_up0_conditions,
             )
             base_velocity = self.output(up0)
             predicted_velocity = base_velocity
@@ -1209,6 +1480,9 @@ def build_complete_world_system(config: dict[str, object]):
                 structure_fact_first_architecture,
                 semantic_renderer_architecture,
                 semantic_mixture_architecture,
+                spatial_affine_conditioned_decoder_architecture,
+                full_backbone_spatial_affine_architecture,
+                joint_condition_local_transport_architecture,
                 authoritative_semantic_carrier_architecture,
                 post_decode_object_rgb_compositor_architecture,
                 post_decode_full_condition_responsibility_architecture,

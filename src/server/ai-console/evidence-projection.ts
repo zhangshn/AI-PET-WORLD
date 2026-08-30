@@ -5,6 +5,11 @@ import { isAiConsoleFormalEvidenceIndexInitialized } from "@/server/ai-console-c
 import { queryAiConsoleControlEventProjection } from "./control-event-projection"
 import { queryAiConsoleControlTransactionProjection } from "./control-transaction-projection"
 import { queryAiConsoleFormalEvidenceProjection } from "./formal-evidence-projection"
+import { queryAiConsoleEvidenceReconciliationProjection } from "./evidence-reconciliation-projection"
+import { isAiConsoleTaskCapsuleStoreInitialized } from "@/server/ai-console-control/task-capsule-store"
+import { queryAiConsoleTaskCapsuleProjection } from "./task-capsule-projection"
+import { isAiConsolePolicyBoundaryReportStoreInitialized } from "@/server/ai-console-control/policy-boundary-report-store"
+import { queryAiConsolePolicyBoundaryReportProjection } from "./policy-boundary-report-projection"
 
 const governanceContractRevision = 1
 
@@ -107,8 +112,10 @@ function governanceProvenance(sourceIdentity: string) {
 export function getAiConsoleEvidenceProjectionAvailability(workspaceSlug: string): "connected" | "partial" | "not_connected" {
   if (workspaceSlug === "artifacts") return isAiConsoleFormalEvidenceIndexInitialized() ? "connected" : "not_connected"
   if (workspaceSlug === "events") return isAiConsoleControlEventLedgerInitialized() ? "connected" : "not_connected"
+  if (workspaceSlug === "capsules") return isAiConsoleTaskCapsuleStoreInitialized() ? "connected" : "not_connected"
+  if (workspaceSlug === "policies") return isAiConsolePolicyBoundaryReportStoreInitialized() ? "connected" : "not_connected"
   if (workspaceSlug === "transactions" && isAiConsoleControlTransactionStoreInitialized()) return "connected"
-  return workspaceSlug === "transactions" || workspaceSlug === "policies" ? "partial" : "not_connected"
+  return workspaceSlug === "transactions" ? "partial" : "not_connected"
 }
 
 export async function queryAiConsoleEvidenceProjection(
@@ -117,8 +124,16 @@ export async function queryAiConsoleEvidenceProjection(
 ): Promise<AiConsoleProjectionResult> {
   if (workspaceSlug === "artifacts") return queryEvidenceTypeProjection(selectedView)
   if (workspaceSlug === "events") return queryAiConsoleControlEventProjection()
-  if (workspaceSlug === "transactions") return selectedView === "控制提交事务" ? queryAiConsoleControlTransactionProjection() : queryTransactionGateProjection(selectedView)
-  if (workspaceSlug === "policies") return queryPolicyRuleProjection()
+  if (workspaceSlug === "capsules") return queryAiConsoleTaskCapsuleProjection()
+  if (workspaceSlug === "transactions") {
+    if (selectedView === "控制提交事务") return queryAiConsoleControlTransactionProjection()
+    if (selectedView === "文件与事件" || selectedView === "SQLite一致性") return queryAiConsoleEvidenceReconciliationProjection(selectedView)
+    return queryTransactionGateProjection(selectedView)
+  }
+  if (workspaceSlug === "policies") {
+    if (selectedView === "正式边界报告") return queryAiConsolePolicyBoundaryReportProjection()
+    return queryPolicyRuleProjection()
+  }
   return createNotConnectedProjection()
 }
 
@@ -160,7 +175,7 @@ function queryPolicyRuleProjection(): AiConsoleProjectionResult {
   return createProjection({
     ...governanceProvenance("ai_console_policy_boundary_rule_catalog_v1"),
     dataStatus: "partial",
-    reasonCode: "policy_boundary_report_index_not_joined",
+    reasonCode: "formal_policy_boundary_reports_are_separate_view",
     unavailableFields: ["policyBoundaryReportId"],
     records: policyRuleRecords,
   })

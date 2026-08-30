@@ -1,0 +1,449 @@
+.liveBar {
+  position: relative;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: 220px minmax(520px, 1fr) minmax(260px, 0.7fr);
+  min-height: 50px;
+  border-top: 1px solid #344654;
+  border-bottom: 1px solid #1e2b34;
+  color: #e8f2f4;
+  background: #0b141a;
+}
+
+.liveIdentity,
+.trainingSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0 14px;
+  border: 0;
+  border-right: 1px solid #263641;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.liveIdentity div,
+.trainingSummary {
+  min-width: 0;
+}
+
+.liveIdentity small,
+.trainingSummary span,
+.liveDrawer header span,
+.drawerGrid > section > span,
+.observabilityHeader span,
+.processPanel header span,
+.trainingIdentityPanel header span,
+.trainingTrendPanel header span {
+  display: block;
+  color: #68818d;
+  font-family: var(--font-app-mono);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.liveIdentity strong,
+.trainingSummary strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.liveIdentity > i,
+.trainingSummary > i {
+  margin-left: auto;
+  color: #75d8e6;
+  font-size: 0.56rem;
+  font-style: normal;
+}
+
+.livePulse,
+.connectingPulse,
+.failedPulse {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.livePulse {
+  background: #72d7a0;
+  box-shadow: 0 0 12px rgba(114, 215, 160, 0.75);
+}
+
+.connectingPulse { background: #e3b173; }
+.failedPulse { background: #ef7373; }
+
+.compactMetrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(80px, 1fr));
+}
+
+.metric {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 11px;
+  border-right: 1px solid #1e2c35;
+}
+
+.metric::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, #6bc9d8 var(--live-meter), #18262e var(--live-meter));
+}
+
+.metric span {
+  color: #657c87;
+  font-size: 0.54rem;
+}
+
+.metric strong {
+  font-family: var(--font-app-mono);
+  font-size: 0.68rem;
+}
+
+.metric i { display: none; }
+
+.trainingSummary {
+  border-right: 0;
+  border-left: 1px solid #263641;
+}
+
+.liveDrawer {
+  position: absolute;
+  right: 10px;
+  bottom: calc(100% + 8px);
+  width: min(820px, calc(100vw - 44px));
+  overflow: hidden;
+  border: 1px solid #3a5360;
+  background: #0d171e;
+  box-shadow: 0 -22px 70px rgba(0, 0, 0, 0.58);
+}
+
+.liveDrawer > header {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 9px 13px;
+  border-bottom: 1px solid #2a3b45;
+  background: #111f27;
+}
+
+.liveDrawer > header strong { display: block; margin-top: 4px; font-size: 0.72rem; }
+.liveDrawer > header > div:last-child { display: flex; align-items: center; gap: 8px; }
+.liveDrawer button,
+.observabilityHeader button {
+  min-height: 28px;
+  border: 1px solid #38515e;
+  color: #cde3e6;
+  background: #12232b;
+  font-size: 0.55rem;
+  cursor: pointer;
+}
+
+.drawerGrid { display: grid; grid-template-columns: 1fr 1fr; }
+.drawerGrid > section { padding: 15px; }
+.drawerGrid > section + section { border-left: 1px solid #293a44; }
+.drawerGrid > section > strong { display: block; margin-top: 5px; font-size: 0.78rem; }
+.drawerGrid dl { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 12px 0; background: #22333d; }
+.drawerGrid dl > div { min-width: 0; padding: 8px; background: #0c151b; }
+.drawerGrid dt { color: #687f89; font-size: 0.51rem; }
+.drawerGrid dd { overflow: hidden; margin: 4px 0 0; font-family: var(--font-app-mono); font-size: 0.58rem; text-overflow: ellipsis; white-space: nowrap; }
+.drawerGrid a { color: #8fd6df; font-size: 0.57rem; text-decoration: none; }
+.drawerGrid a i { margin-left: 7px; font-style: normal; }
+
+.telemetryEmpty { min-height: 125px; margin: 12px 0; padding: 12px; border: 1px solid #34454f; background: #0a1217; }
+.telemetryEmpty strong { font-size: 0.65rem; }
+.telemetryEmpty p { margin: 8px 0; color: #7f949d; font-size: 0.56rem; line-height: 1.55; }
+.telemetryEmpty code { color: #bd976c; font-size: 0.49rem; overflow-wrap: anywhere; }
+
+.observabilityPanel {
+  margin: 0 18px 18px;
+  overflow: hidden;
+  border: 1px solid #3a4d58;
+  background: #0b141a;
+}
+
+.observabilityHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #334651;
+  background: linear-gradient(120deg, #12242c, #0d171d 65%);
+}
+
+.observabilityHeader h3 { margin: 5px 0 0; font-size: 1.02rem; }
+.observabilityHeader p { margin: 5px 0 0; color: #78909a; font-size: 0.58rem; }
+.observabilityHeader > div:last-child { display: flex; align-items: center; gap: 9px; }
+.observabilityHeader > div:last-child > strong { color: #9bc5cc; font-family: var(--font-app-mono); font-size: 0.68rem; }
+.observabilityHeader > div:last-child > code { color: #7899a3; font-family: var(--font-app-mono); font-size: 0.52rem; white-space: nowrap; }
+.observabilityHeader button { padding: 0 10px; }
+.connectedState,
+.connectingState,
+.failedState { padding: 5px 7px; font-family: var(--font-app-mono); font-size: 0.5rem; }
+.connectedState { color: #77dca7; border: 1px solid #2e684c; background: #102b21; }
+.connectingState { color: #e2b57b; border: 1px solid #6c5233; background: #2a2115; }
+.failedState { color: #f08a8a; border: 1px solid #6f3939; background: #2b1616; }
+
+.observabilityFailure { display: flex; gap: 12px; padding: 10px 18px; border-bottom: 1px solid #613c3c; color: #e79a9a; background: #251515; font-size: 0.58rem; }
+.observabilityFailure code { overflow-wrap: anywhere; }
+
+.resourceGaugeGrid { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); border-bottom: 1px solid #2b3b45; }
+.resourceGauge { padding: 14px; border-right: 1px solid #2b3b45; background: #0d181e; }
+.resourceGauge:last-child { border-right: 0; }
+.resourceGauge header { display: flex; align-items: center; justify-content: space-between; }
+.resourceGauge header span { color: #728994; font-size: 0.57rem; }
+.resourceGauge header strong { font-family: var(--font-app-mono); font-size: 1rem; }
+.resourceGauge > div { height: 5px; margin-top: 13px; background: #1a2931; }
+.resourceGauge > div i { display: block; width: var(--gauge-value); height: 100%; background: linear-gradient(90deg, #5aabbc, #80dac7); }
+.resourceGauge p { margin: 9px 0 0; overflow: hidden; color: #6d828b; font-size: 0.52rem; text-overflow: ellipsis; white-space: nowrap; }
+
+.telemetryFacts { display: grid; grid-template-columns: repeat(6, minmax(110px, 1fr)); border-bottom: 1px solid #2b3b45; }
+.telemetryFacts > div { min-width: 0; padding: 12px 14px; border-right: 1px solid #263640; }
+.telemetryFacts > div:last-child { border-right: 0; }
+.telemetryFacts span { color: #657a84; font-size: 0.52rem; }
+.telemetryFacts strong { display: block; margin-top: 7px; font-family: var(--font-app-mono); font-size: 0.72rem; }
+.telemetryFacts small { display: block; overflow: hidden; margin-top: 6px; color: #546872; font-size: 0.47rem; text-overflow: ellipsis; white-space: nowrap; }
+
+.trendGrid { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 1px; padding: 1px; border-bottom: 1px solid #2b3b45; background: #253640; }
+.trendGrid article { min-width: 0; padding: 12px; background: #0b151b; }
+.trendGrid article header { display: flex; align-items: center; justify-content: space-between; }
+.trendGrid article header span { color: #7c9199; font-size: 0.54rem; }
+.trendGrid article header strong { color: #55717b; font-family: var(--font-app-mono); font-size: 0.46rem; }
+.sparkline { width: 100%; height: 68px; margin-top: 8px; overflow: visible; }
+.sparkline polyline { fill: none; stroke: #72ceda; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.sparklineEmpty { display: grid; height: 76px; margin-top: 8px; place-items: center; border: 1px dashed #263842; color: #50646e; font-size: 0.5rem; }
+
+.processPanel { border-bottom: 1px solid #2b3b45; }
+.processPanel > header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #24343d; background: #101b22; }
+.processPanel > header strong { display: block; margin-top: 4px; font-size: 0.68rem; }
+.processPanel > header small { color: #60808a; font-family: var(--font-app-mono); font-size: 0.5rem; }
+.processTable > div { display: grid; grid-template-columns: 70px minmax(180px, 1.2fr) minmax(90px, 0.6fr) minmax(90px, 0.6fr) minmax(160px, 0.9fr); min-height: 36px; align-items: center; border-bottom: 1px solid #1e2c34; }
+.processTable > div:first-child { min-height: 30px; color: #607680; background: #0a1217; font-size: 0.49rem; }
+.processTable > div > * { min-width: 0; padding: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.processTable code { color: #81b9c4; font-size: 0.54rem; }
+.processTable strong,
+.processTable span,
+.processTable small { font-size: 0.53rem; }
+.processTable small { color: #9a805e; }
+.processEmpty { grid-template-columns: 1fr !important; min-height: 74px !important; justify-items: center; color: #607680; }
+.processEmpty strong { color: #90a4ac; }
+
+.observabilityBoundary { display: flex; gap: 12px; padding: 11px 14px; color: #718992; background: #0a1217; font-size: 0.54rem; line-height: 1.55; }
+.observabilityBoundary strong { flex: 0 0 auto; color: #a8c6cb; }
+
+.trainingCommandDeck { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.55fr); border-bottom: 1px solid #2b3b45; }
+.trainingIdentityPanel { padding: 14px; border-right: 1px solid #2b3b45; }
+.trainingIdentityPanel > header,
+.trainingTrendPanel > header { display: flex; align-items: center; justify-content: space-between; }
+.trainingIdentityPanel > header strong,
+.trainingTrendPanel > header strong { font-size: 0.68rem; }
+.trainingIdentityPanel dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 12px 0 0; background: #263741; }
+.trainingIdentityPanel dl > div { min-width: 0; padding: 8px; background: #0a1318; }
+.trainingIdentityPanel dt { color: #637983; font-size: 0.48rem; }
+.trainingIdentityPanel dd { overflow: hidden; margin: 5px 0 0; font-family: var(--font-app-mono); font-size: 0.55rem; text-overflow: ellipsis; white-space: nowrap; }
+.trainingNotReported { min-height: 126px; margin-top: 12px; padding: 14px; border: 1px dashed #3a4a52; background: #0a1217; }
+.trainingNotReported strong { font-size: 0.66rem; }
+.trainingNotReported p { margin: 9px 0; color: #788e97; font-size: 0.56rem; line-height: 1.55; }
+.trainingNotReported code { color: #b58e61; font-size: 0.49rem; }
+.trainingTrendPanel { padding: 14px; }
+.trainingTrendPanel header { flex-wrap: wrap; gap: 5px; }
+.trainingTrendPanel header span { width: 100%; }
+.trainingTrendPanel header small { color: #5d7983; font-family: var(--font-app-mono); font-size: 0.48rem; }
+
+@media (max-width: 1220px) {
+  .liveBar { grid-template-columns: 190px minmax(420px, 1fr); }
+  .trainingSummary { display: none; }
+  .telemetryFacts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .telemetryFacts > div:nth-child(3) { border-right: 0; }
+  .telemetryFacts > div:nth-child(-n + 3) { border-bottom: 1px solid #263640; }
+  .trendGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 860px) {
+  .liveBar { position: sticky; bottom: 0; grid-template-columns: 1fr; }
+  .compactMetrics { grid-template-columns: repeat(5, minmax(60px, 1fr)); }
+  .liveIdentity { min-height: 44px; border-bottom: 1px solid #263641; border-right: 0; }
+  .metric { min-height: 36px; padding: 0 7px; }
+  .liveDrawer { position: fixed; right: 8px; bottom: 8px; left: 8px; width: auto; max-height: calc(100dvh - 16px); overflow-y: auto; }
+  .drawerGrid,
+  .trainingCommandDeck { grid-template-columns: 1fr; }
+  .drawerGrid > section + section,
+  .trainingIdentityPanel { border-left: 0; border-top: 1px solid #293a44; border-right: 0; }
+  .observabilityPanel { margin: 0 10px 12px; }
+  .resourceGaugeGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .resourceGauge:nth-child(2) { border-right: 0; }
+  .resourceGauge:nth-child(-n + 2) { border-bottom: 1px solid #2b3b45; }
+  .processTable { overflow-x: auto; }
+  .processTable > div { min-width: 720px; }
+}
+
+@media (max-width: 560px) {
+  .compactMetrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .metric:nth-child(5) { display: none; }
+  .observabilityHeader { align-items: flex-start; flex-direction: column; }
+  .observabilityHeader > div:last-child { width: 100%; flex-wrap: wrap; }
+  .resourceGaugeGrid,
+  .telemetryFacts,
+  .trendGrid { grid-template-columns: 1fr; }
+  .resourceGauge,
+  .telemetryFacts > div { border-right: 0; border-bottom: 1px solid #263640; }
+  .telemetryFacts > div:nth-child(-n + 3) { border-bottom: 1px solid #263640; }
+  .trainingIdentityPanel dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* V19 observability colors: light neutral frame with distinct metric and state channels. */
+.liveBar {
+  border-color: var(--console-line);
+  color: var(--console-text);
+  background: linear-gradient(90deg, #f7faff, var(--console-surface-1) 48%, #f4f7fb);
+  box-shadow: 0 -8px 24px rgb(53 70 92 / 12%);
+}
+
+.liveIdentity,
+.trainingSummary { border-color: var(--console-line-subtle); }
+.liveIdentity small,
+.trainingSummary span,
+.liveDrawer header span,
+.drawerGrid > section > span,
+.observabilityHeader span,
+.processPanel header span,
+.trainingIdentityPanel header span,
+.trainingTrendPanel header span { color: var(--console-text-muted); }
+
+.liveIdentity > i { color: var(--console-observe); }
+.trainingSummary > i { color: #9237bd; }
+.livePulse { background: var(--console-success); box-shadow: 0 0 10px rgb(22 134 83 / 38%); }
+.connectingPulse { background: var(--console-warning); }
+.failedPulse { background: var(--console-danger); }
+
+.metric { --metric-accent: #2563c5; --metric-accent-rgb: 37 99 197; border-color: var(--console-line-subtle); }
+.metric:nth-child(2) { --metric-accent: #7047c6; --metric-accent-rgb: 112 71 198; }
+.metric:nth-child(3) { --metric-accent: #0f806e; --metric-accent-rgb: 15 128 110; }
+.metric:nth-child(4) { --metric-accent: #a7630b; --metric-accent-rgb: 167 99 11; }
+.metric:nth-child(5) { --metric-accent: #c63f4e; --metric-accent-rgb: 198 63 78; }
+.metric::after { background: linear-gradient(90deg, var(--metric-accent) var(--live-meter), rgb(var(--metric-accent-rgb) / 12%) var(--live-meter)); }
+.metric span { color: var(--console-text-muted); }
+
+.liveDrawer {
+  border-color: var(--console-line-strong);
+  background: var(--console-surface-1);
+  box-shadow: 0 -20px 60px rgb(53 70 92 / 22%);
+}
+
+.liveDrawer > header {
+  border-color: var(--console-line);
+  background: linear-gradient(110deg, rgb(37 99 197 / 9%), var(--console-surface-2) 52%, var(--console-surface-1));
+}
+
+.liveDrawer button,
+.observabilityHeader button {
+  border-color: var(--console-line-strong);
+  color: var(--console-text-secondary);
+  background: var(--console-surface-3);
+}
+
+.drawerGrid > section + section { border-color: var(--console-line-subtle); }
+.drawerGrid dl { background: var(--console-line-subtle); }
+.drawerGrid dl > div { background: var(--console-field); }
+.drawerGrid dt { color: var(--console-text-muted); }
+.drawerGrid a { color: var(--console-action); }
+
+.telemetryEmpty,
+.trainingNotReported {
+  border-color: rgb(167 99 11 / 38%);
+  background: rgb(167 99 11 / 6%);
+}
+
+.telemetryEmpty p,
+.trainingNotReported p { color: var(--console-text-muted); }
+.telemetryEmpty code,
+.trainingNotReported code { color: var(--console-warning); }
+
+.observabilityPanel {
+  border-color: var(--console-line-strong);
+  background: var(--console-surface-1);
+}
+
+.observabilityHeader {
+  border-color: var(--console-line);
+  background: linear-gradient(110deg, rgb(8 126 155 / 9%), var(--console-surface-2) 50%, var(--console-surface-1));
+}
+
+.observabilityHeader p { color: var(--console-text-muted); }
+.observabilityHeader > div:last-child > strong { color: #07566b; }
+.observabilityHeader > div:last-child > code { color: var(--console-text-muted); }
+.connectedState { color: #12643f; border-color: rgb(22 134 83 / 38%); background: rgb(22 134 83 / 8%); }
+.connectingState { color: #7f4b07; border-color: rgb(167 99 11 / 38%); background: rgb(167 99 11 / 8%); }
+.failedState { color: #9f2635; border-color: rgb(198 63 78 / 38%); background: rgb(198 63 78 / 8%); }
+.observabilityFailure { border-color: rgb(198 63 78 / 38%); color: #9f2635; background: rgb(198 63 78 / 8%); }
+
+.resourceGaugeGrid,
+.telemetryFacts,
+.trendGrid,
+.processPanel,
+.trainingCommandDeck { border-color: var(--console-line-subtle); }
+
+.resourceGauge { --gauge-accent: #2563c5; --gauge-accent-rgb: 37 99 197; border-color: var(--console-line-subtle); background: var(--console-surface-1); }
+.resourceGauge:nth-child(2) { --gauge-accent: #7047c6; --gauge-accent-rgb: 112 71 198; }
+.resourceGauge:nth-child(3) { --gauge-accent: #0f806e; --gauge-accent-rgb: 15 128 110; }
+.resourceGauge:nth-child(4) { --gauge-accent: #a7630b; --gauge-accent-rgb: 167 99 11; }
+.resourceGauge header span,
+.resourceGauge p { color: var(--console-text-muted); }
+.resourceGauge > div { background: rgb(var(--gauge-accent-rgb) / 12%); }
+.resourceGauge > div i { background: linear-gradient(90deg, var(--gauge-accent), color-mix(in srgb, var(--gauge-accent) 58%, white)); }
+
+.telemetryFacts > div { border-color: var(--console-line-subtle); }
+.telemetryFacts > div:nth-child(1) strong { color: #c63f4e; }
+.telemetryFacts > div:nth-child(2) strong { color: #a7630b; }
+.telemetryFacts > div:nth-child(3) strong { color: #2563c5; }
+.telemetryFacts > div:nth-child(4) strong { color: #0f806e; }
+.telemetryFacts > div:nth-child(5) strong { color: #7047c6; }
+.telemetryFacts > div:nth-child(6) strong { color: #a7630b; }
+.telemetryFacts span,
+.telemetryFacts small { color: var(--console-text-muted); }
+
+.trendGrid { background: var(--console-line-subtle); }
+.trendGrid article { --trend-accent: #2563c5; background: var(--console-surface-1); }
+.trendGrid article:nth-child(2) { --trend-accent: #7047c6; }
+.trendGrid article:nth-child(3) { --trend-accent: #0f806e; }
+.trendGrid article:nth-child(4) { --trend-accent: #a7630b; }
+.trendGrid article header span { color: var(--console-text-muted); }
+.sparkline polyline { stroke: var(--trend-accent); }
+.sparklineEmpty { border-color: var(--console-line); color: var(--console-text-quiet); }
+
+.processPanel > header { border-color: var(--console-line-subtle); background: var(--console-surface-2); }
+.processPanel > header small { color: var(--console-observe); }
+.processTable > div { border-color: var(--console-line-subtle); }
+.processTable > div:first-child { color: var(--console-text-muted); background: var(--console-field); }
+.processTable code { color: var(--console-action); }
+.processTable small { color: var(--console-warning); }
+
+.observabilityBoundary { color: var(--console-text-muted); background: var(--console-field); }
+.observabilityBoundary strong { color: var(--console-text-secondary); }
+
+.trainingIdentityPanel { border-color: var(--console-line-subtle); }
+.trainingIdentityPanel dl { background: var(--console-line-subtle); }
+.trainingIdentityPanel dl > div { background: var(--console-field); }
+.trainingIdentityPanel dt,
+.trainingTrendPanel header small { color: var(--console-text-muted); }

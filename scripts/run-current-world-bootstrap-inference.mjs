@@ -3,10 +3,10 @@ import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import sharp from "sharp"
+import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-store.mjs"
 
 const ROOT = process.cwd()
 const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "complete-world-visual-bootstrap-inference")
-const LEDGER_ROOT = path.join(ROOT, ".runtime", "ai-painter", "training-process-ledger")
 const PYTHON = path.join(ROOT, "ml", "ai-painter", ".venv", "Scripts", "python.exe")
 const PYTHON_SCRIPT = path.join(ROOT, "ml", "ai-painter", "scripts", "infer_current_world_bootstrap_complete_map.py")
 const STRUCTURE_CHECKPOINT = path.join(ROOT, ".runtime", "ai-painter", "natural-home-v28-structure-guided-training", "best.pt")
@@ -141,9 +141,7 @@ function appendLedger(record) {
     script: "scripts/run-current-world-bootstrap-inference.mjs",
     evidence: [record.outputImagePath, record.modelReportPath, projectPath(manifestPath)],
   }
-  fs.mkdirSync(LEDGER_ROOT, { recursive: true })
-  fs.appendFileSync(path.join(LEDGER_ROOT, "events.jsonl"), `${JSON.stringify(event)}\n`)
-  writeJson(path.join(LEDGER_ROOT, "latest.json"), event)
+  appendAiPainterProgramEvent(event)
 }
 
 function persistFatalError(error) {
@@ -167,7 +165,6 @@ function persistFatalError(error) {
     }
     fs.mkdirSync(failureDir, { recursive: true })
     writeJson(failurePath, failure)
-    fs.mkdirSync(LEDGER_ROOT, { recursive: true })
     const event = {
       schemaVersion: "ai-painter-training-process-ledger-event-v1",
       timestamp: failure.createdAtUtc,
@@ -184,8 +181,7 @@ function persistFatalError(error) {
       script: failure.script,
       evidence: [projectPath(failurePath)],
     }
-    fs.appendFileSync(path.join(LEDGER_ROOT, "events.jsonl"), `${JSON.stringify(event)}\n`)
-    writeJson(path.join(LEDGER_ROOT, "latest.json"), event)
+    appendAiPainterProgramEvent(event)
     console.error(JSON.stringify(failure, null, 2))
   } catch (persistenceError) {
     console.error(persistenceError)

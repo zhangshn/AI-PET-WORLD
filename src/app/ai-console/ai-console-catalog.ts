@@ -151,7 +151,7 @@ export const aiConsoleModules: readonly AiConsoleModule[] = [
     summary: "集中展示验证过程、审核节点、审核器身份、失败码、终态和证据完整性。",
     responsibilities: [
       "验证过程、机器审核与训练状态采用不同状态机",
-      "审核结果只来自正式审核程序和不可变证据",
+      "审核结果只来自冻结合同、机器观测和服务端唯一裁决",
     ],
     secondaryModules: [
       workspace("current", "当前验证"),
@@ -268,7 +268,7 @@ export const aiConsoleModules: readonly AiConsoleModule[] = [
     englishTitle: "OPERATIONS & SAFETY CONTROL",
     plane: "control",
     route: "/ai-console/control",
-    summary: "为本地操作员预留任务、训练、审核、能力、世界、资源和紧急控制入口。",
+    summary: "为本地操作员提供任务、训练、审核、能力、世界、资源和紧急控制合同与已登记安全入口。",
     responsibilities: [
       "人工控制是可选覆盖，不是自主运行的逐步审批",
       "所有写操作必须进入本地命令状态机并由服务端复核",

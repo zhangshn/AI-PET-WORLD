@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { aiCapabilityDomains } from "./ai-console-catalog"
-import { AiConsoleRegistryVerificationControl } from "./ai-console-control-surface"
+import { AiConsoleCapabilityLifecycleControl, AiConsoleRegistryVerificationControl, AiConsoleReviewAdjudicationControl, AiConsoleRuntimeReleaseControl, AiConsoleTaskRegistryControl, AiConsoleTrainingDesignControl, AiConsoleWorldControl } from "./ai-console-control-surface"
 import type {
   AiConsoleWorkspaceDefinition,
   AiConsoleWorkspaceField,
@@ -143,8 +143,6 @@ function EvidenceArtifactContentInspector({ evidenceId }: { evidenceId: string }
 
   useEffect(() => {
     const controller = new AbortController()
-    setState("loading")
-    setDetail(null)
     fetch(`/api/ai-console/evidence/artifacts/${encodeURIComponent(evidenceId)}`, {
       cache: "no-store",
       credentials: "same-origin",
@@ -199,8 +197,79 @@ function EvidenceArtifactContentInspector({ evidenceId }: { evidenceId: string }
   )
 }
 
+function EvidenceReconciliationInspector({ record }: { record: Record<string, unknown> }) {
+  const identities = [
+    ["命令回执证据", "receiptEvidenceId"],
+    ["事件账本证据", "eventLedgerEvidenceId"],
+    ["事件Head证据", "eventHeadEvidenceId"],
+    ["事务SQLite证据", "transactionRegistryEvidenceId"],
+  ] as const
+  const statuses = [
+    ["文件", "fileConsistencyStatus"],
+    ["事件", "eventConsistencyStatus"],
+    ["SQLite", "sqliteConsistencyStatus"],
+    ["索引", "indexConsistencyStatus"],
+    ["跨载体", "crossSurfaceStatus"],
+  ] as const
+
+  return (
+    <section className={styles.reconciliationInspector} aria-label="跨载体正式证据核对">
+      <header>
+        <div><span>CROSS-SURFACE RECONCILIATION</span><strong>跨载体正式证据核对</strong></div>
+        <small>READ-ONLY · FAIL-CLOSED</small>
+      </header>
+      <div className={styles.reconciliationContext}>
+        <div><span>事务身份</span><code>{formatProjectionValue("transactionId", record.transactionId)}</code></div>
+        <div><span>登记批次</span><code>{formatProjectionValue("registrationId", record.registrationId)}</code></div>
+      </div>
+      <div className={styles.reconciliationStatuses}>
+        {statuses.map(([label, field]) => <div key={field}><span>{label}</span><strong>{formatProjectionValue(field, record[field])}</strong><code>{field}</code></div>)}
+      </div>
+      <div className={styles.reconciliationEvidenceIds}>
+        {identities.map(([label, field]) => <div key={field}><span>{label}</span><code>{formatProjectionValue(field, record[field])}</code></div>)}
+      </div>
+    </section>
+  )
+}
+
 function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea: string; projection: WorkspaceQueryPayload | null; workspace: AiConsoleWorkspaceDefinition }) {
-  const visibleFields = workspace.fields.slice(0, workspace.presentation === "monitor" ? 6 : 4)
+  let visibleFields = workspace.fields.slice(0, workspace.presentation === "monitor" ? 6 : 4)
+  if (workspace.moduleSlug === "evidence" && workspace.slug === "capsules") {
+    const fieldNamesByView: Record<string, readonly string[]> = {
+      "任务目标": ["capsuleId", "taskId", "taskGoal", "terminalStatus"],
+      "输入与能力": ["capsuleId", "capabilityDomain", "capabilityVersionId", "inputEvidenceSetId"],
+      "执行摘要": ["capsuleId", "executionId", "executionSummary", "terminalEventId"],
+      "终态与边界": ["capsuleId", "terminalStatus", "policyBoundaryReportId", "terminalAtUtc"],
+    }
+    visibleFields = (fieldNamesByView[activeArea] ?? fieldNamesByView["任务目标"]).map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+  }
+  if (workspace.moduleSlug === "capabilities") {
+    const capabilityFieldNames: Record<string, readonly string[]> = {
+      candidates: ["capabilityVersionId", "capabilityDomain", "modelIdentity", "candidateStatus"],
+      qualification: ["qualificationResultId", "qualificationGateId", "capabilityVersionId", "qualificationStatus"],
+      releases: ["capabilityReleaseIdentity", "capabilityDomain", "capabilityVersionId", "releaseStatus"],
+      migration: ["migrationAssessmentId", "capabilityDomain", "currentMaturityLevel", "machineAcceptanceStatus"],
+    }
+    const fieldNames = capabilityFieldNames[workspace.slug]
+    if (fieldNames) visibleFields = fieldNames.map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+  }
+  if (workspace.moduleSlug === "training") {
+    const trainingFieldNames: Record<string, readonly string[]> = {
+      models: ["modelStructureId", "modelFamily", "capabilityDomain", "modelStructureStatus"],
+      plans: ["trainingPlanId", "modelStructureId", "capabilityDomain", "planStatus"],
+    }
+    const fieldNames = trainingFieldNames[workspace.slug]
+    if (fieldNames) visibleFields = fieldNames.map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+  }
+  if (workspace.moduleSlug === "runtime") {
+    const runtimeFieldNames: Record<string, readonly string[]> = {
+      candidates: ["runtimeFrameCandidateIdentity", "capabilityDomain", "worldId", "candidateStatus"],
+      frames: ["runtimeFrameIdentity", "worldId", "tick", "runtimeFrameStatus"],
+      world: ["worldStateRevisionId", "worldId", "activeRuntimeFrameIdentity", "publishControlStatus", "visualUpdateStatus", "worldRevision"],
+    }
+    const fieldNames = runtimeFieldNames[workspace.slug]
+    if (fieldNames) visibleFields = fieldNames.map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+  }
   const firstRecord = projection?.result?.records?.[0]
   const projectionRecords = useMemo(() => projection?.result?.records ?? [], [projection?.result?.records])
   const [recordQuery, setRecordQuery] = useState("")
@@ -249,7 +318,7 @@ function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea
             </div>
             <ProjectionRecordDetails fields={workspace.fields} record={selectedRecord} />
             {workspace.moduleSlug === "evidence" && workspace.slug === "artifacts" && activeArea === "正式证据记录" && typeof selectedRecord?.evidenceId === "string"
-              ? <EvidenceArtifactContentInspector evidenceId={selectedRecord.evidenceId} />
+              ? <EvidenceArtifactContentInspector evidenceId={selectedRecord.evidenceId} key={selectedRecord.evidenceId} />
               : null}
           </>
         ) : (
@@ -265,7 +334,19 @@ function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea
   }
 
   if (workspace.presentation === "topology") {
-    const topologyFields = workspace.fields.slice(0, 6)
+    let topologyFields = workspace.fields.slice(0, 6)
+    if (workspace.moduleSlug === "capabilities" && workspace.slug === "qualification") {
+      topologyFields = ["qualificationGateId", "capabilityVersionId", "gateOrder", "qualificationStatus", "evidenceRequirement", "failureTerminal"].map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+    }
+    if (workspace.moduleSlug === "capabilities" && workspace.slug === "migration") {
+      topologyFields = ["capabilityId", "capabilityDomain", "currentMaturityLevel", "targetMaturityLevel", "machineAcceptanceStatus", "rollbackIdentity"].map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+    }
+    if (workspace.moduleSlug === "evidence" && workspace.slug === "transactions" && activeArea === "文件与事件") {
+      topologyFields = ["transactionId", "registrationId", "fileConsistencyStatus", "eventConsistencyStatus", "indexConsistencyStatus", "crossSurfaceStatus"].map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+    }
+    if (workspace.moduleSlug === "evidence" && workspace.slug === "transactions" && activeArea === "SQLite一致性") {
+      topologyFields = ["transactionId", "registrationId", "sqliteConsistencyStatus", "indexConsistencyStatus", "evidenceRecordCount", "crossSurfaceStatus"].map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+    }
     return (
       <div className={styles.topologyProjection}>
         <div className={styles.projectionCaption}><span>RELATION GRAPH</span><strong>{activeArea}</strong><small>{projectionRecords.length > 0 ? `${projectionRecords.length} 条受信关系` : isConnectedEmpty ? "正式登记已连接 · 当前0条" : "只表达合同关系，不推测运行状态"}</small></div>
@@ -290,6 +371,9 @@ function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea
             ))}
           </div>
         )}
+        {workspace.moduleSlug === "evidence" && workspace.slug === "transactions" && (activeArea === "文件与事件" || activeArea === "SQLite一致性") && firstRecord
+          ? <EvidenceReconciliationInspector record={firstRecord} />
+          : null}
         <ProjectionFooter activeArea={activeArea} projection={projection} workspace={workspace} />
       </div>
     )
@@ -297,6 +381,16 @@ function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea
 
   if (workspace.presentation === "matrix") {
     let matrixFields = workspace.fields.slice(0, 4)
+    const isPolicyReportView = workspace.moduleSlug === "evidence" && workspace.slug === "policies" && activeArea === "正式边界报告"
+    if (isPolicyReportView) {
+      matrixFields = ["policyBoundaryReportId", "boundaryCategory", "failureCode", "terminalStatus"].map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+    }
+    if (workspace.moduleSlug === "evidence" && workspace.slug === "policies" && activeArea === "边界规则目录") {
+      matrixFields = ["policyRuleId", "boundaryCategory", "prohibitedAction", "failureTerminal"].map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+    }
+    if (workspace.moduleSlug === "evidence" && workspace.slug === "policies" && activeArea === "阻断分类") {
+      matrixFields = ["policyRuleId", "boundaryCategory", "failureTerminal", "prohibitedAction"].map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
+    }
     if (workspace.moduleSlug === "data" && workspace.slug === "conditions" && activeArea === "范围和缺失") {
       matrixFields = ["conditionSchemaId", "valueRange", "missingValueRule", "resamplingRule"].map((canonicalName) => workspace.fields.find((field) => field.canonicalName === canonicalName)).filter((field): field is AiConsoleWorkspaceField => Boolean(field))
     }
@@ -314,7 +408,7 @@ function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea
     const matrixValueFields = matrixFields.slice(1, 4)
     return (
       <div className={styles.matrixProjection}>
-        <div className={styles.projectionCaption}><span>CONTRACT MATRIX</span><strong>{activeArea}</strong><small>{projectionRecords.length > 0 ? `显示 ${Math.min(24, projectionRecords.length)} / ${projection?.result?.total ?? projectionRecords.length} 条受信记录` : isConnectedEmpty ? "正式登记已连接 · 当前0条" : "行列语义来自统一目录"}</small></div>
+        <div className={styles.projectionCaption}><span>{isPolicyReportView ? "FORMAL POLICY REPORTS" : "CONTRACT MATRIX"}</span><strong>{activeArea}</strong><small>{projectionRecords.length > 0 ? `显示 ${Math.min(24, projectionRecords.length)} / ${projection?.result?.total ?? projectionRecords.length} 条受信记录` : isConnectedEmpty ? "正式登记已连接 · 当前0条" : "行列语义来自统一目录"}</small></div>
         <div className={styles.matrixTable}>
           <div className={styles.matrixHeader}><span>{rowIdentityField?.displayName ?? "业务分区"}</span>{matrixValueFields.map((field) => <code key={field.canonicalName}>{field.displayName}</code>)}</div>
           {projectionRecords.length > 0
@@ -324,7 +418,9 @@ function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea
                   {matrixValueFields.map((field) => <span key={field.canonicalName}>{formatProjectionValue(field.canonicalName, record[field.canonicalName])}</span>)}
                 </div>
               ))
-            : workspace.workAreas.map((area) => (
+            : isPolicyReportView && isConnectedEmpty
+              ? <div className={styles.matrixEmptyState}><strong>当前没有政策边界阻断报告</strong><span>正式报告索引已连接；仅实际失败关闭事件会在此登记。</span><code>CONNECTED · 0 RECORDS</code></div>
+              : workspace.workAreas.map((area) => (
                 <div className={`${styles.matrixRow} ${area === activeArea ? styles.matrixRowActive : ""}`} key={area}><strong>{area}</strong>{matrixValueFields.map((field) => <span key={field.canonicalName}>{area === activeArea ? "当前范围" : isConnectedEmpty ? "无登记记录" : "未接入"}</span>)}</div>
               ))}
         </div>
@@ -371,6 +467,9 @@ function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea
               {filteredProjectionRecords.length === 0 ? <div className={styles.searchNoMatch}><strong>当前结果中没有匹配记录</strong><span>调整检索词，不会发起新的目录扫描。</span></div> : null}
             </div>
             <ProjectionRecordDetails fields={workspace.fields} record={selectedRecord} />
+            {workspace.moduleSlug === "evidence" && workspace.slug === "artifacts" && activeArea === "正式证据记录" && typeof selectedRecord?.evidenceId === "string"
+              ? <EvidenceArtifactContentInspector evidenceId={selectedRecord.evidenceId} key={selectedRecord.evidenceId} />
+              : null}
           </>
         ) : <div className={styles.searchEmpty}><span>0</span><strong>{isConnectedEmpty ? `${activeArea}当前无登记记录` : `${activeArea}结果区未连接`}</strong><p>{isConnectedEmpty ? "新平台正式索引已连接；当前没有符合该范围的登记记录。" : "当前可切换检索范围，但不执行数据查询，也不将目录扫描结果冒充正式记录。"}</p></div>}
         <ProjectionFooter activeArea={activeArea} projection={projection} workspace={workspace} />
@@ -383,7 +482,7 @@ function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea
     const activeStepIndex = Math.max(0, workspace.workAreas.indexOf(activeArea)) % commandSteps.length
     return (
       <div className={styles.controlProjection}>
-        <div className={styles.projectionCaption}><span>SAFE COMMAND PIPELINE</span><strong>{activeArea}</strong><small>仅检查合同，不提供执行入口</small></div>
+        <div className={styles.projectionCaption}><span>SAFE COMMAND PIPELINE</span><strong>{activeArea}</strong><small>仅登记了执行器身份的命令提供本地入口</small></div>
         <div className={styles.commandPipeline}>
           {commandSteps.map((step, index) => (
             <div className={index === activeStepIndex ? styles.projectionNodeActive : undefined} key={step}><span>{String(index + 1).padStart(2, "0")}</span><strong>{step}</strong><code>{workspace.fields[index]?.canonicalName ?? workspace.stateContract.canonicalField}</code><small>{index === 3 ? "保存不可变结果" : "服务端复核"}</small></div>
@@ -402,8 +501,15 @@ function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea
             </article>
           ))}
         </div>
-        <div className={styles.commandDisabled}><span>COMMAND VALIDATION CONTRACT</span><strong>{workspace.slug === "reviews" ? "1 SAFE EXECUTOR READY" : "READY · EXECUTOR DISABLED"}</strong><p>{workspace.slug === "reviews" ? "仅主登记核验执行器已登记；其他命令仍不提交、不排队，也不修改训练、审核或Runtime状态。" : "允许命令、角色、参数与安全规则已接入；执行器身份未登记，因此不提交命令、不调用进程，也不修改训练或Runtime状态。"}</p></div>
+        <div className={styles.commandDisabled}><span>COMMAND VALIDATION CONTRACT</span><strong>{workspace.slug === "tasks" ? "3 SAFE COMMANDS READY" : workspace.slug === "capabilities" ? "4 SAFE COMMANDS READY" : workspace.slug === "training" ? "2 SAFE COMMANDS READY" : workspace.slug === "reviews" ? "3 SAFE COMMANDS READY" : workspace.slug === "world" ? "7 SAFE COMMANDS READY" : "READY · EXECUTOR DISABLED"}</strong><p>{workspace.slug === "tasks" ? "仅任务登记、未启动任务优先级和取消已接入；启动任务与队列调度保持禁用。" : workspace.slug === "capabilities" ? "候选、顺序资格结果、非活动发布登记和完整资格发布激活已接入；停用、回退与迁移裁决保持禁用。" : workspace.slug === "training" ? "仅不可变模型结构与非活动训练计划登记已接入；训练启动、暂停、恢复、停止和资源窗口保持禁用。" : workspace.slug === "reviews" ? "主登记核验、冻结审核合同和机器观测终态登记已接入；主动验证、审核重跑、投影重建与证据改写保持禁用。" : workspace.slug === "world" ? "Frame候选、正式未消费Frame、消费、发布暂停/恢复、合法回退和视觉冻结已接入；全部只写新平台登记库，不写旧世界或WorldFacts。" : "允许命令、角色、参数与安全规则已接入；执行器身份未登记，因此不提交命令、不调用进程，也不修改训练或Runtime状态。"}</p></div>
+        {workspace.slug === "tasks" ? <AiConsoleTaskRegistryControl /> : null}
+        {workspace.slug === "capabilities" ? <AiConsoleCapabilityLifecycleControl /> : null}
+        {workspace.slug === "capabilities" ? <AiConsoleRuntimeReleaseControl mode="activation" /> : null}
+        {workspace.slug === "training" ? <AiConsoleTrainingDesignControl /> : null}
         {workspace.slug === "reviews" ? <AiConsoleRegistryVerificationControl /> : null}
+        {workspace.slug === "reviews" ? <AiConsoleReviewAdjudicationControl /> : null}
+        {workspace.slug === "world" ? <AiConsoleRuntimeReleaseControl mode="runtime" /> : null}
+        {workspace.slug === "world" ? <AiConsoleWorldControl /> : null}
         <ProjectionFooter activeArea={activeArea} projection={projection} workspace={workspace} />
       </div>
     )
@@ -436,8 +542,15 @@ export function AiConsoleWorkspaceWorkbench({ initialProjection, workspace }: { 
   useEffect(() => {
     const controller = new AbortController()
     const endpoint = `/api/ai-console/workspaces/${workspace.moduleSlug}/${workspace.slug}?view=${encodeURIComponent(activeArea)}`
-    fetch(endpoint, { cache: "no-store", signal: controller.signal })
-      .then(async (response) => {
+    const isDynamicCurrentView = (workspace.moduleSlug === "tasks" && (workspace.slug === "current" || workspace.slug === "active"))
+      || (workspace.moduleSlug === "training" && workspace.slug === "overview")
+      || (workspace.moduleSlug === "reviews" && (workspace.slug === "current" || workspace.slug === "results" || workspace.slug === "evidence"))
+    let requestInFlight = false
+    const refreshProjection = async () => {
+      if (requestInFlight) return
+      requestInFlight = true
+      try {
+        const response = await fetch(endpoint, { cache: "no-store", signal: controller.signal })
         const payload = await response.json() as WorkspaceQueryPayload
         const isValid = response.ok
           && payload.contractStatus === "ready"
@@ -445,14 +558,22 @@ export function AiConsoleWorkspaceWorkbench({ initialProjection, workspace }: { 
           && payload.selectedView === activeArea
         setProjection(isValid ? payload : null)
         setContractState(isValid ? "ready" : "rejected")
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         if (!(error instanceof DOMException && error.name === "AbortError")) {
-          setProjection(null)
           setContractState("rejected")
         }
-      })
-    return () => controller.abort()
+      } finally {
+        requestInFlight = false
+      }
+    }
+    void refreshProjection()
+    const intervalId = isDynamicCurrentView
+      ? window.setInterval(() => { void refreshProjection() }, 1_000)
+      : null
+    return () => {
+      controller.abort()
+      if (intervalId !== null) window.clearInterval(intervalId)
+    }
   }, [activeArea, workspace.moduleSlug, workspace.slug])
 
   return (

@@ -120,7 +120,13 @@ export function adjudicateLateReviewRows(reviews, {
   lateEpochs = LATE_EPOCHS,
 } = {}) {
   assert.ok(Array.isArray(reviews), "review rows are required")
+  assert.ok(Array.isArray(requiredEpochs) && requiredEpochs.length > 0, "required epochs are required")
+  assert.ok(Array.isArray(lateEpochs) && lateEpochs.length > 0, "late epochs are required")
+  assert.equal(new Set(requiredEpochs).size, requiredEpochs.length, "required epochs must be unique")
+  assert.equal(new Set(lateEpochs).size, lateEpochs.length, "late epochs must be unique")
+  assert.ok(lateEpochs.every((epoch) => requiredEpochs.includes(epoch)), "late epochs must be a subset of required epochs")
   assert.deepEqual(reviews.map((row) => row.epoch), requiredEpochs)
+  const diagnosticEpochs = requiredEpochs.filter((epoch) => !lateEpochs.includes(epoch))
   const lateReviews = lateEpochs.map((epoch) => reviews.find((row) => row.epoch === epoch))
   assert.ok(lateReviews.every(Boolean))
   // Qualification is result-neutral: the exact issue identities may differ by
@@ -156,7 +162,7 @@ export function adjudicateLateReviewRows(reviews, {
   return {
     qualified,
     sourceEpochs: requiredEpochs,
-    diagnosticEpochs: [1, 5],
+    diagnosticEpochs,
     qualificationEpochs: lateEpochs,
     issueSequence: lateReviews.map((row) => ({ epoch: row.epoch, passed: row.passed, issueCodes: row.issueCodes })),
     failureCounts,

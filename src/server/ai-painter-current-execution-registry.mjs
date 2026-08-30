@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto"
+import { spawnSync } from "node:child_process"
 import { closeSync, fsyncSync, openSync } from "node:fs"
 import {
   appendFile,
@@ -19,6 +20,9 @@ export const CURRENT_EXECUTION_REGISTRY_PATH =
 
 const REGISTRY_SCHEMA = "ai-painter-current-execution-registry-v1"
 const CAPSULE_SCHEMA = "ai-painter-local-task-capsule-v1"
+const REGISTRY_TRANSACTION_SCHEMA = "ai-painter-current-execution-registry-transaction-v1"
+const REGISTRY_DEPENDENCY_SCHEMA = "ai-painter-current-execution-registry-dependency-manifest-v1"
+const REGISTRY_WRITER_CLAIM_PATH = `${CURRENT_EXECUTION_REGISTRY_ROOT}/writer.claim.json`
 
 export async function readCurrentExecutionRegistry(projectRoot = process.cwd()) {
   try {
@@ -39,6 +43,7 @@ export async function readCurrentExecutionRegistry(projectRoot = process.cwd()) 
     requireValue(transaction.value?.currentSha256 === current.sha256, "registry_current_hash_mismatch")
 
     verifySqliteCommit(projectRoot, current.value, current.sha256)
+    await verifyPublishedRegistryEvent(projectRoot, current.value, current.sha256)
 
     const archivedNamespaces = normalizeArchivedNamespaces(current.value.archivedEvidenceNamespaces)
     const taskCapsule = await readRegistryBinding(
@@ -262,7 +267,7 @@ export async function initializeCurrentExecutionRegistry({
   return readCurrentExecutionRegistry(projectRoot)
 }
 
-export async function advanceCurrentExecutionRegistry({
+export async function prepareCurrentExecutionRegistryAdvance({
   projectRoot = process.cwd(),
   capabilityVersion,
   packageId,
@@ -277,6 +282,8 @@ export async function advanceCurrentExecutionRegistry({
   latestTrainingTerminal = null,
   expectedPreviousRegistryRevision = null,
   expectedPreviousRegistrySha256 = null,
+  dependencyManifest = null,
+  _testHooks = null,
 }) {
   const previous = await readCurrentExecutionRegistry(projectRoot)
   requireValue(previous.ok === true, "current_execution_registry_not_verified")
@@ -337,9 +344,25 @@ export async function advanceCurrentExecutionRegistry({
   const registryRevision = previous.registry.registryRevision + 1
   const eventSequence = previous.registry.eventSequence + 1
   const transactionId = `current-execution-registry-advance-${compactUtc()}-${randomUUID()}`
-  const transactionRoot = `${CURRENT_EXECUTION_REGISTRY_ROOT}/transactions/${transactionId}`
-  await mkdir(resolveProjectPath(projectRoot, transactionRoot), { recursive: false })
-  const current = {
+  const processIdentity = resolveCurrentProcessIdentity(_testHooks)
+  const writerClaim = {
+    schemaVersion: "ai-painter-current-execution-registry-writer-claim-v1",
+    transactionId,
+    processId: process.pid,
+    processStartIdentity: processIdentity,
+    claimedAtUtc: new Date().toISOString(),
+  }
+  await acquireWriterClaim(projectRoot, writerClaim)
+  let durablePrepared = false
+  let transactionRoot = null
+  try {
+    const lockedPrevious = await readCurrentExecutionRegistry(projectRoot)
+    requireValue(lockedPrevious.ok === true, "current_execution_registry_not_verified_after_claim")
+    requireValue(lockedPrevious.registrySha256 === previous.registrySha256, "registry_changed_before_writer_claim")
+    requireValue(lockedPrevious.registry.registryRevision === previous.registry.registryRevision, "registry_revision_changed_before_writer_claim")
+    transactionRoot = `${CURRENT_EXECUTION_REGISTRY_ROOT}/transactions/${transactionId}`
+    await mkdir(resolveProjectPath(projectRoot, transactionRoot), { recursive: false })
+    const current = {
     schemaVersion: REGISTRY_SCHEMA,
     registryIdentity: "ai-painter-current-execution",
     registryRevision,
@@ -375,59 +398,10 @@ export async function advanceCurrentExecutionRegistry({
     recordedAtAsiaShanghai: asiaShanghaiTimestamp(recordedAtUtc),
     writerIdentity: "local_ai_capability_lifecycle_orchestrator",
     transactionId,
-  }
-  const currentBytes = jsonBytes(current)
-  const currentSha256 = sha256Bytes(currentBytes)
-  const pendingTransaction = {
-    schemaVersion: "ai-painter-current-execution-registry-transaction-v1",
-    transactionId,
-    status: "pending",
-    registryRevision,
-    eventSequence,
-    currentSha256,
-    previousCurrentSha256: previous.registrySha256,
-    recordedAtUtc,
-  }
-  await writeExclusiveJson(
-    projectRoot,
-    `${transactionRoot}/transaction.pending.json`,
-    pendingTransaction,
-  )
-
-  const database = new DatabaseSync(resolveProjectPath(
-    projectRoot,
-    `${CURRENT_EXECUTION_REGISTRY_ROOT}/registry.sqlite`,
-  ))
-  initializeDatabase(database)
-  database.exec("BEGIN IMMEDIATE")
-  try {
-    const row = database.prepare("SELECT MAX(registry_revision) AS revision FROM registry_revisions").get()
-    requireValue(row?.revision === previous.registry.registryRevision, "registry_concurrent_revision_conflict")
-    const committedTransaction = {
-      ...pendingTransaction,
-      status: "committed",
-      committedAtUtc: new Date().toISOString(),
     }
-    await writeExclusiveJson(projectRoot, `${transactionRoot}/transaction.json`, committedTransaction)
-    database.prepare(`
-      INSERT INTO registry_transactions
-      (transaction_id, status, current_sha256, recorded_at_utc)
-      VALUES (?, 'committed', ?, ?)
-    `).run(transactionId, currentSha256, recordedAtUtc)
-    database.prepare(`
-      INSERT INTO registry_revisions
-      (registry_revision, event_sequence, transaction_id, current_sha256, task_id, run_id, recorded_at_utc)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(registryRevision, eventSequence, transactionId, currentSha256, taskId, runId, recordedAtUtc)
-    database.exec("COMMIT")
-  } catch (error) {
-    database.exec("ROLLBACK")
-    throw error
-  } finally {
-    database.close()
-  }
-
-  await appendDurableLine(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/events.jsonl`, {
+    const currentBytes = jsonBytes(current)
+    const currentSha256 = sha256Bytes(currentBytes)
+    const registryEvent = {
     schemaVersion: "ai-painter-current-execution-registry-event-v1",
     registryRevision,
     eventSequence,
@@ -438,12 +412,201 @@ export async function advanceCurrentExecutionRegistry({
     currentSha256,
     previousCurrentSha256: previous.registrySha256,
     recordedAtUtc,
+    }
+    const currentStagedPath = `${transactionRoot}/current.staged.json`
+    const registryEventStagedPath = `${transactionRoot}/registry-event.staged.jsonl`
+    const dependencyManifestPath = `${transactionRoot}/dependency-manifest.json`
+    const normalizedDependencies = normalizeDependencyManifest(dependencyManifest)
+    const registryEventBytes = Buffer.from(`${JSON.stringify(registryEvent)}\n`, "utf8")
+    await writeExclusiveBytes(projectRoot, currentStagedPath, currentBytes)
+    await writeExclusiveBytes(projectRoot, registryEventStagedPath, registryEventBytes)
+    await writeExclusiveJson(projectRoot, dependencyManifestPath, normalizedDependencies)
+    const pendingTransaction = {
+    schemaVersion: REGISTRY_TRANSACTION_SCHEMA,
+    transactionId,
+    status: "pending",
+    registryRevision,
+    eventSequence,
+    currentSha256,
+    previousCurrentSha256: previous.registrySha256,
+    previousRegistryRevision: previous.registry.registryRevision,
+    currentStaged: { path: currentStagedPath, sha256: currentSha256 },
+    registryEventStaged: {
+      path: registryEventStagedPath,
+      sha256: sha256Bytes(registryEventBytes),
+    },
+    dependencyManifest: {
+      path: dependencyManifestPath,
+      sha256: sha256Bytes(jsonBytes(normalizedDependencies)),
+    },
+    recordedAtUtc,
+    }
+    await writeExclusiveJson(
+      projectRoot,
+      `${transactionRoot}/transaction.pending.json`,
+      pendingTransaction,
+    )
+    ensurePreparedDatabaseRows(
+      projectRoot,
+      pendingTransaction,
+      stagedCurrentValueForDatabase(current),
+      _testHooks,
+    )
+    durablePrepared = true
+    invokeTransactionHook(_testHooks, "after_prepare_database_commit", { transactionId })
+    return {
+      ok: true,
+      status: "prepared_not_published",
+      transactionId,
+      registryRevision,
+      eventSequence,
+      currentSha256,
+      previousCurrentSha256: previous.registrySha256,
+      transactionRoot,
+      writerClaim,
+    }
+  } catch (error) {
+    if (!durablePrepared) {
+      if (transactionRoot !== null) {
+        await writeAbortedPrepareRecord(
+          projectRoot,
+          transactionRoot,
+          transactionId,
+          error,
+        ).catch(() => undefined)
+      }
+      await releaseWriterClaim(projectRoot, transactionId).catch(() => undefined)
+    }
+    throw error
+  }
+}
+
+export async function advanceCurrentExecutionRegistry(options) {
+  const prepared = await prepareCurrentExecutionRegistryAdvance(options)
+  return finalizePreparedCurrentExecutionRegistryAdvance({
+    projectRoot: options.projectRoot ?? process.cwd(),
+    transactionId: prepared.transactionId,
+    _testHooks: options._testHooks ?? null,
   })
-  await writeAtomicReplaceBytes(
-    projectRoot,
-    CURRENT_EXECUTION_REGISTRY_PATH,
-    currentBytes,
+}
+
+export async function finalizePreparedCurrentExecutionRegistryAdvance({
+  projectRoot = process.cwd(),
+  transactionId,
+  _testHooks = null,
+}) {
+  requireSafeTransactionId(transactionId)
+  const claim = await readWriterClaim(projectRoot)
+  requireValue(claim.transactionId === transactionId, "registry_writer_claim_transaction_mismatch")
+  requireValue(claim.processId === process.pid, "registry_writer_claim_not_owned_by_current_process")
+  requireValue(
+    claim.processStartIdentity === resolveCurrentProcessIdentity(_testHooks),
+    "registry_writer_claim_process_identity_mismatch",
   )
+  return finalizePreparedAdvanceInternal({ projectRoot, transactionId, _testHooks })
+}
+
+export async function recoverPreparedCurrentExecutionRegistryAdvance({
+  projectRoot = process.cwd(),
+  transactionId = null,
+  _testHooks = null,
+}) {
+  const claim = await readWriterClaim(projectRoot)
+  if (transactionId !== null) requireValue(claim.transactionId === transactionId, "registry_writer_claim_transaction_mismatch")
+  requireSafeTransactionId(claim.transactionId)
+  const probe = probeClaimProcess(claim, _testHooks)
+  requireValue(probe.status !== "indeterminate", "registry_writer_claim_liveness_indeterminate")
+  requireValue(probe.status !== "active", "registry_writer_claim_active")
+  return finalizePreparedAdvanceInternal({
+    projectRoot,
+    transactionId: claim.transactionId,
+    _testHooks,
+  })
+}
+
+async function finalizePreparedAdvanceInternal({ projectRoot, transactionId, _testHooks }) {
+  const transactionRoot = `${CURRENT_EXECUTION_REGISTRY_ROOT}/transactions/${transactionId}`
+  const pendingPath = `${transactionRoot}/transaction.pending.json`
+  const committedPath = `${transactionRoot}/transaction.json`
+  const pending = await readBoundJson(projectRoot, pendingPath)
+  requireValue(pending.value?.schemaVersion === REGISTRY_TRANSACTION_SCHEMA, "registry_pending_transaction_schema_invalid")
+  requireValue(pending.value?.transactionId === transactionId, "registry_pending_transaction_identity_mismatch")
+  requireValue(pending.value?.status === "pending", "registry_pending_transaction_status_invalid")
+  const stagedCurrent = await readRawBinding(projectRoot, pending.value.currentStaged, "registry_staged_current")
+  const stagedEvent = await readRawBinding(projectRoot, pending.value.registryEventStaged, "registry_staged_event")
+  const dependencyManifest = await readRegistryBindingWithoutArchive(
+    projectRoot,
+    pending.value.dependencyManifest,
+    "registry_dependency_manifest",
+  )
+  requireValue(dependencyManifest.value?.schemaVersion === REGISTRY_DEPENDENCY_SCHEMA, "registry_dependency_manifest_schema_invalid")
+  requireValue(sha256Bytes(stagedCurrent.bytes) === pending.value.currentSha256, "registry_staged_current_hash_mismatch")
+  const stagedCurrentValue = JSON.parse(stagedCurrent.bytes.toString("utf8"))
+  requireValue(stagedCurrentValue.transactionId === transactionId, "registry_staged_current_transaction_mismatch")
+  requireValue(stagedCurrentValue.registryRevision === pending.value.registryRevision, "registry_staged_current_revision_mismatch")
+  requireValue(stagedCurrentValue.eventSequence === pending.value.eventSequence, "registry_staged_current_sequence_mismatch")
+  const stagedEventValue = parseSingleJsonLine(stagedEvent.bytes, "registry_staged_event_invalid")
+  requireValue(stagedEventValue.transactionId === transactionId, "registry_staged_event_transaction_mismatch")
+  requireValue(stagedEventValue.currentSha256 === pending.value.currentSha256, "registry_staged_event_current_hash_mismatch")
+
+  const currentBytes = await readFile(resolveProjectPath(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH))
+  const currentSha256 = sha256Bytes(currentBytes)
+  const alreadyPublished = currentSha256 === pending.value.currentSha256
+  if (!alreadyPublished) {
+    requireValue(currentSha256 === pending.value.previousCurrentSha256, "registry_previous_current_hash_changed")
+    const currentValue = JSON.parse(currentBytes.toString("utf8"))
+    requireValue(currentValue.registryRevision === pending.value.previousRegistryRevision, "registry_previous_revision_changed")
+  }
+
+  ensurePreparedDatabaseRows(
+    projectRoot,
+    pending.value,
+    stagedCurrentValueForDatabase(stagedCurrentValue),
+    _testHooks,
+  )
+  verifyPreparedDatabaseRows(projectRoot, pending.value)
+  const dependencyVerification = await verifyDependencyManifest(projectRoot, dependencyManifest.value)
+  invokeTransactionHook(_testHooks, "after_dependencies_verified", { transactionId })
+
+  await ensureAtomicJsonlEvent(
+    projectRoot,
+    `${CURRENT_EXECUTION_REGISTRY_ROOT}/events.jsonl`,
+    stagedEvent.bytes,
+    transactionId,
+  )
+  await verifyRegistryEventBytes(projectRoot, stagedEventValue)
+  invokeTransactionHook(_testHooks, "after_registry_event_committed", { transactionId })
+
+  commitPreparedDatabaseRows(projectRoot, pending.value)
+  invokeTransactionHook(_testHooks, "after_database_committed", { transactionId })
+
+  const committedTransaction = {
+    ...pending.value,
+    status: "committed",
+    dependencyVerification,
+    committedAtUtc: new Date().toISOString(),
+  }
+  if (await fileExists(projectRoot, committedPath)) {
+    const existing = await readBoundJson(projectRoot, committedPath)
+    requireValue(existing.value?.transactionId === transactionId, "registry_committed_transaction_identity_mismatch")
+    requireValue(existing.value?.status === "committed", "registry_committed_transaction_status_invalid")
+    requireValue(existing.value?.currentSha256 === pending.value.currentSha256, "registry_committed_transaction_hash_mismatch")
+  } else {
+    await writeExclusiveJson(projectRoot, committedPath, committedTransaction)
+  }
+  invokeTransactionHook(_testHooks, "before_current_publish", { transactionId })
+
+  if (!alreadyPublished) {
+    const beforePublish = await readFile(resolveProjectPath(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH))
+    requireValue(sha256Bytes(beforePublish) === pending.value.previousCurrentSha256, "registry_previous_current_changed_before_publish")
+    await writeAtomicReplaceBytes(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH, stagedCurrent.bytes)
+  }
+  invokeTransactionHook(_testHooks, "after_current_publish", { transactionId })
+  const published = await readFile(resolveProjectPath(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH))
+  requireValue(sha256Bytes(published) === pending.value.currentSha256, "registry_current_publish_hash_mismatch")
+  verifyCommittedDatabaseRows(projectRoot, stagedCurrentValue, pending.value.currentSha256)
+  await verifyRegistryEventBytes(projectRoot, stagedEventValue)
+  await releaseWriterClaim(projectRoot, transactionId)
   return readCurrentExecutionRegistry(projectRoot)
 }
 
@@ -638,6 +801,278 @@ function verifySqliteCommit(projectRoot, registry, currentSha256) {
   }
 }
 
+function verifyPreparedDatabaseRows(projectRoot, pending) {
+  const database = new DatabaseSync(resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/registry.sqlite`), { readOnly: true })
+  try {
+    const transaction = database.prepare(`
+      SELECT transaction_id, status, current_sha256
+      FROM registry_transactions WHERE transaction_id = ?
+    `).get(pending.transactionId)
+    const revision = database.prepare(`
+      SELECT registry_revision, event_sequence, transaction_id, current_sha256
+      FROM registry_revisions WHERE registry_revision = ?
+    `).get(pending.registryRevision)
+    requireValue(["prepared", "committed"].includes(transaction?.status), "registry_prepared_database_transaction_missing")
+    requireValue(transaction?.current_sha256 === pending.currentSha256, "registry_prepared_database_transaction_hash_mismatch")
+    requireValue(revision?.event_sequence === pending.eventSequence, "registry_prepared_database_sequence_mismatch")
+    requireValue(revision?.transaction_id === pending.transactionId, "registry_prepared_database_transaction_mismatch")
+    requireValue(revision?.current_sha256 === pending.currentSha256, "registry_prepared_database_current_hash_mismatch")
+  } finally {
+    database.close()
+  }
+}
+
+function stagedCurrentValueForDatabase(current) {
+  return {
+    taskId: current.taskId,
+    runId: current.runId,
+  }
+}
+
+function ensurePreparedDatabaseRows(projectRoot, pending, current, testHooks = null) {
+  const database = new DatabaseSync(resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/registry.sqlite`))
+  initializeDatabase(database)
+  let transactionStarted = false
+  try {
+    invokeTransactionHook(testHooks, "before_prepare_database_begin", {
+      transactionId: pending.transactionId,
+    })
+    database.exec("BEGIN IMMEDIATE")
+    transactionStarted = true
+    invokeTransactionHook(testHooks, "after_prepare_database_begin", {
+      transactionId: pending.transactionId,
+    })
+    const transaction = database.prepare(`
+      SELECT transaction_id, status, current_sha256
+      FROM registry_transactions WHERE transaction_id = ?
+    `).get(pending.transactionId)
+    const revision = database.prepare(`
+      SELECT registry_revision, event_sequence, transaction_id, current_sha256, task_id, run_id
+      FROM registry_revisions WHERE registry_revision = ?
+    `).get(pending.registryRevision)
+    if (transaction) {
+      requireValue(["prepared", "committed"].includes(transaction.status), "registry_prepared_database_transaction_status_invalid")
+      requireValue(transaction.current_sha256 === pending.currentSha256, "registry_prepared_database_transaction_hash_mismatch")
+    } else {
+      database.prepare(`
+        INSERT INTO registry_transactions
+        (transaction_id, status, current_sha256, recorded_at_utc)
+        VALUES (?, 'prepared', ?, ?)
+      `).run(pending.transactionId, pending.currentSha256, pending.recordedAtUtc)
+      invokeTransactionHook(testHooks, "after_prepare_transaction_insert", {
+        transactionId: pending.transactionId,
+      })
+    }
+    if (revision) {
+      requireValue(revision.event_sequence === pending.eventSequence, "registry_prepared_database_sequence_mismatch")
+      requireValue(revision.transaction_id === pending.transactionId, "registry_prepared_database_transaction_mismatch")
+      requireValue(revision.current_sha256 === pending.currentSha256, "registry_prepared_database_current_hash_mismatch")
+      requireValue(revision.task_id === current.taskId, "registry_prepared_database_task_mismatch")
+      requireValue(revision.run_id === current.runId, "registry_prepared_database_run_mismatch")
+    } else {
+      const row = database.prepare("SELECT MAX(registry_revision) AS revision FROM registry_revisions").get()
+      requireValue(row?.revision === pending.previousRegistryRevision, "registry_concurrent_revision_conflict")
+      database.prepare(`
+        INSERT INTO registry_revisions
+        (registry_revision, event_sequence, transaction_id, current_sha256, task_id, run_id, recorded_at_utc)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        pending.registryRevision,
+        pending.eventSequence,
+        pending.transactionId,
+        pending.currentSha256,
+        current.taskId,
+        current.runId,
+        pending.recordedAtUtc,
+      )
+      invokeTransactionHook(testHooks, "after_prepare_revision_insert", {
+        transactionId: pending.transactionId,
+      })
+    }
+    invokeTransactionHook(testHooks, "before_prepare_database_commit", {
+      transactionId: pending.transactionId,
+    })
+    database.exec("COMMIT")
+    transactionStarted = false
+  } catch (error) {
+    if (transactionStarted) database.exec("ROLLBACK")
+    throw error
+  } finally {
+    database.close()
+  }
+}
+
+async function writeAbortedPrepareRecord(
+  projectRoot,
+  transactionRoot,
+  transactionId,
+  error,
+) {
+  const abortedPath = `${transactionRoot}/transaction.aborted.json`
+  if (await fileExists(projectRoot, abortedPath)) return
+  await writeExclusiveJson(projectRoot, abortedPath, {
+    schemaVersion: REGISTRY_TRANSACTION_SCHEMA,
+    transactionId,
+    status: "aborted_before_durable_prepare",
+    errorCode: error instanceof Error ? error.message : "registry_prepare_failed",
+    abortedAtUtc: new Date().toISOString(),
+  })
+}
+
+function commitPreparedDatabaseRows(projectRoot, pending) {
+  const database = new DatabaseSync(resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/registry.sqlite`))
+  initializeDatabase(database)
+  database.exec("BEGIN IMMEDIATE")
+  try {
+    const transaction = database.prepare(`
+      SELECT status, current_sha256 FROM registry_transactions WHERE transaction_id = ?
+    `).get(pending.transactionId)
+    requireValue(["prepared", "committed"].includes(transaction?.status), "registry_prepared_database_transaction_missing")
+    requireValue(transaction?.current_sha256 === pending.currentSha256, "registry_prepared_database_transaction_hash_mismatch")
+    if (transaction.status !== "committed") {
+      database.prepare(`
+        UPDATE registry_transactions SET status = 'committed' WHERE transaction_id = ?
+      `).run(pending.transactionId)
+    }
+    database.exec("COMMIT")
+  } catch (error) {
+    database.exec("ROLLBACK")
+    throw error
+  } finally {
+    database.close()
+  }
+}
+
+function verifyCommittedDatabaseRows(projectRoot, registry, currentSha256) {
+  verifySqliteCommit(projectRoot, registry, currentSha256)
+}
+
+async function verifyPublishedRegistryEvent(projectRoot, registry, currentSha256) {
+  const eventsPath = resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/events.jsonl`)
+  const bytes = await readFile(eventsPath)
+  const events = parseCompleteJsonLines(bytes, "registry_event_log_invalid")
+  const matches = events.filter((event) => event.transactionId === registry.transactionId)
+  requireValue(matches.length === 1, "registry_event_transaction_count_invalid")
+  const event = matches[0]
+  requireValue(event.registryRevision === registry.registryRevision, "registry_event_revision_mismatch")
+  requireValue(event.eventSequence === registry.eventSequence, "registry_event_sequence_mismatch")
+  requireValue(event.currentSha256 === currentSha256, "registry_event_current_hash_mismatch")
+}
+
+async function verifyRegistryEventBytes(projectRoot, expected) {
+  const eventsPath = resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/events.jsonl`)
+  const events = parseCompleteJsonLines(await readFile(eventsPath), "registry_event_log_invalid")
+  const matches = events.filter((event) => event.transactionId === expected.transactionId)
+  requireValue(matches.length === 1, "registry_event_transaction_count_invalid")
+  requireValue(JSON.stringify(matches[0]) === JSON.stringify(expected), "registry_event_bytes_mismatch")
+}
+
+async function ensureAtomicJsonlEvent(projectRoot, relativePath, stagedBytes, transactionId) {
+  const absolutePath = resolveProjectPath(projectRoot, relativePath)
+  const existing = await readFile(absolutePath).catch((error) => {
+    if (error?.code === "ENOENT") return Buffer.alloc(0)
+    throw error
+  })
+  const source = existing.toString("utf8").replace(/^\uFEFF/u, "")
+  const endsWithNewline = source.length === 0 || source.endsWith("\n")
+  const segments = source.split("\n")
+  const fragment = endsWithNewline ? "" : segments.pop()
+  if (endsWithNewline) segments.pop()
+  const completeLines = segments.filter((line) => line.trim() !== "")
+  const targetLine = stagedBytes.toString("utf8").trimEnd()
+  const target = parseSingleJsonLine(stagedBytes, "registry_staged_event_invalid")
+  const parsed = completeLines.map((line) => JSON.parse(line.replace(/^\uFEFF/u, "")))
+  const matches = parsed.map((event, index) => ({ event, index })).filter(({ event }) => event.transactionId === transactionId)
+  requireValue(matches.length <= 1, "registry_event_duplicate_transaction")
+  if (matches.length === 1) {
+    requireValue(completeLines[matches[0].index] === targetLine, "registry_event_existing_bytes_mismatch")
+    if (fragment !== "") {
+      requireValue(targetLine.startsWith(fragment), "registry_event_trailing_unrelated_partial")
+      await writeAtomicReplaceBytes(
+        projectRoot,
+        relativePath,
+        Buffer.from(`${completeLines.join("\n")}\n`, "utf8"),
+      )
+    }
+    return
+  }
+  if (fragment !== "") {
+    requireValue(targetLine.startsWith(fragment), "registry_event_unrelated_partial_line")
+  }
+  const nextLines = [...completeLines, targetLine]
+  await writeAtomicReplaceBytes(projectRoot, relativePath, Buffer.from(`${nextLines.join("\n")}\n`, "utf8"))
+  const after = parseCompleteJsonLines(await readFile(absolutePath), "registry_event_log_invalid")
+  requireValue(after.filter((event) => event.transactionId === transactionId).length === 1, "registry_event_repair_failed")
+  requireValue(JSON.stringify(after.find((event) => event.transactionId === transactionId)) === JSON.stringify(target), "registry_event_repair_bytes_mismatch")
+}
+
+function normalizeDependencyManifest(value) {
+  if (value === null || value === undefined) {
+    return {
+      schemaVersion: REGISTRY_DEPENDENCY_SCHEMA,
+      mode: "none",
+      dependencies: [],
+    }
+  }
+  requireValue(value?.schemaVersion === REGISTRY_DEPENDENCY_SCHEMA, "registry_dependency_manifest_schema_invalid")
+  requireValue(value?.mode === "external", "registry_dependency_manifest_mode_invalid")
+  requireValue(value.outerJournal && typeof value.outerJournal.path === "string", "registry_dependency_outer_journal_missing")
+  requireValue(typeof value.outerJournal.requiredState === "string", "registry_dependency_outer_journal_state_missing")
+  requireValue(Array.isArray(value.bindings), "registry_dependency_bindings_missing")
+  requireValue(value.programEvent && typeof value.programEvent.event === "object", "registry_dependency_program_event_missing")
+  requireValue(value.programEvent.event.id === value.programEvent.eventId, "registry_dependency_program_event_identity_mismatch")
+  requireValue(typeof value.programEvent.ledgerPath === "string", "registry_dependency_program_ledger_missing")
+  requireValue(typeof value.programEvent.latestPath === "string", "registry_dependency_program_latest_missing")
+  requireValue(typeof value.programEvent.catalogDatabasePath === "string", "registry_dependency_catalog_database_missing")
+  requireValue(Array.isArray(value.catalogArtifacts), "registry_dependency_catalog_artifacts_missing")
+  return JSON.parse(JSON.stringify(value))
+}
+
+async function verifyDependencyManifest(projectRoot, manifest) {
+  if (manifest.mode === "none") {
+    requireValue(Array.isArray(manifest.dependencies) && manifest.dependencies.length === 0, "registry_dependency_none_not_empty")
+    return { status: "verified", mode: "none", dependencyCount: 0 }
+  }
+  requireValue(manifest.mode === "external", "registry_dependency_manifest_mode_invalid")
+  const outerJournal = await readBoundJson(projectRoot, manifest.outerJournal.path)
+  if (manifest.outerJournal.sha256) requireValue(outerJournal.sha256 === manifest.outerJournal.sha256, "registry_dependency_outer_journal_hash_mismatch")
+  requireValue(outerJournal.value?.state === manifest.outerJournal.requiredState, "registry_dependency_outer_journal_incomplete")
+  for (const binding of manifest.bindings) await readRawBinding(projectRoot, binding, `registry_dependency_${binding.role ?? "binding"}`)
+
+  const expectedEvent = manifest.programEvent.event
+  const ledgerBytes = await readFile(resolveProjectPath(projectRoot, manifest.programEvent.ledgerPath))
+  const ledgerEvents = parseCompleteJsonLines(ledgerBytes, "registry_dependency_program_ledger_invalid")
+  const ledgerMatches = ledgerEvents.filter((event) => event.id === manifest.programEvent.eventId)
+  requireValue(ledgerMatches.length === 1, "registry_dependency_program_event_count_invalid")
+  requireValue(JSON.stringify(ledgerMatches[0]) === JSON.stringify(expectedEvent), "registry_dependency_program_event_mismatch")
+  const latest = await readBoundJson(projectRoot, manifest.programEvent.latestPath)
+  const latestMatches = (latest.value?.events ?? []).filter((event) => event.id === manifest.programEvent.eventId)
+  requireValue(latestMatches.length === 1, "registry_dependency_latest_event_count_invalid")
+  requireValue(JSON.stringify(latestMatches[0]) === JSON.stringify(expectedEvent), "registry_dependency_latest_event_mismatch")
+
+  const catalog = new DatabaseSync(
+    resolveTrustedCatalogDatabasePath(projectRoot, manifest.programEvent.catalogDatabasePath),
+    { readOnly: true },
+  )
+  try {
+    const row = catalog.prepare("SELECT event_json FROM program_events WHERE event_id = ?").get(manifest.programEvent.eventId)
+    requireValue(typeof row?.event_json === "string", "registry_dependency_catalog_program_event_missing")
+    requireValue(JSON.stringify(JSON.parse(row.event_json)) === JSON.stringify(expectedEvent), "registry_dependency_catalog_program_event_mismatch")
+    for (const artifact of manifest.catalogArtifacts) {
+      const indexed = catalog.prepare("SELECT sha256 FROM artifacts WHERE logical_path = ?").get(artifact.logicalPath)
+      requireValue(indexed?.sha256 === artifact.sha256, "registry_dependency_catalog_artifact_mismatch")
+    }
+  } finally {
+    catalog.close()
+  }
+  return {
+    status: "verified",
+    mode: "external",
+    dependencyCount: manifest.bindings.length + manifest.catalogArtifacts.length + 4,
+    programEventId: manifest.programEvent.eventId,
+  }
+}
+
 function initializeDatabase(database) {
   database.exec(`
     PRAGMA journal_mode = WAL;
@@ -672,6 +1107,39 @@ async function readBoundJson(projectRoot, relativePath) {
 async function sha256File(projectRoot, relativePath) {
   const bytes = await readFile(resolveProjectPath(projectRoot, normalizeRelativePath(relativePath)))
   return sha256Bytes(bytes)
+}
+
+async function readRawBinding(projectRoot, binding, role) {
+  requireValue(binding && typeof binding === "object", `${role}_binding_missing`)
+  requireValue(typeof binding.path === "string" && binding.path.length > 0, `${role}_path_missing`)
+  requireValue(typeof binding.sha256 === "string" && /^[a-f0-9]{64}$/.test(binding.sha256), `${role}_hash_invalid`)
+  const normalized = normalizeRelativePath(binding.path)
+  const bytes = await readFile(resolveProjectPath(projectRoot, normalized))
+  requireValue(sha256Bytes(bytes) === binding.sha256, `${role}_hash_mismatch`)
+  return { path: normalized, sha256: binding.sha256, bytes }
+}
+
+async function readRegistryBindingWithoutArchive(projectRoot, binding, role) {
+  const raw = await readRawBinding(projectRoot, binding, role)
+  return { ...raw, value: JSON.parse(raw.bytes.toString("utf8")) }
+}
+
+function parseSingleJsonLine(bytes, code) {
+  const source = bytes.toString("utf8").replace(/^\uFEFF/u, "")
+  requireValue(source.endsWith("\n"), code)
+  const lines = source.split(/\r?\n/u).filter((line) => line !== "")
+  requireValue(lines.length === 1, code)
+  return JSON.parse(lines[0])
+}
+
+function parseCompleteJsonLines(bytes, code) {
+  const source = bytes.toString("utf8").replace(/^\uFEFF/u, "")
+  requireValue(source === "" || source.endsWith("\n"), code)
+  try {
+    return source.split(/\r?\n/u).filter((line) => line !== "").map((line) => JSON.parse(line))
+  } catch {
+    throw new Error(code)
+  }
 }
 
 function sha256Bytes(bytes) {
@@ -711,11 +1179,131 @@ function resolveProjectPath(projectRoot, relativePath) {
   return absolutePath
 }
 
+function resolveTrustedCatalogDatabasePath(projectRoot, value) {
+  requireValue(typeof value === "string" && value.length > 0, "registry_dependency_catalog_database_missing")
+  if (!path.isAbsolute(value) && !/^[A-Za-z]:[\\/]/u.test(value)) {
+    return resolveProjectPath(projectRoot, value)
+  }
+  const configuredDataRoot = path.resolve(
+    process.env.AI_PET_WORLD_DATA_ROOT
+      ?? (process.platform === "win32"
+        ? "D:\\AI-PET-WORLD-DATA"
+        : path.join(path.resolve(projectRoot), ".ai-pet-world-data")),
+  )
+  const expected = path.resolve(configuredDataRoot, "catalog", "ai-pet-world-catalog.sqlite")
+  const actual = path.resolve(value)
+  const samePath = process.platform === "win32"
+    ? actual.toLowerCase() === expected.toLowerCase()
+    : actual === expected
+  requireValue(samePath, "registry_dependency_catalog_database_untrusted")
+  return actual
+}
+
 async function writeExclusiveJson(projectRoot, relativePath, value) {
   const absolutePath = resolveProjectPath(projectRoot, relativePath)
   await mkdir(path.dirname(absolutePath), { recursive: true })
   await writeFile(absolutePath, jsonBytes(value), { flag: "wx" })
   fsyncFile(absolutePath)
+}
+
+async function writeExclusiveBytes(projectRoot, relativePath, bytes) {
+  const absolutePath = resolveProjectPath(projectRoot, relativePath)
+  await mkdir(path.dirname(absolutePath), { recursive: true })
+  await writeFile(absolutePath, bytes, { flag: "wx" })
+  fsyncFile(absolutePath)
+}
+
+async function acquireWriterClaim(projectRoot, claim) {
+  const absolutePath = resolveProjectPath(projectRoot, REGISTRY_WRITER_CLAIM_PATH)
+  await mkdir(path.dirname(absolutePath), { recursive: true })
+  try {
+    await writeFile(absolutePath, jsonBytes(claim), { flag: "wx" })
+    fsyncFile(absolutePath)
+  } catch (error) {
+    if (error?.code === "EEXIST") throw new Error("registry_global_writer_claim_conflict")
+    throw error
+  }
+}
+
+async function readWriterClaim(projectRoot) {
+  const claim = await readBoundJson(projectRoot, REGISTRY_WRITER_CLAIM_PATH)
+  requireValue(claim.value?.schemaVersion === "ai-painter-current-execution-registry-writer-claim-v1", "registry_writer_claim_schema_invalid")
+  requireSafeTransactionId(claim.value.transactionId)
+  requireValue(Number.isInteger(claim.value.processId) && claim.value.processId > 0, "registry_writer_claim_pid_invalid")
+  requireValue(typeof claim.value.processStartIdentity === "string" && claim.value.processStartIdentity.length > 0, "registry_writer_claim_process_identity_invalid")
+  return claim.value
+}
+
+async function releaseWriterClaim(projectRoot, transactionId) {
+  const claim = await readWriterClaim(projectRoot)
+  requireValue(claim.transactionId === transactionId, "registry_writer_claim_transaction_mismatch")
+  await unlink(resolveProjectPath(projectRoot, REGISTRY_WRITER_CLAIM_PATH))
+}
+
+function resolveCurrentProcessIdentity(testHooks) {
+  if (typeof testHooks?.currentProcessIdentity === "string") return testHooks.currentProcessIdentity
+  const probe = queryProcessIdentity(process.pid)
+  requireValue(probe.status === "active", "registry_current_process_identity_unavailable")
+  return probe.identity
+}
+
+function probeClaimProcess(claim, testHooks) {
+  if (typeof testHooks?.probeClaimProcess === "function") return testHooks.probeClaimProcess(claim)
+  const probe = queryProcessIdentity(claim.processId)
+  if (probe.status === "indeterminate") return probe
+  if (probe.status === "dead") return probe
+  return {
+    status: probe.identity === claim.processStartIdentity ? "active" : "dead",
+    identity: probe.identity,
+  }
+}
+
+function queryProcessIdentity(processId) {
+  try {
+    if (process.platform === "win32") {
+      const script = [
+        "$ErrorActionPreference='Stop'",
+        `$p=Get-CimInstance -ClassName Win32_Process -Filter \"ProcessId = ${processId}\" -ErrorAction Stop`,
+        "if ($null -eq $p) { exit 3 }",
+        "$o=[pscustomobject]@{ processId=[int]$p.ProcessId; creationDate=$p.CreationDate.ToUniversalTime().ToString('o') }",
+        "ConvertTo-Json -InputObject $o -Compress",
+      ].join("; ")
+      const result = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+        encoding: "utf8",
+        windowsHide: true,
+        timeout: 10_000,
+      })
+      if (result.status === 3) return { status: "dead" }
+      if (result.error || result.status !== 0) return { status: "indeterminate" }
+      const value = JSON.parse(String(result.stdout).replace(/^\uFEFF/u, ""))
+      if (Number(value.processId) !== processId || typeof value.creationDate !== "string") return { status: "indeterminate" }
+      return { status: "active", identity: `${processId}:${value.creationDate}` }
+    }
+    const result = spawnSync("ps", ["-o", "lstart=", "-p", String(processId)], {
+      encoding: "utf8",
+      timeout: 10_000,
+    })
+    if (result.status === 1 || String(result.stdout).trim() === "") return { status: "dead" }
+    if (result.error || result.status !== 0) return { status: "indeterminate" }
+    return { status: "active", identity: `${processId}:${String(result.stdout).trim()}` }
+  } catch {
+    return { status: "indeterminate" }
+  }
+}
+
+function requireSafeTransactionId(value) {
+  requireValue(typeof value === "string" && /^current-execution-registry-[a-z0-9-]+$/u.test(value), "registry_transaction_id_invalid")
+}
+
+function invokeTransactionHook(testHooks, point, detail) {
+  if (typeof testHooks?.onTransactionPoint === "function") testHooks.onTransactionPoint(point, detail)
+}
+
+async function fileExists(projectRoot, relativePath) {
+  return readFile(resolveProjectPath(projectRoot, relativePath)).then(() => true, (error) => {
+    if (error?.code === "ENOENT") return false
+    throw error
+  })
 }
 
 async function writeAtomicExclusiveBytes(projectRoot, relativePath, bytes) {

@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
+import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-store.mjs"
 
 const ROOT = process.cwd()
 const RUN_ROOT = path.join(ROOT, ".runtime", "ai-painter", "complete-game-world-main-runs")
@@ -684,7 +685,6 @@ function readPixelOutputGate() {
 }
 
 function appendLedger(report) {
-  fs.mkdirSync(LEDGER_ROOT, { recursive: true })
   const event = {
     schemaVersion: "ai-painter-training-process-ledger-event-v1",
     timestamp: report.timestampUtc,
@@ -703,8 +703,7 @@ function appendLedger(report) {
     script: "scripts/run-complete-game-world-generation.mjs",
     evidence: [report.persistentOutputs.report],
   }
-  fs.appendFileSync(path.join(LEDGER_ROOT, "events.jsonl"), `${JSON.stringify(event)}\n`)
-  writeJson(path.join(LEDGER_ROOT, "latest.json"), event)
+  appendAiPainterProgramEvent(event)
 }
 
 function readJson(filePath) {
