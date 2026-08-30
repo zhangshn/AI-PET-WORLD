@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "thailand-rebuild64-slot-190-rgb-collapse-repair-contract-v2",
+  "contractId": "thailand-rebuild64-slot-190-rgb-collapse-repair-v2",
+  "createdAtAsiaShanghai": "2026-08-02T07:30:00+08:00",
+  "ownerAuthorizationId": "project-owner-authorization-2026-08-02-v7-capacity-slot-190-single-rgb-generation-attempt-2",
+  "scope": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceCode": "45",
+    "slotId": "v7-capacity-slot-190",
+    "regionalLandscapeType": "wet-season-drainage-hollow",
+    "monsoonSeason": "wet_season",
+    "waterRelation": "inland_hydrology",
+    "pathEntranceSide": "east",
+    "waterBoundaryPorts": ["north_upstream_inlet", "south_downstream_outlet"]
+  },
+  "requiredRepairs": [
+    "replace_the_v6_short_single_side_tributary_visual_motif_with_a_measurement_supported_distinct_internal_water_network",
+    "require_zero_cross_modal_historical_rgb_water_shape_matches_before_imagegen",
+    "reserve_non_path_boundary_clearance_so_the_rgb_road_can_contact_only_the_east_edge",
+    "compare_the_candidate_against_all_current64_conditions_and_all_historical_rgb_water_shapes",
+    "use_only_the_current_authoritative_condition_guide_as_the_image_reference",
+    "call_codex_builtin_imagegen_once",
+    "run_machine_review_and_print_exact_failure_codes_matches_and_metrics_if_rejected"
+  ],
+  "fixedThresholds": {
+    "normalizedWaterShapeIntersectionMaximum": 0.45,
+    "thresholdReductionAuthorized": false
+  },
+  "generationBoundary": {
+    "imageGenCallCountAuthorized": 1,
+    "automaticRetryAuthorized": false,
+    "historicalRgbGenerationReferenceCount": 0,
+    "failedRgbGenerationReferenceCount": 0
+  },
+  "preservation": {
+    "sourceFailedRecordId": "ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v6",
+    "deleteOldRecords": false,
+    "moveOldDirectories": false,
+    "restoreRejectedTrainingEligibility": false
+  },
+  "forbiddenActions": [
+    "reuse_v6_rgb_as_generation_or_edit_reference",
+    "send_any_historical_or_failed_rgb_to_imagegen",
+    "lower_novelty_thresholds",
+    "automatic_second_retry",
+    "start_gpu_training",
+    "create_runtime_frame",
+    "enter_world"
+  ]
+}

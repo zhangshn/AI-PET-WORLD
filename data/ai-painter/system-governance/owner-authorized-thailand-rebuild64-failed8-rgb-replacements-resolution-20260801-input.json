@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-authorized-thailand-rebuild64-failed8-rgb-replacements-resolution-20260801",
+  "subsystem": "ai_painter_thailand_rebuild64_failed8_rgb_replacements",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceCodes": ["23", "33", "39", "43", "45", "47", "49", "55"],
+    "authorizationRequestId": "owner-authorized-thailand-rebuild64-failed8-rgb-replacements-20260801",
+    "contractPath": "data/ai-painter/system-governance/thailand-rebuild64-failed8-rgb-replacement-contract-v1.json"
+  },
+  "ownerVisibleConclusionZh": "8张未通过内容已从文档、算法、修复数据包到RGB替换生成全部处理完成；8张替换图均通过机器硬门禁并进入成功组。",
+  "localSystemFindingZh": "当前新64组的01至64每个序号均且仅有一个成功记录；原8张失败记录保持rejected并继续显示在未通过组，没有删除、覆盖或作为生成参考。",
+  "blockingReasonCode": "resolved_failed8_replacement_batch_completed",
+  "whyCannotProceedZh": "本次授权范围内工作已完成。任何GPU训练、RuntimeFrame或进入世界仍需要项目所有者另行明确授权。",
+  "minimumRequestedActionZh": "项目所有者现在可以在自主生成训练原图页面统一审核64张当前成功记录，也可以在未通过页面查看旧失败证据。",
+  "invariants": [
+    "active64_exactly_one_success_per_sequence",
+    "replacement8_machine_passed_and_owner_delegated_finalized",
+    "old_failed8_preserved_as_rejected",
+    "failed_rgb_never_used_as_generation_reference",
+    "no_second_retry",
+    "no_gpu_runtime_or_world_side_effect"
+  ],
+  "forbiddenActions": [
+    "delete_or_overwrite_old_failed_records",
+    "start_gpu_training_without_new_authorization",
+    "create_runtime_frame_without_new_authorization",
+    "enter_world_without_new_authorization"
+  ],
+  "ownerFacingMessageZh": "8张补图已经全部完成并进入成功组；当前64张成功记录齐全，旧失败图仍在未通过组保留。",
+  "nextActionAfterAuthorization": [
+    "owner_may_review_current64_success_page",
+    "keep_failed_history_immutable",
+    "wait_for_explicit_training_or_runtime_authorization"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/thailand-rebuild64-failed8-replacement-finalizations/thailand-rebuild64-failed8-replacement-finalization-2026-08-01T08-12-12-695Z/finalization-report.json",
+    ".runtime/ai-painter/thailand-rebuild64-failed8-repair-packages/thailand-rebuild64-failed8-repair-packages-2026-08-01T07-23-41-774Z/batch-report.json",
+    "data/ai-painter/system-governance/thailand-rebuild64-failed8-rgb-replacement-contract-v1.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-repair-failed8-docs-algorithms-and-start-generation-20260801"
+  },
+  "resolution": {
+    "activeSequenceCount": 64,
+    "activeEligibleCount": 64,
+    "replacementCount": 8,
+    "replacementMachinePassedCount": 8,
+    "replacementFailedCount": 0,
+    "pendingOwnerReviewCount": 0,
+    "oldFailedRecordsPreservedCount": 8,
+    "successPageHttpStatus": 200,
+    "failedPageHttpStatus": 200,
+    "reportSha256": "a812f5e5c10f7057a21e2f046ee7fed8203074c2226501574bebcab72a756d3c",
+    "gpuTrainingStarted": false,
+    "runtimeFrameCreated": false,
+    "worldEntryStarted": false
+  },
+  "externalEmployeeBoundary": {
+    "role": "bounded_execution_and_verification_employee",
+    "decisionAuthority": false,
+    "systemOfRecord": false,
+    "longTermMemoryAuthority": false
+  }
+}

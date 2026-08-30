@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-authorized-thailand-rebuild64-machine-final-review-resolution-20260801",
+  "subsystem": "ai_painter_thailand_rebuild64_machine_final_review",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceRange": "01-64",
+    "authorizationRequestId": "owner-authorized-thailand-rebuild64-machine-final-review-20260801"
+  },
+  "ownerVisibleConclusionZh": "活动64张已完成程序最终审核：56张进入成功组，8张进入未通过组，待人工审核为0。",
+  "localSystemFindingZh": "原有7张机器失败继续未通过；当前审核器新增发现第43张完整地图构图多样性失败，因此最终未通过编号为23、33、39、43、45、47、49、55。",
+  "blockingReasonCode": "resolved_machine_final_classification_completed",
+  "whyCannotProceedZh": "本次批量分类任务已经完成；后续若要重做8张失败图，必须另行授权新的RGB生成，不能在本次审核授权下自动重试。",
+  "minimumRequestedActionZh": "无需项目所有者逐张筛选；可直接在成功组和未通过组页面查看最终分类。",
+  "invariants": [
+    "current64_total_64",
+    "success_56_failed_8_pending_0",
+    "manual_visual_inspection_not_claimed",
+    "all_failed_originals_and_evidence_preserved",
+    "index_and_record_statuses_synchronized",
+    "no_new_rgb_generated"
+  ],
+  "forbiddenActions": [
+    "auto_retry_failed_eight",
+    "delete_failed_rgb_or_evidence",
+    "fabricate_manual_visual_review",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "你不需要再手动筛选这64张。成功56张、未通过8张；8张的编号和失败码已进入不可变批量报告。",
+  "nextActionAfterAuthorization": [
+    "inspect_success_and_failed_pages_if_desired",
+    "request_new_rgb_generation_authorization_only_if_failed_replacements_are_needed"
+  ],
+  "evidencePaths": [
+    "data/ai-painter/system-governance/thailand-rebuild64-machine-final-review-contract-v1.json",
+    ".runtime/ai-painter/thailand-rebuild64-machine-final-reviews/thailand-rebuild64-machine-final-review-2026-08-01T07-09-11-618Z/review-report.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-process-previous64-no-manual-screening-problems-direct-failed-20260801"
+  },
+  "resolution": {
+    "total": 64,
+    "successCount": 56,
+    "failedCount": 8,
+    "pendingOwnerReviewCount": 0,
+    "failedSequenceCodes": ["23", "33", "39", "43", "45", "47", "49", "55"],
+    "reportSha256": "a89cca227d1d48291c0cdbd3ff12b931de023b88e923dbfc2d40ead342ebbdb6",
+    "successPageHttpStatus": 200,
+    "failedPageHttpStatus": 200,
+    "newRgbGenerated": 0,
+    "gpuTrainingStarted": false,
+    "runtimeFrameCreated": false,
+    "worldEntryStarted": false
+  }
+}

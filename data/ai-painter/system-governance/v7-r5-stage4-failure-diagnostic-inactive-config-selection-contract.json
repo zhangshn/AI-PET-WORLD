@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "v7-r5-stage4-failure-diagnostic-inactive-config-selection-contract-v1",
+  "status": "cpu_verified_bounded_diagnostic_parameters_selected_inactive",
+  "generatedBy": "local_ai_stage4_diagnostic_parameter_selection_program",
+  "authorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-diagnostic-parameter-selection-20260805/request.json",
+    "sha256": "c18791970ebdb6d6a1d85658ee1b4c512ad9cc69c226938dff55e983af7ea62c"
+  },
+  "authorizationConsumption": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-diagnostic-parameter-selection-20260805/authorization-consumption.json",
+    "sha256": "34cdeb841e0a10bae199cbf66785503c4c147bdd838ce6d9d04477438d586260"
+  },
+  "compiledConfig": {
+    "path": ".runtime/ai-painter/r5-stage4-failure-diagnostic-inactive-configs/ai-assisted-v7-r5-stage4-failure-diagnostic-inactive-config-2026-08-05T11-18-00-000Z/inactive-config.json",
+    "sha256": "c86067e15f2df0a57882b911f13f2202c5b50ff9eb4445582391b6395347dbc6"
+  },
+  "selection": {
+    "path": ".runtime/ai-painter/r5-stage4-failure-diagnostic-inactive-configs/ai-assisted-v7-r5-stage4-failure-diagnostic-inactive-config-2026-08-05T11-18-00-000Z/bounded-diagnostic-parameter-selection.json",
+    "sha256": "eff883034d7763c0e9b974817fefbd43f43a33978a2752c692964663e30c4ffb"
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-failure-diagnostic-config-cpu-regressions/ai-assisted-v7-r5-stage4-failure-diagnostic-config-cpu-2026-08-05T11-23-00-000Z/report.json",
+    "sha256": "a913b7e33853c27004eaa5ecc7180bfa3efb096a519e5e009c77acd28ae0464f",
+    "positiveAssertionsPassed": 26,
+    "negativeAssertionsPassed": 30
+  },
+  "selectedValues": {
+    "diagnosticEpochs": [
+      1,
+      5,
+      10,
+      20,
+      30,
+      40
+    ],
+    "objectChannels": [
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "objectMeasurements": [
+      "independent_loss",
+      "gradient_contribution",
+      "decoded_response"
+    ],
+    "objectGradientTarget": "predicted_rgb_only",
+    "routeMeasurements": [
+      "coverage",
+      "spatial_distribution",
+      "centroid",
+      "required_boundary_contact"
+    ],
+    "routeSpatialGridSize": 4,
+    "routeSpatialGridSizeBounds": {
+      "minimum": 2,
+      "maximum": 16
+    },
+    "pathSupportBandRatio": 0.04,
+    "pathAppearanceTemperature": 0.2,
+    "pathActivationEpsilon": 1e-06,
+    "requiredBoundarySides": [
+      "south"
+    ],
+    "requiredBoundaryBandRatio": 0.04
+  },
+  "activationGate": {
+    "status": "not_active_requires_separate_fixed_single_sample_diagnostic_smoke_authorization",
+    "trainingLossWeightsSelected": false,
+    "checkpointFileRead": false,
+    "optimizerCreation": false,
+    "gpuUse": false,
+    "training": false
+  }
+}

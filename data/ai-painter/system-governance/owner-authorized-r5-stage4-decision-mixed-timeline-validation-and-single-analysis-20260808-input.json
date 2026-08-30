@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "project-owner-task-authorization-v1",
+  "authorizationId": "owner-authorized-r5-stage4-decision-mixed-timeline-validation-and-single-analysis-20260808",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-08T09:25:43.336Z",
+  "recordedAtAsiaShanghai": "2026-08-08T17:25:43.336+08:00",
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-r5-stage4-decision-mixed-timeline-validation-and-single-analysis-20260808",
+    "scope": "fix_only_decision_mode_mixed_epoch_visual_timeline_validation_run_real_evidence_cpu_regression_then_one_isolated_readonly_binary_analysis"
+  },
+  "boundFailure": {
+    "terminalPath": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-decision-analysis/local-ai-v7-r5-stage4-binary-decision-analysis-20260808-171018312/phase-terminal.json",
+    "terminalSha256": "6fb885a5396bebd79792548cc96349c6c5f641e3747c90bc35d393d5ae0e779d",
+    "failureCode": "stage4_failure_learning_visual_differential_identity_invalid",
+    "supportTerminalPath": ".runtime/ai-painter/r5-stage4-decision-analysis-runner-support/owner-authorized-r5-stage4-decision-analysis-runner-and-single-execution-20260808/phase-terminal.json",
+    "supportTerminalSha256": "0af4f2ca253125821b542c7ea8720eabc1ed5165a788d4a424bbae924bf4e087"
+  },
+  "boundImplementation": {
+    "runnerPath": "scripts/run-local-ai-v7-r5-stage4-failure-learning.mjs",
+    "runnerBeforeSha256": "e0ace93008491634407b9b699b7ee3dbdf061e95aa38e38316b7bc5b2061f74f",
+    "decisionContractHelperPath": "scripts/lib/ai-assisted-v7-r5-stage4-failure-decision.mjs",
+    "decisionContractHelperSha256": "a9944202b4530c7b188210ddbc9907de580a683d6e77d79baedea3a7bb123cdd",
+    "cpuCheckerPath": "scripts/check-local-ai-v7-r5-stage4-failure-decision.mjs",
+    "cpuCheckerBeforeSha256": "0bdf70ace3d486ffe8984aecbfcbcfb9a8200c4477d2d4ceac80723b9db1a1b2",
+    "frozenAnalyzerPath": "scripts/lib/ai-assisted-failure-learning-loop.mjs",
+    "frozenAnalyzerSha256": "53f9b0735b92b2f707bc03189a984b0506406c39fd93edc937abd49fac7c7f9f"
+  },
+  "mixedTimelineContract": {
+    "epochs": [1, 5, 10, 20, 30],
+    "failedEpochs": [1, 5, 10, 20],
+    "passedEpochs": [30],
+    "routeCoverageFailureEpochs": [1],
+    "westBoundaryFailureEpochs": [1, 5],
+    "rockSemanticFailureEpochs": [1, 5, 10, 20],
+    "finalEpochIssueCodes": [],
+    "finalVisualCoverageReviewFailed": false,
+    "finalVisualWestBoundaryReviewFailed": false,
+    "finalRockSemanticReviewFailed": false
+  },
+  "boundSourceEvidence": {
+    "sourceRunId": "ai-assisted-v7-r5-stage4-cross-domain-visual-consistency-smoke-20260808-154822808",
+    "terminalSha256": "58d68201a6dd1d34df165297743880743b300f67fa3827df43a55f6c0dba1c2d",
+    "finalizationSha256": "78d2662fe108c4839b21f73df8050b4152a706d1a0431308772e798e7cac457d",
+    "reviewSha256": "46a383d92c45539547eff6a0c95eccbebcde717795c03b923db5c6338ba04d4a",
+    "manifestSha256": "dc20a13bfc20675b259fdfefaa0fc1c1ca13e410f90ad19a9b79c62cbecea79a",
+    "stepTelemetrySha256": "21b3bd1130de69bfdcf27be616d63c268d555694560acb4a900402124673daf4"
+  },
+  "fixedDerivedExecution": {
+    "requestId": "owner-action-request-r5-stage4-binary-decision-analysis-mixed-timeline-20260808-172543336",
+    "outputRunId": "local-ai-v7-r5-stage4-binary-decision-analysis-mixed-timeline-20260808-172543336",
+    "outputRoot": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-decision-analysis",
+    "allowedCpuRegressionCount": 1,
+    "allowedReadonlyAnalysisCount": 1
+  },
+  "authorizedActions": {
+    "modifyDecisionModeVisualValidationOnly": true,
+    "modifyRealEvidenceCpuCheckerOnly": true,
+    "preserveLegacyFiveFailureMode": true,
+    "preserveLegacySixPreviewMode": true,
+    "runRealEvidenceCpuPositiveNegativeRegression": true,
+    "compileDerivedAnalysisAuthorizationAfterCpuPass": true,
+    "atomicallyConsumeOneReadonlyAnalysis": true,
+    "saveReportsProposalsAndTerminal": true
+  },
+  "forbiddenActions": {
+    "modifyDecisionContractHelper": true,
+    "modifyFrozenAnalyzer": true,
+    "modifyReviewThresholds": true,
+    "modifyOldFailureEvidence": true,
+    "modifyOldLatestPointer": true,
+    "readOrLoadCheckpoint": true,
+    "modifyTrainer": true,
+    "modifyTrainingConfig": true,
+    "modifyModelWeights": true,
+    "createOptimizer": true,
+    "startGpu": true,
+    "startTraining": true,
+    "startValidation": true,
+    "startFormalInference": true,
+    "promoteCheckpoint": true,
+    "startRuntimeFrame": true,
+    "enterWorld": true,
+    "automaticRetry": true
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetryAllowed": false
+  },
+  "ownerCommandZh": "授权绑定失败终态SHA-256 6fb885a5396bebd79792548cc96349c6c5f641e3747c90bc35d393d5ae0e779d，仅修正Stage4决策分析模式，使其按照Epoch 1/5/10/20失败、Epoch 30通过的实际时间线验证视觉差异；同步真实证据CPU正反回归，通过后执行一次新的隔离二选一只读分析。不得修改冻结分析器、审核阈值、Checkpoint、训练配置或模型权重，不得启动GPU或训练；失败立即停止且不自动重试。"
+}

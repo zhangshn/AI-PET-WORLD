@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "stage4-stage0-to-80-continuation-authorization-contract-v1",
+  "status": "active",
+  "businessPurpose": "After a separately qualified current-candidate Smoke, allow one Owner signing operation to authorize Stage 0, Stage 1 and Stage 2 while preserving independent signatures, consumption and acceptance.",
+  "requiredStepOrder": ["stage0", "stage1", "stage2"],
+  "coordinatorAuthorization": {
+    "action": "ai_painter.stage4.run_stage0_to_stage2_continuation",
+    "method": "EXEC",
+    "route": "scripts/run-ai-painter-stage4-stage0-to-80-continuation.mjs",
+    "scope": "ai-painter:stage4:stage0-to-80-continuation-coordinator"
+  },
+  "stepContracts": {
+    "stage0": {
+      "action": "ai_painter.stage4.run_formal_stage0",
+      "runner": "scripts/run-stage4-semantic-mixture-formal-stage.mjs",
+      "stage": 0,
+      "resolution": {"width": 256, "height": 192},
+      "epochs": 40,
+      "previousRole": "late_stability_qualification",
+      "requiredPreviousStatus": "terminal_pass_with_late_convergence_evidence_qualified_closed",
+      "requiredTerminalStatus": "semantic_mixture_stage4_formal_stage_completed_closed"
+    },
+    "stage1": {
+      "action": "ai_painter.stage4.run_formal_stage1",
+      "runner": "scripts/run-stage4-semantic-mixture-formal-stage.mjs",
+      "stage": 1,
+      "resolution": {"width": 512, "height": 384},
+      "epochs": 40,
+      "previousRole": "stage0",
+      "requiredPreviousStatus": "semantic_mixture_stage4_formal_stage_completed_closed",
+      "requiredTerminalStatus": "semantic_mixture_stage4_formal_stage_completed_closed"
+    },
+    "stage2": {
+      "action": "ai_painter.stage4.run_formal_stage2",
+      "runner": "scripts/run-stage4-semantic-mixture-formal-stage.mjs",
+      "stage": 2,
+      "resolution": {"width": 1024, "height": 768},
+      "epochs": 40,
+      "previousRole": "stage1",
+      "requiredPreviousStatus": "semantic_mixture_stage4_formal_stage_completed_closed",
+      "requiredTerminalStatus": "semantic_mixture_stage4_formal_stage_completed_closed"
+    }
+  },
+  "fixedTrainingIdentity": {
+    "seed": 20263722,
+    "datasetCapacity": 64,
+    "splitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4},
+    "previewEpochs": [1, 5, 10, 20, 30, 40],
+    "stage0Initialization": "project_random_fact_conditioned_semantic_mixture",
+    "stage1Parent": "same_package_stage0_success_checkpoint_only",
+    "stage2Parent": "same_package_stage1_success_checkpoint_only"
+  },
+  "stopRules": {
+    "automaticRetry": false,
+    "stopOnAnyPreflightFailure": true,
+    "stopOnAnyTrainingFailure": true,
+    "stopOnAnyPreviewReproductionFailure": true,
+    "stopOnAnyMachineReviewFailure": true,
+    "stopOnEvidenceConflict": true,
+    "leaveUnstartedAuthorizationsUnconsumed": true
+  },
+  "forbiddenActions": [
+    "rerun_smoke",
+    "reuse_historical_run",
+    "reuse_historical_authorization",
+    "load_smoke_or_failed_checkpoint",
+    "automatic_retry",
+    "change_model_or_loss",
+    "change_data_or_review_thresholds",
+    "stage5",
+    "formal_inference",
+    "checkpoint_promotion",
+    "owner_final_visual_acceptance",
+    "runtime_frame",
+    "world_entry"
+  ]
+}

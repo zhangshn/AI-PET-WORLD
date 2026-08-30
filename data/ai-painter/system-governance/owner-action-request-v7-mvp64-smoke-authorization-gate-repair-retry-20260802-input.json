@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-v7-mvp64-smoke-authorization-gate-repair-retry-20260802",
+  "subsystem": "ai_painter_v7_mvp64_training_program_authorization_gate",
+  "status": "waiting_owner_authorization",
+  "taskIdentity": {
+    "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+    "failedRunId": "ai-assisted-conditional-denoiser-v7-smoke-2026-08-02T02-11-55-426Z",
+    "failedStage": "smoke",
+    "checkpointCreated": false,
+    "gpuTrainingStarted": false,
+    "failureCode": "conditional_denoiser_training_program_failed"
+  },
+  "ownerVisibleConclusionZh": "V7冒烟检查已按授权调用，但在进入训练和创建checkpoint之前被Python训练器的旧授权状态硬编码拒绝。没有发生显存不足，没有开始训练，也没有进入stage-0。",
+  "localSystemFindingZh": "外层Node训练入口已验证新的owner解决记录、MVP64数据集、64容量、48/8/4/4分割和所有hash；内层Python训练器仍只接受旧字符串trainingAuthorizationStatus=owner_approved，因此把新的更具体状态owner_authorized_active_mvp64_gpu_training误判为未授权。",
+  "blockingReasonCode": "v7_python_trainer_stale_owner_approved_status_guard_rejected_current_hashed_activation",
+  "whyCannotProceedZh": "按本次授权的失败即停规则，程序不能在同一命令后自动修改并重试；stage-0/1/2必须保持未启动，直到项目所有者明确允许修复该授权兼容门禁并重新执行一次冒烟检查。",
+  "minimumRequestedActionZh": "仅修复V7 Python训练器的授权兼容门禁：要求它验证当前嵌套ownerTrainingAuthorization为active、gpuTrainingAuthorizedNow=true、授权文件存在且SHA-256匹配，并继续拒绝旧的延后授权；完成CPU级门禁回归后只重试一次V7冒烟检查。冒烟再次失败立即停止，冒烟通过后才恢复原已批准的stage-0/1/2顺序。",
+  "invariants": [
+    "no_training_checkpoint_exists_from_failed_smoke",
+    "dataset_and_capacity_hashes_remain_unchanged",
+    "authorization_scope_remains_v7_smoke_and_stage_0_1_2_only",
+    "authorization_validation_becomes_stricter_not_weaker",
+    "formal_inference_runtime_frame_and_world_remain_blocked"
+  ],
+  "forbiddenActions": [
+    "change_training_quality_thresholds",
+    "accept_unhashed_or_missing_owner_authorization",
+    "accept_the_old_deferred_authorization_as_active",
+    "retry_more_than_one_smoke_attempt",
+    "start_stage_0_before_smoke_passes",
+    "generate_formal_inference_images",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "第一次V7冒烟检查没有进入训练，原因是Python训练器仍写死旧授权字符串。需要您允许只修复这个授权门禁并重试一次冒烟；不会修改数据、模型质量标准或推理边界。",
+  "nextActionAfterAuthorization": [
+    "repair_python_v7_hashed_owner_activation_gate",
+    "run_cpu_authorization_gate_regression",
+    "retry_v7_smoke_once",
+    "continue_stage_0_1_2_only_if_smoke_passes"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/failures/ai-assisted-conditional-denoiser-v7-smoke-2026-08-02T02-11-55-426Z.json",
+    ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-gpu-training-activation-resolution-20260802/request.json",
+    "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json",
+    "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py"
+  ],
+  "ownerDecision": null,
+  "resolution": null
+}

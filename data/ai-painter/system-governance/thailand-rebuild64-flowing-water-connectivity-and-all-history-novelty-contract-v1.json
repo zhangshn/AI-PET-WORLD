@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "thailand-rebuild64-flowing-water-connectivity-and-all-history-novelty-contract-v1",
+  "contractId": "thailand-rebuild64-flowing-water-connectivity-and-all-history-novelty-contract-v1",
+  "status": "active_owner_authorized_repair",
+  "createdAtUtc": "2026-08-01T10:05:00.000Z",
+  "ownerCommandRef": "owner-command-handle-duplicate-water-framework-and-missing-inlet-outlet-20260801",
+  "scope": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "targetSequenceCodes": ["45", "49"],
+    "targetSlotIds": ["v7-capacity-slot-190", "v7-capacity-slot-194"],
+    "landscape": "wet-season-drainage-hollow",
+    "sourceScope": "approved_sakaerat_wang_nam_khiao_measurement_package"
+  },
+  "hardRules": {
+    "formalFlowingWaterPorts": {
+      "requiredCount": 2,
+      "upstream": { "boundarySide": "north", "role": "upstream_inlet" },
+      "downstream": { "boundarySide": "south", "role": "downstream_outlet" },
+      "pairedNeighborBindingRequired": true,
+      "conditionMaskMustTouchBothContractedSides": true,
+      "rgbMustTouchBothContractedSides": true,
+      "uncontractedWaterBoundaryContactAllowed": false
+    },
+    "novelty": {
+      "sameVisualWaterMotifAcrossCurrent64Allowed": false,
+      "sameMacroWaterRouteOrganizationAcrossAllHistoricalRecordsAllowed": false,
+      "translationScaleMirrorOrSlotLabelMayBypassGate": false,
+      "sameBatchConditionPackagesMustBeComparedBeforeRgb": true,
+      "normalizedWaterShapeComparisonRequiredAfterRgb": true
+    },
+    "sourceAndProjection": {
+      "distinctFormalThailandMeasurementWindowsRequired": true,
+      "exactRealGeometryCarriedIntoGameCoordinates": false,
+      "branchSideDerivedFromEightBandMeasurementGradient": true,
+      "historicalRgbReadDuringConditionConstruction": false
+    }
+  },
+  "disposition": {
+    "supersededRecordIds": [
+      "ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v3",
+      "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v3"
+    ],
+    "supersededRecordsMustRemainStored": true,
+    "supersededRecordsCategory": "rejected",
+    "supersededRecordsTrainingEligible": false,
+    "replacementRgbGeneratedByThisContract": false
+  },
+  "forbiddenSideEffects": {
+    "deleteHistoricalFiles": false,
+    "lowerReviewThresholds": false,
+    "startGpuTraining": false,
+    "startRuntimeFrame": false,
+    "enterWorld": false
+  }
+}

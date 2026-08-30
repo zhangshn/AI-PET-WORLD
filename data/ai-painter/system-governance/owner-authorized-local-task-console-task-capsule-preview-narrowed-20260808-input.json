@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "project-owner-task-authorization-v1",
+  "authorizationId": "owner-authorized-local-task-console-task-capsule-preview-narrowed-20260808",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-08T08:45:30.976Z",
+  "recordedAtAsiaShanghai": "2026-08-08T16:45:30.976+08:00",
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-local-task-console-task-capsule-preview-narrowed-20260808",
+    "scope": "bind_readonly_callsite_scan_timeout_narrow_to_task_console_files_then_read_task_capsule_and_render_unexecuted_owner_action_request_preview"
+  },
+  "boundPreviousFailure": {
+    "code": "readonly_callsite_scan_timeout",
+    "cause": "unbounded_project_callsite_search_exceeded_command_timeout",
+    "previousImplementationAuthorizationCreated": false,
+    "previousImplementationAuthorizationConsumed": false,
+    "previousProjectFilesModified": false
+  },
+  "allowedCallsiteInspection": [
+    "src/server/ai-painter-local-task-console.ts",
+    "src/app/api/ai-painter/task-console/route.ts",
+    "src/app/ai-painter-progress/task-console/task-console.tsx",
+    "data/ai-painter/system-governance/local-ai-task-catalog-v1.json",
+    "scripts/check-ai-painter-local-task-console-phase1.mjs"
+  ],
+  "authorizedActions": {
+    "materializeImmutableOwnerAuthorization": true,
+    "atomicallyConsumeImplementationAuthorization": true,
+    "readAiPainterLocalTaskCapsuleV1": true,
+    "extendExistingTaskConsoleGetSnapshot": true,
+    "displayTaskCapsuleFields": true,
+    "generateInMemoryUnexecutedOwnerActionRequestPreview": true,
+    "synchronizeTaskCatalogCurrentState": true,
+    "runCpuPositiveNegativeContractChecks": true,
+    "runPageContractCheck": true,
+    "runTypeCheck": true
+  },
+  "previewBoundary": {
+    "status": "draft_unexecuted",
+    "persistAsAuthorization": false,
+    "ownerDecisionRecorded": false,
+    "authorizationConsumptionAllowed": false,
+    "executionAllowed": false,
+    "postRequestAllowed": false
+  },
+  "forbiddenActions": {
+    "automaticApproval": true,
+    "automaticAuthorizationConsumption": true,
+    "automaticExecution": true,
+    "modifyTrainer": true,
+    "modifyRunner": true,
+    "modifyTrainingConfig": true,
+    "modifyCheckpoint": true,
+    "modifyModelWeights": true,
+    "modifyMachineReviewThresholds": true,
+    "startGpu": true,
+    "startTraining": true,
+    "startValidation": true,
+    "startFormalInference": true,
+    "startRuntimeFrame": true,
+    "enterWorld": true,
+    "automaticRetry": true
+  },
+  "ownerCommandZh": "授权在新的不可变命令范围内，绑定上一轮readonly_callsite_scan_timeout失败，仅将调用链检查收窄到现有任务操作台服务、GET路由、页面、任务目录和CPU检查器；建立并原子消费新的实施授权后，继续原定的ai-painter-local-task-capsule-v1只读接入、未执行Owner动作请求预览、CPU正反合同检查和页面合同检查。不得自动批准、消费或执行预览请求，其余授权与禁止边界保持不变；失败立即停止且不自动重试。"
+}

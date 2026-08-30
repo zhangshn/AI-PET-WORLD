@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "owner-authorized-r5-stage4-architecture-upgrade-startup-preflight-and-decision-input-v1",
+  "status": "resolved_owner_authorized",
+  "commandRef": "owner-authorized-r5-stage4-architecture-upgrade-startup-preflight-and-decision-20260808",
+  "scope": "fix_architecture_upgrade_initialization_add_real_startup_cpu_preflight_then_one_new_readonly_decision",
+  "recordedAtUtc": "2026-08-08T11:40:54.3098167Z",
+  "recordedAtAsiaShanghai": "2026-08-08T19:40:54.309+08:00",
+  "boundFailure": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-architecture-upgrade-preflight-failures/local-ai-v7-r5-stage4-architecture-upgrade-decision-20260808-191406282/phase-terminal.json",
+    "sha256": "7a52dd8a9fcda6bd15669e9fd75e6e52c56fd994a882883d8d311e7003a3c8b0"
+  },
+  "implementationIdentity": {
+    "runnerPath": "scripts/run-local-ai-v7-r5-stage4-failure-learning.mjs",
+    "runnerBeforeSha256": "c79898358bf79cb05c902947154ec0885d83be32e86cb32163ce7f2203d8ed40",
+    "cpuCheckerPath": "scripts/check-local-ai-v7-r5-stage4-failure-decision.mjs",
+    "cpuCheckerBeforeSha256": "6641687bcf0351737b63375a881d301ec796938bb0f4e8a798605230c741f00e",
+    "frozenAnalyzerPath": "scripts/lib/ai-assisted-failure-learning-loop.mjs",
+    "frozenAnalyzerSha256": "53f9b0735b92b2f707bc03189a984b0506406c39fd93edc937abd49fac7c7f9f",
+    "frozenDecisionHelperPath": "scripts/lib/ai-assisted-v7-r5-stage4-failure-decision.mjs",
+    "frozenDecisionHelperSha256": "10971ef3029b687cd288a330646960146d27291fd37c6079f88cf7bfb664d186",
+    "frozenSmokeRunnerPath": "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs",
+    "frozenSmokeRunnerSha256": "d0889840d3f410baaf3a786da6ff17fd588d542ca8fad8874419c9d5c6a50f42",
+    "frozenTrainerPath": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "frozenTrainerSha256": "cadd21b944da0a430b0643c0c7015926b5eea38aa3f56609953a73399fea986f"
+  },
+  "sourceEvidence": {
+    "structuredSmokeTerminal": { "path": ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/ai-assisted-v7-r5-stage4-structured-stability-smoke-20260808-183823230-finalization/phase-terminal.json", "sha256": "84d8db4a748caa7bd9e969da189fefffeb10f1a612239ed5e6d23b529afe2461" },
+    "structuredSmokeFinalization": { "path": ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/ai-assisted-v7-r5-stage4-structured-stability-smoke-20260808-183823230-finalization/finalization-report.json", "sha256": "3502f0688f078f0b3e846dce60df15b5c1044f03881d0d4ed9e33ef73198f33c" },
+    "structuredSmokeReview": { "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke/ai-assisted-v7-r5-stage4-structured-stability-smoke-20260808-183823230/fixed-preview-reviews.json", "sha256": "5777f7461bf443cc363fab67fe816e2f5e7eee6ceb07a19743c43641e78cc08e" },
+    "structuredSmokeManifest": { "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke/ai-assisted-v7-r5-stage4-structured-stability-smoke-20260808-183823230/manifest.json", "sha256": "d7560fff8ca39f05ea135f4fc54565596026c5db91b2a0126182d11b21c3d32a" },
+    "structuredSmokeStepTelemetry": { "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke/ai-assisted-v7-r5-stage4-structured-stability-smoke-20260808-183823230/stage4-step-telemetry.json", "sha256": "8ab302600c161edb39802ca14d0601499d9365ade9e564846cd757603cfeeaa5" },
+    "previousCrossDomainReview": { "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke/ai-assisted-v7-r5-stage4-cross-domain-visual-consistency-smoke-20260808-154822808/fixed-preview-reviews.json", "sha256": "46a383d92c45539547eff6a0c95eccbebcde717795c03b923db5c6338ba04d4a" },
+    "previousDecisionLatest": { "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-decision-analysis/latest.json", "sha256": "5726da387c3908a22deeec95fe42e85483da1b8818c2275692ca24f61b56029a" }
+  },
+  "authorizedActions": {
+    "runnerInitializationOrderModificationAuthorized": true,
+    "realStartupCpuPreflightModeAuthorized": true,
+    "cpuCheckerSubprocessRegressionModificationAuthorized": true,
+    "cpuPositiveNegativeRegressionAuthorized": true,
+    "singleNewCpuReadonlyArchitectureDecisionAuthorizedAfterPreflight": true,
+    "immutableEvidenceStorageAuthorized": true,
+    "uniquePlanSyncAuthorizedAfterTerminal": true,
+    "migrationRegistrySyncAuthorizedAfterTerminal": true,
+    "localTaskCapsuleSyncAuthorizedAfterTerminal": true,
+    "frozenAnalyzerModificationAuthorized": false,
+    "frozenDecisionHelperModificationAuthorized": false,
+    "reviewThresholdModificationAuthorized": false,
+    "trainingConfigModificationAuthorized": false,
+    "checkpointReadOrLoadAuthorized": false,
+    "optimizerCreationAuthorized": false,
+    "modelWeightModificationAuthorized": false,
+    "gpuUseAuthorized": false,
+    "trainingAuthorized": false,
+    "validationAuthorized": false,
+    "formalInferenceAuthorized": false,
+    "checkpointPromotionAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false,
+    "automaticRetryAuthorized": false
+  }
+}

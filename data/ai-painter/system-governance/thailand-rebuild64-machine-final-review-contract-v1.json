@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "thailand-rebuild64-machine-final-review-contract-v1",
+  "contractId": "thailand-rebuild64-machine-final-review-contract-v1",
+  "status": "active_owner_authorized",
+  "seriesId": "thailand-rebuild64-20260731",
+  "sequenceRange": { "first": 1, "last": 64, "requiredCount": 64 },
+  "ownerAuthorizationRef": "owner-command-process-previous64-no-manual-screening-problems-direct-failed-20260801",
+  "reviewPolicy": {
+    "manualPerImageScreeningRequired": false,
+    "finalDecisionMode": "owner_delegated_machine_hard_gate_batch",
+    "machinePassDecision": "owner_approved_by_explicit_batch_delegation",
+    "machineFailureDecision": "machine_rejected_without_owner_visual_review",
+    "manualVisualInspectionMustNotBeClaimed": true,
+    "currentMachineReviewMustBeReexecuted": true,
+    "failedOriginalMustBePreserved": true,
+    "failedRecordGroup": "failed-records",
+    "successfulRecordGroup": "autonomous-generation-training-originals"
+  },
+  "activeRecordSelection": {
+    "oneRecordPerSequenceRequired": true,
+    "selectionRule": "latest_created_record_with_matching_series_and_sequence",
+    "olderVersionsRemainImmutableHistory": true
+  },
+  "hardGates": [
+    "native_source_and_derivative_integrity",
+    "complete_world_frame_integrity",
+    "style_fingerprint",
+    "all_history_rgb_composition_novelty",
+    "world_facts_and_23_channel_semantic_alignment",
+    "terrain_path_boundary_connection",
+    "hydrology_presence_geometry_and_shoreline",
+    "season_and_ecology_metrics"
+  ],
+  "failurePolicy": {
+    "anyIssueCausesFailure": true,
+    "automaticRetryAllowed": false,
+    "automaticRegenerationAllowed": false,
+    "positiveTrainingAllowed": false,
+    "negativeFailureEvidenceAllowed": true
+  },
+  "sideEffectBoundary": {
+    "newRgbGenerationAllowed": false,
+    "gpuTrainingAllowed": false,
+    "runtimeFrameAllowed": false,
+    "worldEntryAllowed": false
+  }
+}

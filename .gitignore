@@ -126,3 +126,12 @@ runtime-data/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 上传所有治理JSON
+!data/ai-painter/system-governance/
+!data/ai-painter/system-governance/**/*.json
+
+# 上传所有数据包JSON元数据
+!data/world-samples/ai-assisted-cold-start-dataset-packages/
+!data/world-samples/ai-assisted-cold-start-dataset-packages/**/
+!data/world-samples/ai-assisted-cold-start-dataset-packages/**/*.json

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "project-owner-task-authorization-v1",
+  "authorizationId": "owner-authorized-r5-stage4-task-capsule-consumption-repair-and-implementation-20260808",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-08T08:29:24.534Z",
+  "recordedAtAsiaShanghai": "2026-08-08T16:29:24.534+08:00",
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-r5-stage4-task-capsule-consumption-repair-and-implementation-20260808",
+    "scope": "bind_previous_failed_consumption_and_authorization_fix_powershell_sha_and_fail_fast_cpu_regression_then_continue_original_task_capsule_implementation"
+  },
+  "boundPreviousEvidence": {
+    "authorizationPath": "data/ai-painter/system-governance/owner-authorized-r5-stage4-current-training-task-capsule-projection-20260808-input.json",
+    "authorizationSha256": "866f304416e71e5d4e20187e933f0a0228e41586789de2ab785aff72db5ecdf1",
+    "failedConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-r5-stage4-current-training-task-capsule-projection-20260808/implementation-authorization-consumption.json",
+    "failedConsumptionSha256": "1df57ffe61bab9d6a2257af2d03e3e36c2658a1c13c9d19bcf1a093b8272d328",
+    "failedConsumptionMustRemainImmutable": true
+  },
+  "authorizedActions": {
+    "usePowerShellCompatibleSha256": true,
+    "enableFailFastErrorHandling": true,
+    "runConsumptionPositiveNegativeCpuRegression": true,
+    "createNewAuthorizationIdentity": true,
+    "createIndependentAtomicConsumption": true,
+    "continueOriginalTaskCapsuleImplementationAfterCpuPass": true,
+    "modifyExistingReadOnlyStatusProjection": true,
+    "extendCurrentTrainingGetResponse": true,
+    "displayTaskCapsuleInExistingFrontend": true,
+    "synchronizeMigrationRegistryCurrentState": true,
+    "runTypeCheck": true,
+    "runProjectionPositiveNegativeRegression": true,
+    "runPageContractCheck": true
+  },
+  "taskCapsuleFields": [
+    "module",
+    "fixedOverallProgress",
+    "currentStage",
+    "candidateTerminal",
+    "latestBlocker",
+    "nextAllowedAction",
+    "forbiddenActions",
+    "evidencePathsAndSha256"
+  ],
+  "forbiddenActions": {
+    "deleteOrOverwritePreviousFailedConsumption": true,
+    "modifyTrainer": true,
+    "modifyRunner": true,
+    "modifyTrainingConfig": true,
+    "modifyCheckpoint": true,
+    "modifyModelWeights": true,
+    "modifyMachineReviewThresholds": true,
+    "startGpu": true,
+    "startTraining": true,
+    "startValidation": true,
+    "startFormalInference": true,
+    "startRuntimeFrame": true,
+    "enterWorld": true,
+    "automaticRetry": true
+  },
+  "ownerCommandZh": "授权在新的不可变命令范围内，绑定任务胶囊实施失败消费证据SHA-256 1df57ffe61bab9d6a2257af2d03e3e36c2658a1c13c9d19bcf1a093b8272d328及原授权文件实际SHA-256 866f304416e71e5d4e20187e933f0a0228e41586789de2ab785aff72db5ecdf1；不得删除、覆盖或修补原失败消费证据。仅修正本次授权消费步骤，使用当前PowerShell支持的SHA-256实现并启用错误立即终止，建立新的授权身份和独立消费路径；完成CPU正反消费回归后，才继续原任务胶囊投影、GET接口、前端、迁移注册表同步及相关检查。其余授权与禁止边界保持不变，失败立即停止且不自动重试。"
+}

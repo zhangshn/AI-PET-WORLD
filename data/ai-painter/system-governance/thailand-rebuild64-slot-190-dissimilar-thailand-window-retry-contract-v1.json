@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "thailand-rebuild64-slot-190-dissimilar-thailand-window-retry-contract-v1",
+  "contractId": "thailand-rebuild64-slot-190-dissimilar-thailand-window-retry-v1",
+  "createdAtAsiaShanghai": "2026-08-02T06:30:00+08:00",
+  "ownerAuthorizationId": "project-owner-authorization-2026-08-02-v7-capacity-slot-190-single-rgb-generation",
+  "scope": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceCode": "45",
+    "slotId": "v7-capacity-slot-190",
+    "regionalLandscapeType": "wet-season-drainage-hollow",
+    "monsoonSeason": "wet_season",
+    "waterRelation": "inland_hydrology",
+    "pathEntranceSide": "east"
+  },
+  "requiredProcess": [
+    "select_a_new_unused_measurement_window_only_from_the_existing_formal_thailand_sakaerat_wang_nam_khiao_package",
+    "preserve_north_upstream_inlet_and_south_downstream_outlet",
+    "compare_the_candidate_condition_against_all_current64_conditions_and_all_historical_rgb_water_shapes",
+    "require_zero_cross_modal_historical_rgb_water_shape_matches_before_imagegen",
+    "use_only_the_current_authoritative_condition_guide_as_the_image_reference",
+    "call_codex_builtin_imagegen_once",
+    "run_machine_review_and_print_exact_failure_codes_and_metrics_if_rejected"
+  ],
+  "fixedThresholds": {
+    "normalizedWaterShapeIntersectionMaximum": 0.45,
+    "thresholdReductionAuthorized": false
+  },
+  "generationBoundary": {
+    "imageGenCallCountAuthorized": 1,
+    "automaticRetryAuthorized": false,
+    "historicalRgbGenerationReferenceCount": 0,
+    "failedRgbGenerationReferenceCount": 0
+  },
+  "preservation": {
+    "sourceFailedRecordId": "ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v5",
+    "deleteOldRecords": false,
+    "moveOldDirectories": false,
+    "restoreRejectedTrainingEligibility": false
+  },
+  "forbiddenActions": [
+    "reuse_sakaerat_measurement_window_r06_c09_v3",
+    "send_historical_or_failed_rgb_to_imagegen",
+    "lower_novelty_thresholds",
+    "automatic_second_retry",
+    "start_gpu_training",
+    "create_runtime_frame",
+    "enter_world"
+  ]
+}

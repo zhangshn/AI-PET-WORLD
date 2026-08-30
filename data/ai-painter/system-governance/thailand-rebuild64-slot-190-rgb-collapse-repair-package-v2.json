@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "thailand-rebuild64-failed-rgb-repair-package-v2",
+  "repairPackageId": "thailand-rebuild64-45-v7-capacity-slot-190-rgb-collapse-repair-v2",
+  "status": "owner_approved_capacity_registered",
+  "createdAtUtc": "2026-08-01T23:42:00.000Z",
+  "createdAtAsiaShanghai": "2026-08-02T07:42:00+08:00",
+  "authorizationId": "project-owner-authorization-2026-08-02-v7-capacity-slot-190-single-rgb-generation-attempt-2",
+  "contractPath": "data/ai-painter/system-governance/thailand-rebuild64-slot-190-rgb-collapse-repair-contract-v2.json",
+  "sequenceCode": "45",
+  "slotId": "v7-capacity-slot-190",
+  "sourceFailedRecordId": "ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v6",
+  "sourceFailedImageSha256": "95a5a6fb3aa4b692d7259315b3bea4994ecddfc5886cde636710edd722a0eb98",
+  "sourceFailedRgbMayBeUsedAsGenerationReference": false,
+  "issueCodes": [
+    "complete_map_composition_diversity_failed",
+    "condition_terrain_path_ground_uncontracted_boundary_contact"
+  ],
+  "currentCondition": {
+    "conditionId": "earth-reference-v7-v7-capacity-slot-190-c873391d9acd",
+    "conditionRunManifestPath": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-run.json",
+    "taskManifestPath": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/task-manifest.json",
+    "conditionPackId": "visual-conditions-world-visual-task-earth-reference-v7-v7-capacity-slot-190-c873391d9acd-2026-08-02T00-18-27-178Z",
+    "conditionPackPath": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+    "themeArchitectureIdentity": "bd7d934c621818e13b24f1debdfee975c9ea5f5246429e35ba23d26966d2c27b",
+    "instanceDetailIdentity": "8ac5e35b63dc214ab2a73d950d4cb527b86141686715306d5bffcab84233671e"
+  },
+  "routeContract": {
+    "authorizedBoundarySide": "east",
+    "entranceBounds": {"x": 972, "y": 388, "width": 52, "height": 84},
+    "forbiddenBoundarySides": ["north", "south", "west"],
+    "minimumVisibleInWorldTerrainClearancePixelsOnForbiddenSides": 24,
+    "expectedNonZeroRatio": 0.025748,
+    "routeChannelSha256": "08a62382590598ae0d606982f168652f7de754f5a7fb3c86f6fa7165d34297ec",
+    "authorizedBoundaryContactRequired": true,
+    "allOtherBoundaryContactsForbidden": true
+  },
+  "waterContract": {
+    "measurementWindowId": "sakaerat-measurement-window-r02-c07-v3",
+    "internalNetworkConnectionMode": "two_separated_interior_headwater_tributaries_to_main_channel",
+    "branchSide": "west",
+    "upstreamBoundarySide": "north",
+    "downstreamBoundarySide": "south",
+    "eastAndWestWaterContactsForbidden": true,
+    "pairedNeighborPortsRequired": true,
+    "positionAndScaleIndependentHistoricalMotifMatchForbidden": true
+  },
+  "requiredRepairs": [
+    "Render the exact new Thai-measurement-derived water network: one sinuous north-in/south-out main channel, two separated interior headwater tributaries, and the guide-defined connected floodplain backwaters. Do not simplify this into a single short side creek, pond-short-creek motif, island loop, or previous river skeleton.",
+    "Render the compacted-earth route exactly on the guide-defined footprint. It must contact only the east edge inside the entrance bounds. Keep a continuous visible in-world vegetated terrain strip between every road pixel and the north, south and west edges.",
+    "Do not read, imitate, edit or reconstruct the failed v6 RGB or any historical complete-map RGB."
+  ],
+  "retryReason": "Replace v6's normalized historical water-shape match and unexpected south road contact using the new unused r02-c07 Thailand window, its distinct two-tributary internal water network, and an explicit east-only road boundary clearance contract.",
+  "generationInputBoundary": {
+    "onlyImageReferenceRole": "authoritative_semantic_condition_guide",
+    "historicalRgbReferencesAllowed": false,
+    "failedRgbReferenceAllowed": false,
+    "worldFactsMayChange": false,
+    "conditionGeometryMayChange": false,
+    "reviewThresholdsMayChange": false
+  },
+  "oneReplacementGenerationAuthorized": true,
+  "automaticSecondRetryAuthorized": false,
+  "generationResult": {
+    "recordId": "ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7",
+    "requestId": "conditional-rgb-190-2026-08-02T00-23-53-807Z",
+    "imageGenCallCount": 1,
+    "automaticRetryCount": 0,
+    "machineReviewStatus": "machine_contract_passed_waiting_owner_visual_review",
+    "ownerReviewStatus": "owner_approved",
+    "conditionalTrainingEligible": true,
+    "normalizedImageSha256": "376fd221dae23962ab84c3cca78c0bd9f0e97464fc943ba314737e28f3fc4e2c",
+    "ownerReviewId": "ai-cold-start-owner-review-ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7-2026-08-02T00-58-24-760Z",
+    "ownerCommandRef": "owner-approved-thailand-rebuild64-sequence-45-slot-190-v7-20260802",
+    "capacityContributionId": "ai-assisted-v7-capacity-contribution-v7-capacity-slot-190-2026-08-02T01-00-04-104Z",
+    "capacitySplit": "train"
+  }
+}

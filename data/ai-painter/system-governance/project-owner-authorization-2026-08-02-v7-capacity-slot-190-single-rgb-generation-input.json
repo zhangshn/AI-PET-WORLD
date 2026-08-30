@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "project-owner-authorization-2026-08-02-v7-capacity-slot-190-single-rgb-generation",
+  "subsystem": "ai_painter_thailand_rebuild64_slot_190_dissimilar_thailand_window_retry",
+  "status": "owner_authorized_pending_execution",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceCodes": ["45"],
+    "slotIds": ["v7-capacity-slot-190"],
+    "contractPath": "data/ai-painter/system-governance/thailand-rebuild64-slot-190-dissimilar-thailand-window-retry-contract-v1.json"
+  },
+  "ownerVisibleConclusionZh": "项目所有者要求继续处理第45张河道构图相似问题，从现有正式泰国数据包重新寻找不相似的真实测量窗口，并在全部门禁通过后生成一张替换图。",
+  "localSystemFindingZh": "slot-190 v5的道路、水口、生态和画幅门禁均通过，唯一失败为水体构图与历史ai-cold-start-map-014-pond-short-creek的归一化交并值0.506475超过0.45。",
+  "blockingReasonCode": "owner_authorized_slot_190_dissimilar_thailand_window_retry_pending_execution",
+  "whyCannotProceedZh": "必须先替换真实泰国测量窗口并证明条件图对全部历史RGB水体骨架零命中，不能直接再次使用失败条件生成。",
+  "minimumRequestedActionZh": "只为新64组第45张重新选择一个正式泰国测量窗口，重建并完成全历史条件和RGB去重后调用一次Codex内置ImageGen；机器拒绝即停止并明确输出原因。",
+  "invariants": [
+    "slot_190_path_entrance_east",
+    "north_upstream_inlet_south_downstream_outlet",
+    "same_formal_thailand_measurement_source_scope",
+    "historical_rgb_audit_only_never_generation_reference",
+    "all_existing_thresholds_unchanged",
+    "one_generation_call_per_slot"
+  ],
+  "forbiddenActions": [
+    "reuse_sakaerat_measurement_window_r06_c09_v3",
+    "send_historical_rgb_to_imagegen",
+    "send_failed_rgb_to_imagegen",
+    "lower_novelty_thresholds",
+    "automatic_second_retry",
+    "start_gpu_training",
+    "create_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "程序会先在项目现有泰国数据包中筛选与全部历史条件和RGB水体骨架不同的新窗口，再只生成一张；若失败将直接显示失败码、命中对象和数值。",
+  "nextActionAfterAuthorization": [
+    "select_new_dissimilar_thailand_measurement_window_for_slot_190",
+    "rebuild_and_audit_slot_190_condition",
+    "run_current64_and_all_history_cross_modal_novelty_gates",
+    "generate_one_slot_190_rgb_and_run_machine_review"
+  ],
+  "evidencePaths": [
+    "data/ai-painter/system-governance/thailand-rebuild64-slot-190-dissimilar-thailand-window-retry-contract-v1.json",
+    "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v5/reviews/machine-review.json",
+    "docs/game-world-generation/CROSS_MODAL_RGB_GATE_THRESHOLD_ALIGNMENT_20260802.md"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-continue-slot-190-find-dissimilar-thailand-data-20260802",
+    "commandZh": "相似就继续处理，从泰国数据包里找不相似的。"
+  }
+}

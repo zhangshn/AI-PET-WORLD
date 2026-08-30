@@ -1,0 +1,706 @@
+{
+  "schemaVersion": "natural-home-original-image-coverage-blueprint-v1",
+  "blueprintId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1-original-image-coverage",
+  "status": "regional_profile_lifecycle_and_connectivity_owner_approved_source_route_pending",
+  "updatedAt": "2026-07-22T09:12:54+08:00",
+  "ownerDecision": {
+    "mvpProfileConfirmed": true,
+    "longTermWorldIdentityStrategy": "playerId_to_worldId_to_worldSeed_to_worldProfileId",
+    "mvpWorldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "mvpBiomeType": "tropical_monsoon_lowland_foothill_natural_home",
+    "profilePath": "data/world-samples/original-image-library/natural-home-v1/mainland-southeast-asia-tropical-monsoon-profile-v1.json"
+  },
+  "scope": {
+    "completeMapResolution": {
+      "nativeWidth": 1024,
+      "nativeHeight": 768,
+      "displayScale": 1,
+      "displayWidth": 1024,
+      "displayHeight": 768,
+      "displayInterpolation": "native_responsive_display"
+    },
+    "currentVisualMilestone": "single_complete_professional_map_snapshot",
+    "reservedNotRequiredNow": [
+      "multi_tick_animation",
+      "player_character",
+      "butler_character",
+      "animal",
+      "building",
+      "interaction_mechanics"
+    ]
+  },
+  "parallelVisualKnowledgeCatalog": {
+    "catalogId": "natural-home-v1-parallel-visual-knowledge-v1",
+    "path": "data/world-samples/original-image-library/natural-home-v1/parallel-visual-knowledge-catalog-v1.json",
+    "categoryCount": 5,
+    "acquisitionOrder": "parallel_no_stage_order",
+    "mechanicalImageCompositionAllowed": false
+  },
+  "worldConnectivityContract": {
+    "contractId": "natural-home-large-world-connectivity-v1",
+    "path": "data/world-samples/world-connectivity/world-connectivity-contract-v1.json",
+    "status": "active_contract_first_mvp_runtime_owner_approved_coverage_met",
+    "firstMvpRegionConnectivityBlueprintId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1",
+    "firstMvpRegionConnectivityBlueprintPath": "data/world-samples/world-connectivity/blueprints/mainland-southeast-asia-tropical-monsoon-natural-home-v1/mainland-southeast-asia-earth-reference-natural-home-region-0001-v1/blueprint.json",
+    "visualCanDefineTopology": false,
+    "mechanicalImageCompositionAllowed": false
+  },
+  "coverageAxes": {
+    "complete-maps": [
+      "worldId",
+      "worldSeed",
+      "regionalLandscapeType",
+      "layoutVariant",
+      "monsoonSeason",
+      "environmentState",
+      "taskPackageId",
+      "connectivityBlueprintId",
+      "regionId",
+      "edgePortIds",
+      "pathGraphId",
+      "hydrologyGraphId",
+      "walkableGraphId"
+    ],
+    "terrain": [
+      "terrainType",
+      "monsoonSeason",
+      "moistureState",
+      "growthOrWearState",
+      "visualVariant"
+    ],
+    "vegetation": [
+      "plantKind",
+      "speciesId",
+      "lifeStage",
+      "monsoonSeason",
+      "healthState",
+      "resourceState",
+      "visualVariant"
+    ],
+    "natural-objects": [
+      "objectKind",
+      "environmentState",
+      "groundingState",
+      "visualVariant"
+    ],
+    "transitions": [
+      "transitionKind",
+      "leftMaterialState",
+      "rightMaterialState",
+      "monsoonSeason",
+      "moistureState",
+      "polarity"
+    ]
+  },
+  "regionalLandscapeTypes": [
+    {
+      "typeId": "lowland-evergreen-tropical-forest",
+      "nameZh": "低地常绿热带森林",
+      "requiredFeatures": [
+        "layered_evergreen_canopy",
+        "humid_forest_floor",
+        "readable_route_buffer"
+      ],
+      "optionalFeatures": [
+        "hopea_odorata",
+        "forest_glade",
+        "small_stream"
+      ]
+    },
+    {
+      "typeId": "seasonal-evergreen-semi-evergreen-forest",
+      "nameZh": "季节性常绿与半常绿森林",
+      "requiredFeatures": [
+        "mixed_leaf_persistence",
+        "seasonal_moisture_readability",
+        "layered_forest_boundary"
+      ],
+      "optionalFeatures": [
+        "lagerstroemia_speciosa",
+        "bamboo_edge",
+        "open_understory"
+      ]
+    },
+    {
+      "typeId": "moist-deciduous-teak-forest",
+      "nameZh": "湿润落叶柚木林",
+      "requiredFeatures": [
+        "tectona_grandis_group",
+        "seasonal_canopy_state",
+        "readable_forest_floor"
+      ],
+      "optionalFeatures": [
+        "bauhinia_understory",
+        "rock_cluster",
+        "curved_path"
+      ]
+    },
+    {
+      "typeId": "dry-dipterocarp-woodland",
+      "nameZh": "旱季龙脑香疏林",
+      "requiredFeatures": [
+        "open_seasonal_canopy",
+        "dry_season_grass_layer",
+        "walkable_negative_space"
+      ],
+      "optionalFeatures": [
+        "exposed_soil",
+        "embedded_rocks",
+        "sparse_shrubs"
+      ]
+    },
+    {
+      "typeId": "bamboo-grove",
+      "nameZh": "竹林",
+      "requiredFeatures": [
+        "bambusa_group",
+        "readable_bamboo_floor",
+        "controlled_density"
+      ],
+      "optionalFeatures": [
+        "forest_edge_path",
+        "moist_hollow",
+        "rock_cluster"
+      ]
+    },
+    {
+      "typeId": "riparian-tropical-forest",
+      "nameZh": "热带河岸林",
+      "requiredFeatures": [
+        "continuous_river",
+        "continuous_shoreline",
+        "riparian_tree_buffer"
+      ],
+      "optionalFeatures": [
+        "ficus_racemosa",
+        "hopea_odorata",
+        "reeds"
+      ]
+    },
+    {
+      "typeId": "monsoon-grassland",
+      "nameZh": "季风草地",
+      "requiredFeatures": [
+        "open_grassland",
+        "seasonal_moisture_variation",
+        "clear_walkable_space"
+      ],
+      "optionalFeatures": [
+        "chrysopogon_aciculatus",
+        "flower_clusters",
+        "sparse_trees"
+      ]
+    },
+    {
+      "typeId": "tropical-forest-glade",
+      "nameZh": "热带林间空地",
+      "requiredFeatures": [
+        "forest_enclosed_clearing",
+        "playable_negative_space",
+        "controlled_ground_detail"
+      ],
+      "optionalFeatures": [
+        "melastoma",
+        "curcuma",
+        "zingiber"
+      ]
+    },
+    {
+      "typeId": "river-floodplain",
+      "nameZh": "河流洪泛平原",
+      "requiredFeatures": [
+        "river_channel",
+        "floodplain_elevation_readability",
+        "defined_drainage"
+      ],
+      "optionalFeatures": [
+        "wet_grass",
+        "sediment_bank",
+        "riparian_tree_islands"
+      ]
+    },
+    {
+      "typeId": "freshwater-swamp",
+      "nameZh": "淡水沼泽",
+      "requiredFeatures": [
+        "defined_shallow_water",
+        "swamp_edge_continuity",
+        "dry_ground_islands"
+      ],
+      "optionalFeatures": [
+        "phragmites_karka",
+        "rooted_shrubs",
+        "mud_bank"
+      ]
+    },
+    {
+      "typeId": "reed-marsh",
+      "nameZh": "芦苇湿地",
+      "requiredFeatures": [
+        "reed_masses",
+        "continuous_marsh_edge",
+        "visible_shallow_water"
+      ],
+      "optionalFeatures": [
+        "mud_bank",
+        "open_water_pocket",
+        "grass_transition"
+      ]
+    },
+    {
+      "typeId": "pond-short-creek",
+      "nameZh": "池塘与短溪",
+      "requiredFeatures": [
+        "single_connected_pond",
+        "short_creek",
+        "continuous_shoreline"
+      ],
+      "optionalFeatures": [
+        "riparian_tree",
+        "reeds",
+        "shallow_stone_edge"
+      ]
+    },
+    {
+      "typeId": "tropical-mountain-stream",
+      "nameZh": "热带山溪",
+      "requiredFeatures": [
+        "readable_gradient",
+        "connected_stream",
+        "embedded_stones"
+      ],
+      "optionalFeatures": [
+        "forest_canopy",
+        "bamboo",
+        "moss"
+      ]
+    },
+    {
+      "typeId": "limestone-foothill",
+      "nameZh": "石灰岩丘陵",
+      "requiredFeatures": [
+        "limestone_form_readability",
+        "foothill_elevation",
+        "stable_route"
+      ],
+      "optionalFeatures": [
+        "forest_pockets",
+        "exposed_rock",
+        "seasonal_shrubs"
+      ]
+    },
+    {
+      "typeId": "rocky-low-hill",
+      "nameZh": "岩石低丘",
+      "requiredFeatures": [
+        "low_hill_relief",
+        "embedded_rock_groups",
+        "walkable_slope"
+      ],
+      "optionalFeatures": [
+        "grass_patches",
+        "forest_edge",
+        "dry_season_exposure"
+      ]
+    },
+    {
+      "typeId": "forested-low-mountain",
+      "nameZh": "森林低山",
+      "requiredFeatures": [
+        "multiple_elevation_bands",
+        "continuous_forest_cover",
+        "valley_or_route_readability"
+      ],
+      "optionalFeatures": [
+        "symplocos_racemosa",
+        "stream",
+        "rock_outcrop"
+      ]
+    },
+    {
+      "typeId": "tropical-valley-floor",
+      "nameZh": "热带谷地",
+      "requiredFeatures": [
+        "valley_floor_readability",
+        "drainage_axis",
+        "open_route_or_glade"
+      ],
+      "optionalFeatures": [
+        "river",
+        "moist_grass",
+        "forest_walls"
+      ]
+    },
+    {
+      "typeId": "wet-season-drainage-hollow",
+      "nameZh": "雨季排水洼地",
+      "requiredFeatures": [
+        "lower_ground_readability",
+        "defined_drainage",
+        "no_random_puddles"
+      ],
+      "optionalFeatures": [
+        "tall_grass",
+        "reeds",
+        "mud_patch"
+      ]
+    },
+    {
+      "typeId": "dry-season-exposed-riverbank",
+      "nameZh": "旱季裸露河岸",
+      "requiredFeatures": [
+        "lower_water_level",
+        "continuous_exposed_bank",
+        "stable_shore_geometry"
+      ],
+      "optionalFeatures": [
+        "pebbles",
+        "dry_grass",
+        "root_exposure"
+      ]
+    },
+    {
+      "typeId": "grassland-forest-transition",
+      "nameZh": "草地森林过渡带",
+      "requiredFeatures": [
+        "graded_canopy_density",
+        "continuous_ground_transition",
+        "clear_route_buffer"
+      ],
+      "optionalFeatures": [
+        "shrub_edge",
+        "bamboo_cluster",
+        "flower_patch"
+      ]
+    }
+  ],
+  "forbiddenRegionalFeatures": [
+    "snow",
+    "glacier",
+    "alpine_tundra",
+    "desert",
+    "boreal_forest",
+    "temperate_birch_identity",
+    "temperate_pine_identity",
+    "unapproved_coastal_mangrove"
+  ],
+  "currentAllowedPlantKinds": [
+    "tree",
+    "shrub",
+    "flower_patch",
+    "grass_detail",
+    "reed"
+  ],
+  "speciesCatalog": {
+    "catalogId": "mainland-southeast-asia-tropical-monsoon-species-v1",
+    "path": "data/world-samples/original-image-library/natural-home-v1/mainland-southeast-asia-tropical-monsoon-species-catalog-v1.json",
+    "realSpeciesOnly": true,
+    "speciesCount": 12,
+    "countsByPlantKind": {
+      "tree": 5,
+      "shrub": 2,
+      "grass_detail": 2,
+      "flower_patch": 2,
+      "reed": 1
+    }
+  },
+  "currentVisualSnapshot": {
+    "snapshotId": "mainland-southeast-asia-tropical-monsoon-provisional-wet-season-post-rain-v2",
+    "status": "provisional_owner_approved_profile_baseline",
+    "isFinal": false,
+    "path": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-v2.json",
+    "season": "wet_season",
+    "localTime": "10:00:00",
+    "weather": "post_rain_clearing",
+    "lighting": "warm_humid_soft_daylight",
+    "groundMoisture": "moist"
+  },
+  "availableVisualSnapshots": [
+    {
+      "snapshotId": "mainland-southeast-asia-tropical-monsoon-provisional-wet-season-post-rain-v2",
+      "path": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-v2.json",
+      "season": "wet_season",
+      "environmentState": "active_monsoon_post_rain_clearing",
+      "isDefault": true
+    },
+    {
+      "snapshotId": "mainland-southeast-asia-tropical-monsoon-provisional-wet-to-dry-transition-v1",
+      "path": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-wet-to-dry-transition-v1.json",
+      "season": "wet_to_dry_transition",
+      "environmentState": "receding_monsoon_transition",
+      "isDefault": false
+    },
+    {
+      "snapshotId": "mainland-southeast-asia-tropical-monsoon-provisional-late-dry-season-v1",
+      "path": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-late-dry-season-v1.json",
+      "season": "dry_season",
+      "environmentState": "late_dry_season",
+      "isDefault": false
+    },
+    {
+      "snapshotId": "mainland-southeast-asia-tropical-monsoon-provisional-dry-to-wet-transition-v1",
+      "path": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-dry-to-wet-transition-v1.json",
+      "season": "dry_to_wet_transition",
+      "environmentState": "pre_monsoon_rainfall_return_transition",
+      "isDefault": false
+    }
+  ],
+  "requiredStateFramework": {
+    "monsoonSeasons": [
+      "wet_season",
+      "wet_to_dry_transition",
+      "dry_season",
+      "dry_to_wet_transition"
+    ],
+    "lifeStageAxisRequired": true,
+    "healthStateAxisRequired": true,
+    "resourceStateAxisRequiredWhenApplicable": true,
+    "fullCartesianProductForbidden": true,
+    "selectionMethod": "key_states_plus_pairwise_coverage_plus_unseen_challenge"
+  },
+  "lifecycleProfiles": [
+    {
+      "profileId": "tropical-tree-12-key-states-v1",
+      "plantKind": "tree",
+      "canonicalStateCount": 12,
+      "canonicalStates": [
+        "seed_or_fruit",
+        "seedling_wet_season",
+        "sapling_wet_season",
+        "juvenile",
+        "mature_wet_healthy",
+        "mature_flowering",
+        "mature_fruiting",
+        "mature_dry_season",
+        "mature_leaf_shedding_when_applicable",
+        "mature_stressed",
+        "damaged_recovering",
+        "senescent_or_dead_standing"
+      ],
+      "visualVariantsPerState": 3
+    },
+    {
+      "profileId": "tropical-shrub-10-key-states-v1",
+      "plantKind": "shrub",
+      "canonicalStateCount": 10,
+      "canonicalStates": [
+        "seedling",
+        "juvenile",
+        "mature_wet_healthy",
+        "mature_flowering",
+        "mature_resource",
+        "mature_dry_season",
+        "mature_stressed",
+        "damaged_recovering",
+        "sparse_edge_form",
+        "dense_edge_form"
+      ],
+      "visualVariantsPerState": 3
+    },
+    {
+      "profileId": "tropical-grass-and-bamboo-10-key-states-v1",
+      "plantKind": "grass_detail",
+      "canonicalStateCount": 10,
+      "canonicalStates": [
+        "wet_season_emergence",
+        "wet_season_short_healthy",
+        "wet_season_tall_healthy",
+        "wet_season_flowering",
+        "wet_to_dry_seed_head",
+        "dry_season_green_remnant",
+        "dry_season_senescent",
+        "trampled_recovering",
+        "path_edge_form",
+        "dense_grove_form"
+      ],
+      "visualVariantsPerState": 3
+    },
+    {
+      "profileId": "tropical-herb-10-key-states-v1",
+      "plantKind": "flower_patch",
+      "canonicalStateCount": 10,
+      "canonicalStates": [
+        "dormant_or_rhizome",
+        "wet_season_emergence",
+        "leaf_growth",
+        "bud",
+        "flowering",
+        "fruit_or_seed",
+        "wet_to_dry_senescent",
+        "dry_season_dormant",
+        "healthy_sparse_patch",
+        "healthy_dense_patch"
+      ],
+      "visualVariantsPerState": 3
+    },
+    {
+      "profileId": "tropical-reed-10-key-states-v1",
+      "plantKind": "reed",
+      "canonicalStateCount": 10,
+      "canonicalStates": [
+        "wet_season_emergence",
+        "wet_season_sparse",
+        "wet_season_dense",
+        "flooded_base",
+        "water_edge_form",
+        "flowering_or_seed_head",
+        "wet_to_dry_transition",
+        "dry_season_stressed",
+        "damaged_recovering",
+        "shoreline_transition_form"
+      ],
+      "visualVariantsPerState": 3
+    }
+  ],
+  "plannedVegetationSourceUnits": {
+    "calculation": [
+      {
+        "plantKind": "tree",
+        "speciesCount": 5,
+        "canonicalStates": 12,
+        "visualVariants": 3,
+        "units": 180
+      },
+      {
+        "plantKind": "shrub",
+        "speciesCount": 2,
+        "canonicalStates": 10,
+        "visualVariants": 3,
+        "units": 60
+      },
+      {
+        "plantKind": "grass_detail",
+        "speciesCount": 2,
+        "canonicalStates": 10,
+        "visualVariants": 3,
+        "units": 60
+      },
+      {
+        "plantKind": "flower_patch",
+        "speciesCount": 2,
+        "canonicalStates": 10,
+        "visualVariants": 3,
+        "units": 60
+      },
+      {
+        "plantKind": "reed",
+        "speciesCount": 1,
+        "canonicalStates": 10,
+        "visualVariants": 3,
+        "units": 30
+      }
+    ],
+    "vegetationUnitTotal": 390,
+    "categoryGateUnitTotal": 300,
+    "nonDeduplicatedPlanningUpperEnvelope": 690,
+    "countingRule": "Coverage units are audited visual states, not automatically unique image files. Duplicate crops and near-duplicates never increase sufficiency."
+  },
+  "lockedMinimumCategoryCounts": {
+    "completeMapPositive": 20,
+    "completeMapNegative": 40,
+    "grassPathPositive": 40,
+    "grassPathNegative": 40,
+    "grassWaterPositive": 40,
+    "grassWaterNegative": 40,
+    "objectGroundPositive": 30,
+    "objectGroundNegative": 30,
+    "judgeGapRecords": 20,
+    "categoryCountTotal": 300,
+    "note": "These existing gates remain unchanged by the regional profile migration."
+  },
+  "connectivityCoverage": {
+    "requiredForLargeWorldQualification": true,
+    "status": "threshold_met",
+    "contractId": "natural-home-large-world-connectivity-v1",
+    "minimumThresholdStatus": "owner_approved",
+    "currentQualifiedRecordCount": 54,
+    "positiveFamilies": [
+      "cross_region_path_pair",
+      "upstream_downstream_water_pair",
+      "ecology_transition_pair",
+      "elevation_transition_pair",
+      "walkable_component_continuity",
+      "object_identity_continuity"
+    ],
+    "negativeFamilies": [
+      "unmatched_edge_port",
+      "broken_cross_region_path",
+      "broken_hydrology",
+      "isolated_walkable_component",
+      "adjacency_profile_conflict",
+      "object_identity_discontinuity"
+    ],
+    "existingColdStartRecordRule": "Existing AI-assisted visual cold-start records do not count as connectivity coverage until they bind an owner-approved connectivity blueprint and pass connectivity review.",
+    "minimumPositiveRecordCount": 27,
+    "minimumNegativeRecordCount": 27,
+    "minimumPositivePerAxis": 3,
+    "minimumNegativePerAxis": 3,
+    "currentPositiveRecordCount": 27,
+    "currentNegativeRecordCount": 27,
+    "axisCounts": {
+      "internal_entry_to_center_path": {
+        "positive": 3,
+        "negative": 3
+      },
+      "center_to_approved_edge_port_path": {
+        "positive": 3,
+        "negative": 3
+      },
+      "cross_region_path_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "upstream_downstream_water_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "ecology_transition_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "elevation_transition_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "walkable_component_continuity": {
+        "positive": 3,
+        "negative": 3
+      },
+      "collision_preservation": {
+        "positive": 3,
+        "negative": 3
+      },
+      "object_identity_continuity": {
+        "positive": 3,
+        "negative": 3
+      }
+    },
+    "thresholdMet": true,
+    "remainingBlockers": [],
+    "thresholdApprovalId": "ai-assisted-training-gate-owner-approval-2026-07-19T00-00-54-424Z",
+    "thresholdApprovalPath": ".runtime/ai-painter/ai-assisted-training-gate-owner-approvals/ai-assisted-training-gate-owner-approval-2026-07-19T00-00-54-424Z/approval.json",
+    "thresholdApprovalSha256": "096d3c2e764e2a4a6509f381f22abc3c34edc002f62a411b62d065957105f424",
+    "coverageDatasetId": "world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z",
+    "coverageManifestPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/manifest.json",
+    "coverageManifestSha256": "26c58bf50e3a07948c99f53369665c246510560826450a28f5afa4bf1624e177",
+    "lastProgramBuildAtUtc": "2026-07-19T01:05:57.521Z"
+  },
+  "legacyProfileRecords": {
+    "policy": "owner_ordered_image_records_deleted_do_not_restore",
+    "excludedWorldProfileIds": [
+      "temperate-humid-natural-home-v1"
+    ],
+    "currentRecordCount": 0,
+    "reason": "The previous temperate concept images and records were deleted by owner command. Legacy profile definition files remain migration notes only."
+  },
+  "pendingDefinitionsBeforeFinalImageCount": [
+    "approved_original_image_source_route"
+  ],
+  "currentDataConflicts": [
+    "historical_world_state_biome_is_oasis",
+    "existing_concept_records_use_legacy_temperate_profile",
+    "latest_task_environment_must_be_recompiled"
+  ],
+  "automaticStorage": true,
+  "seasonalTransitionSnapshotAuthorizationRef": "project-owner-authorization-2026-07-22-seasonal-transition-environment-snapshots"
+}

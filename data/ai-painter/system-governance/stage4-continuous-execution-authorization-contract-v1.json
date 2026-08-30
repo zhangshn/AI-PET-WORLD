@@ -1,0 +1,123 @@
+{
+  "schemaVersion": "stage4-continuous-execution-authorization-contract-v1",
+  "status": "active",
+  "contractId": "stage4_continuous_execution_authorization_v1",
+  "businessPurpose": "Allow the project Owner to sign one Stage4-to-80 package while preserving exact, independently signed and independently consumed authorization for Smoke, CPU read-only late-stability qualification, Stage 0, Stage 1 and Stage 2.",
+  "contractRevision": 2,
+  "packageSchemaVersion": "project-owner-stage4-continuous-authorization-package-v1",
+  "executionPlanSchemaVersion": "ai-painter-stage4-to-80-execution-plan-v1",
+  "stepAuthorizationSchemaVersion": "project-owner-write-authorization-v2",
+  "coordinatorAuthorization": {
+    "action": "ai_painter.stage4.coordinate_continuous_execution",
+    "runner": "scripts/run-ai-painter-stage4-to-80.mjs",
+    "purpose": "Authorize orchestration state, preflight evidence, event ledger and SQLite writes without granting any GPU training step."
+  },
+  "requiredStepOrder": [
+    "smoke",
+    "late_stability_qualification",
+    "stage0",
+    "stage1",
+    "stage2"
+  ],
+  "stepContracts": {
+    "smoke": {
+      "action": "ai_painter.stage4.run_model_smoke",
+      "runner": "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs",
+      "requiresPreviousSuccessfulTerminal": false,
+      "preflightMode": "runner_preflight_only",
+      "boundTerminalMayProceedOnlyToCpuQualification": true,
+      "nextRole": "late_stability_qualification"
+    },
+    "late_stability_qualification": {
+      "action": "ai_painter.stage4.qualify_bound_smoke_late_stability",
+      "runner": "scripts/run-stage4-general-late-convergence-qualification.mjs",
+      "requiresPreviousSuccessfulTerminal": true,
+      "previousRole": "smoke",
+      "preflightMode": "embedded_cpu_readonly",
+      "executionIsCpuReadonly": true,
+      "terminalLocation": "output_root",
+      "outputNamespacePrefix": ".runtime/ai-painter/stage4-terminal-pass-late-convergence-qualifications/",
+      "runnerAuthorizationMaterialization": "late_stability_from_bound_smoke_v1"
+    },
+    "stage0": {
+      "action": "ai_painter.stage4.run_formal_stage0",
+      "runner": "scripts/run-stage4-semantic-mixture-formal-stage.mjs",
+      "requiresPreviousSuccessfulTerminal": true,
+      "previousRole": "late_stability_qualification",
+      "preflightMode": "runner_preflight_only",
+      "outputNamespacePrefix": ".runtime/ai-painter/stage4-semantic-mixture-formal-training/",
+      "runnerAuthorizationMaterialization": "stage0_from_bound_qualification_v1"
+    },
+    "stage1": {
+      "action": "ai_painter.stage4.run_formal_stage1",
+      "runner": "scripts/run-stage4-semantic-mixture-formal-stage.mjs",
+      "requiresPreviousSuccessfulTerminal": true,
+      "previousRole": "stage0",
+      "preflightMode": "runner_preflight_only",
+      "outputNamespacePrefix": ".runtime/ai-painter/stage4-semantic-mixture-formal-training/",
+      "runtimeEvidenceMaterialization": "parent_checkpoint_from_previous_terminal_v1"
+    },
+    "stage2": {
+      "action": "ai_painter.stage4.run_formal_stage2",
+      "runner": "scripts/run-stage4-semantic-mixture-formal-stage.mjs",
+      "requiresPreviousSuccessfulTerminal": true,
+      "previousRole": "stage1",
+      "preflightMode": "runner_preflight_only",
+      "outputNamespacePrefix": ".runtime/ai-painter/stage4-semantic-mixture-formal-training/",
+      "runtimeEvidenceMaterialization": "parent_checkpoint_from_previous_terminal_v1"
+    }
+  },
+  "authorizationRules": {
+    "packageIsWildcardAuthorization": false,
+    "oneOwnerSigningInvocationMayCreateThePackage": true,
+    "eachStepHasOneExactAction": true,
+    "eachStepHasIndependentEd25519Signature": true,
+    "eachStepHasIndependentOneTimeConsumption": true,
+    "coordinatorHasIndependentOneTimeConsumption": true,
+    "laterStepMayBeConsumedBeforePreviousSuccess": false,
+    "failedOrConsumedAuthorizationMayBeReused": false,
+    "chatMayActAsAuthorization": false,
+    "ownerPrivateKeyMayEnterProject": false,
+    "ownerPrivateKeyMayBeReadByCodex": false
+  },
+  "bindingRules": {
+    "runnerPathAndSha256Required": true,
+    "taskIdentityRequired": true,
+    "freshRunIdRequired": true,
+    "freshOutputNamespaceRequired": true,
+    "preflightArgumentsRequired": true,
+    "executionArgumentsRequired": true,
+    "expectedTerminalPathAndStatusRequired": true,
+    "parentCheckpointMustDeriveFromPreviousSuccessfulTerminal": true,
+    "lateStabilityQualificationMustDeriveFromPackageSmoke": true,
+    "futureEvidenceUsesSignedTemplates": true,
+    "futureEvidenceIsMaterializedOnlyAfterPredecessorSuccess": true,
+    "materializedEvidenceMustRemainInsideExecutionNamespace": true,
+    "unknownPlaceholdersRejected": true,
+    "shellCommandStringsForbidden": true
+  },
+  "stopRules": {
+    "automaticRetry": false,
+    "stopOnPreflightFailure": true,
+    "stopOnExecutionFailure": true,
+    "stopOnEvidenceConflict": true,
+    "stopOnMachineReviewFailure": true,
+    "stopWhenOwnerBusinessDecisionRequired": true,
+    "stopAfterStage2SuccessAtFixedProgressPercent": 80
+  },
+  "evidenceRules": {
+    "immutableRunIdPerExecution": true,
+    "eventsAndSqliteRequired": true,
+    "localTaskCapsuleRequired": true,
+    "markdownIsNotExecutionLedger": true,
+    "latestPointerIsNotAuthority": true
+  },
+  "forbiddenActions": [
+    "stage5_strict_revalidation",
+    "formal_inference",
+    "checkpoint_formal_promotion",
+    "owner_final_visual_acceptance",
+    "runtime_frame",
+    "world_entry"
+  ]
+}

@@ -1,0 +1,213 @@
+{
+  "schemaVersion": "ai-painter-local-ai-capability-migration-registry-v1",
+  "registryId": "ai-painter-local-ai-capability-migration-v1",
+  "status": "active_incremental_migration",
+  "authorizedBy": "project_owner",
+  "authorizedAtAsiaShanghai": "2026-08-02",
+  "updatedAtUtc": "2026-08-23T20:40:01.000Z",
+  "updatedAtAsiaShanghai": "2026-08-24T04:40:01.000+08:00",
+  "objectiveZh": "逐步把AI Painter的训练、审核、记录、编排、生成和世界运行能力迁移到本地自研AI与本地程序；Codex最终仅保留只读监控和证据核验职责。",
+  "systemOfRecord": "local_ai_pet_world_program",
+  "tokenAccountingContract": {
+    "localModelArchitectureUsesNlpTokenizer": false,
+    "authoritativeLocalTokenUnit": "one_latent_spatial_position_processed_by_one_denoiser_sample_forward_pass",
+    "localTokenLabelZh": "本地潜空间Token",
+    "mustNotBePresentedAsApiBillingToken": true,
+    "requiredPerRunFields": [
+      "training_sample_presentations",
+      "optimizer_steps",
+      "denoiser_sample_forward_passes",
+      "latent_spatial_tokens",
+      "latent_channel_values",
+      "condition_scalar_values",
+      "decoded_rgb_frames",
+      "decoded_rgb_pixel_predictions",
+      "fixed_validation_sample_passes",
+      "rollout_trajectories",
+      "rollout_denoiser_steps",
+      "duration_seconds",
+      "gpu_telemetry_when_available"
+    ],
+    "externalTokenRule": "Only record provider/API prompt, completion and total tokens when the local program receives an authoritative usage object; otherwise store unavailable, never estimate from elapsed time.",
+    "externalAgentConversationTokensAvailableToLocalProgram": false,
+    "deprecatedRule": "gpu_active_seconds_times_1000_is_not_a_token_count"
+  },
+  "externalAgentBoundary": {
+    "currentRole": "bounded_implementation_and_verification_only_when_explicitly_assigned_by_project_owner",
+    "targetRole": "read_only_monitor_and_verification_only",
+    "decisionAuthority": false,
+    "systemOfRecordAuthority": false,
+    "ownerApprovalAuthority": false,
+    "mustNotBeRuntimeDependency": true
+  },
+  "currentTaskCapsuleProjection": {
+    "schemaVersion": "ai-painter-local-task-capsule-v1",
+    "moduleId": "ai-painter-v7-failure-learning-r5",
+    "currentStage": 4,
+    "fixedOverallProgress": {
+      "completedStages": 3,
+      "totalStages": 5,
+      "percent": 60
+    },
+    "candidateStatus": "stage4_v9_smoke_trainer_authorization_lineage_failed_closed",
+    "latestBlocker": "trainer_validation_kernel_authorization_lineage_hard_codes_historical_identity",
+    "nextAllowedAction": "owner_must_authorize_trainer_dynamic_lineage_validation_fix_then_new_cpu_gate_and_new_smoke_identity",
+    "projectionRoute": "/api/ai-painter/current-training",
+    "readOnly": true,
+    "chatHistoryRequired": false,
+    "capsulePath": ".runtime/ai-painter/v9-validation-kernel-model-smoke-split-actions/20260810-195316030/local-task-capsule.json",
+    "evidence": ".runtime/ai-painter/v9-validation-kernel-model-smoke-split-actions/20260810-195316030/finalization/phase-terminal.json"
+  },
+  "capabilities": [
+    {
+      "id": "released_capability_runtime_autonomy",
+      "nameZh": "已发布能力版本内的自主生成、审核与发布",
+      "currentOwner": "local_ai_pet_world_program",
+      "targetOwner": "local_ai_pet_world_program",
+      "status": "local_native_contract_active",
+      "externalAgentRequired": false,
+      "evidence": "data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v2.json；scripts/lib/ai-painter-autonomous-package-decision-core.mjs",
+      "nextGateZh": "已发布能力版本内由本地程序自主生成、验证、审核、发布或失败关闭；能力变更、业务范围变化或证据不唯一时才升级Owner。"
+    },
+    {
+      "id": "training_dataset_binding",
+      "nameZh": "训练数据绑定与门禁",
+      "currentOwner": "local_ai_pet_world_program",
+      "targetOwner": "local_ai_pet_world_program",
+      "status": "local_native_active",
+      "externalAgentRequired": false,
+      "evidence": "V7实际64/64与48/8/4/4双层门禁"
+    },
+    {
+      "id": "gpu_training_execution",
+      "nameZh": "GPU训练执行与checkpoint保存",
+      "currentOwner": "local_ai_training_program",
+      "targetOwner": "local_ai_training_program",
+      "status": "local_native_active",
+      "externalAgentRequired": false,
+      "evidence": "本地PyTorch Smoke与Stage 0至2"
+    },
+    {
+      "id": "training_token_accounting",
+      "nameZh": "训练Token与计算量账本",
+      "currentOwner": "local_ai_training_program",
+      "targetOwner": "local_ai_training_program",
+      "status": "local_native_active",
+      "externalAgentRequired": false,
+      "evidence": ".runtime/ai-painter/training-token-ledgers/"
+    },
+    {
+      "id": "machine_visual_review",
+      "nameZh": "机器视觉硬门禁与失败学习",
+      "currentOwner": "local_ai_pet_world_program",
+      "targetOwner": "local_ai_pet_world_program",
+      "status": "local_native_active",
+      "externalAgentRequired": false,
+      "evidence": "本地审核记录、失败码与SQLite事件"
+    },
+    {
+      "id": "failure_learning_and_bounded_repair_contract",
+      "nameZh": "失败学习、根因候选与有界修复合同",
+      "currentOwner": "local_ai_failure_learning_program_with_codex_implementation_support",
+      "targetOwner": "local_ai_failure_learning_program",
+      "status": "r5_stage4_split_actions_cpu_passed_trainer_lineage_failed_closed",
+      "externalAgentRequired": false,
+      "evidence": ".runtime/ai-painter/v9-validation-kernel-model-smoke-split-actions/20260810-195316030/finalization/phase-terminal.json；/api/ai-painter/current-training",
+      "nextGateZh": "实施动作与执行动作已分离且CPU全门通过；训练器仍固定历史Validation Kernel授权血缘。下一步需由Owner授权训练器从当前授权与消费记录动态验证requestId、scope和executionActions，并保留旧合同兼容。"
+    },
+    {
+      "id": "owner_decision_recording",
+      "nameZh": "项目所有者决定与授权记录",
+      "currentOwner": "project_owner_plus_local_system_of_record",
+      "targetOwner": "project_owner_plus_local_system_of_record",
+      "status": "local_native_active",
+      "externalAgentRequired": false,
+      "evidence": "owner-action-request不可变记录"
+    },
+    {
+      "id": "condition_package_orchestration",
+      "nameZh": "世界事实与23通道条件包编排",
+      "currentOwner": "local_ai_pet_world_program",
+      "targetOwner": "local_ai_pet_world_program",
+      "status": "local_native_active_with_released_capability_gate",
+      "externalAgentRequired": false,
+      "evidence": "WorldFacts、任务包、条件包及全历史门禁"
+    },
+    {
+      "id": "complete_map_rgb_synthesis",
+      "nameZh": "完整地图RGB生成",
+      "currentOwner": "local_v7_image_model_with_codex_implementation_support",
+      "targetOwner": "local_v7_image_model",
+      "status": "stage4_v9_model_smoke_not_started_trainer_lineage_failed_after_gpu_consumption",
+      "externalAgentRequired": false,
+      "evidence": ".runtime/ai-painter/v9-validation-kernel-model-smoke-split-actions/20260810-195316030/finalization/phase-terminal.json",
+      "nextGateZh": "CPU与资源预检通过且GPU授权已消费，但训练器授权血缘门在Checkpoint读取前拒绝当前授权。修正并通过新CPU门后必须建立新的独立Smoke身份；Smoke通过后才能申请Stage 0至2完整训练。"
+    },
+    {
+      "id": "post_training_validation",
+      "nameZh": "训练后验证",
+      "currentOwner": "local_ai_validation_program",
+      "targetOwner": "local_ai_validation_program",
+      "status": "local_native_stage4_incomplete_stage5_not_started",
+      "externalAgentRequired": false,
+      "evidence": ".runtime/ai-painter/v7-post-training-validation-reconciliations/ai-assisted-v7-post-training-validation-reconciliation-2026-08-02T08-26-49-721Z/reconciliation-report.json",
+      "nextGateZh": "R5固定第4阶段尚未完成，第5阶段严格复验未启动；只有Stage 0至2完整训练及机器审核全部通过后，才能另行申请严格复验授权。"
+    },
+    {
+      "id": "formal_inference",
+      "nameZh": "本地正式推理",
+      "currentOwner": "not_active",
+      "targetOwner": "local_v7_image_model",
+      "status": "blocked_r5_stage4_incomplete_stage5_not_started",
+      "externalAgentRequired": false,
+      "nextGateZh": "R5 Stage4完整训练未完成且Stage5严格复验未启动；能力版本正式发布后，单次正式推理由本地程序按能力合同自主执行。"
+    },
+    {
+      "id": "runtime_world_integration",
+      "nameZh": "RuntimeFrame与世界运行",
+      "currentOwner": "local_game_runtime",
+      "targetOwner": "local_game_runtime",
+      "status": "blocked",
+      "externalAgentRequired": false,
+      "nextGateZh": "正式能力版本与动态世界门禁通过后，由本地Runtime按已发布能力合同自主创建RuntimeFrame并进入世界。"
+    },
+    {
+      "id": "local_task_orchestration",
+      "nameZh": "本地任务选择、合同预览与执行编排",
+      "currentOwner": "local_task_console_preview_with_codex_implementation_support",
+      "targetOwner": "project_owner_plus_local_task_controller",
+      "status": "local_native_versioned_r5_stage4_task_capsule_reports_trainer_lineage_failure",
+      "externalAgentRequired": false,
+      "evidence": "data/ai-painter/system-governance/local-ai-task-catalog-v1.json；/ai-painter-progress/task-console；/api/ai-painter/current-training；本地任务胶囊不依赖聊天历史",
+      "nextGateZh": "版本化R5 Stage4只读任务胶囊已同步训练器授权血缘失败终态；真实写操作继续要求新的不可变Owner授权、ExecutionGrant精确动作绑定及一次性原子消费。"
+    },
+    {
+      "id": "monitoring_and_evidence_verification",
+      "nameZh": "监控与证据核验",
+      "currentOwner": "local_console_with_optional_codex_verification",
+      "targetOwner": "local_console_with_optional_codex_read_only_monitor",
+      "status": "local_native_r5_task_capsule_readonly_projection_active",
+      "externalAgentRequired": false,
+      "evidence": "/api/ai-painter/current-training；/ai-painter-progress/current-training；ai-painter-local-task-capsule-v1",
+      "nextGateZh": "继续让其他模块终态使用同一任务胶囊合同；Codex优先读取胶囊，仅在核验时按证据路径打开原始文件。"
+    }
+  ],
+  "migrationOrder": [
+    "training_token_accounting",
+    "released_capability_runtime_autonomy",
+    "local_task_orchestration",
+    "post_training_validation",
+    "formal_inference_shadow_mode",
+    "complete_map_rgb_synthesis_cutover",
+    "runtime_world_integration",
+    "external_agent_monitor_only"
+  ],
+  "forbidden": [
+    "fabricate_or_estimate_external_api_tokens_without_provider_usage_evidence",
+    "rename_gpu_seconds_or_wall_clock_time_as_tokens",
+    "let_codex_become_the_system_of_record",
+    "require_chat_history_for_local_operation",
+    "transfer_owner_decision_authority_to_any_model",
+    "activate_formal_inference_runtime_frame_or_world_without_a_released_capability_identity"
+  ]
+}

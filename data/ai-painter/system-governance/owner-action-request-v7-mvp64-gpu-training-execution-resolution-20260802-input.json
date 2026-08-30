@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-v7-mvp64-gpu-training-execution-resolution-20260802",
+  "subsystem": "ai_painter_v7_mvp64_progressive_local_gpu_training_execution",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "activationResolutionId": "owner-action-request-v7-mvp64-gpu-training-activation-resolution-20260802",
+    "gateRepairResolutionId": "owner-action-request-v7-mvp64-smoke-authorization-gate-repair-retry-resolution-20260802",
+    "smokeRunId": "ai-assisted-conditional-denoiser-v7-smoke-2026-08-02T02-28-11-195Z",
+    "stage0RunId": "ai-assisted-conditional-denoiser-v7-stage-0-2026-08-02T02-29-32-223Z",
+    "stage1RunId": "ai-assisted-conditional-denoiser-v7-stage-1-2026-08-02T02-32-41-839Z",
+    "stage2RunId": "ai-assisted-conditional-denoiser-v7-stage-2-2026-08-02T02-37-06-789Z",
+    "stage2CheckpointSha256": "337b3da558e06998eec9d7c2069af1d80d845db363c863e83b97014b53d2a052"
+  },
+  "ownerVisibleConclusionZh": "V7 Python哈希授权门禁已修复，CPU正反回归通过，获准的唯一一次冒烟重试通过；原已批准的stage-0、stage-1、stage-2随后按顺序完成并各保存40个epoch的CUDA训练checkpoint。",
+  "localSystemFindingZh": "三段训练均使用锁定MVP64数据身份和23通道合同，stage-1正确继承stage-0，stage-2正确继承stage-1；所有manifest均保持formalInferenceEligible=false，未生成RGB、未启动RuntimeFrame、未进入世界。当前状态仍是conditional_denoiser_training_completed_pending_validation。",
+  "blockingReasonCode": "resolved_owner_authorized_v7_mvp64_progressive_training_completed_pending_validation",
+  "whyCannotProceedZh": "完成训练checkpoint不等于正式推理获准；完整训练后验证、正式推理样本、owner审核、RuntimeFrame和世界入口仍是独立门禁。",
+  "minimumRequestedActionZh": "保持stage-2 checkpoint不可变，下一步仅在项目所有者另行明确授权后执行训练后验证；验证前不得生成正式推理图。",
+  "invariants": [
+    "dataset_manifest_sha256_8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa",
+    "stage_0_checkpoint_sha256_8f3730a6e17e526f4efddaed93d53859a494c83b99c694462e78262981006a6c",
+    "stage_1_checkpoint_sha256_6fefc76100605e22ef27948d8f9cc9645370ac09ea81b59e857c7fc9ccc5d120",
+    "stage_2_checkpoint_sha256_337b3da558e06998eec9d7c2069af1d80d845db363c863e83b97014b53d2a052",
+    "formal_inference_runtime_frame_and_world_remain_blocked"
+  ],
+  "forbiddenActions": [
+    "rewrite_or_replace_completed_stage_checkpoints",
+    "describe_pending_validation_as_formal_validation_passed",
+    "generate_formal_inference_images_without_new_authorization",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "V7冒烟及stage-0/1/2训练已经完成，当前已停在训练后验证之前；正式推理和游戏世界仍未启动。",
+  "nextActionAfterAuthorization": [
+    "verify_stage_2_checkpoint_and_parent_lineage",
+    "run_v7_post_training_validation_only_after_separate_owner_authorization",
+    "keep_formal_inference_runtime_frame_and_world_blocked"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-gpu-training-activation-resolution-20260802/request.json",
+    ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-smoke-authorization-gate-repair-retry-resolution-20260802/request.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-smoke-2026-08-02T02-28-11-195Z/manifest.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-stage-0-2026-08-02T02-29-32-223Z/manifest.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-stage-1-2026-08-02T02-32-41-839Z/manifest.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-stage-2-2026-08-02T02-37-06-789Z/manifest.json"
+  ],
+  "ownerDecision": {
+    "decision": "approved_and_executed_within_scope",
+    "commandRef": "owner-approved-v7-mvp64-local-gpu-training-activation-20260802",
+    "commandTextZh": "允许启动V7本地GPU训练",
+    "scope": "v7_smoke_and_stage_0_1_2_only"
+  },
+  "resolution": {
+    "pythonAuthorizationGateRegressionPassed": true,
+    "authorizedSmokeRetryCount": 1,
+    "smokeRetryPassed": true,
+    "stage0Completed": true,
+    "stage1Completed": true,
+    "stage2Completed": true,
+    "trainingStatus": "conditional_denoiser_training_completed_pending_validation",
+    "formalInferenceAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false
+  }
+}

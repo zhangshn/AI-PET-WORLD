@@ -1,0 +1,561 @@
+{
+  "schemaVersion": "world-connectivity-coverage-dataset-v1",
+  "datasetId": "world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z",
+  "status": "machine_verified_threshold_met",
+  "createdAtUtc": "2026-07-19T01:05:57.521Z",
+  "createdAtAsiaShanghai": "2026-07-19T09:05:57+08:00",
+  "contractId": "natural-home-large-world-connectivity-v1",
+  "contractPath": "data/world-samples/world-connectivity/world-connectivity-contract-v1.json",
+  "contractSha256": "77454eac9db148512fde8f5f6bd304d7f7d90a26d5852e20e583974ff94e15da",
+  "thresholdApprovalId": "ai-assisted-training-gate-owner-approval-2026-07-19T00-00-54-424Z",
+  "thresholdApprovalPath": ".runtime/ai-painter/ai-assisted-training-gate-owner-approvals/ai-assisted-training-gate-owner-approval-2026-07-19T00-00-54-424Z/approval.json",
+  "connectivityBlueprintId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1",
+  "connectivityBlueprintPath": "data/world-samples/world-connectivity/blueprints/mainland-southeast-asia-tropical-monsoon-natural-home-v1/mainland-southeast-asia-earth-reference-natural-home-region-0001-v1/blueprint.json",
+  "connectivityBlueprintSha256": "57a9577e1b5ba50e584c16a35498dc32eb86d394cf632250f0ee7e61828673a5",
+  "runtimeWorldPath": "data/world-runtime/owner-d0znz8/world-d0znz8/ticks/3/world-state.json",
+  "runtimeWorldSha256": "8b532f1b804699bf6911a4da51283848054f2de3c7250800858bc0711dec16cf",
+  "runtimeTick": 3,
+  "runtimeOwnerReviewId": "world-connectivity-owner-review-world-d0znz8-2026-07-13T11-28-05-420Z",
+  "runtimeOwnerReviewPath": ".runtime/world-connectivity-owner-reviews/world-connectivity-owner-review-world-d0znz8-2026-07-13T11-28-05-420Z/owner-review.json",
+  "conditionalFactsBatchId": "complete-map-world-facts-v2-revision-2026-07-18T11-18-30-905Z",
+  "conditionalFactsManifestPath": ".runtime/ai-painter/ai-assisted-conditional-world-facts/complete-map-world-facts-v2-revision-2026-07-18T11-18-30-905Z/manifest.json",
+  "conditionalFactsManifestSha256": "00eeee2f28cd3c74f3094dfdf7aa3a95be081e481e2e9ac97cd0c91187677104",
+  "recordCount": 54,
+  "positiveRecordCount": 27,
+  "negativeRecordCount": 27,
+  "axisCounts": {
+    "internal_entry_to_center_path": {
+      "positive": 3,
+      "negative": 3
+    },
+    "center_to_approved_edge_port_path": {
+      "positive": 3,
+      "negative": 3
+    },
+    "cross_region_path_pair": {
+      "positive": 3,
+      "negative": 3
+    },
+    "upstream_downstream_water_pair": {
+      "positive": 3,
+      "negative": 3
+    },
+    "ecology_transition_pair": {
+      "positive": 3,
+      "negative": 3
+    },
+    "elevation_transition_pair": {
+      "positive": 3,
+      "negative": 3
+    },
+    "walkable_component_continuity": {
+      "positive": 3,
+      "negative": 3
+    },
+    "collision_preservation": {
+      "positive": 3,
+      "negative": 3
+    },
+    "object_identity_continuity": {
+      "positive": 3,
+      "negative": 3
+    }
+  },
+  "thresholdMet": true,
+  "records": [
+    {
+      "recordId": "connectivity-internal_entry_to_center_path-positive-01",
+      "axis": "internal_entry_to_center_path",
+      "polarity": "positive",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/internal_entry_to_center_path/connectivity-internal_entry_to_center_path-positive-01.json",
+      "recordSha256": "0eeaf69380fd472b8ed7f57b18fe3150d35a0c015a82408add2837bdf7fd680f"
+    },
+    {
+      "recordId": "connectivity-internal_entry_to_center_path-negative-01",
+      "axis": "internal_entry_to_center_path",
+      "polarity": "negative",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/internal_entry_to_center_path/connectivity-internal_entry_to_center_path-negative-01.json",
+      "recordSha256": "b4a00b47155266ff2edce3f2bb8615fbb8c86dcb8a643193393e052e886a0ca1"
+    },
+    {
+      "recordId": "connectivity-internal_entry_to_center_path-positive-02",
+      "axis": "internal_entry_to_center_path",
+      "polarity": "positive",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-009",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/internal_entry_to_center_path/connectivity-internal_entry_to_center_path-positive-02.json",
+      "recordSha256": "f8b08720e5690cc253f8bbd1081a113ac8a12b8aba4c12ebfd6a1a0d85dbc160"
+    },
+    {
+      "recordId": "connectivity-internal_entry_to_center_path-negative-02",
+      "axis": "internal_entry_to_center_path",
+      "polarity": "negative",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-009",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/internal_entry_to_center_path/connectivity-internal_entry_to_center_path-negative-02.json",
+      "recordSha256": "d7511e28db999715528f2ba56d32bc9b17efa533d7db36a9ca9ede8237e308df"
+    },
+    {
+      "recordId": "connectivity-internal_entry_to_center_path-positive-03",
+      "axis": "internal_entry_to_center_path",
+      "polarity": "positive",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-021",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/internal_entry_to_center_path/connectivity-internal_entry_to_center_path-positive-03.json",
+      "recordSha256": "b395cf5e50eaddc174da7cbc1da94844af682e00d09d25cb554cf485d978f551"
+    },
+    {
+      "recordId": "connectivity-internal_entry_to_center_path-negative-03",
+      "axis": "internal_entry_to_center_path",
+      "polarity": "negative",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-021",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/internal_entry_to_center_path/connectivity-internal_entry_to_center_path-negative-03.json",
+      "recordSha256": "43afd39ac5ff4fc841aaf0f7bc5a67e0fec46a51e7674e9dee1da219eaeb6831"
+    },
+    {
+      "recordId": "connectivity-center_to_approved_edge_port_path-positive-01",
+      "axis": "center_to_approved_edge_port_path",
+      "polarity": "positive",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/center_to_approved_edge_port_path/connectivity-center_to_approved_edge_port_path-positive-01.json",
+      "recordSha256": "fc1e4d3e5494962dae411da37a006639798d396de8fbe260d502142f47348cee"
+    },
+    {
+      "recordId": "connectivity-center_to_approved_edge_port_path-negative-01",
+      "axis": "center_to_approved_edge_port_path",
+      "polarity": "negative",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/center_to_approved_edge_port_path/connectivity-center_to_approved_edge_port_path-negative-01.json",
+      "recordSha256": "8c807df090b8382b32a42e90331b7dd72cc0c9594949939465b9a36154d22b62"
+    },
+    {
+      "recordId": "connectivity-center_to_approved_edge_port_path-positive-02",
+      "axis": "center_to_approved_edge_port_path",
+      "polarity": "positive",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-010",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/center_to_approved_edge_port_path/connectivity-center_to_approved_edge_port_path-positive-02.json",
+      "recordSha256": "3297e218e90e54e9c6e63df2b7239cdb37f6d346da922a20740c0f32ee8a4980"
+    },
+    {
+      "recordId": "connectivity-center_to_approved_edge_port_path-negative-02",
+      "axis": "center_to_approved_edge_port_path",
+      "polarity": "negative",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-010",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/center_to_approved_edge_port_path/connectivity-center_to_approved_edge_port_path-negative-02.json",
+      "recordSha256": "8e054fe41f5d3084a396485cfe9efeffecba6c7d6676e775d0ac679d12b4ec49"
+    },
+    {
+      "recordId": "connectivity-center_to_approved_edge_port_path-positive-03",
+      "axis": "center_to_approved_edge_port_path",
+      "polarity": "positive",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-017",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/center_to_approved_edge_port_path/connectivity-center_to_approved_edge_port_path-positive-03.json",
+      "recordSha256": "b4898dba8d327d54478e1a1208cd4f0fe1c3b3efcb780c7f8587934e12e34d2e"
+    },
+    {
+      "recordId": "connectivity-center_to_approved_edge_port_path-negative-03",
+      "axis": "center_to_approved_edge_port_path",
+      "polarity": "negative",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-017",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/center_to_approved_edge_port_path/connectivity-center_to_approved_edge_port_path-negative-03.json",
+      "recordSha256": "0b7c046a0be4a1803ff2042cacc4cfc201cc6452c9c25326d385417478da06e7"
+    },
+    {
+      "recordId": "connectivity-cross_region_path_pair-positive-01",
+      "axis": "cross_region_path_pair",
+      "polarity": "positive",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-004",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/cross_region_path_pair/connectivity-cross_region_path_pair-positive-01.json",
+      "recordSha256": "426b4ead8adfa4287f43b0ac3313e764b10f75cfa8f6ecfb71ec92a91d96ab9d"
+    },
+    {
+      "recordId": "connectivity-cross_region_path_pair-negative-01",
+      "axis": "cross_region_path_pair",
+      "polarity": "negative",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-004",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/cross_region_path_pair/connectivity-cross_region_path_pair-negative-01.json",
+      "recordSha256": "d893d314274ff4d01efcf84b1e3666bfca3d0ccb3d336c295c0f920794547468"
+    },
+    {
+      "recordId": "connectivity-cross_region_path_pair-positive-02",
+      "axis": "cross_region_path_pair",
+      "polarity": "positive",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-016",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/cross_region_path_pair/connectivity-cross_region_path_pair-positive-02.json",
+      "recordSha256": "aa9aa29d7d2ea0e00c75df6e38dbe3a4a459ba6437aca7a0d7ced804304bfc8c"
+    },
+    {
+      "recordId": "connectivity-cross_region_path_pair-negative-02",
+      "axis": "cross_region_path_pair",
+      "polarity": "negative",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-016",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/cross_region_path_pair/connectivity-cross_region_path_pair-negative-02.json",
+      "recordSha256": "53f192860c6937db6acf8175a28fc41178c4033a11ae3fd5eff228d9964aa866"
+    },
+    {
+      "recordId": "connectivity-cross_region_path_pair-positive-03",
+      "axis": "cross_region_path_pair",
+      "polarity": "positive",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-021",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/cross_region_path_pair/connectivity-cross_region_path_pair-positive-03.json",
+      "recordSha256": "37d0ca4e8fb7c7a71f33d61f64e57ee7903b7814ea9b042b9179b7351719e61f"
+    },
+    {
+      "recordId": "connectivity-cross_region_path_pair-negative-03",
+      "axis": "cross_region_path_pair",
+      "polarity": "negative",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-021",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/cross_region_path_pair/connectivity-cross_region_path_pair-negative-03.json",
+      "recordSha256": "30d46deaab1a39ad9a746451653d2425951f09f5534b4ca0c4f3d8f3165a323d"
+    },
+    {
+      "recordId": "connectivity-upstream_downstream_water_pair-positive-01",
+      "axis": "upstream_downstream_water_pair",
+      "polarity": "positive",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/upstream_downstream_water_pair/connectivity-upstream_downstream_water_pair-positive-01.json",
+      "recordSha256": "1f9db308940ad8977362cd3cad67efd6f735cf8abf6be145faab4bf72afc13b4"
+    },
+    {
+      "recordId": "connectivity-upstream_downstream_water_pair-negative-01",
+      "axis": "upstream_downstream_water_pair",
+      "polarity": "negative",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/upstream_downstream_water_pair/connectivity-upstream_downstream_water_pair-negative-01.json",
+      "recordSha256": "cef7cebf529ba355c9dd80e67f6121cb3487b9e26bea35a566d5da8c49dbe170"
+    },
+    {
+      "recordId": "connectivity-upstream_downstream_water_pair-positive-02",
+      "axis": "upstream_downstream_water_pair",
+      "polarity": "positive",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-010",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/upstream_downstream_water_pair/connectivity-upstream_downstream_water_pair-positive-02.json",
+      "recordSha256": "abd7e9cde1dadd352a289abb16c38789a612205ae323149e26619203cca0f880"
+    },
+    {
+      "recordId": "connectivity-upstream_downstream_water_pair-negative-02",
+      "axis": "upstream_downstream_water_pair",
+      "polarity": "negative",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-010",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/upstream_downstream_water_pair/connectivity-upstream_downstream_water_pair-negative-02.json",
+      "recordSha256": "e67507c8c33571a39e91b865d2d4f9f22a8dd7f2f0bb3444484909c9ff9ed081"
+    },
+    {
+      "recordId": "connectivity-upstream_downstream_water_pair-positive-03",
+      "axis": "upstream_downstream_water_pair",
+      "polarity": "positive",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-020",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/upstream_downstream_water_pair/connectivity-upstream_downstream_water_pair-positive-03.json",
+      "recordSha256": "a35a84a793ae94ba7d5bf728d7229d3429923664d9e013df6e88779c8dc8f146"
+    },
+    {
+      "recordId": "connectivity-upstream_downstream_water_pair-negative-03",
+      "axis": "upstream_downstream_water_pair",
+      "polarity": "negative",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-020",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/upstream_downstream_water_pair/connectivity-upstream_downstream_water_pair-negative-03.json",
+      "recordSha256": "76abcc75f3b0a3d7f9b59a6587f65fef918bb820a13b86ff08e46ccebac667ac"
+    },
+    {
+      "recordId": "connectivity-ecology_transition_pair-positive-01",
+      "axis": "ecology_transition_pair",
+      "polarity": "positive",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/ecology_transition_pair/connectivity-ecology_transition_pair-positive-01.json",
+      "recordSha256": "8230d622179733e410fb4770a8388d74d8b01c7c38bf127cb672e7c1c5951590"
+    },
+    {
+      "recordId": "connectivity-ecology_transition_pair-negative-01",
+      "axis": "ecology_transition_pair",
+      "polarity": "negative",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/ecology_transition_pair/connectivity-ecology_transition_pair-negative-01.json",
+      "recordSha256": "36b8c41e040b9673eaddaaa64ab0f964e10d1b70971a8555c7318475ef98e53a"
+    },
+    {
+      "recordId": "connectivity-ecology_transition_pair-positive-02",
+      "axis": "ecology_transition_pair",
+      "polarity": "positive",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-010",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/ecology_transition_pair/connectivity-ecology_transition_pair-positive-02.json",
+      "recordSha256": "4cec07cadde65bb66d0dc9a899f04ca4e7e295a951b821ee5a984164572a3865"
+    },
+    {
+      "recordId": "connectivity-ecology_transition_pair-negative-02",
+      "axis": "ecology_transition_pair",
+      "polarity": "negative",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-010",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/ecology_transition_pair/connectivity-ecology_transition_pair-negative-02.json",
+      "recordSha256": "eaadaa88db0ad486ab33ce7ade9aab9a1cc129ecd341ed66370ef426388cc50b"
+    },
+    {
+      "recordId": "connectivity-ecology_transition_pair-positive-03",
+      "axis": "ecology_transition_pair",
+      "polarity": "positive",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-021",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/ecology_transition_pair/connectivity-ecology_transition_pair-positive-03.json",
+      "recordSha256": "14edd9622c167fae4b504580fa3172e3c15ee07af930e71b0aa30fdf3e3c8262"
+    },
+    {
+      "recordId": "connectivity-ecology_transition_pair-negative-03",
+      "axis": "ecology_transition_pair",
+      "polarity": "negative",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-021",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/ecology_transition_pair/connectivity-ecology_transition_pair-negative-03.json",
+      "recordSha256": "9bb90ab415df1818f80bb67161a66c5baa7cfb015aa847989e67d9d25c95c06e"
+    },
+    {
+      "recordId": "connectivity-elevation_transition_pair-positive-01",
+      "axis": "elevation_transition_pair",
+      "polarity": "positive",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-014",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/elevation_transition_pair/connectivity-elevation_transition_pair-positive-01.json",
+      "recordSha256": "d32edcec33721903274a0239044eab1a5a2cb7242e6a95d6e20b8187693ed66e"
+    },
+    {
+      "recordId": "connectivity-elevation_transition_pair-negative-01",
+      "axis": "elevation_transition_pair",
+      "polarity": "negative",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-014",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/elevation_transition_pair/connectivity-elevation_transition_pair-negative-01.json",
+      "recordSha256": "e462528a62282c4edcec040a05d6cf95d2ae9610c46dc1faee0edb5cc4ffb5f3"
+    },
+    {
+      "recordId": "connectivity-elevation_transition_pair-positive-02",
+      "axis": "elevation_transition_pair",
+      "polarity": "positive",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-015",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/elevation_transition_pair/connectivity-elevation_transition_pair-positive-02.json",
+      "recordSha256": "5ab40d7eace38ea90cd2a90ab966cc9d6877e8772625ada56cc389e148e44a7d"
+    },
+    {
+      "recordId": "connectivity-elevation_transition_pair-negative-02",
+      "axis": "elevation_transition_pair",
+      "polarity": "negative",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-015",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/elevation_transition_pair/connectivity-elevation_transition_pair-negative-02.json",
+      "recordSha256": "c08c8bd9ff55657d4375ce02906ce4bb80356a0cec7316258f4982eee02bf79e"
+    },
+    {
+      "recordId": "connectivity-elevation_transition_pair-positive-03",
+      "axis": "elevation_transition_pair",
+      "polarity": "positive",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-017",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/elevation_transition_pair/connectivity-elevation_transition_pair-positive-03.json",
+      "recordSha256": "1f747608b33f4bd2ef73275eb014235f96f516e77d8c351c33fc3e45670b5fb0"
+    },
+    {
+      "recordId": "connectivity-elevation_transition_pair-negative-03",
+      "axis": "elevation_transition_pair",
+      "polarity": "negative",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-017",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/elevation_transition_pair/connectivity-elevation_transition_pair-negative-03.json",
+      "recordSha256": "aebd4769a77ba2ce00f8040c528e4b1fad3c870c5eee0567e3f8b50c74b36b1f"
+    },
+    {
+      "recordId": "connectivity-walkable_component_continuity-positive-01",
+      "axis": "walkable_component_continuity",
+      "polarity": "positive",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/walkable_component_continuity/connectivity-walkable_component_continuity-positive-01.json",
+      "recordSha256": "35af23c5e026381c2f8cc5dc3f1a9b42bc76a42abdc1792736cb09de2e7b1550"
+    },
+    {
+      "recordId": "connectivity-walkable_component_continuity-negative-01",
+      "axis": "walkable_component_continuity",
+      "polarity": "negative",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/walkable_component_continuity/connectivity-walkable_component_continuity-negative-01.json",
+      "recordSha256": "cfb61011e4a5c88aea13f587aeee0cd8e79a810df2bb008caa772d03f440f667"
+    },
+    {
+      "recordId": "connectivity-walkable_component_continuity-positive-02",
+      "axis": "walkable_component_continuity",
+      "polarity": "positive",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-009",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/walkable_component_continuity/connectivity-walkable_component_continuity-positive-02.json",
+      "recordSha256": "f9e1adc829aa240826819dd8f8af6bdcf2187ce933d747466efd22fface38350"
+    },
+    {
+      "recordId": "connectivity-walkable_component_continuity-negative-02",
+      "axis": "walkable_component_continuity",
+      "polarity": "negative",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-009",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/walkable_component_continuity/connectivity-walkable_component_continuity-negative-02.json",
+      "recordSha256": "cdd46fcc6434ff9539f5ee75eacdbb72ef8f9f4cabc28af93001de2193e7ee11"
+    },
+    {
+      "recordId": "connectivity-walkable_component_continuity-positive-03",
+      "axis": "walkable_component_continuity",
+      "polarity": "positive",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-021",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/walkable_component_continuity/connectivity-walkable_component_continuity-positive-03.json",
+      "recordSha256": "6791b599f5a03f89daa2dcdb1d44bf21d338c4681ea3aeb1b4a2e22ae53a260e"
+    },
+    {
+      "recordId": "connectivity-walkable_component_continuity-negative-03",
+      "axis": "walkable_component_continuity",
+      "polarity": "negative",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-021",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/walkable_component_continuity/connectivity-walkable_component_continuity-negative-03.json",
+      "recordSha256": "3a012e7d8c586be02caf66267a1c56953b97d8e06e59ce16c9247b6880da7701"
+    },
+    {
+      "recordId": "connectivity-collision_preservation-positive-01",
+      "axis": "collision_preservation",
+      "polarity": "positive",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-002",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/collision_preservation/connectivity-collision_preservation-positive-01.json",
+      "recordSha256": "e61a8ea7f58a50b725f2a2b84ba26975e9311dd005d68bfe4b7f2c99d1314051"
+    },
+    {
+      "recordId": "connectivity-collision_preservation-negative-01",
+      "axis": "collision_preservation",
+      "polarity": "negative",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-002",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/collision_preservation/connectivity-collision_preservation-negative-01.json",
+      "recordSha256": "06127c607d4be6757089319dfc5ea5ee0d8389db7aee09dddf14f38acba6f157"
+    },
+    {
+      "recordId": "connectivity-collision_preservation-positive-02",
+      "axis": "collision_preservation",
+      "polarity": "positive",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-016",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/collision_preservation/connectivity-collision_preservation-positive-02.json",
+      "recordSha256": "8c68fc90f6f1345f1e70d860d808eb0b0612c02d99a350dcb5c71a697d911a3f"
+    },
+    {
+      "recordId": "connectivity-collision_preservation-negative-02",
+      "axis": "collision_preservation",
+      "polarity": "negative",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-016",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/collision_preservation/connectivity-collision_preservation-negative-02.json",
+      "recordSha256": "1293bd9e680e0a48bc2ef791d7494fa0ced32ad1bf1e7bda9a8033ed9d0d6ee2"
+    },
+    {
+      "recordId": "connectivity-collision_preservation-positive-03",
+      "axis": "collision_preservation",
+      "polarity": "positive",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-020",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/collision_preservation/connectivity-collision_preservation-positive-03.json",
+      "recordSha256": "85ae157a4fa03663fc3685f2a9a7c3b39630ba03ef40494e301b256fb9f61c2b"
+    },
+    {
+      "recordId": "connectivity-collision_preservation-negative-03",
+      "axis": "collision_preservation",
+      "polarity": "negative",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-020",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/collision_preservation/connectivity-collision_preservation-negative-03.json",
+      "recordSha256": "3a33fdde73b4a014bce9c08c2ab87c3841018b448bd4d65728809394e34bd687"
+    },
+    {
+      "recordId": "connectivity-object_identity_continuity-positive-01",
+      "axis": "object_identity_continuity",
+      "polarity": "positive",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/object_identity_continuity/connectivity-object_identity_continuity-positive-01.json",
+      "recordSha256": "39ccdea464da47110363472477077e71ed28f5b2c8783c95885d907ffbc526ef"
+    },
+    {
+      "recordId": "connectivity-object_identity_continuity-negative-01",
+      "axis": "object_identity_continuity",
+      "polarity": "negative",
+      "variantIndex": 1,
+      "sourceConditionLabel": "complete-map-v2-001",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/object_identity_continuity/connectivity-object_identity_continuity-negative-01.json",
+      "recordSha256": "4ef815b7455dff0525315eb5a5639936a5cc4a0de6ec3760405331d7d8c2d2dc"
+    },
+    {
+      "recordId": "connectivity-object_identity_continuity-positive-02",
+      "axis": "object_identity_continuity",
+      "polarity": "positive",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-005",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/object_identity_continuity/connectivity-object_identity_continuity-positive-02.json",
+      "recordSha256": "435d7eeb6887b1c69edc775bcee63d8294372968750dd61aeab298815f7d6789"
+    },
+    {
+      "recordId": "connectivity-object_identity_continuity-negative-02",
+      "axis": "object_identity_continuity",
+      "polarity": "negative",
+      "variantIndex": 2,
+      "sourceConditionLabel": "complete-map-v2-005",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/object_identity_continuity/connectivity-object_identity_continuity-negative-02.json",
+      "recordSha256": "8b91dca4161edf85024da45fc80981649cc75824440c3e08ad5ae99e201cd14f"
+    },
+    {
+      "recordId": "connectivity-object_identity_continuity-positive-03",
+      "axis": "object_identity_continuity",
+      "polarity": "positive",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-021",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/positive/object_identity_continuity/connectivity-object_identity_continuity-positive-03.json",
+      "recordSha256": "8d60fefb7ba4792df7ec9596d211082519f2c7ef84ea12e64ffb4bfcc028ee71"
+    },
+    {
+      "recordId": "connectivity-object_identity_continuity-negative-03",
+      "axis": "object_identity_continuity",
+      "polarity": "negative",
+      "variantIndex": 3,
+      "sourceConditionLabel": "complete-map-v2-021",
+      "recordPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/records/negative/object_identity_continuity/connectivity-object_identity_continuity-negative-03.json",
+      "recordSha256": "dd30aab10adac464d6ea99663360d4a08555d38072988b0775ea285687098cf0"
+    }
+  ],
+  "trainingUseContract": {
+    "dataKind": "structured_connectivity_supervision",
+    "rgbTrainingTarget": false,
+    "changesRuntimeWorldFacts": false,
+    "positiveMeaning": "owner-approved runtime connectivity rule preserved in a complete-map condition context",
+    "negativeMeaning": "controlled single-axis mutation correctly rejected by the deterministic connectivity reviewer"
+  },
+  "automaticStorage": true
+}

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "stage4-authoritative-visual-semantic-carrier-model-family-contract-v1",
+  "contractId": "stage4-authoritative-visual-semantic-carrier-model-family-contract-v1",
+  "status": "cpu_supported_inactive",
+  "authority": "local_ai_pet_world_program",
+  "architectureId": "stage4_authoritative_visual_semantic_carrier_decoder_v1",
+  "businessPurpose": "Preserve each authoritative visual semantic condition as an independently identifiable latent contribution until the final predicted velocity, without changing the approved data, Loss, review or Runtime contract.",
+  "derivedDimensions": {
+    "conditionChannels": 23,
+    "latentChannels": 12,
+    "denoiserBaseChannels": 64,
+    "latentDownsampleFactor": 4,
+    "source": "current_formal_condition_autoencoder_and_denoiser_contracts"
+  },
+  "carrierIdentityOrder": [
+    "terrain_grass",
+    "terrain_water",
+    "terrain_path_ground",
+    "terrain_shoreline",
+    "terrain_natural_boundary",
+    "terrain_mud_patch",
+    "terrain_tall_grass",
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation"
+  ],
+  "carrierRule": {
+    "oneIndependentParameterNamespacePerIdentity": true,
+    "sourceGate": "exact_resized_authoritative_discrete_condition_channel",
+    "learnedParticipationGateAllowed": false,
+    "outsideAuthoritativeMaskContributionMustBeZero": true,
+    "merge": "base_velocity_plus_sum_of_authoritatively_gated_carriers",
+    "carrierIdentityMayCollapseBeforeFinalLatentOutput": false
+  },
+  "frozenBoundaries": {
+    "approvedSampleCount": 64,
+    "split": [48, 8, 4, 4],
+    "conditionChannelOrderUnchanged": true,
+    "frozenAutoencoderBoundaryUnchanged": true,
+    "lossValuesAndWeightsUnchanged": true,
+    "checkpointFormatUnchanged": true,
+    "machineReviewThresholdsUnchanged": true,
+    "nativeCompleteRgbContractUnchanged": true
+  },
+  "activationGates": {
+    "configurationActiveNow": false,
+    "gpuNow": false,
+    "optimizerNow": false,
+    "backwardNow": false,
+    "weightModificationNow": false,
+    "smokeNow": false,
+    "trainingNow": false,
+    "formalInferenceNow": false,
+    "runtimeFrameNow": false,
+    "worldEntryNow": false
+  },
+  "prohibited": [
+    "failed_preview_pixels_as_target",
+    "machine_review_results_as_target",
+    "historical_or_failed_checkpoint_initialization",
+    "free_width_layer_loss_weight_or_hyperparameter",
+    "learned_gate_replacing_authoritative_semantic_mask",
+    "restart_of_exited_model_routes"
+  ]
+}
+

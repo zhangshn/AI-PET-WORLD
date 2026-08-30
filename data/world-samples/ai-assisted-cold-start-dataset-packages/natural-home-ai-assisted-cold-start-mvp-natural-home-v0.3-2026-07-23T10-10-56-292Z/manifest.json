@@ -1,0 +1,161 @@
+{
+  "schemaVersion": "ai-assisted-cold-start-dataset-package-v1",
+  "policyVersion": "owner-authorized-ai-assisted-cold-start-v1",
+  "ownerAuthorizationRef": null,
+  "ownerAuthorizationRefs": [
+    "conversation-owner-authorization-2026-07-13",
+    "owner-authorized-v7-remaining-104-continuous-batch-20260723",
+    "project-owner-authorization-2026-07-22-v7-capacity-slot-001-single-rgb-generation",
+    "project-owner-authorization-2026-07-22-v7-capacity-slot-002-single-rgb-generation",
+    "project-owner-authorization-2026-07-22-v7-capacity-slot-003-single-rgb-generation"
+  ],
+  "packageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-56-292Z",
+  "parentPackageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-39-673Z",
+  "createdAtUtc": "2026-07-23T10:10:56.292Z",
+  "createdAtAsiaShanghai": "2026-07-23T18:10:56+08:00",
+  "status": "conditional_denoiser_training_ready",
+  "immutable": true,
+  "trainingLane": "ai_assisted_cold_start",
+  "checkpointOwnership": "project_owned_architecture_ai_assisted_cold_start_weights",
+  "modelConfigId": "ai-pet-world-complete-world-ai-assisted-cold-start-v2",
+  "modelArchitectureVersion": "pixel-detail-residual-autoencoder-v2",
+  "modelConfigPath": "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v2.json",
+  "dictionaryVersionId": "mvp-natural-home-v0.3",
+  "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+  "sampleCount": 61,
+  "categoryCounts": {
+    "complete-maps": 57,
+    "natural-objects": 1,
+    "terrain": 1,
+    "transitions": 1,
+    "vegetation": 1
+  },
+  "completeMapCount": 57,
+  "autoencoderSampleCount": 57,
+  "conditionBoundCompleteMapCount": 30,
+  "currentConditionPairCount": 21,
+  "v7CapacityContributionCount": 9,
+  "currentConditionUnpairedCount": 0,
+  "currentConditionExpectedCount": 21,
+  "conditionOnlyBlueprintCount": 21,
+  "conditionalFactsBatchId": "complete-map-world-facts-v2-revision-2026-07-18T11-18-30-905Z",
+  "conditionalFactsManifestPath": ".runtime/ai-painter/ai-assisted-conditional-world-facts/complete-map-world-facts-v2-revision-2026-07-18T11-18-30-905Z/manifest.json",
+  "conditionalFactsManifestSha256": "00eeee2f28cd3c74f3094dfdf7aa3a95be081e481e2e9ac97cd0c91187677104",
+  "trainingGateApprovalId": "ai-assisted-training-gate-owner-approval-2026-07-19T00-00-54-424Z",
+  "trainingGateApprovalPath": ".runtime/ai-painter/ai-assisted-training-gate-owner-approvals/ai-assisted-training-gate-owner-approval-2026-07-19T00-00-54-424Z/approval.json",
+  "trainingGateApprovalSha256": "096d3c2e764e2a4a6509f381f22abc3c34edc002f62a411b62d065957105f424",
+  "trainingGateStatus": {
+    "conditionalThresholdApproved": true,
+    "autoencoderVisualApproved": true,
+    "connectivityThresholdApproved": true,
+    "connectivityCoverageMet": true
+  },
+  "connectivityCoverage": {
+    "minimumPositiveRecordCount": 27,
+    "minimumNegativeRecordCount": 27,
+    "minimumPositivePerAxis": 3,
+    "minimumNegativePerAxis": 3,
+    "currentPositiveRecordCount": 27,
+    "currentNegativeRecordCount": 27,
+    "axisCounts": {
+      "internal_entry_to_center_path": {
+        "positive": 3,
+        "negative": 3
+      },
+      "center_to_approved_edge_port_path": {
+        "positive": 3,
+        "negative": 3
+      },
+      "cross_region_path_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "upstream_downstream_water_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "ecology_transition_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "elevation_transition_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "walkable_component_continuity": {
+        "positive": 3,
+        "negative": 3
+      },
+      "collision_preservation": {
+        "positive": 3,
+        "negative": 3
+      },
+      "object_identity_continuity": {
+        "positive": 3,
+        "negative": 3
+      }
+    },
+    "thresholdMet": true,
+    "evidenceValid": true,
+    "datasetId": "world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z",
+    "manifestPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/manifest.json",
+    "manifestSha256": "26c58bf50e3a07948c99f53369665c246510560826450a28f5afa4bf1624e177"
+  },
+  "splitCounts": {
+    "train": 42,
+    "validation": 7,
+    "challenge": 4,
+    "regression": 4
+  },
+  "readinessContract": {
+    "autoencoderWarmup": "nonempty_owner_approved_rgb_technical_gate_only",
+    "conditionalDenoiser": "owner_approved_threshold_and_per_image_23_channel_binding_required",
+    "conditionOnlyBlueprints": "must_receive_new_rgb_generated_after_the_condition_pack; existing_rgb_rebinding_forbidden",
+    "formalInference": "conditional_checkpoint_and_all_formal_gates_required",
+    "inventedThresholdsAllowed": false
+  },
+  "canStartAutoencoderWarmup": true,
+  "canTrainConditionalDenoiser": true,
+  "canStartFormalTraining": false,
+  "formalInferenceEligible": false,
+  "blockers": [],
+  "thirdPartyWeightsLoaded": false,
+  "thirdPartyGeneratedTrainingOutputUsed": true,
+  "aiGenerationDependencyDeclared": true,
+  "sourceIndexPath": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-56-292Z/source-index.json",
+  "snapshots": {
+    "originalImageIndex": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-56-292Z/snapshots/originalImageIndex.json",
+      "sha256": "2921b09baf637cf04ed94cc05bc12d58c28b25b77c8f90e54388d5d4832d038f"
+    },
+    "dictionary": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-56-292Z/snapshots/dictionary.json",
+      "sha256": "6854390a30aaee539c11a70ad9d7551f4838bb62e57addeaba3b1836426175c9"
+    },
+    "trainingDataPolicy": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-56-292Z/snapshots/trainingDataPolicy.md",
+      "sha256": "e98641f3c4c6648d7d49cb23904cf94037e23b175a6127a2ae4b6a2822fa7121"
+    },
+    "modelConfig": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-56-292Z/snapshots/modelConfig.json",
+      "sha256": "6146dfd1a96a09f0ce7a35c4d3ebaecbb4c6428d57f58fe0d82222cf6b82718f"
+    },
+    "conditionalWorldFacts": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-56-292Z/snapshots/conditionalWorldFacts.json",
+      "sha256": "00eeee2f28cd3c74f3094dfdf7aa3a95be081e481e2e9ac97cd0c91187677104"
+    },
+    "trainingGateApproval": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-56-292Z/snapshots/trainingGateApproval.json",
+      "sha256": "096d3c2e764e2a4a6509f381f22abc3c34edc002f62a411b62d065957105f424"
+    },
+    "connectivityCoverage": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-56-292Z/snapshots/connectivityCoverage.json",
+      "sha256": "3be306ea77450da29817d2821b99f6c2699594f554c0b18e4028cbdb67b60510"
+    },
+    "connectivityCoverageManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-23T10-10-56-292Z/snapshots/connectivityCoverageManifest.json",
+      "sha256": "26c58bf50e3a07948c99f53369665c246510560826450a28f5afa4bf1624e177"
+    }
+  },
+  "automaticStorage": true
+}

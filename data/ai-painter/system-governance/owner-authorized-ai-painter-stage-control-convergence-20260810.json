@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-v1",
+  "requestId": "owner-authorized-ai-painter-stage-control-convergence-20260810",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-10T10:25:26.2790258Z",
+  "recordedAtAsiaShanghai": "2026-08-10T18:25:26.2790258+08:00",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-ai-painter-stage-control-convergence-20260810",
+    "scope": "ai_painter_stage3_stage4_control_layer_conditional_complexity_convergence_cpu_only"
+  },
+  "bindings": {
+    "v9ValidationKernelSmokeFailureTerminal": {
+      "path": ".runtime/ai-painter/stage4-validation-kernel-closures/20260810-023613404/model-smoke/model-smoke-20260810-validated-kernel/finalization/phase-terminal.json",
+      "sha256": "571990fbaf16984d112a90a1eac1fcee014cb92e56ec64e0a6c0e4476ed947cc"
+    },
+    "v9ValidationKernelSmokeFinalization": {
+      "path": ".runtime/ai-painter/stage4-validation-kernel-closures/20260810-023613404/model-smoke/model-smoke-20260810-validated-kernel/finalization/finalization-report.json",
+      "sha256": "f06f75598df76ddf0aa953e93b6e8936274a6cb18de33c26a07e5f121f362986"
+    },
+    "v9ValidationKernelSmokeConsumption": {
+      "path": ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-validation-kernel-through-stage5-20260810/model-smoke-consumption.json",
+      "sha256": "5728dbb1d35284e1e1af1d3e5be49e0cfcb13b26496dcb9f596a9259e01d51b0"
+    },
+    "phase0SuccessTerminal": {
+      "path": ".runtime/ai-painter/stage4-validation-kernel-closures/20260810-023613404/phase0/phase0-20260809-185538784-r2/finalization/phase-terminal.json",
+      "sha256": "72a3ef2d2c2e62d0e0bce152327ba0fe8ab6ee4ac2bd0c422627d24745a71fd8"
+    },
+    "baselineTrainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "2918437cd93d0f402bc246430961cda553db44726395004a54553db82ceba32f"
+    },
+    "baselineSmokeRunner": {
+      "path": "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs",
+      "sha256": "def148c2a9650eca7ffc8807798f66ea56b058d04d1b606dd36aa37fb15250da"
+    },
+    "baselineCpuChecker": {
+      "path": "ml/ai-painter/scripts/check_ai_assisted_v9_r5_stage4_cpu.py",
+      "sha256": "9292599c31e79e0109a5f5e0c6ab5c48019aef29425a70fdad40be75e1d55f6b"
+    },
+    "baselineInactiveConfigCompiler": {
+      "path": "ml/ai-painter/scripts/compile_ai_assisted_v9_r5_stage4_inactive_config.py",
+      "sha256": "4967264b9c63b11ca8d233d1d6f2829a107735effc69270866f90d17b82721bd"
+    },
+    "baselineTaskCapsuleServer": {
+      "path": "src/server/ai-painter-current-training.ts",
+      "sha256": "304f1f28700c5aabbc525e80671f8b1ac59fd17729cf9a07854e972a69f9559e"
+    },
+    "baselineTaskCapsuleProjection": {
+      "path": "src/server/ai-painter-task-capsule-projection.mjs",
+      "sha256": "593a3b3c734814a0c66cf4c753ddc66079853f6a05cbfb2781be83ec011d7b16"
+    }
+  },
+  "fixedTaskIdentity": {
+    "module": "AI Painter R5",
+    "stage": 4,
+    "purpose": "stage3_stage4_control_layer_conditional_complexity_convergence",
+    "architecture": "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "seed": 20263722,
+    "requiredBoundarySides": ["west"],
+    "datasetCapacity": 64,
+    "datasetSplit": {"train": 48, "validation": 8, "challenge": 4, "regression": 4},
+    "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60}
+  },
+  "authorizedActions": {
+    "readOnlyWorkspaceAndEvidenceInspection": true,
+    "immutableAuthorizationAndAtomicImplementationConsumption": true,
+    "baselineBehaviorCapture": true,
+    "existingTrainerControlLayerModification": true,
+    "existingSmokeRunnerControlLayerModification": true,
+    "existingCpuCheckerModification": true,
+    "existingInactiveCompilerCompatibilityModification": true,
+    "authorizationPolicyModuleCreation": true,
+    "executionGrantModuleCreation": true,
+    "modeRegistryModuleCreation": true,
+    "previewReproductionModuleCreation": true,
+    "datasetCheckpointEvidencePolicyIntegrationWithoutPhysicalMigration": true,
+    "cpuPositiveNegativeRegression": true,
+    "realTrainingStartupCpuDryRun": true,
+    "checkpointPathExistenceHashAndExternalIdentityInspection": true,
+    "planMigrationRegistryAndTaskCapsuleSynchronization": true,
+    "checkpointDeserialization": false,
+    "checkpointWeightContentReadOrLoad": false,
+    "optimizerCreation": false,
+    "backwardExecution": false,
+    "modelWeightMutation": false,
+    "gpuExecution": false,
+    "smokeExecution": false,
+    "stage4FullTraining": false,
+    "stage5StrictRevalidation": false,
+    "formalInference": false,
+    "checkpointPromotion": false,
+    "ownerFormalVisualAcceptance": false,
+    "runtimeFrame": false,
+    "worldEntry": false,
+    "worldRuntime": false,
+    "historyEvidenceDeletionOverwriteOrRepair": false
+  },
+  "implementationPolicy": {
+    "maximumCpuImplementationAndRepairCycles": 3,
+    "eachCycleRequiresUniqueIsolatedRunId": true,
+    "eachCyclePreservesFailedPositiveKeysFailedNegativeKeysExitCodeStdoutStderrReportAndTerminal": true,
+    "noParallelBackendOrSecondTrainer": true,
+    "fourPhysicalControlModulesOnly": true,
+    "datasetCheckpointEvidenceRemainInPlace": true,
+    "legacyBehaviorMustRemainEquivalent": true,
+    "securityChecksMayNotBeRelaxed": true,
+    "failureAfterThirdCycleClosesWithoutScopeExpansion": true
+  },
+  "output": {
+    "runId": "20260810-182526279",
+    "root": ".runtime/ai-painter/stage-control-convergence/20260810-182526279",
+    "implementationConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-ai-painter-stage-control-convergence-20260810/implementation-consumption.json",
+    "nextOwnerActionRequestPath": ".runtime/ai-painter/stage-control-convergence/20260810-182526279/next-owner-action-request.json"
+  }
+}

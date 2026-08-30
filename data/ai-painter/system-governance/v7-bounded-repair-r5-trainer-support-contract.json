@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "ai-assisted-v7-r5-trainer-support-contract-v1",
+  "status": "implemented_cpu_verified_candidate_not_active_no_checkpoint_load_no_training",
+  "generatedBy": "local_ai_v7_r5_trainer_support_program",
+  "recordedAtUtc": "2026-08-04T09:08:54.047Z",
+  "recordedAtAsiaShanghai": "2026-08-04T17:08:54+08:00",
+  "sourceProposal": {
+    "path": "data/ai-painter/system-governance/v7-bounded-repair-r5-candidate-proposal.json",
+    "sha256": "0af7181ca95ec9e907bc01b9ccbcd1c4bd45fdfdfe1a472a55fa840deac0e049",
+    "status": "isolated_candidate_proposal_cpu_verified_not_implemented_not_active"
+  },
+  "implementation": {
+    "trainerPath": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "trainerBeforeSha256": "38add4321af1ef0d87348f8b1770af404e1dbd7f7b6ac5fb31d09d6a52974269",
+    "trainerAfterSha256": "10014274b74972c91b2f927b26fd45341fb81175f61718e3a538d2d210857648",
+    "cpuRegressionScriptPath": "ml/ai-painter/scripts/check_ai_assisted_v7_r5_trainer_support_cpu_regression.py",
+    "cpuRegressionScriptSha256": "e1326d94b436aaad5c460b09092b5adeb0a34590070f73553d2c92279cd22b24",
+    "supportedCapabilities": [
+      "bounded_r5_continuation_epoch_replay_count_and_path_consistency_weight_validation",
+      "checkpoint_continuation_identity_binding_without_checkpoint_loading",
+      "original_owner_approved_rgb_and_condition_pack_only_path_replay",
+      "failed_preview_target_rejection",
+      "path_short_trajectory_target_and_step_consistency_loss_with_gradient",
+      "dynamic_three_consecutive_tail_preview_gate",
+      "inactive_r5_candidate_training_rejection"
+    ]
+  },
+  "cpuRegressionEvidence": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-trainer-support/local-ai-v7-r5-trainer-support-2026-08-04T09-08-51-566Z/cpu-positive-negative-regression.json",
+    "sha256": "9ff9f72c6a54fa5427d66c92ca617217dffc6d20f6769e79e14b9436746ce761",
+    "status": "passed_cpu_only_r5_trainer_support_not_active_no_checkpoint_load_no_training",
+    "positiveRegression": {
+      "minimumBoundCandidateContractAccepted": true,
+      "maximumBoundCandidateContractAccepted": true,
+      "originalApprovedTargetReplayContractAccepted": true,
+      "oneAndTwoReplayPassesAccepted": true,
+      "pathTrajectoryConsistencyLossProducesGradient": true,
+      "dynamicThreeTailPassGateAccepted": true,
+      "checkpointContinuationIdentityBoundWithoutLoading": true
+    },
+    "negativeRegression": {
+      "continuationEpochBelowRangeRejected": true,
+      "replayPassAboveRangeRejected": true,
+      "trajectoryWeightAboveRangeRejected": true,
+      "failedPreviewTargetRejected": true,
+      "nonOriginalTargetSourceRejected": true,
+      "checkpointIdentityMutationRejected": true,
+      "checkpointLoadingActivationRejected": true,
+      "r4PathWeightMutationRejected": true,
+      "objectWeightMutationRejected": true,
+      "reviewThresholdMutationRejected": true,
+      "inactiveCandidateTrainingRejected": true,
+      "pathRecurrenceRejected": true,
+      "objectRecurrenceRejected": true,
+      "missingTailEpochRejected": true
+    }
+  },
+  "ownerAuthorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-trainer-support-cpu-regression-20260804/request.json",
+    "sha256": "9a1a6b20d61519cddc3bb21f7124e058f1f1f609096cfb6aa637a63d1f35e134",
+    "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-trainer-support-cpu-regression-20260804/authorization-consumption.json",
+    "consumptionSha256": "4b3b69350e3dc41bfbab3a8e430af45baabc87106b1c17fdb5bc2f7a083e359c",
+    "commandRef": "owner-authorized-v7-r5-trainer-support-cpu-regression-20260804",
+    "scope": "v7_r5_trainer_support_and_cpu_positive_negative_regression_only"
+  },
+  "activationBoundary": {
+    "candidateActive": false,
+    "executionValuesSelected": false,
+    "checkpointLoaded": false,
+    "optimizerCreated": false,
+    "modelWeightsModified": false,
+    "gpuTrainingStarted": false,
+    "validationStarted": false,
+    "formalInferenceStarted": false,
+    "checkpointPromoted": false,
+    "runtimeFrameStarted": false,
+    "worldEntered": false,
+    "nextIndependentAuthorization": "select_r5_bounded_parameters_and_compile_isolated_configuration_only"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "thailand-rebuild64-cross-modal-rgb-collapse-prevention-contract-v1",
+  "contractId": "thailand-rebuild64-cross-modal-rgb-collapse-prevention-v1",
+  "status": "active",
+  "updatedAtAsiaShanghai": "2026-08-01T19:45:00+08:00",
+  "scope": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "targetSequenceCodes": ["45", "49"],
+    "targetSlotIds": ["v7-capacity-slot-190", "v7-capacity-slot-194"]
+  },
+  "crossModalPreRgbGate": {
+    "candidateConditionWaterRaster": {"width": 64, "height": 48},
+    "normalizedWaterShapeRaster": {"width": 32, "height": 32},
+    "transforms": ["direct", "horizontal_mirror", "vertical_mirror", "rotate_180"],
+    "historicalRgbMinimumWaterCoverageRatio": 0.02,
+    "normalizedShapeDuplicateMinimumIoU": 0.38,
+    "layoutDuplicateMinimumIoU": 0.2,
+    "strongNormalizedShapeDuplicateMinimumIoU": 0.45,
+    "duplicateRule": "normalized_shape_iou_at_least_0_38_and_layout_iou_at_least_0_2_or_normalized_shape_iou_at_least_0_55",
+    "incompleteHistoricalComparisonIsHardFailure": true
+  },
+  "generationInputBoundary": {
+    "historicalRgbMayBeReadForAuditSignatureOnly": true,
+    "historicalRgbPixelsForwardedToGenerator": false,
+    "historicalRgbPathsForwardedToGenerator": false,
+    "historicalMatchRecordIdsForwardedToGenerator": false,
+    "failedRgbMayBeUsedAsImageReference": false,
+    "conditionGuideIsOnlyImageReference": true
+  },
+  "fixedDefinitions": {
+    "sequence45PathEntranceSide": "east",
+    "sequence49PathEntranceSide": "west",
+    "waterUpstreamBoundarySide": "north",
+    "waterDownstreamBoundarySide": "south",
+    "pairedNeighborWaterPortsRequired": true,
+    "landscape": "wet-season-drainage-hollow",
+    "season": "wet_season",
+    "hydrology": "inland_hydrology"
+  },
+  "unchangedHardGates": [
+    "23_channel_condition_contract",
+    "current64_all_2016_pairs_distinct",
+    "all_history_condition_guide_novelty",
+    "route_and_water_boundary_alignment",
+    "post_rgb_all_history_composition_novelty"
+  ],
+  "forbiddenActions": [
+    "lower_existing_thresholds",
+    "send_historical_rgb_to_generator",
+    "automatic_second_retry",
+    "auto_approve_machine_rejected_rgb",
+    "start_gpu_training",
+    "create_runtime_frame",
+    "enter_world"
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "ai-assisted-v7-bounded-repair-r4-candidate-proposal-v1",
+  "status": "isolated_candidate_proposal_cpu_verified_not_implemented_not_active",
+  "generatedBy": "local_ai_failure_learning_r4_candidate_proposal_compiler",
+  "sourceR3Candidate": {
+    "path": "data/ai-painter/system-governance/v7-bounded-repair-r3-candidate-overlay.json",
+    "sha256": "6c013e05a36c85646b18fde12b5573049be8ea1703c47899f54956d468a2a501"
+  },
+  "sourceFailureLearningReport": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r4-candidates/local-ai-v7-r4-candidate-proposal-2026-08-04T06-44-36-619Z/failure-learning-report.json",
+    "sha256": "c1efdbba9c68dc8642e3d375e984619ef8bcea1a7aec6bd0c69cc45754e128a3"
+  },
+  "sourceOfflineClosure": {
+    "path": ".runtime/ai-painter/v7-bounded-repair-r3-offline-closures/ai-assisted-v7-r3-existing-smoke-offline-closure-2026-08-04T06-23-28-275Z/closure-report.json",
+    "sha256": "ef1a76cfb9f7f379b49103cb30a47c7c56cbc3ba2350c173fbf7ef69610632df"
+  },
+  "sourcePreviewReview": {
+    "path": ".runtime/ai-painter/v7-bounded-repair-r3-offline-closures/ai-assisted-v7-r3-existing-smoke-offline-closure-2026-08-04T06-23-28-275Z/fixed-preview-hard-gate-review.json",
+    "sha256": "5d132b235a6893abf2a3edec073593c327f3148676343d35fc94804a29d1e2e5"
+  },
+  "reviewThresholdPolicy": "preserved_unchanged",
+  "proposal": {
+    "boundedRepairVersion": "v7_bounded_repair_r4_candidate_proposal",
+    "baseBoundedRepairVersion": "v7_bounded_repair_r3_candidate",
+    "implementationStatus": "proposal_only_requires_separate_owner_authorization",
+    "trainingAuthorizationStatus": "not_authorized_proposal_only",
+    "repairContractId": "local-ai-v7-r4-road-boundary-object-semantic-stability-proposal-20260804",
+    "pathStabilityWeightSearch": {
+      "pathInteriorRgb": {
+        "current": 1.5,
+        "minimum": 1.5,
+        "maximum": 2,
+        "selectedValue": null,
+        "evidenceIssueCode": "condition_terrain_path_ground_coverage_mismatch",
+        "occurrenceEpochs": [
+          30,
+          40,
+          60,
+          80
+        ]
+      },
+      "pathForbiddenBoundaryRgb": {
+        "current": 1.75,
+        "minimum": 1.75,
+        "maximum": 2,
+        "selectedValue": null,
+        "evidenceIssueCode": "condition_terrain_path_ground_uncontracted_boundary_contact",
+        "occurrenceEpochs": [
+          1,
+          20,
+          80,
+          110
+        ],
+        "tailRecurrenceEpoch": 110
+      }
+    },
+    "objectSemanticStabilityProposal": {
+      "preserveIndependentChannels": true,
+      "currentChannelWeights": {
+        "object_footprints": 1,
+        "object_tree": 1,
+        "object_rock": 1.25,
+        "object_vegetation": 1
+      },
+      "selectedWeightChanges": null,
+      "requireZeroTailIssueCodes": [
+        "condition_object_footprints_reference_semantic_mismatch",
+        "condition_object_rock_reference_semantic_mismatch",
+        "condition_object_tree_reference_semantic_mismatch",
+        "condition_object_vegetation_reference_semantic_mismatch"
+      ],
+      "rationale": "object_semantic_issues_resolved_before_tail_so_weights_are_not_blindly_increased"
+    },
+    "smokeStabilityGate": {
+      "requiredConsecutiveTailPasses": 3,
+      "tailEpochs": [
+        100,
+        110,
+        120
+      ],
+      "requireAllMachineReviewsPassed": true,
+      "requireZeroPathBoundaryIssues": true,
+      "requireZeroObjectSemanticIssues": true,
+      "preserveReviewThresholds": true,
+      "thresholdSource": "unchanged_existing_machine_review_contract"
+    },
+    "ownerTrainingAuthorization": {
+      "status": "not_authorized_proposal_only",
+      "trainerImplementationAuthorized": false,
+      "gpuTrainingAuthorizedNow": false,
+      "fullTrainingAuthorized": false,
+      "validationAuthorized": false,
+      "formalInferenceAuthorized": false,
+      "runtimeFrameAuthorized": false,
+      "worldEntryAuthorized": false
+    }
+  },
+  "promotionBoundary": {
+    "formalConfigActive": false,
+    "trainerImplementationComplete": false,
+    "modelWeightsModified": false,
+    "gpuTrainingAuthorized": false,
+    "validationAuthorized": false,
+    "formalInferenceAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false,
+    "nextIndependentAuthorization": "r4_candidate_trainer_implementation_and_non_training_regression_only"
+  },
+  "compiledAtUtc": "2026-08-04T06:44:36.619Z",
+  "compiledAtAsiaShanghai": "2026-08-04T14:44:36+08:00",
+  "authorizationPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r4-candidate-proposal-cpu-regression-20260804/request.json",
+  "authorizationSha256": "6cc894ba1237e002ab3803008ca2e659235c87d4cbdfc4b73966b02f1a02e1d2",
+  "authorizationConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r4-candidate-proposal-cpu-regression-20260804/authorization-consumption.json",
+  "authorizationConsumptionSha256": "963f7fff0074eaefd5be6c4630d0ab1311abd17fa7e42aad4e3abc338fd98063",
+  "cpuRegressionEvidence": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r4-candidates/local-ai-v7-r4-candidate-proposal-2026-08-04T06-44-36-619Z/cpu-synthetic-regression.json",
+    "sha256": "c3419797b91c2d8e0a7f54b9152cfcf7c48d08b9bb113099c8dc594ac842976f",
+    "status": "passed_cpu_only_proposal_not_implemented_no_training"
+  },
+  "failureLearningEvidence": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r4-candidates/local-ai-v7-r4-candidate-proposal-2026-08-04T06-44-36-619Z/failure-learning-report.json",
+    "sha256": "c1efdbba9c68dc8642e3d375e984619ef8bcea1a7aec6bd0c69cc45754e128a3"
+  }
+}

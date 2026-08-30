@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "project-owner-task-authorization-v1",
+  "authorizationId": "owner-authorized-local-task-console-preview-css-resume-20260808",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-08T08:53:43.524Z",
+  "recordedAtAsiaShanghai": "2026-08-08T16:53:43.524+08:00",
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-local-task-console-preview-css-resume-20260808",
+    "scope": "bind_previous_css_context_failure_preserve_partial_implementation_complete_existing_page_styles_then_run_bounded_readonly_contract_checks"
+  },
+  "boundPreviousFailure": {
+    "terminalPath": ".runtime/ai-painter/local-task-console-task-capsule-preview-implementations/owner-authorized-local-task-console-task-capsule-preview-narrowed-20260808/phase-terminal.json",
+    "terminalSha256": "8fac7a94626eba629c50cf8c96bdb67569a682891aa822eec8d451a0f1d2eb24",
+    "status": "failed_closed",
+    "failureCode": "page_stylesheet_patch_context_mismatch"
+  },
+  "preservedPartialImplementation": [
+    "src/server/ai-painter-local-task-console.ts",
+    "src/app/api/ai-painter/task-console/route.ts",
+    "src/app/ai-painter-progress/task-console/task-console.tsx",
+    "data/ai-painter/system-governance/local-ai-task-catalog-v1.json"
+  ],
+  "authorizedWriteTargets": [
+    "src/app/ai-painter-progress/task-console/page.module.css",
+    "scripts/check-ai-painter-local-task-console-phase1.mjs",
+    ".runtime/ai-painter/local-task-console-task-capsule-preview-implementations/owner-authorized-local-task-console-preview-css-resume-20260808"
+  ],
+  "authorizedActions": {
+    "materializeImmutableOwnerAuthorization": true,
+    "atomicallyConsumeImplementationAuthorization": true,
+    "completeExistingTaskCapsulePageStyles": true,
+    "completeExistingOwnerActionPreviewPageStyles": true,
+    "synchronizeCpuContractCheckerForExistingImplementation": true,
+    "runTaskConsoleCpuPositiveNegativeContractCheck": true,
+    "runPageContractCheck": true,
+    "runCurrentTrainingProjectionRegression": true,
+    "runTypeScriptTypeCheck": true,
+    "saveImplementationReportAndTerminal": true
+  },
+  "previewBoundary": {
+    "status": "draft_unexecuted",
+    "persistAsAuthorization": false,
+    "ownerDecisionRecorded": false,
+    "authorizationConsumptionAllowed": false,
+    "executionAllowed": false,
+    "postRequestAllowed": false
+  },
+  "forbiddenActions": {
+    "expandCallChain": true,
+    "createParallelBackend": true,
+    "createPostExecutionEndpoint": true,
+    "automaticApproval": true,
+    "automaticPreviewAuthorizationConsumption": true,
+    "automaticPreviewExecution": true,
+    "modifyTrainer": true,
+    "modifyRunner": true,
+    "modifyTrainingConfig": true,
+    "readOrLoadCheckpoint": true,
+    "modifyCheckpoint": true,
+    "modifyModelWeights": true,
+    "modifyMachineReviewThresholds": true,
+    "startGpu": true,
+    "startTraining": true,
+    "startValidation": true,
+    "startFormalInference": true,
+    "startRuntimeFrame": true,
+    "enterWorld": true,
+    "automaticRetry": true
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetryAllowed": false,
+    "automaticFixAfterCheckFailureAllowed": false
+  },
+  "ownerCommandZh": "授权在新的不可变命令范围内，绑定本次失败终态SHA-256 8fac7a94626eba629c50cf8c96bdb67569a682891aa822eec8d451a0f1d2eb24，保留当前任务操作台部分实施；仅按照现有压缩CSS的实际结构完成任务胶囊与Owner动作请求预览样式接入，不扩大调用链和后台范围。随后执行CPU正反合同检查、页面合同检查、current-training投影回归和TypeScript类型检查，通过后保存实施报告与成功终态。不得自动批准、消费或执行预览请求，不得新增POST执行接口，其余授权与禁止边界保持不变；失败立即停止且不自动重试。"
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "stage4-cross-domain-gpu-smoke-support-contract-v1",
+  "status": "cpu_verified_sample194_west_gpu_smoke_preflight_gate_execution_not_consumed",
+  "authorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-cross-domain-visual-consistency-gpu-intent-20260808-154822808/request.json",
+    "sha256": "e0827059cf54a2117c7791e404f7c40a58c88aa0d3f8137b94db71536bff2d59"
+  },
+  "preflightAuthorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-cross-domain-visual-consistency-cpu-preflight-20260808-154822808/request.json",
+    "sha256": "32cb964d4f2953cd12f0d669c0c14098a185c4bcd394c7dad21cadcf616bcf6a"
+  },
+  "inactiveConfig": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-cross-domain-visual-consistency-cpu-runs/ai-assisted-v7-r5-stage4-cross-domain-visual-consistency-cpu-20260808-154822808/inactive-smoke-config.json",
+    "sha256": "6128bb057c0b935a89cfe58cacd2d1411ace75ad1cf4f58d5a811fbf1b7f8968"
+  },
+  "trainer": {
+    "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "sha256": "8cfb220baee73f830808ac4f10657edc191674485b800893a3dd58e39a45ac16"
+  },
+  "runner": {
+    "path": "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs",
+    "sha256": "89b4b4f4b396c1de72b570decb9bf9820a69f51dfb7fa48ffd21a484894df4e2"
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-cross-domain-gpu-smoke-authorization-cpu-regressions/20260808-154822808/report.json",
+    "sha256": "76553511f2ee769c2acced125df21e822a3e79d01e377fc9ce83cefd2f69525e"
+  },
+  "fixedExecution": {
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "seed": 20263722,
+    "requiredBoundarySides": [
+      "west"
+    ],
+    "stageIndex": 0,
+    "resolution": {
+      "width": 256,
+      "height": 192
+    },
+    "epochCount": 30,
+    "previewEpochs": [
+      1,
+      5,
+      10,
+      20,
+      30
+    ],
+    "diagnosticMetricCount": 17
+  },
+  "gpuExecutionAuthorizationConsumed": false,
+  "checkpointFileRead": false,
+  "checkpointLoaded": false,
+  "optimizerCreated": false,
+  "backwardExecuted": false,
+  "modelWeightsModified": false,
+  "gpuUsed": false,
+  "trainingStarted": false,
+  "automaticRetryStarted": false,
+  "stage4FullTrainingStarted": false,
+  "stage1Started": false,
+  "stage2Started": false,
+  "strictRevalidationStarted": false,
+  "formalInferenceStarted": false,
+  "checkpointPromoted": false,
+  "runtimeFrameStarted": false,
+  "worldEntryStarted": false
+}

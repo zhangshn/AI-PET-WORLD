@@ -1,0 +1,238 @@
+{
+  "schemaVersion": "ai-assisted-v7-r5-stage3-internal-candidate-v1",
+  "status": "isolated_stage3_internal_candidate_cpu_verified_not_implemented_not_active",
+  "generatedBy": "local_ai_v7_r5_stage3_internal_failure_learning_program",
+  "sourceEvidence": {
+    "review": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/ai-assisted-v7-repair-r5-checkpoint-continuation-single-sample-overfit-smoke-2026-08-04T10-07-52-619Z/fixed-preview-hard-gate-review.json",
+      "sha256": "e3c834c8b07dfaeea0a70c9b7a1cc95caa00e4fb37a94c7e2105f26de4f165a3"
+    },
+    "closure": {
+      "path": ".runtime/ai-painter/v7-bounded-repair-r5-overfit-smoke-review-closures/r5-review-closure-2026-08-04T10-13-36-185Z/closure-report.json",
+      "sha256": "26c5e920f4703118a1f35a6f3380e30d7175427ab5f0d674946a40c6538a55bd"
+    },
+    "manifest": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/ai-assisted-v7-repair-r5-checkpoint-continuation-single-sample-overfit-smoke-2026-08-04T10-07-52-619Z/manifest.json",
+      "sha256": "37fab710dab997d0ea390ffa9f8dcf337f21011ac37c7f40698c8a49d836686d"
+    },
+    "checkpointIdentity": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/ai-assisted-v7-repair-r5-checkpoint-continuation-single-sample-overfit-smoke-2026-08-04T10-07-52-619Z/complete-world-ai-assisted-conditional-denoiser.pt",
+      "sha256": "21198424af06d140c780540c345809841afc4fb2e19cd0c52419f62b58f5da42",
+      "fileHashedOnly": true,
+      "deserialized": false,
+      "loadedIntoModel": false
+    },
+    "baseR5Proposal": {
+      "path": "data/ai-painter/system-governance/v7-bounded-repair-r5-candidate-proposal.json",
+      "sha256": "0af7181ca95ec9e907bc01b9ccbcd1c4bd45fdfdfe1a472a55fa840deac0e049"
+    },
+    "r5SelectionContract": {
+      "path": "data/ai-painter/system-governance/v7-bounded-repair-r5-isolated-config-selection-contract.json",
+      "sha256": "7d5cda5f3def74635f6b16ce9f647430c9610e0290ac244c9000743f52f5b3b3"
+    }
+  },
+  "failureAnalysis": {
+    "previewCount": 4,
+    "failedPreviewCount": 4,
+    "issueClusters": [
+      {
+        "issueCode": "condition_terrain_path_ground_coverage_mismatch",
+        "occurrenceCount": 4,
+        "occurrenceEpochs": [
+          1,
+          10,
+          20,
+          30
+        ],
+        "expectedNonZeroRatio": 0.0291,
+        "actualSignalRatios": [
+          0.1997,
+          0.1062,
+          0.0998,
+          0.1143
+        ],
+        "coverageRatios": [
+          6.8611,
+          3.6469,
+          3.4295,
+          3.9257
+        ],
+        "unchangedMaximumCoverageRatio": 3,
+        "minimumObservedCoverageRatio": 3.4295,
+        "maximumObservedCoverageRatio": 6.8611,
+        "finalObservedCoverageRatio": 3.9257,
+        "conclusion": "decoded_path_signal_remains_systematically_over_covered"
+      },
+      {
+        "issueCode": "condition_terrain_path_ground_uncontracted_boundary_contact",
+        "occurrenceCount": 2,
+        "occurrenceEpochs": [
+          10,
+          30
+        ],
+        "requiredBoundarySides": [
+          "south"
+        ],
+        "unexpectedBoundarySidesByEpoch": {
+          "10": [
+            "north",
+            "west"
+          ],
+          "30": [
+            "north",
+            "east",
+            "west"
+          ]
+        },
+        "conclusion": "unauthorized_boundary_contact_recurs_after_temporary_recovery"
+      }
+    ],
+    "objectSemanticRegressionCount": 0,
+    "modelResponse": {
+      "coverageImprovedFromEpoch1": true,
+      "finalCoverageStillRejected": true,
+      "boundaryContactTemporarilyRecoveredAtEpoch20": true,
+      "boundaryContactRecurredAtEpoch30": true
+    },
+    "conclusion": "r5_is_learnable_but_coverage_scale_and_authorized_boundary_topology_are_not_stable"
+  },
+  "proposal": {
+    "boundedRepairVersion": "v7_r5_stage3_internal_path_coverage_boundary_candidate_v1",
+    "baseBoundedRepairVersion": "v7_bounded_repair_r5_candidate",
+    "implementationStatus": "proposal_only_requires_separate_owner_authorization",
+    "trainingAuthorizationStatus": "not_authorized_proposal_only",
+    "repairContractId": "local-ai-v7-r5-stage3-internal-path-coverage-boundary-stability-proposal-20260804",
+    "repairMode": "bounded_r5_checkpoint_continuation_with_original_target_coverage_and_authorized_boundary_topology",
+    "checkpointContinuationProposal": {
+      "sourceCheckpointPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/ai-assisted-v7-repair-r5-checkpoint-continuation-single-sample-overfit-smoke-2026-08-04T10-07-52-619Z/complete-world-ai-assisted-conditional-denoiser.pt",
+      "sourceCheckpointSha256": "21198424af06d140c780540c345809841afc4fb2e19cd0c52419f62b58f5da42",
+      "loadingAuthorizedNow": false,
+      "continuationEpochs": {
+        "minimum": 30,
+        "maximum": 50,
+        "selectedValue": null
+      },
+      "evaluationInterval": 10
+    },
+    "preserveExistingPathLossWeights": {
+      "pathInteriorRgb": 2,
+      "pathForbiddenBoundaryRgb": 2,
+      "increaseBeyondExistingBoundSelected": false
+    },
+    "pathHardExampleReplayProposal": {
+      "targetSource": "original_owner_approved_rgb_and_condition_pack_only",
+      "failedPreviewPixelsUsedAsTrainingTargets": false,
+      "evidenceEpochs": [
+        1,
+        10,
+        20,
+        30
+      ],
+      "replayPassesPerEpoch": {
+        "minimum": 2,
+        "maximum": 2,
+        "selectedValue": null
+      }
+    },
+    "pathCoverageCalibrationProposal": {
+      "conditionChannel": "terrain_path_ground",
+      "targetSource": "original_condition_mask_support_only",
+      "machineReviewThresholdUsedAsTrainingTarget": false,
+      "objective": "penalize_excess_decoded_path_activation_relative_to_original_condition_mask_support",
+      "weight": {
+        "minimum": 0.25,
+        "maximum": 0.75,
+        "selectedValue": null
+      }
+    },
+    "authorizedBoundaryTopologyProposal": {
+      "conditionChannel": "terrain_path_ground",
+      "allowedSidesSource": "original_condition_channel_boundary_contact_only",
+      "requiredBoundarySides": [
+        "south"
+      ],
+      "objective": "penalize_decoded_path_contact_on_sides_absent_from_original_condition_channel",
+      "weight": {
+        "minimum": 0.25,
+        "maximum": 0.75,
+        "selectedValue": null
+      }
+    },
+    "pathShortTrajectoryConsistencyProposal": {
+      "currentWeight": 0.25,
+      "weight": {
+        "minimum": 0.25,
+        "maximum": 0.5,
+        "selectedValue": null
+      },
+      "preserveCoverageAndBoundaryAcrossSteps": true
+    },
+    "objectSemanticStabilityProposal": {
+      "selectedWeightChanges": null,
+      "preserveExistingIndependentChannelWeights": true,
+      "rationale": "all_four_r5_previews_passed_every_object_semantic_audit"
+    },
+    "smokeStabilityGate": {
+      "requiredConsecutiveTailPasses": 3,
+      "evaluationInterval": 10,
+      "requireAllMachineReviewsPassed": true,
+      "requireZeroPathCoverageIssues": true,
+      "requireZeroUnauthorizedBoundaryContacts": true,
+      "requireZeroObjectSemanticIssues": true,
+      "preserveReviewThresholds": true
+    },
+    "ownerTrainingAuthorization": {
+      "status": "not_authorized_proposal_only",
+      "trainerImplementationAuthorized": false,
+      "checkpointLoadingAuthorized": false,
+      "optimizerCreationAuthorized": false,
+      "gpuTrainingAuthorizedNow": false,
+      "fullTrainingAuthorized": false,
+      "strictRevalidationAuthorized": false,
+      "formalInferenceAuthorized": false,
+      "runtimeFrameAuthorized": false,
+      "worldEntryAuthorized": false
+    }
+  },
+  "reviewThresholdPolicy": "preserved_unchanged",
+  "promotionBoundary": {
+    "fixedStageNumber": 3,
+    "addsNewFixedStage": false,
+    "candidateActive": false,
+    "selectedExecutionValuesPresent": false,
+    "checkpointDeserialized": false,
+    "checkpointLoaded": false,
+    "optimizerCreated": false,
+    "modelWeightsModified": false,
+    "gpuTrainingStarted": false,
+    "validationStarted": false,
+    "formalInferenceStarted": false,
+    "runtimeFrameStarted": false,
+    "worldEntered": false,
+    "nextIndependentAuthorization": "r5_stage3_internal_candidate_trainer_support_and_cpu_regression_only"
+  },
+  "candidateContract": {
+    "status": "r5_stage3_internal_candidate_contract_valid_proposal_only",
+    "reviewThresholdsPreserved": true,
+    "failedPreviewsUsedAsTrainingTargets": false,
+    "fixedStageNumber": 3,
+    "addsNewFixedStage": false
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage3-internal/local-ai-v7-r5-stage3-internal-failure-learning-2026-08-04T10-30-49-274Z/cpu-positive-negative-regression.json",
+    "sha256": "000ce7f0c77fe1843f77ccae693822d59dff7573e0fef9df25caf620f51c681c",
+    "status": "passed_cpu_only_candidate_not_active_no_checkpoint_load_no_training"
+  },
+  "failureAnalysisEvidence": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage3-internal/local-ai-v7-r5-stage3-internal-failure-learning-2026-08-04T10-30-49-274Z/failure-analysis.json",
+    "sha256": "8ed8b971f6067d47be5b3f54d1d966cce0f783b70ac0ed6417b52440066e4f42"
+  },
+  "ownerAuthorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-internal-failure-learning-20260804/request.json",
+    "sha256": "5ceec1431b1bbce09353515421e762ac741726c86a6b9777fb9da45ad39314dc",
+    "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-internal-failure-learning-20260804/authorization-consumption.json",
+    "consumptionSha256": "55ea3c30fa04f74b7cf2c774354df8df37ec64a67b523913713da0c1ebd1c95f",
+    "commandRef": "owner-authorized-v7-r5-stage3-internal-failure-learning-cpu-regression-20260804",
+    "scope": "read_four_r5_smoke_rejections_generate_stage3_internal_path_coverage_boundary_candidate_and_cpu_regression_only"
+  }
+}

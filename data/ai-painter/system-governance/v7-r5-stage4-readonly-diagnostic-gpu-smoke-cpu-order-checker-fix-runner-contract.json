@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "v7-r5-stage4-readonly-diagnostic-gpu-smoke-runner-contract-v1",
+  "status": "cpu_verified_checkpoint_not_read_gpu_not_started",
+  "authorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-readonly-diagnostic-cuda-context-init-retry-20260805/request.json",
+    "sha256": "479ee128b6ca4eeb4ee106def732fc66ee96a86e1ee556e9e792e0a9d715ef0f"
+  },
+  "implementationConsumption": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-readonly-diagnostic-cuda-context-init-retry-20260805/implementation-authorization-consumption.json",
+    "sha256": "7c9ccd48125c80b8dd74a96e1564aa3e399758a7bf4028761b963c63f10d6fa7"
+  },
+  "runner": {
+    "path": "ml/ai-painter/scripts/run_ai_assisted_v7_r5_stage4_readonly_diagnostic_gpu_smoke.py",
+    "sha256": "0b4e7120b5926263ec68ac5a3f5f11e509ae1f5f37443019f144edc4a4132900"
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-readonly-diagnostic-gpu-smoke-cpu-order-checker-fix-regressions/ai-assisted-v7-r5-stage4-readonly-diagnostic-cpu-order-checker-fix-2026-08-05T12-05-00-000Z/report.json",
+    "sha256": "6114ca9b7ee3b6cfe1d1ecb645155d2f45035b23d8634a642474aa2a48facf70",
+    "positiveAssertionsPassed": 37,
+    "negativeAssertionsPassed": 37
+  },
+  "execution": {
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "conditionLabel": "v7-complete-map-194",
+    "stage0CheckpointSha256": "17c1d4e34e8e738bc042c0f99dad27afcc3bfd9337e3e220bc0e172c6e634453",
+    "autoencoderCheckpointSha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba",
+    "resolution": {
+      "width": 256,
+      "height": 192
+    },
+    "timestep": 999,
+    "seed": 20263722,
+    "denoiserForwardPasses": 1,
+    "lossBackwardPasses": 0,
+    "optimizerSteps": 0
+  },
+  "activationGate": {
+    "status": "requires_atomic_gpu_execution_consumption_after_python_gpu_and_resource_preflights",
+    "checkpointFileRead": false,
+    "checkpointLoaded": false,
+    "gpuUsed": false,
+    "training": false
+  },
+  "preflight": {
+    "schemaVersion": "v7-r5-stage4-readonly-diagnostic-gpu-smoke-preflight-v1",
+    "status": "all_readonly_diagnostic_cuda_context_init_retry_preflights_passed_checkpoint_not_read_gpu_not_started",
+    "recordedAtUtc": "2026-08-05T12:06:04.158456Z",
+    "recordedAtAsiaShanghai": "2026-08-05T20:06:04+08:00",
+    "authorization": {
+      "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-readonly-diagnostic-cuda-context-init-retry-20260805/request.json",
+      "sha256": "479ee128b6ca4eeb4ee106def732fc66ee96a86e1ee556e9e792e0a9d715ef0f"
+    },
+    "implementationConsumption": {
+      "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-readonly-diagnostic-cuda-context-init-retry-20260805/implementation-authorization-consumption.json",
+      "sha256": "7c9ccd48125c80b8dd74a96e1564aa3e399758a7bf4028761b963c63f10d6fa7"
+    },
+    "config": {
+      "path": ".runtime/ai-painter/r5-stage4-failure-diagnostic-inactive-configs/ai-assisted-v7-r5-stage4-failure-diagnostic-inactive-config-2026-08-05T11-18-00-000Z/inactive-config.json",
+      "sha256": "c86067e15f2df0a57882b911f13f2202c5b50ff9eb4445582391b6395347dbc6"
+    },
+    "selectionContract": {
+      "path": "data/ai-painter/system-governance/v7-r5-stage4-failure-diagnostic-inactive-config-selection-contract.json",
+      "sha256": "ccf6953c83a4220134d711ff432eea52b5c5ae589d3e00382dd2adcafc8f68d5"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "836899f6cc596d6555fd5fb7aa18c94ade8ed324b1a4a058d982ecc4412996da"
+    },
+    "previousFailure": {
+      "terminalPath": ".runtime/ai-painter/v7-r5-stage4-readonly-diagnostic-gpu-smoke-retries/ai-assisted-v7-r5-stage4-readonly-diagnostic-gpu-smoke-retry-2026-08-05T12-00-00-000Z/phase-terminal.json",
+      "terminalSha256": "2633767c2d50bdb7f7ab1a74d285d1b6d6a85b761f9640c974301224053c8bd4",
+      "failureMessage": "Invalid device argument "
+    },
+    "sample": {
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+      "conditionLabel": "v7-complete-map-194",
+      "split": "validation",
+      "imagePath": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6.png",
+      "imageSha256": "13caf53dce064afdd0bc1318f4c5b5bb9b3c63631679d84ccd3ed3ab992688be",
+      "conditionPackPath": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-194-2026-08-01T15-47-45-117Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+      "conditionPackSha256": "2db536def8a3b7d3049b7cae673942edd77aa1151f432dc5774f2b3a33579ca9",
+      "v7CapacitySlotId": "v7-capacity-slot-194"
+    },
+    "checkpointBindingsFromImmutableManifestOnly": {
+      "stage0Path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4/ai-assisted-v7-r5-stage4-full-training-2026-08-05T10-21-08-137Z-stage-0/complete-world-ai-assisted-conditional-denoiser.pt",
+      "stage0Sha256": "17c1d4e34e8e738bc042c0f99dad27afcc3bfd9337e3e220bc0e172c6e634453",
+      "autoencoderPath": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/complete-world-ai-assisted-autoencoder.pt",
+      "autoencoderSha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba"
+    },
+    "diagnostic": {
+      "resolution": {
+        "width": 256,
+        "height": 192
+      },
+      "timestep": 999,
+      "seed": 20263722,
+      "denoiserForwardPasses": 1,
+      "lossBackwardPasses": 0,
+      "optimizerSteps": 0
+    },
+    "checkpointFileRead": false,
+    "checkpointLoaded": false,
+    "optimizerCreated": false,
+    "lossBackwardExecuted": false,
+    "modelWeightsModified": false,
+    "checkpointWritten": false,
+    "gpuUsed": false,
+    "trainingStarted": false,
+    "fullTrainingStarted": false,
+    "automaticRetryStarted": false,
+    "strictRevalidationStarted": false,
+    "formalInferenceStarted": false,
+    "checkpointFormallyPromoted": false,
+    "runtimeFrameStarted": false,
+    "worldEntryStarted": false
+  }
+}

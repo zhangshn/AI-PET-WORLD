@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-v7-mvp64-gpu-training-activation-20260802",
+  "subsystem": "ai_painter_v7_mvp64_formal_local_gpu_training_activation",
+  "status": "waiting_owner_authorization",
+  "taskIdentity": {
+    "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+    "seriesId": "thailand-rebuild64-20260731",
+    "datasetPackageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+    "capacityPlanRunId": "ai-assisted-v7-data-capacity-plan-2026-08-02T01-44-37-927Z",
+    "qualifiedCompleteMapCount": 64,
+    "splitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "gpuTrainingStarted": false,
+    "imageInferenceStarted": false,
+    "runtimeFrameStarted": false,
+    "worldEntryStarted": false
+  },
+  "ownerVisibleConclusionZh": "新64组已全部通过项目所有者审核并登记为正式V7容量；64个活动序号均且仅有一个成功记录，训练分割为48个train、8个validation、4个challenge、4个regression。最新数据集、容量计划、23通道绑定、来源与唯一性、全历史失败学习和CPU完整模型合同均已通过。",
+  "localSystemFindingZh": "当前已满足此前延后授权列出的MVP64数据和审计激活门禁，但现有记录仍明确标记gpuTrainingAuthorizedNow=false。为避免把旧的延后授权或本轮数据准备许可误当作实际GPU启动许可，程序必须获得一次新的、范围明确的训练激活命令后，才能进入V7本地分阶段训练。",
+  "blockingReasonCode": "v7_mvp64_cpu_ready_gpu_training_activation_requires_explicit_owner_authorization",
+  "whyCannotProceedZh": "GPU训练会产生新的模型权重并占用本地计算资源，属于新的执行阶段；本轮许可只完成容量登记、数据集重建、CPU门禁和授权申请，不能自动扩大为GPU训练、图像推理、RuntimeFrame或进入世界。",
+  "minimumRequestedActionZh": "仅授权使用已锁定的MVP64数据集启动项目自有V7条件去噪器的分阶段本地GPU训练；必须先运行训练程序冒烟检查，再依次执行stage-0、stage-1、stage-2，每阶段独立落盘并通过固定门禁后才能进入下一阶段。此授权不包含生成游戏图片、正式推理、RuntimeFrame或进入/world。",
+  "invariants": [
+    "dataset_package_and_64_capacity_record_hashes_remain_immutable",
+    "formal_split_remains_48_train_8_validation_4_challenge_4_regression",
+    "challenge_and_regression_metrics_are_not_read_during_training",
+    "all_23_condition_channels_and_real_thailand_source_lineage_remain_bound",
+    "historical_rejected_rgb_remains_negative_learning_only",
+    "no_new_rgb_training_original_is_generated",
+    "each_training_stage_must_persist_checkpoint_provenance_and_machine_evidence",
+    "formal_inference_runtime_frame_and_world_entry_remain_blocked"
+  ],
+  "forbiddenActions": [
+    "change_or_rebalance_the_locked_64_record_split",
+    "replace_any_training_record_or_condition_package",
+    "read_challenge_or_regression_metrics_during_checkpoint_selection",
+    "load_third_party_weights",
+    "skip_smoke_or_any_progressive_training_stage",
+    "continue_after_a_failed_training_stage",
+    "generate_formal_inference_images",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "V7的64张训练容量和CPU预检已经全部就绪。需要您另行明确允许启动本地GPU训练；获批后程序只执行冒烟检查和stage-0/1/2训练，任何失败立即停止，仍不会生成正式游戏图或进入世界。",
+  "nextActionAfterAuthorization": [
+    "record_bounded_v7_gpu_training_activation",
+    "verify_locked_dataset_and_capacity_hashes_again",
+    "run_v7_training_program_smoke_check",
+    "run_v7_stage_0_and_verify_checkpoint",
+    "run_v7_stage_1_and_verify_parent_checkpoint",
+    "run_v7_stage_2_and_verify_parent_checkpoint",
+    "stop_before_formal_inference_and_request_separate_authorization"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/ai-assisted-v7-gpu-training-readiness-checks/ai-assisted-v7-gpu-training-readiness-check-2026-08-02T01-53-15-339Z/readiness-report.json",
+    ".runtime/ai-painter/ai-assisted-v7-data-capacity-plans/ai-assisted-v7-data-capacity-plan-2026-08-02T01-44-37-927Z/capacity-plan.json",
+    "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+    "data/ai-painter/system-governance/thailand-rebuild64-sequence-registry-v1.json",
+    ".runtime/ai-painter/auto-visual-judge-learning/latest.json"
+  ],
+  "ownerDecision": null,
+  "resolution": null
+}

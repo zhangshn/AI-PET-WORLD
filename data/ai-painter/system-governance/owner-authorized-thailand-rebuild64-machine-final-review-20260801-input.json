@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-authorized-thailand-rebuild64-machine-final-review-20260801",
+  "subsystem": "ai_painter_thailand_rebuild64_machine_final_review",
+  "status": "owner_authorized_pending_execution",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceRange": "01-64",
+    "reviewContractPath": "data/ai-painter/system-governance/thailand-rebuild64-machine-final-review-contract-v1.json"
+  },
+  "ownerVisibleConclusionZh": "之前64张不再由项目所有者逐张手动筛选，程序按当前完整机器硬门禁统一复审；任何问题直接归入未通过。",
+  "localSystemFindingZh": "当前活动64张由57张机器通过待人工审核和7张机器失败组成；另有6张旧版本已在未通过组，旧版本不属于本次活动64张且保持不可变。",
+  "blockingReasonCode": "owner_authorized_machine_only_final_classification_pending_execution",
+  "whyCannotProceedZh": "必须先把取消逐张人工审核和失败直归未通过的规则写入本地系统，随后才能合法批量改变57张待审核记录的终态。",
+  "minimumRequestedActionZh": "按当前机器审核器复审活动64张；机器通过者按明确的批量委托授权写入成功终态，机器失败者直接保留或写入未通过终态。",
+  "invariants": [
+    "exactly_one_active_record_for_each_sequence_01_to_64",
+    "manual_visual_inspection_not_claimed",
+    "any_machine_issue_is_direct_failure",
+    "failed_images_and_evidence_preserved",
+    "older_versions_remain_immutable",
+    "no_automatic_retry_or_regeneration"
+  ],
+  "forbiddenActions": [
+    "fabricate_per_image_manual_visual_review",
+    "delete_failed_rgb_or_review_evidence",
+    "lower_machine_review_thresholds",
+    "generate_replacement_rgb",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "处理完成后，成功页只保留当前机器硬门禁通过的活动记录；存在任何硬问题的活动记录直接显示在未通过组，不再等待人工按钮。",
+  "nextActionAfterAuthorization": [
+    "select_exact_current64_active_records",
+    "rerun_current_machine_review_for_all64",
+    "finalize_machine_pass_records_under_explicit_batch_delegation",
+    "leave_machine_fail_records_in_failed_group",
+    "write_batch_report_and_verify_page_group_counts"
+  ],
+  "evidencePaths": [
+    "data/ai-painter/system-governance/thailand-rebuild64-machine-final-review-contract-v1.json",
+    ".runtime/ai-painter/earth-geospatial-v7-capacity-146-209-complete-framework-audits/earth-geospatial-v7-capacity-146-209-complete-framework-audit-2026-08-01T05-57-04-574Z/audit-report.json",
+    ".runtime/ai-painter/thailand-rebuild64-full-world-dynamic-readiness-checks/thailand-rebuild64-full-world-dynamic-readiness-check-2026-08-01T05-57-23-178Z/check-report.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-process-previous64-no-manual-screening-problems-direct-failed-20260801"
+  },
+  "resolution": null
+}

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "owner-authorized-r5-stage4-architecture-design-convergence-input-v1",
+  "status": "resolved_owner_authorized",
+  "commandRef": "owner-authorized-r5-stage4-architecture-design-convergence-20260808",
+  "scope": "add_cpu_readonly_architecture_design_convergence_mode_regress_then_one_formal_readonly_design",
+  "recordedAtUtc": "2026-08-08T12:03:28.1198463Z",
+  "recordedAtAsiaShanghai": "2026-08-08T20:03:28.119+08:00",
+  "boundArchitectureDecisionTerminal": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-architecture-upgrade/local-ai-v7-r5-stage4-architecture-upgrade-decision-20260808-195022696/phase-terminal.json",
+    "sha256": "78e203672b4697048fb5c2e38756808fcfc8a92de05d31265f1da59a9b3be438"
+  },
+  "boundArchitectureUpgradeProposal": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-architecture-upgrade/local-ai-v7-r5-stage4-architecture-upgrade-decision-20260808-195022696/architecture-upgrade-proposal.json",
+    "sha256": "a1dcf15e3fdb973c47200432987387d769a0ad5825416718bb2db370fcb8bf43"
+  },
+  "implementationIdentity": {
+    "runnerPath": "scripts/run-local-ai-v7-r5-stage4-failure-learning.mjs",
+    "runnerBeforeSha256": "064441a426eaf01f82a05c08ba118939325a35ed63bad01c0f3277513a56bda4",
+    "cpuCheckerPath": "scripts/check-local-ai-v7-r5-stage4-failure-decision.mjs",
+    "cpuCheckerBeforeSha256": "bdf8b3bb6cf775bab3c1eeaebab096bba4c122d8fbe8745a7d7b8176a69ae153",
+    "decisionHelperPath": "scripts/lib/ai-assisted-v7-r5-stage4-failure-decision.mjs",
+    "decisionHelperBeforeSha256": "10971ef3029b687cd288a330646960146d27291fd37c6079f88cf7bfb664d186",
+    "frozenAnalyzerPath": "scripts/lib/ai-assisted-failure-learning-loop.mjs",
+    "frozenAnalyzerSha256": "53f9b0735b92b2f707bc03189a984b0506406c39fd93edc937abd49fac7c7f9f",
+    "frozenSmokeRunnerPath": "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs",
+    "frozenSmokeRunnerSha256": "d0889840d3f410baaf3a786da6ff17fd588d542ca8fad8874419c9d5c6a50f42",
+    "frozenTrainerPath": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "frozenTrainerSha256": "cadd21b944da0a430b0643c0c7015926b5eea38aa3f56609953a73399fea986f",
+    "frozenModelPath": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+    "frozenModelSha256": "f086820205665896c4930b7ca3924b6bf6edb87fac31924cc3ab68c32d2337ac",
+    "formalSpecificationPath": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "formalSpecificationSha256": "0d8551522647bf13a6a96f76430e3bfb1708da63e09eda417ba97a17037cb956"
+  },
+  "requiredArchitectureDirections": [
+    "condition_to_decoded_visual_domain_consistency",
+    "object_semantic_projection_and_decoder_alignment",
+    "multiscale_route_boundary_topology_supervision"
+  ],
+  "requiredComparisonFields": [
+    "modificationScope",
+    "dependencies",
+    "modelStructureImpact",
+    "legalSupervisionSources",
+    "compatibility",
+    "resourceRisk",
+    "rollbackPoint",
+    "cpuAcceptanceRoute",
+    "gpuAcceptanceRoute"
+  ],
+  "requiredActions": {
+    "addArchitectureDesignConvergenceMode": true,
+    "extendDecisionHelperForArchitectureDesign": true,
+    "extendExistingCpuChecker": true,
+    "cpuPositiveNegativeRegressionBeforeFormalExecution": true,
+    "singleFormalReadonlyDesignExecutionAfterRegression": true,
+    "exactlyOneRecommendedBoundedInactiveImplementationContractOrExit": true,
+    "generateUnexecutedOwnerActionRequest": true,
+    "synchronizeUniquePlanAndLocalTaskCapsule": true
+  },
+  "authorizedBoundaries": {
+    "failureLearningRunnerModificationAuthorized": true,
+    "decisionHelperModificationAuthorized": true,
+    "cpuCheckerModificationAuthorized": true,
+    "cpuRegressionAuthorized": true,
+    "singleReadonlyArchitectureDesignAuthorizedAfterRegression": true,
+    "architectureDesignEvidenceWriteAuthorized": true,
+    "uniquePlanAndTaskCapsuleSyncAuthorized": true,
+    "trainerModificationAuthorized": false,
+    "smokeRunnerModificationAuthorized": false,
+    "trainingConfigModificationAuthorized": false,
+    "checkpointReadOrLoadAuthorized": false,
+    "optimizerCreationAuthorized": false,
+    "backwardExecutionAuthorized": false,
+    "modelWeightModificationAuthorized": false,
+    "reviewThresholdModificationAuthorized": false,
+    "hyperparameterCandidateGenerationAuthorized": false,
+    "failedPreviewPixelsAsTrainingTargetsAuthorized": false,
+    "reviewThresholdsAsTrainingTargetsAuthorized": false,
+    "gpuUseAuthorized": false,
+    "trainingAuthorized": false,
+    "validationAuthorized": false,
+    "formalInferenceAuthorized": false,
+    "checkpointPromotionAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false,
+    "automaticRetryAuthorized": false
+  },
+  "ownerCommandZh": "授权在新的不可变命令范围内，绑定Stage4架构决策终态及架构升级提案；允许对冻结的Stage4失败学习运行器和决策辅助文件作唯一例外，仅新增CPU只读architecture-design-convergence模式及对应CPU检查器。该模式必须比较条件到解码视觉域一致性、对象语义投影与解码器对齐、多尺度道路边界拓扑监督三个方向，并输出修改范围、依赖、模型结构影响、合法监督来源、兼容性、资源风险、回退点及CPU/GPU验收路线；最终只能推荐一个有界未激活架构实施合同或退出当前候选路线，同时生成未执行Owner动作请求。先执行CPU正反回归，通过后原子消费一次只读设计授权并生成正式报告、合同和终态，随后同步唯一计划表及本地任务胶囊。不得修改训练器、Smoke运行器、训练配置、Checkpoint、模型权重或审核阈值，不得读取Checkpoint、创建优化器、启动GPU或训练；失败立即停止且不自动重试。"
+}

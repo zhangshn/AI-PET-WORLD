@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "local-ai-task-catalog-v1",
+  "status": "r5_stage4_task_capsule_preview_active_no_execution_authorized",
+  "updatedAtAsiaShanghai": "2026-08-08T16:49:45+08:00",
+  "moduleId": "local-self-developed-ai-task-console",
+  "executionPolicy": {
+    "allowArbitraryCommands": false,
+    "requiresTrustedOwnerSignature": true,
+    "requiresAtomicAuthorizationConsumption": true,
+    "requiresImmutableStartRecord": true,
+    "requiresImmutableTerminalRecord": true,
+    "phase1RealLaunchEnabled": false
+  },
+  "tasks": [
+    {
+      "taskTypeId": "v7-next-bounded-repair-design",
+      "nameZh": "V7下一轮有界修复设计",
+      "category": "failure_repair_design",
+      "recommendedNow": true,
+      "summaryZh": "R5第4阶段当前候选已失败关闭；现阶段只允许Owner审阅任务胶囊，并明确选择新的只读失败分析、新的有界候选设计或暂停Stage4。",
+      "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+      "datasetPackageId": "mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+      "inputs": [
+        "ai-painter-local-task-capsule-v1",
+        "R5 Stage4候选失败终态与机器审核",
+        "不可变Owner授权消费记录",
+        "当前唯一计划表和迁移注册表"
+      ],
+      "plannedSteps": [
+        "由本地程序只读展示当前R5 Stage4任务胶囊",
+        "展示固定总进度、候选终态、最新阻断和证据哈希",
+        "生成未执行的Owner动作请求预览",
+        "等待Owner另行给出新的不可变命令范围",
+        "未授权时不保存为授权、不消费请求、不执行任何动作"
+      ],
+      "excludedPermissions": [
+        "修改模型权重",
+        "启动GPU训练",
+        "执行验证或推理",
+        "生成RuntimeFrame",
+        "进入世界"
+      ],
+      "resourceEstimateZh": "只读证据分析与任务合同构建；不占用GPU训练资源。",
+      "riskZh": "错误归因可能扩大修复范围，因此必须保持失败证据和审核阈值不变。",
+      "rollbackPointZh": "不修改Checkpoint、训练原图和既有失败记录。",
+      "requiredAuthorizationKind": "owner_stage4_next_action_decision",
+      "executionCommand": null
+    },
+    {
+      "taskTypeId": "v7-next-single-sample-overfit-smoke",
+      "nameZh": "V7下一轮单样本过拟合Smoke",
+      "category": "model_training_smoke",
+      "recommendedNow": false,
+      "summaryZh": "当前R5 Stage4候选已失败关闭，没有新的Smoke执行授权；本任务仅保留为后续独立授权入口。",
+      "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+      "datasetPackageId": "mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+      "inputs": ["R3隔离候选配置及SHA-256", "CPU正反回归报告", "固定单样本", "父Checkpoint", "现有机器预览硬门禁"],
+      "plannedSteps": ["核对R3候选与CPU回归证据", "训练前只读预检", "原子消费独立训练授权", "单样本GPU Smoke", "自动保存100/110/120预览并逐张机器审核", "要求末段连续3次全部通过", "保存终态并停止"],
+      "excludedPermissions": ["完整Stage训练", "严格复验", "正式推理", "RuntimeFrame", "进入世界"],
+      "resourceEstimateZh": "需要短时GPU训练；资源值必须在执行前由本地程序重新采集。",
+      "riskZh": "Smoke通过只证明单样本可学习，不代表泛化或正式资格。",
+      "rollbackPointZh": "保留父Checkpoint；Smoke产物隔离且不得晋级。",
+      "requiredAuthorizationKind": "model_training_smoke",
+      "executionCommand": null
+    },
+    {
+      "taskTypeId": "v7-next-full-stage-training",
+      "nameZh": "V7下一轮Stage 0→1→2完整训练",
+      "category": "model_training",
+      "recommendedNow": false,
+      "summaryZh": "在修复Smoke通过后执行64张、48/8/4/4数据绑定的完整渐进训练。",
+      "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+      "datasetPackageId": "mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+      "inputs": ["64/64合格数据", "48/8/4/4切分", "获准模型配置", "父Checkpoint链"],
+      "plannedSteps": ["完整只读预检", "原子消费完整训练授权", "Stage 0", "Stage 1", "Stage 2", "保存Checkpoint与终态"],
+      "excludedPermissions": ["训练后严格复验", "正式推理", "RuntimeFrame", "进入世界"],
+      "resourceEstimateZh": "需要独占GPU；耗时、显存、Token和磁盘预算必须在启动前重新计算。",
+      "riskZh": "资源争抢、过拟合、Stage预览失败或证据写入失败均必须停止。",
+      "rollbackPointZh": "每个Stage保留父Checkpoint和不可变失败证据。",
+      "requiredAuthorizationKind": "full_model_training",
+      "executionCommand": null
+    },
+    {
+      "taskTypeId": "v7-next-post-training-strict-validation",
+      "nameZh": "V7训练后严格复验",
+      "category": "model_validation",
+      "recommendedNow": false,
+      "summaryZh": "对完成训练的固定Checkpoint执行独立challenge多种子复验，不修改权重。",
+      "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+      "datasetPackageId": "mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+      "inputs": ["完整训练Checkpoint及SHA-256", "challenge留出集", "固定多种子", "机器审核合同"],
+      "plannedSteps": ["只读复验预检", "原子消费独立验证授权", "固定轨迹推理", "机器审核", "聚合终态并停止"],
+      "excludedPermissions": ["修改训练权重", "自动修复", "正式推理", "RuntimeFrame", "进入世界"],
+      "resourceEstimateZh": "需要GPU推理资源，但不得启动训练优化器。",
+      "riskZh": "任一轨迹或证据闭环失败均不得宣布模型通过。",
+      "rollbackPointZh": "Checkpoint只读；复验失败保留全部轨迹和拒绝证据。",
+      "requiredAuthorizationKind": "post_training_validation",
+      "executionCommand": null
+    }
+  ]
+}

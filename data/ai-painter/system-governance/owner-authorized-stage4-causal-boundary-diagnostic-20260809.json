@@ -1,0 +1,183 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-v1",
+  "requestId": "owner-authorized-stage4-causal-boundary-diagnostic-20260809",
+  "status": "resolved_owner_authorized",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-stage4-causal-boundary-diagnostic-20260809",
+    "scope": "one_stage4_readonly_causal_boundary_diagnostic_autoencoder_denoiser_or_training_preview_pipeline_no_retry"
+  },
+  "taskIdentity": {
+    "module": "AI Painter R5",
+    "stage": 4,
+    "runId": "20260809-180838035",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "seed": 20263722,
+    "timestep": 999,
+    "resolution": {
+      "width": 256,
+      "height": 192
+    },
+    "requiredBoundarySides": [
+      "west"
+    ],
+    "targetSemanticChannels": [
+      "terrain_path_ground",
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "allowedFaultLayers": [
+      "autoencoder_reconstruction_layer",
+      "denoiser_condition_to_latent_coupling_layer",
+      "training_preview_pipeline_layer"
+    ]
+  },
+  "bindings": {
+    "v9RouteExitTerminal": {
+      "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v9-route-decision/20260809-174921166/phase-terminal.json",
+      "sha256": "e2607e2420128769745e04d978cea91967112d1b76a616b83c01f9aefa8e4fa0"
+    },
+    "v9SmokeFailureTerminal": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-smoke-finalizations/v9-stage4-smoke-20260809-164936292-finalization/phase-terminal.json",
+      "sha256": "e7f92d743d5d106d5f5238bb63b17d4a110859c10d49cfae8bd409256a46acd7"
+    },
+    "v9SmokeFinalization": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-smoke-finalizations/v9-stage4-smoke-20260809-164936292-finalization/finalization-report.json",
+      "sha256": "ea68ec12bd14b20eff8edc603171bbbda488e153e9b1aac0a2d2b82ee8b0fba3"
+    },
+    "v9SmokeManifest": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-smokes/v9-stage4-smoke-20260809-164936292/manifest.json",
+      "sha256": "072a233042b4904b5b38b987b4db8e7abbcbc53b8f10cfed0eca018ee44e4a6b"
+    },
+    "v9MachineReview": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-smokes/v9-stage4-smoke-20260809-164936292/fixed-preview-reviews.json",
+      "sha256": "a56254d2a38a8410a00263a23da74dbb05e7d1c4e790e19dda42f0a21555b00c"
+    },
+    "v9SmokeConfig": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-smoke-configs/v9-stage4-smoke-20260809-164936292.json",
+      "sha256": "f45e7124376a9f7523f277ca7defc59056860f92f91405caa391d66716aaf577"
+    },
+    "v9Epoch30Preview": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-smokes/v9-stage4-smoke-20260809-164936292/fixed-epoch-previews/epoch-030-v7-complete-map-194-seed-20266722.png",
+      "sha256": "54590f9887b68b4b1bf3765700c4f40e7f1da280a1a325498fad2ac8c6aa7894"
+    },
+    "datasetManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+      "sha256": "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
+    },
+    "datasetSourceIndex": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json",
+      "sha256": "84f1d4c810e9023f3517f9fd6567dfc2414a0eb95a0a56df45a3025344e12251"
+    },
+    "sourceRecord": {
+      "path": "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6/record.json",
+      "sha256": "ac8e4a6bb7b33a8de818b2850fe85c1c2a799b5861930be3573a1c2286a90dc9"
+    },
+    "referenceImage": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6.png",
+      "sha256": "13caf53dce064afdd0bc1318f4c5b5bb9b3c63631679d84ccd3ed3ab992688be"
+    },
+    "conditionPack": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-194-2026-08-01T15-47-45-117Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+      "sha256": "2db536def8a3b7d3049b7cae673942edd77aa1151f432dc5774f2b3a33579ca9"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "b8509fefac983df510bc357296c2a21200736b14f282231f519bd3753b16e75a"
+    },
+    "modelImplementation": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "e189fa70c0d28633b9313636afadd6f16a241118442ab6eae5074706092708e7"
+    },
+    "datasetImplementation": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/dataset.py",
+      "sha256": "d9245fda230788b749f4d108445f665aaf0b677b7c6cc9a6e2094b24400e81f9"
+    },
+    "conditionAlignmentAuditor": {
+      "path": "scripts/lib/ai-assisted-condition-alignment.mjs",
+      "sha256": "c01ea4efba9835e488e42c7ed44d2aef434ee3db21b06e84e70379722bcc145e"
+    },
+    "causalDiagnosticRunner": {
+      "path": ".runtime/ai-painter/stage4-causal-boundary-diagnostic-implementations/20260809-180838035/run_stage4_causal_boundary_diagnostic.py",
+      "sha256": "885ea533058c4c455eef9ebf16d42419d18a996b57235b7f4dd04a55597de4d2"
+    },
+    "causalFinalizer": {
+      "path": ".runtime/ai-painter/stage4-causal-boundary-diagnostic-implementations/20260809-180838035/finalize_stage4_causal_boundary_diagnostic.mjs",
+      "sha256": "b8a49614e8144b2a542e7d6ab90b4f915b169d3859e986741f662462b3614a03"
+    },
+    "projectAutoencoderCheckpoint": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/complete-world-ai-assisted-autoencoder.pt",
+      "sha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba"
+    },
+    "failedV9SmokeCheckpoint": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-smokes/v9-stage4-smoke-20260809-164936292/complete-world-ai-assisted-conditional-denoiser.pt",
+      "sha256": "791f65b3dc3dddb709b4b5594e3fffcda73ee629c5ff69333c92992ec1177148"
+    }
+  },
+  "authorizedActions": {
+    "isolatedOneTimeDiagnosticContractWrite": true,
+    "cpuPositiveNegativeContractRegression": true,
+    "pythonPreflight": true,
+    "cudaResourcePreflight": true,
+    "diskBudgetPreflight": true,
+    "projectAutoencoderCheckpointReadAndLoad": true,
+    "failedV9SmokeCheckpointReadAndLoad": true,
+    "singleSampleValidationRead": true,
+    "autoencoderReferenceRoundtrip": true,
+    "denoiserLatentCausalCouplingInspection": true,
+    "torchAutogradGradInspection": true,
+    "trainingPreviewPathConsistencyInspection": true,
+    "singleReadonlyGpuDiagnostic": true,
+    "conditionAlignmentReadonlyAudit": true,
+    "gpuDiagnosticReportWrite": true,
+    "causalBoundaryDecisionWrite": true,
+    "inactiveArchitectureDirectionWrite": true,
+    "terminalEvidenceWrite": true,
+    "uniquePlanUpdate": true,
+    "trainerModification": false,
+    "smokeRunnerModification": false,
+    "modelImplementationModification": false,
+    "datasetModification": false,
+    "conditionPackModification": false,
+    "machineReviewThresholdModification": false,
+    "optimizerCreation": false,
+    "backwardMethodExecution": false,
+    "modelWeightModification": false,
+    "checkpointWrite": false,
+    "training": false,
+    "validation": false,
+    "formalInference": false,
+    "parameterCandidateGeneration": false,
+    "stage4FullTraining": false,
+    "stage1OrStage2": false,
+    "strictRevalidation": false,
+    "checkpointPromotion": false,
+    "runtimeFrame": false,
+    "worldEntry": false,
+    "automaticRetry": false
+  },
+  "decisionContract": {
+    "pipelineMismatchPrecedence": true,
+    "autoencoderSemanticRegressionSecond": true,
+    "denoiserByExclusionAfterPositiveCouplingEvidence": true,
+    "exactlyOneFaultLayerRequired": true,
+    "parameterCandidateGenerationAllowed": false
+  },
+  "implementation": {
+    "implementationConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-causal-boundary-diagnostic-20260809/implementation-consumption.json",
+    "cpuReportPath": ".runtime/ai-painter/stage4-causal-boundary-diagnostic-implementations/20260809-180838035/cpu-positive-negative-regression.json",
+    "pythonPreflightPath": ".runtime/ai-painter/stage4-causal-boundary-diagnostic-implementations/20260809-180838035/python-preflight.json",
+    "resourcePreflightPath": ".runtime/ai-painter/stage4-causal-boundary-diagnostic-implementations/20260809-180838035/resource-preflight.json"
+  },
+  "execution": {
+    "gpuConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-causal-boundary-diagnostic-20260809/gpu-consumption.json",
+    "outputDirectory": ".runtime/ai-painter/stage4-causal-boundary-diagnostics/20260809-180838035"
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetry": false,
+    "preserveEvidence": true
+  }
+}

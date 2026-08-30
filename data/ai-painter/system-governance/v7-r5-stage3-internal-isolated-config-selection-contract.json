@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "ai-assisted-v7-r5-stage3-internal-isolated-config-selection-contract-v1",
+  "status": "r5_stage3_isolated_config_compiled_not_active_checkpoint_not_read_or_loaded_training_not_authorized",
+  "generatedBy": "local_ai_v7_r5_stage3_internal_isolated_config_selection_program",
+  "recordedAtUtc": "2026-08-04T11:48:23.322Z",
+  "recordedAtAsiaShanghai": "2026-08-04T19:48:23+08:00",
+  "fixedStageNumber": 3,
+  "addsNewFixedStage": false,
+  "selectionPolicy": "failure_prevalence_linear_mapping_with_minimum_continuation_and_preserved_trajectory_weight",
+  "selectedValues": {
+    "continuationEpochs": 30,
+    "replayPassesPerEpoch": 2,
+    "pathCoverageCalibrationWeight": 0.75,
+    "authorizedBoundaryTopologyWeight": 0.5,
+    "pathShortTrajectoryConsistencyWeight": 0.25
+  },
+  "selectionRationale": {
+    "policy": "failure_prevalence_linear_mapping_with_minimum_continuation_and_preserved_trajectory_weight",
+    "coverageFailurePrevalence": 1,
+    "boundaryFailurePrevalence": 0.5,
+    "continuationEpochs": "选择30：允许范围下限，同时提供Epoch 10/20/30三次连续尾段审核。",
+    "replayPassesPerEpoch": "选择2：候选上下限均为2，只重放原始Owner已通过RGB和绑定条件包。",
+    "pathCoverageCalibrationWeight": "覆盖拒绝出现4/4次，按出现率线性映射到0.25—0.75范围上限0.75。",
+    "authorizedBoundaryTopologyWeight": "边界拒绝出现2/4次，按出现率线性映射到0.25—0.75范围中点0.50。",
+    "pathShortTrajectoryConsistencyWeight": "保持当前值和候选下限0.25，避免与两个新Loss同时放大。",
+    "objectSemanticWeights": "保持不变：四张R5预览的对象语义审核全部通过。",
+    "reviewThresholds": "保持原机器审核阈值不变，拒绝阈值不作为训练目标。"
+  },
+  "compiledConfiguration": {
+    "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/stage3-internal-isolated-configs/ai-assisted-v7-r5-stage3-internal-isolated-config-2026-08-04T11-48-19-629Z/isolated-config.json",
+    "sha256": "400e44d68b5c6500619bdac4a28ff20151457451dd93bfd9672c41f87d6ca363",
+    "status": "isolated_r5_stage3_internal_candidate_not_active",
+    "trainingAuthorizationStatus": "not_authorized_candidate_only"
+  },
+  "selectionEvidence": {
+    "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/stage3-internal-isolated-configs/ai-assisted-v7-r5-stage3-internal-isolated-config-2026-08-04T11-48-19-629Z/selection-report.json",
+    "sha256": "e28aa15e0f9a65a43bfde3a1835412fd0b6befb11f3e8c78e0543f81ba203c33",
+    "status": "r5_stage3_bounded_values_selected_isolated_config_compiled_not_active"
+  },
+  "sourceEvidence": {
+    "candidate": {
+      "path": "data/ai-painter/system-governance/v7-r5-stage3-internal-path-coverage-boundary-candidate.json",
+      "sha256": "54004f535bd75d018040cf3f651cd6dcc399b0cb0617fb796f3a339aefb3843c"
+    },
+    "trainerSupport": {
+      "path": "data/ai-painter/system-governance/v7-r5-stage3-internal-trainer-support-contract.json",
+      "sha256": "da41a392815f55154d39b4b8e8ee8f2bf7e00a399042bb0ed2e3553dfb1a3e60"
+    },
+    "trainerSupportTerminal": {
+      "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage3-trainer-support/local-ai-v7-r5-stage3-trainer-support-2026-08-04T11-27-02-362Z/phase-terminal.json",
+      "sha256": "d4f0a5a3862d9354a1843fe0eb2e7f29b73b9edf1a24a4bf69ab581a23835a19"
+    },
+    "baseR5IsolatedConfig": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/isolated-configs/ai-assisted-v7-r5-isolated-config-2026-08-04T09-31-44-704Z/isolated-config.json",
+      "sha256": "9421b10789ea5590863f789fa3b7933fc806bd8abf32347c900d5d80a3a54089"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "e3b1eb17e4945e55ae00c196a85ec1d1dc74b4b7e212e43f00a8b7eb9da12265"
+    },
+    "compiler": {
+      "path": "ml/ai-painter/scripts/compile_ai_assisted_v7_r5_stage3_internal_isolated_config.py",
+      "sha256": "6321c0c8fa400710b72149e83dbdd014b54c3178a68a3672715e6eb133d2abcd"
+    },
+    "checkpointIdentityCopiedFromCandidateWithoutFileRead": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/ai-assisted-v7-repair-r5-checkpoint-continuation-single-sample-overfit-smoke-2026-08-04T10-07-52-619Z/complete-world-ai-assisted-conditional-denoiser.pt",
+      "sha256": "21198424af06d140c780540c345809841afc4fb2e19cd0c52419f62b58f5da42",
+      "checkpointFileReadByCompiler": false,
+      "checkpointDeserialized": false,
+      "checkpointLoaded": false
+    }
+  },
+  "ownerAuthorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-internal-isolated-config-selection-20260804/request.json",
+    "sha256": "b2fef210f442476ea4289ece897e4d550e1663c429544fc1c05cd9b82d83b6a3",
+    "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-internal-isolated-config-selection-20260804/authorization-consumption.json",
+    "consumptionSha256": "b2cc1fd43823d560c68566c3c1b8401ad9c6e239c702693dd7ac1ce509ad5eec",
+    "commandRef": "owner-authorized-v7-r5-stage3-internal-isolated-config-selection-20260804",
+    "scope": "select_r5_stage3_internal_bounded_parameters_and_compile_inactive_isolated_config_only"
+  },
+  "executionBoundary": {
+    "configurationActive": false,
+    "checkpointFileReadByCompiler": false,
+    "checkpointDeserialized": false,
+    "checkpointLoaded": false,
+    "optimizerCreated": false,
+    "modelWeightsModified": false,
+    "gpuTrainingStarted": false,
+    "fullTrainingStarted": false,
+    "strictRevalidationStarted": false,
+    "formalInferenceStarted": false,
+    "runtimeFrameStarted": false,
+    "worldEntered": false,
+    "nextIndependentAuthorization": "one_r5_stage3_internal_checkpoint_continuation_single_sample_gpu_overfit_smoke_only"
+  }
+}

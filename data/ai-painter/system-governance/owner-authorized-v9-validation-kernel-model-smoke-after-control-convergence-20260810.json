@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-v1",
+  "requestId": "owner-authorized-v9-validation-kernel-model-smoke-after-control-convergence-20260810",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-10T11:22:40.690Z",
+  "recordedAtAsiaShanghai": "2026-08-10T19:22:40.690+08:00",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-v9-validation-kernel-model-smoke-after-control-convergence-20260810",
+    "scope": "one_independent_v9_validation_kernel_sample194_30_epoch_model_smoke_after_control_convergence"
+  },
+  "bindings": {
+    "controlConvergenceTerminal": { "path": ".runtime/ai-painter/stage-control-convergence/20260810-182526279/cycles/cycle-3-20260810-185600000/phase-terminal.json", "sha256": "692ce1a77ce77c348f53bd1c8b6ea8a55f150b0a420f263e6b61b3bd4badd875" },
+    "controlConvergenceImplementationReport": { "path": ".runtime/ai-painter/stage-control-convergence/20260810-182526279/implementation-report.json", "sha256": "b4865c29aea96907f3cdf5c7e64c9a5610bd0bac7ef3703532108643d39a858c" },
+    "controlConvergenceCpuReport": { "path": ".runtime/ai-painter/stage-control-convergence/20260810-182526279/cycles/cycle-3-20260810-185600000/cpu-report.json", "sha256": "e23ed54b8d57a2fb8dc99f612e74ea78b95094ea52664a1a71382edcedfbcecd" },
+    "controlConvergenceSupportContract": { "path": ".runtime/ai-painter/stage-control-convergence/20260810-182526279/cycles/cycle-3-20260810-185600000/support-contract.json", "sha256": "920f7ea2f37ce38c0562dab4168cc4c949100a7fb7a46c45b66e5be705f289dd" },
+    "sourceV9InactiveConfig": { "path": ".runtime/ai-painter/v9-r5-stage4-cpu-support/20260809-161005213/inactive-config.json", "sha256": "e4a90350ea1263bcef0a90ba36491f4a9477c8886aeac4ae0f44b846f1e4bef6" },
+    "phase0SuccessTerminal": { "path": ".runtime/ai-painter/stage4-validation-kernel-closures/20260810-023613404/phase0/phase0-20260809-185538784-r2/finalization/phase-terminal.json", "sha256": "72a3ef2d2c2e62d0e0bce152327ba0fe8ab6ee4ac2bd0c422627d24745a71fd8" },
+    "datasetManifest": { "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json", "sha256": "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa" },
+    "datasetSourceIndex": { "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json", "sha256": "84f1d4c810e9023f3517f9fd6567dfc2414a0eb95a0a56df45a3025344e12251" },
+    "projectAutoencoderCheckpoint": { "path": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/complete-world-ai-assisted-autoencoder.pt", "sha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba" },
+    "trainer": { "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py", "sha256": "5e712fab5e73f1762f41981499e28d770b7e4ead9329a88ebf33e34a5f370b89" },
+    "smokeRunner": { "path": "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs", "sha256": "376f23b0b885053bd8049169d4e781ecec674bf422c370d39455117b6d9baa5f" },
+    "cpuChecker": { "path": "ml/ai-painter/scripts/check_ai_assisted_v9_r5_stage4_cpu.py", "sha256": "b88cdeac571a26a63a95633c3369892fbae9bc211338a740ae787434c44ff90f" },
+    "authorizationPolicy": { "path": "ml/ai-painter/scripts/ai_painter_authorization_policy.py", "sha256": "23a1d059bf2fa326d91fb05bc011972904a45fc6e5954f6277b732a3052b64c5" },
+    "executionGrant": { "path": "ml/ai-painter/scripts/ai_painter_execution_grant.py", "sha256": "72006eb2b4203ca8f9e28b09aaf6aa2ca4a84c50f3ae6b3df76587d92e823722" },
+    "modeRegistry": { "path": "ml/ai-painter/scripts/ai_painter_stage_mode_registry.py", "sha256": "207365a1cac598638ed641aafccf1f95a35e134844e4e649d85c62cb70ce94d1" }
+  },
+  "fixedTaskIdentity": {
+    "module": "AI Painter R5",
+    "stage": 4,
+    "architecture": "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "seed": 20263722,
+    "requiredBoundarySides": ["west"],
+    "resolution": { "width": 256, "height": 192 },
+    "smokeEpochs": 30,
+    "smokePreviewEpochs": [1, 5, 10, 20, 30],
+    "datasetCapacity": 64,
+    "datasetSplit": { "train": 48, "validation": 8, "challenge": 4, "regression": 4 }
+  },
+  "authorizedActions": {
+    "cpuPositiveNegativeAuthorizationGate": true,
+    "pythonPreflight": true,
+    "cudaResourcePreflight": true,
+    "diskBudgetPreflight": true,
+    "atomicGpuAuthorizationConsumption": true,
+    "projectAutoencoderReadAndLoadFrozen": true,
+    "v9FixedRandomInitialization": true,
+    "optimizerCreation": true,
+    "backwardExecution": true,
+    "boundedModelWeightMutation": true,
+    "singleThirtyEpochV9Smoke": true,
+    "fiveBoundPreviewWrites": true,
+    "seventeenDiagnosticMetricWrites": true,
+    "machineReview": true,
+    "smokeCheckpointWrite": true,
+    "stage4FullTraining": false,
+    "stage1OrStage2": false,
+    "stage5StrictRevalidation": false,
+    "formalInference": false,
+    "checkpointPromotion": false,
+    "runtimeFrame": false,
+    "worldEntry": false,
+    "automaticRetry": false,
+    "implementationCodeModification": false
+  },
+  "executionPolicy": {
+    "maximumGpuSmokeExecutions": 1,
+    "allPreflightsMustPassBeforeGpuConsumption": true,
+    "failureStopsImmediately": true,
+    "automaticRetryAuthorized": false
+  },
+  "output": {
+    "runId": "20260810-192240690",
+    "root": ".runtime/ai-painter/v9-validation-kernel-model-smoke-after-control-convergence/20260810-192240690",
+    "cpuPreflightConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-v9-validation-kernel-model-smoke-after-control-convergence-20260810/cpu-preflight-consumption.json",
+    "gpuConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-v9-validation-kernel-model-smoke-after-control-convergence-20260810/gpu-smoke-consumption.json"
+  }
+}

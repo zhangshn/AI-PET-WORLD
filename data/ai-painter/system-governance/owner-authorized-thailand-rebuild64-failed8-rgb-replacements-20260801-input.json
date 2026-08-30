@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-authorized-thailand-rebuild64-failed8-rgb-replacements-20260801",
+  "subsystem": "ai_painter_thailand_rebuild64_failed8_rgb_replacements",
+  "status": "owner_authorized_pending_execution",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceCodes": ["23", "33", "39", "43", "45", "47", "49", "55"],
+    "slotIds": ["v7-capacity-slot-168", "v7-capacity-slot-178", "v7-capacity-slot-184", "v7-capacity-slot-188", "v7-capacity-slot-190", "v7-capacity-slot-192", "v7-capacity-slot-194", "v7-capacity-slot-200"],
+    "replacementRgbCount": 8,
+    "contractPath": "data/ai-painter/system-governance/thailand-rebuild64-failed8-rgb-replacement-contract-v1.json"
+  },
+  "ownerVisibleConclusionZh": "修复新64组8张未通过内容，从正式文档、失败修复算法和数据包开始，然后为每张生成一个新版本。",
+  "localSystemFindingZh": "8张失败覆盖构图重复/多样性不足、道路缺少指定边界接触、道路覆盖不足以及道路触碰未约定边界；旧失败图不能作为生成参考。",
+  "blockingReasonCode": "none_owner_authorized_failed8_replacement_generation",
+  "whyCannotProceedZh": "授权已经明确；程序必须先编译8份失败修复数据包并通过生成前检查，随后才能逐张调用图像生成。",
+  "minimumRequestedActionZh": "保持当前泰国WorldFacts和权威23通道条件，为8张各生成一个新版本，机器失败直接未通过，机器通过按既有无人工筛选政策进入成功终态。",
+  "invariants": [
+    "exact_failed_sequences_23_33_39_43_45_47_49_55",
+    "current_authoritative_condition_package_per_slot",
+    "failed_rgb_not_used_as_generation_reference",
+    "one_new_version_per_target",
+    "all_failure_evidence_compiled_into_repair_packages",
+    "old_failed_records_preserved"
+  ],
+  "forbiddenActions": [
+    "overwrite_or_delete_old_failed_records",
+    "use_old_failed_rgb_as_image_reference",
+    "change_world_facts_or_review_thresholds",
+    "automatic_second_retry",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "程序将按8份专属修复包重新生成；每张只生成一次，失败继续进入未通过，不再要求项目所有者逐张筛选。",
+  "nextActionAfterAuthorization": [
+    "compile_eight_failure_repair_packages",
+    "validate_current_condition_and_all_history_preflight",
+    "generate_one_new_rgb_version_per_target",
+    "run_machine_review_and_direct_classification",
+    "write_batch_resolution"
+  ],
+  "evidencePaths": [
+    "data/ai-painter/system-governance/thailand-rebuild64-failed8-rgb-replacement-contract-v1.json",
+    ".runtime/ai-painter/thailand-rebuild64-machine-final-reviews/thailand-rebuild64-machine-final-review-2026-08-01T07-09-11-618Z/review-report.json",
+    ".runtime/ai-painter/earth-geospatial-v7-capacity-146-209-complete-framework-audits/earth-geospatial-v7-capacity-146-209-complete-framework-audit-2026-08-01T05-57-04-574Z/audit-report.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-repair-failed8-docs-algorithms-and-start-generation-20260801"
+  },
+  "resolution": null
+}

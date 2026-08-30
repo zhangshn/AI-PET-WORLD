@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-v1",
+  "requestId": "owner-authorized-stage4-continuous-closure-20260809",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-09T10:47:40.7614512Z",
+  "recordedAtAsiaShanghai": "2026-08-09T18:47:40.7654604+08:00",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-stage4-continuous-closure-20260809",
+    "scope": "continuous_stage4_business_closure_or_route_exit_with_bounded_implementation_repairs"
+  },
+  "businessTerminal": {
+    "success": "stage4_full_training_closed_fixed_progress_4_of_5",
+    "failure": "stage4_candidate_route_failed_closed",
+    "currentFixedProgress": "3/5 (60%)"
+  },
+  "bindings": {
+    "causalFinalizerFailureTerminal": {
+      "path": ".runtime/ai-painter/stage4-causal-boundary-diagnostic-finalizations/20260809-182939654-finalizer-failure/phase-terminal.json",
+      "sha256": "fc5f85d483372389b037c3d1828214e5081b6fae023e6ce225ff6245b1eeecfe"
+    },
+    "causalGpuDiagnosticReport": {
+      "path": ".runtime/ai-painter/stage4-causal-boundary-diagnostics/20260809-182939654/gpu-diagnostic-report.json",
+      "sha256": "2902cffc3bcdc99b2d83464a14af367f9926ebac41008710938c6b1bb31e3f0e"
+    },
+    "causalGpuDiagnosticTerminal": {
+      "path": ".runtime/ai-painter/stage4-causal-boundary-diagnostics/20260809-182939654/gpu-phase-terminal.json",
+      "sha256": "28dcef5eb6659a945dbdcd56a566302f1072696de836d7f09db71ecb388db7f1"
+    },
+    "existingCausalFinalizer": {
+      "path": ".runtime/ai-painter/stage4-causal-boundary-diagnostic-implementations/20260809-182939654/finalize_stage4_causal_boundary_diagnostic.mjs",
+      "sha256": "6deb9fbca7485ca3e44ef7ad6956d2a787c33343615254c6df40def295fef471"
+    },
+    "uniquePlan": {
+      "path": "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md"
+    }
+  },
+  "fixedTaskIdentity": {
+    "module": "AI Painter R5",
+    "stage": 4,
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "seed": 20263722,
+    "resolution": {
+      "width": 256,
+      "height": 192
+    },
+    "requiredBoundarySides": [
+      "west"
+    ],
+    "smokeEpochs": 30,
+    "smokePreviewEpochs": [1, 5, 10, 20, 30],
+    "fullTraining": {
+      "qualifiedSamples": "64/64",
+      "split": "48/8/4/4",
+      "stages": [
+        {"stage": 0, "width": 256, "height": 192, "epochs": 40},
+        {"stage": 1, "width": 512, "height": 384, "epochs": 40},
+        {"stage": 2, "width": 1024, "height": 768, "epochs": 40}
+      ],
+      "previewEpochs": [1, 5, 10, 20, 30, 40]
+    }
+  },
+  "authorizedActions": {
+    "immutableAuthorizationAndAtomicConsumption": true,
+    "registeredSharpDependencyResolutionFix": true,
+    "cpuPositiveNegativeRegression": true,
+    "existingGpuEvidenceOfflineAudit": true,
+    "exactlyOneCausalFaultDecision": true,
+    "boundedSingleCausalDirectionImplementation": true,
+    "existingFinalizerAndCpuCheckerModification": true,
+    "trainingPreviewPipelineModificationWhenSelected": true,
+    "modelArchitectureBranchModificationWhenSelected": true,
+    "trainerGateAndLossModificationWhenSelected": true,
+    "inactiveConfigCompilerModification": true,
+    "smokeRunnerModification": true,
+    "stage4FullTrainingRunnerModification": true,
+    "legacyV7V8V9Stage3Stage4CompatibilityPreservation": true,
+    "pythonCudaDiskPreflight": true,
+    "projectAutoencoderCheckpointReadAndLoad": true,
+    "boundedSmokeOptimizerCreation": true,
+    "boundedSmokeBackwardExecution": true,
+    "boundedSmokeWeightModification": true,
+    "boundedSmokeCheckpointWrite": true,
+    "singleThirtyEpochGpuSmoke": true,
+    "stage4FullTrainingStage0To2": true,
+    "fullTrainingOptimizerBackwardWeightAndCheckpointWrite": true,
+    "machineReview": true,
+    "evidenceAndTerminalWrite": true,
+    "uniquePlanAndLocalTaskCapsuleUpdate": true,
+    "stage5StrictRevalidation": false,
+    "formalInference": false,
+    "checkpointPromotion": false,
+    "runtimeFrame": false,
+    "worldEntry": false,
+    "historyEvidenceDeletionOrOverwrite": false,
+    "machineReviewThresholdReduction": false,
+    "failedPreviewPixelsAsTrainingTarget": false,
+    "freeHyperparameterSearch": false
+  },
+  "continuousExecutionPolicy": {
+    "maximumCpuImplementationRepairCycles": 3,
+    "maximumGpuSmokeExecutions": 1,
+    "ordinaryPathFieldHashCallOrderOutputTypeCompatibilityDefectsMayBeFixedWithoutNewOwnerAuthorization": true,
+    "eachRepairRequiresNewRunIdAndPreservedFailureEvidence": true,
+    "downstreamIdentityMustBindImmediateSuccessfulUpstreamTerminalManifestAndSha256": true,
+    "visualModelFailureMayNotBeAutoRetried": true,
+    "stopOnNewModelRouteChoiceDestructiveActionSecurityBoundaryOrRepairBudgetExhaustion": true
+  },
+  "causalDecisionContract": {
+    "allowedFaultLayers": [
+      "autoencoder_reconstruction_layer",
+      "denoiser_condition_to_latent_coupling_layer",
+      "training_preview_pipeline_layer"
+    ],
+    "exactlyOneRequired": true,
+    "pipelineMismatchPrecedence": true,
+    "legalSupervisionOnly": true
+  },
+  "execution": {
+    "runId": "20260809-184740761",
+    "implementationConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-continuous-closure-20260809/implementation-consumption.json",
+    "outputRoot": ".runtime/ai-painter/stage4-continuous-closures/20260809-184740761"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "project-owner-task-authorization-v1",
+  "authorizationId": "owner-authorized-r5-stage4-structured-stability-candidate-cpu-20260808",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-08T10:16:09.094Z",
+  "recordedAtAsiaShanghai": "2026-08-08T18:16:09.094+08:00",
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-r5-stage4-structured-stability-candidate-cpu-20260808",
+    "scope": "build_one_inactive_stage4_structured_route_rock_trajectory_stability_candidate_and_late_stability_qualification_cpu_only"
+  },
+  "boundDecisionEvidence": {
+    "analysisTerminalPath": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-decision-analysis/local-ai-v7-r5-stage4-binary-decision-analysis-structural-20260808-180121033/phase-terminal.json",
+    "analysisTerminalSha256": "86a9a278457462c9ea5979b70776ad1655734352e6fe0d69583a47ad208f7b76",
+    "decisionPath": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-decision-analysis/local-ai-v7-r5-stage4-binary-decision-analysis-structural-20260808-180121033/binary-decision.json",
+    "decisionSha256": "aa6127b0c0fb1420730c053ef8f3cd655fbb453d085bebb0cc6a3fd73e242976",
+    "proposalPath": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-decision-analysis/local-ai-v7-r5-stage4-binary-decision-analysis-structural-20260808-180121033/architecture-or-candidate-proposal.json",
+    "proposalSha256": "efbd4a4f33805e7fa163dcd9e27763c36439627a5f6cdd8f1c89984b6849a123",
+    "analysisCpuRegressionPath": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-decision-analysis/local-ai-v7-r5-stage4-binary-decision-analysis-structural-20260808-180121033/cpu-positive-negative-regression.json",
+    "analysisCpuRegressionSha256": "cc50d31b68505af945ef5c2c959d9f99d8e4278d319b43f8b01ef6888de226f5",
+    "acceptedDecisionCode": "new_actionable_difference",
+    "acceptedNewRootCauseIds": [
+      "route_topology_training_trajectory_instability",
+      "terminal_pass_without_stability_window",
+      "uneven_object_semantic_learning_rate"
+    ]
+  },
+  "boundImplementation": {
+    "trainerPath": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "trainerBeforeSha256": "8cfb220baee73f830808ac4f10657edc191674485b800893a3dd58e39a45ac16",
+    "compilerAndCpuCheckerPath": "ml/ai-painter/scripts/check_ai_assisted_v7_r5_stage4_diagnostic_evidence_bounded_repair_cpu.py",
+    "compilerAndCpuCheckerBeforeSha256": "a6f4a9ce2484b4e227831bec0144c24af1ab2783cff2fafcb4475440581d4c6f",
+    "sourceInactiveConfigPath": ".runtime/ai-painter/v7-r5-stage4-cross-domain-visual-consistency-cpu-runs/ai-assisted-v7-r5-stage4-cross-domain-visual-consistency-cpu-20260808-154822808/inactive-smoke-config.json",
+    "sourceInactiveConfigSha256": "6128bb057c0b935a89cfe58cacd2d1411ace75ad1cf4f58d5a811fbf1b7f8968"
+  },
+  "fixedTaskIdentity": {
+    "fixedStageNumber": 4,
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "seed": 20263722,
+    "requiredBoundarySides": ["west"],
+    "previewEpochs": [1, 5, 10, 20, 30]
+  },
+  "boundedSelection": {
+    "selectionPolicy": "observed_failure_prevalence_linear_mapping_with_existing_weight_caps",
+    "routeFailurePrevalence": 0.4,
+    "rockFailurePrevalence": 0.8,
+    "trajectoryTailStepCount": {
+      "minimum": 2,
+      "maximum": 3,
+      "selectedValue": 3
+    },
+    "routeTrajectoryStabilityWeight": {
+      "minimum": 0.05,
+      "maximum": 0.2,
+      "selectedValue": 0.11
+    },
+    "rockTrajectoryStabilityWeight": {
+      "minimum": 0.05,
+      "maximum": 0.25,
+      "selectedValue": 0.21
+    },
+    "lateStabilityQualification": {
+      "requiredEpochs": [20, 30],
+      "minimumConsecutivePasses": 2,
+      "finalEpochMustPass": true,
+      "trainingTarget": false
+    }
+  },
+  "outputContract": {
+    "runId": "ai-assisted-v7-r5-stage4-structured-stability-candidate-cpu-20260808-181609094",
+    "allOutputsMustInitiallyBeAbsent": true,
+    "candidateMustDifferFromSourceConfig": true,
+    "candidateMustRemainInactive": true
+  },
+  "authorizedActions": {
+    "modifyTrainerSupport": true,
+    "modifyInactiveConfigCompiler": true,
+    "modifyCpuChecker": true,
+    "selectBoundedParameters": true,
+    "compileOneInactiveConfiguration": true,
+    "runOneCpuPositiveNegativeRegression": true,
+    "runOneCompleteConfigurationAudit": true,
+    "saveSelectionContractSupportContractReportAndTerminal": true,
+    "updateUniquePlanAfterSuccess": true,
+    "synchronizeLocalTaskCapsuleAfterSuccess": true
+  },
+  "forbiddenActions": {
+    "useFailedPreviewPixelsAsTrainingTargets": true,
+    "useMachineReviewThresholdsAsTrainingTargets": true,
+    "modifySourceEvidence": true,
+    "modifyReviewThresholds": true,
+    "readOrLoadCheckpoint": true,
+    "createOptimizer": true,
+    "executeBackward": true,
+    "modifyModelWeights": true,
+    "startGpu": true,
+    "startTraining": true,
+    "startValidation": true,
+    "startFormalInference": true,
+    "promoteCheckpoint": true,
+    "startRuntimeFrame": true,
+    "enterWorld": true,
+    "automaticRetry": true
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetryAllowed": false
+  },
+  "ownerCommandZh": "授权在新的不可变命令范围内，接受Stage4正式只读分析的new_actionable_difference作为下一未激活候选方向，绑定分析终态SHA-256 86a9a278457462c9ea5979b70776ad1655734352e6fe0d69583a47ad208f7b76、二选一决策SHA-256 aa6127b0c0fb1420730c053ef8f3cd655fbb453d085bebb0cc6a3fd73e242976、未激活提案SHA-256 efbd4a4f33805e7fa163dcd9e27763c36439627a5f6cdd8f1c89984b6849a123及CPU回归SHA-256 cc50d31b68505af945ef5c2c959d9f99d8e4278d319b43f8b01ef6888de226f5；针对route_topology_training_trajectory_instability、terminal_pass_without_stability_window和uneven_object_semantic_learning_rate完成一次结构化有界候选建设。授权基于原始条件包、原始参考及既有合法训练监督选择有界道路轨迹稳定参数和对象语义通道参数，建立不使用失败预览像素或机器审核阈值作为训练目标的晚期连续通过资格门，修改或扩展现有训练器支持、未激活配置编译器及CPU检查器并保留旧Stage3、旧Stage4兼容；执行CPU正反回归和完整配置审计，通过后保存未激活配置、候选合同、报告、终态证据并同步唯一计划表及本地任务胶囊。不得读取或加载Checkpoint，不得创建优化器、执行.backward()、修改模型权重、启动GPU或训练；失败立即停止且不自动重试。"
+}

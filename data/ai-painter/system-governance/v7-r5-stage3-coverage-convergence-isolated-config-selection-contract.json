@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "ai-assisted-v7-r5-stage3-coverage-convergence-isolated-config-selection-contract-v1",
+  "status": "bounded_values_selected_config_compiled_cpu_verified_not_active",
+  "recordedAt": "2026-08-05T15:56:21.7972640+08:00",
+  "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+  "fixedStageNumber": 3,
+  "addsNewFixedStage": false,
+  "selectionPolicy": "failure_prevalence_linear_mapping_with_tail_gate_continuation",
+  "selectedValues": {
+    "continuationEpochs": 30,
+    "pathActivationMassCalibrationWeight": 0.625,
+    "shortTrajectoryCoverageDriftWeight": 0.2875
+  },
+  "sourceEvidence": {
+    "candidatePath": "data/ai-painter/system-governance/v7-r5-stage3-internal-path-coverage-convergence-candidate.json",
+    "candidateSha256": "20902ff2aed25fff6575c6a46e1cb44188ccee0565a2bbcbe8bfe552dab04615",
+    "trainerSupportPath": "data/ai-painter/system-governance/v7-r5-stage3-coverage-convergence-trainer-support-contract.json",
+    "trainerSupportSha256": "1bad7dd4b4a2ca4e9a438d1b09ed9322c9e00816a9246093a1a95327de66369a",
+    "baseConfigPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/stage3-internal-isolated-configs/ai-assisted-v7-r5-stage3-internal-isolated-config-2026-08-04T11-48-19-629Z/isolated-config.json",
+    "baseConfigSha256": "400e44d68b5c6500619bdac4a28ff20151457451dd93bfd9672c41f87d6ca363"
+  },
+  "implementation": {
+    "compilerPath": "ml/ai-painter/scripts/compile_ai_assisted_v7_r5_stage3_internal_isolated_config.py",
+    "compilerBeforeSha256": "6321c0c8fa400710b72149e83dbdd014b54c3178a68a3672715e6eb133d2abcd",
+    "compilerAfterSha256": "633b6272c28fcd9e9b582dd752a9f989bafc8a91d08df4b437cc17322211ea9d",
+    "cpuCheckerPath": "ml/ai-painter/scripts/check_ai_assisted_v7_r5_stage3_coverage_convergence_config_compilation_cpu.py",
+    "cpuCheckerSha256": "f66022d361a3a0cffc612ac7f99a5e8288ce29f7d1c2735551d5206de6029370",
+    "legacyCandidateCompatibilityPreserved": true
+  },
+  "compiledConfiguration": {
+    "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/stage3-coverage-convergence-isolated-configs/ai-assisted-v7-r5-stage3-coverage-convergence-isolated-config-2026-08-05T07-54-34-093Z/isolated-config.json",
+    "sha256": "0f35220968a020bd5b27d785380f1e20eacb85239bb598b567156c8f907185d6",
+    "status": "isolated_r5_stage3_coverage_convergence_candidate_not_active",
+    "selectionPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/stage3-coverage-convergence-isolated-configs/ai-assisted-v7-r5-stage3-coverage-convergence-isolated-config-2026-08-05T07-54-34-093Z/selection-report.json",
+    "selectionSha256": "eef4cbd09d9cd60fd00bb3a7665f2031197b4da95d04fefecf0a642368b8eaf5"
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/v7-r5-stage3-coverage-convergence-config-compilation-cpu-regressions/20260805-153200000/report.json",
+    "sha256": "721760408cf18b50fae6d0b3ab3e65febd71c05f6a65e19594e7924b48fd7241",
+    "status": "passed_cpu_only_bounded_selection_inactive_config_compilation_not_active",
+    "positiveAssertionsPassed": 20,
+    "negativeAssertionsPassed": 13
+  },
+  "authorization": {
+    "requestPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-coverage-convergence-isolated-config-selection-20260805/request.json",
+    "requestSha256": "d68ead8a3e7e8aa042cfc68cab591841ec5a7443149b3b5abe1b7ae6909bc532",
+    "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-coverage-convergence-isolated-config-selection-20260805/authorization-consumption.json",
+    "consumptionSha256": "a05b30ebaed6dd1de3522f4e99b153b479f705ca7460712321ef797df293ac5f"
+  },
+  "executionBoundary": {
+    "configurationActive": false,
+    "checkpointFileRead": false,
+    "checkpointDeserialized": false,
+    "checkpointLoaded": false,
+    "optimizerCreated": false,
+    "modelWeightsModified": false,
+    "gpuTrainingStarted": false,
+    "fullTrainingStarted": false,
+    "strictRevalidationStarted": false,
+    "formalInferenceStarted": false,
+    "runtimeFrameStarted": false,
+    "worldEntered": false
+  }
+}

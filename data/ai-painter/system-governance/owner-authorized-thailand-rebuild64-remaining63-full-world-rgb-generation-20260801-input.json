@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-authorized-thailand-rebuild64-remaining63-full-world-rgb-generation-20260801",
+  "subsystem": "ai_painter_thailand_rebuild64_full_world_rgb_generation",
+  "status": "owner_authorized_pending_execution",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceRange": "02-64",
+    "slotRange": "v7-capacity-slot-147..v7-capacity-slot-209",
+    "remainingRgbCount": 63,
+    "sequence01OwnerReviewStatus": "pending_review"
+  },
+  "ownerVisibleConclusionZh": "项目所有者明确授权：现在直接把新64组中剩余第02至64张全部生成。第01张保持等待项目所有者人工审核，不因本批授权自动写入通过。",
+  "localSystemFindingZh": "64个升级后的完整矩形世界条件包及全量回归已经通过，剩余第02至64张可以逐张按各自泰国条件包生成、自动保存并接受机器审核。",
+  "blockingReasonCode": "none_owner_authorized_remaining63_generation",
+  "whyCannotProceedZh": "无阻断；执行范围严格限定为新64组第02至64张各一次生成。",
+  "minimumRequestedActionZh": "按顺序为slot-147至slot-209逐张建立条件RGB请求，只把该张权威语义条件图作为图像输入，调用一次Codex内置ImageGen，保存原图与审核派生图并执行机器审核。",
+  "invariants": [
+    "each_slot_uses_its_current_independent_thailand_measurement_condition_package",
+    "one_codex_builtin_image_generation_call_per_remaining_asset",
+    "only_the_current_slots_authoritative_semantic_condition_guide_is_an_image_reference",
+    "historical_and_current_rgb_images_are_not_generation_inputs",
+    "generated_rgb_is_automatically_persisted_and_machine_reviewed",
+    "machine_pass_does_not_equal_owner_approval_or_positive_training_eligibility",
+    "sequence_01_owner_review_remains_pending",
+    "gpu_training_runtime_frame_and_world_are_not_started"
+  ],
+  "forbiddenActions": [
+    "auto_approve_sequence_01_or_any_generated_rgb",
+    "auto_register_capacity_before_owner_approval",
+    "retry_a_failed_image_generation_without_a_new_owner_authorized_retry",
+    "use_any_historical_or_previous_candidate_rgb_as_generation_input",
+    "generate_beyond_sequence_64",
+    "lower_machine_review_thresholds",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "程序将连续生成第02至64张，并在每张完成后自动保存、机器审核；机器拒绝项保留到未通过组且不自动重试，机器通过项仍等待项目所有者在页面逐张人工审核。",
+  "nextActionAfterAuthorization": [
+    "validate_post_upgrade_batch_authorization_scope",
+    "generate_sequence_02_through_64_once_each",
+    "persist_each_source_and_review_derivative",
+    "run_machine_review_for_each_generated_rgb",
+    "report_complete_batch_inventory_without_owner_auto_approval"
+  ],
+  "evidencePaths": [
+    "data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json",
+    "data/ai-painter/system-governance/thailand-rebuild64-sequence-registry-v1.json",
+    ".runtime/ai-painter/earth-geospatial-v7-capacity-146-209-complete-framework-audits/earth-geospatial-v7-capacity-146-209-complete-framework-audit-2026-07-31T16-22-48-089Z/audit-report.json",
+    ".runtime/ai-painter/owner-action-requests/project-owner-authorization-2026-08-01-v7-capacity-slot-146-single-rgb-generation/request.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-generate-thailand-rebuild64-remaining63-20260801",
+    "commandZh": "ok，现在直接 把剩下的图全部生成",
+    "ownerReviewPolicy": "generate_and_machine_review_all_remaining_then_owner_reviews_each_on_page"
+  },
+  "resolution": null
+}

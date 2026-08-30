@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-authorized-thailand-rebuild64-semantic-topology-diversity-upgrade-resolution-20260801",
+  "subsystem": "ai_painter_thailand_rebuild64_semantic_topology_diversity",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceCodes": ["45", "49"],
+    "slotIds": ["v7-capacity-slot-190", "v7-capacity-slot-194"],
+    "authorizationRequestId": "owner-authorized-thailand-rebuild64-semantic-topology-diversity-upgrade-20260801"
+  },
+  "ownerVisibleConclusionZh": "河道同类型和相同骨架问题已经完成算法、文档和两份数据包修复；当前64组条件包全部通过语义拓扑与动态世界门禁。",
+  "localSystemFindingZh": "根因包括候选预检复用旧连接实例、使用固定河宽、只检查主河、只比较自身旧记录，以及道路自由空间搜索容量不足。程序已改为候选自身连接、主河与内部支流完整预检、全部历史比较和不降阈值的测量驱动道路候选扩展。",
+  "blockingReasonCode": "resolved_semantic_topology_and_all_history_duplicate_repair_passed",
+  "whyCannotProceedZh": "条件包问题已经解除，但本次授权仅覆盖文档、算法、数据包重建和检查，不构成新的RGB生成、GPU训练、RuntimeFrame或进入世界授权。",
+  "minimumRequestedActionZh": "如需重新生成受影响图片，项目所有者必须另行明确授权对应RGB生成范围。",
+  "invariants": [
+    "same_formal_thailand_sakaerat_wang_nam_khiao_source_scope",
+    "candidate_specific_connectivity_and_water_widths",
+    "main_channel_internal_branch_shoreline_and_route_all_checked",
+    "all_current64_and_all_history_compared",
+    "water_and_route_thresholds_unchanged",
+    "historical_rgb_immutable_and_not_used_as_generation_input"
+  ],
+  "forbiddenActions": [
+    "generate_rgb_without_new_explicit_authorization",
+    "delete_or_reclassify_historical_failure_evidence",
+    "lower_water_route_or_duplicate_thresholds",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "190现在是主河分汊型，194现在是源头支流汇入主河型；两者及当前64组均无语义重复，且两张对245份历史条件图的命中数均为0。",
+  "nextActionAfterAuthorization": [
+    "prepare_only_the_explicitly_authorized_replacement_rgb_requests",
+    "generate_each_authorized_rgb_once",
+    "run_machine_review_and_wait_for_owner_review"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/earth-geospatial-v7-capacity-146-209-complete-framework-audits/earth-geospatial-v7-capacity-146-209-complete-framework-audit-2026-08-01T05-57-04-574Z/audit-report.json",
+    ".runtime/ai-painter/thailand-rebuild64-full-world-dynamic-readiness-checks/thailand-rebuild64-full-world-dynamic-readiness-check-2026-08-01T05-57-23-178Z/check-report.json",
+    ".runtime/ai-painter/ai-assisted-pre-rgb-condition-guide-novelty-audits/ai-assisted-pre-rgb-condition-guide-novelty-v7-capacity-slot-190-2026-08-01T05-56-31-117Z/audit-report.json",
+    ".runtime/ai-painter/ai-assisted-pre-rgb-condition-guide-novelty-audits/ai-assisted-pre-rgb-condition-guide-novelty-v7-capacity-slot-194-2026-08-01T05-56-31-117Z/audit-report.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-handle-semantic-water-duplicate-update-docs-and-start-processing-20260801"
+  },
+  "resolution": {
+    "slot190MeasurementWindowId": "sakaerat-measurement-window-r06-c08-v3",
+    "slot190NetworkMode": "main_channel_anabranch",
+    "slot190ConditionId": "earth-reference-v7-v7-capacity-slot-190-ed7cd2dadc68",
+    "slot194MeasurementWindowId": "sakaerat-measurement-window-r01-c06-v3",
+    "slot194NetworkMode": "interior_headwater_tributary_to_main_channel",
+    "slot194ConditionId": "earth-reference-v7-v7-capacity-slot-194-fe5e7ddfe51d",
+    "current64Passed": 64,
+    "current64PairComparisons": 2016,
+    "semanticDuplicatePairs": 0,
+    "slot190HistoricalMatches": 0,
+    "slot194HistoricalMatches": 0,
+    "rgbCreated": 0,
+    "gpuTrainingStarted": false,
+    "runtimeFrameCreated": false,
+    "worldEntryStarted": false
+  }
+}

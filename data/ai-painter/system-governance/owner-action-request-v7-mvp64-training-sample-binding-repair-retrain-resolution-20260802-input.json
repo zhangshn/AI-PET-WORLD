@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-v7-mvp64-training-sample-binding-repair-retrain-resolution-20260802",
+  "subsystem": "ai_painter_v7_mvp64_training_dataset_sample_binding_repair_retrain",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "parentRequestId": "owner-action-request-v7-mvp64-training-sample-binding-repair-retrain-20260802",
+    "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+    "datasetPackageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+    "requiredV7CapacityCount": 64,
+    "requiredSplitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "quarantinedLegacyLoadedCount": 21
+  },
+  "ownerVisibleConclusionZh": "项目所有者先明确回复‘允许’修复V7 Dataset绑定并从头重训，暂停处理控制台后又明确回复‘ok继续我们的正式内容’，现恢复此前暂停的正式主线授权。",
+  "localSystemFindingZh": "现有Python Dataset错误地仅接受currentConditionIdentityMatches=true，导致64条v7CapacityContributionRegistered正式记录全部被排除并误训21条旧条件配对。修复必须同时在Node与Python以实际加载行证明64和48/8/4/4。",
+  "blockingReasonCode": "resolved_owner_authorized_v7_mvp64_training_sample_binding_repair_retrain",
+  "whyCannotProceedZh": "本记录只解除V7 Dataset绑定修复、CPU正反回归及从全新冒烟和stage-0开始重训的阻断；不解除训练后验证、正式推理、RuntimeFrame或进入世界的独立阻断。",
+  "minimumRequestedActionZh": "V7 Dataset仅选择64条已注册容量贡献；Node和Python强制实际加载64及48/8/4/4，CPU正反回归通过后执行一次新冒烟，再从随机初始化的新stage-0顺序训练stage-1和stage-2。",
+  "invariants": [
+    "existing_64_dataset_rows_and_capacity_contribution_files_remain_unchanged",
+    "old_21_sample_checkpoints_remain_preserved_nonformal_wrong_sample_set_evidence",
+    "new_v7_training_loads_exactly_64_registered_capacity_rows",
+    "new_v7_split_equals_48_8_4_4",
+    "new_stage_0_uses_project_random_initialization_without_parent_checkpoint",
+    "new_stage_1_and_stage_2_only_use_the_immediately_preceding_repaired_run",
+    "formal_inference_runtime_frame_and_world_remain_blocked"
+  ],
+  "forbiddenActions": [
+    "modify_or_replace_the_locked_64_dataset_records",
+    "delete_or_overwrite_existing_checkpoints",
+    "mix_legacy_21_condition_pairs_into_the_repaired_v7_training",
+    "reuse_any_legacy_21_sample_checkpoint_as_parent",
+    "continue_after_a_failed_gate_or_training_stage",
+    "generate_formal_inference_images",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "V7 Dataset样本绑定修复与完整重训已获批准并恢复执行。程序必须在stage-2完成后停在训练后验证之前。",
+  "nextActionAfterAuthorization": [
+    "repair_v7_dataset_to_select_registered_capacity_contributions_only",
+    "add_node_and_python_actual_loaded_row_count_and_split_gates",
+    "run_cpu_positive_and_negative_dataset_binding_regression",
+    "run_one_new_v7_smoke_test",
+    "run_new_stage_0_then_stage_1_then_stage_2_without_legacy_parent",
+    "stop_before_post_training_validation"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-training-sample-binding-repair-retrain-20260802/request.json",
+    "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+    "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json"
+  ],
+  "ownerDecision": {
+    "decision": "approved",
+    "commandRef": "owner-approved-v7-mvp64-training-sample-binding-repair-retrain-20260802",
+    "commandTextZh": "允许；暂停控制台工作后，ok继续我们的正式内容",
+    "scope": "v7_dataset_binding_repair_cpu_regression_smoke_stage_0_1_2_only"
+  },
+  "resolution": {
+    "parentRequestResolved": true,
+    "datasetBindingRepairAuthorized": true,
+    "cpuRegressionAuthorized": true,
+    "gpuRetrainingAuthorized": true,
+    "postTrainingValidationAuthorized": false,
+    "formalInferenceAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false
+  }
+}

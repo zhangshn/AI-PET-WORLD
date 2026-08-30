@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-authorized-thailand-rebuild64-semantic-topology-diversity-upgrade-20260801",
+  "subsystem": "ai_painter_thailand_rebuild64_semantic_topology_gate",
+  "status": "owner_authorized_pending_execution",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceCodes": ["01-64"],
+    "slotIds": ["v7-capacity-slot-146..v7-capacity-slot-209"]
+  },
+  "ownerVisibleConclusionZh": "项目所有者确认不同真实测量数据不得被算法压缩为相同道路、河道、岸线或整体骨架，并授权把语义拓扑唯一性写入正式文档、算法和64组硬门禁后开始处理。",
+  "localSystemFindingZh": "现有64组使用64个不同泰国测量窗口，但道路仅落入4个粗类型，两个有水组均落入main_channel_anabranch；像素交并比、质心、哈希和身份字段不能识别同类型不同坐标的视觉骨架重复。",
+  "blockingReasonCode": "resolved_owner_authorized_semantic_topology_diversity_upgrade",
+  "whyCannotProceedZh": "在语义拓扑门禁补齐前继续生成RGB会把相同道路或河网语法作为正样本写入本地模型训练集，并固化为未来游戏世界画面。",
+  "minimumRequestedActionZh": "新增语义拓扑合同和签名算法，对64组及失败历史全量审核，重建所有语义重复的数据包；只有重新通过门禁的数据包才能进入后续出图。",
+  "invariants": [
+    "same_formal_thailand_measurement_source_scope",
+    "each_condition_package_remains_bound_to_real_measurement_facts",
+    "unique_measurement_window_is_necessary_but_not_sufficient",
+    "landscape_season_hydrology_presence_and_owner_entry_side_remain_fixed",
+    "no_historical_rgb_generation_input",
+    "no_threshold_reduction_or_duplicate_bypass",
+    "failed_rgb_remains_negative_evidence",
+    "no_auto_owner_approval_gpu_runtime_frame_or_world"
+  ],
+  "forbiddenActions": [
+    "treat_hash_or_measurement_fingerprint_uniqueness_as_visual_uniqueness",
+    "reuse_same_route_or_water_network_motif_with_coordinate_deformation",
+    "mirror_rotate_or_minor_deform_a_rejected_skeleton",
+    "generate_rgb_before_all_64_semantic_topology_preflight_passes",
+    "auto_approve_owner_review",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "程序先升级文档、拓扑签名和出图前硬门禁，再审核并重建问题数据包；未通过的新数据包不会进入出图。",
+  "nextActionAfterAuthorization": [
+    "persist_semantic_topology_diversity_contract",
+    "implement_route_water_shoreline_and_complete_skeleton_signature",
+    "audit_all_64_and_rejected_history",
+    "rebuild_semantic_duplicate_condition_packages_from_distinct_real_measurement_evidence",
+    "rerun_all_pre_rgb_gates",
+    "wait_for_rgb_authorization_if_current_execution_contract_still_blocks_rgb"
+  ],
+  "evidencePaths": [
+    "data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json",
+    ".runtime/ai-painter/earth-geospatial-v7-capacity-146-209-complete-framework-audits/latest.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-semantic-topology-diversity-doc-algorithm-and-processing-20260801",
+    "commandZh": "处理这个问题，文档方案把这些细节加进去，然后开始处理",
+    "ownerReviewPolicy": "finish_all_64_then_owner_reviews_together"
+  },
+  "resolution": null
+}

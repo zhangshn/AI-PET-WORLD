@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "ai-painter-r5-stage4-v8-gradient-diagnostic-retry-authorization-v1",
+  "status": "owner_authorized_independent_diagnostic_not_consumed",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-v8-stage4-gradient-diagnostic-retry-execution-20260808",
+    "scope": "one_v8_sample194_gradient_diagnostic_after_dataset_selection_cpu_pass_only",
+    "sourceOwnerAuthorizationPath": "data/ai-painter/system-governance/owner-authorized-v8-stage4-dataset-selection-and-gradient-diagnostic-retry-20260808.json",
+    "sourceOwnerAuthorizationSha256": "9fd14ae784e49a05753a20008a7e60dbce6925f9ba14054789668b8ebbe5f2b6"
+  },
+  "taskIdentity": {
+    "architectureId": "multiscale_condition_unet_v8_stage4_decoded_alignment",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "seed": 20263722,
+    "timestep": 999,
+    "resolution": {
+      "width": 256,
+      "height": 192
+    },
+    "requiredBoundarySides": [
+      "west"
+    ],
+    "datasetSelectionContract": "registered_v7_capacity_contribution_v1",
+    "requiredSplitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    }
+  },
+  "bindings": {
+    "runner": {
+      "path": "ml/ai-painter/scripts/run_ai_assisted_v8_r5_stage4_gradient_diagnostic.py",
+      "sha256": "c088c313e5fc6ab1564d39b21c52e62194a0de8239214f62e6a97e644c59cc5d"
+    },
+    "model": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "954d2b42cb9f8216f74ccd5753de017ea8539aea0f58d94e954374ded4029577"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "8f97e2487cd0520d0e06d4ef9a274ee1dfa55ad3acf3751803172818e1adf1c5"
+    },
+    "datasetImplementation": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/dataset.py",
+      "sha256": "d9245fda230788b749f4d108445f665aaf0b677b7c6cc9a6e2094b24400e81f9"
+    },
+    "cpuChecker": {
+      "path": "ml/ai-painter/scripts/check_ai_assisted_v8_stage4_dataset_selection_cpu.py",
+      "sha256": "7b009df390697b62db205b55ed3ece3895d0d9b975f3c85e0f9b75d76b9fa790"
+    },
+    "inactiveConfig": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-decoded-domain-alignment-cpu-support/20260808-211500000/inactive-config.json",
+      "sha256": "ef941d1483aa8fc1798203bd314843569ca4f759d6c3261ad71d25476c499a13"
+    },
+    "previousFailureTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-gradient-diagnostic/20260808-220000000/phase-terminal.json",
+      "sha256": "89121b65a8fa991569b8122c884d087f6b866294ff9a24f9739f939059cd0974"
+    },
+    "datasetManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+      "sha256": "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
+    },
+    "autoencoderCheckpoint": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/complete-world-ai-assisted-autoencoder.pt",
+      "sha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba"
+    },
+    "datasetCpuReport": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-dataset-selection-cpu/20260808-214500000/report.json",
+      "sha256": "08a1a4a11d96161ee11cc6277d416604057710389426eb86f2954362fac2e263"
+    },
+    "datasetCpuTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-dataset-selection-cpu/20260808-214500000/phase-terminal.json",
+      "sha256": "cb94479dffd2825fae7b47d371dc18f6d9f682adfe7449f862fdfacf55825a83"
+    }
+  },
+  "authorizedActions": {
+    "gpuUseAuthorized": true,
+    "autoencoderCheckpointReadAuthorized": true,
+    "oldDenoiserCheckpointReadAuthorized": false,
+    "optimizerCreationAuthorized": false,
+    "backwardExecutionAuthorized": false,
+    "modelWeightMutationAuthorized": false,
+    "checkpointWriteAuthorized": false,
+    "trainingAuthorized": false,
+    "thirtyEpochSmokeAuthorized": false,
+    "fullTrainingAuthorized": false,
+    "strictRevalidationAuthorized": false,
+    "automaticRetryAuthorized": false
+  },
+  "consumptionPaths": {
+    "diagnostic": ".runtime/ai-painter/owner-action-requests/owner-authorized-v8-stage4-dataset-selection-and-gradient-diagnostic-retry-20260808/gpu-diagnostic-consumption.json"
+  },
+  "outputRoots": {
+    "diagnostic": ".runtime/ai-painter/v8-r5-stage4-gradient-diagnostic/20260808-215000000"
+  }
+}

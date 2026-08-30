@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "v7-r5-stage4-readonly-diagnostic-gate-fix-contract-v1",
+  "status": "authorized_gate_field_fix_applied_cpu_not_yet_run",
+  "authorizationPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-readonly-diagnostic-previous-failure-field-gate-fix-retry-20260805/request.json",
+  "authorizationSha256": "be1526d0f6c9702eb177f9e09466e6e094b821815cacaaa7be9542df4c6e41ef",
+  "implementationConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-readonly-diagnostic-previous-failure-field-gate-fix-retry-20260805/implementation-authorization-consumption.json",
+  "implementationConsumptionSha256": "ff77aaa99deaf965359ea70e08254f4571cfb81b260558a1c5dfa5123b8b8f96",
+  "change": {
+    "runnerFieldBefore": "previousFailureTerminalPath",
+    "runnerFieldAfter": "previousGpuFailureTerminalPath",
+    "runnerBeforeSha256": "776c4775104d16f2ca1d3b946584cc27ff1d2547253d582de08f1af2d1c0ebbc",
+    "runnerAfterSha256": "80eab3e3bea7568030c369391e14acb873033112de8d7a373a7bdaa243b85fdb",
+    "cpuCheckerChange": "runner SHA-256 binding only",
+    "cpuCheckerBeforeSha256": "60bfa95e9dabf28ae55c61dc59d1858e9fc65ffb35af7f9e17cd08c15a11d41c",
+    "cpuCheckerAfterSha256": "93970b40614e1e755db174806ba685ba26be1c9e4bd2859222e0c8df8079f8f4",
+    "trainerSha256Unchanged": "8a83a5750faaedb0dcc5459693b61933e20be3e5ea144b8ff3a6baa8bd4c3b1d"
+  },
+  "boundaries": {
+    "trainingConfigModified": false,
+    "checkpointRead": false,
+    "checkpointLoaded": false,
+    "optimizerCreated": false,
+    "modelWeightsModified": false,
+    "gpuUsed": false,
+    "trainingStarted": false
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-v1",
+  "requestId": "owner-authorized-v9-stage4-object-semantic-architecture-design-and-diagnostic-manifest-contract-20260809",
+  "status": "resolved_owner_authorized",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-v9-stage4-object-semantic-architecture-design-and-diagnostic-manifest-contract-20260809",
+    "scope": "cpu_only_v9_object_semantic_decoder_alignment_design_and_exact_17_metric_manifest_contract_only",
+    "sourceCommand": "授权在新的不可变命令范围内，绑定V8失败归因终态、归因报告及架构决策；仅执行CPU级V9对象语义—解码器对齐架构设计及诊断Manifest注册合同建设。保留样本绑定west道路拓扑，使用原始参考、23通道条件包、批准WorldFacts、对象语义掩码和冻结Autoencoder解码特征作为合法监督来源；明确四类语义投影、解码尺度、结构影响、兼容性、资源风险、回退点、CPU/GPU验收路线及17项指标精确映射。只生成未激活合同、报告和终态，不选择超参数，不读取Checkpoint，不修改权重，不启动GPU或训练。"
+  },
+  "taskIdentity": {
+    "module": "AI Painter R5",
+    "stage": 4,
+    "closedCandidateId": "stage4_decoded_domain_alignment_bridge_v1",
+    "designContractId": "stage4_object_semantic_decoder_alignment_v9_v1",
+    "proposedArchitectureId": "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+    "conditionChannels": 23,
+    "preservedRequiredBoundarySides": ["west"],
+    "objectSemanticChannels": ["object_footprints", "object_tree", "object_rock", "object_vegetation"],
+    "decoderScales": ["up1", "up0"],
+    "requiredDiagnosticMetricCount": 17
+  },
+  "bindings": {
+    "v8AttributionTerminal": {
+      "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v8-attribution/20260809-154712137/phase-terminal.json",
+      "sha256": "25adba11edf9ae3c89e34cd2f421256bcdbd404b8e18ffb4b789515943542679"
+    },
+    "v8AttributionReport": {
+      "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v8-attribution/20260809-154712137/analysis-report.json",
+      "sha256": "d84f8d03c9e14b9df0211c0d5be57106121ea76be103e37cf035c1cc20cb1041"
+    },
+    "v8ArchitectureDecision": {
+      "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v8-attribution/20260809-154712137/architecture-decision.json",
+      "sha256": "2eb19535f2db846e63f0d9b4423706e829968d469c76646ddabb5233930b20c1"
+    },
+    "priorV8DesignReport": {
+      "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-architecture-design-convergence/local-ai-v7-r5-stage4-architecture-design-convergence-20260808-202232050/architecture-design-report.json",
+      "sha256": "2b6b4702987f14fb9de1c7ba3e15f090519b230b1d7df00920ffcfa54b302613"
+    },
+    "priorV8InactiveContract": {
+      "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-architecture-design-convergence/local-ai-v7-r5-stage4-architecture-design-convergence-20260808-202232050/inactive-architecture-implementation-contract.json",
+      "sha256": "da53f0005c99c64d525ec25d784b52304d76775a405847a02a71800c1212438e"
+    },
+    "modelFrozen": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "954d2b42cb9f8216f74ccd5753de017ea8539aea0f58d94e954374ded4029577"
+    },
+    "trainerFrozen": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "f25a31f6c96cc54ef66fb0f3a3f6326882ebda89c20365a8d53057a9a4620818"
+    },
+    "v8SmokeRunnerFrozen": {
+      "path": "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs",
+      "sha256": "cbea5dd82cfc86b777f698919215218b614c344fb6e24c2bfe057a7f2c59521f"
+    },
+    "formalSpecification": {
+      "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+      "sha256": "0d8551522647bf13a6a96f76430e3bfb1708da63e09eda417ba97a17037cb956"
+    }
+  },
+  "authorizedActions": {
+    "localV9ArchitectureDesignEntryImplementation": true,
+    "oneCpuReadonlyArchitectureDesign": true,
+    "architectureDesignReportWrite": true,
+    "inactiveImplementationContractWrite": true,
+    "terminalEvidenceWrite": true,
+    "uniquePlanUpdate": true,
+    "hyperparameterSelection": false,
+    "checkpointFileReadOrLoad": false,
+    "modelModification": false,
+    "trainerModification": false,
+    "smokeRunnerModification": false,
+    "reviewThresholdModification": false,
+    "optimizerCreation": false,
+    "backwardExecution": false,
+    "modelWeightModification": false,
+    "gpuUse": false,
+    "training": false,
+    "automaticRetry": false
+  },
+  "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-v9-stage4-object-semantic-architecture-design-and-diagnostic-manifest-contract-20260809/design-consumption.json",
+  "outputPaths": {
+    "runRoot": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v9-architecture-design/20260809-155330050",
+    "designReport": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v9-architecture-design/20260809-155330050/architecture-design-report.json",
+    "inactiveContract": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v9-architecture-design/20260809-155330050/inactive-architecture-implementation-contract.json",
+    "terminal": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v9-architecture-design/20260809-155330050/phase-terminal.json"
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetry": false,
+    "preserveSourceEvidence": true
+  }
+}

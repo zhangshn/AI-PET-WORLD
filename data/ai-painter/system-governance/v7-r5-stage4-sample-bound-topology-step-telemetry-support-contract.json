@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "v7-r5-stage4-sample-bound-topology-step-telemetry-support-contract-v1",
+  "status": "cpu_verified_support_available_not_active",
+  "recordedAtUtc": "2026-08-08T04:31:27.616Z",
+  "sourceAnalysisPath": ".runtime/ai-painter/local-ai-v7-r5-stage4-boundary-provenance-smoke-telemetry-readonly-analysis/local-ai-v7-r5-stage4-boundary-provenance-narrowed-review-identity-readonly-analysis-2026-08-08T03-57-39-860Z/analysis-report.json",
+  "sourceAnalysisSha256": "e9f0519db4d2d0cb50c5c338d72166072b1c0ab4ca3554be3f46a3195a00496c",
+  "trainerPath": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+  "trainerSha256": "7fb60831c0f57a397567e805ff57e0e4b7fe511e5c35fd5514f998b0be964da9",
+  "runnerPath": "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs",
+  "runnerSha256": "9089a664284e79d6232028f21fa2a219a9b59b77b465208adad9b8f76ffcbcd6",
+  "telemetryLibraryPath": "scripts/lib/ai-assisted-v7-r5-stage4-step-telemetry.mjs",
+  "telemetryLibrarySha256": "b44197e9628a78cd8f2f66c6a80f2f935b070877ef1e1c4d1ab81b46f4d4a9a1",
+  "cpuCheckerPath": "scripts/check-ai-assisted-v7-r5-stage4-sample-bound-topology-step-telemetry-cpu.mjs",
+  "cpuCheckerSha256": "4debb36c098b870e01ee3b3698bf3f4e70f1cc50b9293f3116f1fbfeaf63a8ac",
+  "cpuReportPath": ".runtime/ai-painter/v7-r5-stage4-sample-bound-topology-step-telemetry-cpu-regressions/v7-r5-stage4-sample-bound-topology-step-telemetry-cpu-2026-08-08T04-31-23-005Z/report.json",
+  "cpuReportSha256": "135bac3389e9b9de3dca30a4f1ff1d91f95fe7e9d98272fa02fbad9180130feb",
+  "capability": {
+    "topologyAuthority": "current_execution_sample_world_facts_connectivity_and_project_route_geometry",
+    "conditionMaskRole": "per_resolution_consistency_validation_only",
+    "checkedResolutions": [
+      {
+        "width": 256,
+        "height": 192
+      },
+      {
+        "width": 512,
+        "height": 384
+      },
+      {
+        "width": 1024,
+        "height": 768
+      }
+    ],
+    "rejectsCrossSampleBoundaryTopologyBeforeCheckpointRead": true,
+    "preciseSteps": [
+      "model_device_placement",
+      "autoencoder_checkpoint_read",
+      "autoencoder_state_load",
+      "denoiser_checkpoint_read",
+      "denoiser_state_load",
+      "optimizer_creation",
+      "batch_device_transfer",
+      "forward_loss",
+      "backward",
+      "optimizer_step",
+      "checkpoint_write"
+    ],
+    "runnerFinalizationDerivedFromStepTelemetry": true,
+    "legacyBehaviorCompatibilityPreserved": true
+  },
+  "activation": {
+    "trainingConfigModified": false,
+    "conditionPackModified": false,
+    "checkpointFileRead": false,
+    "checkpointLoaded": false,
+    "optimizerCreated": false,
+    "gpuUsed": false,
+    "trainingStarted": false,
+    "supportActivatedForNewExecution": false
+  },
+  "nextIndependentAuthorization": "compile_sample194_west_bound_stage4_bounded_smoke_inactive_config_and_cpu_authorization_gate_only"
+}

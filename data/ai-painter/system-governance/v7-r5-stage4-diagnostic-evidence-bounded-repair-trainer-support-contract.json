@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "v7-r5-stage4-diagnostic-evidence-bounded-repair-trainer-support-contract-v1",
+  "status": "cpu_verified_bounded_repair_support_not_active",
+  "trainer": {
+    "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "sha256": "dd465603361f1e53b0304d89b62a111b8d822fbfaac3537509c006a893946dd5"
+  },
+  "selection": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/selection-contract.json",
+    "sha256": "6b4b6c9e23836b2d483625594b254f725c1e0ebc799c54f20507210a9db8e228"
+  },
+  "inactiveConfig": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/inactive-config.json",
+    "sha256": "6bcc1a6f49b4e9fd5a7ac1eca5f25783445894097b22cf349e15b365cad07332"
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/cpu-positive-negative-regression.json",
+    "sha256": "975332317a237b7da5ad96c131d6420c5a9d8033790fcb113976e96544a7e05c"
+  },
+  "supportedCapabilities": {
+    "existingObjectSemanticChannelWeights": true,
+    "requiredBoundaryContactLoss": true,
+    "pathActivationMassCalibrationWeight": true,
+    "legacyConfigurationWithoutRequiredBoundaryContact": true
+  },
+  "positiveAssertionsPassed": 15,
+  "negativeAssertionsPassed": 15,
+  "candidateActive": false,
+  "sourceTrainingConfigModified": false,
+  "reviewThresholdsModified": false,
+  "failedPreviewPixelsUsedAsTrainingTargets": false,
+  "checkpointFileRead": false,
+  "checkpointDeserialized": false,
+  "checkpointLoaded": false,
+  "optimizerCreated": false,
+  "backwardExecuted": false,
+  "modelWeightsModified": false,
+  "gpuUsed": false,
+  "trainingStarted": false,
+  "strictRevalidationStarted": false,
+  "formalInferenceStarted": false,
+  "checkpointPromoted": false,
+  "runtimeFrameStarted": false,
+  "worldEntryStarted": false
+}

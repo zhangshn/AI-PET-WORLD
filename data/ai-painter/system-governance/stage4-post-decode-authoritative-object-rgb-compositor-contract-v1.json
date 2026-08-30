@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "stage4-post-decode-authoritative-object-rgb-compositor-contract-v1",
+  "contractId": "stage4-post-decode-authoritative-object-rgb-compositor-contract-v1",
+  "status": "cpu_supported_inactive",
+  "authority": "local_ai_pet_world_program",
+  "architectureId": "stage4_post_decode_authoritative_object_rgb_compositor_v1",
+  "problemBoundary": "The frozen Autoencoder preserves semantic information in round-trip evidence, but all prior latent-only Stage4 routes decode footprints, tree, rock and vegetation into visually indistinguishable green texture across multiple samples.",
+  "structuralDifference": "Terrain, route and hydrology retain the existing latent generation path. Four independent trainable RGB proposal heads operate only after frozen Autoencoder decode and are composed only inside the same authoritative object masks.",
+  "derivedDimensions": {
+    "decodedRgbChannels": 3,
+    "sameClassMaskChannels": 1,
+    "perHeadInputChannels": 4,
+    "existingBaseWidth": 64,
+    "perHeadOutputChannels": 3,
+    "conditionChannels": 23,
+    "latentChannels": 12,
+    "latentDownsampleFactor": 4,
+    "source": "current decoded RGB, four approved object masks and existing formal width contract"
+  },
+  "objectIdentityOrder": [
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation"
+  ],
+  "compositionRule": {
+    "oneIndependentParameterNamespacePerObjectClass": true,
+    "perHeadInput": "decoded_rgb_plus_same_class_authoritative_mask_only",
+    "outsideSameClassMaskContributionMustBeZero": true,
+    "overlapRule": "normalize_sum_of_masked_rgb_proposals_by_exact_mask_sum_using_current_tensor_dtype_epsilon",
+    "backgroundRule": "retain_frozen_autoencoder_decoded_rgb_where_object_mask_sum_is_zero",
+    "freeBlendWeightsAllowed": false,
+    "finalHarmonizerMayEraseObjectRgb": false
+  },
+  "frozenBoundaries": {
+    "approvedSampleCount": 64,
+    "split": [48, 8, 4, 4],
+    "conditionChannelOrderUnchanged": true,
+    "objectMasksUnchanged": true,
+    "frozenAutoencoderUnchanged": true,
+    "existingLossValuesAndWeightsUnchanged": true,
+    "checkpointFormatUnchangedUntilQualification": true,
+    "machineReviewThresholdsUnchanged": true,
+    "nativeCompleteRgbBusinessContractUnchanged": true
+  },
+  "activationGates": {
+    "configurationActiveNow": false,
+    "gpuNow": false,
+    "optimizerNow": false,
+    "backwardNow": false,
+    "weightModificationNow": false,
+    "smokeNow": false,
+    "trainingNow": false,
+    "formalInferenceNow": false,
+    "runtimeFrameNow": false,
+    "worldEntryNow": false
+  },
+  "prohibited": [
+    "failed_preview_pixels_as_target",
+    "machine_review_results_as_target",
+    "historical_or_failed_checkpoint_initialization",
+    "free_width_layer_loss_weight_or_hyperparameter",
+    "sprite_tile_patch_or_rule_based_drawing",
+    "object_mask_modification",
+    "outside_mask_object_rgb_mutation",
+    "restart_of_exited_model_routes"
+  ]
+}

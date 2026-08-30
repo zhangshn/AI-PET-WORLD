@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "r5-stage4-structured-stability-smoke-qualification-support-contract-v1",
+  "status": "cpu_verified_structured_stability_smoke_qualification_support_not_active",
+  "runnerPath": "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs",
+  "runnerSha256": "d0889840d3f410baaf3a786da6ff17fd588d542ca8fad8874419c9d5c6a50f42",
+  "cpuCheckerPath": "scripts/check-ai-assisted-v7-r5-stage4-sample-bound-topology-step-telemetry-cpu.mjs",
+  "cpuCheckerSha256": "5390273e6f52290c1aa98b97c46a4b73c4fd03a30c9576197008b4fe40bc7a34",
+  "cpuReportPath": ".runtime/ai-painter/v7-r5-stage4-structured-stability-smoke-qualification-cpu-runs/v7-r5-stage4-structured-stability-smoke-qualification-cpu-20260808-183823230/report.json",
+  "cpuReportSha256": "530890589eea14bea9fc91ad5c13fe01856c5662fc462998f223ed43e94ed297",
+  "capability": {
+    "reviewedPreviewEpochs": [
+      1,
+      5,
+      10,
+      20,
+      30
+    ],
+    "qualificationEpochs": [
+      20,
+      30
+    ],
+    "minimumConsecutivePasses": 2,
+    "finalEpochMustPass": true,
+    "reviewThresholdsChanged": false,
+    "legacyStage3AndStage4BehaviorPreserved": true
+  },
+  "checkpointFileRead": false,
+  "checkpointDeserialized": false,
+  "checkpointLoaded": false,
+  "optimizerCreated": false,
+  "backwardExecuted": false,
+  "modelWeightsModified": false,
+  "gpuUsed": false,
+  "trainingStarted": false,
+  "stage4FullTrainingStarted": false,
+  "stage1Started": false,
+  "stage2Started": false,
+  "strictRevalidationStarted": false,
+  "formalInferenceStarted": false,
+  "checkpointPromoted": false,
+  "runtimeFrameStarted": false,
+  "worldEntryStarted": false
+}

@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-v1",
+  "requestId": "owner-authorized-v8-stage4-file-backed-resource-gate-and-smoke-20260809",
+  "status": "resolved_owner_authorized",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-v8-stage4-file-backed-resource-gate-and-smoke-20260809",
+    "scope": "one_file_backed_cuda_resource_and_disk_preflight_then_one_v8_30_epoch_gpu_smoke_only",
+    "sourceCommand": "授权在新的不可变命令范围内，绑定V8预检失败终态、根因报告及Python预检报告；不得再次使用内联JavaScript转义命令，仅调用现有资源门禁或建立文件化只读检查入口，执行一次CUDA资源及磁盘预检。全部通过后才建立并原子消费独立GPU授权，执行固定样本194、种子20263722、west拓扑、30 Epoch V8 GPU Smoke。失败立即停止且不自动重试。"
+  },
+  "taskIdentity": {
+    "module": "AI Painter R5",
+    "candidateId": "stage4_decoded_domain_alignment_bridge_v1",
+    "architectureId": "multiscale_condition_unet_v8_stage4_decoded_alignment",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "seed": 20263722,
+    "requiredBoundarySides": ["west"],
+    "resolution": {"width": 256, "height": 192},
+    "epochCount": 30,
+    "previewEpochs": [1, 5, 10, 20, 30],
+    "datasetSelectionContract": "registered_v7_capacity_contribution_v1",
+    "requiredSplitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4}
+  },
+  "bindings": {
+    "previousPreflightFailureTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke-preflights/20260809-152420477/phase-terminal-final.json",
+      "sha256": "58a015a35a9a3a92ea5408a734380c44e69b601c8de6d9a95f2069f0c8bf2ebe"
+    },
+    "previousPreflightRootCauseReport": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke-preflights/20260809-152420477/resource-disk-root-cause-report.json",
+      "sha256": "08e2fefb5898339479da7cf795d720d443eb06433739671e0b0dd24dca325b1c"
+    },
+    "successfulPythonPreflightReport": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke-preflights/20260809-152420477/preflight-report.json",
+      "sha256": "2e7bb542d3cf659c8517f4d65f45822cb88cd58af20a4f089798b7596d1cbef2"
+    },
+    "cpuReport": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-sample-role-fix-cpu/20260809-152420477/cpu-report.json",
+      "sha256": "bdd634ef757aed047524c0ea1e517ada31b9f555d212b434a53fcc36d1a5b846"
+    },
+    "cpuTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-sample-role-fix-cpu/20260809-152420477/phase-terminal.json",
+      "sha256": "a7021531e0e6ed9e0bdbf96ae7e4cc5729ffc567f5c09e9209ce2a7d5996d287"
+    },
+    "supportContract": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-sample-role-fix-cpu/20260809-152420477/support-contract.json",
+      "sha256": "550d5d470b48ae166e53d6602851ac903954e32a47bf2d3194cb548120d109ca"
+    },
+    "sourceOwnerAuthorization": {
+      "path": "data/ai-painter/system-governance/owner-authorized-v8-stage4-training-loss-and-30-epoch-smoke-20260808.json",
+      "sha256": "10e21a3fa90fadb5751eca90946fa8da157f8dce0208527042019d3a1bdab5a3"
+    },
+    "inactiveConfig": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-training-loss-smoke-cpu/20260808-220500000/inactive-config.json",
+      "sha256": "9116f2a05b00b21e52cc09a192c8fb9e08c12e4dae56c3e47f02321ac2a93dbf"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "f25a31f6c96cc54ef66fb0f3a3f6326882ebda89c20365a8d53057a9a4620818"
+    },
+    "cpuChecker": {
+      "path": "ml/ai-painter/scripts/check_ai_assisted_v8_r5_stage4_training_loss_smoke_cpu.py",
+      "sha256": "7d462212d9c3698b22baaed44484901b5e04b0786a38093229c99bb1d029a197"
+    },
+    "smokeRunner": {
+      "path": "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs",
+      "sha256": "cbea5dd82cfc86b777f698919215218b614c344fb6e24c2bfe057a7f2c59521f"
+    },
+    "model": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "954d2b42cb9f8216f74ccd5753de017ea8539aea0f58d94e954374ded4029577"
+    },
+    "datasetImplementation": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/dataset.py",
+      "sha256": "d9245fda230788b749f4d108445f665aaf0b677b7c6cc9a6e2094b24400e81f9"
+    }
+  },
+  "authorizedActions": {
+    "fileBackedReadonlyResourceGateImplementation": true,
+    "oneCudaResourceAndDiskPreflight": true,
+    "resourcePreflightEvidenceWrite": true,
+    "independentGpuAuthorizationCreationAfterAllPreflights": true,
+    "atomicGpuExecutionConsumptionAfterAllPreflights": true,
+    "autoencoderCheckpointReadAndLoadAfterGpuConsumption": true,
+    "v8RandomInitialization": true,
+    "optimizerCreationAfterGpuConsumption": true,
+    "backwardExecutionAfterGpuConsumption": true,
+    "boundedModelWeightMutationAfterGpuConsumption": true,
+    "singleSampleThirtyEpochTrainingAfterGpuConsumption": true,
+    "smokeCheckpointWrite": true,
+    "fivePreviewWriteAndMachineReview": true,
+    "inlineJavascriptPreflight": false,
+    "oldDenoiserCheckpointReadOrLoad": false,
+    "stage4FullTraining": false,
+    "stage1OrStage2": false,
+    "strictRevalidation": false,
+    "formalInference": false,
+    "checkpointPromotion": false,
+    "runtimeFrame": false,
+    "worldEntry": false,
+    "automaticRetry": false
+  },
+  "consumptionPaths": {
+    "resourcePreflight": ".runtime/ai-painter/owner-action-requests/owner-authorized-v8-stage4-file-backed-resource-gate-and-smoke-20260809/resource-preflight-consumption.json",
+    "gpuSmoke": ".runtime/ai-painter/owner-action-requests/owner-authorized-v8-stage4-training-loss-and-30-epoch-smoke-20260808/gpu-smoke-consumption.json"
+  },
+  "outputPaths": {
+    "resourcePreflightRoot": ".runtime/ai-painter/v8-r5-stage4-resource-disk-preflights/20260809-153438396",
+    "gpuExecutionAuthorization": "data/ai-painter/system-governance/owner-authorized-v8-stage4-smoke-gpu-execution-20260809-153438396.json",
+    "gpuOutputDirectory": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke/20260809-153438396",
+    "gpuFinalizationDirectory": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke-finalizations/20260809-153438396",
+    "activeConfig": ".runtime/ai-painter/v8-r5-stage4-training-loss-smoke-cpu/20260809-153438396/active-config.json"
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetry": false,
+    "preservePriorEvidence": true,
+    "doNotStartFullTraining": true
+  }
+}

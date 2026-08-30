@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-slot-146-new64-01-single-rgb-generation-resolution-20260801",
+  "subsystem": "ai_painter_thailand_rebuild64_single_rgb_generation",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceCode": "01",
+    "slotId": "v7-capacity-slot-146",
+    "conditionId": "earth-reference-v7-v7-capacity-slot-146-65332ba6bc50",
+    "requestId": "conditional-rgb-146-2026-07-31T23-58-36-692Z",
+    "recordId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "imageSha256": "eb5c085a05f775ea8df2a8912ff806794dca25b7a378dc54102b142aecf43125"
+  },
+  "ownerVisibleConclusionZh": "项目所有者授权的新64组第01张单次草图已经生成并保存，当前等待项目所有者视觉审核。",
+  "localSystemFindingZh": "内置生成只调用一次；源图1448×1086，最近邻审核派生图1024×768。完整世界画幅、无水、湿季森林低山、南侧入口、风格和全历史构图门禁最终通过。审核复核期间发现额外入口检测曾只使用条件支持像素，程序已改为同时记录全幅原始道路边界连通分量并对同一图片重审；没有再次生成RGB。",
+  "blockingReasonCode": "single_rgb_generation_completed_owner_visual_review_required",
+  "whyCannotProceedZh": "机器通过不能代替项目所有者视觉结论；在项目所有者明确通过或拒绝前，该图不得计入正样本容量，也不得进入第02张。",
+  "minimumRequestedActionZh": "请项目所有者只审核新64组第01张，并明确回复通过或拒绝及原因。",
+  "invariants": [
+    "generated_image_identity_and_sha256_remain_unchanged",
+    "world_facts_condition_pack_and_23_channels_remain_unchanged",
+    "machine_review_history_remains_immutable",
+    "owner_review_remains_pending",
+    "only_one_image_generation_call_was_used"
+  ],
+  "forbiddenActions": [
+    "generate_sequence_02_or_any_other_rgb",
+    "retry_sequence_01_without_new_owner_authorization",
+    "auto_approve_owner_review",
+    "register_positive_capacity_before_owner_approval",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "新64组第01张草图已经按新版完整世界合同生成并通过最终机器审核，当前仅等待你的视觉审核；程序没有生成第02张，也没有启动训练或游戏运行。",
+  "nextActionAfterAuthorization": [
+    "wait_for_owner_visual_review_of_new64_sequence_01",
+    "record_explicit_owner_approval_or_rejection",
+    "do_not_generate_sequence_02_without_new_owner_command"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/owner-action-requests/project-owner-authorization-2026-08-01-v7-capacity-slot-146-single-rgb-generation/request.json",
+    ".runtime/ai-painter/ai-assisted-cold-start/conditional-rgb-generation-requests/conditional-rgb-146-2026-07-31T23-58-36-692Z/request.json",
+    "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3/source/original.png",
+    "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3/reviews/machine/ai-cold-start-machine-review-ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3-2026-08-01T00-06-18-223Z.json",
+    ".runtime/ai-painter/ai-assisted-cold-start/review-pipeline-runs/ai-assisted-cold-start-review-ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3-2026-08-01T00-01-41-290Z/run-report.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-generate-thailand-rebuild64-sequence-01-single-draft-20260801",
+    "ownerReviewPolicy": "pending_individual_owner_review_after_machine_review"
+  },
+  "resolution": {
+    "generationCallCount": 1,
+    "generatedRgbCount": 1,
+    "sourceWidth": 1448,
+    "sourceHeight": 1086,
+    "reviewWidth": 1024,
+    "reviewHeight": 768,
+    "machineReviewPassed": true,
+    "ownerReviewStatus": "pending_review",
+    "conditionalTrainingEligible": false,
+    "nextRgbAuthorized": false,
+    "gpuTrainingStarted": false
+  }
+}

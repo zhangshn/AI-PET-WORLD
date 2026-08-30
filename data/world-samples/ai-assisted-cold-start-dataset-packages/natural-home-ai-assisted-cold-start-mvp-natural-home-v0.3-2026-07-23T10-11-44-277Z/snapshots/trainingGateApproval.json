@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "ai-assisted-training-gate-owner-approval-v1",
+  "approvalId": "ai-assisted-training-gate-owner-approval-2026-07-19T00-00-54-424Z",
+  "status": "owner_approved_thresholds_recorded_coverage_pending",
+  "ownerCommandRef": "owner-command-2026-07-19-training-gates-approved-21-27-27",
+  "reviewerRole": "project_owner",
+  "createdAtUtc": "2026-07-19T00:00:54.424Z",
+  "createdAtAsiaShanghai": "2026-07-19T08:00:54+08:00",
+  "approvals": {
+    "conditionalDenoiserThreshold": {
+      "decision": "approved",
+      "minimumCurrentConditionPairCount": 21,
+      "observedCurrentConditionPairCount": 21,
+      "observedCurrentConditionUnpairedCount": 0,
+      "datasetPackageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-18T22-21-18-171Z",
+      "datasetManifestPath": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-18T22-21-18-171Z/manifest.json",
+      "datasetManifestSha256": "8ff080bfea05f76bd6253160ea4c9cedf0b104eca44a18642b0dcb2f5282ff9a"
+    },
+    "autoencoderV2VisualReview": {
+      "decision": "approved",
+      "comparisonStatusBeforeApproval": "v2_reconstruction_improved_owner_review_required",
+      "comparisonSampleCount": 6,
+      "candidateModelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v2",
+      "candidateCheckpointSha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba",
+      "comparisonPath": ".runtime/ai-painter/ai-assisted-autoencoder-version-comparisons/latest.json",
+      "comparisonSha256": "24b314820246ff8e04f48e8645c48b5578eaaa16f68f75f8e3217a1b4a6879b5"
+    },
+    "worldConnectivityCoverageThreshold": {
+      "decision": "approved",
+      "contractId": "natural-home-large-world-connectivity-v1",
+      "minimumPositiveRecordCount": 27,
+      "minimumNegativeRecordCount": 27,
+      "minimumPositivePerAxis": 3,
+      "minimumNegativePerAxis": 3,
+      "coverageAxes": [
+        "internal_entry_to_center_path",
+        "center_to_approved_edge_port_path",
+        "cross_region_path_pair",
+        "upstream_downstream_water_pair",
+        "ecology_transition_pair",
+        "elevation_transition_pair",
+        "walkable_component_continuity",
+        "collision_preservation",
+        "object_identity_continuity"
+      ],
+      "currentPositiveRecordCount": 0,
+      "currentNegativeRecordCount": 0,
+      "axisCounts": {
+        "internal_entry_to_center_path": {
+          "positive": 0,
+          "negative": 0
+        },
+        "center_to_approved_edge_port_path": {
+          "positive": 0,
+          "negative": 0
+        },
+        "cross_region_path_pair": {
+          "positive": 0,
+          "negative": 0
+        },
+        "upstream_downstream_water_pair": {
+          "positive": 0,
+          "negative": 0
+        },
+        "ecology_transition_pair": {
+          "positive": 0,
+          "negative": 0
+        },
+        "elevation_transition_pair": {
+          "positive": 0,
+          "negative": 0
+        },
+        "walkable_component_continuity": {
+          "positive": 0,
+          "negative": 0
+        },
+        "collision_preservation": {
+          "positive": 0,
+          "negative": 0
+        },
+        "object_identity_continuity": {
+          "positive": 0,
+          "negative": 0
+        }
+      },
+      "thresholdMetAtApproval": false
+    }
+  },
+  "trainingStarted": false,
+  "automaticStorage": true
+}

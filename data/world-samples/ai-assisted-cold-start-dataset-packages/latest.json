@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "ai-assisted-cold-start-dataset-package-latest-v1",
+  "packageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+  "status": "conditional_denoiser_training_ready",
+  "createdAtUtc": "2026-08-02T01:38:05.149Z",
+  "manifestPath": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+  "sourceIndexPath": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json",
+  "sampleCount": 116,
+  "autoencoderSampleCount": 112,
+  "conditionBoundCompleteMapCount": 85,
+  "currentConditionPairCount": 21,
+  "v7CapacityContributionCount": 64,
+  "currentConditionUnpairedCount": 0,
+  "conditionOnlyBlueprintCount": 21,
+  "conditionalFactsBatchId": "complete-map-world-facts-v2-revision-2026-07-18T11-18-30-905Z",
+  "canStartAutoencoderWarmup": true,
+  "canTrainConditionalDenoiser": true
+}

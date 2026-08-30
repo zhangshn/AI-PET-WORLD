@@ -1,0 +1,177 @@
+{
+  "schemaVersion": "ai-painter-current-training-dashboard-contract-v1",
+  "status": "active_locked",
+  "ownerAuthorization": {
+    "authorizedAtAsiaShanghai": "2026-08-02",
+    "scopeZh": "为AI Painter训练模块提供可从当前运行入口进入的专用后端控制台，完整展示训练状态、数据绑定、阶段、epoch、checkpoint、本地模型Token计算账本、能力迁移、当前电脑硬件、事件、证据和阻断。",
+    "writeAuthorizationGranted": false
+  },
+  "routes": {
+    "entry": "/ai-painter-progress",
+    "dashboard": "/ai-painter-progress/current-training",
+    "stageRecordDetail": "/ai-painter-progress/current-training/runs/<runId>",
+    "readApi": "/api/ai-painter/current-training"
+  },
+  "architecture": {
+    "layers": [
+      "homepage_entry",
+      "current_training_dashboard_client",
+      "get_only_route",
+      "read_only_server_aggregator",
+      "program_saved_evidence"
+    ],
+    "polling": "non_reentrant_setTimeout_after_previous_request",
+    "pollingIntervalMs": 5000,
+    "serverSnapshotCacheMs": 2500,
+    "runtime": "nodejs",
+    "desktopLayout": "single_viewport_fixed_training_workbench_without_document_scroll",
+    "longContent": "single_lower_workspace_with_panel_owned_vertical_and_horizontal_scroll"
+  },
+  "readSources": [
+    "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json",
+    "data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/",
+    ".runtime/ai-painter/owner-action-requests/latest.json",
+    ".runtime/ai-painter/v7-post-training-validations/latest.json",
+    ".runtime/ai-painter/v7-post-training-validation-reconciliations/latest.json",
+    ".runtime/ai-painter/v7-repair-r1-strict-revalidations/latest.json",
+    ".runtime/ai-painter/v7-repair-r1-strict-revalidations/<batchId>/validation-report.json",
+    ".runtime/ai-painter/ai-assisted-v7-repair-r1-strict-revalidation-trajectories/<runId>/machine-review.json",
+    "data/ai-painter/system-governance/local-ai-model-data-dictionary-v1.json",
+    ".runtime/ai-painter/training-process-ledger/",
+    ".runtime/ai-painter/training-token-ledgers/<runId>/ledger.json",
+    "data/ai-painter/system-governance/local-ai-capability-migration-registry-v1.json",
+    "nvidia-smi",
+    "Windows Get-CimInstance Win32_Processor/Win32_OperatingSystem/Win32_LogicalDisk",
+    "Windows Get-NetAdapter -Physical",
+    "Node os fallback"
+  ],
+  "requiredPanels": [
+    "fixed_current_training_mission_overview",
+    "top_level_stage_record_and_workspace_navigation",
+    "top_level_strict_validation_visual_review_workspace",
+    "lower_local_workspace_view_switcher",
+    "current_status_and_active_gate",
+    "training_kpis",
+    "model_and_23_channel_contract",
+    "expected_capacity_actual_split_comparison",
+    "complete_execution_timeline",
+    "epoch_chart_and_epoch_table",
+    "checkpoint_lineage",
+    "per_run_local_ai_training_token_accounting",
+    "codex_to_local_ai_capability_migration_status",
+    "all_64_capacity_rows",
+    "program_event_details",
+    "cpu_memory_gpu_disk_network_system_hardware",
+    "immutable_evidence",
+    "local_ai_model_unified_data_dictionary",
+    "next_owner_action"
+  ],
+  "interactionContracts": {
+    "parameterDictionary": "single_machine_readable_local_ai_model_dictionary_covering_model_data_training_checkpoint_strict_validation_machine_review_tokens_hardware_and_owner_governance_with_chinese_explanation_reading_rule_source_and_fuzzy_search",
+    "strictValidationReview": "read_only_batch_selector_and_eight_trajectory_visual_cards_with_inline_condition_seed_status_time_hash_token_gate_and_machine_rejection_evidence_plus_alertdialog_detail_without_page_navigation",
+    "trainingRecordSelector": "top_level_collapsed_dropdown_with_fuzzy_search_and_inline_workspace_selection",
+    "mainDashboardStageSelection": "switch_lower_workspace_without_full_page_navigation",
+    "runEvidenceInspection": "self_developed_alertdialog_inside_current_dashboard_without_url_navigation",
+    "currentTrainingMission": "always_visible_training_activity_model_dataset_chain_stage_epoch_checkpoint_resource_and_gate_summary",
+    "stageRecordIsolation": "one_run_id_per_alertdialog_or_direct_compatibility_detail_route",
+    "epochTableHeaders": "click_to_open_matching_parameter_definition",
+    "hardwareKpiGauges": "four_self_developed_radial_meters_fixed_in_header_middle_between_title_and_status_tools_with_live_percentage_detail_and_three_threshold_tones",
+    "trainingTokenAccounting": "each_run_has_an_immutable_detail_ledger_and_epoch_rows_show_the_locked_local_latent_spatial_token_unit",
+    "capabilityMigration": "each_capability_shows_current_owner_target_owner_status_and_blocker_without_triggering_actions",
+    "diagnosticImages": "display_only_when_the_training_program_saved_run_bound_image_evidence"
+  },
+  "timestampContract": {
+    "scope": "all_program_generated_training_data_runs_stages_epochs_authorizations_events_checkpoints_manifests_token_evidence_and_capacity_records",
+    "requiredUtcFormat": "ISO-8601_with_seconds_or_fractional_seconds",
+    "displayTimezone": "Asia/Shanghai",
+    "displayPrecision": "milliseconds_when_source_precision_exists",
+    "preserveUtcOriginal": true,
+    "missingLegacyTimestamp": "show_not_recorded_without_refresh_time_or_inferred_backfill"
+  },
+  "automaticProgramWrites": {
+    "authority": "local_ai_pet_world_program_only",
+    "dashboardRemainsGetOnly": true,
+    "trainingProgramWrites": [
+      "epoch_metrics",
+      "checkpoint_and_parent_hash",
+      "training_token_accounting",
+      "hardware_and_process_evidence",
+      "program_events"
+    ],
+    "validationProgramWrites": [
+      "per_trajectory_manifest_and_image",
+      "per_trajectory_validation_token_accounting",
+      "machine_review_and_failure_codes",
+      "aggregate_validation_report",
+      "current_status_pointer",
+      "owner_action_request",
+      "program_events_and_sqlite_index"
+    ],
+    "concurrencyRule": "one_atomic_validation_lock_per_active_v7_validation",
+    "authorizationReuseRule": "a_completed_validation_consumes_its_exact_owner_command_and_checkpoint_pair",
+    "externalAgentManualBackfillIsSystemOfRecord": false
+  },
+  "truthConstraints": {
+    "registeredV7CapacityCount": 64,
+    "currentPythonDatasetLoadedCount": 64,
+    "currentPythonDatasetLoadedV7CapacityCount": 64,
+    "currentPythonDatasetSplitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "currentCheckpointDisposition": "repair_r1_training_completed_pending_strict_revalidation",
+    "currentPostTrainingValidationUniqueTrajectories": 8,
+    "currentPostTrainingValidationMachinePassed": 0,
+    "currentPostTrainingValidationMachineRejected": 8,
+    "currentPostTrainingValidationLatentSpatialTokens": 19660800,
+    "localTrainingTokenUnit": "one_latent_spatial_position_processed_by_one_denoiser_sample_forward",
+    "localTrainingTokenIsNlpToken": false,
+    "currentStage2LatentSpatialTokens": 1779892224,
+    "currentStage2ExternalApiTokens": 0,
+    "formalInferenceAllowed": false
+  },
+  "hardwareInventory": {
+    "collectionMode": "read_only_live_snapshot",
+    "included": [
+      "cpu_model_load_cores_threads_clock",
+      "memory_total_used_available_usage",
+      "gpu_name_load_temperature_memory_driver_compute_process_count",
+      "all_fixed_disks_capacity_and_usage",
+      "all_physical_network_adapters_status_and_link_speed",
+      "os_version_build_architecture_hostname_uptime"
+    ],
+    "excludedSensitiveIdentifiers": [
+      "mac_address",
+      "disk_serial_number",
+      "motherboard_serial_number",
+      "bios_serial_number"
+    ]
+  },
+  "forbiddenOperations": [
+    "start_training",
+    "start_inference",
+    "mutate_training_status",
+    "write_or_repair_ledger",
+    "create_or_modify_evidence",
+    "copy_move_rename_runtime_artifacts",
+    "treat_quarantined_checkpoint_as_mvp64_success",
+    "bundle_runtime_artifacts_in_production_build"
+    ,"estimate_or_fabricate_external_provider_tokens"
+    ,"treat_gpu_active_seconds_times_1000_as_training_tokens"
+    ,"trigger_capability_migration_from_the_monitor_dashboard"
+  ],
+  "implementationOwnership": {
+    "selfDeveloped": true,
+    "externalDashboardTemplateUsed": false,
+    "externalChartLibraryUsed": false,
+    "copiedProductUiUsed": false
+  },
+  "capabilityMigrationTarget": {
+    "localAiRole": "execution_accounting_governance_validation_inference_and_runtime_subject_to_owner_gates",
+    "codexRole": "read_only_monitor_and_verification_only",
+    "migrationMustRemainOwnerAuthorized": true
+  }
+}

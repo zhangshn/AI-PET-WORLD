@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "v7-r5-stage4-failure-diagnostic-trainer-support-contract-v1",
+  "status": "cpu_verified_diagnostic_support_not_active",
+  "generatedBy": "local_ai_stage4_diagnostic_trainer_support_program",
+  "authorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-diagnostic-trainer-support-20260805/request.json",
+    "sha256": "4a314080c8a43bcab0b8dd943f00ad9476bc6ba7b7c9eafaed8272d99f9a7559"
+  },
+  "authorizationConsumption": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-diagnostic-trainer-support-20260805/authorization-consumption.json",
+    "sha256": "ac3fc4717bdcce78d9b7debe2842d9b6769dcbc2a06f056aab1e69fe2bc942d6"
+  },
+  "failureLearningProposal": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4/local-ai-v7-r5-stage4-failure-learning-2026-08-05T10-52-29-779Z/read-only-repair-proposal.json",
+    "sha256": "2a5d311fbf397c0438fa030e12fef21ecfb58c323436ed3c4e682fe15e43b677"
+  },
+  "trainer": {
+    "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "sha256": "836899f6cc596d6555fd5fb7aa18c94ade8ed324b1a4a058d982ecc4412996da"
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-trainer-support/local-ai-v7-r5-stage4-diagnostic-trainer-support-2026-08-05T11-00-00-000Z/cpu-positive-negative-regression.json",
+    "sha256": "e25b8511b839e28ddcb9f05a0ca48066fb4299c004255bd2681cb0f6311f4c18"
+  },
+  "diagnostics": {
+    "objectChannels": [
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "objectMeasurements": [
+      "independent_loss",
+      "gradient_contribution",
+      "decoded_response"
+    ],
+    "routeMeasurements": [
+      "coverage",
+      "spatial_distribution",
+      "centroid",
+      "required_boundary_contact"
+    ],
+    "changesTrainingWeightsNow": false,
+    "selectedExecutionValues": false,
+    "trainingConfigApplied": false
+  },
+  "activationGate": {
+    "status": "not_active_requires_separate_parameter_selection_and_execution_authorization",
+    "checkpointFileRead": false,
+    "optimizerCreation": false,
+    "gpuUse": false,
+    "training": false
+  }
+}

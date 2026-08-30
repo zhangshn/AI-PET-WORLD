@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-authorized-thailand-rebuild64-full-world-dynamic-readiness-upgrade-20260731",
+  "subsystem": "ai_painter_thailand_rebuild64_world_training_and_future_runtime",
+  "status": "owner_authorized_pending_execution",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceRange": "01-64",
+    "affectedConditionPackageCount": 64,
+    "ownerRejectedCurrentRgbCount": 6,
+    "ownerRejectedSequenceCodes": [
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "53"
+    ]
+  },
+  "ownerVisibleConclusionZh": "项目所有者明确：这些原图既用于本地AI模型训练，也是未来游戏画面和持续世界的静态基准，后续还要动态化；不能只提高审核标准，必须全面升级64组定义、条件算法、生成算法和机器审核。当前第01至05张及第53张198 v3全部进入未通过，不得算作成功。",
+  "localSystemFindingZh": "现有条件图把深色natural_boundary画成包围不规则区域的平坦色块，生成提示又要求保留其几何，导致生成器稳定学习和输出悬浮地图、外部深绿色底色与锯齿裁切边。旧机器审核只检查水体和道路的粗空间分布，没有验证矩形世界覆盖、非空背景、真实入口边界接触和未来动态世界可分解性，因此错误放行。",
+  "blockingReasonCode": "thailand_rebuild64_full_world_dynamic_readiness_contract_missing",
+  "whyCannotProceedZh": "继续生成会把地图外背景、悬浮轮廓、错误入口和重复视觉语法批量写入本地AI正样本，并破坏未来连续世界连接与动态化。",
+  "minimumRequestedActionZh": "保留并正式拒绝当前六张RGB；建立完整矩形世界、边界连接、23通道动态可分解与全64独立构图合同；重建64个条件包；升级生成提示和机器硬门禁；完成全量回归后再等待项目所有者恢复出图。",
+  "invariants": [
+    "thailand_measurement_facts_and_source_lineage_are_not_fabricated_or_replaced",
+    "all_64_slots_receive_the_same_full_world_and_future_dynamic_readiness_contract",
+    "every_rgb_pixel_represents_in_world_surface_or_in_world_object_not_external_backdrop",
+    "path_boundary_side_is_a_raster_and_visual_hard_constraint",
+    "worldfacts_23_channels_walkable_collision_and_object_identity_remain_authoritative",
+    "all_64_theme_architectures_and_instance_details_remain_independent",
+    "rejected_rgb_is_preserved_for_negative_failure_learning_only",
+    "gpu_training_runtime_frame_and_world_are_not_started"
+  ],
+  "forbiddenActions": [
+    "count_current_rejected_rgb_as_positive_training_data",
+    "delete_current_rejected_rgb_or_review_evidence",
+    "render_external_background_void_or_floating_map_cutout",
+    "accept_a_route_that_does_not_touch_its_contract_boundary_side",
+    "reuse_copy_mirror_rotate_or_template_another_slots_macro_framework",
+    "use_historical_rgb_as_generation_input",
+    "auto_approve_owner_review",
+    "resume_rgb_generation_before_new_contract_and_regression_pass",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "当前RGB生成暂停。程序先全面升级64组数据定义、条件图、生成约束和机器审核，并把现有六张缺陷图保留到未通过组；完成重建和回归后再报告，不自动恢复出图。",
+  "nextActionAfterAuthorization": [
+    "record_owner_rejection_for_current_01_05_and_53_rgb",
+    "add_full_canvas_world_and_future_dynamic_readiness_contract",
+    "repair_condition_guide_natural_boundary_semantics",
+    "upgrade_conditional_rgb_prompt_contract",
+    "add_full_frame_matte_floating_cutout_and_boundary_entrance_machine_gates",
+    "rebuild_all_64_condition_packages",
+    "run_all_64_framework_and_visual_gate_regressions",
+    "wait_for_owner_authorization_before_rgb_generation_resumes"
+  ],
+  "evidencePaths": [
+    "docs/BUSINESS_SPEC.md",
+    "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md",
+    "data/ai-painter/system-governance/thailand-rebuild64-sequence-registry-v1.json",
+    "data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-upgrade-all-thailand-rebuild64-world-training-and-dynamic-readiness-20260731",
+    "commandZh": "要做升级，修改需要全面修改，这些图直接进入失败，不能算通过",
+    "ownerReviewPolicy": "current_six_rgb_owner_rejected_and_future_rgb_requires_new_machine_contract_plus_individual_owner_review"
+  },
+  "resolution": null
+}

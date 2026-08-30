@@ -1,0 +1,203 @@
+{
+  "schemaVersion": "ai-painter-r5-stage4-v8-four-gate-owner-authorization-v1",
+  "status": "owner_authorized_four_gates_not_consumed",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-ai-painter-r5-stage4-v8-four-gate-completion-20260808",
+    "sourceMessage": "那你就把这四次关键执行 全部执行完，现在给你授权",
+    "scope": "execute_v8_gradient_diagnostic_then_v8_30_epoch_smoke_then_stage4_three_stage_full_training_then_stage5_strict_revalidation_with_independent_atomic_gates",
+    "stopOnFirstFailure": true,
+    "automaticRetryAuthorized": false
+  },
+  "fixedOverallPlan": {
+    "initialCompletedStages": 3,
+    "totalStages": 5,
+    "initialPercent": 60,
+    "stage4CompletesOnlyAfterFullTrainingAndMachineReviewsPass": true,
+    "stage5CompletesOnlyAfterStrictRevalidationPasses": true
+  },
+  "taskIdentity": {
+    "module": "AI Painter R5",
+    "candidateId": "stage4_decoded_domain_alignment_bridge_v1",
+    "architectureId": "multiscale_condition_unet_v8_stage4_decoded_alignment",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "seed": 20263722,
+    "timestep": 999,
+    "resolution": {
+      "width": 256,
+      "height": 192
+    },
+    "requiredBoundarySides": [
+      "west"
+    ],
+    "datasetEligibleCount": 64,
+    "datasetSplitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    }
+  },
+  "bindings": {
+    "runner": {
+      "path": "ml/ai-painter/scripts/run_ai_assisted_v8_r5_stage4_gradient_diagnostic.py",
+      "sha256": "e6af1508c0dffebf1a859fed97c8a6fcb4b09df837720b247ab4d994d2a5eb53"
+    },
+    "model": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "954d2b42cb9f8216f74ccd5753de017ea8539aea0f58d94e954374ded4029577"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "da53341175118b6f2b76cb1a804b0285e73bb2a933d4867971101445161d8057"
+    },
+    "inactiveConfig": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-decoded-domain-alignment-cpu-support/20260808-211500000/inactive-config.json",
+      "sha256": "ef941d1483aa8fc1798203bd314843569ca4f759d6c3261ad71d25476c499a13"
+    },
+    "cpuSupportTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-decoded-domain-alignment-cpu-support/20260808-211500000/phase-terminal.json",
+      "sha256": "cfa9d86a1ed6a5e6aed2149e301260367d6fe44d386dcd9e6fd0d2eacd501b32"
+    },
+    "datasetManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+      "sha256": "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
+    },
+    "autoencoderCheckpoint": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/complete-world-ai-assisted-autoencoder.pt",
+      "sha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba"
+    }
+  },
+  "implementationBoundary": {
+    "existingArchitectureOnly": true,
+    "parallelBackendAuthorized": false,
+    "authorizedTargets": [
+      "ml/ai-painter/scripts/run_ai_assisted_v8_r5_stage4_gradient_diagnostic.py",
+      "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs",
+      "scripts/run-ai-assisted-v7-r5-stage4-coverage-convergence-full-training.mjs",
+      "scripts/run-ai-assisted-v7-post-training-validation.mjs",
+      "existing_stage4_and_stage5_cpu_checkers",
+      "existing_stage4_inactive_config_compiler",
+      "current_training_projection_and_unique_plan_sync"
+    ],
+    "trainingObjectivePolicy": {
+      "allowedSources": [
+        "original_owner_approved_reference_rgb",
+        "original_compiled_23_channel_condition_pack",
+        "approved_world_facts_region_graph_and_edge_ports",
+        "project_generated_game_coordinate_route_geometry",
+        "original_object_identity_and_semantic_masks",
+        "current_training_prediction_and_frozen_project_autoencoder_decode"
+      ],
+      "failedPreviewPixelsUsedAsTrainingTargets": false,
+      "machineReviewThresholdsUsedAsTrainingTargets": false,
+      "newFreeHyperparameterSelectionAuthorized": false,
+      "existingDiscreteConditionOutputBindingWeightMayBeReusedForSharedReadout": true
+    },
+    "legacyStage3AndStage4CompatibilityRequired": true
+  },
+  "executionGates": [
+    {
+      "id": "v8_gradient_diagnostic",
+      "prerequisite": "bound_v8_cpu_support_terminal_passed",
+      "authorizedActions": {
+        "gpuUseAuthorized": true,
+        "autoencoderCheckpointReadAuthorized": true,
+        "oldDenoiserCheckpointReadAuthorized": false,
+        "optimizerCreationAuthorized": false,
+        "backwardExecutionAuthorized": false,
+        "modelWeightMutationAuthorized": false,
+        "checkpointWriteAuthorized": false,
+        "trainingAuthorized": false
+      },
+      "automaticRetryAuthorized": false
+    },
+    {
+      "id": "v8_30_epoch_single_sample_smoke",
+      "prerequisite": "v8_gradient_diagnostic_passed_closed",
+      "epochCount": 30,
+      "previewEpochs": [1, 5, 10, 20, 30],
+      "initialization": "project_random_v8_denoiser_only",
+      "authorizedActions": {
+        "configCompilationAuthorized": true,
+        "trainerSupportImplementationAuthorized": true,
+        "gpuUseAuthorized": true,
+        "autoencoderCheckpointReadAuthorized": true,
+        "oldDenoiserCheckpointReadAuthorized": false,
+        "optimizerCreationAuthorized": true,
+        "backwardExecutionAuthorized": true,
+        "modelWeightMutationAuthorized": true,
+        "smokeCheckpointWriteAuthorized": true,
+        "machineReviewAuthorized": true,
+        "fullTrainingAuthorized": false
+      },
+      "automaticRetryAuthorized": false
+    },
+    {
+      "id": "v8_stage0_stage1_stage2_full_training",
+      "prerequisite": "v8_30_epoch_single_sample_smoke_and_machine_review_passed_closed",
+      "stages": [
+        {"index": 0, "width": 256, "height": 192, "epochs": 40, "initialization": "project_random_v8_denoiser"},
+        {"index": 1, "width": 512, "height": 384, "epochs": 40, "initialization": "current_run_stage0_checkpoint_only"},
+        {"index": 2, "width": 1024, "height": 768, "epochs": 40, "initialization": "current_run_stage1_checkpoint_only"}
+      ],
+      "previewEpochs": [1, 5, 10, 20, 30, 40],
+      "authorizedActions": {
+        "gpuUseAuthorized": true,
+        "autoencoderCheckpointReadAuthorized": true,
+        "smokeCheckpointInitializationAuthorized": false,
+        "optimizerCreationAuthorized": true,
+        "backwardExecutionAuthorized": true,
+        "modelWeightMutationAuthorized": true,
+        "stageCheckpointWriteAuthorized": true,
+        "machineReviewAuthorized": true,
+        "strictRevalidationAuthorized": false
+      },
+      "automaticRetryAuthorized": false
+    },
+    {
+      "id": "r5_stage5_strict_revalidation",
+      "prerequisite": "v8_stage0_stage1_stage2_full_training_and_all_machine_reviews_passed_closed",
+      "authorizedActions": {
+        "stage2CheckpointReadAuthorized": true,
+        "gpuValidationAuthorized": true,
+        "optimizerCreationAuthorized": false,
+        "backwardExecutionAuthorized": false,
+        "modelWeightMutationAuthorized": false,
+        "strictRevalidationAuthorized": true,
+        "formalInferenceAuthorized": false,
+        "checkpointPromotionAuthorized": false
+      },
+      "automaticRetryAuthorized": false
+    }
+  ],
+  "gateTransitionPolicy": {
+    "sequentialOnly": true,
+    "eachGateRequiresIndependentAtomicConsumption": true,
+    "laterGateConsumptionRequiresPreviousSuccessTerminalPathAndSha256": true,
+    "futureOutputCheckpointIdentityMustBeBoundFromCurrentRunManifest": true,
+    "stopAndCloseOnAnyFailure": true,
+    "noAutomaticRetry": true
+  },
+  "consumptionPaths": {
+    "diagnostic": ".runtime/ai-painter/owner-action-requests/owner-authorized-ai-painter-r5-stage4-v8-four-gate-completion-20260808/diagnostic-consumption.json",
+    "smoke": ".runtime/ai-painter/owner-action-requests/owner-authorized-ai-painter-r5-stage4-v8-four-gate-completion-20260808/smoke-consumption.json",
+    "fullTraining": ".runtime/ai-painter/owner-action-requests/owner-authorized-ai-painter-r5-stage4-v8-four-gate-completion-20260808/full-training-consumption.json",
+    "strictRevalidation": ".runtime/ai-painter/owner-action-requests/owner-authorized-ai-painter-r5-stage4-v8-four-gate-completion-20260808/strict-revalidation-consumption.json"
+  },
+  "outputRoots": {
+    "diagnostic": ".runtime/ai-painter/v8-r5-stage4-gradient-diagnostic/20260808-220000000",
+    "smoke": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke/20260808-220000000",
+    "fullTraining": ".runtime/ai-painter/v8-r5-stage4-full-training/20260808-220000000",
+    "strictRevalidation": ".runtime/ai-painter/v8-r5-stage5-strict-revalidation/20260808-220000000"
+  },
+  "globallyForbiddenActions": {
+    "formalInference": true,
+    "checkpointFormalPromotion": true,
+    "runtimeFrame": true,
+    "worldEntry": true,
+    "automaticRetry": true,
+    "failureEvidenceDeletionOrOverwrite": true
+  }
+}

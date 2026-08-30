@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "project-owner-task-authorization-v1",
+  "authorizationId": "owner-authorized-r5-stage4-decision-outcome-neutral-checker-and-single-analysis-20260808",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-08T09:41:26.103Z",
+  "recordedAtAsiaShanghai": "2026-08-08T17:41:26.103+08:00",
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-r5-stage4-decision-outcome-neutral-checker-and-single-analysis-20260808",
+    "scope": "fix_only_cpu_checker_outcome_neutral_binary_verdict_and_failed_key_observability_then_one_real_evidence_regression_and_one_readonly_binary_analysis"
+  },
+  "boundFailure": {
+    "terminalPath": ".runtime/ai-painter/r5-stage4-decision-cpu-output-ownership-support/owner-authorized-r5-stage4-decision-cpu-output-ownership-and-single-analysis-20260808/phase-terminal.json",
+    "terminalSha256": "dc9a71f651ea87b848f50c825774dca5206f102cb7b1dbd0b8515ff313bec520",
+    "failureCode": "stage4_decision_cpu_positive_regression_failed"
+  },
+  "boundImplementation": {
+    "runnerPath": "scripts/run-local-ai-v7-r5-stage4-failure-learning.mjs",
+    "runnerSha256": "87ea41032d294b04ab0ac3d1287a1951103e4f467f6547bb5208a27bc49b2256",
+    "cpuCheckerPath": "scripts/check-local-ai-v7-r5-stage4-failure-decision.mjs",
+    "cpuCheckerBeforeSha256": "fe615df2b67feb719c4f8b2deb09644168e35298c703b5ee31cad8d2f09c4018",
+    "decisionHelperPath": "scripts/lib/ai-assisted-v7-r5-stage4-failure-decision.mjs",
+    "decisionHelperSha256": "a9944202b4530c7b188210ddbc9907de580a683d6e77d79baedea3a7bb123cdd",
+    "frozenAnalyzerPath": "scripts/lib/ai-assisted-failure-learning-loop.mjs",
+    "frozenAnalyzerSha256": "53f9b0735b92b2f707bc03189a984b0506406c39fd93edc937abd49fac7c7f9f"
+  },
+  "sourceEvidence": {
+    "failureTerminalSha256": "58d68201a6dd1d34df165297743880743b300f67fa3827df43a55f6c0dba1c2d",
+    "finalizationSha256": "78d2662fe108c4839b21f73df8050b4152a706d1a0431308772e798e7cac457d",
+    "machineReviewSha256": "46a383d92c45539547eff6a0c95eccbebcde717795c03b923db5c6338ba04d4a",
+    "manifestSha256": "dc20a13bfc20675b259fdfefaa0fc1c1ca13e410f90ad19a9b79c62cbecea79a",
+    "stepTelemetrySha256": "21b3bd1130de69bfdcf27be616d63c268d555694560acb4a900402124673daf4",
+    "oldSuccessfulAnalysisPointerSha256": "2541e319dfa57db2e29af2c3a3aefd1c379f9836582c16c2d8b1e880ab2e9a8d"
+  },
+  "decisionContract": {
+    "allowedDecisionCodes": [
+      "new_actionable_difference",
+      "evidence_repeats_existing_failure"
+    ],
+    "bothResultsMustRemainInactive": true,
+    "preselectedDecisionCodeForbidden": true,
+    "failedPositiveKeysRequiredBeforeAggregateAssertion": true,
+    "failedNegativeKeysRequiredBeforeAggregateAssertion": true
+  },
+  "outputOwnershipContract": {
+    "historicalDecisionRootMayExist": true,
+    "newRunId": "local-ai-v7-r5-stage4-binary-decision-analysis-outcome-neutral-20260808-174126103",
+    "newRunDirectoryMustNotExist": true,
+    "decisionLatestPath": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-decision-analysis/latest.json",
+    "decisionLatestMustNotExist": true
+  },
+  "authorizedActions": {
+    "modifyCpuCheckerDecisionOutcomeContractOnly": true,
+    "addCpuCheckerFailedKeyObservability": true,
+    "runOneRealEvidenceCpuPositiveNegativeRegression": true,
+    "compileDerivedExecutionIdentityAfterCpuPass": true,
+    "atomicallyConsumeOneReadonlyAnalysis": true,
+    "executeOneBinaryDecisionAnalysis": true,
+    "saveReportsProposalAndTerminal": true
+  },
+  "forbiddenActions": {
+    "modifyRunner": true,
+    "modifyDecisionHelper": true,
+    "modifyFrozenAnalyzer": true,
+    "modifySourceEvidence": true,
+    "modifyReviewThresholds": true,
+    "modifyOldLatestPointer": true,
+    "readOrLoadCheckpoint": true,
+    "modifyTrainingConfig": true,
+    "modifyModelWeights": true,
+    "createOptimizer": true,
+    "startGpu": true,
+    "startTraining": true,
+    "startValidation": true,
+    "startFormalInference": true,
+    "promoteCheckpoint": true,
+    "startRuntimeFrame": true,
+    "enterWorld": true,
+    "automaticRetry": true
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetryAllowed": false
+  },
+  "ownerCommandZh": "授权绑定本次CPU失败终态SHA-256 dc9a71f651ea87b848f50c825774dca5206f102cb7b1dbd0b8515ff313bec520及当前CPU检查器SHA-256 fe615df2b67feb719c4f8b2deb09644168e35298c703b5ee31cad8d2f09c4018；仅修改CPU检查器，使真实证据裁决接受两个合法且未激活的二选一结果，不得预设必须为evidence_repeats_existing_failure，并在聚合断言前输出具体failedPositiveKeys和failedNegativeKeys。不得修改运行器、决策辅助文件、冻结分析器、来源证据或审核阈值。执行一次真实证据CPU正反回归；全部通过后建立新runId、原子消费一次只读分析授权并执行一次二选一分析。失败立即停止且不自动重试；不得读取Checkpoint、启动GPU或训练。"
+}

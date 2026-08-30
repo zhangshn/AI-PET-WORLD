@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-thailand-rebuild64-sequence-45-49-measurement-window-replacement-20260801",
+  "subsystem": "ai_painter_thailand_rebuild64_pre_rgb_novelty_gate",
+  "status": "waiting_owner_authorization",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "blockedSequenceCodes": ["45", "49"],
+    "blockedSlotIds": ["v7-capacity-slot-190", "v7-capacity-slot-194"],
+    "generatedRgbCount": 62,
+    "machinePassedWaitingOwnerCount": 57,
+    "machineRejectedCount": 5,
+    "rgbNotGeneratedCount": 2
+  },
+  "ownerVisibleConclusionZh": "新64组已有62张完成生成；第45张和第49张在ImageGen调用前被全历史构图门禁拦截，因此没有生成，也没有重复调用。两张当前水文/道路宏观关系分别与各自旧失败图过近。",
+  "localSystemFindingZh": "仅改变匿名种子未能解除重复，因为这两张的粗水文主通道由当前真实测量窗口的八段DEM/D8摘要决定，现有算法明确禁止重试种子改变水文宏观拓扑。若继续且不降低门禁，必须为这两个槽位从同一泰国正式数据范围选择未使用真实测量窗口，并重建条件包。",
+  "blockingReasonCode": "two_current_thailand_measurement_windows_duplicate_owner_rejected_water_route_macro_topology",
+  "whyCannotProceedZh": "直接出图会绕过全历史重复硬门禁；继续更换随机种子不会改变测量驱动的水文宏观结构；降低阈值或忽略旧失败图均违反现行文档。",
+  "minimumRequestedActionZh": "仅授权第45张和第49张从同一Sakaerat/Wang Nam Khiao正式泰国数据范围选择两个未使用真实测量窗口，保持各自景观、季节、水文类型和入口侧不变；重建两套条件包并通过64组全量回归及全历史重复门禁后，各调用一次ImageGen。",
+  "invariants": [
+    "same_formal_thailand_sakaerat_wang_nam_khiao_source_scope",
+    "sequence_45_and_49_landscape_season_hydrology_and_entry_side_remain_fixed",
+    "only_two_blocked_condition_packages_may_change",
+    "all_64_pairwise_and_all_history_novelty_gates_remain_unchanged",
+    "historical_rgb_is_never_a_generation_input",
+    "existing_62_generated_rgb_and_reviews_remain_immutable",
+    "gpu_training_runtime_frame_and_world_remain_stopped"
+  ],
+  "forbiddenActions": [
+    "lower_or_bypass_the_pre_rgb_novelty_gate",
+    "reuse_the_owner_rejected_water_or_route_macro_topology",
+    "select_measurement_data_outside_the_formal_thailand_scope",
+    "change_any_of_the_other_62_condition_packages",
+    "automatically_retry_the_five_machine_rejected_rgb_images",
+    "auto_approve_owner_review",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "需要项目所有者明确允许只替换第45、49张的真实泰国测量窗口；获批后程序才能在不绕过文档门禁的前提下补齐最后两张。",
+  "nextActionAfterAuthorization": [
+    "rank_unused_formal_thailand_measurement_windows_against_all_history",
+    "replace_only_sequence_45_and_49_measurement_bindings",
+    "rebuild_and_check_only_slot_190_and_194_condition_packages",
+    "rerun_all_64_framework_and_dynamic_readiness_regressions",
+    "pass_pre_rgb_all_history_novelty_for_both_slots",
+    "generate_each_missing_rgb_once_and_machine_review"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/ai-assisted-pre-rgb-condition-guide-novelty-audits/ai-assisted-pre-rgb-condition-guide-novelty-v7-capacity-slot-190-2026-08-01T03-08-01-080Z/audit-report.json",
+    ".runtime/ai-painter/ai-assisted-pre-rgb-condition-guide-novelty-audits/ai-assisted-pre-rgb-condition-guide-novelty-v7-capacity-slot-194-2026-08-01T02-30-17-761Z/audit-report.json",
+    ".runtime/ai-painter/earth-geospatial-v7-capacity-146-209-complete-framework-audits/earth-geospatial-v7-capacity-146-209-complete-framework-audit-2026-08-01T03-15-57-596Z/audit-report.json",
+    ".runtime/ai-painter/thailand-rebuild64-full-world-dynamic-readiness-checks/thailand-rebuild64-full-world-dynamic-readiness-check-2026-08-01T03-16-14-093Z/check-report.json",
+    ".runtime/ai-painter/owner-action-requests/owner-authorized-thailand-rebuild64-remaining63-full-world-rgb-generation-20260801/request.json"
+  ],
+  "ownerDecision": null,
+  "resolution": null
+}

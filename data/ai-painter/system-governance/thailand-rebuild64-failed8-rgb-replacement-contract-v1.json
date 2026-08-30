@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "thailand-rebuild64-failed8-rgb-replacement-contract-v1",
+  "contractId": "thailand-rebuild64-failed8-rgb-replacement-contract-v1",
+  "status": "active_owner_authorized",
+  "seriesId": "thailand-rebuild64-20260731",
+  "ownerAuthorizationId": "owner-authorized-thailand-rebuild64-failed8-rgb-replacements-20260801",
+  "targets": [
+    { "sequenceCode": "23", "slotId": "v7-capacity-slot-168" },
+    { "sequenceCode": "33", "slotId": "v7-capacity-slot-178" },
+    { "sequenceCode": "39", "slotId": "v7-capacity-slot-184" },
+    { "sequenceCode": "43", "slotId": "v7-capacity-slot-188" },
+    { "sequenceCode": "45", "slotId": "v7-capacity-slot-190" },
+    { "sequenceCode": "47", "slotId": "v7-capacity-slot-192" },
+    { "sequenceCode": "49", "slotId": "v7-capacity-slot-194" },
+    { "sequenceCode": "55", "slotId": "v7-capacity-slot-200" }
+  ],
+  "repairClasses": {
+    "composition": [
+      "historical_rejected_composition_duplicate",
+      "complete_map_composition_diversity_failed"
+    ],
+    "requiredRouteBoundary": [
+      "condition_terrain_path_ground_required_boundary_contact_missing"
+    ],
+    "routeCoverage": [
+      "condition_terrain_path_ground_coverage_mismatch"
+    ],
+    "forbiddenRouteBoundary": [
+      "condition_terrain_path_ground_uncontracted_boundary_contact"
+    ]
+  },
+  "dataPackagePolicy": {
+    "sameWorldFactsRequired": true,
+    "sameCurrentAuthoritativeConditionPackageRequired": true,
+    "currentThailandSourceScopeRequired": true,
+    "sourceFailedRgbMayBeUsedAsGenerationReference": false,
+    "conditionGuideIsOnlyImageReference": true,
+    "failureEvidenceMustCompileToStructuredRepairPackage": true
+  },
+  "generationPolicy": {
+    "oneReplacementAttemptPerTarget": true,
+    "automaticSecondRetryAllowed": false,
+    "oldFailureMustRemainImmutable": true,
+    "newVersionRequired": true,
+    "machineReviewRequired": true,
+    "manualPerImageReviewRequired": false,
+    "machinePassUsesDelegatedBatchFinalization": true,
+    "machineFailureGoesDirectlyToFailedRecords": true
+  },
+  "sideEffectBoundary": {
+    "gpuTrainingAllowed": false,
+    "runtimeFrameAllowed": false,
+    "worldEntryAllowed": false
+  }
+}

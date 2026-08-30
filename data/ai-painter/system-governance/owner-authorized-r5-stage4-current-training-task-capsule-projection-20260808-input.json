@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "project-owner-task-authorization-v1",
+  "authorizationId": "owner-authorized-r5-stage4-current-training-task-capsule-projection-20260808",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-08T08:26:28.596Z",
+  "recordedAtAsiaShanghai": "2026-08-08T16:26:28.596+08:00",
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-r5-stage4-current-training-task-capsule-projection-20260808",
+    "scope": "extend_existing_ai_painter_read_only_status_projection_and_current_training_get_api_with_versioned_r5_stage4_task_capsule_frontend_and_migration_registry_sync"
+  },
+  "authorizedActions": {
+    "materializeImmutableOwnerAuthorization": true,
+    "atomicallyConsumeImplementationAuthorization": true,
+    "modifyExistingReadOnlyStatusProjection": true,
+    "extendCurrentTrainingGetResponse": true,
+    "displayTaskCapsuleInExistingFrontend": true,
+    "synchronizeMigrationRegistryCurrentState": true,
+    "runTypeCheck": true,
+    "runProjectionPositiveNegativeRegression": true,
+    "runPageContractCheck": true
+  },
+  "taskCapsuleFields": [
+    "module",
+    "fixedOverallProgress",
+    "currentStage",
+    "candidateTerminal",
+    "latestBlocker",
+    "nextAllowedAction",
+    "forbiddenActions",
+    "evidencePathsAndSha256"
+  ],
+  "sourceBoundaries": {
+    "existingBackendOnly": true,
+    "parallelBackendAuthorized": false,
+    "sources": [
+      "current_r5_stage4_terminal",
+      "current_r5_stage4_machine_review",
+      "owner_authorization_consumption",
+      "unique_module_plan",
+      "local_ai_capability_migration_registry"
+    ]
+  },
+  "forbiddenActions": {
+    "modifyTrainer": true,
+    "modifyRunner": true,
+    "modifyTrainingConfig": true,
+    "modifyCheckpoint": true,
+    "modifyModelWeights": true,
+    "modifyMachineReviewThresholds": true,
+    "startGpu": true,
+    "startTraining": true,
+    "startValidation": true,
+    "startFormalInference": true,
+    "startRuntimeFrame": true,
+    "enterWorld": true,
+    "automaticRetry": true
+  },
+  "ownerCommandZh": "授权在新的不可变命令范围内，扩展现有AI Painter只读状态投影与current-training GET接口，在不建立平行后台的前提下，读取当前R5 Stage4终态、机器审核、Owner授权消费记录、唯一计划表和迁移注册表，生成版本化本地任务胶囊；字段固定包括模块、固定总进度、当前阶段、候选终态、最新阻断、下一合法动作、禁止动作以及证据路径与SHA-256。同步前端只读展示和迁移注册表当前状态，并执行类型检查、投影正反回归及页面合同检查。不得修改训练器、运行器、训练配置、Checkpoint、模型权重或审核阈值，不得启动GPU、训练、验证、正式推理、RuntimeFrame或进入世界；失败立即停止且不自动重试。"
+}

@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-v7-mvp64-training-sample-binding-repair-retrain-execution-resolution-20260802",
+  "subsystem": "ai_painter_v7_mvp64_training_dataset_sample_binding_repair_retrain",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "parentRequestId": "owner-action-request-v7-mvp64-training-sample-binding-repair-retrain-resolution-20260802",
+    "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+    "datasetPackageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+    "actualLoadedV7CapacityCount": 64,
+    "actualLoadedSplitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "stage2CheckpointSha256": "5a105a8143112f0d2fe19cb90f250b9fb204530d5ed07ba06a60fdbdfbcd23a5"
+  },
+  "ownerVisibleConclusionZh": "V7 Dataset绑定已修复，CPU正反回归、全新GPU冒烟及Stage 0→1→2训练全部完成；实际加载64/64，分割48/8/4/4，旧21样本checkpoint未被复用。当前按授权停在训练后验证之前。",
+  "localSystemFindingZh": "新Stage 0无父checkpoint，Stage 1父哈希精确等于本轮Stage 0，Stage 2父哈希精确等于本轮Stage 1；旧训练文件保持不变。训练结束后GPU利用率归零且没有Python GPU训练进程。",
+  "blockingReasonCode": "post_training_validation_requires_separate_owner_authorization",
+  "whyCannotProceedZh": "本轮授权只覆盖Dataset修复、回归、冒烟和Stage 0至2训练，不覆盖训练后验证、正式推理、RuntimeFrame或进入世界。",
+  "minimumRequestedActionZh": "如需继续，项目所有者需另行明确授权V7训练后验证；验证通过仍不自动授权正式推理或进入世界。",
+  "invariants": [
+    "new_v7_training_loaded_exactly_64_registered_capacity_rows",
+    "new_v7_split_equals_48_8_4_4",
+    "legacy_21_sample_checkpoints_remain_preserved_nonformal_evidence",
+    "stage_0_has_no_parent_checkpoint",
+    "stage_1_and_stage_2_only_inherit_from_the_immediately_preceding_repaired_stage",
+    "formal_inference_runtime_frame_and_world_remain_blocked"
+  ],
+  "forbiddenActions": [
+    "start_post_training_validation_without_new_owner_authorization",
+    "mark_checkpoint_formal_inference_eligible",
+    "generate_formal_inference_images",
+    "start_runtime_frame",
+    "enter_world",
+    "delete_or_overwrite_legacy_training_evidence"
+  ],
+  "ownerFacingMessageZh": "修复后的64样本训练链已完成并通过完整性核验，当前等待是否启动训练后验证的新授权。",
+  "nextActionAfterAuthorization": [
+    "run_v7_post_training_validation_only_if_separately_authorized"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-training-sample-binding-repair-retrain-resolution-20260802/request.json",
+    ".runtime/ai-painter/v7-dataset-binding-regressions/v7-dataset-binding-regression-2026-08-02T04-54-09-856174Z/report.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-smoke-2026-08-02T04-55-35-881Z/manifest.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-stage-0-2026-08-02T04-56-52-635Z/manifest.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-stage-1-2026-08-02T05-08-54-120Z/manifest.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-stage-2-2026-08-02T05-20-16-111Z/manifest.json",
+    ".runtime/ai-painter/v7-repaired-training-chain-checks/ai-assisted-v7-repaired-training-chain-check-2026-08-02T05-49-07-751Z/check-report.json"
+  ],
+  "ownerDecision": {
+    "decision": "approved",
+    "commandRef": "owner-approved-v7-mvp64-training-sample-binding-repair-retrain-20260802",
+    "commandTextZh": "允许；暂停控制台工作后，ok继续我们的正式内容",
+    "scope": "v7_dataset_binding_repair_cpu_regression_smoke_stage_0_1_2_only"
+  },
+  "resolution": {
+    "parentRequestResolved": true,
+    "datasetBindingRepairCompleted": true,
+    "cpuRegressionCompleted": true,
+    "gpuSmokeCompleted": true,
+    "stage0Completed": true,
+    "stage1Completed": true,
+    "stage2Completed": true,
+    "postTrainingValidationAuthorized": false,
+    "formalInferenceAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false
+  }
+}

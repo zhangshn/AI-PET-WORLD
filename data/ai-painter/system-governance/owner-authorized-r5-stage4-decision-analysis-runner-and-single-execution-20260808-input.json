@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "project-owner-task-authorization-v1",
+  "authorizationId": "owner-authorized-r5-stage4-decision-analysis-runner-and-single-execution-20260808",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-08T09:10:18.312Z",
+  "recordedAtAsiaShanghai": "2026-08-08T17:10:18.312+08:00",
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-r5-stage4-decision-analysis-runner-and-single-execution-20260808",
+    "scope": "extend_existing_stage4_failure_runner_with_isolated_binary_decision_mode_then_cpu_regression_and_one_bound_readonly_analysis"
+  },
+  "boundImplementationIdentity": {
+    "runnerPath": "scripts/run-local-ai-v7-r5-stage4-failure-learning.mjs",
+    "runnerBeforeSha256": "cad58ac85fd6cedd8020b06c858821b5f9e26f9ca58b8c1197dd9c00916d28d1",
+    "frozenAnalyzerPath": "scripts/lib/ai-assisted-failure-learning-loop.mjs",
+    "frozenAnalyzerSha256": "53f9b0735b92b2f707bc03189a984b0506406c39fd93edc937abd49fac7c7f9f",
+    "oldSuccessfulAnalysisPointerPath": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-smoke-timeline/latest.json",
+    "oldSuccessfulAnalysisPointerSha256": "2541e319dfa57db2e29af2c3a3aefd1c379f9836582c16c2d8b1e880ab2e9a8d",
+    "oldSuccessfulAnalysisTerminalSha256": "a9796b35c2c2025677abfea3ee5e20f8077d96aac6f7cdfda1e59ee528d14c71",
+    "oldSuccessfulAnalysisSha256": "0fd2efd0eb9fb816802fa87e8ff0ab5e4ff595207f52027a976cac58528424c7"
+  },
+  "boundSourceEvidence": {
+    "sourceRunId": "ai-assisted-v7-r5-stage4-cross-domain-visual-consistency-smoke-20260808-154822808",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "seed": 20263722,
+    "requiredBoundarySides": ["west"],
+    "requiredEpochs": [1, 5, 10, 20, 30],
+    "requiredPreviewCount": 5,
+    "requiredPreviewPassCount": 1,
+    "requiredPreviewFailCount": 4,
+    "requiredDiagnosticMetricCountPerEpoch": 17,
+    "sourceFailureTerminalPath": ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/ai-assisted-v7-r5-stage4-cross-domain-visual-consistency-smoke-20260808-154822808-finalization/phase-terminal.json",
+    "sourceFailureTerminalSha256": "58d68201a6dd1d34df165297743880743b300f67fa3827df43a55f6c0dba1c2d",
+    "sourceFinalizationPath": ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/ai-assisted-v7-r5-stage4-cross-domain-visual-consistency-smoke-20260808-154822808-finalization/finalization-report.json",
+    "sourceFinalizationSha256": "78d2662fe108c4839b21f73df8050b4152a706d1a0431308772e798e7cac457d",
+    "sourceReviewPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke/ai-assisted-v7-r5-stage4-cross-domain-visual-consistency-smoke-20260808-154822808/fixed-preview-reviews.json",
+    "sourceReviewSha256": "46a383d92c45539547eff6a0c95eccbebcde717795c03b923db5c6338ba04d4a",
+    "sourceManifestPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke/ai-assisted-v7-r5-stage4-cross-domain-visual-consistency-smoke-20260808-154822808/manifest.json",
+    "sourceManifestSha256": "dc20a13bfc20675b259fdfefaa0fc1c1ca13e410f90ad19a9b79c62cbecea79a",
+    "sourceStepTelemetryPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke/ai-assisted-v7-r5-stage4-cross-domain-visual-consistency-smoke-20260808-154822808/stage4-step-telemetry.json",
+    "sourceStepTelemetrySha256": "21b3bd1130de69bfdcf27be616d63c268d555694560acb4a900402124673daf4"
+  },
+  "fixedDerivedExecutionIdentity": {
+    "requestId": "owner-action-request-r5-stage4-binary-decision-analysis-20260808-171018312",
+    "outputRunId": "local-ai-v7-r5-stage4-binary-decision-analysis-20260808-171018312",
+    "outputRoot": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-decision-analysis",
+    "allowedCpuRegressionCount": 1,
+    "allowedReadonlyAnalysisCount": 1,
+    "runnerAfterSha256MustBeBoundFromPassedCpuReport": true
+  },
+  "authorizedImplementationActions": {
+    "modifyExistingRunnerForDecisionModeOnly": true,
+    "addPureDecisionContractHelper": true,
+    "addCpuPositiveNegativeDecisionChecker": true,
+    "preserveLegacyFivePreviewMode": true,
+    "preserveLegacySixPreviewMode": true,
+    "useNewIsolatedOutputNamespace": true,
+    "compileDerivedExecutionAuthorizationAfterCpuPass": true,
+    "atomicallyConsumeSingleAnalysisExecutionAuthorization": true,
+    "saveImplementationAndExecutionEvidence": true
+  },
+  "decisionContract": {
+    "allowedCodes": ["new_actionable_difference", "evidence_repeats_existing_failure"],
+    "newActionableDifferenceOutput": "bounded_inactive_candidate_proposal",
+    "repeatedFailureOutput": "stage4_architecture_decision_upgrade_proposal",
+    "proposalActivated": false,
+    "automaticExecutionAllowed": false
+  },
+  "forbiddenActions": {
+    "deleteOrOverwriteOldLatestPointer": true,
+    "modifyOldAnalysisReportOrTerminal": true,
+    "modifyFrozenAnalyzer": true,
+    "modifyMachineReviewThresholds": true,
+    "readOrLoadCheckpoint": true,
+    "modifyTrainer": true,
+    "modifyTrainingConfig": true,
+    "modifyModelWeights": true,
+    "createOptimizer": true,
+    "startGpu": true,
+    "startTraining": true,
+    "startValidation": true,
+    "startFormalInference": true,
+    "promoteCheckpoint": true,
+    "startRuntimeFrame": true,
+    "enterWorld": true,
+    "automaticRetry": true
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetryAllowed": false,
+    "laterPhaseMayStartAfterFailure": false
+  },
+  "ownerCommandZh": "授权在新的不可变命令范围内，绑定现有Stage4失败分析运行器SHA-256 cad58ac85fd6cedd8020b06c858821b5f9e26f9ca58b8c1197dd9c00916d28d1、冻结分析器SHA-256 53f9b0735b92b2f707bc03189a984b0506406c39fd93edc937abd49fac7c7f9f及旧成功分析指针SHA-256 2541e319dfa57db2e29af2c3a3aefd1c379f9836582c16c2d8b1e880ab2e9a8d；允许对不得修改运行器作唯一例外，仅扩展现有运行器增加独立的Stage4决策分析模式和全新隔离输出命名空间，不删除、覆盖或修改旧latest指针、旧分析报告或旧终态，不修改分析算法与机器审核阈值，并保留旧五预览和六预览行为兼容。新模式必须将分析结论限制为二选一：new_actionable_difference时生成有界未激活候选提案；evidence_repeats_existing_failure时停止参数修复并生成Stage4架构决策升级提案。同步CPU检查器并执行正反回归，通过后绑定原五份Stage4失败证据，原子消费一次只读分析授权并执行一次五预览、五Epoch×17指标CPU差异分析，保存报告、提案和终态后关闭且不自动重试。不得读取或加载Checkpoint、修改训练器、训练配置、模型权重或审核阈值，不得创建优化器、启动GPU、训练、验证、正式推理、Checkpoint晋级、RuntimeFrame或进入世界。"
+}

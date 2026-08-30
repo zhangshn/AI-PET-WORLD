@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "owner-authorized-r5-stage4-v7-stage-boundary-v8-cpu-regression-input-v1",
+  "status": "resolved_owner_authorized_not_consumed",
+  "commandRef": "owner-authorized-r5-stage4-v7-stage-boundary-v8-cpu-regression-20260808-210526578",
+  "scope": "separate_v7_stage3_30_epoch_and_stage4_inactive_40_epoch_contracts_then_run_one_complete_v8_cpu_regression",
+  "recordedAtUtc": "2026-08-08T13:05:26.579Z",
+  "recordedAtAsiaShanghai": "2026-08-08T21:05:26.583+08:00",
+  "boundPreviousFailureTerminal": {
+    "path": ".runtime/ai-painter/v8-r5-stage4-decoded-domain-alignment-cpu-support/20260808-211000000/phase-terminal.json",
+    "sha256": "2f931b9e398338210ab39d3e93a13d58aace5e1800983c7e828b0a8f069bfcf0",
+    "status": "r5_stage4_decoded_domain_alignment_cpu_regression_failed_closed"
+  },
+  "boundPreviousCpuReport": {
+    "path": ".runtime/ai-painter/v8-r5-stage4-decoded-domain-alignment-cpu-support/20260808-211000000/cpu-regression-report.json",
+    "sha256": "bfaf2e077da9df251358d95ae75ccdb0b5b740ce6deffb4632ba63f2d66e2fd5",
+    "onlyFailedPositiveKey": "legacy_v7_stage4_contract_still_accepted"
+  },
+  "implementationIdentity": {
+    "frozenModelPath": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+    "frozenModelSha256": "954d2b42cb9f8216f74ccd5753de017ea8539aea0f58d94e954374ded4029577",
+    "trainerPath": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "trainerBeforeSha256": "cf5678e75f89e4f21970c2b79d6cd60b3a00a730620427cfd575d6499b026275",
+    "cpuCheckerPath": "ml/ai-painter/scripts/check_ai_assisted_v7_r5_stage4_diagnostic_evidence_bounded_repair_cpu.py",
+    "cpuCheckerBeforeSha256": "b87c73237ff8f934a2b11451198c910294f4fccc46c05140ca4138b8a19aefe4",
+    "boundLegacyStage4InactiveConfigPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4/configs/ai-assisted-v7-r5-stage4-coverage-convergence-full-training-config-20260805-182000000.json",
+    "boundLegacyStage4InactiveConfigSha256": "c7a893604b55e3e1cb49ed288d7f723212034b13aed3456bf5822eaa175cb352",
+    "previousV8CpuSupportAuthorizationPath": "data/ai-painter/system-governance/owner-authorized-r5-stage4-decoded-domain-alignment-cpu-support-20260808-204122373-input.json",
+    "previousV8CpuSupportAuthorizationSha256": "0fed5e61b65c4e24cb53dfb74674ece6d7f3c644a1475d56fc00ecbda63be9d4",
+    "previousV8CpuSupportConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-r5-stage4-decoded-domain-alignment-cpu-support-20260808-204122373/implementation-authorization-consumption.json",
+    "previousV8CpuSupportConsumptionSha256": "dabbfd467463e9433341995a7cd547574f91742abfa2c7bb254a7aa6f18e2b95",
+    "uniquePlanPath": "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md",
+    "uniquePlanBeforeSha256": "deef8c3c85a6f77b1c6dfaa14cec87a6f9f3b78e2a56cc81148ac10a8f61888b",
+    "migrationRegistryPath": "data/ai-painter/system-governance/local-ai-capability-migration-registry-v1.json",
+    "migrationRegistryBeforeSha256": "b121310fc6a9db9b7f90e37cf7492220b56951f297bc6370db0c49594e1f1ade"
+  },
+  "requiredContractSeparation": {
+    "stage3SmokeContinuationEpochs": 30,
+    "stage4FormalEpochsPerStage": 40,
+    "stage4ResolutionStages": [
+      {"index": 0, "width": 256, "height": 192, "epochs": 40, "initialization": "deterministic_project_random"},
+      {"index": 1, "width": 512, "height": 384, "epochs": 40, "initialization": "current_run_stage_0_checkpoint_only"},
+      {"index": 2, "width": 1024, "height": 768, "epochs": 40, "initialization": "current_run_stage_1_checkpoint_only"}
+    ],
+    "fixedPreviewEpochsPerStage": [1, 5, 10, 20, 30, 40],
+    "legacyInactiveStage4Status": "compiled_not_active",
+    "legacyStage3BehaviorMustRemainCompatible": true,
+    "malformedStage4ContractMustBeRejected": true
+  },
+  "requiredActions": {
+    "modifyGenericV7CandidateValidator": true,
+    "recognizeOnlyStructurallyValidInactiveStage4FullTrainingContract": true,
+    "preserveStage3ThirtyEpochSelectionSemantics": true,
+    "validateStage4FortyEpochsIndependently": true,
+    "extendExistingCpuCheckerPositiveNegativeFixtures": true,
+    "runExactlyOneCompleteV7CompatibilityAndV8CpuRegression": true,
+    "saveInactiveConfigSupportContractCpuReportOwnerRequestAndTerminalOnlyAfterAllPass": true,
+    "synchronizeUniquePlanMigrationRegistryAndLocalTaskCapsuleOnlyAfterAllPass": true
+  },
+  "authorizedBoundaries": {
+    "trainerModificationAuthorized": true,
+    "existingCpuCheckerModificationAuthorized": true,
+    "frozenV8ModelModificationAuthorized": false,
+    "legacyV7ConfigFileModificationAuthorized": false,
+    "syntheticCpuForwardAuthorized": true,
+    "syntheticCpuAutogradInspectionAuthorized": true,
+    "cpuPositiveNegativeRegressionAuthorized": true,
+    "inactiveConfigCompilationAuthorizedAfterAllPass": true,
+    "evidenceWriteAuthorized": true,
+    "uniquePlanMigrationRegistryAndTaskCapsuleSyncAuthorizedAfterAllPass": true,
+    "checkpointReadOrLoadAuthorized": false,
+    "optimizerCreationAuthorized": false,
+    "backwardMethodExecutionAuthorized": false,
+    "modelWeightModificationAuthorized": false,
+    "modelParameterUpdateAuthorized": false,
+    "gpuUseAuthorized": false,
+    "trainingAuthorized": false,
+    "hyperparameterSelectionAuthorized": false,
+    "reviewThresholdModificationAuthorized": false,
+    "strictRevalidationAuthorized": false,
+    "formalInferenceAuthorized": false,
+    "checkpointPromotionAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false,
+    "automaticRetryAuthorized": false
+  },
+  "failurePolicy": "stop_immediately_close_terminal_and_do_not_retry_automatically",
+  "ownerCommandZh": "授权在新的不可变命令范围内，绑定本次失败终态SHA-256 2f931b9e398338210ab39d3e93a13d58aace5e1800983c7e828b0a8f069bfcf0、CPU报告SHA-256 bfaf2e077da9df251358d95ae75ccdb0b5b740ce6deffb4632ba63f2d66e2fd5、当前模型SHA-256 954d2b42cb9f8216f74ccd5753de017ea8539aea0f58d94e954374ded4029577、训练器SHA-256 cf5678e75f89e4f21970c2b79d6cd60b3a00a730620427cfd575d6499b026275及CPU检查器SHA-256 b87c73237ff8f934a2b11451198c910294f4fccc46c05140ca4138b8a19aefe4；仅结构性修正通用V7候选校验器，使其将合法的Stage4未激活完整训练合同识别为Stage4，并保持Stage3 Smoke的30 Epoch证据与Stage4每阶段40 Epoch合同独立验证；同步CPU检查器，使用绑定的旧V7 Stage4配置执行正反兼容回归。全部通过后继续原V8 CPU回归，并仅在全部通过时保存未激活配置、支持合同、CPU报告、Owner动作请求和终态，同步唯一计划表及本地任务胶囊。不得读取或加载Checkpoint、创建优化器、执行.backward()、更新模型权重、启动GPU或训练；失败立即停止且不自动重试。"
+}

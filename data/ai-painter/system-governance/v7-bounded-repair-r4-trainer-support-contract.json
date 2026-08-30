@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "ai-assisted-v7-r4-trainer-support-contract-v1",
+  "status": "implemented_cpu_verified_candidate_not_active_training_not_authorized",
+  "generatedBy": "local_ai_v7_r4_trainer_support_program",
+  "recordedAtUtc": "2026-08-04T07:08:01.085Z",
+  "recordedAtAsiaShanghai": "2026-08-04T15:08:01+08:00",
+  "sourceProposal": {
+    "path": "data/ai-painter/system-governance/v7-bounded-repair-r4-candidate-proposal.json",
+    "sha256": "255bf781bd7b63af3d993ca1da73a1a3c2d3d4653c9ce6e0eed28ae95b1de884",
+    "status": "isolated_candidate_proposal_cpu_verified_not_implemented_not_active"
+  },
+  "implementation": {
+    "trainerPath": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "trainerBeforeSha256": "b1556273ecccd73a439160983c9601d26c4b8352d143bcd56209f340ae0ae6af",
+    "trainerAfterSha256": "3dacafe35fcce05456ed040247aaf2d9fa31bf2459e35bddb19ebf5446e491e8",
+    "cpuRegressionScriptPath": "ml/ai-painter/scripts/check_ai_assisted_v7_r4_trainer_support_cpu_regression.py",
+    "cpuRegressionScriptSha256": "bb78ecab0b9f3d4a0b907c5759b2dbda467c878af22a6152d6315dbc7e431aa2",
+    "supportedCapabilities": [
+      "bounded_path_interior_weight_selection_validation",
+      "bounded_forbidden_boundary_weight_selection_validation",
+      "independent_object_footprints_tree_rock_vegetation_loss_and_gradient",
+      "epoch_100_110_120_zero_path_and_object_recurrence_gate",
+      "inactive_r4_candidate_training_rejection"
+    ]
+  },
+  "cpuRegressionEvidence": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r4-trainer-support/local-ai-v7-r4-trainer-support-2026-08-04T07-07-59-031Z/cpu-positive-negative-regression.json",
+    "sha256": "ee24663fed3603843066027e4a1e048e8ea0578314cda699d232810a55d4e2ce",
+    "status": "passed_cpu_only_r4_trainer_support_not_active_no_training",
+    "positiveRegression": {
+      "minimumBoundCandidateContractAccepted": true,
+      "maximumBoundCandidateContractAccepted": true,
+      "allFourObjectChannelsIndependentlyDetectable": true,
+      "allObjectChannelErrorsProduceGradient": true,
+      "pathInteriorErrorProducesGradient": true,
+      "forbiddenBoundaryErrorProducesGradient": true,
+      "epoch100110120ZeroRecurrenceGatePassed": true
+    },
+    "negativeRegression": {
+      "pathInteriorBelowRangeRejected": true,
+      "pathForbiddenAboveRangeRejected": true,
+      "reviewThresholdMutationRejected": true,
+      "objectWeightSelectionRejected": true,
+      "inactiveCandidateTrainingRejected": true,
+      "pathBoundaryRecurrenceRejected": true,
+      "objectSemanticRecurrenceRejected": true,
+      "missingTailEpochRejected": true
+    }
+  },
+  "ownerAuthorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r4-trainer-support-cpu-regression-20260804/request.json",
+    "sha256": "11207f534cd5f5fcdbebe640e10379d60828a4fd35e1b8acd7a5403887c2954a",
+    "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r4-trainer-support-cpu-regression-20260804/authorization-consumption.json",
+    "consumptionSha256": "4f218ee9697bb2cbbb52f318899eb164749ea442a03c64cc7d637544644af7f5",
+    "commandRef": "owner-authorized-v7-r4-trainer-support-cpu-regression-20260804",
+    "scope": "v7_r4_trainer_support_and_cpu_positive_negative_regression_only"
+  },
+  "activationBoundary": {
+    "candidateActive": false,
+    "formalConfigurationSelected": false,
+    "optimizerCreated": false,
+    "modelWeightsModified": false,
+    "gpuTrainingStarted": false,
+    "validationStarted": false,
+    "formalInferenceStarted": false,
+    "checkpointPromoted": false,
+    "runtimeFrameStarted": false,
+    "worldEntered": false,
+    "nextIndependentAuthorization": "select_r4_bounded_candidate_values_and_compile_isolated_r4_smoke_configuration"
+  }
+}

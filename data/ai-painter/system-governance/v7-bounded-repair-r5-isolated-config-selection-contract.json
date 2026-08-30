@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "ai-assisted-v7-r5-isolated-config-selection-contract-v1",
+  "status": "r5_isolated_config_compiled_not_active_checkpoint_not_loaded_training_not_authorized",
+  "generatedBy": "local_ai_v7_r5_isolated_config_selection_program",
+  "recordedAtUtc": "2026-08-04T09:31:46.800Z",
+  "recordedAtAsiaShanghai": "2026-08-04T17:31:46+08:00",
+  "selectionPolicy": "minimum_effective_intervention_before_single_sample_gpu_smoke",
+  "selectedValues": {
+    "continuationEpochs": 30,
+    "replayPassesPerEpoch": 1,
+    "pathShortTrajectoryConsistencyWeight": 0.25
+  },
+  "selectionRationale": {
+    "whyMinimumIntervention": "R4最终预览已通过，当前缺口是尾段连续稳定性而不是完全不可学习；先用范围下限执行单样本Smoke可避免道路目标过权和对象语义回退。",
+    "continuationEpochs": "选择30：这是允许范围内能提供Epoch 10/20/30三次连续尾段审核的最短完整周期。",
+    "replayPassesPerEpoch": "选择1：每个原始合格目标增加一次道路困难样本重放，先验证稳定收益，避免直接翻倍重放造成过拟合。",
+    "pathShortTrajectoryConsistencyWeight": "选择0.25：R4道路基础Loss已为2.0上限，新增一致性项先使用提案下限。",
+    "objectWeights": "保持不变：对象拒绝码均在Epoch 100前消失。",
+    "reviewThresholds": "保持不变：Smoke仍须连续三次通过全部原机器门禁。",
+    "pathTailFailureEpochs": [
+      100,
+      110
+    ]
+  },
+  "compiledConfiguration": {
+    "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/isolated-configs/ai-assisted-v7-r5-isolated-config-2026-08-04T09-31-44-704Z/isolated-config.json",
+    "sha256": "9421b10789ea5590863f789fa3b7933fc806bd8abf32347c900d5d80a3a54089",
+    "status": "isolated_r5_candidate_not_active",
+    "trainingAuthorizationStatus": "not_authorized_candidate_only"
+  },
+  "selectionEvidence": {
+    "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/isolated-configs/ai-assisted-v7-r5-isolated-config-2026-08-04T09-31-44-704Z/selection-report.json",
+    "sha256": "f8c362aa65849c802d379ac0ecbc6bd876ab1500baa74f1119dc640322c0f0dc",
+    "status": "r5_bounded_values_selected_isolated_config_compiled_not_active"
+  },
+  "sourceEvidence": {
+    "proposal": {
+      "path": "data/ai-painter/system-governance/v7-bounded-repair-r5-candidate-proposal.json",
+      "sha256": "0af7181ca95ec9e907bc01b9ccbcd1c4bd45fdfdfe1a472a55fa840deac0e049"
+    },
+    "trainerSupport": {
+      "path": "data/ai-painter/system-governance/v7-bounded-repair-r5-trainer-support-contract.json",
+      "sha256": "667d2f27cdf5d5f6403711176e2e07b036796d6bcafa4a829412e3c7ccdca877"
+    },
+    "trainerSupportTerminal": {
+      "path": ".runtime/ai-painter/local-ai-failure-learning-r5-trainer-support/local-ai-v7-r5-trainer-support-2026-08-04T09-08-51-566Z/phase-terminal.json",
+      "sha256": "cf030052cb3542a3150f454a82d2cb0c0b827d3c5f19203adda2d29274bc7815"
+    },
+    "r4Config": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r4/derived-configs/ai-assisted-v7-repair-r4-random-init-single-sample-overfit-smoke-2026-08-04T07-49-43-831Z.json",
+      "sha256": "50dd0eabf456f3be45400d3923988d5c43364c7424067b8326ab9a75b8c50f3e"
+    },
+    "r4CheckpointIdentity": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r4/ai-assisted-v7-repair-r4-random-init-single-sample-overfit-smoke-2026-08-04T07-49-43-831Z/complete-world-ai-assisted-conditional-denoiser.pt",
+      "sha256": "a8cd24d1be1a1128b2cb487ce72a487218bd9b165adddde31f9caba81ca69a32",
+      "fileDeserialized": false,
+      "loadedIntoModel": false
+    }
+  },
+  "ownerAuthorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-isolated-config-selection-20260804/request.json",
+    "sha256": "c358be52d05fbb92410f2b3fa4806196dadaf3671a709734876596b9c401e764",
+    "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-isolated-config-selection-20260804/authorization-consumption.json",
+    "consumptionSha256": "73f799ef027d3e1a92930aeb39e6fe57442506574eaaa526ca73a5a6a127a29f",
+    "commandRef": "owner-authorized-v7-r5-isolated-config-selection-20260804",
+    "scope": "select_r5_bounded_parameters_and_compile_isolated_configuration_only"
+  },
+  "executionBoundary": {
+    "configurationActive": false,
+    "checkpointFileReadByCompiler": false,
+    "checkpointDeserialized": false,
+    "checkpointLoaded": false,
+    "optimizerCreated": false,
+    "modelWeightsModified": false,
+    "gpuTrainingStarted": false,
+    "validationStarted": false,
+    "formalInferenceStarted": false,
+    "checkpointPromoted": false,
+    "runtimeFrameStarted": false,
+    "worldEntered": false,
+    "nextIndependentAuthorization": "one_r5_single_sample_gpu_overfit_smoke_only"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-v7-mvp64-training-sample-binding-repair-retrain-20260802",
+  "subsystem": "ai_painter_v7_mvp64_training_dataset_sample_binding",
+  "status": "waiting_owner_authorization",
+  "taskIdentity": {
+    "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+    "datasetPackageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+    "authorizedV7CapacityCount": 64,
+    "authorizedSplitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "actualLoadedConditionalSampleCount": 21,
+    "actualLoadedSplitCounts": {
+      "train": 16,
+      "validation": 2,
+      "challenge": 2,
+      "regression": 1
+    },
+    "loadedV7CapacityContributionCount": 0,
+    "affectedCheckpointRunIds": [
+      "ai-assisted-conditional-denoiser-v7-smoke-2026-08-02T02-28-11-195Z",
+      "ai-assisted-conditional-denoiser-v7-stage-0-2026-08-02T02-29-32-223Z",
+      "ai-assisted-conditional-denoiser-v7-stage-1-2026-08-02T02-32-41-839Z",
+      "ai-assisted-conditional-denoiser-v7-stage-2-2026-08-02T02-37-06-789Z"
+    ]
+  },
+  "ownerVisibleConclusionZh": "V7训练流程和GPU执行成功，但收尾核验发现实际训练的不是新64组：数据包含64条正式V7容量记录，Python Dataset筛选却把64条全部排除，最终只加载21条旧条件配对。现有冒烟及stage-0/1/2 checkpoint必须保留为失败学习和诊断证据，不得作为MVP64正式候选。",
+  "localSystemFindingZh": "64条V7记录均为conditionBound=true、formalConditionalTrainingEligible=true、owner_approved、machine passed、具有conditional_denoiser角色，并具备48/8/4/4 split；但它们currentConditionIdentityMatches全部为false，因为正式身份来自v7CapacityContributionRegistered。数据包构建器已用currentConditionIdentityMatches OR v7CapacityContributionRegistered建立绑定，Python Dataset却只接受currentConditionIdentityMatches=true，导致loadedV7CapacityContributionCount=0。",
+  "blockingReasonCode": "v7_python_dataset_filtered_all_64_capacity_contributions_and_trained_legacy_21_condition_pairs",
+  "whyCannotProceedZh": "继续训练后验证会验证错误样本集合的checkpoint，并可能把21条旧条件配对误报为MVP64训练成果。修复筛选器和重新执行完整训练会产生新的模型权重，超出当前已完成命令的安全修复边界，必须另行获得项目所有者明确授权。",
+  "minimumRequestedActionZh": "仅修复V7训练数据绑定：V7 Dataset只加载64条已注册容量贡献，强制实际计数和split必须等于64及48/8/4/4；Node与Python预检同时验证实际加载行，不允许仅相信manifest容量字段。CPU正反回归通过后，从新的stage-0开始重新执行冒烟和stage-0/1/2；旧checkpoint全部保留但不得作为父checkpoint复用。",
+  "invariants": [
+    "existing_64_dataset_rows_and_capacity_contribution_files_remain_unchanged",
+    "old_21_sample_checkpoints_are_preserved_as_nonformal_failure_evidence",
+    "new_v7_training_must_load_exactly_64_capacity_rows",
+    "new_v7_split_must_equal_48_8_4_4",
+    "new_stage_0_must_not_resume_from_the_21_sample_checkpoint",
+    "formal_inference_runtime_frame_and_world_remain_blocked"
+  ],
+  "forbiddenActions": [
+    "validate_or_promote_the_21_sample_checkpoint_as_mvp64",
+    "delete_or_overwrite_existing_checkpoints",
+    "mix_legacy_21_condition_pairs_into_the_v7_mvp64_training_split",
+    "lower_training_or_review_thresholds",
+    "start_retraining_without_owner_authorization",
+    "generate_formal_inference_images",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "训练程序跑完了，但实际只吃到21条旧条件配对，新64组一条都没进入训练。现有checkpoint不能算MVP64成果。需要您另行允许修复V7 Dataset实际行筛选和双层计数门禁，然后从头重训。",
+  "nextActionAfterAuthorization": [
+    "repair_v7_dataset_to_select_registered_capacity_contributions_only",
+    "add_node_and_python_actual_loaded_row_count_and_split_gates",
+    "run_cpu_positive_and_negative_dataset_binding_regression",
+    "retry_smoke_once_then_retrain_stage_0_1_2_from_new_stage_0_only",
+    "stop_before_post_training_validation"
+  ],
+  "evidencePaths": [
+    "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+    "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-smoke-2026-08-02T02-28-11-195Z/manifest.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-stage-0-2026-08-02T02-29-32-223Z/manifest.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-stage-1-2026-08-02T02-32-41-839Z/manifest.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/ai-assisted-conditional-denoiser-v7-stage-2-2026-08-02T02-37-06-789Z/manifest.json",
+    ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-gpu-training-execution-resolution-20260802/request.json"
+  ],
+  "ownerDecision": null,
+  "resolution": {
+    "checkpointDisposition": "preserved_nonformal_wrong_sample_set_evidence",
+    "mvp64TrainingCompleted": false,
+    "postTrainingValidationAllowed": false,
+    "formalInferenceAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false
+  }
+}

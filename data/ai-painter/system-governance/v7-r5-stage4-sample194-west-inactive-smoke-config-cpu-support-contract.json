@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "stage4-sample194-west-inactive-smoke-config-cpu-support-contract-v1",
+  "status": "cpu_verified_sample194_west_inactive_config_and_config_bound_authorization_gate_not_active",
+  "inactiveConfig": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-sample194-west-config-bound-path-fix-cpu-runs/ai-assisted-v7-r5-stage4-sample194-west-config-bound-path-fix-cpu-2026-08-08T05-56-13-962Z/inactive-smoke-config.json",
+    "sha256": "e35632ab00c640a9b54fbdb49585480e61a36c5323cfb3e00de5ddc1a6745799"
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-sample194-west-config-bound-path-fix-cpu-runs/ai-assisted-v7-r5-stage4-sample194-west-config-bound-path-fix-cpu-2026-08-08T05-56-13-962Z/cpu-positive-negative-regression.json",
+    "sha256": "b7c6b543218e2829b1a0c22fd37f1f725929fbd1a4abc3d7b580115528e085f7"
+  },
+  "trainer": {
+    "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "sha256": "90dc6bb3c1da44e828ce94f0a51e5f58a91e052c9e822ae4b0579d94918e71e6"
+  },
+  "inactiveCompiler": {
+    "path": "ml/ai-painter/scripts/check_ai_assisted_v7_r5_stage4_diagnostic_evidence_bounded_repair_cpu.py",
+    "sha256": "f754d24c147c114ae903623b1d7fc9b8e782fcf09fe00c4755e826da87e1b415"
+  },
+  "cpuChecker": {
+    "path": "ml/ai-painter/scripts/check_ai_assisted_v7_r5_stage4_bounded_repair_smoke_authorization_cpu.py",
+    "sha256": "272139bfe445325417cdcff2b7162e92fd137661421e410b002f9a4aa24e5fdf"
+  },
+  "runnerReadOnlyBinding": {
+    "path": "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs",
+    "sha256": "9089a664284e79d6232028f21fa2a219a9b59b77b465208adad9b8f76ffcbcd6"
+  },
+  "capability": {
+    "authorizationBindingMode": "config_bound_immutable_owner_authorization_v1",
+    "legacyStage3AndStage4CompatibilityPreserved": true,
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "seed": 20263722,
+    "requiredBoundarySides": [
+      "west"
+    ],
+    "checkedResolutions": [
+      {
+        "width": 256,
+        "height": 192
+      },
+      {
+        "width": 512,
+        "height": 384
+      },
+      {
+        "width": 1024,
+        "height": 768
+      }
+    ],
+    "checkpointIdentityBoundFromManifestWithoutCheckpointRead": true,
+    "completeCpuContractAuditPassed": true,
+    "registeredRuntimePathIdentityVerified": true,
+    "absoluteAndTraversalPathsRejected": true,
+    "unregisteredExternalRuntimeIdentityRejected": true
+  },
+  "nextIndependentAuthorization": "bind_current_runner_to_cpu_verified_sample194_west_config_and_execute_one_gpu_smoke_only",
+  "gpuExecutionAuthorizationConsumed": false,
+  "checkpointFileRead": false,
+  "checkpointLoaded": false,
+  "optimizerCreated": false,
+  "backwardExecuted": false,
+  "modelWeightsModified": false,
+  "gpuUsed": false,
+  "trainingStarted": false,
+  "automaticRetryStarted": false,
+  "stage4FullTrainingStarted": false,
+  "stage1Started": false,
+  "stage2Started": false,
+  "strictRevalidationStarted": false,
+  "formalInferenceStarted": false,
+  "checkpointPromoted": false,
+  "runtimeFrameStarted": false,
+  "worldEntryStarted": false
+}

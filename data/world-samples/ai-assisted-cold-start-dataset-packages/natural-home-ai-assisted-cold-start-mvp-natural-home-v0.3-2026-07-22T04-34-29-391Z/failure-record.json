@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "ai-assisted-dataset-package-build-failure-v1",
+  "failureId": "ai-assisted-dataset-package-build-failure-2026-07-22T04-55-29-837Z",
+  "status": "failed",
+  "failureCode": "dataset_builder_owner_authorization_contract_mismatch",
+  "failureMessage": "The legacy dataset package builder rejected the approved V7 slot authorization before package completion.",
+  "failureMessageZh": "?????????????????????V7???????",
+  "recordId": "ai-cold-start-v7-v7-capacity-slot-001-lowland-evergreen-tropical-forest-v1",
+  "incompletePackagePath": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-22T04-34-29-391Z",
+  "generatedImageCreated": false,
+  "gpuTrainingStarted": false,
+  "resolutionStatus": "shared_owner_authorization_validator_aligned_v7_capacity_pairing_route_still_missing",
+  "nextAction": "wait_for_owner_authorization_to_implement_v7_final_condition_rgb_pair_and_capacity_contribution_route",
+  "automaticStorage": true,
+  "createdAtUtc": "2026-07-22T04:55:29.837Z",
+  "createdAtAsiaShanghai": "2026-07-22T12:55:29+08:00"
+}

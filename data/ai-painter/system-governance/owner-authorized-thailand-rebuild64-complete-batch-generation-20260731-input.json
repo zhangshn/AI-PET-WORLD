@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-authorized-thailand-rebuild64-complete-batch-generation-20260731",
+  "subsystem": "ai_painter_thailand_rebuild64_autonomous_training_originals",
+  "status": "owner_authorized_pending_execution",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceRange": "01-64",
+    "retainedReferenceWorkItemId": "thailand-rebuild64-53",
+    "retainedReferenceLegacySlotId": "v7-capacity-slot-198",
+    "remainingConditionPackageCount": 63,
+    "remainingRgbGenerationCount": 63
+  },
+  "ownerVisibleConclusionZh": "项目所有者已明确授权：严格依据项目文档和泰国数据包，一次性完成新64组全部图片，完成后统一留在页面供项目所有者逐张审核。",
+  "localSystemFindingZh": "新64组第53张（旧slot-198 v3）已具备独立完整构图数据包和待审核RGB；其余63组旧条件包缺少当前完整构图架构，必须先各自重建并通过全64组反重复门禁，之后才能逐张生成。",
+  "blockingReasonCode": "owner_batch_authorization_received_condition_rebuild_and_rgb_execution_pending",
+  "whyCannotProceedZh": "直接使用旧63个条件包会重复通用骨架，违反项目对训练原图的大框架独立性要求；必须先完成数据包修复与全量比较。",
+  "minimumRequestedActionZh": "按新64组注册表重建其余63个独立数据包，通过全64组门禁后逐张生成、自动接收并机器审核，全部人工审核结论保持待项目所有者决定。",
+  "invariants": [
+    "all_conditions_derive_from_each_slots_own_thailand_measurement_assignment",
+    "new_sequence_53_existing_slot_198_v3_package_and_rgb_remain_unchanged",
+    "all_64_complete_frameworks_are_compared_before_remaining_rgb_generation",
+    "one_builtin_generation_call_per_distinct_missing_rgb_asset",
+    "historical_rgb_is_not_used_as_generation_input",
+    "owner_review_is_never_written_by_program_or_external_employee"
+  ],
+  "forbiddenActions": [
+    "delete_or_restore_archived_legacy_rgb",
+    "lower_machine_review_or_framework_similarity_thresholds",
+    "copy_mirror_rotate_or_reuse_another_slots_framework",
+    "auto_approve_owner_review",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "已收到一次性批量完成授权。程序将先重建并核验63个独立数据包，再逐张生成和机器审核；生成结果统一进入页面等待项目所有者审核。",
+  "nextActionAfterAuthorization": [
+    "rebuild_63_measurement_driven_complete_composition_condition_packages",
+    "run_64_package_complete_framework_novelty_audit",
+    "build_63_formal_conditional_rgb_requests",
+    "invoke_builtin_image_generation_once_for_each_request",
+    "intake_and_machine_review_each_generated_rgb",
+    "leave_owner_review_pending",
+    "verify_new64_page_inventory"
+  ],
+  "evidencePaths": [
+    "data/ai-painter/system-governance/thailand-rebuild64-sequence-registry-v1.json",
+    ".runtime/ai-painter/earth-geospatial-v7-capacity-146-209-complete-framework-audits/latest.json",
+    "data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-complete-all-thailand-rebuild64-images-in-one-batch-20260731",
+    "commandZh": "按照文档内容一次性把所有图片全部生成完成，然后在页面中慢慢审核",
+    "ownerReviewPolicy": "pending_individual_owner_review_after_batch_generation"
+  },
+  "resolution": null
+}

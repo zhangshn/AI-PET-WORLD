@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "project-owner-authorization-2026-08-02-v7-capacity-slot-190-single-rgb-generation-attempt-2",
+  "subsystem": "ai_painter_thailand_rebuild64_slot_190_rgb_collapse_repair",
+  "status": "owner_authorized_pending_execution",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceCodes": ["45"],
+    "slotIds": ["v7-capacity-slot-190"],
+    "contractPath": "data/ai-painter/system-governance/thailand-rebuild64-slot-190-rgb-collapse-repair-contract-v2.json"
+  },
+  "ownerVisibleConclusionZh": "项目所有者要求继续处理第45张；本次只允许在修复水体视觉母题重复和道路南边误接触后生成一张新的替换RGB。",
+  "localSystemFindingZh": "slot-190 v6条件包通过生成前门禁，但RGB与历史pond-short-creek的归一化水体形状相似度为0.512，超过0.45；道路还在南边缘产生39个接触像素和624像素的意外连通分量。",
+  "blockingReasonCode": "owner_authorized_slot_190_rgb_collapse_repair_pending_execution",
+  "whyCannotProceedZh": "必须先构建具有明显不同内部水网语义的新泰国条件，并为非入口边缘增加道路安全带，不能只换随机种子或修改失败RGB。",
+  "minimumRequestedActionZh": "只修复slot-190条件与生成约束，完成64组和全历史门禁后调用一次Codex内置ImageGen；机器拒绝即停止并输出完整原因。",
+  "invariants": [
+    "slot_190_path_entrance_east",
+    "north_upstream_inlet_south_downstream_outlet",
+    "same_formal_thailand_measurement_source_scope",
+    "historical_rgb_audit_only_never_generation_reference",
+    "all_existing_thresholds_unchanged",
+    "one_generation_call_per_slot"
+  ],
+  "forbiddenActions": [
+    "send_historical_rgb_to_imagegen",
+    "send_failed_rgb_to_imagegen",
+    "lower_novelty_thresholds",
+    "automatic_second_retry",
+    "start_gpu_training",
+    "create_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "先从正式泰国数据和条件算法中消除水网母题与道路边界问题，再只生成一张并立即机器审核。",
+  "nextActionAfterAuthorization": [
+    "repair_slot_190_measurement_supported_water_network_and_path_boundary_clearance",
+    "run_current64_and_all_history_cross_modal_novelty_gates",
+    "generate_one_slot_190_rgb_and_run_machine_review"
+  ],
+  "evidencePaths": [
+    "data/ai-painter/system-governance/thailand-rebuild64-slot-190-rgb-collapse-repair-contract-v2.json",
+    "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v6/reviews/machine-review.json",
+    "docs/game-world-generation/CROSS_MODAL_RGB_GATE_THRESHOLD_ALIGNMENT_20260802.md"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-continue-slot-190-rgb-collapse-repair-20260802",
+    "commandZh": "继续"
+  }
+}

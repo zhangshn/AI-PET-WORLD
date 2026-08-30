@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "ai-painter-r5-stage4-v8-smoke-gpu-execution-authorization-v1",
+  "status": "owner_authorized_gpu_smoke_not_consumed",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-v8-stage4-training-loss-and-30-epoch-smoke-20260808",
+    "scope": "one_fixed_sample194_seed20263722_west_30_epoch_v8_gpu_smoke_only_after_current_cpu_python_cuda_disk_preflights",
+    "sourceOwnerAuthorizationPath": "data/ai-painter/system-governance/owner-authorized-v8-stage4-training-loss-and-30-epoch-smoke-20260808.json",
+    "sourceOwnerAuthorizationSha256": "10e21a3fa90fadb5751eca90946fa8da157f8dce0208527042019d3a1bdab5a3",
+    "currentOwnerAuthorizationPath": "data/ai-painter/system-governance/owner-authorized-v8-stage4-file-backed-resource-gate-and-smoke-20260809.json",
+    "currentOwnerAuthorizationSha256": "c5acec502a7197441ea04e9ca6d85a2d878ba9b62d16ff67b207c5ffce10fa7c"
+  },
+  "taskIdentity": {
+    "module": "AI Painter R5",
+    "candidateId": "stage4_decoded_domain_alignment_bridge_v1",
+    "architectureId": "multiscale_condition_unet_v8_stage4_decoded_alignment",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "conditionLabel": "v7-complete-map-194",
+    "seed": 20263722,
+    "requiredBoundarySides": ["west"],
+    "resolution": {"width": 256, "height": 192},
+    "epochCount": 30,
+    "previewEpochs": [1, 5, 10, 20, 30],
+    "datasetSelectionContract": "registered_v7_capacity_contribution_v1",
+    "requiredSplitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4},
+    "initialization": "project_random_v8_denoiser",
+    "parentDenoiserCheckpointPath": null
+  },
+  "bindings": {
+    "currentOwnerAuthorization": {
+      "path": "data/ai-painter/system-governance/owner-authorized-v8-stage4-file-backed-resource-gate-and-smoke-20260809.json",
+      "sha256": "c5acec502a7197441ea04e9ca6d85a2d878ba9b62d16ff67b207c5ffce10fa7c"
+    },
+    "resourcePreflightReport": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-resource-disk-preflights/20260809-153438396/resource-disk-report.json",
+      "sha256": "1967c24e6ffd993ff3d6c14a49d0be0dcd021a8128605da3f1c7c1387b7e40d5"
+    },
+    "resourcePreflightTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-resource-disk-preflights/20260809-153438396/phase-terminal.json",
+      "sha256": "9a102fe7a4bcb9371eeb61c25192e2ba300adde245ce7183d8b22905216bd862"
+    },
+    "pythonPreflightReport": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke-preflights/20260809-152420477/preflight-report.json",
+      "sha256": "2e7bb542d3cf659c8517f4d65f45822cb88cd58af20a4f089798b7596d1cbef2"
+    },
+    "cpuReport": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-sample-role-fix-cpu/20260809-152420477/cpu-report.json",
+      "sha256": "bdd634ef757aed047524c0ea1e517ada31b9f555d212b434a53fcc36d1a5b846"
+    },
+    "cpuTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-sample-role-fix-cpu/20260809-152420477/phase-terminal.json",
+      "sha256": "a7021531e0e6ed9e0bdbf96ae7e4cc5729ffc567f5c09e9209ce2a7d5996d287"
+    },
+    "supportContract": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-sample-role-fix-cpu/20260809-152420477/support-contract.json",
+      "sha256": "550d5d470b48ae166e53d6602851ac903954e32a47bf2d3194cb548120d109ca"
+    },
+    "gradientDiagnosticTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-gradient-diagnostic/20260808-215000000/phase-terminal.json",
+      "sha256": "07bc1214a5cf1659594352b7401a4314c38ff1e5e4391c30e5184c53d888f4c3"
+    },
+    "gradientDiagnosticReport": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-gradient-diagnostic/20260808-215000000/diagnostic-report.json",
+      "sha256": "0e5e0f20ba549b50d84cd899fb8cad0bc779c1ff6b27771fe893fab4c23ae1f3"
+    },
+    "inactiveConfig": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-training-loss-smoke-cpu/20260808-220500000/inactive-config.json",
+      "sha256": "9116f2a05b00b21e52cc09a192c8fb9e08c12e4dae56c3e47f02321ac2a93dbf"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "f25a31f6c96cc54ef66fb0f3a3f6326882ebda89c20365a8d53057a9a4620818"
+    },
+    "model": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "954d2b42cb9f8216f74ccd5753de017ea8539aea0f58d94e954374ded4029577"
+    },
+    "datasetImplementation": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/dataset.py",
+      "sha256": "d9245fda230788b749f4d108445f665aaf0b677b7c6cc9a6e2094b24400e81f9"
+    },
+    "smokeRunner": {
+      "path": "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs",
+      "sha256": "cbea5dd82cfc86b777f698919215218b614c344fb6e24c2bfe057a7f2c59521f"
+    },
+    "datasetManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+      "sha256": "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
+    },
+    "sourceIndex": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json",
+      "sha256": "84f1d4c810e9023f3517f9fd6567dfc2414a0eb95a0a56df45a3025344e12251"
+    },
+    "autoencoderCheckpoint": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/complete-world-ai-assisted-autoencoder.pt",
+      "sha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba"
+    }
+  },
+  "authorizedActions": {
+    "gpuUseAuthorized": true,
+    "autoencoderCheckpointReadAuthorized": true,
+    "optimizerCreationAuthorized": true,
+    "backwardExecutionAuthorized": true,
+    "boundedWeightMutationAuthorized": true,
+    "smokeCheckpointWriteAuthorized": true,
+    "machineReviewAuthorized": true,
+    "oldDenoiserCheckpointReadAuthorized": false,
+    "stage4FullTrainingAuthorized": false,
+    "stage1OrStage2Authorized": false,
+    "strictRevalidationAuthorized": false,
+    "formalInferenceAuthorized": false,
+    "checkpointPromotionAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false,
+    "automaticRetryAuthorized": false
+  },
+  "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-v8-stage4-training-loss-and-30-epoch-smoke-20260808/gpu-smoke-consumption.json",
+  "outputPaths": {
+    "outputDirectory": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke/20260809-153438396",
+    "finalizationDirectory": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke-finalizations/20260809-153438396",
+    "activeConfig": ".runtime/ai-painter/v8-r5-stage4-training-loss-smoke-cpu/20260809-153438396/active-config.json"
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetry": false,
+    "stage4FullTrainingForbidden": true
+  }
+}

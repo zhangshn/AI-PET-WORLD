@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-thailand-rebuild64-slot-190-194-flowing-water-rgb-resolution-20260801",
+  "subsystem": "ai_painter_thailand_rebuild64_flowing_water_rgb_replacements",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "seriesId": "thailand-rebuild64-20260731",
+    "sequenceCodes": ["45", "49"],
+    "slotIds": ["v7-capacity-slot-190", "v7-capacity-slot-194"],
+    "conditionIds": [
+      "earth-reference-v7-v7-capacity-slot-190-bf401ca67784",
+      "earth-reference-v7-v7-capacity-slot-194-1e94c6f96b41"
+    ],
+    "authorizationRequestId": "owner-authorized-thailand-rebuild64-failed8-rgb-replacements-20260801"
+  },
+  "ownerVisibleConclusionZh": "项目所有者已明确回复开始。程序在纠正第45张东侧入口、第49张西侧入口后，为两张各生成一次替换RGB并自动审核；两张均因生成后构图仍命中全历史相似门禁而进入未通过组，没有自动重试。",
+  "localSystemFindingZh": "两份条件包本身通过23通道、水文北入南出、相邻区域成对水口、道路入口侧、各253份全历史预生成比较和64组2016对框架比较。失败发生在ImageGen最终RGB阶段：slot-190 v4命中历史拒绝构图；slot-194 v4同时命中历史拒绝构图与完整地图构图多样性失败。",
+  "blockingReasonCode": "resolved_owner_authorized_two_rgb_attempts_machine_rejected",
+  "whyCannotProceedZh": "本次授权的两次生成已经用完。机器拒绝图不能进入成功组、不能计入训练容量；继续更换条件或再次生成属于新的返工授权范围。",
+  "minimumRequestedActionZh": "无需操作；如需继续返工第45张和第49张，请项目所有者另行明确授权。",
+  "invariants": [
+    "slot_190_path_entrance_east",
+    "slot_194_path_entrance_west",
+    "flowing_water_north_inlet_south_outlet",
+    "historical_rgb_generation_reference_count_zero",
+    "exactly_one_generation_call_per_slot",
+    "machine_rejected_records_stored_only_in_failed_group",
+    "no_gpu_runtime_frame_or_world_side_effect"
+  ],
+  "forbiddenActions": [
+    "automatic_second_retry",
+    "auto_approve_machine_rejected_rgb",
+    "count_machine_rejected_rgb_as_training_eligible",
+    "delete_or_overwrite_failed_records",
+    "start_gpu_training",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "第45张和第49张替换图都已生成一次并自动归入未通过；旧图与新失败图均保留，成功页面不会显示它们。",
+  "nextActionAfterAuthorization": [
+    "wait_for_separate_owner_authorization_before_any_new_repair_or_rgb_generation",
+    "keep_v3_and_v4_failed_records_immutable"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/earth-geospatial-v7-capacity-146-209-complete-framework-audits/earth-geospatial-v7-capacity-146-209-complete-framework-audit-2026-08-01T11-01-13-438Z/audit-report.json",
+    ".runtime/ai-painter/ai-assisted-cold-start/conditional-rgb-generation-requests/conditional-rgb-190-2026-08-01T11-08-17-791Z/generation-result.json",
+    ".runtime/ai-painter/ai-assisted-cold-start/conditional-rgb-generation-requests/conditional-rgb-194-2026-08-01T11-08-17-793Z/generation-result.json",
+    "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v4/reviews/machine-review.json",
+    "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v4/reviews/machine-review.json",
+    "data/ai-painter/system-governance/thailand-rebuild64-slot-190-flowing-water-rgb-repair-package-v1.json",
+    "data/ai-painter/system-governance/thailand-rebuild64-slot-194-flowing-water-rgb-repair-package-v1.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-command-start-slot-190-194-flowing-water-rgb-20260801",
+    "commandZh": "开始"
+  },
+  "resolution": {
+    "generatedRecordCount": 2,
+    "machinePassedCount": 0,
+    "machineRejectedCount": 2,
+    "automaticRetryCount": 0,
+    "successPageHttpStatus": 200,
+    "failedPageHttpStatus": 200,
+    "gpuTrainingStarted": false,
+    "runtimeFrameCreated": false,
+    "worldEntryStarted": false
+  }
+}

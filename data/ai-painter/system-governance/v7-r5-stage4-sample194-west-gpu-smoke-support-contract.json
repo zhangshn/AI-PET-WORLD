@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "stage4-sample194-west-gpu-smoke-support-contract-v1",
+  "status": "cpu_verified_sample194_west_gpu_smoke_preflight_gate_execution_not_consumed",
+  "authorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-sample194-west-dual-auth-gpu-smoke-20260808-143343550/gpu-active-authorization.json",
+    "sha256": "5e336e710f988d8d5e98dadcaf849a7d31390bd54d37eec8237357d4350d803c"
+  },
+  "inactiveConfig": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-sample194-west-config-bound-path-fix-cpu-runs/ai-assisted-v7-r5-stage4-sample194-west-config-bound-path-fix-cpu-2026-08-08T05-56-13-962Z/inactive-smoke-config.json",
+    "sha256": "e35632ab00c640a9b54fbdb49585480e61a36c5323cfb3e00de5ddc1a6745799"
+  },
+  "trainer": {
+    "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "sha256": "90dc6bb3c1da44e828ce94f0a51e5f58a91e052c9e822ae4b0579d94918e71e6"
+  },
+  "runner": {
+    "path": "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs",
+    "sha256": "e924aeaaa4577c9f41708d3223b7041f9221f0349dd4219e53ccbcc7b63cd246"
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/v7-r5-stage4-sample194-west-gpu-smoke-authorization-cpu-regressions/20260808-142134730/report.json",
+    "sha256": "47aa32c210ba77160da6323aea66f5791f7b46af5fe0607dad11c88f788d1862"
+  },
+  "fixedExecution": {
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "seed": 20263722,
+    "requiredBoundarySides": [
+      "west"
+    ],
+    "stageIndex": 0,
+    "resolution": {
+      "width": 256,
+      "height": 192
+    },
+    "epochCount": 30,
+    "previewEpochs": [
+      1,
+      5,
+      10,
+      20,
+      30
+    ],
+    "diagnosticMetricCount": 17
+  },
+  "gpuExecutionAuthorizationConsumed": false,
+  "checkpointFileRead": false,
+  "checkpointLoaded": false,
+  "optimizerCreated": false,
+  "backwardExecuted": false,
+  "modelWeightsModified": false,
+  "gpuUsed": false,
+  "trainingStarted": false,
+  "automaticRetryStarted": false,
+  "stage4FullTrainingStarted": false,
+  "stage1Started": false,
+  "stage2Started": false,
+  "strictRevalidationStarted": false,
+  "formalInferenceStarted": false,
+  "checkpointPromoted": false,
+  "runtimeFrameStarted": false,
+  "worldEntryStarted": false
+}

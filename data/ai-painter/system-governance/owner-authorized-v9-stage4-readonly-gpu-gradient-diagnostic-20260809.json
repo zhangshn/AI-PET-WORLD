@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-v1",
+  "requestId": "owner-authorized-v9-stage4-readonly-gpu-gradient-diagnostic-20260809",
+  "status": "resolved_owner_authorized",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-v9-stage4-readonly-gpu-gradient-diagnostic-20260809",
+    "scope": "one_v9_sample194_readonly_gpu_forward_autograd_gradient_routing_diagnostic_only"
+  },
+  "taskIdentity": {
+    "module": "AI Painter R5",
+    "stage": 4,
+    "architectureId": "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "seed": 20263722,
+    "timestep": 999,
+    "resolution": {"width": 256, "height": 192},
+    "requiredBoundarySides": ["west"],
+    "objectSemanticChannels": [
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "diagnosticManifestMetricCount": 17,
+    "denoiserInitialization": "fixed_random_v9_seed_20263722",
+    "autoencoderState": "bound_project_checkpoint_loaded_and_frozen"
+  },
+  "bindings": {
+    "v9CpuTerminal": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-cpu-support/20260809-161005213/phase-terminal.json",
+      "sha256": "7094094dc750b35694516f7fd6f2b22dca642d7f7a0de4aff8dc773dfc95e02e"
+    },
+    "v9InactiveConfig": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-cpu-support/20260809-161005213/inactive-config.json",
+      "sha256": "e4a90350ea1263bcef0a90ba36491f4a9477c8886aeac4ae0f44b846f1e4bef6"
+    },
+    "v9CpuReport": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-cpu-support/20260809-161005213/cpu-regression-report.json",
+      "sha256": "5b7548a53a85addb82fd6701dcf878735c688fd049a821b67d72f38a1158e961"
+    },
+    "v9SupportContract": {
+      "path": ".runtime/ai-painter/v9-r5-stage4-cpu-support/20260809-161005213/support-contract.json",
+      "sha256": "961c18c7f84d73ea5a954170fc2a7804e692872469dfe28b0395d75c367b2538"
+    },
+    "model": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "e189fa70c0d28633b9313636afadd6f16a241118442ab6eae5074706092708e7"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "94c2862a9b91ddf5c2f865943bf64a7269fd7822dd6a7767a90961e164d5f7a8"
+    },
+    "datasetImplementation": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/dataset.py",
+      "sha256": "d9245fda230788b749f4d108445f665aaf0b677b7c6cc9a6e2094b24400e81f9"
+    },
+    "datasetManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+      "sha256": "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
+    },
+    "datasetSourceIndex": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json",
+      "sha256": "84f1d4c810e9023f3517f9fd6567dfc2414a0eb95a0a56df45a3025344e12251"
+    },
+    "projectAutoencoderCheckpoint": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/complete-world-ai-assisted-autoencoder.pt",
+      "sha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba"
+    }
+  },
+  "authorizedActions": {
+    "v9DiagnosticRunnerImplementation": true,
+    "v9DiagnosticCpuCheckerImplementation": true,
+    "cpuPositiveNegativeAuthorizationRegression": true,
+    "pythonPreflight": true,
+    "cudaResourcePreflight": true,
+    "diskBudgetPreflight": true,
+    "projectAutoencoderCheckpointReadAndLoad": true,
+    "v9FixedRandomInitialization": true,
+    "singleSampleValidationRead": true,
+    "singleGpuForward": true,
+    "torchAutogradGradInspection": true,
+    "cudaTelemetryWrite": true,
+    "diagnosticReportWrite": true,
+    "terminalEvidenceWrite": true,
+    "uniquePlanUpdate": true,
+    "oldV7OrV8DenoiserCheckpointReadOrLoad": false,
+    "optimizerCreation": false,
+    "backwardMethodExecution": false,
+    "modelWeightModification": false,
+    "checkpointWrite": false,
+    "smoke": false,
+    "stage4FullTraining": false,
+    "stage1OrStage2": false,
+    "strictRevalidation": false,
+    "formalInference": false,
+    "checkpointPromotion": false,
+    "runtimeFrame": false,
+    "worldEntry": false,
+    "automaticRetry": false
+  },
+  "implementation": {
+    "runnerPath": "ml/ai-painter/scripts/run_ai_assisted_v9_r5_stage4_gradient_diagnostic.py",
+    "cpuCheckerPath": "ml/ai-painter/scripts/check_ai_assisted_v9_r5_stage4_gradient_diagnostic_cpu.py",
+    "implementationConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-v9-stage4-readonly-gpu-gradient-diagnostic-20260809/implementation-consumption.json",
+    "implementationAttestationPath": ".runtime/ai-painter/v9-r5-stage4-gradient-diagnostic-preflights/20260809-163406562/implementation-attestation.json",
+    "cpuReportPath": ".runtime/ai-painter/v9-r5-stage4-gradient-diagnostic-preflights/20260809-163406562/cpu-regression-report.json",
+    "pythonPreflightPath": ".runtime/ai-painter/v9-r5-stage4-gradient-diagnostic-preflights/20260809-163406562/python-preflight-report.json",
+    "resourcePreflightPath": ".runtime/ai-painter/v9-r5-stage4-gradient-diagnostic-preflights/20260809-163406562/resource-disk-preflight-report.json"
+  },
+  "execution": {
+    "gpuConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-v9-stage4-readonly-gpu-gradient-diagnostic-20260809/gpu-execution-consumption.json",
+    "outputDirectory": ".runtime/ai-painter/v9-r5-stage4-gradient-diagnostic/20260809-163406562"
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetry": false,
+    "preserveEvidence": true
+  }
+}

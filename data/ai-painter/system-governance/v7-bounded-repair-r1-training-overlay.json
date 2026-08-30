@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "ai-assisted-v7-bounded-repair-r1-training-overlay-v1",
+  "status": "owner_authorized_bounded_repair_r1_single_stage0_smoke",
+  "baseConfigPath": "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json",
+  "baseConfigSha256": "b501b1b882961a193f581cc5885ea58ab8fa5df700343be2307e9a6b14ceebeb",
+  "repairContractId": "ai-assisted-v7-validation-failure-repair-contract-2026-08-02T09-05-28-750Z",
+  "diagnosticReportPath": ".runtime/ai-painter/v7-bounded-repair-r1-diagnostics/ai-assisted-v7-bounded-repair-r1-diagnostic-2026-08-02T09-37-48-994Z/diagnostic-report.json",
+  "diagnosticReportSha256": "ae0e07a4cd829fadb038a0544a728e9f5a562ee5ab40e4001f442551e2721974",
+  "authorizationPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-bounded-repair-r1-resolution-20260802/request.json",
+  "authorizationSha256": "62cd42d18dad88f142643c7a5b5df82d8ae4a1925646e0aa856c9af65b6199fa",
+  "patch": {
+    "architectureVersion": "all-validation-multiseed-semantic-rollout-unet-v7-repair-r1",
+    "status": "bounded_repair_r1_owner_authorized_single_stage0_smoke",
+    "training": {
+      "boundedRepairVersion": "v7_bounded_repair_r1",
+      "repairContractId": "ai-assisted-v7-validation-failure-repair-contract-2026-08-02T09-05-28-750Z",
+      "trainingAuthorizationStatus": "owner_authorized_bounded_repair_r1_single_stage0_smoke",
+      "denoiserLossVersion": "velocity_decoded_rgb_semantic_contrast_grid_boundary_v7_repair_r1",
+      "bestCheckpointMetric": "all_validation_multiseed_professional_semantic_rollout_score_v7_repair_r1",
+      "denoiserLossWeights": {
+        "velocity": 1.0,
+        "cleanLatent": 0.75,
+        "multiscaleLatentGradient": 0.35,
+        "multiscaleLatentLaplacian": 0.2,
+        "quietRegionExcess": 0.8,
+        "discreteConditionOutputBinding": 0.9,
+        "continuousConditionOutputBinding": 0.35,
+        "decodedRgb": 0.75,
+        "decodedRgbGradient": 0.35,
+        "decodedRgbLaplacian": 0.15,
+        "decodedRgbQuietRegionExcess": 1.0,
+        "sparseRegionDecodedRgb": 1.0,
+        "sparseRegionContrast": 1.25,
+        "spatialGridRgb": 1.25,
+        "pathBoundaryRgb": 1.5
+      },
+      "bestCheckpointMetricWeights": {
+        "velocityPredictionMse": 1.0,
+        "cleanLatentMae": 0.75,
+        "multiscaleLatentGradientMae": 0.35,
+        "multiscaleLatentLaplacianMae": 0.2,
+        "quietRegionExcess": 0.8,
+        "discreteConditionOutputBindingBce": 0.9,
+        "continuousConditionOutputBindingMae": 0.35,
+        "decodedRgbMae": 0.75,
+        "decodedRgbGradientMae": 0.35,
+        "decodedRgbLaplacianMae": 0.15,
+        "decodedRgbQuietRegionExcess": 1.0,
+        "sparseRegionDecodedRgbMae": 1.0,
+        "sparseRegionContrastMae": 1.25,
+        "spatialGridRgbMae": 1.25,
+        "pathBoundaryRgbMae": 1.5
+      },
+      "rolloutCheckpointMetricWeights": {
+        "rolloutRgbMae": 0.75,
+        "rolloutRgbGradientMae": 0.5,
+        "rolloutRgbLaplacianMae": 0.25,
+        "rolloutSparseRegionRgbMae": 1.0,
+        "rolloutRegionContrastMae": 1.5,
+        "rolloutSpatialGridRgbMae": 1.5,
+        "rolloutPathBoundaryRgbMae": 1.5
+      },
+      "pathBoundaryBandRatio": 0.04,
+      "fixedEpochPreviewPolicy": {
+        "smoke": [1],
+        "formalStage": [1, 5, 10, 20, 30, 40]
+      },
+      "ownerTrainingAuthorization": {
+        "authorizationId": "owner-action-request-v7-bounded-repair-r1-resolution-20260802",
+        "authorizationPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-bounded-repair-r1-resolution-20260802/request.json",
+        "authorizationSha256": "62cd42d18dad88f142643c7a5b5df82d8ae4a1925646e0aa856c9af65b6199fa",
+        "status": "owner_authorized_bounded_repair_r1_single_stage0_smoke",
+        "gpuTrainingAuthorizedNow": true,
+        "fullTrainingAuthorized": false,
+        "formalInferenceAuthorized": false
+      }
+    }
+  },
+  "forbiddenActions": [
+    "full_stage0_stage1_stage2_training",
+    "strict_challenge_revalidation",
+    "formal_model_promotion",
+    "formal_image_generation",
+    "runtime_frame",
+    "world_entry"
+  ]
+}

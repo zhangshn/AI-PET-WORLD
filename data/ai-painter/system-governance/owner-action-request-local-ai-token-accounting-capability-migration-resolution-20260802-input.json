@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-local-ai-token-accounting-capability-migration-resolution-20260802",
+  "subsystem": "ai_painter_training_accounting_and_local_capability_migration",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "dashboardRoute": "/ai-painter-progress/current-training",
+    "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+    "currentStage2RunId": "ai-assisted-conditional-denoiser-v7-stage-2-2026-08-02T05-20-16-111Z"
+  },
+  "ownerVisibleConclusionZh": "项目所有者要求控制台记录每次本地自研AI训练的Token和详细计算量，并逐步把执行、审核、记录、编排、生成与世界运行能力迁移到本地系统，使Codex最终只作为只读监控者和证据核验者。",
+  "localSystemFindingZh": "当前V7是图像扩散模型，不使用NLP tokenizer。项目将一个去噪样本前向所处理的一个潜空间位置定义为一个本地潜空间Token；GPU秒乘1000的旧代理值不具备Token语义，已经废止。历史成功Run通过不可变旁路账本补齐，未来Run由Python训练器直接写入精确账本。",
+  "blockingReasonCode": "resolved_owner_authorized_local_training_accounting_and_incremental_capability_migration",
+  "whyCannotProceedZh": "本次范围已经完成，无需额外授权。训练后验证、正式推理、RuntimeFrame和世界运行仍是独立门禁，本次授权不包含这些动作。",
+  "minimumRequestedActionZh": "无需操作；控制台保持只读。后续每项能力迁移必须遵守注册表顺序及原有项目所有者门禁。",
+  "invariants": [
+    "local_latent_spatial_token_is_not_an_nlp_or_api_billing_token",
+    "external_provider_tokens_are_recorded_only_from_authoritative_usage_evidence",
+    "historical_training_manifests_remain_immutable",
+    "local_program_is_the_system_of_record",
+    "project_owner_retains_all_decision_and_authorization_authority",
+    "codex_target_role_is_read_only_monitor_and_verification_only"
+  ],
+  "forbiddenActions": [
+    "estimate_external_api_tokens_from_time_or_gpu_usage",
+    "rename_gpu_seconds_as_tokens",
+    "make_chat_history_a_runtime_dependency",
+    "give_codex_owner_decision_authority",
+    "start_post_training_validation",
+    "start_formal_inference",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "本地训练Token账本和能力迁移注册表已经纳入只读控制台；未来训练会自动保存精确计算账本，Codex目标职责固定为只读监控和证据核验。",
+  "nextActionAfterAuthorization": [
+    "keep_per_run_training_token_ledgers_immutable",
+    "show_accounting_and_capability_migration_in_read_only_console",
+    "move_capabilities_to_local_system_only_after_their_existing_owner_gates_pass",
+    "reduce_codex_to_optional_read_only_monitor_and_verifier"
+  ],
+  "evidencePaths": [
+    "data/ai-painter/system-governance/local-ai-capability-migration-registry-v1.json",
+    "data/ai-painter/system-governance/ai-painter-current-training-dashboard-contract-v1.json",
+    ".runtime/ai-painter/training-token-ledgers-builds/ai-assisted-training-token-ledger-build-2026-08-02T06-12-10-987Z/build-report.json",
+    ".runtime/ai-painter/training-token-ledgers/ai-assisted-conditional-denoiser-v7-stage-2-2026-08-02T05-20-16-111Z/ledger.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-local-ai-token-accounting-and-capability-migration-20260802",
+    "commandZh": "控制面板记录每次训练Token及细节，逐步转移到本地AI，Codex只作为监控者"
+  },
+  "resolution": {
+    "historicalSuccessfulRunLedgerCount": 8,
+    "futureTrainingManifestAccountingEnabled": true,
+    "dashboardReadOnly": true,
+    "stage2LatentSpatialTokens": 1779892224,
+    "stage2ExternalApiTokens": 0,
+    "postTrainingValidationStarted": false,
+    "formalInferenceStarted": false,
+    "runtimeFrameCreated": false,
+    "worldEntryStarted": false
+  }
+}

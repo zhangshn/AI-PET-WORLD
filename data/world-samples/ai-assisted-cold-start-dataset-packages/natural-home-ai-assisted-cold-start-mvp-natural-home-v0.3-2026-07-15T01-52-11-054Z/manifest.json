@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "ai-assisted-cold-start-dataset-package-v1",
+  "policyVersion": "owner-authorized-ai-assisted-cold-start-v1",
+  "ownerAuthorizationRef": "conversation-owner-authorization-2026-07-13",
+  "packageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-15T01-52-11-054Z",
+  "parentPackageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-15T00-27-44-840Z",
+  "createdAtUtc": "2026-07-15T01:52:11.054Z",
+  "createdAtAsiaShanghai": "2026-07-15T09:52:11+08:00",
+  "status": "autoencoder_warmup_ready_condition_blueprints_ready_rgb_pairing_blocked",
+  "immutable": true,
+  "trainingLane": "ai_assisted_cold_start",
+  "checkpointOwnership": "project_owned_architecture_ai_assisted_cold_start_weights",
+  "modelConfigId": "ai-pet-world-complete-world-ai-assisted-cold-start-v2",
+  "modelArchitectureVersion": "pixel-detail-residual-autoencoder-v2",
+  "modelConfigPath": "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v2.json",
+  "dictionaryVersionId": "mvp-natural-home-v0.3",
+  "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+  "sampleCount": 26,
+  "categoryCounts": {
+    "complete-maps": 22,
+    "natural-objects": 1,
+    "terrain": 1,
+    "transitions": 1,
+    "vegetation": 1
+  },
+  "completeMapCount": 22,
+  "autoencoderSampleCount": 22,
+  "conditionBoundCompleteMapCount": 1,
+  "conditionOnlyBlueprintCount": 21,
+  "conditionalFactsBatchId": "ai-assisted-conditional-world-facts-2026-07-15T01-44-41-749Z",
+  "conditionalFactsManifestPath": ".runtime/ai-painter/ai-assisted-conditional-world-facts/ai-assisted-conditional-world-facts-2026-07-15T01-44-41-749Z/manifest.json",
+  "conditionalFactsManifestSha256": "34ab0ce6deadbfbc051a39ec7edb5e2c0c2b54694956ab8678d4b3af1ef402be",
+  "splitCounts": {
+    "train": 16,
+    "validation": 2,
+    "challenge": 2,
+    "regression": 2
+  },
+  "readinessContract": {
+    "autoencoderWarmup": "nonempty_owner_approved_rgb_technical_gate_only",
+    "conditionalDenoiser": "owner_approved_threshold_and_per_image_23_channel_binding_required",
+    "conditionOnlyBlueprints": "must_receive_new_rgb_generated_after_the_condition_pack; existing_rgb_rebinding_forbidden",
+    "formalInference": "conditional_checkpoint_and_all_formal_gates_required",
+    "inventedThresholdsAllowed": false
+  },
+  "canStartAutoencoderWarmup": true,
+  "canTrainConditionalDenoiser": false,
+  "canStartFormalTraining": false,
+  "formalInferenceEligible": false,
+  "blockers": [
+    "condition_blueprints_require_new_rgb_pairs",
+    "ai_assisted_conditional_training_threshold_pending_owner_approval",
+    "world_connectivity_coverage_thresholds_pending"
+  ],
+  "thirdPartyWeightsLoaded": false,
+  "thirdPartyGeneratedTrainingOutputUsed": true,
+  "aiGenerationDependencyDeclared": true,
+  "sourceIndexPath": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-15T01-52-11-054Z/source-index.json",
+  "snapshots": {
+    "originalImageIndex": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-15T01-52-11-054Z/snapshots/originalImageIndex.json",
+      "sha256": "c953051c6ba4f7a03fe4b04de411db856534b46ffcf37af2fe9ba4f319ed5980"
+    },
+    "dictionary": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-15T01-52-11-054Z/snapshots/dictionary.json",
+      "sha256": "6854390a30aaee539c11a70ad9d7551f4838bb62e57addeaba3b1836426175c9"
+    },
+    "trainingDataPolicy": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-15T01-52-11-054Z/snapshots/trainingDataPolicy.md",
+      "sha256": "9e12704f5f5ee846052107e0e7846d057229b1fed6b465cc0ae2aba6e7862108"
+    },
+    "modelConfig": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-15T01-52-11-054Z/snapshots/modelConfig.json",
+      "sha256": "6146dfd1a96a09f0ce7a35c4d3ebaecbb4c6428d57f58fe0d82222cf6b82718f"
+    },
+    "conditionalWorldFacts": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-15T01-52-11-054Z/snapshots/conditionalWorldFacts.json",
+      "sha256": "34ab0ce6deadbfbc051a39ec7edb5e2c0c2b54694956ab8678d4b3af1ef402be"
+    }
+  },
+  "automaticStorage": true
+}

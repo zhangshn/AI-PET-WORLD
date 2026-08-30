@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "owner-authorized-r5-stage4-architecture-design-activation-gate-fix-input-v1",
+  "status": "resolved_owner_authorized",
+  "commandRef": "owner-authorized-r5-stage4-architecture-design-activation-gate-fix-20260808",
+  "scope": "fix_exact_architecture_activation_gate_keys_regress_then_one_formal_readonly_design_if_passed",
+  "recordedAtUtc": "2026-08-08T12:22:32.0505386Z",
+  "recordedAtAsiaShanghai": "2026-08-08T20:22:32.050+08:00",
+  "boundFailureTerminal": {
+    "path": ".runtime/ai-painter/r5-stage4-architecture-design-convergence-support/20260808-200328119/phase-terminal.json",
+    "sha256": "1ad17632b4f35cb105c2469881a263ccf7418f033558f0daa024fe4b3133deea"
+  },
+  "implementationIdentity": {
+    "frozenRunnerPath": "scripts/run-local-ai-v7-r5-stage4-failure-learning.mjs",
+    "frozenRunnerSha256": "151dd8e63e9107562b5579208b261cee7c0b4ecce88dffe6999cfd44072679ed",
+    "cpuCheckerPath": "scripts/check-local-ai-v7-r5-stage4-failure-decision.mjs",
+    "cpuCheckerBeforeSha256": "bbb56364ba54d54746652401d652a42faf02ded7d07c8724b2107dac8979e7d3",
+    "decisionHelperPath": "scripts/lib/ai-assisted-v7-r5-stage4-failure-decision.mjs",
+    "decisionHelperBeforeSha256": "44652d9deb9a3ab46df7c71d2752c34a6386a9761d12d339c719785edf209a54"
+  },
+  "frozenArchitectureDesignCanonicalOutputs": {
+    "reportCanonicalSha256": "c17fd0bb4e319b7fef68aa6d5d08cbd7be691d85e8b599ca0ffec7218ba8fd8d",
+    "contractCanonicalSha256": "ce3fee86ab3e047361d46da4a7423f398cb630e48789b1bd1a7184bcb3d292a7",
+    "ownerRequestCanonicalSha256": "c4126edfbfd30a27b54057b672d3b2a597edae43902596cee6246398d9ff80fa"
+  },
+  "requiredActions": {
+    "validateExactActivationGateKeySet": true,
+    "rejectUnknownActivationGateActionFields": true,
+    "testFormalTrainingNowActivation": true,
+    "testUnknownStartTrainingNowInjection": true,
+    "synchronizeCpuChecker": true,
+    "singleNewCpuPositiveNegativeRegression": true,
+    "singleFormalReadonlyDesignOnlyIfRegressionPasses": true
+  },
+  "authorizedBoundaries": {
+    "decisionHelperActivationGateValidationModificationAuthorized": true,
+    "cpuCheckerModificationAuthorized": true,
+    "cpuRegressionAuthorized": true,
+    "singleReadonlyArchitectureDesignAuthorizedAfterRegression": true,
+    "architectureDesignEvidenceAndStateSyncAuthorized": true,
+    "runnerModificationAuthorized": false,
+    "architectureDirectionOrRecommendationModificationAuthorized": false,
+    "trainerModificationAuthorized": false,
+    "smokeRunnerModificationAuthorized": false,
+    "trainingConfigModificationAuthorized": false,
+    "checkpointReadOrLoadAuthorized": false,
+    "optimizerCreationAuthorized": false,
+    "backwardExecutionAuthorized": false,
+    "modelWeightModificationAuthorized": false,
+    "reviewThresholdModificationAuthorized": false,
+    "hyperparameterCandidateGenerationAuthorized": false,
+    "gpuUseAuthorized": false,
+    "trainingAuthorized": false,
+    "validationAuthorized": false,
+    "formalInferenceAuthorized": false,
+    "checkpointPromotionAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false,
+    "automaticRetryAuthorized": false
+  },
+  "ownerCommandZh": "授权在新的不可变命令范围内，绑定本次失败终态、当前运行器、CPU检查器及决策辅助文件哈希；冻结运行器和架构设计内容，仅修正架构实施合同激活门，使其验证精确字段集合、拒绝未知动作字段，并让负向回归分别覆盖正式trainingNow字段激活和未知startTrainingNow字段注入。同步CPU检查器后执行一次新的CPU正反回归；全部通过后才建立并原子消费一次正式CPU只读架构设计授权，继续原定三方向设计收敛、未激活合同、Owner请求、计划表和任务胶囊同步。不得读取Checkpoint、修改训练器、Smoke运行器、训练配置、权重或审核阈值，不得启动GPU或训练；失败立即停止且不自动重试。"
+}

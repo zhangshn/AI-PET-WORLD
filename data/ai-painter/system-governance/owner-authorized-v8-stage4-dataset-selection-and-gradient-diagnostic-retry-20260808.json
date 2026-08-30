@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-v1",
+  "requestId": "owner-authorized-v8-stage4-dataset-selection-and-gradient-diagnostic-retry-20260808",
+  "status": "resolved_owner_authorized",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-v8-stage4-dataset-selection-and-gradient-diagnostic-retry-20260808",
+    "scope": "fix_v8_dataset_selection_to_existing_64_v7_capacity_rows_cpu_regress_then_one_new_gradient_diagnostic_only",
+    "sourceCommand": "授权在新的不可变命令范围内，绑定V8梯度诊断失败终态SHA-256 89121b65a8fa991569b8122c884d087f6b866294ff9a24f9739f939059cd0974；结构性修正V8 Dataset选择合同，使V8继续使用现有已批准的64份V7容量贡献及48/8/4/4划分，并保持旧V7数据选择行为兼容。执行CPU正反数据身份回归，必须验证样本194唯一属于validation且实际加载划分为48/8/4/4；通过后建立新的独立诊断授权，重新执行一次相同的V8固定单样本GPU前向与梯度路由诊断。失败立即停止且不自动重试；不得提前启动30 Epoch Smoke、完整训练或严格复验。"
+  },
+  "taskIdentity": {
+    "module": "AI Painter R5",
+    "candidateId": "stage4_decoded_domain_alignment_bridge_v1",
+    "architectureId": "multiscale_condition_unet_v8_stage4_decoded_alignment",
+    "datasetPackageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+    "requiredCapacityCount": 64,
+    "requiredSplitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "seed": 20263722,
+    "timestep": 999,
+    "resolution": {
+      "width": 256,
+      "height": 192
+    },
+    "requiredBoundarySides": [
+      "west"
+    ]
+  },
+  "bindings": {
+    "previousFailureTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-gradient-diagnostic/20260808-220000000/phase-terminal.json",
+      "sha256": "89121b65a8fa991569b8122c884d087f6b866294ff9a24f9739f939059cd0974"
+    },
+    "datasetImplementationBefore": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/dataset.py",
+      "sha256": "607f857c48bb0e8d9ec2ea64c65a96ab7e1ffb76f09e3199c3b19965194b5ad3"
+    },
+    "trainerBefore": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "da53341175118b6f2b76cb1a804b0285e73bb2a933d4867971101445161d8057"
+    },
+    "diagnosticRunnerBefore": {
+      "path": "ml/ai-painter/scripts/run_ai_assisted_v8_r5_stage4_gradient_diagnostic.py",
+      "sha256": "e6af1508c0dffebf1a859fed97c8a6fcb4b09df837720b247ab4d994d2a5eb53"
+    },
+    "legacyV7DatasetChecker": {
+      "path": "ml/ai-painter/scripts/check_ai_assisted_v7_dataset_binding_gate.py",
+      "sha256": "5537549176bb12d7296e081c41a76e2c325a2101f8ea275d7cc0c92bc309c57f"
+    },
+    "inactiveV8Config": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-decoded-domain-alignment-cpu-support/20260808-211500000/inactive-config.json",
+      "sha256": "ef941d1483aa8fc1798203bd314843569ca4f759d6c3261ad71d25476c499a13"
+    },
+    "datasetManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+      "sha256": "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
+    },
+    "sourceIndex": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json",
+      "sha256": "84f1d4c810e9023f3517f9fd6567dfc2414a0eb95a0a56df45a3025344e12251"
+    }
+  },
+  "authorizedActions": {
+    "datasetSelectionContractImplementation": true,
+    "trainerDatasetSelectionIntegration": true,
+    "diagnosticRunnerDatasetSelectionIntegration": true,
+    "cpuPositiveNegativeRegression": true,
+    "cpuEvidenceWrite": true,
+    "independentGpuDiagnosticAuthorizationCreationAfterCpuPass": true,
+    "atomicGpuDiagnosticConsumptionAfterAllPreflights": true,
+    "oneGpuGradientDiagnostic": true,
+    "autoencoderCheckpointReadDuringGpuDiagnostic": true,
+    "oldDenoiserCheckpointRead": false,
+    "optimizerCreation": false,
+    "backwardExecution": false,
+    "modelWeightMutation": false,
+    "checkpointWrite": false,
+    "training": false,
+    "thirtyEpochSmoke": false,
+    "fullTraining": false,
+    "strictRevalidation": false,
+    "formalInference": false,
+    "checkpointPromotion": false,
+    "runtimeFrame": false,
+    "worldEntry": false,
+    "automaticRetry": false
+  },
+  "compatibility": {
+    "legacyV7SelectionMustRemain48_8_4_4": true,
+    "legacyNonV7CurrentConditionSelectionMustRemainAvailable": true,
+    "v8MustUseRegisteredV7CapacityContributionSelection": true
+  },
+  "consumptionPaths": {
+    "implementation": ".runtime/ai-painter/owner-action-requests/owner-authorized-v8-stage4-dataset-selection-and-gradient-diagnostic-retry-20260808/implementation-consumption.json",
+    "gpuDiagnostic": ".runtime/ai-painter/owner-action-requests/owner-authorized-v8-stage4-dataset-selection-and-gradient-diagnostic-retry-20260808/gpu-diagnostic-consumption.json"
+  },
+  "outputPaths": {
+    "cpuRunDirectory": ".runtime/ai-painter/v8-r5-stage4-dataset-selection-cpu/20260808-214000000",
+    "gpuRunDirectory": ".runtime/ai-painter/v8-r5-stage4-gradient-diagnostic/20260808-214000000"
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetry": false,
+    "preservePreviousFailureEvidence": true,
+    "laterTrainingGatesRemainClosed": true
+  }
+}

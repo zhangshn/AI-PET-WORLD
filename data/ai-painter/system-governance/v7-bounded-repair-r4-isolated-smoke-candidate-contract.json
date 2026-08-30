@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "ai-assisted-v7-r4-isolated-smoke-candidate-contract-v1",
+  "status": "compiled_cpu_verified_isolated_not_active_gpu_smoke_not_authorized",
+  "generatedBy": "local_ai_v7_r4_smoke_config_compiler",
+  "recordedAtUtc": "2026-08-04T07:27:28.180Z",
+  "recordedAtAsiaShanghai": "2026-08-04T15:27:28+08:00",
+  "selection": {
+    "path": ".runtime/ai-painter/local-ai-v7-r4-smoke-configurations/local-ai-v7-r4-smoke-config-2026-08-04T07-27-25-970Z/r4-bounded-weight-selection.json",
+    "sha256": "0ac452157f6491d97143054f8a8bc827164302e17f417a617d0d9f98191053b8",
+    "selectedWeights": {
+      "pathInteriorRgb": 2,
+      "pathForbiddenBoundaryRgb": 2
+    },
+    "rule": "select_maximum_when_issue_occurs_at_least_three_times_or_recurs_in_required_tail_otherwise_preserve_current"
+  },
+  "compiledConfiguration": {
+    "path": ".runtime/ai-painter/local-ai-v7-r4-smoke-configurations/local-ai-v7-r4-smoke-config-2026-08-04T07-27-25-970Z/r4-isolated-single-sample-smoke-config.json",
+    "sha256": "bd57ef3fa80417af0823c6f9c171644548e8dedf181b1716d2be5029967bfff4",
+    "status": "isolated_r4_candidate_not_active",
+    "plannedOverfitSampleId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "plannedInitialization": "project_random_multiscale_denoiser",
+    "plannedEpochs": 120,
+    "plannedEvaluationInterval": 10,
+    "requiredTailEpochs": [
+      100,
+      110,
+      120
+    ]
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/local-ai-v7-r4-smoke-configurations/local-ai-v7-r4-smoke-config-2026-08-04T07-27-25-970Z/cpu-configuration-regression.json",
+    "sha256": "0a9c9e4aa62d465f017154dea9e15f3a550698cb4701d2a8c6a561ba4188aada",
+    "status": "passed_cpu_configuration_only_not_active_no_training",
+    "positiveRegression": {
+      "r4CandidateContractAccepted": true,
+      "selectedWeightsRemainInsideProposalBounds": true,
+      "objectSemanticWeightsPreserved": true,
+      "reviewThresholdsPreserved": true,
+      "singleSampleSmokePlanCompiled": true
+    },
+    "negativeRegression": {
+      "trainingRejectedWhileInactive": true,
+      "parentCheckpointRejected": true,
+      "sampleIdentityRequired": true,
+      "tailEpochContractRequired": true,
+      "gpuAuthorizationRejected": true
+    }
+  },
+  "sourceEvidence": {
+    "proposal": {
+      "path": "data/ai-painter/system-governance/v7-bounded-repair-r4-candidate-proposal.json",
+      "sha256": "255bf781bd7b63af3d993ca1da73a1a3c2d3d4653c9ce6e0eed28ae95b1de884"
+    },
+    "trainerSupport": {
+      "path": "data/ai-painter/system-governance/v7-bounded-repair-r4-trainer-support-contract.json",
+      "sha256": "09e52752f3d2451de5ace75ee6a6a122f9fbd959d057ff414c5b698700165e68"
+    },
+    "r3Candidate": {
+      "path": "data/ai-painter/system-governance/v7-bounded-repair-r3-candidate-overlay.json",
+      "sha256": "6c013e05a36c85646b18fde12b5573049be8ea1703c47899f54956d468a2a501"
+    },
+    "r3SmokeConfig": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r3/derived-configs/ai-assisted-v7-repair-r3-random-init-single-sample-overfit-smoke-2026-08-04T05-57-12-288Z.json",
+      "sha256": "fb21621860a5f2816c1027e69414d17b075efc2cbaa7b3b087110d0ee00832c6"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "3dacafe35fcce05456ed040247aaf2d9fa31bf2459e35bddb19ebf5446e491e8"
+    }
+  },
+  "ownerAuthorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r4-smoke-config-compilation-20260804/request.json",
+    "sha256": "a27eed02dfdf2a3b0c972c654d93ef46f620892722097af2c679da3a2a829dde",
+    "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r4-smoke-config-compilation-20260804/authorization-consumption.json",
+    "consumptionSha256": "96f417da5c87b1b8cafc6498ef2a6d21c1c93402932abcbee49f2850d43a769a",
+    "commandRef": "owner-authorized-v7-r4-smoke-config-compilation-20260804",
+    "scope": "select_r4_bounded_weights_and_compile_isolated_single_sample_smoke_configuration_only"
+  },
+  "executionBoundary": {
+    "candidateActive": false,
+    "formalConfigurationActive": false,
+    "optimizerCreated": false,
+    "modelWeightsModified": false,
+    "gpuSmokeAuthorized": false,
+    "gpuTrainingStarted": false,
+    "validationStarted": false,
+    "formalInferenceStarted": false,
+    "checkpointPromoted": false,
+    "runtimeFrameStarted": false,
+    "worldEntered": false,
+    "nextIndependentAuthorization": "r4_single_sample_gpu_overfit_smoke_execution_only"
+  }
+}

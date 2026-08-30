@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "owner-authorized-r5-stage4-decoded-domain-alignment-cpu-support-input-v1",
+  "status": "resolved_owner_authorized_not_consumed",
+  "commandRef": "owner-authorized-r5-stage4-decoded-domain-alignment-cpu-support-20260808-204122373",
+  "scope": "implement_stage4_decoded_domain_alignment_bridge_v1_cpu_support_compile_inactive_config_and_regress_only",
+  "recordedAtUtc": "2026-08-08T12:41:22.373Z",
+  "recordedAtAsiaShanghai": "2026-08-08T20:41:22.373+08:00",
+  "boundArchitectureDesignTerminal": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-architecture-design-convergence/local-ai-v7-r5-stage4-architecture-design-convergence-20260808-202232050/phase-terminal.json",
+    "sha256": "8f5a6f2a59ade9ee5fed8c7e8cd42944ff4188630e2f5f80bf176536c06c1608"
+  },
+  "boundArchitectureDesignReport": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-architecture-design-convergence/local-ai-v7-r5-stage4-architecture-design-convergence-20260808-202232050/architecture-design-report.json",
+    "sha256": "2b6b4702987f14fb9de1c7ba3e15f090519b230b1d7df00920ffcfa54b302613"
+  },
+  "boundInactiveImplementationContract": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-architecture-design-convergence/local-ai-v7-r5-stage4-architecture-design-convergence-20260808-202232050/inactive-architecture-implementation-contract.json",
+    "sha256": "da53f0005c99c64d525ec25d784b52304d76775a405847a02a71800c1212438e",
+    "contractId": "stage4_decoded_domain_alignment_bridge_v1",
+    "proposedArchitectureId": "multiscale_condition_unet_v8_stage4_decoded_alignment"
+  },
+  "implementationIdentity": {
+    "modelPath": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+    "modelBeforeSha256": "f086820205665896c4930b7ca3924b6bf6edb87fac31924cc3ab68c32d2337ac",
+    "trainerPath": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "trainerBeforeSha256": "cadd21b944da0a430b0643c0c7015926b5eea38aa3f56609953a73399fea986f",
+    "inactiveCompilerAndCpuCheckerPath": "ml/ai-painter/scripts/check_ai_assisted_v7_r5_stage4_diagnostic_evidence_bounded_repair_cpu.py",
+    "inactiveCompilerAndCpuCheckerBeforeSha256": "ddec91bb92f745242473d9b085909efe5cca95bea011f27070257356ecf7486f",
+    "sourceInactiveConfigPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4/configs/ai-assisted-v7-r5-stage4-coverage-convergence-full-training-config-20260805-182000000.json",
+    "sourceInactiveConfigSha256": "c7a893604b55e3e1cb49ed288d7f723212034b13aed3456bf5822eaa175cb352",
+    "uniquePlanPath": "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md",
+    "uniquePlanBeforeSha256": "deef8c3c85a6f77b1c6dfaa14cec87a6f9f3b78e2a56cc81148ac10a8f61888b",
+    "migrationRegistryPath": "data/ai-painter/system-governance/local-ai-capability-migration-registry-v1.json",
+    "migrationRegistryBeforeSha256": "b121310fc6a9db9b7f90e37cf7492220b56951f297bc6370db0c49594e1f1ade",
+    "sourceTaskCapsulePath": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-architecture-design-convergence/local-ai-v7-r5-stage4-architecture-design-convergence-20260808-202232050/local-task-capsule.json",
+    "sourceTaskCapsuleSha256": "978cb25557874824306cecca1460661a096330a7f63c17c6b29c50eb11e3e88a"
+  },
+  "requiredArchitectureContract": {
+    "conditionChannels": 23,
+    "typedAdapterScales": ["up1", "up0"],
+    "sharedReadoutChannels": [
+      "terrain_path_ground",
+      "route_required_boundary",
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "latentOutputShapeUnchanged": true,
+    "legacyStage3AndStage4CompatibilityRequired": true,
+    "existingDenoiserCheckpointCompatible": false,
+    "hyperparameterSelections": []
+  },
+  "requiredCpuRegressions": [
+    "shape_and_23_channel_contract",
+    "typed_condition_channel_order_and_scale",
+    "shared_route_object_readout_shape",
+    "gradient_isolation_without_optimizer_or_weight_update",
+    "illegal_supervision_source_rejection",
+    "failed_preview_and_review_threshold_target_rejection",
+    "old_checkpoint_strict_load_incompatibility",
+    "legacy_stage3_and_stage4_positive_negative_compatibility"
+  ],
+  "requiredActions": {
+    "addV8ArchitectureBranch": true,
+    "extendTrainerAuthorizationGate": true,
+    "extendExistingInactiveConfigCompiler": true,
+    "extendExistingCpuChecker": true,
+    "compileInactiveConfiguration": true,
+    "runSyntheticCpuPositiveNegativeRegression": true,
+    "saveInactiveConfigurationSupportContractCpuReportOwnerRequestAndTerminal": true,
+    "synchronizeUniquePlanMigrationRegistryAndLocalTaskCapsule": true
+  },
+  "authorizedBoundaries": {
+    "modelCodeModificationAuthorized": true,
+    "trainerCodeModificationAuthorized": true,
+    "existingInactiveCompilerAndCpuCheckerModificationAuthorized": true,
+    "syntheticCpuTensorForwardAuthorized": true,
+    "syntheticCpuAutogradInspectionAuthorized": true,
+    "inactiveConfigCompilationAuthorized": true,
+    "evidenceWriteAuthorized": true,
+    "uniquePlanMigrationRegistryAndTaskCapsuleSyncAuthorized": true,
+    "existingTrainingConfigModificationAuthorized": false,
+    "hyperparameterSelectionAuthorized": false,
+    "checkpointReadOrLoadAuthorized": false,
+    "optimizerCreationAuthorized": false,
+    "backwardMethodExecutionAuthorized": false,
+    "modelParameterUpdateAuthorized": false,
+    "modelWeightModificationAuthorized": false,
+    "gpuUseAuthorized": false,
+    "trainingAuthorized": false,
+    "validationAuthorized": false,
+    "reviewThresholdModificationAuthorized": false,
+    "failedPreviewPixelsAsTrainingTargetsAuthorized": false,
+    "reviewThresholdsAsTrainingTargetsAuthorized": false,
+    "strictRevalidationAuthorized": false,
+    "formalInferenceAuthorized": false,
+    "checkpointPromotionAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false,
+    "automaticRetryAuthorized": false
+  },
+  "failurePolicy": "stop_immediately_close_terminal_and_do_not_retry_automatically",
+  "ownerCommandZh": "授权在新的不可变命令范围内，绑定Stage4架构设计终态SHA-256 8f5a6f2a59ade9ee5fed8c7e8cd42944ff4188630e2f5f80bf176536c06c1608、架构设计报告SHA-256 2b6b4702987f14fb9de1c7ba3e15f090519b230b1d7df00920ffcfa54b302613及未激活实施合同SHA-256 da53f0005c99c64d525ec25d784b52304d76775a405847a02a71800c1212438e；仅实施stage4_decoded_domain_alignment_bridge_v1的CPU支持：新增multiscale_condition_unet_v8_stage4_decoded_alignment架构分支，在现有up1/up0尺度加入类型化条件适配器和共享语义—拓扑读出，保持23通道输入、潜变量输出形状及旧Stage3/Stage4行为兼容；扩展训练器授权门、现有未激活配置编译器和CPU检查器。授权使用合成CPU张量执行形状、通道顺序、梯度隔离、非法监督来源、旧Checkpoint不兼容及旧模式正反回归，但不得创建优化器或更新权重。通过后仅保存未激活配置、支持合同、CPU报告、Owner动作请求和终态并同步唯一计划表及本地任务胶囊。不得读取或加载Checkpoint、启动GPU或训练，不得选择超参数、修改审核阈值、执行第5阶段严格复验、正式推理、Checkpoint晋级、RuntimeFrame或进入世界；失败立即停止且不自动重试。"
+}

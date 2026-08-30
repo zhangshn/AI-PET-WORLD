@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-v7-mvp64-post-training-validation-resolution-20260802",
+  "subsystem": "ai_painter_v7_mvp64_post_training_validation",
+  "status": "owner_authorized_pending_execution",
+  "taskIdentity": {
+    "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+    "checkpointRunId": "ai-assisted-conditional-denoiser-v7-stage-2-2026-08-02T05-20-16-111Z",
+    "checkpointSha256": "5a105a8143112f0d2fe19cb90f250b9fb204530d5ed07ba06a60fdbdfbcd23a5",
+    "datasetPackageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+    "actualLoadedV7CapacityCount": 64,
+    "splitCounts": { "train": 48, "validation": 8, "challenge": 4, "regression": 4 },
+    "strictHeldOutSplit": "challenge",
+    "heldOutSampleCount": 4,
+    "deterministicSeedsPerSample": 2,
+    "plannedValidationImageCount": 8
+  },
+  "ownerVisibleConclusionZh": "项目所有者明确要求并行启动现有V7的训练后验证，同时完善项目文档。训练后验证只使用训练期间未读取图像和条件张量的4条challenge记录，每条执行2个确定性种子，共8张隔离验证图。",
+  "localSystemFindingZh": "修复后的V7 Stage 2已完成64/64与48/8/4/4训练绑定，最终checkpoint哈希和父链通过。配置将challenge固定为strictHeldOutInferenceSplit，并将每样本多种子数固定为2，因此本次验证范围按4条challenge乘2个种子闭合，不读取训练目标图参与生成。",
+  "blockingReasonCode": "resolved_owner_authorized_v7_mvp64_post_training_validation_pending_execution",
+  "whyCannotProceedZh": "本记录已经解除训练后验证启动阻断，但不解除正式推理、正式候选、RuntimeFrame或世界运行的独立阻断。",
+  "minimumRequestedActionZh": "本地程序执行8条严格held-out验证轨迹并保存图片、模型报告、Token、机器审核、失败码和聚合报告；完成后停止等待项目所有者查看验证结果。",
+  "invariants": [
+    "checkpoint_sha256_remains_5a105a8143112f0d2fe19cb90f250b9fb204530d5ed07ba06a60fdbdfbcd23a5",
+    "dataset_actual_v7_capacity_count_remains_64",
+    "split_counts_remain_48_8_4_4",
+    "challenge_samples_were_not_read_during_training",
+    "two_deterministic_seeds_per_challenge_sample",
+    "target_rgb_never_used_as_generation_input",
+    "all_outputs_remain_nonformal_and_nonruntime",
+    "no_automatic_retry"
+  ],
+  "forbiddenActions": [
+    "modify_or_resume_training_weights",
+    "use_train_validation_or_regression_rgb_as_held_out_generation_target",
+    "read_target_rgb_during_generation",
+    "automatic_retry_of_failed_validation_trajectory",
+    "mark_formal_inference_eligible",
+    "create_formal_candidate",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "现有V7训练后验证已获授权；本地程序将对4条严格未见challenge条件各运行2个种子并自动保存全部证据，完成后停在正式推理之前。",
+  "nextActionAfterAuthorization": [
+    "verify_checkpoint_dataset_and_v7_binding",
+    "run_four_challenge_conditions_with_two_deterministic_seeds_each",
+    "machine_review_every_validation_image",
+    "aggregate_diversity_failures_tokens_and_hardware_evidence",
+    "stop_before_formal_inference_and_wait_for_owner_review"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/latest.json",
+    ".runtime/ai-painter/v7-repaired-training-chain-checks/ai-assisted-v7-repaired-training-chain-check-2026-08-02T05-49-07-751Z/check-report.json",
+    "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json",
+    "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json"
+  ],
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-v7-mvp64-post-training-validation-20260802",
+    "commandZh": "并行启动的是现有V7的训练后验证，同时完善我们的文档"
+  },
+  "resolution": {
+    "postTrainingValidationAuthorized": true,
+    "formalInferenceAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false,
+    "executionCompleted": false
+  }
+}

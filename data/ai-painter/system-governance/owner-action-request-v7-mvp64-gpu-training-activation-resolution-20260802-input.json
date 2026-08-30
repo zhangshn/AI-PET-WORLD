@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-v7-mvp64-gpu-training-activation-resolution-20260802",
+  "subsystem": "ai_painter_v7_mvp64_formal_local_gpu_training_activation",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "parentRequestId": "owner-action-request-v7-mvp64-gpu-training-activation-20260802",
+    "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+    "datasetPackageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+    "capacityPlanRunId": "ai-assisted-v7-data-capacity-plan-2026-08-02T01-44-37-927Z",
+    "qualifiedCompleteMapCount": 64,
+    "splitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    }
+  },
+  "ownerVisibleConclusionZh": "项目所有者已明确回复‘允许启动V7本地GPU训练’，批准此前MVP64 GPU训练激活申请。授权只覆盖训练程序冒烟检查以及stage-0、stage-1、stage-2分阶段训练。",
+  "localSystemFindingZh": "MVP64数据集、64个容量贡献、48/8/4/4分割、CPU完整模型合同和全历史失败学习证据均已通过并锁定；当前可以激活训练入口，但仍必须在每个阶段前后复核证据并在失败时立即停止。",
+  "blockingReasonCode": "resolved_owner_authorized_v7_mvp64_local_gpu_training_activation",
+  "whyCannotProceedZh": "本记录用于解除GPU训练激活阻断；它不解除正式推理、RuntimeFrame或进入世界的独立阻断。",
+  "minimumRequestedActionZh": "按父申请中的固定边界执行V7训练冒烟检查和stage-0/1/2；任何失败立即停止并保存证据，stage-2完成后停在正式推理之前。",
+  "invariants": [
+    "dataset_manifest_sha256_8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa",
+    "capacity_plan_sha256_9e2166393fd49561c47d985b92601caae2820867df33c1a06f176b99c39fceb5",
+    "formal_split_remains_48_train_8_validation_4_challenge_4_regression",
+    "challenge_and_regression_metrics_are_not_read_during_training",
+    "third_party_weights_loaded_false",
+    "formal_inference_runtime_frame_and_world_entry_remain_blocked"
+  ],
+  "forbiddenActions": [
+    "change_or_replace_any_of_the_locked_64_records",
+    "skip_smoke_or_progressive_stage_order",
+    "continue_after_failed_stage",
+    "generate_formal_inference_images",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "V7本地GPU训练激活已获批准。程序现在可以执行冒烟检查和stage-0/1/2，完成后必须停止并等待正式推理的另行授权。",
+  "nextActionAfterAuthorization": [
+    "record_v7_gpu_training_activation_without_starting_training",
+    "verify_locked_dataset_capacity_and_cpu_readiness",
+    "run_v7_training_program_smoke_check",
+    "run_v7_stage_0_then_stage_1_then_stage_2_with_fail_fast",
+    "stop_before_formal_inference"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-gpu-training-activation-20260802/request.json",
+    ".runtime/ai-painter/ai-assisted-v7-gpu-training-readiness-checks/ai-assisted-v7-gpu-training-readiness-check-2026-08-02T01-53-15-339Z/readiness-report.json",
+    ".runtime/ai-painter/ai-assisted-v7-data-capacity-plans/ai-assisted-v7-data-capacity-plan-2026-08-02T01-44-37-927Z/capacity-plan.json",
+    "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
+  ],
+  "ownerDecision": {
+    "decision": "approved",
+    "commandRef": "owner-approved-v7-mvp64-local-gpu-training-activation-20260802",
+    "commandTextZh": "允许启动V7本地GPU训练",
+    "scope": "v7_smoke_and_stage_0_1_2_only"
+  },
+  "resolution": {
+    "parentRequestResolved": true,
+    "gpuTrainingActivated": true,
+    "gpuTrainingStartedAtRecordTime": false,
+    "formalInferenceAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false
+  }
+}

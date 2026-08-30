@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-v1",
+  "requestId": "owner-authorized-v8-stage4-smoke-readonly-failure-attribution-20260809",
+  "status": "resolved_owner_authorized",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-v8-stage4-smoke-readonly-failure-attribution-20260809",
+    "scope": "one_cpu_readonly_v8_smoke_diagnostic_export_and_visual_failure_attribution_only",
+    "sourceCommand": "授权在新的不可变命令范围内，绑定V8 Smoke失败终态、Finalization、Manifest、机器审核及Smoke Checkpoint身份；冻结训练器、运行器、审核阈值和Checkpoint，仅执行一次CPU只读失败归因，分别裁决17项诊断指标未注册或未导出的证据合同缺陷，以及五张预览0/5通过的V8候选视觉效果失败。生成分析报告、架构退出或后续实施决策、终态证据并更新唯一计划表。不得读取或加载Checkpoint，不得修改权重、启动GPU、训练或自动重试。"
+  },
+  "taskIdentity": {
+    "module": "AI Painter R5",
+    "candidateId": "stage4_decoded_domain_alignment_bridge_v1",
+    "architectureId": "multiscale_condition_unet_v8_stage4_decoded_alignment",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "seed": 20263722,
+    "requiredBoundarySides": ["west"],
+    "epochCount": 30,
+    "previewEpochs": [1, 5, 10, 20, 30]
+  },
+  "bindings": {
+    "smokeFailureTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke-finalizations/20260809-153438396/phase-terminal.json",
+      "sha256": "d916183ac649a622c86a4a7bb5abec3eb045ccb892ebf7ce3ef72756112787ad"
+    },
+    "smokeFinalization": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke-finalizations/20260809-153438396/finalization-report.json",
+      "sha256": "8b0dc33185a7bede1bafebb5d6ef3c85261308bf9c9e4cfbafd3c603246748f5"
+    },
+    "smokeManifest": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke/20260809-153438396/manifest.json",
+      "sha256": "2415c001806bcea939d5093e855c38ff7ec39ac8b8e812fd486f1d9639c08cc1"
+    },
+    "machineReview": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke/20260809-153438396/fixed-preview-reviews.json",
+      "sha256": "03bd732ddb0d087338f7aca5db702a40e87eba641313db47e78a98f9b2a0521b"
+    },
+    "trainerFrozen": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "f25a31f6c96cc54ef66fb0f3a3f6326882ebda89c20365a8d53057a9a4620818"
+    },
+    "smokeRunnerFrozen": {
+      "path": "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs",
+      "sha256": "cbea5dd82cfc86b777f698919215218b614c344fb6e24c2bfe057a7f2c59521f"
+    }
+  },
+  "checkpointIdentityRecordedOnly": {
+    "path": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke/20260809-153438396/complete-world-ai-assisted-conditional-denoiser.pt",
+    "sha256": "1f6f374b9d1bb44e659ef14368f7cf0e13d305ccd8e3d00ab5a5e1ce9002ff38",
+    "fileReadAuthorized": false,
+    "identityVerificationSource": "bound_manifest_and_finalization_fields_only"
+  },
+  "authorizedActions": {
+    "localV8FailureAttributionEntryImplementation": true,
+    "oneCpuReadonlyFailureAttribution": true,
+    "analysisReportWrite": true,
+    "architectureDecisionWrite": true,
+    "terminalEvidenceWrite": true,
+    "uniquePlanUpdate": true,
+    "checkpointFileReadOrLoad": false,
+    "trainerModification": false,
+    "smokeRunnerModification": false,
+    "reviewThresholdModification": false,
+    "modelWeightModification": false,
+    "optimizerCreation": false,
+    "gpuUse": false,
+    "training": false,
+    "automaticRetry": false
+  },
+  "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-v8-stage4-smoke-readonly-failure-attribution-20260809/analysis-consumption.json",
+  "outputPaths": {
+    "runRoot": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v8-attribution/20260809-154712137",
+    "analysisReport": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v8-attribution/20260809-154712137/analysis-report.json",
+    "architectureDecision": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v8-attribution/20260809-154712137/architecture-decision.json",
+    "terminal": ".runtime/ai-painter/local-ai-failure-learning-r5-stage4-v8-attribution/20260809-154712137/phase-terminal.json"
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetry": false,
+    "preserveSourceEvidence": true
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "thailand-rebuild64-failed-rgb-repair-package-v1",
+  "repairPackageId": "thailand-rebuild64-49-v7-capacity-slot-194-flowing-water-repair-v1",
+  "status": "ready_for_owner_authorized_single_replacement_generation",
+  "createdAtUtc": "2026-08-01T11:02:00.000Z",
+  "createdAtAsiaShanghai": "2026-08-01T19:02:00+08:00",
+  "authorizationId": "owner-authorized-thailand-rebuild64-failed8-rgb-replacements-20260801",
+  "contractPath": "data/ai-painter/system-governance/thailand-rebuild64-flowing-water-connectivity-and-all-history-novelty-contract-v1.json",
+  "sequenceCode": "49",
+  "slotId": "v7-capacity-slot-194",
+  "sourceFailedRecordId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v3",
+  "sourceFailedImageSha256": "59201072e3d400ad3e42faf5e62fcd6beb3dc915f3098b5ea7aed923619fc007",
+  "sourceFailedRgbMayBeUsedAsGenerationReference": false,
+  "issueCodes": [
+    "historical_rejected_composition_duplicate",
+    "complete_map_composition_diversity_failed",
+    "condition_terrain_water_upstream_downstream_ports_missing",
+    "condition_terrain_water_inlet_outlet_raster_missing"
+  ],
+  "currentCondition": {
+    "conditionId": "earth-reference-v7-v7-capacity-slot-194-1e94c6f96b41",
+    "conditionRunManifestPath": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-194-2026-08-01T10-57-02-494Z/complete-map-condition-run.json",
+    "taskManifestPath": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-194-2026-08-01T10-57-02-494Z/complete-map-condition-task/task-manifest.json",
+    "conditionPackId": "visual-conditions-world-visual-task-earth-reference-v7-v7-capacity-slot-194-1e94c6f96b41-2026-08-01T10-57-02-494Z",
+    "conditionPackPath": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-194-2026-08-01T10-57-02-494Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+    "themeArchitectureIdentity": "82d48ece9f890e994214fc29fa4fa6d66e77ef97ee324ca55c1714335e4b24a4",
+    "instanceDetailIdentity": "89788cbd022397b31cb0942443ed3ae91512d71726a10eb525265a4750497aaa"
+  },
+  "routeContract": {
+    "authorizedBoundarySide": "west",
+    "entranceBounds": {
+      "x": 0,
+      "y": 411,
+      "width": 52,
+      "height": 84
+    },
+    "forbiddenBoundarySides": ["north", "east", "south"],
+    "expectedNonZeroRatio": 0.020896,
+    "routeChannelSha256": "e78ae5bd235c4c2ae904b59deee47f555bef52824ff02b6877e2a6c475157a97",
+    "authorizedBoundaryContactRequired": true,
+    "allOtherBoundaryContactsForbidden": true
+  },
+  "waterContract": {
+    "upstreamBoundarySide": "north",
+    "downstreamBoundarySide": "south",
+    "eastAndWestWaterContactsForbidden": true,
+    "pairedNeighborPortsRequired": true,
+    "positionAndScaleIndependentHistoricalMotifMatchForbidden": true
+  },
+  "requiredRepairs": [
+    "Render the exact current condition guide: one continuous north-in/south-out flowing-water network with no east or west water contact; preserve the west-only path entrance and forbid path contact on north, east and south.",
+    "Do not reproduce any historical river skeleton, island, branch arrangement, shoreline framework or complete-map composition; do not read or imitate the failed RGB."
+  ],
+  "retryReason": "Replace the rejected duplicate river composition with the exact current Thai-measurement-derived condition: north upstream inlet, south downstream outlet, paired water ports, west-only path entrance, and no uncontracted road or water boundary contact.",
+  "generationInputBoundary": {
+    "onlyImageReferenceRole": "authoritative_semantic_condition_guide",
+    "historicalRgbReferencesAllowed": false,
+    "failedRgbReferenceAllowed": false,
+    "worldFactsMayChange": false,
+    "conditionGeometryMayChange": false,
+    "reviewThresholdsMayChange": false
+  },
+  "oneReplacementGenerationAuthorized": true,
+  "automaticSecondRetryAuthorized": false
+}

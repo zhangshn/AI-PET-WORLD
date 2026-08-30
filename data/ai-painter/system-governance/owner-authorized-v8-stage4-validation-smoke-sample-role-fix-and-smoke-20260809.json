@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-v1",
+  "requestId": "owner-authorized-v8-stage4-validation-smoke-sample-role-fix-and-smoke-20260809",
+  "status": "resolved_owner_authorized",
+  "ownerDecision": {
+    "commandRef": "owner-authorized-v8-stage4-validation-smoke-sample-role-fix-and-smoke-20260809",
+    "scope": "separate_formal_train_selection_from_authorized_v8_validation_smoke_sample_cpu_regress_then_one_v8_30_epoch_gpu_smoke_only",
+    "sourceCommand": "授权在新的不可变命令范围内，绑定本次CPU失败终态及CPU报告；结构性区分正式完整训练的train样本选择与固定诊断/Smoke的明确授权样本选择。V8固定样本194按照真实validation身份只读选取，不得伪装为train或改变48/8/4/4划分；旧V7单样本train行为保持不变。同步CPU检查器并执行正反回归；通过后才继续Python、CUDA资源和磁盘预检，全部通过后建立并原子消费一次独立GPU授权，执行原定30 Epoch V8 GPU Smoke。失败立即停止且不自动重试。"
+  },
+  "taskIdentity": {
+    "module": "AI Painter R5",
+    "candidateId": "stage4_decoded_domain_alignment_bridge_v1",
+    "architectureId": "multiscale_condition_unet_v8_stage4_decoded_alignment",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "sampleSplit": "validation",
+    "seed": 20263722,
+    "requiredBoundarySides": ["west"],
+    "resolution": {"width": 256, "height": 192},
+    "epochCount": 30,
+    "previewEpochs": [1, 5, 10, 20, 30],
+    "datasetSelectionContract": "registered_v7_capacity_contribution_v1",
+    "requiredSplitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4}
+  },
+  "bindings": {
+    "previousCpuFailureTerminal": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-dispatch-fix-cpu/20260809-151500000/phase-terminal.json",
+      "sha256": "f5414f32889ed519844a369b34820187263ef94a7b00a3bbbd120903808e803e"
+    },
+    "previousCpuFailureReport": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-dispatch-fix-cpu/20260809-151500000/cpu-report.json",
+      "sha256": "3ad77ed3f7d31fb34da0ca56aed3469e2ed53cfcac5d686018276ddb906851dc"
+    },
+    "previousDispatchAuthorization": {
+      "path": "data/ai-painter/system-governance/owner-authorized-v8-stage4-mutually-exclusive-dispatch-fix-and-smoke-20260809.json",
+      "sha256": "4d608c3afd54b3bac00fcf38d03a16c84d197dbe6ba31a940219b50c8afb0b2a"
+    },
+    "sourceOwnerAuthorization": {
+      "path": "data/ai-painter/system-governance/owner-authorized-v8-stage4-training-loss-and-30-epoch-smoke-20260808.json",
+      "sha256": "10e21a3fa90fadb5751eca90946fa8da157f8dce0208527042019d3a1bdab5a3"
+    },
+    "inactiveConfig": {
+      "path": ".runtime/ai-painter/v8-r5-stage4-training-loss-smoke-cpu/20260808-220500000/inactive-config.json",
+      "sha256": "9116f2a05b00b21e52cc09a192c8fb9e08c12e4dae56c3e47f02321ac2a93dbf"
+    },
+    "trainerBefore": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "8d330fef614b5b17959c86278c726110671a4617848ca49edfd53de3e9ec87ee"
+    },
+    "cpuCheckerBefore": {
+      "path": "ml/ai-painter/scripts/check_ai_assisted_v8_r5_stage4_training_loss_smoke_cpu.py",
+      "sha256": "d6de50fe4afab92e385505a01fd27f77dd84a27a64b3bae01e72323de304fb8b"
+    },
+    "smokeRunnerFrozen": {
+      "path": "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs",
+      "sha256": "cbea5dd82cfc86b777f698919215218b614c344fb6e24c2bfe057a7f2c59521f"
+    },
+    "smokeDispatcherFrozen": {
+      "path": "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs",
+      "sha256": "d85935123c6c687d4579b7e4e4871f2340784ad6ceda06b03c4f1b6542d0e180"
+    },
+    "modelFrozen": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "954d2b42cb9f8216f74ccd5753de017ea8539aea0f58d94e954374ded4029577"
+    },
+    "datasetImplementationFrozen": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/dataset.py",
+      "sha256": "d9245fda230788b749f4d108445f665aaf0b677b7c6cc9a6e2094b24400e81f9"
+    }
+  },
+  "authorizedActions": {
+    "trainerSingleSampleRoleSeparation": true,
+    "cpuCheckerSampleRoleRegressionExtension": true,
+    "cpuPositiveNegativeRegression": true,
+    "oneReadonlyPythonPreflightAfterCpuPass": true,
+    "cudaResourcePreflightAfterPythonPass": true,
+    "diskBudgetPreflightAfterPythonPass": true,
+    "independentGpuAuthorizationCreationAfterAllPreflights": true,
+    "atomicGpuExecutionConsumptionAfterAllPreflights": true,
+    "autoencoderCheckpointReadAndLoadAfterGpuConsumption": true,
+    "v8RandomInitialization": true,
+    "optimizerCreationAfterGpuConsumption": true,
+    "backwardExecutionAfterGpuConsumption": true,
+    "boundedModelWeightMutationAfterGpuConsumption": true,
+    "singleSampleThirtyEpochTrainingAfterGpuConsumption": true,
+    "smokeCheckpointWrite": true,
+    "fivePreviewWriteAndMachineReview": true,
+    "datasetSplitMutation": false,
+    "validationSampleReclassificationAsTrain": false,
+    "oldDenoiserCheckpointReadOrLoad": false,
+    "stage4FullTraining": false,
+    "stage1OrStage2": false,
+    "strictRevalidation": false,
+    "formalInference": false,
+    "checkpointPromotion": false,
+    "runtimeFrame": false,
+    "worldEntry": false,
+    "automaticRetry": false
+  },
+  "consumptionPaths": {
+    "implementation": ".runtime/ai-painter/owner-action-requests/owner-authorized-v8-stage4-validation-smoke-sample-role-fix-and-smoke-20260809/implementation-consumption.json",
+    "gpuSmoke": ".runtime/ai-painter/owner-action-requests/owner-authorized-v8-stage4-training-loss-and-30-epoch-smoke-20260808/gpu-smoke-consumption.json"
+  },
+  "outputPaths": {
+    "cpuRoot": ".runtime/ai-painter/v8-r5-stage4-sample-role-fix-cpu/20260809-152420477",
+    "preflightRoot": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke-preflights/20260809-152420477",
+    "gpuExecutionAuthorization": "data/ai-painter/system-governance/owner-authorized-v8-stage4-smoke-gpu-execution-20260809-152420477.json",
+    "gpuOutputDirectory": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke/20260809-152420477",
+    "gpuFinalizationDirectory": ".runtime/ai-painter/v8-r5-stage4-single-sample-smoke-finalizations/20260809-152420477",
+    "activeConfig": ".runtime/ai-painter/v8-r5-stage4-training-loss-smoke-cpu/20260809-152420477/active-config.json"
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetry": false,
+    "preservePriorEvidence": true,
+    "doNotStartFullTraining": true
+  }
+}

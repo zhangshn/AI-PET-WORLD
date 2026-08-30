@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "project-owner-task-authorization-v1",
+  "authorizationId": "owner-authorized-r5-stage4-structured-stability-gpu-smoke-20260808",
+  "status": "resolved_owner_authorized",
+  "recordedAtUtc": "2026-08-08T10:38:23.230Z",
+  "recordedAtAsiaShanghai": "2026-08-08T18:38:23.230+08:00",
+  "ownerDecision": {
+    "decision": "authorized",
+    "commandRef": "owner-authorized-r5-stage4-structured-stability-gpu-smoke-20260808",
+    "scope": "extend_existing_stage4_smoke_runner_and_cpu_checker_for_late_stability_qualification_then_one_fixed_sample194_seed20263722_west_30_epoch_gpu_smoke"
+  },
+  "boundCandidateEvidence": {
+    "terminalPath": ".runtime/ai-painter/v7-r5-stage4-structured-stability-candidate-cpu-runs/ai-assisted-v7-r5-stage4-structured-stability-candidate-cpu-20260808-181609094/phase-terminal.json",
+    "terminalSha256": "21c78dbbbe8a7a7afeb3eeed9a1c10af552add79b4c635ee89c14270b2c70981",
+    "inactiveConfigPath": ".runtime/ai-painter/v7-r5-stage4-structured-stability-candidate-cpu-runs/ai-assisted-v7-r5-stage4-structured-stability-candidate-cpu-20260808-181609094/inactive-smoke-config.json",
+    "inactiveConfigSha256": "32f49c75e276c6024fee070c1f2391c1bf35c547a7da86d6d8e19f9135f850ac",
+    "selectionContractPath": ".runtime/ai-painter/v7-r5-stage4-structured-stability-candidate-cpu-runs/ai-assisted-v7-r5-stage4-structured-stability-candidate-cpu-20260808-181609094/selection-contract.json",
+    "selectionContractSha256": "00ecd7d05c09246b262f279579bbce5377479ed8a5742be27465bc9117c01590",
+    "supportContractPath": "data/ai-painter/system-governance/v7-r5-stage4-structured-stability-candidate-support-contract.json",
+    "supportContractSha256": "9410e9475a154d22ef40bd5dfe3155e4f560639015851899e41ef4c73019e4e6",
+    "cpuReportPath": ".runtime/ai-painter/v7-r5-stage4-structured-stability-candidate-cpu-runs/ai-assisted-v7-r5-stage4-structured-stability-candidate-cpu-20260808-181609094/cpu-positive-negative-regression.json",
+    "cpuReportSha256": "86e24468554825de7cd5074d4b2e04a489dd9f5831d8471f1e0a8f60d29522a6"
+  },
+  "boundImplementationBefore": {
+    "runnerPath": "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs",
+    "runnerSha256": "89b4b4f4b396c1de72b570decb9bf9820a69f51dfb7fa48ffd21a484894df4e2",
+    "cpuCheckerPath": "scripts/check-ai-assisted-v7-r5-stage4-sample-bound-topology-step-telemetry-cpu.mjs",
+    "cpuCheckerSha256": "4debb36c098b870e01ee3b3698bf3f4e70f1cc50b9293f3116f1fbfeaf63a8ac",
+    "trainerPath": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "trainerSha256": "cadd21b944da0a430b0643c0c7015926b5eea38aa3f56609953a73399fea986f",
+    "telemetryLibraryPath": "scripts/lib/ai-assisted-v7-r5-stage4-step-telemetry.mjs",
+    "telemetryLibrarySha256": "b44197e9628a78cd8f2f66c6a80f2f935b070877ef1e1c4d1ab81b46f4d4a9a1"
+  },
+  "fixedTaskIdentity": {
+    "fixedStageNumber": 4,
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    "seed": 20263722,
+    "requiredBoundarySides": ["west"],
+    "resolutionStage": {"width": 256, "height": 192},
+    "epochCount": 30,
+    "previewEpochs": [1, 5, 10, 20, 30],
+    "lateQualification": {
+      "requiredEpochs": [20, 30],
+      "minimumConsecutivePasses": 2,
+      "finalEpochMustPass": true,
+      "reviewAllPreviewEpochs": true,
+      "reviewThresholdsChanged": false,
+      "trainingTarget": false
+    },
+    "stage0ManifestPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4/ai-assisted-v7-r5-stage4-full-training-2026-08-05T10-21-08-137Z-stage-0/manifest.json",
+    "stage0ManifestSha256": "2dfcfd016734ef7d88e33d6f75b23b9d043df7d075b280827b304e1c89ede5ef",
+    "stage0CheckpointPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4/ai-assisted-v7-r5-stage4-full-training-2026-08-05T10-21-08-137Z-stage-0/complete-world-ai-assisted-conditional-denoiser.pt",
+    "stage0CheckpointSha256": "17c1d4e34e8e738bc042c0f99dad27afcc3bfd9337e3e220bc0e172c6e634453",
+    "autoencoderCheckpointPath": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/complete-world-ai-assisted-autoencoder.pt",
+    "autoencoderCheckpointSha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba",
+    "outputRunId": "ai-assisted-v7-r5-stage4-structured-stability-smoke-20260808-183823230",
+    "cpuRunId": "v7-r5-stage4-structured-stability-smoke-qualification-cpu-20260808-183823230"
+  },
+  "authorizedActions": {
+    "modifyExistingStage4SmokeRunner": true,
+    "modifyExistingStage4CpuChecker": true,
+    "preserveLegacyStage3AndStage4Behavior": true,
+    "runOneCpuPositiveNegativeRegression": true,
+    "runPythonPreflight": true,
+    "runCudaResourcePreflight": true,
+    "runDiskBudgetPreflight": true,
+    "atomicallyConsumeOneGpuExecutionAfterAllPreflights": true,
+    "readAndLoadBoundCheckpointsAfterGpuConsumption": true,
+    "createOptimizerAfterGpuConsumption": true,
+    "executeBackwardAfterGpuConsumption": true,
+    "modifyWeightsWithinOneSmoke": true,
+    "runOneFixedThirtyEpochGpuSmoke": true,
+    "saveFivePreviewsAndSeventeenMetrics": true,
+    "runMachineReviewWithUnchangedThresholds": true,
+    "saveCheckpointHashesAndTerminal": true,
+    "updateUniquePlanAndTaskCapsuleAfterClosure": true
+  },
+  "forbiddenActions": {
+    "useFailedPreviewPixelsAsTrainingTargets": true,
+    "useMachineReviewThresholdsAsTrainingTargets": true,
+    "changeMachineReviewThresholds": true,
+    "checkpointReadBeforeGpuConsumption": true,
+    "gpuUseBeforeAllPreflightsPass": true,
+    "stage4FullTraining": true,
+    "stage1": true,
+    "stage2": true,
+    "stage5StrictRevalidation": true,
+    "formalInference": true,
+    "checkpointPromotion": true,
+    "runtimeFrame": true,
+    "worldEntry": true,
+    "automaticRetry": true
+  },
+  "failurePolicy": {
+    "stopImmediately": true,
+    "automaticRetryAllowed": false
+  },
+  "ownerCommandZh": "授权在新的不可变命令范围内，绑定当前结构化稳定候选终态、未激活配置、支持合同及CPU报告；仅扩展现有Stage4 GPU Smoke运行器及CPU检查器，使当前结构化稳定候选读取并验证stage4LateStabilityQualification，保存并审核Epoch 1/5/10/20/30全部预览，但以Epoch 20和30连续通过且Epoch 30通过作为晚期稳定资格，保持每张预览审核阈值不变并保留旧Stage3、旧Stage4行为兼容。执行CPU正反回归及Python、CUDA资源和磁盘预检；全部通过后原子消费一次GPU授权，读取明确绑定的Stage0 Checkpoint与项目Autoencoder Checkpoint，创建优化器、执行.backward()及一次固定样本194、种子20263722、west拓扑、30 Epoch有界GPU Smoke，保存五张预览、17项指标、机器审核、模型前后哈希、Smoke Checkpoint和终态证据。失败立即停止且不自动重试。不授权Stage4完整训练、Stage1/2、第5阶段严格复验、正式推理、Checkpoint晋级、RuntimeFrame或进入世界。"
+}

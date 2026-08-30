@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "ai-painter-owner-action-request-input-v1",
+  "requestId": "owner-action-request-v7-mvp64-smoke-authorization-gate-repair-retry-resolution-20260802",
+  "subsystem": "ai_painter_v7_mvp64_training_program_authorization_gate",
+  "status": "resolved_owner_authorized",
+  "taskIdentity": {
+    "parentRequestId": "owner-action-request-v7-mvp64-smoke-authorization-gate-repair-retry-20260802",
+    "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+    "failedRunId": "ai-assisted-conditional-denoiser-v7-smoke-2026-08-02T02-11-55-426Z",
+    "repairScope": "python_v7_hashed_owner_activation_gate_only",
+    "authorizedSmokeRetryCount": 1
+  },
+  "ownerVisibleConclusionZh": "项目所有者已明确允许修复V7 Python授权门禁并重试一次冒烟。授权不允许修改数据、质量阈值、正式推理边界、RuntimeFrame或世界入口。",
+  "localSystemFindingZh": "第一次V7冒烟在训练开始和checkpoint创建之前，被Python训练器遗留的owner_approved字符串门禁拒绝；外层Node入口已经验证当前MVP64哈希授权。修复必须让Python独立验证同一份不可变授权文件及SHA-256，并继续拒绝旧延后授权。",
+  "blockingReasonCode": "resolved_owner_authorized_v7_python_hashed_activation_gate_repair_single_smoke_retry",
+  "whyCannotProceedZh": "本记录解除的仅是Python授权门禁修复和一次冒烟重试阻断；若唯一一次重试失败，必须立即停止且不得自动继续stage-0。",
+  "minimumRequestedActionZh": "实现V7 Python哈希授权门禁，运行CPU正反回归，然后只重试一次V7冒烟；冒烟通过后才恢复原已批准的stage-0/1/2顺序。",
+  "invariants": [
+    "dataset_and_capacity_hashes_remain_unchanged",
+    "old_deferred_authorization_remains_rejected",
+    "smoke_retry_count_is_exactly_one",
+    "stage_0_cannot_start_before_smoke_passes",
+    "formal_inference_runtime_frame_and_world_remain_blocked"
+  ],
+  "forbiddenActions": [
+    "change_training_quality_thresholds",
+    "accept_unhashed_or_missing_owner_authorization",
+    "accept_old_deferred_authorization_as_active",
+    "retry_smoke_more_than_once",
+    "start_stage_0_after_failed_smoke",
+    "generate_formal_inference_images",
+    "start_runtime_frame",
+    "enter_world"
+  ],
+  "ownerFacingMessageZh": "V7 Python授权门禁修复和一次冒烟重试已获批准；程序必须先完成CPU正反门禁回归，唯一重试失败即停。",
+  "nextActionAfterAuthorization": [
+    "repair_python_v7_hashed_owner_activation_gate",
+    "run_cpu_positive_and_negative_authorization_gate_regression",
+    "retry_v7_smoke_exactly_once",
+    "continue_stage_0_1_2_only_if_smoke_passes"
+  ],
+  "evidencePaths": [
+    ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-smoke-authorization-gate-repair-retry-20260802/request.json",
+    ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7/failures/ai-assisted-conditional-denoiser-v7-smoke-2026-08-02T02-11-55-426Z.json",
+    ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-gpu-training-activation-resolution-20260802/request.json",
+    ".runtime/ai-painter/ai-assisted-v7-gpu-training-readiness-checks/ai-assisted-v7-gpu-training-readiness-check-2026-08-02T01-53-15-339Z/readiness-report.json"
+  ],
+  "ownerDecision": {
+    "decision": "approved",
+    "commandRef": "owner-approved-v7-mvp64-python-authorization-gate-repair-single-smoke-retry-20260802",
+    "commandTextZh": "允许修复V7 Python授权门禁并重试一次冒烟",
+    "scope": "python_v7_hashed_authorization_gate_repair_and_one_smoke_retry_only"
+  },
+  "resolution": {
+    "parentRequestResolved": true,
+    "pythonAuthorizationGateRepairAuthorized": true,
+    "authorizedSmokeRetryCount": 1,
+    "stageSequenceAuthorizationRetainedFromOriginalActivation": true,
+    "formalInferenceAuthorized": false,
+    "runtimeFrameAuthorized": false,
+    "worldEntryAuthorized": false
+  }
+}

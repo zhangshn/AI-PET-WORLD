@@ -1,0 +1,211 @@
+{
+  "schemaVersion": "ai-assisted-v7-r5-stage3-coverage-convergence-candidate-v1",
+  "status": "isolated_stage3_coverage_convergence_candidate_cpu_verified_not_implemented_not_active",
+  "generatedBy": "local_ai_v7_r5_stage3_coverage_convergence_failure_learning_program",
+  "sourceEvidence": {
+    "review": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-internal/ai-assisted-v7-r5-stage3-internal-checkpoint-continuation-overfit-smoke-2026-08-04T13-23-54-684Z/fixed-preview-hard-gate-review.json",
+      "sha256": "766718a5cba23491f693e3c63bdf6bf40a01c3a7dbebfff13f91602065afec8a"
+    },
+    "manifest": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-internal/ai-assisted-v7-r5-stage3-internal-checkpoint-continuation-overfit-smoke-2026-08-04T13-23-54-684Z/manifest.json",
+      "sha256": "91f36faa6293eef911acc313ede0e11855f5fef7bda1e8c1823dff4ac28cd6d9"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-internal/ai-assisted-v7-r5-stage3-internal-checkpoint-continuation-overfit-smoke-2026-08-04T13-23-54-684Z/run-terminal-registration.json",
+      "sha256": "231152e418e6d2a41700ac8cf75db188a288ef6400133b91c61d7ccb721b1710"
+    },
+    "finalization": {
+      "path": ".runtime/ai-painter/v7-r5-stage3-internal-overfit-smoke-finalizations/ai-assisted-v7-r5-stage3-overfit-smoke-finalization-2026-08-04T13-23-54-684Z/finalization-report.json",
+      "sha256": "a6e5cd96817ed2ba6761123786ebe3174513a47dddbbaf83c5f6b3e0c865bc6f"
+    },
+    "checkpointIdentity": {
+      "path": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-internal/ai-assisted-v7-r5-stage3-internal-checkpoint-continuation-overfit-smoke-2026-08-04T13-23-54-684Z/complete-world-ai-assisted-conditional-denoiser.pt",
+      "sha256": "39ce5fc5ac9766795f9e5084a926f1fa1f5237720456010464f69f24098e3514",
+      "fileHashedOnly": true,
+      "deserialized": false,
+      "loadedIntoModel": false
+    },
+    "parentCandidate": {
+      "path": "data/ai-painter/system-governance/v7-r5-stage3-internal-path-coverage-boundary-candidate.json",
+      "sha256": "54004f535bd75d018040cf3f651cd6dcc399b0cb0617fb796f3a339aefb3843c"
+    },
+    "selectionContract": {
+      "path": "data/ai-painter/system-governance/v7-r5-stage3-internal-isolated-config-selection-contract.json",
+      "sha256": "0df8084664460711a641365bed0e6435893f7aa8e8343fad3c9702e2eb3b6de3"
+    }
+  },
+  "failureAnalysis": {
+    "previewCount": 4,
+    "passedBaselineEpoch": 1,
+    "rejectedEpochs": [
+      10,
+      20,
+      30
+    ],
+    "issueCode": "condition_terrain_path_ground_coverage_mismatch",
+    "expectedNonZeroRatio": 0.0291,
+    "unchangedMaximumCoverageRatio": 3,
+    "coverageRatios": [
+      {
+        "epoch": 1,
+        "coverageRatio": 2.8606,
+        "passed": true
+      },
+      {
+        "epoch": 10,
+        "coverageRatio": 3.1751,
+        "passed": false
+      },
+      {
+        "epoch": 20,
+        "coverageRatio": 3.6168,
+        "passed": false
+      },
+      {
+        "epoch": 30,
+        "coverageRatio": 3.0493,
+        "passed": false
+      }
+    ],
+    "rejectedCoverageExcess": [
+      {
+        "epoch": 10,
+        "excessAboveUnchangedGate": 0.17510000000000003
+      },
+      {
+        "epoch": 20,
+        "excessAboveUnchangedGate": 0.6168
+      },
+      {
+        "epoch": 30,
+        "excessAboveUnchangedGate": 0.04930000000000012
+      }
+    ],
+    "minimumRejectedCoverageRatio": 3.0493,
+    "maximumRejectedCoverageRatio": 3.6168,
+    "finalRejectedCoverageRatio": 3.0493,
+    "monotonicConvergenceObserved": false,
+    "authorizedBoundaryStable": true,
+    "objectSemanticsStable": true,
+    "conclusion": "path_visual_activation_mass_passes_initially_then_drifts_and_oscillates_above_the_unchanged_gate"
+  },
+  "proposal": {
+    "boundedRepairVersion": "v7_r5_stage3_internal_path_coverage_convergence_candidate_v2",
+    "parentBoundedRepairVersion": "v7_r5_stage3_internal_path_coverage_boundary_candidate_v1",
+    "implementationStatus": "proposal_only_requires_separate_owner_authorization",
+    "trainingAuthorizationStatus": "not_authorized_proposal_only",
+    "repairContractId": "local-ai-v7-r5-stage3-path-coverage-convergence-proposal-20260804",
+    "repairMode": "bounded_original_target_activation_mass_calibration_and_short_trajectory_drift_damping",
+    "checkpointContinuationProposal": {
+      "sourceCheckpointPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-internal/ai-assisted-v7-r5-stage3-internal-checkpoint-continuation-overfit-smoke-2026-08-04T13-23-54-684Z/complete-world-ai-assisted-conditional-denoiser.pt",
+      "sourceCheckpointSha256": "39ce5fc5ac9766795f9e5084a926f1fa1f5237720456010464f69f24098e3514",
+      "loadingAuthorizedNow": false,
+      "continuationEpochs": {
+        "minimum": 10,
+        "maximum": 30,
+        "selectedValue": null
+      },
+      "evaluationInterval": 10
+    },
+    "pathActivationMassCalibrationProposal": {
+      "conditionChannel": "terrain_path_ground",
+      "targetSource": "original_owner_approved_rgb_activation_mass_with_original_condition_mask_only",
+      "failedPreviewPixelsUsedAsTrainingTargets": false,
+      "machineReviewThresholdUsedAsTrainingTarget": false,
+      "lossForm": "symmetric_log_activation_mass_ratio_plus_outside_support_leakage",
+      "weight": {
+        "minimum": 0.25,
+        "maximum": 0.75,
+        "selectedValue": null
+      }
+    },
+    "shortTrajectoryCoverageDriftProposal": {
+      "source": "current_training_prediction_steps_against_original_target_activation_mass_only",
+      "failedPreviewTrajectoryUsedAsTrainingTarget": false,
+      "objective": "damp_path_activation_mass_drift_across_denoising_steps_without_learning_review_outputs",
+      "weight": {
+        "minimum": 0.1,
+        "maximum": 0.35,
+        "selectedValue": null
+      }
+    },
+    "preserveExistingTrainingContract": {
+      "originalApprovedTargetReplayPassesPerEpoch": 2,
+      "pathInteriorRgbWeight": 2,
+      "pathForbiddenBoundaryRgbWeight": 2,
+      "pathCoverageCalibrationWeight": 0.75,
+      "authorizedBoundaryTopologyWeight": 0.5,
+      "objectSemanticWeightChanges": null,
+      "boundaryTopologyChanges": null
+    },
+    "smokeStabilityGate": {
+      "tailEpochs": [
+        10,
+        20,
+        30
+      ],
+      "requiredConsecutiveTailPasses": 3,
+      "requireAllMachineReviewsPassed": true,
+      "requireZeroPathCoverageIssues": true,
+      "requireZeroUnauthorizedBoundaryContacts": true,
+      "requireZeroObjectSemanticIssues": true,
+      "preserveReviewThresholds": true
+    },
+    "ownerTrainingAuthorization": {
+      "status": "not_authorized_proposal_only",
+      "trainerImplementationAuthorized": false,
+      "checkpointLoadingAuthorized": false,
+      "optimizerCreationAuthorized": false,
+      "modelWeightMutationAuthorized": false,
+      "gpuTrainingAuthorizedNow": false,
+      "fullTrainingAuthorized": false,
+      "strictRevalidationAuthorized": false,
+      "formalInferenceAuthorized": false,
+      "runtimeFrameAuthorized": false,
+      "worldEntryAuthorized": false
+    }
+  },
+  "reviewThresholdPolicy": "preserved_unchanged_not_used_as_training_target",
+  "promotionBoundary": {
+    "fixedStageNumber": 3,
+    "addsNewFixedStage": false,
+    "candidateActive": false,
+    "selectedExecutionValuesPresent": false,
+    "checkpointDeserialized": false,
+    "checkpointLoaded": false,
+    "optimizerCreated": false,
+    "modelWeightsModified": false,
+    "gpuTrainingStarted": false,
+    "validationStarted": false,
+    "formalInferenceStarted": false,
+    "runtimeFrameStarted": false,
+    "worldEntered": false,
+    "nextIndependentAuthorization": "r5_stage3_coverage_convergence_candidate_trainer_support_and_cpu_regression_only"
+  },
+  "candidateContract": {
+    "status": "r5_stage3_coverage_convergence_candidate_contract_valid_proposal_only",
+    "reviewThresholdsPreserved": true,
+    "machineReviewThresholdUsedAsTrainingTarget": false,
+    "failedPreviewsUsedAsTrainingTargets": false,
+    "fixedStageNumber": 3,
+    "addsNewFixedStage": false
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage3-coverage-convergence/local-ai-v7-r5-stage3-coverage-convergence-failure-learning-2026-08-04T15-05-51-063Z/cpu-positive-negative-regression.json",
+    "sha256": "ede1a5b6ab3a8430e7e63d1d24ea748462478bb16c88d94a12fe6b7e0c830678",
+    "status": "passed_cpu_only_coverage_convergence_candidate_not_implemented_not_active"
+  },
+  "failureAnalysisEvidence": {
+    "path": ".runtime/ai-painter/local-ai-failure-learning-r5-stage3-coverage-convergence/local-ai-v7-r5-stage3-coverage-convergence-failure-learning-2026-08-04T15-05-51-063Z/failure-analysis.json",
+    "sha256": "f169067c566c617467caaaf43b7425c3a76460b94e4a9686c9335e8940e58529"
+  },
+  "ownerAuthorization": {
+    "path": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-coverage-convergence-failure-learning-20260804/request.json",
+    "sha256": "25f6fd9a9bf3758ab6b123afd941f86ceb093561d0ef13b59f421b8da784ed08",
+    "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-coverage-convergence-failure-learning-20260804/authorization-consumption.json",
+    "consumptionSha256": "ec4f22883cc1a3b1a794ab9830d773e517022584ee09b15696efb6d2e7448a93",
+    "commandRef": "owner-authorized-v7-r5-stage3-coverage-convergence-failure-learning-cpu-regression-20260804",
+    "scope": "read_r5_stage3_epoch_10_20_30_path_coverage_rejections_compile_isolated_coverage_convergence_candidate_and_cpu_regression_only"
+  }
+}

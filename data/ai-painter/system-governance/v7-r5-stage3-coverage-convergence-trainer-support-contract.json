@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "ai-assisted-v7-r5-stage3-coverage-convergence-trainer-support-contract-v1",
+  "status": "implemented_cpu_verified_not_selected_not_active",
+  "recordedAt": "2026-08-05T01:42:50.069+08:00",
+  "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
+  "fixedStageNumber": 3,
+  "addsNewFixedStage": false,
+  "candidate": {
+    "path": "data/ai-painter/system-governance/v7-r5-stage3-internal-path-coverage-convergence-candidate.json",
+    "sha256": "20902ff2aed25fff6575c6a46e1cb44188ccee0565a2bbcbe8bfe552dab04615",
+    "executionValuesSelected": false,
+    "active": false
+  },
+  "implementation": {
+    "trainerPath": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+    "trainerBeforeSha256": "f41597ec380c068fc9ea9d87dcea56f214bc6a3bc4bff5ddb6875f90ae19b7eb",
+    "trainerAfterSha256": "e337fbcbdbef1a740c43615e3cc9ac4d62ae4f8d53f754b0e012b104373014da",
+    "cpuCheckerPath": "ml/ai-painter/scripts/check_ai_assisted_v7_r5_stage3_internal_trainer_support_cpu.py",
+    "cpuCheckerBeforeSha256": "5e92cbd991ca5be8aae5a9d093e74b883d97a22ed6d11e67199bfda13edd299b",
+    "cpuCheckerAfterSha256": "08fbec6aadcd6ff1b6db744627fd2398e18ea3f0ce04186dbb5a29b9a7ad8470",
+    "losses": [
+      {
+        "name": "pathActivationMassCalibrationLoss",
+        "targetSource": "original_owner_approved_rgb_activation_mass_with_original_condition_mask_only",
+        "lossForm": "symmetric_log_activation_mass_ratio_plus_outside_support_leakage"
+      },
+      {
+        "name": "shortTrajectoryCoverageDriftLoss",
+        "source": "current_training_prediction_steps_against_original_target_activation_mass_only"
+      }
+    ],
+    "failedPreviewPixelsUsedAsTrainingTargets": false,
+    "machineReviewThresholdUsedAsTrainingTarget": false
+  },
+  "cpuRegression": {
+    "path": ".runtime/ai-painter/v7-r5-stage3-coverage-convergence-trainer-support-cpu-regressions/20260805-013845045/report.json",
+    "sha256": "f39fc5441242ece50849e47022119b924fec4f6b6e712e4dc1e20977a9493225",
+    "status": "passed_cpu_only_stage3_coverage_convergence_trainer_support_not_selected_not_active",
+    "positiveAssertionsPassed": 21,
+    "negativeAssertionsPassed": 19
+  },
+  "preservedEvidence": {
+    "sourceCheckpointPath": ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-internal/ai-assisted-v7-r5-stage3-internal-checkpoint-continuation-overfit-smoke-2026-08-04T13-23-54-684Z/complete-world-ai-assisted-conditional-denoiser.pt",
+    "sourceCheckpointSha256": "39ce5fc5ac9766795f9e5084a926f1fa1f5237720456010464f69f24098e3514"
+  },
+  "authorization": {
+    "requestPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-coverage-convergence-trainer-support-20260805/request.json",
+    "requestSha256": "541a89b7144833798da632fd24c99aa19bbff2c84457fab8907be8ad137067a5",
+    "consumptionPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-coverage-convergence-trainer-support-20260805/authorization-consumption.json",
+    "consumptionSha256": "e396ed5e193938b6a90dcd98e26456e1c5b7b286b8e90877b5732a40c3eea7ce"
+  },
+  "executionBoundary": {
+    "executionValuesSelected": false,
+    "candidateActive": false,
+    "checkpointLoaded": false,
+    "optimizerCreated": false,
+    "modelWeightsModified": false,
+    "gpuTrainingStarted": false,
+    "fullTrainingStarted": false,
+    "strictRevalidationStarted": false,
+    "formalInferenceStarted": false,
+    "runtimeFrameStarted": false,
+    "worldEntered": false
+  }
+}
