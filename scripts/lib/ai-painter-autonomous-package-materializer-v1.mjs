@@ -7,6 +7,8 @@ export const AUTONOMOUS_PACKAGE_ROOT = ".runtime/ai-painter/autonomous-closed-lo
 
 export function materializeAutonomousClosedLoopPackage(candidate, {
   root = process.cwd(), recordedAtUtc = new Date().toISOString(),
+  recoverExistingExact = false,
+  _testHooks = null,
 } = {}) {
   validateCandidate(candidate);
   const programLineage = Object.fromEntries(Object.entries(candidate.programFiles).map(([role, relativePath]) => [
@@ -40,24 +42,72 @@ export function materializeAutonomousClosedLoopPackage(candidate, {
   const relativeRoot = `${AUTONOMOUS_PACKAGE_ROOT}/${spec.packageIdentity}`;
   const absoluteRoot = resolveInsideRoot(root, relativeRoot);
   fs.mkdirSync(path.dirname(absoluteRoot), { recursive: true });
-  assert(!fs.existsSync(absoluteRoot), "autonomous package identity already exists");
-  fs.mkdirSync(absoluteRoot, { recursive: false });
+  if (fs.existsSync(absoluteRoot)) {
+    assert(recoverExistingExact,
+      "autonomous package identity already exists");
+    assert(fs.statSync(absoluteRoot).isDirectory(),
+      "autonomous package identity is not a directory");
+  } else {
+    fs.mkdirSync(absoluteRoot, { recursive: false });
+  }
+  if (typeof _testHooks?.afterPackageRootCreated === "function") {
+    _testHooks.afterPackageRootCreated({ absoluteRoot, packageIdentity: spec.packageIdentity });
+  }
   const packagePath = path.join(absoluteRoot, "package.json");
   const manifestPath = path.join(absoluteRoot, "manifest.json");
-  fs.writeFileSync(packagePath, bytes, { flag: "wx" });
-  fs.writeFileSync(manifestPath, `${JSON.stringify({
+  const manifestBytes = Buffer.from(`${JSON.stringify({
     schemaVersion: "ai-painter-autonomous-closed-loop-package-manifest-v1",
     status: "materialized_not_started", packageIdentity: spec.packageIdentity,
     packagePath: `${relativeRoot}/package.json`, packageSha256,
     ownerAuthorizationRequired: false, ownerResponseRequired: false,
     recordedAtUtc,
-  }, null, 2)}\n`, { flag: "wx" });
+  }, null, 2)}\n`, "utf8");
+  persistExactFile(packagePath, bytes, { recoverExistingExact });
+  if (typeof _testHooks?.afterPackagePersisted === "function") {
+    _testHooks.afterPackagePersisted({ packagePath, packageSha256 });
+  }
+  persistExactFile(manifestPath, manifestBytes, { recoverExistingExact });
   return {
     packageIdentity: spec.packageIdentity,
     packagePath: `${relativeRoot}/package.json`, packageSha256,
     manifestPath: `${relativeRoot}/manifest.json`,
     ownerAuthorizationRequired: false,
   };
+}
+
+function persistExactFile(targetPath, bytes, { recoverExistingExact }) {
+  if (fs.existsSync(targetPath)) {
+    assert(recoverExistingExact,
+      `autonomous package file already exists: ${path.basename(targetPath)}`);
+    assert(fs.statSync(targetPath).isFile(),
+      `autonomous package path is not a file: ${path.basename(targetPath)}`);
+    assert(fs.readFileSync(targetPath).equals(bytes),
+      `autonomous package recovery bytes differ: ${path.basename(targetPath)}`);
+    return;
+  }
+  const stagedPath = `${targetPath}.staged`;
+  if (fs.existsSync(stagedPath)) {
+    assert(fs.statSync(stagedPath).isFile(),
+      `autonomous package staged path is invalid: ${path.basename(stagedPath)}`);
+    assert(fs.readFileSync(stagedPath).equals(bytes),
+      `autonomous package staged bytes differ: ${path.basename(targetPath)}`);
+  } else {
+    const descriptor = fs.openSync(stagedPath, "wx", 0o600);
+    try {
+      fs.writeFileSync(descriptor, bytes);
+      fs.fsyncSync(descriptor);
+    } finally {
+      fs.closeSync(descriptor);
+    }
+  }
+  try {
+    fs.linkSync(stagedPath, targetPath);
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+    assert(fs.readFileSync(targetPath).equals(bytes),
+      `autonomous package concurrent recovery bytes differ: ${path.basename(targetPath)}`);
+  }
+  fs.unlinkSync(stagedPath);
 }
 
 function validateCandidate(candidate) {

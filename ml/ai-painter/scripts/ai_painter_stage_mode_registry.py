@@ -169,6 +169,9 @@ JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_SMOKE_STATUS = (
 JOINT_CONDITION_LOCAL_TRANSPORT_STAGE4_FULL_DATA_SCREEN_STATUS = (
     "local_ai_stage4_joint_condition_local_transport_full_data_screen_active"
 )
+STAGE4_SEMANTIC_TRANSPORT_V2_CONTROLLED_SMOKE_STATUS = (
+    "local_ai_stage4_semantic_transport_v2_controlled_smoke_active"
+)
 STAGE4_PER_CLASS_FINAL_VISIBLE_REFERENCE_FEATURE_STRUCTURE_OBLIGATION_ID = (
     "stage4_per_class_final_visible_reference_feature_structure_obligation_v1"
 )
@@ -298,6 +301,9 @@ _FULL_BACKBONE_SPATIAL_AFFINE_DENOISER = (
 )
 _JOINT_CONDITION_LOCAL_TRANSPORT_DENOISER = (
     "stage4_full_backbone_joint_condition_local_transport_denoiser_v1"
+)
+_STAGE4_SEMANTIC_TRANSPORT_V2 = (
+    "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2"
 )
 
 
@@ -744,6 +750,16 @@ FORMAL_MODE_REGISTRY = ModeRegistry(
             "full_data_screen",
             "joint_condition_local_transport_stage4_full_data_screen_adapter",
             None,
+            True,
+        ),
+        ModeSpec(
+            "stage4_semantic_transport_v2_controlled_smoke",
+            STAGE4_SEMANTIC_TRANSPORT_V2_CONTROLLED_SMOKE_STATUS,
+            _STAGE4_SEMANTIC_TRANSPORT_V2,
+            4,
+            "single_sample_smoke",
+            "stage4_semantic_transport_v2_controlled_smoke_adapter",
+            "validation",
             True,
         ),
         ModeSpec(

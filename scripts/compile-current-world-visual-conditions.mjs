@@ -4,14 +4,19 @@ import path from "node:path"
 import sharp from "sharp"
 
 const ROOT = process.cwd()
-const TASK_ROOT = path.join(ROOT, ".runtime", "ai-painter", "world-visual-generation-task-packages")
+const CONDITION_CONTRACT_PATH = "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json"
+const conditionContractBytes = fs.readFileSync(resolveProjectPath(CONDITION_CONTRACT_PATH))
+const conditionContract = JSON.parse(conditionContractBytes.toString("utf8"))
+const conditionContractSha256 = sha256(conditionContractBytes)
 const explicitTaskPath = argumentValue("--task")
 const explicitManifestPath = argumentValue("--task-manifest")
-const latestTask = explicitManifestPath
-  ? readRequiredJson(resolveProjectPath(explicitManifestPath))
-  : readRequiredJson(path.join(TASK_ROOT, "latest.json"))
-const taskPath = resolveProjectPath(explicitTaskPath ?? latestTask.taskPath)
-const task = readRequiredJson(taskPath)
+assert(explicitManifestPath, "--task-manifest is required; legacy latest task fallback is forbidden")
+const taskManifestPath = resolveProjectPath(explicitManifestPath)
+const taskManifestBytes = fs.readFileSync(taskManifestPath)
+const taskManifest = JSON.parse(taskManifestBytes.toString("utf8"))
+const taskPath = resolveProjectPath(explicitTaskPath ?? taskManifest.taskPath)
+const taskBytes = fs.readFileSync(taskPath)
+const task = JSON.parse(taskBytes.toString("utf8"))
 const taskDir = path.dirname(taskPath)
 const outputDir = path.join(taskDir, "compiled-conditions")
 const channelDir = path.join(outputDir, "channels")
@@ -19,19 +24,36 @@ const manifestPath = path.join(outputDir, "manifest.json")
 const conditionPackPath = path.join(outputDir, "condition-pack.json")
 const timestamp = new Date().toISOString()
 
+assert(conditionContract.schemaVersion === "ai-painter-complete-map-condition-contract-v1", "unsupported current condition contract schema")
+assert(conditionContract.status === "active_current_machine_condition_contract", "current condition contract is not active")
+assert(conditionContract.authority === "local_ai_pet_world_program", "current condition contract authority mismatch")
 assert(task.schemaVersion === "runtime-frame-generation-task-v1", "unsupported task package schema")
-assert(task.taskId === latestTask.taskId, "task identity does not match latest pointer")
-assert(task.dictionaryVersionId === latestTask.dictionaryVersionId, "dictionary identity mismatch")
-assert(task.worldId === latestTask.worldId && task.tick === latestTask.tick, "world identity mismatch")
+assert(task.taskId === taskManifest.taskId, "task identity does not match the explicit task manifest")
+assert(task.taskSha256 === taskManifest.taskSha256, "task SHA-256 does not match the explicit task manifest")
+assert(task.dictionaryVersionId === taskManifest.dictionaryVersionId, "dictionary identity mismatch")
+assert(task.worldId === taskManifest.worldId && task.tick === taskManifest.tick, "world identity mismatch")
+assert(typeof task.regionId === "string" && task.regionId.length > 0, "current task regionId binding missing")
+assert(task.regionId === taskManifest.regionId, "task regionId does not match the explicit task manifest")
+assert(typeof task.factHash === "string" && /^[a-f0-9]{64}$/u.test(task.factHash), "current task factHash binding missing or invalid")
+assert(task.factHash === taskManifest.factHash, "task factHash does not match the explicit task manifest")
+assert(typeof task.datasetReleaseIdentity === "string" && task.datasetReleaseIdentity.length > 0, "current task datasetReleaseIdentity binding missing")
+assert(task.datasetReleaseIdentity === taskManifest.datasetReleaseIdentity, "task datasetReleaseIdentity does not match the explicit task manifest")
 assert(task.outputSize?.frameScope === "complete_runtime_frame", "condition compiler requires a complete map task")
 assert(Number.isInteger(task.outputSize?.width) && Number.isInteger(task.outputSize?.height), "invalid output size")
 assert(task.sourceBindings?.visualFactManifestPath, "visual fact manifest binding missing")
+assert(typeof taskManifest.directorPath === "string" && taskManifest.directorPath.length > 0, "explicit task manifest director path missing")
+assert(task.sourceBindings?.directorOutputPath === taskManifest.directorPath, "task director path does not match the explicit task manifest")
+const taskCanonical = JSON.parse(JSON.stringify(task))
+delete taskCanonical.taskSha256
+assert(sha256(Buffer.from(JSON.stringify(taskCanonical))) === task.taskSha256, "task package canonical SHA-256 mismatch")
 
 const visualFactPath = resolveProjectPath(task.sourceBindings.visualFactManifestPath)
 const visualFactBytes = fs.readFileSync(visualFactPath)
 const visualFacts = JSON.parse(visualFactBytes.toString("utf8"))
 assert(visualFacts.manifestId === task.sourceBindings.visualFactManifestId, "visual fact manifest identity mismatch")
 assert(visualFacts.worldId === task.worldId && visualFacts.tick === task.tick, "visual fact world identity mismatch")
+assert(visualFacts.regionId === task.regionId, "visual fact region identity mismatch")
+assert(visualFacts.factHash === task.factHash, "visual fact factHash identity mismatch")
 assert(visualFacts.passed === true, "visual fact manifest did not pass")
 assert((visualFacts.forbiddenLeakIds ?? []).length === 0, "visual fact manifest contains forbidden leaks")
 assert(visualFacts.manifestSha256 === task.sourceBindings.visualFactManifestSha256, "visual fact manifest hash mismatch")
@@ -44,6 +66,7 @@ assert(
 
 const width = task.outputSize.width
 const height = task.outputSize.height
+assert(width === conditionContract.scope?.nativeWidth && height === conditionContract.scope?.nativeHeight, "task output size differs from the current condition contract")
 const terrainRegions = task.spatialLayers?.terrainRegions ?? []
 const walkableRegions = task.spatialLayers?.walkableRegions ?? []
 const collisionRegions = task.spatialLayers?.collisionRegions ?? []
@@ -53,6 +76,7 @@ assert(walkableRegions.length > 0, "walkable regions missing")
 assert(collisionRegions.length > 0, "collision regions missing")
 assert(objectFootprints.length > 0, "object footprints missing")
 
+assert(!fs.existsSync(outputDir), "condition output directory already exists; package output reuse is forbidden")
 fs.mkdirSync(channelDir, { recursive: true })
 
 const terrainKinds = ["grass", "water", "path_ground", "shoreline", "natural_boundary", "mud_patch", "tall_grass"]
@@ -145,6 +169,19 @@ channels.push(await writeChannel({
   sourceRefs: ["ecology/single-map-ecology-fields", "transition/grass-to-water"],
 }))
 
+const compiledChannelOrder = channels.map((channel) => channel.id)
+assert(
+  JSON.stringify(compiledChannelOrder) === JSON.stringify(conditionContract.tensorContract?.channelOrder),
+  "compiled condition channel order differs from the current machine contract",
+)
+assert(channels.length === conditionContract.tensorContract?.channelCount, "compiled condition channel count differs from the current machine contract")
+for (const channel of channels) {
+  const definition = conditionContract.channelDefinitions?.find((entry) => entry.id === channel.id)
+  assert(definition, `condition channel is not defined by the current machine contract: ${channel.id}`)
+  assert(channel.dtype === conditionContract.tensorContract?.storage?.dtype, `condition channel dtype differs from contract: ${channel.id}`)
+  assert(JSON.stringify(channel.valueRange) === JSON.stringify(conditionContract.tensorContract?.storage?.valueRangeInclusive), `condition channel range differs from contract: ${channel.id}`)
+}
+
 const unavailableChannels = [
   unavailable("depth", "current task contains no authoritative depth geometry"),
   unavailable("contact_shadow", "light direction and authoritative shadow footprint are not present in current facts"),
@@ -161,21 +198,47 @@ const conditionPack = {
   status: "compiled_conditions_ready",
   outputKind: "model_condition_only_no_rgb",
   changesWorldFacts: false,
+  changesVisualFactManifest: false,
   generatesPlayerFacingPixels: false,
   taskId: task.taskId,
   taskSha256: task.taskSha256,
   dictionaryVersionId: task.dictionaryVersionId,
   worldId: task.worldId,
+  regionId: task.regionId,
   ownerId: task.ownerId,
   tick: task.tick,
+  factHash: task.factHash,
+  datasetReleaseIdentity: task.datasetReleaseIdentity,
   worldProfileId: task.worldProfileId,
   earthParameterSnapshotId: task.earthParameterSnapshotId,
   visualFactManifestId: visualFacts.manifestId,
   visualFactManifestSha256: task.sourceBindings.visualFactManifestSha256,
+  identityBindings: {
+    conditionContractIdentity: conditionContract.conditionContractIdentity,
+    conditionContractPath: CONDITION_CONTRACT_PATH,
+    conditionContractSha256,
+    conditionPackageId: `visual-conditions-${task.taskId}`,
+    conditionPackagePath: projectPath(conditionPackPath),
+    conditionPackageSha256: null,
+    taskPackageId: task.taskId,
+    taskPackagePath: projectPath(taskPath),
+    taskPackageSha256: task.taskSha256,
+    taskManifestPath: projectPath(taskManifestPath),
+    taskManifestSha256: sha256(taskManifestBytes),
+    worldId: task.worldId,
+    regionId: task.regionId,
+    tick: task.tick,
+    factHash: task.factHash,
+    visualFactManifestId: visualFacts.manifestId,
+    visualFactManifestPath: task.sourceBindings.visualFactManifestPath,
+    visualFactManifestSha256: task.sourceBindings.visualFactManifestSha256,
+    dictionaryVersionId: task.dictionaryVersionId,
+    datasetReleaseIdentity: task.datasetReleaseIdentity,
+  },
   sourceBindings: {
     taskPackagePath: projectPath(taskPath),
-    taskManifestPath: latestTask.manifestPath,
-    directorOutputPath: latestTask.directorPath,
+    taskManifestPath: projectPath(taskManifestPath),
+    directorOutputPath: taskManifest.directorPath,
     visualFactManifestPath: task.sourceBindings.visualFactManifestPath,
     dictionaryPath: task.sourceBindings.dictionaryPath,
     datasetPackagePath: task.sourceBindings.datasetPackagePath,
@@ -221,8 +284,13 @@ const conditionPack = {
   bootstrapInferenceGate: task.bootstrapInferenceGate,
 }
 
-const packCanonical = JSON.stringify(conditionPack)
-conditionPack.conditionPackSha256 = sha256(Buffer.from(packCanonical))
+assert(sha256(fs.readFileSync(taskPath)) === sha256(taskBytes), "task package changed during condition compilation")
+assert(sha256(fs.readFileSync(visualFactPath)) === sha256(visualFactBytes), "VisualFactManifest changed during condition compilation")
+const packCanonical = JSON.parse(JSON.stringify(conditionPack))
+delete packCanonical.conditionPackSha256
+delete packCanonical.identityBindings.conditionPackageSha256
+conditionPack.conditionPackSha256 = sha256(Buffer.from(JSON.stringify(packCanonical)))
+conditionPack.identityBindings.conditionPackageSha256 = conditionPack.conditionPackSha256
 writeJson(conditionPackPath, conditionPack)
 
 const manifest = {
@@ -232,17 +300,23 @@ const manifest = {
   conditionPackSha256: conditionPack.conditionPackSha256,
   status: conditionPack.status,
   outputKind: conditionPack.outputKind,
+  changesWorldFacts: false,
+  changesVisualFactManifest: false,
   createdAt: timestamp,
   createdAtAsiaShanghai: conditionPack.createdAtAsiaShanghai,
   taskId: task.taskId,
   taskSha256: task.taskSha256,
   dictionaryVersionId: task.dictionaryVersionId,
   worldId: task.worldId,
+  regionId: task.regionId,
   ownerId: task.ownerId,
   tick: task.tick,
+  factHash: task.factHash,
+  datasetReleaseIdentity: task.datasetReleaseIdentity,
   worldProfileId: task.worldProfileId,
   earthParameterSnapshotId: task.earthParameterSnapshotId,
   visualFactManifestId: visualFacts.manifestId,
+  identityBindings: { ...conditionPack.identityBindings },
   canvas: conditionPack.canvas,
   channelCount: channels.length,
   unavailableChannelCount: unavailableChannels.length,
@@ -466,7 +540,9 @@ function readRequiredJson(filePath) {
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true })
-  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`)
+  const temporaryPath = `${filePath}.${process.pid}.${crypto.randomUUID()}.tmp`
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, { flag: "wx" })
+  fs.renameSync(temporaryPath, filePath)
 }
 
 function sha256(bytes) {

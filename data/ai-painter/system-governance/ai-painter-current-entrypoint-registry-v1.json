@@ -2,7 +2,7 @@
   "schemaVersion": "ai-painter-current-entrypoint-registry-v1",
   "contractId": "ai-painter-current-entrypoint-registry-v1",
   "status": "active",
-  "purpose": "Define the only package entrypoints that the current local AI Painter autonomous runtime may resolve. All other historical AI Painter and Stage4 scripts remain immutable evidence and are not current execution sources.",
+  "purpose": "Define the only package entrypoints that the current local AI Painter autonomous runtime may resolve. Retired Stage4 candidate and training entrypoints are preserved only in the SHA-bound non-dispatchable audit index.",
   "resolverIdentity": "local_ai_painter_current_entrypoint_resolver",
   "normalAuthority": "local_ai_pet_world_program",
   "ownerInNormalStateMachine": false,
@@ -58,171 +58,71 @@
       "role": "policy_boundary_recording"
     },
     {
-      "packageScript": "run:stage4-three-component-smoke-failure-boundary-adjudication",
-      "entryFile": "scripts/run-stage4-three-component-smoke-failure-boundary-adjudication-v2.mjs",
-      "role": "current_stage4_cpu_adjudication"
+      "packageScript": "verify:ai-painter-stage4-full-resolution-typed-semantic-transport-rgb-responsibility-cpu-contract",
+      "entryFile": "scripts/check-ai-painter-stage4-full-resolution-typed-semantic-transport-rgb-responsibility.mjs",
+      "role": "stage4_successor_cpu_contract_verification"
     },
     {
-      "packageScript": "materialize:stage4-three-component-smoke-failure-boundary-package",
-      "entryFile": "scripts/materialize-stage4-three-component-smoke-failure-boundary-local-package.mjs",
-      "role": "current_stage4_local_package_materialization"
+      "packageScript": "run:ai-painter-stage4-v2-cpu-contract-acceptance",
+      "entryFile": "scripts/run-ai-painter-stage4-v2-cpu-contract-acceptance.mjs",
+      "role": "stage4_v2_cpu_contract_acceptance_and_lifecycle_advance"
     },
     {
-      "packageScript": "check:ai-painter-stage4-bounded-candidate-planner",
-      "entryFile": "scripts/check-ai-painter-stage4-bounded-candidate-planner.mjs",
-      "role": "stage4_bounded_candidate_cpu_regression"
+      "packageScript": "plan:ai-painter-stage4-v2-readonly-gpu-qualification",
+      "entryFile": "scripts/plan-ai-painter-stage4-v2-readonly-gpu-qualification.mjs",
+      "role": "stage4_v2_cpu_only_readonly_gpu_qualification_planning"
     },
     {
-      "packageScript": "materialize:ai-painter-stage4-bounded-candidate",
-      "entryFile": "scripts/materialize-ai-painter-stage4-bounded-candidate.mjs",
-      "role": "stage4_bounded_candidate_materialization"
+      "packageScript": "launch:ai-painter-stage4-v2-readonly-gpu-qualification-background",
+      "entryFile": "scripts/launch-ai-painter-stage4-v2-readonly-gpu-qualification-background.mjs",
+      "role": "stage4_v2_readonly_gpu_qualification_background_launch"
     },
     {
-      "packageScript": "check:ai-painter-stage4-post-decode-failure-bounded-planning",
-      "entryFile": "scripts/check-ai-painter-stage4-post-decode-failure-bounded-planning.mjs",
-      "role": "stage4_post_decode_failure_bounded_planning_cpu_regression"
+      "packageScript": "adjudicate:ai-painter-stage4-v2-readonly-gpu-qualification-failure",
+      "entryFile": "scripts/adjudicate-ai-painter-stage4-v2-readonly-gpu-qualification-failure.mjs",
+      "role": "stage4_v2_readonly_gpu_qualification_failure_adjudication"
     },
     {
-      "packageScript": "run:ai-painter-stage4-post-decode-failure-bounded-planning",
-      "entryFile": "scripts/run-ai-painter-stage4-post-decode-failure-bounded-planning.mjs",
-      "role": "stage4_post_decode_failure_bounded_planning_execution"
+      "packageScript": "plan:ai-painter-stage4-v2-controlled-smoke",
+      "entryFile": "scripts/plan-ai-painter-stage4-v2-controlled-smoke.mjs",
+      "role": "stage4_v2_controlled_smoke_cpu_materialization"
     },
     {
-      "packageScript": "check:ai-painter-stage4-authoritative-semantic-carrier",
-      "entryFile": "scripts/check-ai-painter-stage4-authoritative-semantic-carrier.mjs",
-      "role": "stage4_authoritative_semantic_carrier_cpu_regression"
+      "packageScript": "launch:ai-painter-stage4-v2-controlled-smoke-background",
+      "entryFile": "scripts/launch-ai-painter-stage4-v2-controlled-smoke-background.mjs",
+      "role": "stage4_v2_controlled_smoke_background_launch_and_supervision"
     },
     {
-      "packageScript": "implement:ai-painter-stage4-bounded-model-family",
-      "entryFile": "scripts/implement-ai-painter-stage4-bounded-model-family.mjs",
-      "role": "stage4_bounded_model_family_isolated_implementation"
+      "packageScript": "adjudicate:ai-painter-stage4-v2-controlled-smoke-failure-boundary",
+      "entryFile": "scripts/adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs",
+      "role": "stage4_v2_controlled_smoke_failure_boundary_adjudication"
     },
     {
-      "packageScript": "verify:ai-painter-stage4-authoritative-semantic-carrier-cpu-contract",
-      "entryFile": "scripts/verify-ai-painter-stage4-authoritative-semantic-carrier-cpu-contract.mjs",
-      "role": "stage4_authoritative_semantic_carrier_cpu_contract_verification"
+      "packageScript": "plan:ai-painter-stage4-v2-formal-stage0-to-stage2",
+      "entryFile": "scripts/plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
+      "role": "stage4_v2_formal_stage0_to_stage2_plan_only_materialization"
     },
     {
-      "packageScript": "run:ai-painter-stage4-authoritative-semantic-carrier-readonly-gpu",
-      "entryFile": "scripts/run-ai-painter-stage4-authoritative-semantic-carrier-readonly-gpu.mjs",
-      "role": "stage4_authoritative_semantic_carrier_readonly_gpu_qualification"
-    },
-    {
-      "packageScript": "record:ai-painter-stage4-readonly-gpu-failure",
-      "entryFile": "scripts/record-ai-painter-stage4-readonly-gpu-failure.mjs",
-      "role": "stage4_readonly_gpu_failed_attempt_recording"
-    },
-    {
-      "packageScript": "check:ai-painter-stage4-authoritative-semantic-carrier-smoke-contract",
-      "entryFile": "scripts/check-ai-painter-stage4-authoritative-semantic-carrier-smoke-contract.mjs",
-      "role": "stage4_authoritative_semantic_carrier_smoke_contract_cpu_regression"
-    },
-    {
-      "packageScript": "compile:ai-painter-stage4-authoritative-semantic-carrier-smoke",
-      "entryFile": "scripts/compile-ai-painter-stage4-authoritative-semantic-carrier-smoke.mjs",
-      "role": "stage4_authoritative_semantic_carrier_smoke_contract_compilation"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-authoritative-semantic-carrier-controlled-smoke",
-      "entryFile": "scripts/run-ai-painter-stage4-authoritative-semantic-carrier-controlled-smoke.mjs",
-      "role": "stage4_authoritative_semantic_carrier_controlled_smoke_execution"
-    },
-    {
-      "packageScript": "check:ai-painter-stage4-direct-clean-latent-smoke-contract",
-      "entryFile": "scripts/check-ai-painter-stage4-direct-clean-latent-smoke-contract.mjs",
-      "role": "stage4_direct_clean_latent_smoke_contract_cpu_regression"
-    },
-    {
-      "packageScript": "compile:ai-painter-stage4-direct-clean-latent-smoke-contract",
-      "entryFile": "scripts/compile-ai-painter-stage4-direct-clean-latent-smoke-contract.mjs",
-      "role": "stage4_direct_clean_latent_smoke_contract_compilation"
-    },
-    {
-      "packageScript": "plan:ai-painter-stage4-direct-responsibility-residual-successor",
-      "entryFile": "scripts/plan-ai-painter-stage4-direct-responsibility-residual-successor.mjs",
-      "role": "stage4_direct_responsibility_residual_bounded_planning"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-direct-responsibility-residual-cpu-support",
-      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-cpu-support.mjs",
-      "role": "stage4_direct_responsibility_residual_cpu_support"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-direct-responsibility-residual-readonly-gpu",
-      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-readonly-gpu.mjs",
-      "role": "stage4_direct_responsibility_residual_readonly_gpu_qualification"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-direct-responsibility-residual-controlled-smoke",
-      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-controlled-smoke.mjs",
-      "role": "stage4_direct_responsibility_residual_controlled_smoke_closed_loop"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-direct-responsibility-residual-stage0",
-      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-stage0.mjs",
-      "role": "stage4_direct_responsibility_residual_formal_stage0_closed_loop"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-native-responsibility-residual-cpu-support",
-      "entryFile": "scripts/run-ai-painter-stage4-native-responsibility-residual-cpu-support.mjs",
-      "role": "stage4_native_responsibility_residual_cpu_support"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-native-responsibility-residual-readonly-gpu",
-      "entryFile": "scripts/run-ai-painter-stage4-native-responsibility-residual-readonly-gpu.mjs",
-      "role": "stage4_native_responsibility_residual_readonly_gpu_qualification"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-native-responsibility-residual-controlled-smoke",
-      "entryFile": "scripts/run-ai-painter-stage4-native-responsibility-residual-controlled-smoke.mjs",
-      "role": "stage4_native_responsibility_residual_controlled_smoke_closed_loop"
-    },
-    {
-      "packageScript": "plan:ai-painter-stage4-route-counterfactual-compositor",
-      "entryFile": "scripts/plan-ai-painter-stage4-route-counterfactual-compositor.mjs",
-      "role": "stage4_route_counterfactual_project_level_planning"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-route-counterfactual-cpu-support",
-      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-cpu-support.mjs",
-      "role": "stage4_route_counterfactual_cpu_support"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-route-counterfactual-readonly-gpu",
-      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-readonly-gpu.mjs",
-      "role": "stage4_route_counterfactual_readonly_gpu_qualification"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-route-counterfactual-controlled-smoke",
-      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-compositor-controlled-smoke.mjs",
-      "role": "stage4_route_counterfactual_controlled_smoke_closed_loop"
-    },
-    {
-      "packageScript": "check:ai-painter-stage4-route-counterfactual-fixed40",
-      "entryFile": "scripts/check-ai-painter-stage4-route-counterfactual-fixed40.mjs",
-      "role": "stage4_route_counterfactual_fixed40_cpu_contract"
-    },
-    {
-      "packageScript": "adjudicate:ai-painter-stage4-route-counterfactual-fixed40-lineage",
-      "entryFile": "scripts/adjudicate-ai-painter-stage4-route-counterfactual-fixed40-lineage.mjs",
-      "role": "stage4_route_counterfactual_fixed40_lineage_adjudication"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-route-counterfactual-fixed40",
-      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-fixed-40-qualification.mjs",
-      "role": "stage4_route_counterfactual_fixed40_closed_loop"
-    },
-    {
-      "packageScript": "check:ai-painter-stage4-staged-successor-unique-derivation-review",
-      "entryFile": "scripts/check-ai-painter-stage4-staged-successor-unique-derivation-review.mjs",
-      "role": "stage4_staged_successor_unique_derivation_cpu_regression"
-    },
-    {
-      "packageScript": "run:ai-painter-stage4-staged-successor-unique-derivation-review",
-      "entryFile": "scripts/run-ai-painter-stage4-staged-successor-unique-derivation-review.mjs",
-      "role": "stage4_staged_successor_unique_derivation_review"
+      "packageScript": "check:ai-painter-stage4-core",
+      "entryFile": "scripts/check-ai-painter-stage4-core.mjs",
+      "role": "stage4_model_lifecycle_documentation_core_regression"
     }
   ],
+  "routingPrecedence": {
+    "selectionAuthority": "current_execution_registry_task_and_next_machine_action",
+    "filesystemRecencySelectionForbidden": true,
+    "historicalEntrypointFallbackForbidden": true,
+    "jointConditionFullDataScreenTerminalRoute": "adjudicate_joint_condition_local_transport_full_data_screen_failure_boundary"
+  },
+  "transitionalHandoff": {
+    "retiredFailureAdjudicator": "adjudicate:ai-painter-stage4-joint-condition-local-transport-full-data-screen-failure-boundary",
+    "failureAdjudicatorRetirement": "completed_after_the_revision_57_task_was_consumed_into_the_revision_58_v2_cpu_acceptance_task",
+    "v2CpuAcceptanceConsumption": "completed_at_revision_59_with_the_readonly_gpu_qualification_planning_task_registered",
+    "successorCpuAcceptance": "run:ai-painter-stage4-v2-cpu-contract-acceptance",
+    "currentSchedulerEntrypoint": "plan:ai-painter-stage4-v2-readonly-gpu-qualification",
+    "retirementTargetIndex": "data/ai-painter/system-governance/ai-painter-retired-entrypoint-index-v1.json",
+    "historicalFallbackForbidden": true
+  },
   "historicalIsolation": {
     "historicalScriptsMayRemainOnDisk": true,
     "historicalPackageCommandsMayRemainForEvidenceReproduction": true,
@@ -230,7 +130,8 @@
     "currentEntrypointMayImportOwnerAuthorizationStore": false,
     "currentEntrypointMayCreateOwnerRequestArtifact": false,
     "currentEntrypointMayEnterOwnerWaitState": false,
-    "legacyPrefixRequiredForNewHistoricalAliases": "legacy:"
+    "legacyPrefixRequiredForNewHistoricalAliases": "legacy:",
+    "autonomousResolverMayInvokeRetiredEntrypoint": false
   },
   "forbiddenCurrentSourceTokens": [
     "waiting_owner_authorization",
@@ -246,5 +147,11 @@
     "scripts/lib/ai-painter-autonomous-package-decision-core-v3.mjs",
     "scripts/lib/ai-painter-capability-lifecycle-v1.mjs",
     "scripts/lib/ai-painter-machine-capability-release-orchestrator-v1.mjs"
-  ]
+  ],
+  "retiredEntrypointIndex": {
+    "schemaVersion": "ai-painter-retired-entrypoint-index-v1",
+    "path": "data/ai-painter/system-governance/ai-painter-retired-entrypoint-index-v1.json",
+    "sha256": "fee9b3d4ad40191f520423672d631b232e214bd6d51887f151545ee1ab6228fc",
+    "dispatchable": false
+  }
 }

@@ -3,6 +3,10 @@ import path from "node:path"
 
 import { appendAiPainterProgramEvent, writeJsonAtomic } from "./lib/ai-painter-program-event-store.mjs"
 import { runAutonomousClosedLoop, sha256File, validateClosedLoopPackage } from "./lib/ai-painter-autonomous-closed-loop-v1.mjs"
+import {
+  JOINT_CONDITION_FULL_DATA_SCREEN_ADJUDICATION_TASK,
+  routeJointConditionFullDataScreenTerminal,
+} from "./lib/ai-painter-stage4-joint-condition-local-transport-lifecycle-v1.mjs"
 import { advanceCurrentExecutionRegistry, readCurrentExecutionRegistry } from "../src/server/ai-painter-current-execution-registry.mjs"
 
 const args = process.argv.slice(2); const packagePath = value("--package"); const expected = value("--package-sha256")
@@ -13,7 +17,8 @@ const spec = JSON.parse(fs.readFileSync(absolute, "utf8")); validateClosedLoopPa
 if (!spec.packageIdentity.includes("joint-condition-local-transport-full-data-screen")) throw new Error("wrong package kind")
 const sourceRegistry = await readCurrentExecutionRegistry(root)
 if (sourceRegistry.ok !== true || sourceRegistry.registry.activeExecution !== null) throw new Error("current registry is not available for a fresh full-data screen")
-const registryAlreadyProjected = sourceRegistry.registry.packageId === spec.packageIdentity && sourceRegistry.registry.taskId === "joint_condition_local_transport_full_data_screen_terminal_recorded"
+const registryAlreadyProjected = sourceRegistry.registry.packageId === spec.packageIdentity
+  && sourceRegistry.registry.taskId === JOINT_CONDITION_FULL_DATA_SCREEN_ADJUDICATION_TASK
 if (!registryAlreadyProjected && sourceRegistry.registry.taskId !== "compile_joint_condition_local_transport_24_epoch_full_data_screen") throw new Error("current registry does not authorize this bounded local action")
 const executionRoot = resolveInside(root, `.runtime/ai-painter/autonomous-closed-loop-executions/${spec.packageIdentity}`)
 const livePath = resolveInside(root, ".runtime/ai-painter/current-execution-registry/active-runtime-projection.json")
@@ -59,19 +64,28 @@ async function projectTerminalToRegistry({ root: projectRoot, spec: packageSpec,
   const evidenceFiles = [genericTerminal, progress, finalization, manifest, review, late].filter((file) => fs.existsSync(file))
   const finalizationValue = fs.existsSync(finalization) ? JSON.parse(fs.readFileSync(finalization, "utf8")) : null
   const status = finalizationValue?.status ?? `joint_full_data_screen_${terminalState.state}`
+  const sourceRunId = path.posix.basename(packageSpec.outputRoot)
+  const nextTask = routeJointConditionFullDataScreenTerminal({
+    status,
+    sourcePackageIdentity: packageSpec.packageIdentity,
+    sourceRunId,
+    sourceOutputRoot: packageSpec.outputRoot,
+  })
   writeOrVerify(projectionPath, { schemaVersion: "ai-painter-joint-full-data-screen-registry-terminal-v1", executionState: "completed", status, autonomousExecutionState: terminalState.state, packageIdentity: packageSpec.packageIdentity, runId: path.posix.basename(packageSpec.outputRoot), outputRoot: packageSpec.outputRoot, ownerAuthorizationRequired: false, ownerResponseRequired: false, automaticRetryStarted: false, recordedAtUtc: new Date().toISOString() }, ["schemaVersion", "executionState", "status", "autonomousExecutionState", "packageIdentity", "runId", "outputRoot"])
   const evidence = evidenceFiles.map((file) => ({ kind: path.basename(file).replace(/\W+/gu, "_"), ...binding(projectRoot, file), sha256Verified: true }))
-  writeOrVerify(capsulePath, { schemaVersion: "ai-painter-local-task-capsule-v1", capsuleId: `local-ai-${packageSpec.packageIdentity}`, module: { id: "ai-painter-r5-stage4", nameZh: "AI Painter R5 / Stage4" }, currentStage: { number: 4, total: 5, status }, evidence, integrity: { status: "verified", requiredEvidencePresent: true, boundEvidenceVerified: true, identityMatches: true }, ownerAuthorizationRequired: false, ownerResponseRequired: false, recordedAtUtc: new Date().toISOString() }, ["schemaVersion", "capsuleId", "evidence", "integrity", "ownerAuthorizationRequired", "ownerResponseRequired"])
+  writeOrVerify(capsulePath, { schemaVersion: "ai-painter-local-task-capsule-v1", capsuleId: `local-ai-${packageSpec.packageIdentity}`, module: { id: "ai-painter-r5-stage4", nameZh: "AI Painter R5 / Stage4" }, currentStage: { number: 4, total: 5, status }, nextAllowedAction: { taskId: nextTask.taskId, action: nextTask.nextMachineAction, automaticRetryStarted: false, trainingRestartAllowed: false }, evidence, integrity: { status: "verified", requiredEvidencePresent: true, boundEvidenceVerified: true, identityMatches: true }, ownerAuthorizationRequired: false, ownerResponseRequired: false, recordedAtUtc: new Date().toISOString() }, ["schemaVersion", "capsuleId", "nextAllowedAction", "evidence", "integrity", "ownerAuthorizationRequired", "ownerResponseRequired"])
   const projectionBinding = binding(projectRoot, projectionPath)
   const latestEvidence = Object.fromEntries([["autonomousTerminal", genericTerminal], ["progress", progress], ["manifest", manifest], ["machineReviewTimeline", review], ["lateStabilityQualification", late], ["finalization", finalization]].map(([kind, file]) => [kind, fs.existsSync(file) ? binding(projectRoot, file) : null]))
   return advanceCurrentExecutionRegistry({
     projectRoot, capabilityVersion: packageSpec.capabilityVersion, packageId: packageSpec.packageIdentity,
-    taskId: "joint_condition_local_transport_full_data_screen_terminal_recorded", taskKind: "full_data_screen_result",
-    runId: path.posix.basename(packageSpec.outputRoot), lifecycleStage: status,
-    executionState: "completed", activity: status,
+    taskId: nextTask.taskId, taskKind: nextTask.taskKind,
+    taskGoal: nextTask.taskGoal, priority: nextTask.priority,
+    queueStatus: nextTask.queueStatus, nextMachineAction: nextTask.nextMachineAction,
+    runId: sourceRunId, lifecycleStage: nextTask.lifecycleStage,
+    executionState: nextTask.executionState, activity: nextTask.activity,
     taskCapsulePath: path.relative(projectRoot, capsulePath).replaceAll("\\", "/"),
     terminalEvidencePath: projectionBinding.path,
-    latestTrainingTerminal: { runId: path.posix.basename(packageSpec.outputRoot), ...projectionBinding, status, evidence: latestEvidence },
+    latestTrainingTerminal: { runId: sourceRunId, ...projectionBinding, status, evidence: latestEvidence },
     expectedPreviousRegistryRevision: source.registry.registryRevision,
     expectedPreviousRegistrySha256: source.registrySha256,
   })

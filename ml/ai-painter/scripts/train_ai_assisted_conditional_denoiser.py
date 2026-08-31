@@ -29,6 +29,14 @@ from ai_painter_joint_condition_local_transport_contract import (
     validate_joint_condition_local_transport_controlled_smoke_config,
     validate_joint_condition_local_transport_full_data_screen_config,
 )
+from ai_painter_stage4_semantic_transport_v2_trainer_support import (
+    ARCHITECTURE_ID as STAGE4_SEMANTIC_TRANSPORT_V2_ARCHITECTURE,
+    RESPONSIBILITY_IDENTITIES as STAGE4_SEMANTIC_TRANSPORT_V2_RESPONSIBILITIES,
+    stage4_semantic_transport_v2_optimizer_parameters,
+    validate_stage4_semantic_transport_v2_autoencoder_boundary,
+    validate_stage4_semantic_transport_v2_responsibility_evidence,
+    validate_stage4_semantic_transport_v2_trainer_contract,
+)
 from ai_painter_spatial_affine_decoder_contract import (
     compile_spatial_affine_decoder_cpu_inactive_config,
     load_spatial_affine_formal_objective_contract,
@@ -2297,6 +2305,16 @@ def main() -> int:
     model.autoencoder.eval()
     for parameter in model.autoencoder.parameters():
         parameter.requires_grad_(False)
+    stage4_semantic_transport_v2_autoencoder_loaded = None
+    stage4_semantic_transport_v2_autoencoder_before_training = None
+    stage4_semantic_transport_v2_autoencoder_after_training = None
+    if is_stage4_semantic_transport_v2(config):
+        stage4_semantic_transport_v2_autoencoder_loaded = (
+            validate_stage4_semantic_transport_v2_autoencoder_boundary(
+                model,
+                phase="loaded",
+            )
+        )
     if controlled_smoke_resource_telemetry_path is not None:
         controlled_smoke_resource_telemetry_recorder(
             controlled_smoke_resource_telemetry_path,
@@ -2368,8 +2386,27 @@ def main() -> int:
         else compute_latent_normalization(model, datasets["train"], device)
     )
     diffusion = build_diffusion_schedule(config, device)
+    optimizer_parameters = model.denoiser.parameters()
+    if is_stage4_semantic_transport_v2(config):
+        stage4_semantic_transport_v2_autoencoder_before_training = (
+            validate_stage4_semantic_transport_v2_autoencoder_boundary(
+                model,
+                phase="before_training",
+                expected_state_sha256=(
+                    stage4_semantic_transport_v2_autoencoder_loaded[
+                        "stateSha256"
+                    ]
+                ),
+            )
+        )
+        optimizer_parameters = (
+            stage4_semantic_transport_v2_optimizer_parameters(model)
+        )
     record_stage4_step(step_telemetry_path, "optimizer_creation", "started")
-    optimizer = torch.optim.AdamW(model.denoiser.parameters(), lr=float(config["training"]["denoiserLearningRate"]))
+    optimizer = torch.optim.AdamW(
+        optimizer_parameters,
+        lr=float(config["training"]["denoiserLearningRate"]),
+    )
     record_stage4_step(step_telemetry_path, "optimizer_creation", "completed")
     epoch_count = (
         int(args.overfit_epochs)
@@ -2952,6 +2989,18 @@ def main() -> int:
         if terminal_qualification_identity["previewSha256Matches"] is not True:
             raise ValueError("Stage 4 terminal qualification byte-exact preview mismatch")
     model.denoiser.load_state_dict(best_denoiser_state)
+    if is_stage4_semantic_transport_v2(config):
+        stage4_semantic_transport_v2_autoencoder_after_training = (
+            validate_stage4_semantic_transport_v2_autoencoder_boundary(
+                model,
+                phase="after_training",
+                expected_state_sha256=(
+                    stage4_semantic_transport_v2_autoencoder_loaded[
+                        "stateSha256"
+                    ]
+                ),
+            )
+        )
     restored_denoiser_state_sha256 = (
         state_dict_sha256(model.denoiser.state_dict())
         if record_stage4_smoke_state_hashes
@@ -3247,6 +3296,27 @@ def main() -> int:
             "initialDenoiserStateSha256": initial_denoiser_state_sha256,
             "finalDenoiserStateSha256": final_denoiser_state_sha256,
             "weightsChanged": initial_denoiser_state_sha256 != final_denoiser_state_sha256,
+        }
+    if is_stage4_semantic_transport_v2(config):
+        checkpoint["stage4SemanticTransportV2AutoencoderBoundary"] = {
+            "schemaVersion": "stage4-semantic-transport-v2-autoencoder-boundary-v1",
+            "loaded": stage4_semantic_transport_v2_autoencoder_loaded,
+            "beforeTraining": (
+                stage4_semantic_transport_v2_autoencoder_before_training
+            ),
+            "afterTraining": (
+                stage4_semantic_transport_v2_autoencoder_after_training
+            ),
+            "allStateHashesMatch": (
+                stage4_semantic_transport_v2_autoencoder_loaded["stateSha256"]
+                == stage4_semantic_transport_v2_autoencoder_before_training[
+                    "stateSha256"
+                ]
+                == stage4_semantic_transport_v2_autoencoder_after_training[
+                    "stateSha256"
+                ]
+            ),
+            "optimizerContainsAutoencoder": False,
         }
     if joint_condition_local_transport_smoke:
         checkpoint["stage4JointConditionLocalTransportSmoke"] = {
@@ -5117,6 +5187,11 @@ def validate_training_inputs(config, package):
         validate_post_decode_object_rgb_stage4_smoke_contract(config, package)
     elif architecture == "stage4_post_decode_full_condition_route_object_responsibility_renderer_v1":
         validate_post_decode_full_condition_responsibility_contract(config, package)
+    elif architecture == STAGE4_SEMANTIC_TRANSPORT_V2_ARCHITECTURE:
+        validate_stage4_semantic_transport_v2_trainer_contract(
+            config,
+            root=Path(__file__).resolve().parents[3],
+        )
     elif architecture == STAGE4_SPATIAL_AFFINE_DECODER_ARCHITECTURE:
         validate_stage4_spatial_affine_decoder_contract(config, package)
     elif architecture == STAGE4_FULL_BACKBONE_SPATIAL_AFFINE_DENOISER_ARCHITECTURE:
@@ -17857,7 +17932,18 @@ def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, time
         stage4_structure_fact = None
         stage4_semantic_renderer = None
         stage4_semantic_mixture = None
-        if is_fact_conditioned_semantic_mixture_stage4(config):
+        stage4_semantic_transport_v2 = None
+        stage4_semantic_transport_v2_rgb = None
+        if is_stage4_semantic_transport_v2(config):
+            (
+                predicted_velocity,
+                stage4_semantic_transport_v2,
+            ) = model.predict_velocity_with_stage4_semantic_responsibility(
+                noisy_latent,
+                timesteps,
+                conditions,
+            )
+        elif is_fact_conditioned_semantic_mixture_stage4(config):
             predicted_velocity, stage4_semantic_mixture = model.predict_velocity_with_stage4_semantic_mixture(
                 noisy_latent, timesteps, conditions
             )
@@ -17885,12 +17971,39 @@ def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, time
         if is_v6_or_later(config):
             if target_image is None or latent_normalization is None:
                 raise ValueError("V6 decoded RGB supervision requires target image and latent normalization")
-            predicted_rgb = decode_final_visible_rgb(
-                model,
-                denormalize_latent(predicted_clean, latent_normalization),
-                conditions,
-                config,
-            )
+            if is_stage4_semantic_transport_v2(config):
+                (
+                    predicted_rgb,
+                    stage4_semantic_transport_v2_rgb,
+                ) = decode_final_visible_rgb(
+                    model,
+                    denormalize_latent(predicted_clean, latent_normalization),
+                    conditions,
+                    config,
+                    return_stage4_semantic_responsibility_evidence=True,
+                )
+            else:
+                predicted_rgb = decode_final_visible_rgb(
+                    model,
+                    denormalize_latent(predicted_clean, latent_normalization),
+                    conditions,
+                    config,
+                )
+            if is_stage4_semantic_transport_v2(config):
+                return composite_denoiser_losses_stage4_semantic_transport_v2(
+                    predicted_velocity,
+                    target_velocity,
+                    predicted_clean,
+                    clean_latent,
+                    predicted_conditions,
+                    target_conditions,
+                    predicted_rgb,
+                    target_image,
+                    conditions,
+                    stage4_semantic_transport_v2,
+                    stage4_semantic_transport_v2_rgb,
+                    config,
+                )
             if is_fact_conditioned_semantic_mixture_stage4(config):
                 typed_counterfactual_rgb = {}
                 for identity, gated_contribution in zip(
@@ -18226,6 +18339,85 @@ def composite_denoiser_losses_v6(predicted_velocity, target_velocity, predicted_
         "compositeLoss": composite,
         **values,
         "compositeConditionQualityScore": checkpoint,
+    }
+
+
+def composite_denoiser_losses_stage4_semantic_transport_v2(
+    predicted_velocity,
+    target_velocity,
+    predicted_clean,
+    clean_latent,
+    predicted_conditions,
+    target_conditions,
+    predicted_rgb,
+    target_rgb,
+    full_conditions,
+    latent_responsibility,
+    rgb_responsibility,
+    config,
+):
+    """Reuse the formal V6 objective without adding or replacing any Loss term."""
+
+    validate_stage4_semantic_transport_v2_responsibility_evidence(
+        latent_responsibility,
+        rgb_responsibility,
+        predicted_velocity,
+        predicted_rgb,
+    )
+    base = composite_denoiser_losses_v6(
+        predicted_velocity,
+        target_velocity,
+        predicted_clean,
+        clean_latent,
+        predicted_conditions,
+        target_conditions,
+        predicted_rgb,
+        target_rgb,
+        full_conditions,
+        config,
+    )
+    contributions = tuple(latent_responsibility["responsibilityContributions"])
+    proposals = tuple(rgb_responsibility["responsibilityRgbProposals"])
+    metrics = {
+        "stage4SemanticTransportV2FormalV6ObjectiveReused": predicted_velocity.new_tensor(1.0),
+        "stage4SemanticTransportV2ResponsibilityCount": predicted_velocity.new_tensor(
+            float(len(STAGE4_SEMANTIC_TRANSPORT_V2_RESPONSIBILITIES))
+        ),
+    }
+    for index, identity in enumerate(STAGE4_SEMANTIC_TRANSPORT_V2_RESPONSIBILITIES):
+        prefix = upper_camel(identity)
+        # These are read-only evidence metrics.  They are deliberately not added
+        # to compositeLossTensor; the corresponding formal V6 terms already
+        # supervise the final mask-gated RGB and composed velocity.
+        metrics[
+            f"stage4SemanticTransportV2{prefix}ContributionAbsMean"
+        ] = contributions[index].abs().mean()
+        metrics[
+            f"stage4SemanticTransportV2{prefix}ProposalRgbMae"
+        ] = masked_condition_rgb_loss(
+            proposals[index],
+            target_rgb,
+            full_conditions,
+            config,
+            identity,
+        )
+        metrics[
+            f"stage4SemanticTransportV2{prefix}FinalRgbMae"
+        ] = masked_condition_rgb_loss(
+            predicted_rgb,
+            target_rgb,
+            full_conditions,
+            config,
+            identity,
+        )
+    return {
+        **base,
+        **metrics,
+        "compositeLossTensor": base["compositeLossTensor"],
+        "compositeLoss": base["compositeLoss"],
+        "compositeConditionQualityScore": base[
+            "compositeConditionQualityScore"
+        ],
     }
 
 
@@ -20470,6 +20662,13 @@ def is_v9_stage4_object_semantic_decoded_alignment(config):
     return config.get("denoiserArchitecture") == "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment"
 
 
+def is_stage4_semantic_transport_v2(config):
+    return (
+        config.get("denoiserArchitecture")
+        == STAGE4_SEMANTIC_TRANSPORT_V2_ARCHITECTURE
+    )
+
+
 def is_stage4_spatial_affine_decoder(config):
     return config.get("denoiserArchitecture") == STAGE4_SPATIAL_AFFINE_DECODER_ARCHITECTURE
 
@@ -20697,8 +20896,25 @@ def is_post_decode_full_condition_responsibility_stage4(config):
     )
 
 
-def decode_final_visible_rgb(model, denormalized_latent, conditions, config):
+def decode_final_visible_rgb(
+    model,
+    denormalized_latent,
+    conditions,
+    config,
+    *,
+    return_stage4_semantic_responsibility_evidence=False,
+):
     """Use the capability-version final RGB path without changing legacy decoders."""
+    if is_stage4_semantic_transport_v2(config):
+        return model.decode_stage4_semantic_responsibility_rgb(
+            denormalized_latent,
+            conditions,
+            return_evidence=return_stage4_semantic_responsibility_evidence,
+        )
+    if return_stage4_semantic_responsibility_evidence:
+        raise ValueError(
+            "semantic-responsibility RGB evidence is unavailable outside Stage 4 V2"
+        )
     if is_post_decode_authoritative_object_rgb_compositor_stage4(config):
         return model.decode_stage4_post_decode_object_rgb(
             denormalized_latent,
@@ -20767,6 +20983,7 @@ def uses_registered_v7_capacity_dataset(config):
         or is_stage4_spatial_affine_decoder(config)
         or is_stage4_full_backbone_spatial_affine(config)
         or is_stage4_joint_condition_local_transport(config)
+        or is_stage4_semantic_transport_v2(config)
     )
 
 
@@ -20781,6 +20998,7 @@ def uses_v7_rollout_validation(config):
         or is_stage4_spatial_affine_decoder(config)
         or is_stage4_full_backbone_spatial_affine(config)
         or is_stage4_joint_condition_local_transport(config)
+        or is_stage4_semantic_transport_v2(config)
     )
 
 
@@ -20804,6 +21022,7 @@ def is_v6_or_later(config):
         or is_stage4_spatial_affine_decoder(config)
         or is_stage4_full_backbone_spatial_affine(config)
         or is_stage4_joint_condition_local_transport(config)
+        or is_stage4_semantic_transport_v2(config)
     )
 
 

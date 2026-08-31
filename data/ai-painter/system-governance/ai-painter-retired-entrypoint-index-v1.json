@@ -1,0 +1,325 @@
+{
+  "schemaVersion": "ai-painter-retired-entrypoint-index-v1",
+  "indexId": "ai-painter-retired-entrypoint-index-v1",
+  "status": "active_read_only_audit_index",
+  "purpose": "Preserve exact source identities for retired AI Painter Stage4 candidate, Smoke, qualification, training, recovery, and completed transition entrypoints without making them resolvable by the current autonomous scheduler.",
+  "dispatchable": false,
+  "resolverMaySchedule": false,
+  "sourceFilesRetained": true,
+  "packageCommandsRetainedForExplicitHistoricalAuditOnly": true,
+  "retirementPolicy": {
+    "currentResolverAuthority": "ai-painter-current-entrypoint-registry-v1",
+    "absentFromCurrentRegistryRequired": true,
+    "packageScriptAndEntryFileDisjointFromCurrentRegistryRequired": true,
+    "sourceSha256RecomputedOnAudit": true,
+    "automaticFallbackForbidden": true,
+    "filesystemRecencySelectionForbidden": true
+  },
+  "deferredRetirementHandoffs": [
+    {
+      "packageScript": "adjudicate:ai-painter-stage4-joint-condition-local-transport-full-data-screen-failure-boundary",
+      "entryFile": "scripts/adjudicate-ai-painter-stage4-joint-condition-local-transport-full-data-screen-failure-boundary.mjs",
+      "status": "consumed_and_moved_to_retired_entrypoints",
+      "consumedCurrentRegistryRevision": 57,
+      "successorCpuAcceptanceRegistryRevision": 58,
+      "readonlyGpuQualificationPlanningRegistryRevision": 59,
+      "automaticFallbackForbidden": true
+    }
+  ],
+  "retiredEntrypoints": [
+    {
+      "packageScript": "adjudicate:ai-painter-stage4-joint-condition-local-transport-full-data-screen-failure-boundary",
+      "entryFile": "scripts/adjudicate-ai-painter-stage4-joint-condition-local-transport-full-data-screen-failure-boundary.mjs",
+      "role": "stage4_joint_condition_full_data_screen_failure_boundary_adjudication_consumed",
+      "sourceSha256": "27ded06200e1193926d14f760c4d14aed58eeb966ba2285031287df01d8d88f1",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:stage4-three-component-smoke-failure-boundary-adjudication",
+      "entryFile": "scripts/run-stage4-three-component-smoke-failure-boundary-adjudication-v2.mjs",
+      "role": "current_stage4_cpu_adjudication",
+      "sourceSha256": "e15e638205d7c03f21c752b86c43ac6c940da2e0666a7b4c496e11718968d696",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "materialize:stage4-three-component-smoke-failure-boundary-package",
+      "entryFile": "scripts/materialize-stage4-three-component-smoke-failure-boundary-local-package.mjs",
+      "role": "current_stage4_local_package_materialization",
+      "sourceSha256": "aa207a6ac0daa46bd65999fd7c376ea04d12461c87c9ec42b38ea1bc5db31686",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "check:ai-painter-stage4-bounded-candidate-planner",
+      "entryFile": "scripts/check-ai-painter-stage4-bounded-candidate-planner.mjs",
+      "role": "stage4_bounded_candidate_cpu_regression",
+      "sourceSha256": "653d100500562d407d3bb06fa76fcb68368cc936bd1083475b7a204b04fc1da5",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "materialize:ai-painter-stage4-bounded-candidate",
+      "entryFile": "scripts/materialize-ai-painter-stage4-bounded-candidate.mjs",
+      "role": "stage4_bounded_candidate_materialization",
+      "sourceSha256": "bc513751aa1af790b28cd616e9245f1d0dbe7704744031ab99f1b3ccbe7f5dc6",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "check:ai-painter-stage4-post-decode-failure-bounded-planning",
+      "entryFile": "scripts/check-ai-painter-stage4-post-decode-failure-bounded-planning.mjs",
+      "role": "stage4_post_decode_failure_bounded_planning_cpu_regression",
+      "sourceSha256": "f6f4dc5585c20e75f92616ea3aa713aa7b2686e7b526da1c41f6fc9fadeb31ef",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-post-decode-failure-bounded-planning",
+      "entryFile": "scripts/run-ai-painter-stage4-post-decode-failure-bounded-planning.mjs",
+      "role": "stage4_post_decode_failure_bounded_planning_execution",
+      "sourceSha256": "3ec2b5dbd9f3eb7cc48e6aee86c8d7a54a87a5d47f00fcac8e3a4a49999b67f3",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "check:ai-painter-stage4-authoritative-semantic-carrier",
+      "entryFile": "scripts/check-ai-painter-stage4-authoritative-semantic-carrier.mjs",
+      "role": "stage4_authoritative_semantic_carrier_cpu_regression",
+      "sourceSha256": "ac2bbc31026e1f3abaece309fcc917eb29495ce627a52d04643d6b8f91514050",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "implement:ai-painter-stage4-bounded-model-family",
+      "entryFile": "scripts/implement-ai-painter-stage4-bounded-model-family.mjs",
+      "role": "stage4_bounded_model_family_isolated_implementation",
+      "sourceSha256": "73ad07cd192ce84a4d7a52aba003bf90b9f6b5d3468cf0492b9a4f38dbcd5d0c",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "verify:ai-painter-stage4-authoritative-semantic-carrier-cpu-contract",
+      "entryFile": "scripts/verify-ai-painter-stage4-authoritative-semantic-carrier-cpu-contract.mjs",
+      "role": "stage4_authoritative_semantic_carrier_cpu_contract_verification",
+      "sourceSha256": "f938946121085280d513caeb97d1b39e1cd9311b650c78c7f169a75e4f5e7da8",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-authoritative-semantic-carrier-readonly-gpu",
+      "entryFile": "scripts/run-ai-painter-stage4-authoritative-semantic-carrier-readonly-gpu.mjs",
+      "role": "stage4_authoritative_semantic_carrier_readonly_gpu_qualification",
+      "sourceSha256": "ed6373f2cee6b5ef31f3b45d93747b85c4e051d73193b294c91f3906f2f54a2b",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "record:ai-painter-stage4-readonly-gpu-failure",
+      "entryFile": "scripts/record-ai-painter-stage4-readonly-gpu-failure.mjs",
+      "role": "stage4_readonly_gpu_failed_attempt_recording",
+      "sourceSha256": "f25ada4a40b7923e9e60b8dbc882246eaaa1635b638402e5af8624d0e21d9e72",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "check:ai-painter-stage4-authoritative-semantic-carrier-smoke-contract",
+      "entryFile": "scripts/check-ai-painter-stage4-authoritative-semantic-carrier-smoke-contract.mjs",
+      "role": "stage4_authoritative_semantic_carrier_smoke_contract_cpu_regression",
+      "sourceSha256": "654ebbe9731907613d142ec81058a355dcac98485fe3b38076b3aaad28a47ef5",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "compile:ai-painter-stage4-authoritative-semantic-carrier-smoke",
+      "entryFile": "scripts/compile-ai-painter-stage4-authoritative-semantic-carrier-smoke.mjs",
+      "role": "stage4_authoritative_semantic_carrier_smoke_contract_compilation",
+      "sourceSha256": "5b396da74548bae328ce3892d384ed309cfb5876c947cc3460540ce02c163cd2",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-authoritative-semantic-carrier-controlled-smoke",
+      "entryFile": "scripts/run-ai-painter-stage4-authoritative-semantic-carrier-controlled-smoke.mjs",
+      "role": "stage4_authoritative_semantic_carrier_controlled_smoke_execution",
+      "sourceSha256": "fe9afd539cad09041a0a45cf278801d8c8e6d52abf1f811a6ac35a491c4d0062",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "check:ai-painter-stage4-direct-clean-latent-smoke-contract",
+      "entryFile": "scripts/check-ai-painter-stage4-direct-clean-latent-smoke-contract.mjs",
+      "role": "stage4_direct_clean_latent_smoke_contract_cpu_regression",
+      "sourceSha256": "bb407f00ed12305b3753a8004777c88d849fb73a7377d2ff401ffe71f9594281",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "compile:ai-painter-stage4-direct-clean-latent-smoke-contract",
+      "entryFile": "scripts/compile-ai-painter-stage4-direct-clean-latent-smoke-contract.mjs",
+      "role": "stage4_direct_clean_latent_smoke_contract_compilation",
+      "sourceSha256": "c2a4a5256fe4d2ccf80fe8279e550569c909f38ab7d36b3802edcc41f7b57267",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "plan:ai-painter-stage4-direct-responsibility-residual-successor",
+      "entryFile": "scripts/plan-ai-painter-stage4-direct-responsibility-residual-successor.mjs",
+      "role": "stage4_direct_responsibility_residual_bounded_planning",
+      "sourceSha256": "562d31f20a51af5f8b79da832cc341846853acf9f1004a2e27e4631360d58e13",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-direct-responsibility-residual-cpu-support",
+      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-cpu-support.mjs",
+      "role": "stage4_direct_responsibility_residual_cpu_support",
+      "sourceSha256": "6e77226a463265a9c41f847d7088f8ada68aa232040b9c75130d52a9f6530c44",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-direct-responsibility-residual-readonly-gpu",
+      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-readonly-gpu.mjs",
+      "role": "stage4_direct_responsibility_residual_readonly_gpu_qualification",
+      "sourceSha256": "5a310dc7a190cd78cba34ec737427b537845f7b0af7d250c375559aec6bd2075",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-direct-responsibility-residual-controlled-smoke",
+      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-controlled-smoke.mjs",
+      "role": "stage4_direct_responsibility_residual_controlled_smoke_closed_loop",
+      "sourceSha256": "23b0746135818c5eea79eab9d3e87db39229c606cf1fdf6e93db9f3504204940",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-direct-responsibility-residual-stage0",
+      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-stage0.mjs",
+      "role": "stage4_direct_responsibility_residual_formal_stage0_closed_loop",
+      "sourceSha256": "2d6ccc5e9aedc0ab28d897ec77db9efceb02a26d9e702801d4d04c6b318fb3da",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-native-responsibility-residual-cpu-support",
+      "entryFile": "scripts/run-ai-painter-stage4-native-responsibility-residual-cpu-support.mjs",
+      "role": "stage4_native_responsibility_residual_cpu_support",
+      "sourceSha256": "c9bbcc3ef8dff6e99b04ace0d3e300f0cdb30ecf3be5932886a73deae9042825",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-native-responsibility-residual-readonly-gpu",
+      "entryFile": "scripts/run-ai-painter-stage4-native-responsibility-residual-readonly-gpu.mjs",
+      "role": "stage4_native_responsibility_residual_readonly_gpu_qualification",
+      "sourceSha256": "febbbaf86ad4fd9a49154966b40acb707328875bb47d7f9d0741bd6eaa9ba84b",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-native-responsibility-residual-controlled-smoke",
+      "entryFile": "scripts/run-ai-painter-stage4-native-responsibility-residual-controlled-smoke.mjs",
+      "role": "stage4_native_responsibility_residual_controlled_smoke_closed_loop",
+      "sourceSha256": "47b04dc90e90e7587fc4858f7914de5ce607e1fc0e1e5f6513300be086277a17",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "plan:ai-painter-stage4-route-counterfactual-compositor",
+      "entryFile": "scripts/plan-ai-painter-stage4-route-counterfactual-compositor.mjs",
+      "role": "stage4_route_counterfactual_project_level_planning",
+      "sourceSha256": "91b7881ddef5172de436fdce49fdfb48fe2508cff95d5c5acff0bf29e7679867",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-route-counterfactual-cpu-support",
+      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-cpu-support.mjs",
+      "role": "stage4_route_counterfactual_cpu_support",
+      "sourceSha256": "253ad54522904730599c7d022e7cd80b1be0f47e266d1e7488e003703f88238d",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-route-counterfactual-readonly-gpu",
+      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-readonly-gpu.mjs",
+      "role": "stage4_route_counterfactual_readonly_gpu_qualification",
+      "sourceSha256": "16256c23679e25ef05e94810325e3a2f74df368e68c0a8f85845081f3f9e7dc8",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-route-counterfactual-controlled-smoke",
+      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-compositor-controlled-smoke.mjs",
+      "role": "stage4_route_counterfactual_controlled_smoke_closed_loop",
+      "sourceSha256": "a4f96f6e0eac41025aa00263b691b3bf98f5a36188d3b6bba8b223a0690999f6",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "check:ai-painter-stage4-route-counterfactual-fixed40",
+      "entryFile": "scripts/check-ai-painter-stage4-route-counterfactual-fixed40.mjs",
+      "role": "stage4_route_counterfactual_fixed40_cpu_contract",
+      "sourceSha256": "74e1f9866ae449d9f3df7fbf5b7c17bec8d79049aef4d0fbee9e6c85036c1e74",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "adjudicate:ai-painter-stage4-route-counterfactual-fixed40-lineage",
+      "entryFile": "scripts/adjudicate-ai-painter-stage4-route-counterfactual-fixed40-lineage.mjs",
+      "role": "stage4_route_counterfactual_fixed40_lineage_adjudication",
+      "sourceSha256": "958d901a1625cc8f79c6808bc7e87492811a09e1b37bb5560d5886b392866a40",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-route-counterfactual-fixed40",
+      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-fixed-40-qualification.mjs",
+      "role": "stage4_route_counterfactual_fixed40_closed_loop",
+      "sourceSha256": "cb2d73c37cd8df918b59b402541c4134683fc173c788d9b224c9cd8bdfe2a6ff",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "check:ai-painter-stage4-staged-successor-unique-derivation-review",
+      "entryFile": "scripts/check-ai-painter-stage4-staged-successor-unique-derivation-review.mjs",
+      "role": "stage4_staged_successor_unique_derivation_cpu_regression",
+      "sourceSha256": "540569633c49b57ce89cb636cd806ca17639c4b6d33d2ac661aa36685c41295e",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-staged-successor-unique-derivation-review",
+      "entryFile": "scripts/run-ai-painter-stage4-staged-successor-unique-derivation-review.mjs",
+      "role": "stage4_staged_successor_unique_derivation_review",
+      "sourceSha256": "3c8a7dc0144c9abcbc57b97e525b102f9b9085c81b566753348211a47ea50b01",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "check:ai-painter-stage4-joint-condition-local-transport-full-data-screen",
+      "entryFile": "scripts/check-ai-painter-stage4-joint-condition-local-transport-full-data-screen-compilation.mjs",
+      "role": "stage4_joint_condition_full_data_screen_cpu_regression",
+      "sourceSha256": "0a87986ac06dee02db78fb04a6685142e9ef32b9fb47e3b2d099e8e1c3a16d7b",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "check:ai-painter-stage4-joint-condition-local-transport-lifecycle-routing",
+      "entryFile": "scripts/check-ai-painter-stage4-joint-condition-local-transport-lifecycle-routing.mjs",
+      "role": "stage4_joint_condition_full_data_screen_lifecycle_regression",
+      "sourceSha256": "fe61609ed5b5950f9e76c1ac598427c75805acb36483fb787f537c81df587fc8",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "compile:ai-painter-stage4-joint-condition-local-transport-full-data-screen",
+      "entryFile": "scripts/compile-ai-painter-stage4-joint-condition-local-transport-full-data-screen.mjs",
+      "role": "stage4_joint_condition_full_data_screen_compilation",
+      "sourceSha256": "681c083f9adf74cdd391889fee12c44d0ff9f84ff480e2ca02b7812bc8473036",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "materialize:ai-painter-stage4-joint-condition-local-transport-full-data-screen",
+      "entryFile": "scripts/materialize-ai-painter-stage4-joint-condition-local-transport-full-data-screen-package.mjs",
+      "role": "stage4_joint_condition_full_data_screen_package_materialization",
+      "sourceSha256": "24200b855af52576de80a360bf5b1a6cf14676972f1f515c535abb477ef35583",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-joint-condition-local-transport-full-data-screen",
+      "entryFile": "scripts/run-ai-painter-stage4-joint-condition-local-transport-full-data-screen-package.mjs",
+      "role": "stage4_joint_condition_full_data_screen_closed_loop",
+      "sourceSha256": "702e4a1866eabb644f8a3fcd23055ac197148ed5170fd6438d15e979a9439f5d",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "launch:ai-painter-stage4-joint-condition-local-transport-full-data-screen-background",
+      "entryFile": "scripts/launch-ai-painter-stage4-joint-condition-local-transport-full-data-screen-background.mjs",
+      "role": "stage4_joint_condition_full_data_screen_background_execution",
+      "sourceSha256": "ffab872344f01ec1d85045168f8e81e5a423f912b807652ba52fdc3a57e53244",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "recover:ai-painter-stage4-joint-condition-local-transport-post-checkpoint",
+      "entryFile": "scripts/run-ai-painter-stage4-joint-condition-local-transport-full-data-screen-post-checkpoint-recovery.mjs",
+      "role": "stage4_joint_condition_full_data_screen_post_checkpoint_recovery",
+      "sourceSha256": "a8b9cc6a5620e812259e5e8dba92c71a22bf65ef8a81dfa660214f8e2816458e",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    },
+    {
+      "packageScript": "materialize:ai-painter-stage4-joint-condition-local-transport-full-data-screen-adjudication-task",
+      "entryFile": "scripts/materialize-ai-painter-stage4-joint-condition-local-transport-full-data-screen-adjudication-task.mjs",
+      "role": "stage4_joint_condition_full_data_screen_adjudication_task_materialization",
+      "sourceSha256": "c54f6f09183047fad47b5465ec0d55caa3837e72ccd0148afd0a4ef17262394b",
+      "retirementDisposition": "read_only_audit_not_dispatchable"
+    }
+  ]
+}

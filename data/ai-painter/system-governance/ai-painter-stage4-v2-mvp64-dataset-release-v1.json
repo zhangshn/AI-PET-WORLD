@@ -1,0 +1,1388 @@
+{
+  "schemaVersion": "ai-painter-stage4-v2-dataset-release-contract-v1",
+  "datasetReleaseIdentity": "ai-painter-stage4-v2-mvp64-fc8807d3501380ea3b9c43a895e711d94e40e14df97d805c52361d8a05a9fb16",
+  "status": "verified_dataset_release",
+  "immutable": true,
+  "createdAtUtc": "2026-08-30T16:44:54.597Z",
+  "createdAtAsiaShanghai": "2026-08-31T00:44:54.597+08:00",
+  "createdBy": "local_ai_dataset_release_compiler",
+  "releaseScope": {
+    "sourcePackageSampleCount": 116,
+    "releasedSampleCount": 64,
+    "splitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "permittedPurpose": "stage4_v2_training_input_identity_only"
+  },
+  "sourcePackage": {
+    "packageId": "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z",
+    "packageSampleCount": 116,
+    "manifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+      "sha256": "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
+    },
+    "sourceIndex": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json",
+      "sha256": "84f1d4c810e9023f3517f9fd6567dfc2414a0eb95a0a56df45a3025344e12251",
+      "schemaVersion": "ai-assisted-cold-start-dataset-source-index-v1",
+      "sampleCount": 116
+    }
+  },
+  "conditionContractBinding": {
+    "conditionContractIdentity": "ai-painter-complete-map-23-channel-condition-v1",
+    "path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+    "sha256": "c8941c7730edb73c0b0a733bc877cf550184e2f3ab2adb08102fb0214d38cac2",
+    "sourcePackCompatibilityMode": "immutable_source_pack_wrapped_by_dataset_release_v1",
+    "sourcePacksPredateEmbeddedContractIdentity": true,
+    "sourcePackSelfDeclaredCurrentIdentityTrusted": false,
+    "exactChannelOrderTypeStorageAndBytesRequired": true,
+    "compatibilityEstablishedByReleaseChecker": true,
+    "useOutsideThisDatasetReleaseAllowed": false
+  },
+  "selectionContract": {
+    "selector": "source_index_v7CapacityContributions_exact_membership_v1",
+    "sourceCollection": "v7CapacityContributions",
+    "matchCollection": "samples",
+    "matchKey": "sampleId",
+    "order": "v7CapacityContributions_array_order",
+    "exactContributionCount": 64,
+    "exactSplitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "requiredCrossChecks": [
+      "sampleId",
+      "split",
+      "imageSha256",
+      "conditionPackPath",
+      "capacitySlotId",
+      "contributionPath",
+      "contributionSha256"
+    ],
+    "qualificationInputs": [
+      "source_manifest_bytes_and_sha256",
+      "source_index_bytes_and_sha256",
+      "v7CapacityContributions_exact_membership",
+      "matching_samples_records",
+      "referenced_image_bytes_and_sha256",
+      "referenced_condition_pack_bytes_and_sha256",
+      "referenced_contribution_bytes_and_sha256"
+    ],
+    "disallowedQualificationSources": [
+      "latest_pointer_or_directory_recency",
+      "legacy_human_authorization_or_review_fields",
+      "historical_model_training_or_checkpoint_results",
+      "calling_process_boolean_assertions"
+    ]
+  },
+  "canonicalization": {
+    "selectedSamplesAlgorithm": "utf8_json_stringify_array_in_contract_property_order_v1",
+    "selectedSamplesSha256": "bdffe0d299d5cc7e316494c39df78865bb4bc77cc20200a6fbb0fb345f592545",
+    "datasetReleasePayloadAlgorithm": "utf8_json_stringify_object_v1",
+    "datasetReleasePayloadFields": [
+      "sourceManifestSha256",
+      "sourceIndexSha256",
+      "conditionContractSha256",
+      "selectedSamplesSha256",
+      "splitCounts"
+    ],
+    "datasetReleasePayloadSha256": "fc8807d3501380ea3b9c43a895e711d94e40e14df97d805c52361d8a05a9fb16"
+  },
+  "samples": [
+    {
+      "ordinal": 1,
+      "sourceSampleIndex": 51,
+      "sourceContributionIndex": 0,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+      "capacitySlotId": "v7-capacity-slot-146",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3.png",
+        "sha256": "eb5c085a05f775ea8df2a8912ff806794dca25b7a378dc54102b142aecf43125"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "05ff62ecdce5a4d545af0dc4652e64fe580d272f032049a8b464924bb751e3aa"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-146-2026-08-02T01-32-06-285Z/contribution.json",
+        "sha256": "e25cbe34f15a1637e90dad3c6565f74a10e9db9930616afd4b79082af7a4919f"
+      }
+    },
+    {
+      "ordinal": 2,
+      "sourceSampleIndex": 52,
+      "sourceContributionIndex": 1,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v4",
+      "capacitySlotId": "v7-capacity-slot-147",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v4.png",
+        "sha256": "ba1d9b01e1b5e49dff3e05cd97eef892d50df5c0fdc4900a95a896717d0c0031"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-147-2026-07-31T15-15-31-152Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "0cb2073cbcceaae56ef7027dff2b77a3f237f9945e7a7d1efa83c222b75fdf39"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-147-2026-08-02T01-32-06-853Z/contribution.json",
+        "sha256": "4abd8ae2e03b3d42f2c5c86f3ea2ff70d27f2f8d3daacae6d40314a17a4ab0b3"
+      }
+    },
+    {
+      "ordinal": 3,
+      "sourceSampleIndex": 53,
+      "sourceContributionIndex": 2,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-148-grassland-forest-transition-v3",
+      "capacitySlotId": "v7-capacity-slot-148",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-148-grassland-forest-transition-v3.png",
+        "sha256": "66104463c962f8003fa9f5c37dc3b21fa13bef97919c066913755f0ed21c324f"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-148-2026-07-31T15-15-35-218Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "9843d76e47b267e565effb21a14a0035d8fda0b9182f725a0ff3a178140b5a8a"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-148-2026-08-02T01-33-04-307Z/contribution.json",
+        "sha256": "fbc0999a35b22127f9bb88ccec67c727eb2909c3f89e779ac838863d298d8d77"
+      }
+    },
+    {
+      "ordinal": 4,
+      "sourceSampleIndex": 54,
+      "sourceContributionIndex": 3,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v3",
+      "capacitySlotId": "v7-capacity-slot-149",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v3.png",
+        "sha256": "2059bff5101f9654568732e602153e7a5a5130950411423149bbf8ff9fc061c7"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-149-2026-07-31T15-15-39-125Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "5be0a232ec3704914ead75c27b8cd73675784b1fabac8d8548865af716d3e724"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-149-2026-08-02T01-33-05-220Z/contribution.json",
+        "sha256": "334e9a9f402152a344b9b015766d4606e5b2ccdd670a2a215b1cf95247ead74c"
+      }
+    },
+    {
+      "ordinal": 5,
+      "sourceSampleIndex": 55,
+      "sourceContributionIndex": 4,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-150-tropical-forest-glade-v3",
+      "capacitySlotId": "v7-capacity-slot-150",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-150-tropical-forest-glade-v3.png",
+        "sha256": "fbaa2d74ffa78d0b5199331a9aa50ba79b3502bf4c664791ba889508b6c0dfa9"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-150-2026-07-31T15-15-42-914Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "aa8facccd7e1bb549ddbb8307398409b9b4c940cb40bce9c5b2e17178b1e7abb"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-150-2026-08-02T01-33-06-096Z/contribution.json",
+        "sha256": "6124fa3f35c96d8ef4a8321a8c484c931512acfa914a3ad0143d655677e7d50f"
+      }
+    },
+    {
+      "ordinal": 6,
+      "sourceSampleIndex": 56,
+      "sourceContributionIndex": 5,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-151-tropical-forest-glade-v2",
+      "capacitySlotId": "v7-capacity-slot-151",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-151-tropical-forest-glade-v2.png",
+        "sha256": "8624941f6790f498bb299b9d0e046aaee54fdd9ea8c36e768ec3ed3e6cb2d8af"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-151-2026-07-31T15-15-46-761Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "ba3336d779c84188b1de8adcc8b791db024338fd9c280fee647549e0a9274b0d"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-151-2026-08-02T01-33-06-941Z/contribution.json",
+        "sha256": "f3fb9b4a2a0ebd89e4b36e5a20cc59dbda4ce0ba4447b8de52be0d61b2bc02c4"
+      }
+    },
+    {
+      "ordinal": 7,
+      "sourceSampleIndex": 57,
+      "sourceContributionIndex": 6,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-152-tropical-forest-glade-v2",
+      "capacitySlotId": "v7-capacity-slot-152",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-152-tropical-forest-glade-v2.png",
+        "sha256": "7581ef8ef51c32ff9ef8fd6b32d114bde51e31970316739c54948b77ad60f124"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-152-2026-07-31T15-15-50-940Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "2faea2b9b7441a1b92432ce6dc00330e7684bdaa604006115aceb9de53edbe54"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-152-2026-08-02T01-33-08-003Z/contribution.json",
+        "sha256": "59c5aca30779c7d3afa9875593353b7fd604a258fc491d9ce4fab84d8e72e400"
+      }
+    },
+    {
+      "ordinal": 8,
+      "sourceSampleIndex": 58,
+      "sourceContributionIndex": 7,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-153-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-153",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-153-forested-low-mountain-v2.png",
+        "sha256": "a16000be29f0a31da26ee4dc926ec69e1b02cce41a3242c0b70faa5e544716a7"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-153-2026-07-31T15-15-55-071Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "3436ccf7782658bedeea1d5c7ec1c62f0e51908c011a2f8684cced7c62519c7a"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-153-2026-08-02T01-33-08-909Z/contribution.json",
+        "sha256": "987f47141742531c967a314323d9a05478d8835cf82e070b225f96553ef02bc4"
+      }
+    },
+    {
+      "ordinal": 9,
+      "sourceSampleIndex": 59,
+      "sourceContributionIndex": 8,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-154-tropical-forest-glade-v2",
+      "capacitySlotId": "v7-capacity-slot-154",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-154-tropical-forest-glade-v2.png",
+        "sha256": "d8aba4d7f9d9c2df0c89bd0a94f7a05ea7cf6218d8821140ee86966573b49ca9"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-154-2026-07-31T15-15-59-036Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "51fa93e2565e7b43007e5f9c4a0ac20372c588a63a1ce24d253a733c194bbf6e"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-154-2026-08-02T01-33-09-787Z/contribution.json",
+        "sha256": "40242939bfe849f39eb38f6f3bccc2a8e2b9d7a10b4418777cd6f08812190163"
+      }
+    },
+    {
+      "ordinal": 10,
+      "sourceSampleIndex": 60,
+      "sourceContributionIndex": 9,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-155-grassland-forest-transition-v2",
+      "capacitySlotId": "v7-capacity-slot-155",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-155-grassland-forest-transition-v2.png",
+        "sha256": "f73598d4cf46cc5e8f3ee406558f32108d85248addaaa24faf614222c03d0563"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-155-2026-07-31T15-16-03-237Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "ab82c3c6a521e8b380d5f8abbaed804a266c58e952d57a8906b83e2a1b3698e6"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-155-2026-08-02T01-33-10-688Z/contribution.json",
+        "sha256": "552002a417faf4435a0ee65360b90be675d98f23448d212f5ff83e749d9f0a9e"
+      }
+    },
+    {
+      "ordinal": 11,
+      "sourceSampleIndex": 61,
+      "sourceContributionIndex": 10,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-156-seasonal-evergreen-semi-evergreen-forest-v2",
+      "capacitySlotId": "v7-capacity-slot-156",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-156-seasonal-evergreen-semi-evergreen-forest-v2.png",
+        "sha256": "a8fca44aa8f609efc10901ae82fc6ba04071145cac05c8ec9bac2e9810c847a3"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-156-2026-07-31T15-16-07-111Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "30ceafb13f32c85d151a52cbb813022ddb1489977bdce8ecf681eb367734140c"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-156-2026-08-02T01-33-11-517Z/contribution.json",
+        "sha256": "0b23bd00811af009dab4ef865e0df1face5ba777d91d9e0cdd145f370318d395"
+      }
+    },
+    {
+      "ordinal": 12,
+      "sourceSampleIndex": 62,
+      "sourceContributionIndex": 11,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-157-grassland-forest-transition-v2",
+      "capacitySlotId": "v7-capacity-slot-157",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-157-grassland-forest-transition-v2.png",
+        "sha256": "e54f721ca7d50310bcb13c706824572eb32b37b6c0b81cc9a233e9342f8adf6c"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-157-2026-07-31T15-16-11-187Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "2749797a10bb6b60ffe6a3cdcb268bfa5b52019da76a76d2f39c01764f1ae944"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-157-2026-08-02T01-33-12-380Z/contribution.json",
+        "sha256": "3069b7b6bf30e704917542e40bd4ba2f1984fb5ff90edb11b4cd461bcf19ad41"
+      }
+    },
+    {
+      "ordinal": 13,
+      "sourceSampleIndex": 63,
+      "sourceContributionIndex": 12,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-158-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-158",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-158-forested-low-mountain-v2.png",
+        "sha256": "a53de85677487ade567092ce84e189ce904789bc63e5ebb17c5d61af663fccc8"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-158-2026-07-31T15-51-15-121Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "ab5d3b03a0f86e0270fe8bd8c7982e91f47debc5052b94355df0e490500b6622"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-158-2026-08-02T01-33-13-227Z/contribution.json",
+        "sha256": "4292ef808af5df4aceba6258b482f62649356ead07e6baa687648c0fd386d2a6"
+      }
+    },
+    {
+      "ordinal": 14,
+      "sourceSampleIndex": 64,
+      "sourceContributionIndex": 13,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-159-dry-dipterocarp-woodland-v2",
+      "capacitySlotId": "v7-capacity-slot-159",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-159-dry-dipterocarp-woodland-v2.png",
+        "sha256": "04a636c198528bfd4324ec737a6f5a31529970ecbd2916dc84ba94ac51ac6620"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-159-2026-07-31T15-16-15-830Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "b43055160cb76b64952783dbf75099c02ee7525fd14aa796c64a6ce7aec0317c"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-159-2026-08-02T01-33-14-128Z/contribution.json",
+        "sha256": "bceaad0a3f616204c9a227df3193d338c5d3089342d363b45199b018bf5baba8"
+      }
+    },
+    {
+      "ordinal": 15,
+      "sourceSampleIndex": 65,
+      "sourceContributionIndex": 14,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-160-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-160",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-160-forested-low-mountain-v2.png",
+        "sha256": "e5c292f965e285669206fed6bb88d2b93334c969c20f7997ba04ab11eefa3ada"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-160-2026-07-31T15-16-19-885Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "d9e2317174590c737156e24cac34e2f5d39e7fc8e814fe84a93d16e5327882d4"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-160-2026-08-02T01-33-14-973Z/contribution.json",
+        "sha256": "0229dab23a6cf5ba4cb2ebcf0b424df1669d3de83ca647046d33a8113884ea76"
+      }
+    },
+    {
+      "ordinal": 16,
+      "sourceSampleIndex": 66,
+      "sourceContributionIndex": 15,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-161-grassland-forest-transition-v2",
+      "capacitySlotId": "v7-capacity-slot-161",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-161-grassland-forest-transition-v2.png",
+        "sha256": "7354fbd43b0e852124b61b320632c4c31324881d69f7cb3730778cdd2777353e"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-161-2026-07-31T15-16-23-955Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "08087b0ee17225d5a3bbeee6fc607dccb3fdb19cbde1d4a85a5fa51e848e58cf"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-161-2026-08-02T01-33-15-839Z/contribution.json",
+        "sha256": "04250693e769a76e631d4dfd99d4385c25285a88dffbfc1a4437491c9b0dad43"
+      }
+    },
+    {
+      "ordinal": 17,
+      "sourceSampleIndex": 67,
+      "sourceContributionIndex": 16,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-162-grassland-forest-transition-v2",
+      "capacitySlotId": "v7-capacity-slot-162",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-162-grassland-forest-transition-v2.png",
+        "sha256": "39ed2f86d982a3fd9b0bf82cb13eb9b0d606ef090812cedf667054f6fd7540ab"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-162-2026-07-31T15-16-27-851Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "9363dc1331e9b6ef8c59483ada37fe35a32425dc89bd46cd2c9dec4405a31a8c"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-162-2026-08-02T01-33-16-686Z/contribution.json",
+        "sha256": "7104075bcae0274778ced3b2eec6bb3bac53c6711ac5ce33179b76b54a5e338f"
+      }
+    },
+    {
+      "ordinal": 18,
+      "sourceSampleIndex": 68,
+      "sourceContributionIndex": 17,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-163-tropical-forest-glade-v2",
+      "capacitySlotId": "v7-capacity-slot-163",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-163-tropical-forest-glade-v2.png",
+        "sha256": "2e5bfc4b4052c70a8467bb4387a527f1c2b51ed4d5ce406191d03e5d8fed92db"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-163-2026-07-31T15-16-31-790Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "0d9a96a192409e8fd5d649aaccd69e1ff69170068f5324434cc9e9efd882e116"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-163-2026-08-02T01-33-17-580Z/contribution.json",
+        "sha256": "3a090297be5d5f075c6659662ce6289c7e0bda0732a8fdaab63d40d4d8ae7185"
+      }
+    },
+    {
+      "ordinal": 19,
+      "sourceSampleIndex": 69,
+      "sourceContributionIndex": 18,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-164-bamboo-grove-v2",
+      "capacitySlotId": "v7-capacity-slot-164",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-164-bamboo-grove-v2.png",
+        "sha256": "ae12f6629ca34c3c6f1911edf89c541067e8277e0dce5c8191cd67bd03ee00cd"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-164-2026-07-31T15-16-35-713Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "d67d989338738507a903919bae8f4580cc89373b0f29f7b45b7fffa28b86698a"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-164-2026-08-02T01-33-18-433Z/contribution.json",
+        "sha256": "e8f230a04c98d4de1fc487f7603068933fe003c11484b95bd10e0231ec0d02b8"
+      }
+    },
+    {
+      "ordinal": 20,
+      "sourceSampleIndex": 70,
+      "sourceContributionIndex": 19,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-165-seasonal-evergreen-semi-evergreen-forest-v2",
+      "capacitySlotId": "v7-capacity-slot-165",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-165-seasonal-evergreen-semi-evergreen-forest-v2.png",
+        "sha256": "e39595f27fee1b3ccd5c1c1e7078ee7502264705e7476c70eccf047c41d29ab3"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-165-2026-07-31T15-16-39-650Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "607ac1e696d9847f902e215328638b417680c0672d57a4d5d8b677727d324b88"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-165-2026-08-02T01-33-19-313Z/contribution.json",
+        "sha256": "7cb253f48557626b95c2247f72b3cb95b56f92b79cbfa9f66464677392455515"
+      }
+    },
+    {
+      "ordinal": 21,
+      "sourceSampleIndex": 71,
+      "sourceContributionIndex": 20,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-166-seasonal-evergreen-semi-evergreen-forest-v2",
+      "capacitySlotId": "v7-capacity-slot-166",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-166-seasonal-evergreen-semi-evergreen-forest-v2.png",
+        "sha256": "c1ae207037dfcf79a8267053e70b5de1e49904a5dd40a9279355087d81505d85"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-166-2026-07-31T15-16-43-409Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "9d3889b5aff1416a84ddeabcd88e37da66c0a52ad85418bc763268ca72b566a8"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-166-2026-08-02T01-33-20-191Z/contribution.json",
+        "sha256": "99b0cf2a53d0304a5b27cec08fdb6d5437aa8997f4011629cef37b6c2213867a"
+      }
+    },
+    {
+      "ordinal": 22,
+      "sourceSampleIndex": 72,
+      "sourceContributionIndex": 21,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-167-tropical-forest-glade-v2",
+      "capacitySlotId": "v7-capacity-slot-167",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-167-tropical-forest-glade-v2.png",
+        "sha256": "adb86e2d3ae21fda392085efcf2bad7fc0a0e050c0d540c9ed9b3118288d28ce"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-167-2026-07-31T15-16-47-167Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "6acb17eb172153dc3a71545cb7822b8033d75a5ca7f2e20fe1eb8442392e5619"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-167-2026-08-02T01-33-21-045Z/contribution.json",
+        "sha256": "a0fb528a7a590a11c597b46daf4f9b9bd0bd9b3f296028d442e200a87748c356"
+      }
+    },
+    {
+      "ordinal": 23,
+      "sourceSampleIndex": 73,
+      "sourceContributionIndex": 22,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-168-dry-dipterocarp-woodland-v3",
+      "capacitySlotId": "v7-capacity-slot-168",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-168-dry-dipterocarp-woodland-v3.png",
+        "sha256": "9e6f82eceb731407afa343009a8af505066726e5e3c60c22504d128a493a1042"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-168-2026-07-31T15-16-51-173Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "194332dbafac11530a2cd7c81ac0fac7f4eb524a67f103eb6a3e61a25e640395"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-168-2026-08-02T01-33-21-874Z/contribution.json",
+        "sha256": "84f0355af52ed4a900fef575456f5ac4c3276b57de6cedd065169a51a742d913"
+      }
+    },
+    {
+      "ordinal": 24,
+      "sourceSampleIndex": 74,
+      "sourceContributionIndex": 23,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-169-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-169",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-169-forested-low-mountain-v2.png",
+        "sha256": "272fb9f9ce42427f3ff7ae3d958afecdeadd079b6e839f896f0285da94818814"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-169-2026-07-31T16-10-15-246Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "5a984e08f5db2bab1e3214859d839cbe31a0d4d63f8ebabdc862e04777af4179"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-169-2026-08-02T01-33-22-720Z/contribution.json",
+        "sha256": "ff2bc0b08d20cb0b1df10e9e39c82a1f9e16777e79a2d30a4425b409583209fa"
+      }
+    },
+    {
+      "ordinal": 25,
+      "sourceSampleIndex": 75,
+      "sourceContributionIndex": 24,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-170-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-170",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-170-forested-low-mountain-v2.png",
+        "sha256": "f5402987ff8dc00ba2f674183053251953e0c6646bde81f04edae95a7ad1e744"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-170-2026-07-31T15-16-58-823Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "b210a28601673f8229f04eba7607e582a142318ca213c426163105dd10b0e493"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-170-2026-08-02T01-33-23-745Z/contribution.json",
+        "sha256": "b642cc53d85783c93e64361471140070ccf793378aeb6413cc5eeb5ee5e6e467"
+      }
+    },
+    {
+      "ordinal": 26,
+      "sourceSampleIndex": 76,
+      "sourceContributionIndex": 25,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-171-grassland-forest-transition-v2",
+      "capacitySlotId": "v7-capacity-slot-171",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-171-grassland-forest-transition-v2.png",
+        "sha256": "94dd15eb4c3fca86fed4243da0268b2c45813f4845fe64cf2bd398c0b0f240da"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-171-2026-07-31T15-17-02-703Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "89fa366c9856b1b4a959d6476e1eed40f9dbd1c041531f3e050450dda673de66"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-171-2026-08-02T01-33-24-925Z/contribution.json",
+        "sha256": "f294dd994419bf33901d2d5a548680f121564320356983c1c5d4fbf5f9f203b6"
+      }
+    },
+    {
+      "ordinal": 27,
+      "sourceSampleIndex": 77,
+      "sourceContributionIndex": 26,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-172-seasonal-evergreen-semi-evergreen-forest-v2",
+      "capacitySlotId": "v7-capacity-slot-172",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-172-seasonal-evergreen-semi-evergreen-forest-v2.png",
+        "sha256": "fc1d686251a16bf9eb1e5fa0d7685ae07e2888a70b03fd93bfa8a44c1059b963"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-172-2026-07-31T15-17-06-812Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "c6720c40e77574bb5537fbbbe76f1f04c81845aab626dbb847cb47dfc804f64d"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-172-2026-08-02T01-33-25-840Z/contribution.json",
+        "sha256": "eefc6e28a6b291512517ee116f5a4cd11a43dadccf4d9a909b7914b40d2c3e8c"
+      }
+    },
+    {
+      "ordinal": 28,
+      "sourceSampleIndex": 78,
+      "sourceContributionIndex": 27,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-173-grassland-forest-transition-v2",
+      "capacitySlotId": "v7-capacity-slot-173",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-173-grassland-forest-transition-v2.png",
+        "sha256": "629ea3b39415b3527155c1cb3e732c3b355c5b96caffde79246b7ce1150ad2c0"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-173-2026-07-31T15-17-10-851Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "89436ebd8f46e4fcff5faf5e60810e10ddeda682adf2df41e1f2244cfa70bb42"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-173-2026-08-02T01-33-26-748Z/contribution.json",
+        "sha256": "c409c0164a6c0a10311be072f6e7f08cc10d9cd3498e783c67974e6d9a0543a2"
+      }
+    },
+    {
+      "ordinal": 29,
+      "sourceSampleIndex": 79,
+      "sourceContributionIndex": 28,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-174-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-174",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-174-forested-low-mountain-v2.png",
+        "sha256": "98f17546b6188d37902f540101288b141c8ef3093f75a96c1a9e2be625664e73"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-174-2026-07-31T15-17-14-716Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "cfdb8ad5ceb5dbeba2c01e5436fa48e72e9de4cb90d844837a1eff86414d6dd0"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-174-2026-08-02T01-33-27-634Z/contribution.json",
+        "sha256": "4bda174275897c518e69c3bcdfd3be6e74f9c1e1ab265b1f26e8d073ed9cf123"
+      }
+    },
+    {
+      "ordinal": 30,
+      "sourceSampleIndex": 80,
+      "sourceContributionIndex": 29,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-175-dry-dipterocarp-woodland-v2",
+      "capacitySlotId": "v7-capacity-slot-175",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-175-dry-dipterocarp-woodland-v2.png",
+        "sha256": "4f737e211951a7b375c599b9c40021167a9eae70da9eed55bb5cbd9eda4529eb"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-175-2026-07-31T15-17-18-870Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "5a67bee10de0cd5e567b43bd6733d8e96cf9b96d4cde5579604d976c6c3dc8b7"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-175-2026-08-02T01-33-28-523Z/contribution.json",
+        "sha256": "684e915fa574319c1379db6f00e8c652ce54f5f566271b1dca34595a15b8102f"
+      }
+    },
+    {
+      "ordinal": 31,
+      "sourceSampleIndex": 81,
+      "sourceContributionIndex": 30,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-176-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-176",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-176-forested-low-mountain-v2.png",
+        "sha256": "a292fb0aa5e6ac7cfc05b83565d16c645be850dcb8731ef485d7d3746ef4853a"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-176-2026-07-31T15-17-22-850Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "614d6783b47b1d100722f4e118b9825f5189484ea62f0f060a1fc88297afda1d"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-176-2026-08-02T01-33-29-451Z/contribution.json",
+        "sha256": "e1324c5edf45070f7c46965d842c7021dff20a60fc6898daca5223d1455e84d4"
+      }
+    },
+    {
+      "ordinal": 32,
+      "sourceSampleIndex": 82,
+      "sourceContributionIndex": 31,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-177-dry-dipterocarp-woodland-v2",
+      "capacitySlotId": "v7-capacity-slot-177",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-177-dry-dipterocarp-woodland-v2.png",
+        "sha256": "be18ccaa93ce697b1d2ccefd7517a8fa172349e9fe81000624955834ab6c1d09"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-177-2026-07-31T15-17-26-761Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "a2056b9d6709e044055ab4fe03c7c372ee2ea6ba6cf1e9b0446a2eac9871ffa8"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-177-2026-08-02T01-33-30-324Z/contribution.json",
+        "sha256": "8a9886acdcd9643778f0c96a3470f73d825e9385f2521a09f10a6a20fecb9d77"
+      }
+    },
+    {
+      "ordinal": 33,
+      "sourceSampleIndex": 83,
+      "sourceContributionIndex": 32,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-178-forested-low-mountain-v3",
+      "capacitySlotId": "v7-capacity-slot-178",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-178-forested-low-mountain-v3.png",
+        "sha256": "2d914e0f710c1fe3ecefa1936f878f9679f357a89d71280b376bc892d1dc4ce5"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-178-2026-07-31T15-17-30-674Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "9e295bc3c53d0226b673b18e3e7e90d0f98d33a69a364871410285058ceb16fa"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-178-2026-08-02T01-33-31-267Z/contribution.json",
+        "sha256": "958e9afc0b0d64af8c5718c7421d628e5c82c574a292d7edd7cb1194bd3d992c"
+      }
+    },
+    {
+      "ordinal": 34,
+      "sourceSampleIndex": 84,
+      "sourceContributionIndex": 33,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-179-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-179",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-179-forested-low-mountain-v2.png",
+        "sha256": "b653249e3da6ba7c0bfe929da52df693bdadc0ec9696aa31445dd7bd1665ad84"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-179-2026-07-31T15-17-34-659Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "c06f0a7b5de206eb86444eaa8e80d86c51dc37b760c208eeee47cd758534542c"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-179-2026-08-02T01-33-32-222Z/contribution.json",
+        "sha256": "6b7428c4af1e088c7b1b7807d4b08e7b5654a375cfd6bdd9c3115a708a60f15e"
+      }
+    },
+    {
+      "ordinal": 35,
+      "sourceSampleIndex": 85,
+      "sourceContributionIndex": 34,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-180-seasonal-evergreen-semi-evergreen-forest-v2",
+      "capacitySlotId": "v7-capacity-slot-180",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-180-seasonal-evergreen-semi-evergreen-forest-v2.png",
+        "sha256": "0568374d0505dd2c70f2c6a3e9c643cae8c5855b0904bbdef9ed06c5c54ada92"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-180-2026-07-31T15-17-38-642Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "05ca68ce9d9982ba0bceaf8b3c50788db702768d0664ce22e8dc60633d17feb9"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-180-2026-08-02T01-33-33-186Z/contribution.json",
+        "sha256": "b94bdfb12b45d883757182bbde24af9a673dd846d112c7565d3a86bd2ba96e61"
+      }
+    },
+    {
+      "ordinal": 36,
+      "sourceSampleIndex": 86,
+      "sourceContributionIndex": 35,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-181-dry-dipterocarp-woodland-v2",
+      "capacitySlotId": "v7-capacity-slot-181",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-181-dry-dipterocarp-woodland-v2.png",
+        "sha256": "645db30a33f280de2fe15d7c6cf0411b7e82b73de1f974ffc6de8241598df2e2"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-181-2026-07-31T15-17-42-496Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "82a8ff1408216fb3e5526062178fd4058376ee02c1966f1a3c9030d8cbd1bc5f"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-181-2026-08-02T01-33-34-062Z/contribution.json",
+        "sha256": "cd0d762f5627e350c3afffcc6cf00f95dd590ed00b6e9e607942c3c1ad5f5588"
+      }
+    },
+    {
+      "ordinal": 37,
+      "sourceSampleIndex": 87,
+      "sourceContributionIndex": 36,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-182-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-182",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-182-forested-low-mountain-v2.png",
+        "sha256": "47c7b890539e996252b3730fb63bf2eb4d92799fa144088d6a0be0243584ac5a"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-182-2026-07-31T15-17-46-332Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "10c9acf00b493e07a0e745c02e13053c6f1d1658818e4998cb9f9cc49fdf4728"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-182-2026-08-02T01-33-34-932Z/contribution.json",
+        "sha256": "16ca35bac95296db5ef0d1935c3e878c26d1058239aa8369ad266d463a1539d1"
+      }
+    },
+    {
+      "ordinal": 38,
+      "sourceSampleIndex": 88,
+      "sourceContributionIndex": 37,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-183-bamboo-grove-v2",
+      "capacitySlotId": "v7-capacity-slot-183",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-183-bamboo-grove-v2.png",
+        "sha256": "7b7f60b878a347df285af1c334de55ea3534cc138fdacede5844fb4e824357c9"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-183-2026-07-31T15-17-50-660Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "2842559d278d6430103a97cc44813e6e7190c6e392be4f55dad8ace7f20f695f"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-183-2026-08-02T01-33-35-838Z/contribution.json",
+        "sha256": "190d7b6e797f85160fe018c8c0b8be6031e53fbdbbe3f8abd65bfd75fb0650ff"
+      }
+    },
+    {
+      "ordinal": 39,
+      "sourceSampleIndex": 89,
+      "sourceContributionIndex": 38,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-184-seasonal-evergreen-semi-evergreen-forest-v3",
+      "capacitySlotId": "v7-capacity-slot-184",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-184-seasonal-evergreen-semi-evergreen-forest-v3.png",
+        "sha256": "6fc06c43536fccfb33323ec8401e719172811692dc70c02a25ad5396bf866135"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-184-2026-07-31T15-17-54-525Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "bc10b2a14fdb25138ad6007527881c008dfe1349ed6dfe78ef33a0067d0472f4"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-184-2026-08-02T01-33-36-726Z/contribution.json",
+        "sha256": "6eeadb431e5e3ad211ab819fbaecf41324c3fa178c2ae6913665285f51ae6394"
+      }
+    },
+    {
+      "ordinal": 40,
+      "sourceSampleIndex": 90,
+      "sourceContributionIndex": 39,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-185-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-185",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-185-forested-low-mountain-v2.png",
+        "sha256": "44227da70ff35a454a543eacfbc45a8fd89fd65799f1da66dc88d2e54eba2b46"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-185-2026-07-31T16-22-32-868Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "8f742fc37ed6f04c73a0dbb0c9feff31bd3daeab933d610cbdfa178b874aec1f"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-185-2026-08-02T01-33-37-649Z/contribution.json",
+        "sha256": "c279d3df4f7c55d5d83ca6450447dad9180092e8b8dac278b96364332b5f14ea"
+      }
+    },
+    {
+      "ordinal": 41,
+      "sourceSampleIndex": 91,
+      "sourceContributionIndex": 40,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-186-grassland-forest-transition-v2",
+      "capacitySlotId": "v7-capacity-slot-186",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-186-grassland-forest-transition-v2.png",
+        "sha256": "ea8ef19334571188af840c4cb1508296a456da76c2ed9216d74a974a1e1bd9b4"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-186-2026-07-31T15-18-02-712Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "8d1d85c5f308a18f716202791333e7847ae0fed4bc596754bbb15ae07bf3d079"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-186-2026-08-02T01-33-39-118Z/contribution.json",
+        "sha256": "38d767ba46e9a26a941088f013d9fc391db3d8e788ffff93ead97d5a511079c3"
+      }
+    },
+    {
+      "ordinal": 42,
+      "sourceSampleIndex": 92,
+      "sourceContributionIndex": 41,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-187-grassland-forest-transition-v2",
+      "capacitySlotId": "v7-capacity-slot-187",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-187-grassland-forest-transition-v2.png",
+        "sha256": "5bb29dc7c04a51ca618bd7e5e439f260dfab265abb865d3c78f3c2cd3220460a"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-187-2026-07-31T15-18-06-903Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "18664017ba328eb1121337fc1f2fce3b62dd4c2ddc983685f44295ded45f494f"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-187-2026-08-02T01-33-40-060Z/contribution.json",
+        "sha256": "24155e7beec6bb0e9876b8790beef56af717e2401586ff9663be51c9b962bb6d"
+      }
+    },
+    {
+      "ordinal": 43,
+      "sourceSampleIndex": 93,
+      "sourceContributionIndex": 42,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-188-grassland-forest-transition-v3",
+      "capacitySlotId": "v7-capacity-slot-188",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-188-grassland-forest-transition-v3.png",
+        "sha256": "90c3f83382c372e7bafe8e50f9eecf0b2376aeea7a8b69671b369116341cc6c5"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-188-2026-07-31T15-18-10-912Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "7e369c9175639c878621c69dc9815063c6b3935a4a39a5dcab1c863c17461835"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-188-2026-08-02T01-33-40-952Z/contribution.json",
+        "sha256": "2e9e0d6d37b0412d9cd571b309a126ad21b2ec880176ca8773da1fda0da3d321"
+      }
+    },
+    {
+      "ordinal": 44,
+      "sourceSampleIndex": 94,
+      "sourceContributionIndex": 43,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+      "capacitySlotId": "v7-capacity-slot-189",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2.png",
+        "sha256": "0ba187e506e440a35fc7da831923fbbce4a7286c68a4b56649f36aa8a46e0d52"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-189-2026-07-31T15-18-14-787Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "7096a2f5ce56099407b82797787297237f2e1193904407eb9d80f392a9297991"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-189-2026-08-02T01-33-41-947Z/contribution.json",
+        "sha256": "b41ecc1763a2d03c2dc91f46eb3cef6880730633d8641a22c750088298f0babf"
+      }
+    },
+    {
+      "ordinal": 45,
+      "sourceSampleIndex": 95,
+      "sourceContributionIndex": 44,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7",
+      "capacitySlotId": "v7-capacity-slot-190",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7.png",
+        "sha256": "376fd221dae23962ab84c3cca78c0bd9f0e97464fc943ba314737e28f3fc4e2c"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "1079fac2754423c04a680ceafa0f8c8a7032d5700921ef52e3941dd2b428bc5f"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-190-2026-08-02T01-00-04-104Z/contribution.json",
+        "sha256": "5e6c3a1bc99e9b795a8baf418e38aff6e65cf75f0cb89d355f9026bea6e8d3db"
+      }
+    },
+    {
+      "ordinal": 46,
+      "sourceSampleIndex": 96,
+      "sourceContributionIndex": 45,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-191-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-191",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-191-forested-low-mountain-v2.png",
+        "sha256": "a8e27cc946a4fb4c828a987eec124b87c6d1de1cb7428c78632153cd48ff40e7"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-191-2026-07-31T15-19-11-300Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "f26d392327ef6a7734895d79cadd4ba8c62cf7be8734171d1cd2b507791fca50"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-191-2026-08-02T01-33-43-225Z/contribution.json",
+        "sha256": "398a442993f6277f6d07d82d96cee4a945ca00e65ffc4a649b94251ed661d699"
+      }
+    },
+    {
+      "ordinal": 47,
+      "sourceSampleIndex": 97,
+      "sourceContributionIndex": 46,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-192-forested-low-mountain-v3",
+      "capacitySlotId": "v7-capacity-slot-192",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-192-forested-low-mountain-v3.png",
+        "sha256": "c88e906c8aebff64b5a598a92bc479f8126bd632d2f49dcb8cd1e890146f14c7"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-192-2026-07-31T15-19-15-440Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "d4835cc0d5f90ab888a68ec4d6b97011fb54c4730ae7af9c2e53b52cc7aeed3d"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-192-2026-08-02T01-33-44-066Z/contribution.json",
+        "sha256": "8327e2067372155af8b276bb546965afa798d6c3b7a8986c93bdc1761701ac1f"
+      }
+    },
+    {
+      "ordinal": 48,
+      "sourceSampleIndex": 98,
+      "sourceContributionIndex": 47,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-193-tropical-forest-glade-v2",
+      "capacitySlotId": "v7-capacity-slot-193",
+      "split": "train",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-193-tropical-forest-glade-v2.png",
+        "sha256": "4c7dc26c720d0339e528b8b4a3dbc46be472b46eaba7bc16da032521feb7b51f"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-193-2026-07-31T15-19-19-190Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "4bb10840856212a069426771d7de94d044caab8a564db5264caf452d7877237b"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-193-2026-08-02T01-33-44-926Z/contribution.json",
+        "sha256": "717a78a4dbdcfde61f65c1e667215979810a0016a79bbdafe91fb92eee8fe79f"
+      }
+    },
+    {
+      "ordinal": 49,
+      "sourceSampleIndex": 99,
+      "sourceContributionIndex": 48,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+      "capacitySlotId": "v7-capacity-slot-194",
+      "split": "validation",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6.png",
+        "sha256": "13caf53dce064afdd0bc1318f4c5b5bb9b3c63631679d84ccd3ed3ab992688be"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-194-2026-08-01T15-47-45-117Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "2db536def8a3b7d3049b7cae673942edd77aa1151f432dc5774f2b3a33579ca9"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-194-2026-08-01T22-18-32-367Z/contribution.json",
+        "sha256": "8d6add552c64931912f789081bbda8c26d00830b45ac995def1cfcb344e08b8b"
+      }
+    },
+    {
+      "ordinal": 50,
+      "sourceSampleIndex": 100,
+      "sourceContributionIndex": 49,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-195-seasonal-evergreen-semi-evergreen-forest-v2",
+      "capacitySlotId": "v7-capacity-slot-195",
+      "split": "validation",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-195-seasonal-evergreen-semi-evergreen-forest-v2.png",
+        "sha256": "b7dc8156c48f8e605de57d0f78abed415a7e096cac694eb0836f812bdff77de0"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-195-2026-07-31T15-20-50-814Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "92ec9af253b700bf7b0ae134d7d76d1a2ca1184089b5d6fa577059b776b84d73"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-195-2026-08-02T01-33-46-215Z/contribution.json",
+        "sha256": "59cc87a76685ab576c9120a7cdafca9eb2b218aedf6ae730ba918876168f5856"
+      }
+    },
+    {
+      "ordinal": 51,
+      "sourceSampleIndex": 101,
+      "sourceContributionIndex": 50,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-196-seasonal-evergreen-semi-evergreen-forest-v2",
+      "capacitySlotId": "v7-capacity-slot-196",
+      "split": "validation",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-196-seasonal-evergreen-semi-evergreen-forest-v2.png",
+        "sha256": "a5af9e088dbef4c287142c5c7f5e5b4f5afe53f4682693688da7d2105a3cf56c"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-196-2026-07-31T15-20-55-058Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "8ed0928d9b6536255ffbf80d07437567d4af2a4be58b81374887bb543304f25c"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-196-2026-08-02T01-33-47-080Z/contribution.json",
+        "sha256": "9c075d5192589e9e2bee5c59d71c126f4470ae870eace5c7f137e243c78ce9d6"
+      }
+    },
+    {
+      "ordinal": 52,
+      "sourceSampleIndex": 102,
+      "sourceContributionIndex": 51,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-197-tropical-forest-glade-v2",
+      "capacitySlotId": "v7-capacity-slot-197",
+      "split": "validation",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-197-tropical-forest-glade-v2.png",
+        "sha256": "032a33a1b0858f7ce4543feaa21d11cc269c9dadebe5dab9620f6108d34bd7fb"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-197-2026-07-31T15-20-59-164Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "2691095e4e0bee4572bd82dacec3866ccceaf027b89f9d81eb47c39b64e74201"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-197-2026-08-02T01-33-47-931Z/contribution.json",
+        "sha256": "6c34a1bd541684e9381f9af6aa339b532f206129e2c766475e25865847c9579b"
+      }
+    },
+    {
+      "ordinal": 53,
+      "sourceSampleIndex": 103,
+      "sourceContributionIndex": 52,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-198-grassland-forest-transition-v4",
+      "capacitySlotId": "v7-capacity-slot-198",
+      "split": "validation",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-198-grassland-forest-transition-v4.png",
+        "sha256": "5c9f483eed72e054fb745dc6853e5b12bfe7d639762bbd60efb3172559ef7c5c"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-198-2026-07-31T15-21-03-287Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "245be396615567ab7c115f80b7295efd38c4e56bd53fbd2ac3e6c68814e1f5f6"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-198-2026-08-02T01-33-48-809Z/contribution.json",
+        "sha256": "f8ae2c8da0a5e0343d33175a154bc032173786ed58345b4e55c74d834ba2d0af"
+      }
+    },
+    {
+      "ordinal": 54,
+      "sourceSampleIndex": 104,
+      "sourceContributionIndex": 53,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-199-grassland-forest-transition-v1",
+      "capacitySlotId": "v7-capacity-slot-199",
+      "split": "validation",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-199-grassland-forest-transition-v1.png",
+        "sha256": "70c832d4ac692e9227424daf05f81dd37d58dc9a626a1eb7b875e49d4ad40c2b"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-199-2026-07-31T15-21-07-716Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "d41247e5ac0968b2bac4e43e5f8845309e5e49ddbdee18f0074e663c745148a8"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-199-2026-08-02T01-33-49-673Z/contribution.json",
+        "sha256": "ec3f3333897e9426538939b33ea1859d073319b9ede5f2ecfbfbdd7be7b6f575"
+      }
+    },
+    {
+      "ordinal": 55,
+      "sourceSampleIndex": 105,
+      "sourceContributionIndex": 54,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-200-forested-low-mountain-v2",
+      "capacitySlotId": "v7-capacity-slot-200",
+      "split": "validation",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-200-forested-low-mountain-v2.png",
+        "sha256": "8640a8a3e746f85f76d10751bd18e09f1d643e88042f88c3dab857bab122467a"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-200-2026-07-31T15-21-11-763Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "dd9ac03c356f8fc43817a4380f60823b6a75ddc3d5e9255171418cd497dde4d1"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-200-2026-08-02T01-33-50-666Z/contribution.json",
+        "sha256": "af3b6c6a9089cb8d79691f59489a37c1fac0fd538f60f94a4d5c718f49a0980f"
+      }
+    },
+    {
+      "ordinal": 56,
+      "sourceSampleIndex": 106,
+      "sourceContributionIndex": 55,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-201-bamboo-grove-v1",
+      "capacitySlotId": "v7-capacity-slot-201",
+      "split": "validation",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-201-bamboo-grove-v1.png",
+        "sha256": "db840cf363a7d6fff04e83ffa91704b2d4a5feaf60f69dd4b470e275c2009a59"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-201-2026-07-31T15-51-38-067Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "394a7cdc90aa949c1945f7686aba8c0e17cdb88dfb0eeb729b0ca5b745423f0f"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-201-2026-08-02T01-33-51-674Z/contribution.json",
+        "sha256": "d5ad6dd4f571d8f5672ccb9f2f3528701c02933470db9b81ccb00e1c2088b906"
+      }
+    },
+    {
+      "ordinal": 57,
+      "sourceSampleIndex": 107,
+      "sourceContributionIndex": 56,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-202-dry-dipterocarp-woodland-v1",
+      "capacitySlotId": "v7-capacity-slot-202",
+      "split": "challenge",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-202-dry-dipterocarp-woodland-v1.png",
+        "sha256": "61a2d394f71709cca886b6ff056b872877af614de0e85520bcd59518ba3168e7"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-202-2026-07-31T15-21-18-321Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "300eb4840d104c086a7d0597b15ffc3c5c28c004923c300091089c0f32b5ca49"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-202-2026-08-02T01-33-52-649Z/contribution.json",
+        "sha256": "9d21541f20790a31022fca6073e2f5e905638c289f62582d35b604c5e45bb50c"
+      }
+    },
+    {
+      "ordinal": 58,
+      "sourceSampleIndex": 108,
+      "sourceContributionIndex": 57,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-203-tropical-forest-glade-v1",
+      "capacitySlotId": "v7-capacity-slot-203",
+      "split": "challenge",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-203-tropical-forest-glade-v1.png",
+        "sha256": "0971ed4893f75cc38e45025094e47336e7c5b2712d474fd26f26a2610fbf817f"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-203-2026-07-31T15-21-22-119Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "73c2db7e4d75e7722a764df93d408bbcd1d7dffd040e8677c61345b9a13aa5b7"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-203-2026-08-02T01-33-53-634Z/contribution.json",
+        "sha256": "4ba6f53422cfe05e6ef07e8819014697f33c73838c4f1d99d8e8c5e2a88ac864"
+      }
+    },
+    {
+      "ordinal": 59,
+      "sourceSampleIndex": 109,
+      "sourceContributionIndex": 58,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-204-forested-low-mountain-v1",
+      "capacitySlotId": "v7-capacity-slot-204",
+      "split": "challenge",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-204-forested-low-mountain-v1.png",
+        "sha256": "4587d584ec285448afeed70577076b90778c576aea47ebb2c6d662272e600acf"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-204-2026-07-31T15-21-26-177Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "087ea381e6448e1285b4eb66ad970e4cdce42dfa7dce03f51ccd2539c7e0072d"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-204-2026-08-02T01-33-54-591Z/contribution.json",
+        "sha256": "855f3034b49960363ca597ab1be50041bb97b268882b06f5ed84c768eaf3f2a7"
+      }
+    },
+    {
+      "ordinal": 60,
+      "sourceSampleIndex": 110,
+      "sourceContributionIndex": 59,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-205-dry-dipterocarp-woodland-v1",
+      "capacitySlotId": "v7-capacity-slot-205",
+      "split": "challenge",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-205-dry-dipterocarp-woodland-v1.png",
+        "sha256": "8965d5ca852b27774319dab1c1df24d8b5e99b612121d5f31acba250a9d7e7af"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-205-2026-07-31T16-10-34-618Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "ff9b83c7f670fa9299c18b16631e93c89f505ccec6eafd3b9948897162cdfcc6"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-205-2026-08-02T01-33-55-530Z/contribution.json",
+        "sha256": "d554297475cca862dd26ccad857ccc2e62c773aed07aeda6cf50a97563634310"
+      }
+    },
+    {
+      "ordinal": 61,
+      "sourceSampleIndex": 111,
+      "sourceContributionIndex": 60,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-206-bamboo-grove-v1",
+      "capacitySlotId": "v7-capacity-slot-206",
+      "split": "regression",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-206-bamboo-grove-v1.png",
+        "sha256": "df78c4b979ac7e7e27527a8d9a692d2eb36faf823b81bfddaf90601b73db1b82"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-206-2026-07-31T15-21-34-374Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "85672023de1b0368204d0538c023aa9dc7404cde08eb570168e7744c10747bd8"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-206-2026-08-02T01-33-56-425Z/contribution.json",
+        "sha256": "e09eb2166a161065e05f07449f26217bdb5b2319b8f641089418277405d81c87"
+      }
+    },
+    {
+      "ordinal": 62,
+      "sourceSampleIndex": 112,
+      "sourceContributionIndex": 61,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-207-tropical-forest-glade-v1",
+      "capacitySlotId": "v7-capacity-slot-207",
+      "split": "regression",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-207-tropical-forest-glade-v1.png",
+        "sha256": "0833aaef58e9751d7e498e43c839acd4b805eeb22da891e22759b978c485f6bc"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-207-2026-07-31T15-21-38-461Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "238f719e149c942dd81f154d25e1f4e5558afa54b20e1c1c6572d46178ecb213"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-207-2026-08-02T01-33-57-294Z/contribution.json",
+        "sha256": "5d97076562b4257ea76e7a551b9b286252a2e09960bc8a92eee59628b5fa79d2"
+      }
+    },
+    {
+      "ordinal": 63,
+      "sourceSampleIndex": 113,
+      "sourceContributionIndex": 62,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-208-forested-low-mountain-v1",
+      "capacitySlotId": "v7-capacity-slot-208",
+      "split": "regression",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-208-forested-low-mountain-v1.png",
+        "sha256": "62bd0b60d9fa692dce36fa10526f4ed83eccf68eed22df6428385d5c3e3005cc"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-208-2026-07-31T15-21-42-685Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "de7453f267191886594b1e54281486beedcb1f1ad6d59afcb385b8096e8878a5"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-208-2026-08-02T01-33-58-407Z/contribution.json",
+        "sha256": "28632cd40598ca7f9cd772c74507cd71fbe3fe3636da9793425ea13f89822be7"
+      }
+    },
+    {
+      "ordinal": 64,
+      "sourceSampleIndex": 114,
+      "sourceContributionIndex": 63,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-209-tropical-forest-glade-v1",
+      "capacitySlotId": "v7-capacity-slot-209",
+      "split": "regression",
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-209-tropical-forest-glade-v1.png",
+        "sha256": "22e7b3dbfed8fbee149ba0286404d90c2694c90b9aae38a62f3c0d0b8cb6529e"
+      },
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-209-2026-07-31T15-21-46-531Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "2eb5f4460a6b2132fa00b2eb25c504b10097366f3a857d82b4247aa5360a84f4"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-209-2026-08-02T01-34-00-724Z/contribution.json",
+        "sha256": "91457be4dc534028ac6038812fb6ac82f78440b71765c6f315fae26c7975b9f9"
+      }
+    }
+  ],
+  "releaseSemantics": {
+    "datasetIdentityAndSplitVerified": true,
+    "modelQualified": false,
+    "gpuQualified": false,
+    "trainingCompleted": false,
+    "checkpointQualified": false,
+    "capabilityReleased": false,
+    "runtimeEligible": false,
+    "worldEntryEligible": false
+  }
+}

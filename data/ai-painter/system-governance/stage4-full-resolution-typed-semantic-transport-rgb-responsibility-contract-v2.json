@@ -1,0 +1,418 @@
+{
+  "schemaVersion": "stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2",
+  "contractId": "stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2",
+  "status": "cpu_supported_inactive",
+  "authority": "local_ai_pet_world_program",
+  "architectureId": "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2",
+  "predecessor": {
+    "architectureId": "stage4_full_backbone_joint_condition_local_transport_denoiser_v1",
+    "disposition": "rejected_read_only_not_valid_for_new_work",
+    "weightsReusable": false,
+    "checkpointReusable": false,
+    "outputReusable": false
+  },
+  "responsibilityImplementationMode": "declared_shared_substrate",
+  "conditionContract": {
+    "identity": "ai-painter-complete-map-23-channel-condition-v1",
+    "path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+    "sha256": "c8941c7730edb73c0b0a733bc877cf550184e2f3ab2adb08102fb0214d38cac2",
+    "legacyLatestPointerFallbackAllowed": false,
+    "missingCurrentPackageStatus": "no_current_condition_package_registered"
+  },
+  "datasetBinding": {
+    "datasetReleaseIdentity": "ai-painter-stage4-v2-mvp64-fc8807d3501380ea3b9c43a895e711d94e40e14df97d805c52361d8a05a9fb16",
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-mvp64-dataset-release-v1.json",
+    "sha256": "cd6b7e3fe70549788159237a86f1ab7144ee39db6cc011abaac43b6e5e15affc",
+    "sourceManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json",
+      "sha256": "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
+    },
+    "sourceIndex": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json",
+      "sha256": "84f1d4c810e9023f3517f9fd6567dfc2414a0eb95a0a56df45a3025344e12251"
+    },
+    "sampleCount": 64,
+    "splitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "selection": "source_index_v7CapacityContributions_exact_membership_v1",
+    "legacyLatestPointerFallbackAllowed": false,
+    "historicalHumanAuthorizationFieldsTrusted": false
+  },
+  "lossContract": {
+    "identity": "stage4-semantic-transport-v2-trainer-loss-support-contract-v1",
+    "path": "data/ai-painter/system-governance/stage4-semantic-transport-v2-trainer-loss-support-contract-v1.json",
+    "sha256": "9e0cd29396944c1dcaa2dbc8a61012fe1ca6910732c2dc723ce815c16b7c449d",
+    "objectiveMappingId": "formal_v6_composite_exact_reuse_v1",
+    "newWeightedLossAllowed": false,
+    "machineReviewThresholdAsTrainingTargetAllowed": false
+  },
+  "reviewThresholdContract": {
+    "identity": "ai-painter-stage4-v2-machine-review-threshold-contract-v1",
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+    "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df",
+    "formalRunnerDispatchableNow": false,
+    "thresholdOverrideAllowed": false,
+    "historicalRunEvidenceAllowed": false
+  },
+  "foundationAssetBinding": {
+    "identity": "ai-painter-project-foundation-autoencoder-pixel-detail-residual-v2-v1",
+    "role": "project_owned_cross_candidate_frozen_foundation_capability",
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract-v1.json",
+    "sha256": "0bd33d11175f33e7b2fc684d84e1dc9e837d4c26d0961b4ac5f7e26c6c8534ea",
+    "checkpointWeightsReadableDuringCpuAcceptance": false,
+    "checkpointFileHashVerificationRequired": true,
+    "futureRuntimeStateAndOptimizerEvidenceRequired": true
+  },
+  "programBindings": {
+    "modelFactory": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "22d4d980be37b2c706c6ba7dbe5deb7d0f2f7a060e11af19024f96ffd2aa6bd0"
+    },
+    "successorModule": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/stage4_semantic_transport_v2.py",
+      "sha256": "8cf06a8d3e32ae830151d35aa237710eab8d6aa651c2647058b5821ffe198e97"
+    },
+    "cpuContractTest": {
+      "path": "ml/ai-painter/tests/test_stage4_semantic_transport_v2.py",
+      "sha256": "8cc50ed0a0a11f529446b5a482a4f1423708498a4c55f1a48d521b069b478086"
+    },
+    "conditionCompiler": {
+      "path": "scripts/compile-current-world-visual-conditions.mjs",
+      "sha256": "ec3caf37b3169cf50342cccc4ade2b8277903e77dc3a70cee3a60d886e136447"
+    },
+    "currentConditionValidator": {
+      "path": "scripts/check-current-world-visual-conditions.mjs",
+      "sha256": "c23acf310de715603ee26095cc10131f7a0d9337e3c049616b98c1ed5fab6dcd"
+    },
+    "typedResizeBehaviorValidator": {
+      "path": "ml/ai-painter/scripts/check_typed_condition_resize_behavior.py",
+      "sha256": "da041974c99fb2eed6c444180530b545b0c0cd4efd2c8961e8c831bca6f4c93c"
+    },
+    "conditionSemanticAlignmentValidator": {
+      "path": "scripts/check-ai-painter-contract-semantic-alignment.mjs",
+      "sha256": "e58d23d01fccd09f863a59a11ecf2a543d05d0bd32dc773ff91438899e864a7c"
+    },
+    "datasetReleaseValidator": {
+      "path": "scripts/check-ai-painter-stage4-v2-mvp64-dataset-release.mjs",
+      "sha256": "8adbbcb8eb79b8246866ee3ca2f24d66d821e6a2d3515daa4d57bbbad8cb9f63"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "a0c56725542f9e0e36958b5941e3f70b440cf036add924f8d5ee9c54dc55f33d"
+    },
+    "trainerSupport": {
+      "path": "ml/ai-painter/scripts/ai_painter_stage4_semantic_transport_v2_trainer_support.py",
+      "sha256": "d331417e87f544194e3efb631f4b4ed5d187cbc75d1990bb7b4e32b5e8826adf"
+    },
+    "trainerSupportCpuChecker": {
+      "path": "ml/ai-painter/scripts/check_stage4_semantic_transport_v2_trainer_support_cpu.py",
+      "sha256": "5907dd2aa7375d331ff53c8cd4a20013ba07ed4e23783b6b7650ff5c6846582f"
+    },
+    "trainerSupportCpuTest": {
+      "path": "ml/ai-painter/tests/test_stage4_semantic_transport_v2_trainer_support.py",
+      "sha256": "5e27cfa7b9c27c24d9b9bda3bf4c34852a4f8d3d65fa153796c29e060a678c4d"
+    },
+    "reviewThresholdValidator": {
+      "path": "scripts/check-ai-painter-stage4-v2-machine-review-threshold-contract.mjs",
+      "sha256": "6643825feb3ed684192d7afc963c685474b9dab27e28824c2bc5f5b99e0e8901"
+    },
+    "reviewCompositionBoundary": {
+      "path": "scripts/lib/ai-painter-stage4-v2-screen-review-contract-boundary.mjs",
+      "sha256": "71574b70a04b54e63714c7a783cb52bb6e7cb576cab963536cdbc42e8c02911b"
+    },
+    "foundationAssetValidator": {
+      "path": "scripts/check-ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract.mjs",
+      "sha256": "746bd1ee0088d3d7ff25a272cc18b02288beb75ea2d4c4d213b5000e103f78b7"
+    },
+    "cpuContractValidator": {
+      "path": "scripts/check-ai-painter-stage4-full-resolution-typed-semantic-transport-rgb-responsibility.mjs",
+      "sha256": "5b91b36f1a02a3bdc6cdda088fccb49576fa8d20f046e065e00132c39c009998"
+    },
+    "cpuAcceptanceRunner": {
+      "path": "scripts/run-ai-painter-stage4-v2-cpu-contract-acceptance.mjs",
+      "sha256": "f8809b507234c08b348c5304d1ad4761765e0929123a561e5773d0f1af19d2ce"
+    },
+    "cpuAcceptanceTest": {
+      "path": "scripts/test-ai-painter-stage4-v2-cpu-contract-acceptance.mjs",
+      "sha256": "e4e2f8da821767a331deb1aca2b3815fa141940c23db8311e5b75c23a954d634"
+    }
+  },
+  "prerequisiteBindings": {
+    "condition_contract": {
+      "id": "condition_contract",
+      "required": true,
+      "executionClass": "cpu_readonly",
+      "path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+      "sha256": "c8941c7730edb73c0b0a733bc877cf550184e2f3ab2adb08102fb0214d38cac2",
+      "checkerCommand": {
+        "command": "node",
+        "args": [
+          "scripts/check-ai-painter-contract-semantic-alignment.mjs"
+        ]
+      },
+      "safety": {
+        "gpuAllowed": false,
+        "optimizerAllowed": false,
+        "backwardAllowed": false,
+        "checkpointWeightsReadAllowed": false,
+        "checkpointFileHashVerificationAllowed": true,
+        "weightMutationAllowed": false,
+        "trainingAllowed": false
+      }
+    },
+    "dataset_release": {
+      "id": "dataset_release",
+      "required": true,
+      "executionClass": "cpu_readonly",
+      "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-mvp64-dataset-release-v1.json",
+      "sha256": "cd6b7e3fe70549788159237a86f1ab7144ee39db6cc011abaac43b6e5e15affc",
+      "checkerCommand": {
+        "command": "node",
+        "args": [
+          "scripts/check-ai-painter-stage4-v2-mvp64-dataset-release.mjs"
+        ]
+      },
+      "safety": {
+        "gpuAllowed": false,
+        "optimizerAllowed": false,
+        "backwardAllowed": false,
+        "checkpointWeightsReadAllowed": false,
+        "checkpointFileHashVerificationAllowed": true,
+        "weightMutationAllowed": false,
+        "trainingAllowed": false
+      }
+    },
+    "trainer_loss_support": {
+      "id": "trainer_loss_support",
+      "required": true,
+      "executionClass": "cpu_readonly",
+      "path": "data/ai-painter/system-governance/stage4-semantic-transport-v2-trainer-loss-support-contract-v1.json",
+      "sha256": "9e0cd29396944c1dcaa2dbc8a61012fe1ca6910732c2dc723ce815c16b7c449d",
+      "checkerCommand": {
+        "command": "python",
+        "args": [
+          "ml/ai-painter/scripts/check_stage4_semantic_transport_v2_trainer_support_cpu.py"
+        ]
+      },
+      "safety": {
+        "gpuAllowed": false,
+        "optimizerAllowed": false,
+        "backwardAllowed": false,
+        "checkpointWeightsReadAllowed": false,
+        "checkpointFileHashVerificationAllowed": true,
+        "weightMutationAllowed": false,
+        "trainingAllowed": false
+      }
+    },
+    "machine_review_threshold": {
+      "id": "machine_review_threshold",
+      "required": true,
+      "executionClass": "cpu_readonly",
+      "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+      "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df",
+      "checkerCommand": {
+        "command": "node",
+        "args": [
+          "scripts/check-ai-painter-stage4-v2-machine-review-threshold-contract.mjs"
+        ]
+      },
+      "safety": {
+        "gpuAllowed": false,
+        "optimizerAllowed": false,
+        "backwardAllowed": false,
+        "checkpointWeightsReadAllowed": false,
+        "checkpointFileHashVerificationAllowed": true,
+        "weightMutationAllowed": false,
+        "trainingAllowed": false
+      }
+    },
+    "foundation_autoencoder_lineage": {
+      "id": "foundation_autoencoder_lineage",
+      "required": true,
+      "executionClass": "cpu_readonly",
+      "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract-v1.json",
+      "sha256": "0bd33d11175f33e7b2fc684d84e1dc9e837d4c26d0961b4ac5f7e26c6c8534ea",
+      "checkerCommand": {
+        "command": "node",
+        "args": [
+          "scripts/check-ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract.mjs"
+        ]
+      },
+      "safety": {
+        "gpuAllowed": false,
+        "optimizerAllowed": false,
+        "backwardAllowed": false,
+        "checkpointWeightsReadAllowed": false,
+        "checkpointFileHashVerificationAllowed": true,
+        "weightMutationAllowed": false,
+        "trainingAllowed": false
+      }
+    }
+  },
+  "inputContract": {
+    "conditionChannels": 23,
+    "conditionChannelOrder": [
+      "terrain_grass",
+      "terrain_water",
+      "terrain_path_ground",
+      "terrain_shoreline",
+      "terrain_natural_boundary",
+      "terrain_mud_patch",
+      "terrain_tall_grass",
+      "walkable",
+      "collision",
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation",
+      "focal_area",
+      "object_instance",
+      "coordinate_x",
+      "coordinate_y",
+      "signed_distance_path",
+      "signed_distance_water",
+      "signed_distance_shoreline",
+      "signed_distance_object_ground",
+      "signed_distance_boundary",
+      "moisture_proximity"
+    ],
+    "discrete": [
+      "terrain_grass",
+      "terrain_water",
+      "terrain_path_ground",
+      "terrain_shoreline",
+      "terrain_natural_boundary",
+      "terrain_mud_patch",
+      "terrain_tall_grass",
+      "walkable",
+      "collision",
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation",
+      "focal_area",
+      "object_instance"
+    ],
+    "continuous": [
+      "coordinate_x",
+      "coordinate_y",
+      "signed_distance_path",
+      "signed_distance_water",
+      "signed_distance_shoreline",
+      "signed_distance_object_ground",
+      "signed_distance_boundary",
+      "moisture_proximity"
+    ],
+    "discreteResize": "nearest",
+    "continuousResize": "bilinear_align_corners_false",
+    "nativeConditionEncodingBeforeReduction": true,
+    "discreteOccupancyPreservingReduction": true
+  },
+  "derivedDimensions": {
+    "autoencoderBaseChannels": 48,
+    "denoiserBaseChannels": 64,
+    "responsibilitySemanticChannels": 64,
+    "latentChannels": 12,
+    "latentDownsampleFactor": 4,
+    "timeEmbeddingChannels": 256,
+    "responsibilityTransportKernel": "3x3_9_neighbors",
+    "source": "versioned_condition_autoencoder_and_denoiser_contracts"
+  },
+  "responsibilityGroups": {
+    "terrain_route_hydrology_spatial_realization": [
+      "terrain_path_ground",
+      "terrain_water",
+      "terrain_shoreline"
+    ],
+    "per_class_object_semantic_realization": [
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "global_visual_harmonization_and_native_complete_rgb_decode": [
+      "base_decoded_rgb",
+      "terrain_path_ground",
+      "terrain_water",
+      "terrain_shoreline",
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ]
+  },
+  "responsibilityIsolation": {
+    "oneParameterNamespacePerSemanticIdentity": true,
+    "oneTransportKernelPerSemanticIdentity": true,
+    "oneRgbResponsibilityHeadPerSemanticIdentity": true,
+    "authoritativeMaskGatingRequired": true,
+    "declaredSharedSubstrateAllowed": true,
+    "sharedSubstrateParameterNamespaces": [
+      "denoiser.time_embedding",
+      "denoiser.latent_stem",
+      "denoiser.native_condition_encoder",
+      "denoiser.level0_fusion",
+      "denoiser.level0",
+      "denoiser.down1",
+      "denoiser.level1",
+      "denoiser.down2",
+      "denoiser.middle",
+      "denoiser.up1",
+      "denoiser.up1_fusion",
+      "denoiser.up1_block",
+      "denoiser.up0",
+      "denoiser.up0_fusion",
+      "denoiser.up0_block",
+      "denoiser.base_output",
+      "denoiser.output_bound_condition_probe"
+    ],
+    "responsibilityOwnedParameterNamespaces": [
+      "denoiser.responsibility_paths.<responsibilityId>",
+      "denoiser.rgb_responsibility_heads.<responsibilityId>"
+    ],
+    "responsibilityOwnedParameterSharingAllowed": false,
+    "sharedSubstrateCannotSubstituteResponsibilityEvidence": true,
+    "maskOutsideRgbMutationAllowed": false
+  },
+  "autoencoderBoundary": {
+    "architecture": "residual_4x_latent_pixel_detail_v2",
+    "mustLoadOnlyCapabilityBoundProjectArtifact": true,
+    "evalModeRequired": true,
+    "requiresGrad": false,
+    "historicalFailedDenoiserCheckpointAllowed": false
+  },
+  "trainingPrerequisites": {
+    "datasetManifestAndSourceIndexPathAndShaRequired": true,
+    "formalLossFormulaImplementationPathAndShaRequired": true,
+    "machineReviewThresholdVersionPathValuesAndShaRequired": true,
+    "trainingObjectiveToResponsibilityReviewAlignmentRequired": true,
+    "trainerSupportContractRequired": true,
+    "readonlyGpuQualificationRequired": true,
+    "controlledSmokeRequired": true
+  },
+  "activationGates": {
+    "configurationActiveNow": false,
+    "gpuNow": false,
+    "optimizerNow": false,
+    "backwardNow": false,
+    "weightModificationNow": false,
+    "trainingNow": false,
+    "formalInferenceNow": false,
+    "runtimeFrameNow": false,
+    "worldEntryNow": false
+  },
+  "prohibited": [
+    "relabel_predecessor_as_successor",
+    "historical_or_failed_denoiser_checkpoint_initialization",
+    "historical_output_reuse",
+    "condition_channel_reorder_or_type_change",
+    "shared_transport_identity_for_distinct_formal_responsibilities",
+    "failed_preview_or_machine_review_as_training_target",
+    "free_structure_loss_weight_or_review_threshold_change",
+    "automatic_gpu_training_before_all_prerequisites"
+  ]
+}

@@ -47,11 +47,117 @@ try {
   }
   positive += 1;
 
+  for (const [index, hookName] of [
+    "afterLifecycleEvidencePersisted",
+    "afterLifecycleSqliteCommitted",
+    "afterLifecycleStateCommitted",
+    "afterLifecycleEventCommitted",
+  ].entries()) {
+    const crashSpec = candidate(`capability-lifecycle-crash-${index}`, source);
+    const crashCreated = createCapabilityCandidate(crashSpec, {
+      root: fixtureRoot,
+      recordedAtUtc: `2026-08-24T02:0${index}:00.000Z`,
+    });
+    const crashEvidence = {
+      ...evidence(crashSpec.capabilityVersion, "isolated_implementation", source),
+      crashWindow: hookName,
+    };
+    assert.throws(
+      () => advanceCapabilityLifecycle({
+        root: fixtureRoot,
+        capabilityVersion: crashSpec.capabilityVersion,
+        targetState: "isolated_implementation",
+        evidence: crashEvidence,
+        recordedAtUtc: `2026-08-24T03:0${index}:00.000Z`,
+        _testHooks: { [hookName]: () => { throw new Error(`injected crash ${hookName}`); } },
+      }),
+      new RegExp(`injected crash ${hookName}`),
+    );
+    const recovered = advanceCapabilityLifecycle({
+      root: fixtureRoot,
+      capabilityVersion: crashSpec.capabilityVersion,
+      targetState: "isolated_implementation",
+      evidence: crashEvidence,
+      recordedAtUtc: `2026-08-24T04:0${index}:00.000Z`,
+    });
+    const replayed = advanceCapabilityLifecycle({
+      root: fixtureRoot,
+      capabilityVersion: crashSpec.capabilityVersion,
+      targetState: "isolated_implementation",
+      evidence: crashEvidence,
+      recordedAtUtc: `2026-08-24T05:0${index}:00.000Z`,
+    });
+    assert.deepEqual(replayed, recovered);
+    assert.equal(recovered.updatedAtUtc, `2026-08-24T03:0${index}:00.000Z`);
+    assertLifecycleCommitExactlyOnce(crashCreated, recovered);
+    positive += 1;
+  }
+
+  const rejectedCrashSpec = candidate("capability-lifecycle-crash-terminal", source);
+  const rejectedCrashCreated = createCapabilityCandidate(rejectedCrashSpec, { root: fixtureRoot });
+  const rejectedCrashEvidence = {
+    ...evidence(rejectedCrashSpec.capabilityVersion, "rejected", source),
+    status: "failed",
+    failureCode: "fixture_failure",
+  };
+  assert.throws(
+    () => advanceCapabilityLifecycle({
+      root: fixtureRoot,
+      capabilityVersion: rejectedCrashSpec.capabilityVersion,
+      targetState: "rejected",
+      evidence: rejectedCrashEvidence,
+      _testHooks: { afterLifecycleEventCommitted: () => { throw new Error("injected terminal crash"); } },
+    }),
+    /injected terminal crash/,
+  );
+  const rejectedRecovered = advanceCapabilityLifecycle({
+    root: fixtureRoot,
+    capabilityVersion: rejectedCrashSpec.capabilityVersion,
+    targetState: "rejected",
+    evidence: rejectedCrashEvidence,
+  });
+  assertLifecycleCommitExactlyOnce(rejectedCrashCreated, rejectedRecovered);
+  assert.deepEqual(
+    JSON.parse(fs.readFileSync(path.join(rejectedCrashCreated.candidateRoot, "phase-terminal.json"), "utf8")),
+    rejectedRecovered,
+  );
+  positive += 1;
+
+  const underscoredSpec = candidate(
+    "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2",
+    source,
+  );
+  const underscoredCreated = createCapabilityCandidate(underscoredSpec, { root: fixtureRoot });
+  assert.equal(underscoredCreated.state.capabilityVersion, underscoredSpec.capabilityVersion);
+  assert.equal(underscoredCreated.state.state, "change_candidate");
+  positive += 1;
+
   assert.throws(() => createCapabilityCandidate({ ...candidate("capability-owner-invalid", source), ownerAuthorizationRequired: true }, { root: fixtureRoot }), /cannot require Owner/); negative += 1;
+  assert.throws(() => createCapabilityCandidate(candidate("stage4 invalid identity", source), { root: fixtureRoot }), /capabilityVersion is invalid/); negative += 1;
   assert.throws(() => createCapabilityCandidate(spec, { root: fixtureRoot }), /already exists/); negative += 1;
   assert.throws(() => advanceCapabilityLifecycle({ root: fixtureRoot, capabilityVersion: gpuSpec.capabilityVersion, targetState: "released", evidence: evidence(gpuSpec.capabilityVersion, "released", source) }), /invalid capability transition/); negative += 1;
   assert.throws(() => advanceCapabilityLifecycle({ root: fixtureRoot, capabilityVersion: gpuSpec.capabilityVersion, targetState: "formal_stage_validation_completed", evidence: { ...evidence(gpuSpec.capabilityVersion, "formal_stage_validation_completed", source), bindings: [{ ...source, sha256: "0".repeat(64) }] } }), /SHA-256 mismatch/); negative += 1;
   assert.throws(() => advanceCapabilityLifecycle({ root: fixtureRoot, capabilityVersion: spec.capabilityVersion, targetState: "released", evidence: evidence(spec.capabilityVersion, "released", source) }), /terminal capability/); negative += 1;
+
+  const exactConflictSpec = candidate("capability-lifecycle-exact-conflict", source);
+  createCapabilityCandidate(exactConflictSpec, { root: fixtureRoot });
+  const exactEvidence = evidence(exactConflictSpec.capabilityVersion, "isolated_implementation", source);
+  advanceCapabilityLifecycle({
+    root: fixtureRoot,
+    capabilityVersion: exactConflictSpec.capabilityVersion,
+    targetState: "isolated_implementation",
+    evidence: exactEvidence,
+  });
+  assert.throws(
+    () => advanceCapabilityLifecycle({
+      root: fixtureRoot,
+      capabilityVersion: exactConflictSpec.capabilityVersion,
+      targetState: "isolated_implementation",
+      evidence: { ...exactEvidence, conflictingPayload: true },
+    }),
+    /evidence conflict/,
+  );
+  negative += 1;
 
   validateCapabilityLifecycleContract(fixtureRoot); positive += 1;
   process.stdout.write(`${JSON.stringify({ status: "passed", positive, negative, ownerInLifecycle: false, optionalGpuQualificationVerified: true, persistentTransitionsVerified: true }, null, 2)}\n`);
@@ -66,3 +172,27 @@ function evidence(capabilityVersion, targetState, source) { return { schemaVersi
 function copy(relative) { write(relative, fs.readFileSync(path.join(projectRoot, relative))); }
 function write(relative, bytes) { const absolute = path.join(fixtureRoot, relative); fs.mkdirSync(path.dirname(absolute), { recursive: true }); fs.writeFileSync(absolute, bytes); }
 function sha(relative) { return crypto.createHash("sha256").update(fs.readFileSync(path.join(fixtureRoot, relative))).digest("hex"); }
+function assertLifecycleCommitExactlyOnce(created, state) {
+  const database = new DatabaseSync(created.sqlitePath, { readOnly: true });
+  try {
+    assert.equal(database.prepare("SELECT COUNT(*) AS count FROM lifecycle_transitions").get().count, 2);
+    const capability = database.prepare(
+      "SELECT state, updated_at_utc, owner_response_required FROM capabilities WHERE capability_version = ?",
+    ).get(state.capabilityVersion);
+    assert.deepEqual({ ...capability }, {
+      state: state.state,
+      updated_at_utc: state.updatedAtUtc,
+      owner_response_required: 0,
+    });
+  } finally {
+    database.close();
+  }
+  const events = fs.readFileSync(path.join(created.candidateRoot, "event-ledger.jsonl"), "utf8")
+    .split(/\r?\n/u)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+    .filter((event) => event.sequence === state.sequence);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].evidenceSha256, state.latestEvidence.sha256);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(created.candidateRoot, "state.json"), "utf8")), state);
+}

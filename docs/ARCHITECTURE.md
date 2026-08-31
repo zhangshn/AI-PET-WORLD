@@ -1,14 +1,14 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-08-30 13:51:22 +08:00
+更新时间：2026-08-30 18:21:44 +08:00
 
 状态：long-term-architecture-reference
 
-文档版本：`AI-PET-WORLD-ARCHITECTURE-1.6`
+文档版本：`AI-PET-WORLD-ARCHITECTURE-1.7`
 
 生效日期：`2026-08-26`
 
-替代版本：`AI-PET-WORLD-ARCHITECTURE-1.5`
+替代版本：`AI-PET-WORLD-ARCHITECTURE-1.6`
 
 文档状态：`active_normative_target`
 
@@ -43,9 +43,9 @@ Codex只作为外部受控执行与检查员工，不得成为系统编排器、
 
 机器可读长期合同由AI Painter正式主体规格登记。训练、能力版本变更、生成、验证、审核、发布、回退或失败关闭均由本地程序在生效合同内自主执行；触及长期业务、外部许可、付费资源或不可恢复操作时禁止越界动作，保存`policy-boundary-report`并写入事件总账与SQLite。Owner职责只由`GOV-OWNER-001`定义，不进入执行链。`latest.json`只是查询指针。
 
-## 0.1 V7 容量架构
+## 0.1 当前批准训练数据容量基线
 
-V7训练容量采用两级目标，不改变AI Painter、WorldFacts、World Director、23通道、审核或Runtime边界：
+当前批准数据发布版本采用两级容量目标，不改变AI Painter、WorldFacts、World Director、23通道、审核或Runtime边界。这里的容量版本属于数据发布身份，不代表模型家族、能力版本或项目产品代际：
 
 | 级别 | 完整地图数量 | split | 作用 |
 |---|---:|---|---|
@@ -73,6 +73,16 @@ V7训练容量采用两级目标，不改变AI Painter、WorldFacts、World Dire
 本地编排器必须核对任务合同、scope、具体动作、资源预算和输出边界，并在训练或能力发布等高风险写入前原子登记。普通CPU检查、自动机器审核、只读分析、失败关闭、监控和治理记录属于系统自身职责，不得被错误归类为新的人工授权事项。
 
 生产构建和新能力发布必须有独立变更身份，任一中间步骤失败都保持上一正式版本。正式能力发布后，Runtime任务按版本化合同自主执行；不能从一次业务运行反向获得修改模型、数据或阈值的权限。
+
+新训练能力在进入GPU之前还必须把以下内容收口为同一个不可变能力身份：
+
+- 完整Loss计算公式、规一化/聚合/遮罩语义、数值权重、实现路径与程序SHA-256；
+- 机器审核合同的版本、路径、程序SHA-256、全部阈值、单位、比较符和失败码映射；
+- `datasetReleaseIdentity`及其`manifest.json`、`source-index.json`的路径和SHA-256，以及四个split的实际选中行；
+- 项目基础Autoencoder的资产角色、发布身份、路径、SHA-256、状态哈希和冻结合同；
+- 每个可训练责任的训练目标与正式语义审核项之间的可执行对齐证据。
+
+上述绑定只规定能力身份必须记录什么，长期架构不硬编码某次运行的SHA、阈值或Loss数值。任一绑定缺失或哈希不一致时禁止训练，不得用文档名称、配置别名或历史稳定性代替实际证据。
 
 能力发布身份不能由调用方布尔字段或外部口头声明成立。发布器必须从真实不可变证据重新计算数据版本、模型产物、审核合同、Runtime接口合同、23通道条件合同、测试报告和程序血缘的SHA-256，验证全部机器门后原子追加发布注册记录；只有注册记录完整有效时才能签发一次性内部任务票据。消费票据时必须再次计算票据SHA-256并核对当前发布记录。注册表中的实际发布状态属于机器事实，不在长期架构文档硬编码。
 
@@ -154,7 +164,7 @@ review_pending
 | 审核终态 | 单次执行映射 | 能力生命周期映射 |
 |---|---|---|
 | `review_passed` | `reviewing -> adjudicating` | 允许继续后续机器资格，不直接等于`released` |
-| `review_failed` | `reviewing -> failed_closed` | 当前能力候选进入`rejected`或保持未发布 |
+| `review_failed` | 来源审核执行`reviewing -> failed_closed`；编排器随即以新修订物化`failure_boundary_adjudication`当前任务 | 审核失败阻止发布；只有后续裁决才能将能力候选置为`rejected`或建立新`change_candidate` |
 | `review_evidence_conflict` | `reviewing -> failed_closed` | 不得形成发布裁决；新证据必须使用新执行身份 |
 | `blocked_policy_boundary` | 当前执行失败关闭并保存政策报告 | 能力保持上一正式版本，不产生Owner等待状态 |
 
@@ -175,7 +185,9 @@ latestTrainingTerminal   最近一次训练的不可变终态
 selectedHistoricalRun    只读界面当前选中的历史记录
 ```
 
-`currentProjectTask`由本地能力生命周期编排器在合法状态转换成功后更新。训练失败后形成的审核、裁决或下一候选规划可以成为新的项目当前任务，但不改写该训练的失败终态。`activeExecution`必须同时满足任务锁、进程和心跳身份一致且未过期；不满足时为空。`selectedHistoricalRun`只是查询参数，不参与任何状态转换。
+`currentProjectTask`由本地能力生命周期编排器在合法状态转换成功后更新。训练失败后形成的审核、裁决或下一候选规划可以成为新的项目当前任务，但不改写该训练的失败终态。审核失败不允许把原执行从`failed_closed`改写为运行中；编排器必须建立一个新的`failure_boundary_adjudication`任务。该任务在裁决尚未改变能力版本结论时保持来源能力的`lifecycleStage=formal_stage_validation_completed`，其独立执行初始状态为`package_materialized`，并通过`supersedes`引用来源失败终态；裁决实际启动后，只有`executionState`按`adjudicating -> finalizing -> completed / failed_closed`推进。裁决确认需要能力变更时才另建`change_candidate`，不得把`adjudicating`写入能力生命周期字段。`activeExecution`必须同时满足任务锁、进程和心跳身份一致且未过期；不满足时为空。`selectedHistoricalRun`只是查询参数，不参与任何状态转换。
+
+`nextMachineAction`不是页面推荐文案。它必须由同一编排器在当前执行登记中与任务、能力版本、先决证据、注册入口和程序血缘一起写入并验证。控制台只可投影该字段；它不得根据页面顺序、失败文案或历史目录生成下一动作。
 
 当前执行登记采用单写者、追加事件和单调修订。每次更新必须绑定能力版本、执行包、任务、Run、状态、事件序号、终态或任务胶囊的路径与SHA-256。文件指针、追加事件和SQLite索引在同一个可恢复事务中提交；并发修订冲突必须失败关闭，不得覆盖。
 
@@ -428,6 +440,15 @@ authoritative_world_structure_binding                  [非训练权威绑定]
 
 四个责任阶段必须绑定同一 `worldId`、`regionId`、`tick`、`factHash`、`VisualFactManifest` 和23通道条件包。后三个可训练责任边界可以由一个模型、声明共享关系的共享底座或参数隔离组件实现；具体能力版本必须登记`responsibilityImplementationMode`，稳定值仅允许`single_model`、`declared_shared_substrate`或`parameter_isolated_components`，并登记每段责任对应的输入、输出、参数或共享映射、Checkpoint映射、审核和终态证据。共享实现不得伪装成参数隔离，单模型也不得省略逐责任可验证输出。后一责任只能消费同一执行包前序责任的成功证据和输出身份。该内部责任链不得与 `Stage 0/1/2` 的训练分辨率阶段混淆，也不得退化为 tile、patch、sprite、局部拼接、低分辨率放大或规则程序直绘。
 
+可训练实现还必须满足以下空间与责任保真边界：
+
+1. 23通道先在原生条件空间保持通道身份，再按通道类型分别重采样。离散掩码只能使用nearest-neighbor，连续场只能使用能力合同登记的bilinear规则；禁止先混合通道再统一缩小。
+2. 道路与footprints、tree、rock、vegetation必须各有可识别的语义承载通路、责任输出和反例响应证据。它们可以共享已登记底座，但不得只依赖一组对所有特征通道广播的共享空间权重。
+3. 最终RGB解码边界必须显式消费前序责任输出和对应条件身份，并通过单一条件反事实实验证明最终RGB仍保留该责任。仅依赖通用潜变量解码不构成条件责任证明。
+4. 空间缩小的正反回归必须覆盖最小离散对象、单像素/单连通域保留、连续场插值和跨通道不污染。“缩小后尺寸正确”不能代替语义保真。
+
+模型工厂只负责按版本化能力身份调度实现，不得在一个无版本隔离的条件分支集合中同时维护历史失败候选、当前候选和未来候选的行为。被拒绝或被后继实现替代的架构身份只保留不可变的历史适配器和证据解析能力；任何会改变条件采样、责任通路、参数图或RGB解码的修复都必须使用新模型能力身份和独立实现模块。
+
 固定禁止关系：
 
 ```text
@@ -549,7 +570,7 @@ RuntimeFrame运行证据按`working -> candidates -> accepted frame / rejected f
 | 模块 | 职责 |
 |---|---|
 | Dataset Builder | 准备训练图、Mask、来源记录、用途记录。 |
-| Training Runner | 本地训练，记录 GPU、耗时、loss、输出。 |
+| Training Runner | 本地训练，验证完整Loss合同、数据发布身份和基础资产冻结状态，记录 GPU、耗时、loss、输出。 |
 | Authoritative World Structure Binding | 非训练地绑定 WorldFacts、VisualFactManifest、23通道条件和任务身份，不生成或修改世界事实。 |
 | Terrain / Route / Hydrology Responsibility Boundary | 承担地形、道路和水文空间实现；无论采用单模型、共享底座或隔离组件，都必须保存该责任的独立输出身份、审核证据和终态映射。 |
 | Per-Class Object Semantic Responsibility Boundary | 承担 footprints、tree、rock、vegetation 语义实现，不修改批准对象掩码；必须保存逐类输出与审核证据。 |
@@ -560,6 +581,8 @@ RuntimeFrame运行证据按`working -> candidates -> accepted frame / rejected f
 | Result Archive | 保存成功、失败、耗时、时间戳、GPU 信息、质量分数。 |
 
 `Dataset Builder` 必须统一消费五类合格记录和完整任务条件，输出同一个版本化完整世界数据包。`Refiner` 只负责模型内部或候选后的受控细化，不得把五类原图按坐标贴合、缩放或拼接后宣称为 AI Painter 完整地图生成。
+
+项目基础Autoencoder和训练候选Denoiser必须分属不同资产角色。前者可以作为已批准的`project_foundation_asset`被新能力显式绑定和加载，但构造系统必须自行执行`eval`、将所有参数设为不可训练，并在前后向与训练终态重算状态哈希。外部Trainer再次冻结只是防御性验证，不能代替模型自保证。历史失败Denoiser、其Checkpoint和部分权重始终是`failed_candidate_asset`，不得因项目基础Autoencoder合法复用而被连带加载。
 
 AI Painter 禁止承担：
 
@@ -619,6 +642,6 @@ VisualFactManifest + 世界导演 + 结构化游戏地图
 
 ## 9. 视觉模型实现关系
 
-V7是AI Painter视觉生产子系统中的一代完整地图条件去噪实现：输入是正式世界事实、世界导演和23通道完整地图条件，输出须经过机器审核、能力版本发布策略和RuntimeFrame绑定，不能生成或修改世界事实。V7及其后续候选属于可替换实现，不等同于AI Painter长期业务架构。
+`complete-world-ai-assisted-cold-start-v7`是AI Painter视觉生产子系统中已经退役的完整地图条件去噪迁移实现。其配置仅保留为历史证据和后继机器合同的编译输入，不是当前能力入口，也不得建立新训练或运行任务。AI-PET-WORLD产品代际、数据发布版本、模型能力版本和该历史配置名称是四种独立身份；任何一项均不得由另一项名称推导。所有现行或后继模型仍必须消费正式世界事实、世界导演和版本化23通道条件，输出经过机器审核、能力发布和RuntimeFrame绑定，并且不能生成或修改世界事实。
 
 代码合同、CPU回归、数据容量、GPU训练、Checkpoint、训练后验证、正式推理和游戏世界完成是相互独立的状态。任何前置状态都不能被描述为后续能力通过；实际模型状态只从训练、验证和资格机器证据读取。

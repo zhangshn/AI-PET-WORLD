@@ -1,0 +1,154 @@
+{
+  "schemaVersion": "ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract-v1",
+  "contractId": "ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract-v1",
+  "status": "cpu_supported_inactive",
+  "immutable": true,
+  "architectureId": "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2",
+  "assetIdentity": "ai-painter-project-foundation-autoencoder-pixel-detail-residual-v2-v1",
+  "assetRole": "project_owned_cross_candidate_frozen_foundation_capability",
+  "capabilityReleaseStatus": "not_released",
+  "formalInferenceEligible": false,
+  "activation": {
+    "cpuLineageValidationAllowed": true,
+    "checkpointDeserializationAllowedDuringCpuValidation": false,
+    "gpuAllowed": false,
+    "trainingAllowed": false,
+    "formalInferenceAllowed": false,
+    "runtimeFrameAllowed": false,
+    "worldEntryAllowed": false
+  },
+  "checkpoint": {
+    "path": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/complete-world-ai-assisted-autoencoder.pt",
+    "sha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba",
+    "bytes": 10137309,
+    "formatRole": "project_owned_autoencoder_state_dict_container",
+    "cpuValidationMode": "raw_file_size_and_sha256_only_no_deserialization"
+  },
+  "staticCpuQualification": {
+    "qualificationKind": "static_lineage_and_program_binding_only",
+    "checkpointWeightsDeserialized": false,
+    "runtimeLoadProven": false,
+    "runtimeFreezeProven": false,
+    "optimizerExclusionProven": false,
+    "architectureProgram": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "22d4d980be37b2c706c6ba7dbe5deb7d0f2f7a060e11af19024f96ffd2aa6bd0",
+      "requiredSystemClass": "ProjectOwnedCompleteWorldSystem"
+    },
+    "futureLoadingProofProgram": {
+      "path": "ml/ai-painter/scripts/ai_painter_stage4_semantic_transport_v2_trainer_support.py",
+      "sha256": "d331417e87f544194e3efb631f4b4ed5d187cbc75d1990bb7b4e32b5e8826adf",
+      "stateIdentityAlgorithm": "sha256_sorted_tensor_bytes_v1",
+      "boundaryFunction": "validate_stage4_semantic_transport_v2_autoencoder_boundary",
+      "optimizerParameterFunction": "stage4_semantic_transport_v2_optimizer_parameters"
+    }
+  },
+  "sourceManifest": {
+    "path": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/manifest.json",
+    "sha256": "e03a7a118e3f3b550745f3a1ebeeef376cd2fbb950fb360ad2b19f64e77de0b3",
+    "sameDirectoryAsCheckpoint": true,
+    "schemaVersion": "project-owned-ai-assisted-cold-start-checkpoint-v2",
+    "status": "autoencoder_warmup_completed_conditioning_blocked",
+    "ownership": "project_owned_architecture_ai_assisted_cold_start_weights",
+    "trainingLane": "ai_assisted_cold_start",
+    "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v2",
+    "architectureVersion": "pixel-detail-residual-autoencoder-v2",
+    "trainingStage": "autoencoder_warmup_only",
+    "denoiserTrained": false,
+    "formalInferenceEligible": false,
+    "checkpointPath": ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/complete-world-ai-assisted-autoencoder.pt",
+    "checkpointSha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba"
+  },
+  "lineageInterpretation": {
+    "projectOwned": true,
+    "crossCandidateFoundation": true,
+    "historicalRunSelection": false,
+    "historicalCheckpointFallback": false,
+    "failedDenoiserCheckpoint": false,
+    "containsDenoiserTraining": false,
+    "denoiserWeightsMayBeLoaded": false,
+    "parentCheckpointMayBeLoaded": false,
+    "sourceManifestGovernanceFieldsInherited": false,
+    "sourceManifestRemainingBlockersInherited": false,
+    "sourceManifestRole": "immutable_asset_provenance_only"
+  },
+  "consumerBoundary": {
+    "allowedConsumerArchitectureIds": [
+      "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2"
+    ],
+    "allowedRole": "frozen_autoencoder_foundation_dependency_only",
+    "standaloneFormalInferenceAllowed": false,
+    "crossArchitectureFallbackAllowed": false,
+    "latestPointerAllowed": false,
+    "directoryRecencySelectionAllowed": false,
+    "pathOrShaOverrideAllowed": false
+  },
+  "currentAssetShape": {
+    "inputRgbChannels": 3,
+    "latentChannels": 12,
+    "spatialScaleFactor": 4,
+    "shapeRole": "current_version_compatibility_value_not_permanent_business_contract"
+  },
+  "freezeImplementation": {
+    "modelFactory": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "22d4d980be37b2c706c6ba7dbe5deb7d0f2f7a060e11af19024f96ffd2aa6bd0"
+    },
+    "systemClass": "ProjectOwnedCompleteWorldSystem",
+    "constructionRequirements": [
+      "self.autoencoder.eval()",
+      "self.autoencoder.requires_grad_(False)"
+    ],
+    "parentTrainModeRequirements": [
+      "super().train(mode)",
+      "self.autoencoder.eval()"
+    ],
+    "autoencoderTrainingModeRequired": false,
+    "autoencoderParametersRequireGradRequired": false
+  },
+  "executionProofRequirements": {
+    "checkpointFileSha256BeforeLoadMustEqualContract": true,
+    "loadedAutoencoderStateHashRequired": true,
+    "stateHashBeforeTrainingRequired": true,
+    "stateHashAfterTrainingRequired": true,
+    "loadedStateHashMustEqualBeforeTrainingStateHash": true,
+    "beforeTrainingStateHashMustEqualAfterTrainingStateHash": true,
+    "autoencoderEvalModeRequiredThroughout": true,
+    "autoencoderRequiresGradFalseRequiredThroughout": true,
+    "proofMustBeBoundToCurrentExecutionPackage": true,
+    "proofMayUseHistoricalRun": false,
+    "failureCode": "stage4_v2_frozen_autoencoder_state_identity_changed"
+  },
+  "futureRuntimeEvidence": {
+    "evidenceSchemaVersion": "ai-painter-stage4-v2-frozen-autoencoder-runtime-evidence-v1",
+    "executionPackageLineageRequired": true,
+    "checkpointFileSha256MustEqualContract": true,
+    "requiredPhases": ["loaded", "before_training", "after_training"],
+    "requiredPerPhaseFields": [
+      "stateSha256",
+      "training",
+      "requiresGradParameterCount",
+      "optimizerContainsAutoencoder",
+      "optimizerScope"
+    ],
+    "allStateHashesMustMatch": true,
+    "requiredPhaseValues": {
+      "training": false,
+      "requiresGradParameterCount": 0,
+      "optimizerContainsAutoencoder": false,
+      "optimizerScope": "denoiser_trainable_parameters_only"
+    },
+    "checkpointWeightsMayBeReadDuringStaticCpuQualification": false,
+    "failureCode": "stage4_v2_frozen_autoencoder_runtime_evidence_invalid"
+  },
+  "forbiddenUses": [
+    "formal_inference_capability_release",
+    "standalone_runtime_decode",
+    "denoiser_initialization",
+    "failed_denoiser_resume",
+    "historical_candidate_checkpoint_selection",
+    "checkpoint_weight_inspection_during_cpu_contract_validation",
+    "training_target_generation",
+    "latest_pointer_resolution"
+  ]
+}

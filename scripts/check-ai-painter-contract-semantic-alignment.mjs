@@ -13,6 +13,7 @@ const historicalContracts = {
 };
 const currentContracts = {
   business: "data/ai-painter/system-governance/complete-map-world-business-contract-v3.json",
+  condition: "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
   responsibility: "data/ai-painter/system-governance/local-ai-operating-responsibility-contract-v3.json",
   autonomy: "data/ai-painter/system-governance/ai-painter-capability-runtime-autonomy-contract-v3.json",
   releaseRegistry: "data/ai-painter/system-governance/ai-painter-capability-release-registry-v2.json",
@@ -40,6 +41,126 @@ const business = readJson(currentContracts.business);
 assert(business.status === "active_long_term_business_contract", "business contract is not active");
 assert(business.ownerAuthorizationId === undefined, "long-term business contract contains cold-start Owner authorization");
 assert(business.executionGate === undefined, "long-term business contract contains task execution gates");
+
+const expectedConditionOrder = [
+  "terrain_grass",
+  "terrain_water",
+  "terrain_path_ground",
+  "terrain_shoreline",
+  "terrain_natural_boundary",
+  "terrain_mud_patch",
+  "terrain_tall_grass",
+  "walkable",
+  "collision",
+  "object_footprints",
+  "object_tree",
+  "object_rock",
+  "object_vegetation",
+  "focal_area",
+  "object_instance",
+  "coordinate_x",
+  "coordinate_y",
+  "signed_distance_path",
+  "signed_distance_water",
+  "signed_distance_shoreline",
+  "signed_distance_object_ground",
+  "signed_distance_boundary",
+  "moisture_proximity",
+];
+const expectedDiscreteConditions = expectedConditionOrder.slice(0, 15);
+const expectedContinuousConditions = expectedConditionOrder.slice(15);
+const condition = readJson(currentContracts.condition);
+assert(condition.schemaVersion === "ai-painter-complete-map-condition-contract-v1", "current condition contract schema mismatch");
+assert(condition.contractId === "ai-painter-complete-map-condition-contract-v1", "current condition contract identity mismatch");
+assert(condition.conditionContractIdentity === "ai-painter-complete-map-23-channel-condition-v1", "current condition tensor identity mismatch");
+assert(condition.status === "active_current_machine_condition_contract", "current condition contract is not active");
+assert(condition.authority === "local_ai_pet_world_program", "current condition contract authority mismatch");
+assert(condition.scope?.nativeWidth === 1024 && condition.scope?.nativeHeight === 768, "current condition native frame mismatch");
+assert(condition.scope?.frameScope === "complete_runtime_frame", "current condition frame scope mismatch");
+assert(condition.scope?.playerFacingPixelsGenerated === false, "condition compilation may generate player-facing pixels");
+assert(condition.tensorContract?.channelCount === 23, "current condition contract does not define 23 channels");
+assert(JSON.stringify(condition.tensorContract?.channelOrder) === JSON.stringify(expectedConditionOrder), "current condition channel order mismatch");
+assert(JSON.stringify(condition.tensorContract?.typePartitions?.discrete) === JSON.stringify(expectedDiscreteConditions), "current condition discrete partition mismatch");
+assert(JSON.stringify(condition.tensorContract?.typePartitions?.continuous) === JSON.stringify(expectedContinuousConditions), "current condition continuous partition mismatch");
+assert(condition.tensorContract?.storage?.dtype === "uint8", "current condition storage dtype mismatch");
+assert(JSON.stringify(condition.tensorContract?.storage?.valueRangeInclusive) === JSON.stringify([0, 255]), "current condition storage range mismatch");
+assert(JSON.stringify(condition.tensorContract?.storage?.nativeShape) === JSON.stringify([1, 768, 1024]), "current condition native shape mismatch");
+assert(condition.tensorContract?.modelInput?.dtype === "float32", "current condition model dtype mismatch");
+assert(condition.tensorContract?.modelInput?.normalizationFormula === "float32(storage_uint8) / 255.0", "current condition normalization formula mismatch");
+assert(JSON.stringify(condition.tensorContract?.modelInput?.normalizedRangeInclusive) === JSON.stringify([0, 1]), "current condition normalized range mismatch");
+assert(condition.tensorContract?.modelInput?.missingChannelFillAllowed === false, "current condition contract permits missing-channel fill");
+assert(condition.tensorContract?.modelInput?.channelReorderAllowed === false, "current condition contract permits channel reorder");
+assert(condition.tensorContract?.resize?.contractId === "discrete_nearest_continuous_bilinear_v1", "current condition resize identity mismatch");
+assert(condition.tensorContract?.resize?.typePartitionMustOccurBeforeResize === true, "current condition contract does not type-partition before resize");
+assert(condition.tensorContract?.resize?.featureMixingBeforeTypedResizeAllowed === false, "current condition contract permits mixing before typed resize");
+assert(condition.tensorContract?.resize?.discrete?.mode === "nearest", "current condition discrete resize mismatch");
+assert(condition.tensorContract?.resize?.discrete?.intermediateValuesMayBeIntroduced === false, "current condition discrete resize permits interpolation values");
+assert(condition.tensorContract?.resize?.continuous?.mode === "bilinear", "current condition continuous resize mismatch");
+assert(condition.tensorContract?.resize?.continuous?.alignCorners === false, "current condition continuous alignCorners mismatch");
+assert(condition.channelDefinitions?.length === 23, "current condition definitions are incomplete");
+for (let index = 0; index < expectedConditionOrder.length; index += 1) {
+  const definition = condition.channelDefinitions[index];
+  assert(definition?.index === index, `condition definition index mismatch: ${index}`);
+  assert(definition?.id === expectedConditionOrder[index], `condition definition identity mismatch: ${index}`);
+  assert(definition?.type === (index < 15 ? "discrete" : "continuous"), `condition definition type mismatch: ${definition?.id}`);
+  assert(typeof definition?.encoding === "string" && definition.encoding.length > 0, `condition definition encoding missing: ${definition?.id}`);
+  assert(typeof definition?.semantic === "string" && definition.semantic.length > 0, `condition definition semantic missing: ${definition?.id}`);
+}
+for (const field of [
+  "conditionContractIdentity",
+  "conditionContractPath",
+  "conditionContractSha256",
+  "conditionPackageId",
+  "conditionPackagePath",
+  "conditionPackageSha256",
+  "taskPackageId",
+  "taskPackagePath",
+  "taskPackageSha256",
+  "taskManifestPath",
+  "taskManifestSha256",
+  "worldId",
+  "regionId",
+  "tick",
+  "factHash",
+  "visualFactManifestId",
+  "visualFactManifestPath",
+  "visualFactManifestSha256",
+  "dictionaryVersionId",
+  "datasetReleaseIdentity",
+]) assert(condition.identityBindings?.requiredFields?.includes(field), `current condition identity binding missing: ${field}`);
+assert(condition.identityBindings?.bindingContainer === "identityBindings", "current condition binding container mismatch");
+assert(condition.identityBindings?.conditionPackageSha256Canonicalization?.excludedFields?.includes("conditionPackSha256"), "condition package canonicalization does not exclude the top-level self hash");
+assert(condition.identityBindings?.conditionPackageSha256Canonicalization?.excludedFields?.includes("identityBindings.conditionPackageSha256"), "condition package canonicalization does not exclude the nested self hash");
+assert(condition.identityBindings?.crossRunOrCrossSampleSubstitutionAllowed === false, "current condition contract permits cross-run or cross-sample substitution");
+assert(condition.identityBindings?.pathWithoutSha256Allowed === false, "current condition contract permits unverified paths");
+assert(condition.identityBindings?.sha256WithoutReadablePathAllowed === false, "current condition contract permits detached hashes");
+assert(condition.authoritativeInputInvariance?.worldFactsMustPreexistConditionCompilation === true, "WorldFacts preexistence is not required");
+assert(condition.authoritativeInputInvariance?.visualFactManifestMustPreexistConditionCompilation === true, "VisualFactManifest preexistence is not required");
+assert(condition.authoritativeInputInvariance?.conditionCompilerMayModifyWorldFacts === false, "condition compiler may modify WorldFacts");
+assert(condition.authoritativeInputInvariance?.conditionCompilerMayModifyVisualFactManifest === false, "condition compiler may modify VisualFactManifest");
+assert(condition.authoritativeInputInvariance?.conditionCompilerMayInferMissingWorldFacts === false, "condition compiler may infer missing WorldFacts");
+assert(condition.authoritativeInputInvariance?.rgbMayReplaceWorldFacts === false, "RGB may replace WorldFacts");
+assert(condition.authoritativeInputInvariance?.rgbMayReplaceVisualFactManifest === false, "RGB may replace VisualFactManifest");
+assert(condition.missingChannelPolicy?.all23ChannelsRequiredForTrainingAndInference === true, "current condition contract does not require all 23 channels");
+assert(condition.missingChannelPolicy?.silentZeroFillAllowed === false, "current condition contract permits silent zero fill");
+assert(condition.missingChannelPolicy?.modelGuessAllowed === false, "current condition contract permits guessed channels");
+assert(condition.currentPackageRegistry?.schemaVersion === "ai-painter-current-condition-package-registry-v1", "current condition package registry schema missing");
+assert(condition.currentPackageRegistry?.path === ".runtime/ai-painter/current-condition-package-registry/current.json", "current condition package registry path mismatch");
+assert(condition.currentPackageRegistry?.legacyLatestPointerFallbackAllowed === false, "current condition contract permits legacy latest fallback");
+assert(condition.currentPackageRegistry?.missingRegistryStatus === "no_current_condition_package_registered", "missing current condition package status mismatch");
+for (const forbiddenField of condition.forbiddenFieldNames ?? []) {
+  assert(!objectHasKey(condition, forbiddenField), `current condition contract contains forbidden historical field: ${forbiddenField}`);
+}
+const currentConditionCheckerText = readText("scripts/check-current-world-visual-conditions.mjs");
+const currentConditionCompilerText = readText("scripts/compile-current-world-visual-conditions.mjs");
+const typedResizeCheckerText = readText("ml/ai-painter/scripts/check_typed_condition_resize_behavior.py");
+assert(!currentConditionCheckerText.includes("world-visual-generation-task-packages/latest.json"), "current condition checker still reads the historical latest pointer");
+assert(currentConditionCheckerText.includes("currentPackageRegistry"), "current condition checker does not select through the formal current registry");
+assert(currentConditionCheckerText.includes("no_current_condition_package_registered"), "current condition checker does not expose the missing-current-package status");
+assert(!currentConditionCompilerText.includes("world-visual-generation-task-packages/latest.json"), "condition compiler still falls back to the historical latest pointer");
+assert(currentConditionCompilerText.includes("legacy latest task fallback is forbidden"), "condition compiler does not fail closed without an explicit task manifest");
+assert(currentConditionCompilerText.includes("ai-painter-complete-map-condition-contract-v1.json"), "condition compiler does not bind the current condition contract");
+assert(!currentConditionCheckerText.includes("cold-start-v7") && !typedResizeCheckerText.includes("cold-start-v7"), "historical cold-start V7 configuration is still used by current condition validation");
 
 const responsibility = readJson(currentContracts.responsibility);
 assert(responsibility.normalAutonomousPath?.ownerInStateMachine === false, "Owner remains in normal state machine");
@@ -98,14 +219,6 @@ assert(packageJson.scripts?.["legacy:record:ai-painter-owner-action-request"], "
 assert(packageJson.scripts?.["record:ai-painter-policy-boundary-report"], "policy boundary report entry is missing");
 assert(packageJson.scripts?.["check:ai-painter-local-autonomy-governance"], "local autonomy governance check entry is missing");
 
-const config = readJson("ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json");
-assert(config.conditionChannels === 23, "V7 config does not define 23 channels");
-assert(config.conditionChannelOrder?.length === 23, "V7 channel order is incomplete");
-assert(new Set(config.conditionChannelOrder).size === 23, "V7 channel order contains duplicates");
-const typed = [...config.conditionChannelTypes.discrete, ...config.conditionChannelTypes.continuous];
-assert(typed.length === 23 && new Set(typed).size === 23, "V7 channel types do not uniquely cover all channels");
-assert(config.conditionResizeContract === "discrete_nearest_continuous_bilinear_v1", "V7 resize contract mismatch");
-
 console.log(JSON.stringify({
   ok: true,
   status: "ai_painter_machine_contract_cpu_core_alignment_passed",
@@ -117,7 +230,13 @@ console.log(JSON.stringify({
   machineReleaseAdjudicationRequired: true,
   persistentTicketReplayProtectionRequired: true,
   currentCapabilityReleaseStatus: "none_released",
+  conditionContractIdentity: condition.conditionContractIdentity,
+  conditionContractPath: currentContracts.condition,
+  conditionContractSha256: sha256(readBytes(currentContracts.condition)),
   conditionChannelsVerified: 23,
+  discreteConditionChannelsVerified: 15,
+  continuousConditionChannelsVerified: 8,
+  historicalColdStartConditionConfigUsedAsAuthority: false,
   genericAutonomousOrchestratorIntegrated: true,
   candidateSpecificFullTrainingAdapterStatus: "not_materialized",
   fullTrainingRunnerAdoptionClaimed: false,
@@ -129,3 +248,9 @@ function readBytes(relativePath) { return fs.readFileSync(path.resolve(ROOT, rel
 function sha256(bytes) { return crypto.createHash("sha256").update(bytes).digest("hex"); }
 function exists(relativePath) { return fs.existsSync(path.resolve(ROOT, relativePath)); }
 function assert(condition, message) { if (!condition) throw new Error(message); }
+function objectHasKey(value, targetKey) {
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some((item) => objectHasKey(item, targetKey));
+  if (Object.prototype.hasOwnProperty.call(value, targetKey)) return true;
+  return Object.values(value).some((item) => objectHasKey(item, targetKey));
+}

@@ -1,0 +1,460 @@
+{
+  "schemaVersion": "stage4-semantic-transport-v2-trainer-loss-support-contract-v1",
+  "contractId": "stage4-semantic-transport-v2-trainer-loss-support-contract-v1",
+  "status": "cpu_supported_inactive",
+  "authority": "local_ai_pet_world_program",
+  "architectureId": "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2",
+  "objectiveMappingId": "formal_v6_composite_exact_reuse_v1",
+  "purpose": "Bind the inactive V2 Trainer to the existing formal V6 composite objective without adding, deleting, renaming or reweighting a Loss term.",
+  "formalObjectiveContract": {
+    "path": "data/ai-painter/system-governance/stage4-formal-diffusion-objective-and-checkpoint-contract-v1.json",
+    "sha256": "779027a5fe2a58d80be4519d7df17a5dc39ffd58307a627eef09620adaf42059",
+    "schemaVersion": "ai-painter-stage4-formal-diffusion-objective-and-checkpoint-contract-v1"
+  },
+  "programBindings": {
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "a0c56725542f9e0e36958b5941e3f70b440cf036add924f8d5ee9c54dc55f33d"
+    },
+    "trainerSupport": {
+      "path": "ml/ai-painter/scripts/ai_painter_stage4_semantic_transport_v2_trainer_support.py",
+      "sha256": "d331417e87f544194e3efb631f4b4ed5d187cbc75d1990bb7b4e32b5e8826adf"
+    },
+    "modelFactory": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "22d4d980be37b2c706c6ba7dbe5deb7d0f2f7a060e11af19024f96ffd2aa6bd0"
+    },
+    "successorModule": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/stage4_semantic_transport_v2.py",
+      "sha256": "8cf06a8d3e32ae830151d35aa237710eab8d6aa651c2647058b5821ffe198e97"
+    },
+    "cpuTest": {
+      "path": "ml/ai-painter/tests/test_stage4_semantic_transport_v2_trainer_support.py",
+      "sha256": "5e27cfa7b9c27c24d9b9bda3bf4c34852a4f8d3d65fa153796c29e060a678c4d"
+    },
+    "cpuChecker": {
+      "path": "ml/ai-painter/scripts/check_stage4_semantic_transport_v2_trainer_support_cpu.py",
+      "sha256": "5907dd2aa7375d331ff53c8cd4a20013ba07ed4e23783b6b7650ff5c6846582f"
+    }
+  },
+  "trainerDispatch": {
+    "velocityMethod": "predict_velocity_with_stage4_semantic_responsibility",
+    "rgbMethod": "decode_stage4_semantic_responsibility_rgb",
+    "conditionProbeMethod": "reconstruct_conditions_from_clean_latent",
+    "conditionProbeRole": "non_responsibility_auxiliary_output_binding",
+    "conditionProbeArchitecture": "12_to_64_to_existing_residual_block_to_23_to_sigmoid",
+    "conditionProbeFreeParameters": false,
+    "conditionProbeSharesResponsibilityParameters": false,
+    "legacyDispatchChanged": false
+  },
+  "autoencoderTrainingBoundary": {
+    "stateIdentityAlgorithm": "sha256_sorted_tensor_bytes_v1",
+    "requiredEvidencePhases": ["loaded", "before_training", "after_training"],
+    "allStateHashesMustMatch": true,
+    "evalModeRequired": true,
+    "requiresGradParameterCount": 0,
+    "optimizerParameterSource": "stage4_semantic_transport_v2_optimizer_parameters",
+    "optimizerScope": "denoiser_trainable_parameters_only",
+    "optimizerContainsAutoencoder": false,
+    "checkpointEvidenceField": "stage4SemanticTransportV2AutoencoderBoundary"
+  },
+  "responsibilityIdentityOrder": [
+    "terrain_path_ground",
+    "terrain_water",
+    "terrain_shoreline",
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation"
+  ],
+  "responsibilityObjectiveMapping": {
+    "terrain_path_ground": [
+      "pathBoundaryRgb",
+      "pathInteriorRgb",
+      "pathForbiddenBoundaryRgb"
+    ],
+    "terrain_water": [
+      "sparseRegionDecodedRgb",
+      "sparseRegionContrast",
+      "decodedRgb"
+    ],
+    "terrain_shoreline": [
+      "sparseRegionDecodedRgb",
+      "sparseRegionContrast",
+      "decodedRgb"
+    ],
+    "object_footprints": ["objectSemanticRgb"],
+    "object_tree": ["objectSemanticRgb"],
+    "object_rock": ["objectSemanticRgb"],
+    "object_vegetation": ["objectSemanticRgb"]
+  },
+  "existingRouteConstraintFunctions": {
+    "ids": [
+      "pathCoverageCalibrationLoss",
+      "authorizedBoundaryTopologyLoss",
+      "stage4RequiredBoundaryContactLoss"
+    ],
+    "implementationStatus": "existing_trainer_functions_not_activated_by_this_contract",
+    "reason": "The bound formal objective contains no numeric weight fields for these functions; activating them here would add an unbound Loss weight."
+  },
+  "globalVisualObjectiveTerms": [
+    "decodedRgb",
+    "decodedRgbGradient",
+    "decodedRgbLaplacian",
+    "decodedRgbQuietRegionExcess",
+    "spatialGridRgb"
+  ],
+  "conditionProbeObjectiveTerms": [
+    "discreteConditionOutputBinding",
+    "continuousConditionOutputBinding"
+  ],
+  "latentVelocityObjectiveTerms": [
+    "velocity",
+    "cleanLatent",
+    "multiscaleLatentGradient",
+    "multiscaleLatentLaplacian",
+    "quietRegionExcess"
+  ],
+  "denoiserLossWeights": {
+    "velocity": 1,
+    "cleanLatent": 0.75,
+    "multiscaleLatentGradient": 0.35,
+    "multiscaleLatentLaplacian": 0.2,
+    "quietRegionExcess": 0.8,
+    "discreteConditionOutputBinding": 0.9,
+    "continuousConditionOutputBinding": 0.35,
+    "decodedRgb": 0.75,
+    "decodedRgbGradient": 0.35,
+    "decodedRgbLaplacian": 0.15,
+    "decodedRgbQuietRegionExcess": 1,
+    "sparseRegionDecodedRgb": 1,
+    "sparseRegionContrast": 1.25,
+    "spatialGridRgb": 1.25,
+    "pathBoundaryRgb": 1.5,
+    "objectSemanticRgb": 1,
+    "pathInteriorRgb": 2,
+    "pathForbiddenBoundaryRgb": 2
+  },
+  "objectiveTerms": {
+    "velocity": {
+      "metricId": "velocityPredictionMse",
+      "weight": 1,
+      "prediction": "predicted_velocity[B,12,Hl,Wl]",
+      "target": "sqrt(alpha_bar_t)*noise-sqrt(1-alpha_bar_t)*clean_latent",
+      "mask": "none",
+      "normalization": "mean_over_all_elements",
+      "aggregation": "single_scalar",
+      "emptyPolicy": "not_applicable",
+      "formula": "mean((predicted_velocity-target_velocity)^2)",
+      "formulaSha256": "7a3f67750beba7c4a9263917a35cfcc064814581423ec5f116a38ef30a697f4c",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:18180-18228"
+    },
+    "cleanLatent": {
+      "metricId": "cleanLatentMae",
+      "weight": 0.75,
+      "prediction": "sqrt(alpha_bar_t)*noisy_latent-sqrt(1-alpha_bar_t)*predicted_velocity",
+      "target": "normalized frozen-Autoencoder clean_latent[B,12,Hl,Wl]",
+      "mask": "none",
+      "normalization": "mean_over_all_elements",
+      "aggregation": "single_scalar",
+      "emptyPolicy": "not_applicable",
+      "formula": "mean(abs(predicted_clean-clean_latent))",
+      "formulaSha256": "a545879fffc011f0a2e4561f89f2801838bb460a5f8e0935d8a8133a87927551",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:18180-18228"
+    },
+    "multiscaleLatentGradient": {
+      "metricId": "multiscaleLatentGradientMae",
+      "weight": 0.35,
+      "prediction": "predicted_clean at scales 1,0.5,0.25 using area reduction",
+      "target": "clean_latent at identical scales",
+      "mask": "none",
+      "normalization": "mean horizontal and vertical finite-difference L1 per scale",
+      "aggregation": "arithmetic_mean_over_scales",
+      "emptyPolicy": "minimum_reduced_axis_size_2",
+      "formula": "mean_scales(0.5*(mean(abs(dx(predicted_s)-dx(target_s)))+mean(abs(dy(predicted_s)-dy(target_s)))))",
+      "formulaSha256": "99d071e7e75a386c0c8f8e2ccf979f18d5a15363981a745648ea351a3faefea5",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20548-20570"
+    },
+    "multiscaleLatentLaplacian": {
+      "metricId": "multiscaleLatentLaplacianMae",
+      "weight": 0.2,
+      "prediction": "replicate-padded four-neighbor Laplacian of predicted_clean at each scale",
+      "target": "replicate-padded four-neighbor Laplacian of clean_latent at each scale",
+      "mask": "none",
+      "normalization": "mean_absolute_error_per_scale",
+      "aggregation": "arithmetic_mean_over_scales",
+      "emptyPolicy": "minimum_reduced_axis_size_2",
+      "formula": "mean_scales(mean(abs(laplacian_replicate(predicted_s)-laplacian_replicate(target_s))))",
+      "formulaSha256": "0b6f963bde6d585a030f33dd42878720c6f76667e1be8330769ea03e2f3484d6",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20554-20582"
+    },
+    "quietRegionExcess": {
+      "metricId": "quietRegionExcess",
+      "weight": 0.8,
+      "prediction": "predicted_clean channel-mean spatial activity",
+      "target": "clean_latent channel-mean spatial activity",
+      "mask": "target activity <= per-sample 0.3 quantile",
+      "normalization": "masked_sum/max(mask_count,1)",
+      "aggregation": "all_batch_quiet_pixels",
+      "emptyPolicy": "denominator_clamped_to_1",
+      "formula": "sum(relu(activity(predicted)-activity(target)-margin)*I(activity(target)<=per_sample_quantile(activity(target),q)))/max(sum(mask),1)",
+      "formulaSha256": "ae76c57ae124b7fc60589547f4108798f63e0df64944f94b809862c0f59a7fc6",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20585-20599"
+    },
+    "discreteConditionOutputBinding": {
+      "metricId": "discreteConditionOutputBindingBce",
+      "weight": 0.9,
+      "prediction": "auxiliary output-bound probe[B,15,Hl,Wl] clamped to [1e-6,1-1e-6]",
+      "target": "15 authoritative discrete conditions resized nearest to latent size",
+      "mask": "per-channel positive and negative class masks",
+      "normalization": "positive and negative class means have equal class weight when present",
+      "aggregation": "mean_available_classes_then_mean_channels",
+      "emptyPolicy": "only classes present in a channel are averaged",
+      "formula": "mean_channels(mean_available_classes(-log(clamp(pred,eps,1-eps))@target>=0.5,-log1p(-clamp(pred,eps,1-eps))@target<0.5))",
+      "formulaSha256": "a324cb730b782086894a2c96dd437c370241e6f488a5001eeef0f3f1c15bba4e",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20602-20618"
+    },
+    "continuousConditionOutputBinding": {
+      "metricId": "continuousConditionOutputBindingMae",
+      "weight": 0.35,
+      "prediction": "auxiliary output-bound probe[B,8,Hl,Wl]",
+      "target": "8 authoritative continuous conditions resized bilinear align_corners=false",
+      "mask": "none",
+      "normalization": "mean_over_all_continuous_elements",
+      "aggregation": "single_scalar",
+      "emptyPolicy": "not_applicable",
+      "formula": "mean(abs(predicted_conditions[continuous]-typed_target_conditions[continuous]))",
+      "formulaSha256": "0e477281e0a3675a5de2e79ba981a7d417b49bc5b72499ee8d47b99ceb5b1755",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:18180-18228"
+    },
+    "decodedRgb": {
+      "metricId": "decodedRgbMae",
+      "weight": 0.75,
+      "prediction": "V2 authoritative-mask-gated complete RGB[B,3,H,W]",
+      "target": "approved source RGB[B,3,H,W]",
+      "mask": "none",
+      "normalization": "mean_over_all_elements",
+      "aggregation": "single_scalar",
+      "emptyPolicy": "not_applicable",
+      "formula": "mean(abs(predicted_rgb-target_rgb))",
+      "formulaSha256": "2f37096ab818dea5fbbcf3a45de1d7e3e00e902cc6ad0a02e9055719275c5af3",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:18231-18342"
+    },
+    "decodedRgbGradient": {
+      "metricId": "decodedRgbGradientMae",
+      "weight": 0.35,
+      "prediction": "V2 complete RGB finite differences at scales 1,0.5,0.25",
+      "target": "approved source RGB finite differences at identical scales",
+      "mask": "none",
+      "normalization": "mean horizontal and vertical finite-difference L1 per scale",
+      "aggregation": "arithmetic_mean_over_scales",
+      "emptyPolicy": "minimum_reduced_axis_size_2",
+      "formula": "mean_scales(0.5*(mean(abs(dx(predicted_rgb_s)-dx(target_rgb_s)))+mean(abs(dy(predicted_rgb_s)-dy(target_rgb_s)))))",
+      "formulaSha256": "0dc881196ce54a1f6f93e186e86a3555785225ee749d5ece5afa5f831b016a5b",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20548-20570"
+    },
+    "decodedRgbLaplacian": {
+      "metricId": "decodedRgbLaplacianMae",
+      "weight": 0.15,
+      "prediction": "V2 complete RGB replicate-padded Laplacian at each scale",
+      "target": "approved source RGB replicate-padded Laplacian at each scale",
+      "mask": "none",
+      "normalization": "mean_absolute_error_per_scale",
+      "aggregation": "arithmetic_mean_over_scales",
+      "emptyPolicy": "minimum_reduced_axis_size_2",
+      "formula": "mean_scales(mean(abs(laplacian_replicate(predicted_rgb_s)-laplacian_replicate(target_rgb_s))))",
+      "formulaSha256": "46e49ce0d13f3e4ac9fad49ec71f64d0638a0f0789a6b612d286c3dd443de45a",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20554-20582"
+    },
+    "decodedRgbQuietRegionExcess": {
+      "metricId": "decodedRgbQuietRegionExcess",
+      "weight": 1,
+      "prediction": "V2 complete RGB channel-mean spatial activity",
+      "target": "approved source RGB channel-mean spatial activity",
+      "mask": "target activity <= per-sample 0.3 quantile",
+      "normalization": "masked_sum/max(mask_count,1)",
+      "aggregation": "all_batch_quiet_pixels",
+      "emptyPolicy": "denominator_clamped_to_1",
+      "formula": "sum(relu(activity(predicted_rgb)-activity(target_rgb)-margin)*I(activity(target_rgb)<=per_sample_quantile(activity(target_rgb),q)))/max(sum(mask),1)",
+      "formulaSha256": "fdd209336ac67ff012d0b929314e471bbda6a4e40192a51e0176c39fdf79a90e",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20585-20599"
+    },
+    "sparseRegionDecodedRgb": {
+      "metricId": "sparseRegionDecodedRgbMae",
+      "weight": 1,
+      "prediction": "V2 complete RGB within each configured authoritative sparse mask",
+      "target": "approved source RGB within the same mask",
+      "mask": "nearest-resized water,path,shoreline,footprints,focal_area",
+      "normalization": "masked_sum/(mask_count*3)",
+      "aggregation": "mean_over_nonempty_configured_channels",
+      "emptyPolicy": "zero when every configured mask is empty",
+      "formula": "mean_nonempty_channels(sum(abs(predicted_rgb-target_rgb)*nearest(mask_c))/(sum(mask_c)*3));c=[terrain_water,terrain_path_ground,terrain_shoreline,object_footprints,focal_area]",
+      "formulaSha256": "2330f9c9ae35c3b8d64b4c3c947782a5431c9738dbe0a137eb6c0b9d0a3a0cb8",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:19086-19097"
+    },
+    "sparseRegionContrast": {
+      "metricId": "sparseRegionContrastMae",
+      "weight": 1.25,
+      "prediction": "per-channel RGB mean_inside minus mean_outside",
+      "target": "approved RGB mean_inside minus mean_outside",
+      "mask": "nearest-resized water,path,shoreline,footprints,focal_area",
+      "normalization": "inside and outside counts each clamped to 1",
+      "aggregation": "mean_rgb_l1_then_mean_configured_channels",
+      "emptyPolicy": "count denominators clamped to 1",
+      "formula": "mean_channels(l1(mean_inside(predicted_rgb,c)-mean_outside(predicted_rgb,c),mean_inside(target_rgb,c)-mean_outside(target_rgb,c)));c=[terrain_water,terrain_path_ground,terrain_shoreline,object_footprints,focal_area]",
+      "formulaSha256": "aa06482140a84bcd2e9218cdb887aef343be1d681850faede39595c9e87b34cb",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20194-20208"
+    },
+    "spatialGridRgb": {
+      "metricId": "spatialGridRgbMae",
+      "weight": 1.25,
+      "prediction": "adaptive-average-pooled V2 complete RGB[6,8]",
+      "target": "adaptive-average-pooled approved source RGB[6,8]",
+      "mask": "none",
+      "normalization": "mean_over_batch_rgb_and_6x8_grid",
+      "aggregation": "single_scalar",
+      "emptyPolicy": "not_applicable",
+      "formula": "mean(abs(adaptive_avg_pool_6x8(predicted_rgb)-adaptive_avg_pool_6x8(target_rgb)))",
+      "formulaSha256": "cdb9baa0c511fb94cfe3f888676a974b0eea97073d1f6ce3948170d81bf36cca",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20211-20214"
+    },
+    "pathBoundaryRgb": {
+      "metricId": "pathBoundaryRgbMae",
+      "weight": 1.5,
+      "prediction": "V2 complete RGB on authoritative path pixels in the outer image band",
+      "target": "approved source RGB on identical pixels",
+      "mask": "nearest(path_ground)*outer band width max(1,round(min(H,W)*0.04))",
+      "normalization": "masked_sum/max(mask_count*3,1)",
+      "aggregation": "single_scalar",
+      "emptyPolicy": "denominator_clamped_to_1",
+      "formula": "sum(abs(predicted_rgb-target_rgb)*nearest(path_mask)*outer_band)/max(sum(nearest(path_mask)*outer_band)*3,1)",
+      "formulaSha256": "b0732d8b02b137a340a2813767d5616df1198366bc4db990cdaa97ef84d9edb3",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20217-20229"
+    },
+    "objectSemanticRgb": {
+      "metricId": "objectSemanticRgbMae",
+      "weight": 1,
+      "prediction": "V2 complete RGB per footprints/tree/rock/vegetation mask",
+      "target": "approved source RGB under the same object mask",
+      "mask": "nearest-resized authoritative per-class object mask",
+      "normalization": "each class masked_sum/max(mask_count*3,1)",
+      "aggregation": "weighted_mean using footprints=1,tree=1,rock=1.25,vegetation=1",
+      "emptyPolicy": "empty class yields zero masked numerator with denominator clamped to 1",
+      "formula": "sum_c(class_weight[c]*masked_rgb_l1(predicted_rgb,target_rgb,c))/sum_c(class_weight[c]);c=[object_footprints,object_tree,object_rock,object_vegetation]",
+      "formulaSha256": "e0bbe3d34414af2e05a39ee7947cde49dffc5918a21a7c8e58a451d4df31d101",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:19161-19187"
+    },
+    "pathInteriorRgb": {
+      "metricId": "pathInteriorRgbMae",
+      "weight": 2,
+      "prediction": "V2 complete RGB under authoritative path mask",
+      "target": "approved source RGB under authoritative path mask",
+      "mask": "nearest-resized terrain_path_ground",
+      "normalization": "masked_sum/max(mask_count*3,1)",
+      "aggregation": "single_scalar",
+      "emptyPolicy": "denominator_clamped_to_1",
+      "formula": "sum(abs(predicted_rgb-target_rgb)*nearest(path_mask))/max(sum(nearest(path_mask))*3,1)",
+      "formulaSha256": "53f118adfa9264e92c716e6586a99811a56d54f76518797877e99b4baaedd49a",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:19615-19622"
+    },
+    "pathForbiddenBoundaryRgb": {
+      "metricId": "pathForbiddenBoundaryRgbMae",
+      "weight": 2,
+      "prediction": "V2 complete RGB on non-path pixels in the outer image band",
+      "target": "approved source RGB on identical pixels",
+      "mask": "outer band*(1-nearest(path_ground))",
+      "normalization": "masked_sum/max(mask_count*3,1)",
+      "aggregation": "single_scalar",
+      "emptyPolicy": "denominator_clamped_to_1",
+      "formula": "sum(abs(predicted_rgb-target_rgb)*outer_band*(1-nearest(path_mask)))/max(sum(outer_band*(1-nearest(path_mask)))*3,1)",
+      "formulaSha256": "0b376bcc8476c41678a8361d4b54a9bd01966043fae12272ca270813feaf9c17",
+      "implementation": "train_ai_assisted_conditional_denoiser.py:20232-20244"
+    }
+  },
+  "compositeFormula": {
+    "formula": "sum(objectiveTerms[id].weight*objectiveTerms[id].metric for id in denoiserLossWeights in frozen contract order)",
+    "aggregation": "one scalar; no V2-only additive term",
+    "implementation": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py:18231-18342",
+    "implementationSha256": "a0c56725542f9e0e36958b5941e3f70b440cf036add924f8d5ee9c54dc55f33d"
+  },
+  "trainingReviewAlignment": {
+    "terrain_path_ground": {
+      "conditionChannelIds": ["terrain_path_ground", "signed_distance_path"],
+      "responsibilityOutputIdentity": "terrain_path_ground latent contribution plus mask-gated RGB proposal",
+      "objectiveTermIds": ["pathBoundaryRgb", "pathInteriorRgb", "pathForbiddenBoundaryRgb"],
+      "reviewMetricFamily": "route topology, interior and required/forbidden boundary review",
+      "thresholdsUsedAsTargets": false
+    },
+    "terrain_water": {
+      "conditionChannelIds": ["terrain_water", "signed_distance_water", "moisture_proximity"],
+      "responsibilityOutputIdentity": "terrain_water latent contribution plus mask-gated RGB proposal",
+      "objectiveTermIds": ["sparseRegionDecodedRgb", "sparseRegionContrast", "decodedRgb"],
+      "reviewMetricFamily": "water semantic and complete-map review",
+      "thresholdsUsedAsTargets": false
+    },
+    "terrain_shoreline": {
+      "conditionChannelIds": ["terrain_shoreline", "signed_distance_shoreline", "moisture_proximity"],
+      "responsibilityOutputIdentity": "terrain_shoreline latent contribution plus mask-gated RGB proposal",
+      "objectiveTermIds": ["sparseRegionDecodedRgb", "sparseRegionContrast", "decodedRgb"],
+      "reviewMetricFamily": "shoreline semantic and complete-map review",
+      "thresholdsUsedAsTargets": false
+    },
+    "object_footprints": {
+      "conditionChannelIds": ["object_footprints", "object_instance", "signed_distance_object_ground"],
+      "responsibilityOutputIdentity": "object_footprints latent contribution plus mask-gated RGB proposal",
+      "objectiveTermIds": ["objectSemanticRgb"],
+      "classAggregationWeight": 1,
+      "reviewMetricFamily": "footprints masked semantic review",
+      "thresholdsUsedAsTargets": false
+    },
+    "object_tree": {
+      "conditionChannelIds": ["object_tree", "object_instance", "signed_distance_object_ground"],
+      "responsibilityOutputIdentity": "object_tree latent contribution plus mask-gated RGB proposal",
+      "objectiveTermIds": ["objectSemanticRgb"],
+      "classAggregationWeight": 1,
+      "reviewMetricFamily": "tree masked semantic review",
+      "thresholdsUsedAsTargets": false
+    },
+    "object_rock": {
+      "conditionChannelIds": ["object_rock", "object_instance", "signed_distance_object_ground"],
+      "responsibilityOutputIdentity": "object_rock latent contribution plus mask-gated RGB proposal",
+      "objectiveTermIds": ["objectSemanticRgb"],
+      "classAggregationWeight": 1.25,
+      "reviewMetricFamily": "rock masked semantic review",
+      "thresholdsUsedAsTargets": false
+    },
+    "object_vegetation": {
+      "conditionChannelIds": ["object_vegetation", "object_instance", "signed_distance_object_ground", "moisture_proximity"],
+      "responsibilityOutputIdentity": "object_vegetation latent contribution plus mask-gated RGB proposal",
+      "objectiveTermIds": ["objectSemanticRgb"],
+      "classAggregationWeight": 1,
+      "reviewMetricFamily": "vegetation masked semantic review",
+      "thresholdsUsedAsTargets": false
+    }
+  },
+  "trainingTargetSafeguards": {
+    "machineReviewThresholdsUsedAsTrainingTargets": false,
+    "machineReviewScoresUsedAsTrainingTargets": false,
+    "failedPreviewPixelsUsedAsTrainingTargets": false
+  },
+  "activationGates": {
+    "gpuNow": false,
+    "optimizerNow": false,
+    "backwardNow": false,
+    "weightModificationNow": false,
+    "checkpointReadNow": false,
+    "trainingNow": false,
+    "formalInferenceNow": false,
+    "runtimeFrameNow": false,
+    "worldEntryNow": false
+  },
+  "prohibited": [
+    "new_or_removed_loss_term",
+    "loss_value_or_weight_change",
+    "machine_review_threshold_as_training_target",
+    "failed_preview_pixel_as_training_target",
+    "responsibility_parameter_sharing",
+    "legacy_mode_dispatch_change",
+    "gpu_or_training_activation_from_this_contract"
+  ]
+}

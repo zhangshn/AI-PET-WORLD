@@ -3,6 +3,13 @@ from __future__ import annotations
 import math
 
 from ai_painter.training.torch_runtime import require_torch
+from ai_painter.complete_world.stage4_semantic_transport_v2 import (
+    ARCHITECTURE_ID as STAGE4_SEMANTIC_TRANSPORT_V2_ARCHITECTURE,
+    RESPONSIBILITY_CHANNELS as STAGE4_SEMANTIC_TRANSPORT_V2_RESPONSIBILITIES,
+    RESPONSIBILITY_GROUPS as STAGE4_SEMANTIC_TRANSPORT_V2_RESPONSIBILITY_GROUPS,
+    build_stage4_semantic_transport_denoiser,
+    validate_successor_config as validate_stage4_semantic_transport_v2_config,
+)
 
 
 STAGE4_STRUCTURE_FACT_CHANNEL_ORDER = (
@@ -87,6 +94,7 @@ def build_complete_world_system(config: dict[str, object]):
     joint_condition_local_transport_architecture = (
         "stage4_full_backbone_joint_condition_local_transport_denoiser_v1"
     )
+    semantic_transport_v2_architecture = STAGE4_SEMANTIC_TRANSPORT_V2_ARCHITECTURE
     authoritative_semantic_carrier_architecture = (
         "stage4_authoritative_visual_semantic_carrier_decoder_v1"
     )
@@ -197,6 +205,12 @@ def build_complete_world_system(config: dict[str, object]):
             raise ValueError(
                 "Stage 4 full-backbone conditioning requires the frozen 4x 12-channel Autoencoder boundary"
             )
+    if denoiser_architecture == semantic_transport_v2_architecture:
+        if controlled_structure_arm_explicit or stage4_responsibility_component_role_explicit:
+            raise ValueError(
+                "Stage 4 semantic transport V2 cannot reuse exited controlled arms or responsibility components"
+            )
+        validate_stage4_semantic_transport_v2_config(config)
     if denoiser_architecture in {
         direct_clean_latent_architecture,
         direct_responsibility_residual_architecture,
@@ -1469,7 +1483,11 @@ def build_complete_world_system(config: dict[str, object]):
         def __init__(self):
             super().__init__()
             self.autoencoder = ProjectOwnedAutoencoder()
-            if denoiser_architecture in {
+            self.autoencoder.eval()
+            self.autoencoder.requires_grad_(False)
+            if denoiser_architecture == semantic_transport_v2_architecture:
+                self.denoiser = build_stage4_semantic_transport_denoiser(config)
+            elif denoiser_architecture in {
                 "multiscale_condition_unet_v3",
                 "multiscale_condition_unet_v4",
                 "multiscale_condition_unet_v5",
@@ -1492,6 +1510,15 @@ def build_complete_world_system(config: dict[str, object]):
                 self.denoiser = ProjectOwnedDenoiser()
             else:
                 raise ValueError(f"unsupported denoiser architecture: {denoiser_architecture}")
+
+        def train(self, mode: bool = True):
+            super().train(mode)
+            # The Autoencoder is an immutable capability boundary, not a trainable
+            # child of the active Stage 4 denoiser.  Re-assert eval mode after every
+            # parent mode transition so external trainers cannot thaw it by calling
+            # ``system.train()``.
+            self.autoencoder.eval()
+            return self
 
         def predict_noise(self, noisy_latent, timestep, conditions):
             return self.denoiser(noisy_latent, timestep, conditions)
@@ -1554,6 +1581,76 @@ def build_complete_world_system(config: dict[str, object]):
                 conditions,
                 return_stage4_authoritative_semantic_carriers=True,
             )
+
+        def predict_velocity_with_stage4_semantic_responsibility(
+            self,
+            noisy_latent,
+            timestep,
+            conditions,
+        ):
+            if denoiser_architecture != semantic_transport_v2_architecture:
+                raise ValueError(
+                    "semantic responsibility evidence is only available in the versioned Stage 4 V2 successor"
+                )
+            return self.denoiser(
+                noisy_latent,
+                timestep,
+                conditions,
+                return_stage4_semantic_responsibility=True,
+            )
+
+        def decode_stage4_semantic_responsibility_rgb(
+            self,
+            latent,
+            conditions,
+            return_evidence=False,
+        ):
+            if denoiser_architecture != semantic_transport_v2_architecture:
+                raise ValueError(
+                    "condition-aware RGB responsibility is only available in the versioned Stage 4 V2 successor"
+                )
+            decoded_rgb = self.autoencoder.decode(latent)
+            if tuple(conditions.shape[-2:]) != tuple(decoded_rgb.shape[-2:]):
+                raise ValueError(
+                    "condition-aware RGB responsibility requires native conditions to match decoded RGB size"
+                )
+            typed_conditions = self.denoiser.prepare_typed_conditions(
+                conditions, decoded_rgb.shape[-2:]
+            )
+            proposals = []
+            masks = []
+            gated = []
+            branch_input = torch.cat((decoded_rgb, typed_conditions), dim=1)
+            for channel_id in STAGE4_SEMANTIC_TRANSPORT_V2_RESPONSIBILITIES:
+                source_index = condition_channel_order.index(channel_id)
+                mask = typed_conditions[:, source_index:source_index + 1]
+                proposal = self.denoiser.rgb_responsibility_heads[channel_id](
+                    torch.cat((branch_input, mask), dim=1)
+                )
+                masks.append(mask)
+                proposals.append(proposal)
+                gated.append(proposal * mask)
+            mask_sum = torch.stack(masks, dim=0).sum(dim=0)
+            coverage = mask_sum.clamp(0.0, 1.0)
+            foreground = torch.stack(gated, dim=0).sum(dim=0) / mask_sum.clamp_min(
+                torch.finfo(decoded_rgb.dtype).eps
+            )
+            complete_rgb = decoded_rgb * (1.0 - coverage) + foreground * coverage
+            if return_evidence:
+                return complete_rgb, {
+                    "architectureIdentity": semantic_transport_v2_architecture,
+                    "baseDecodedRgb": decoded_rgb,
+                    "responsibilityMasks": tuple(masks),
+                    "responsibilityRgbProposals": tuple(proposals),
+                    "authoritativelyGatedResponsibilityRgb": tuple(gated),
+                    "responsibilityIdentityOrder": STAGE4_SEMANTIC_TRANSPORT_V2_RESPONSIBILITIES,
+                    "responsibilityGroups": STAGE4_SEMANTIC_TRANSPORT_V2_RESPONSIBILITY_GROUPS,
+                    "sourceConditionChannels": STAGE4_SEMANTIC_TRANSPORT_V2_RESPONSIBILITIES,
+                    "compositorKind": "typed_identity_isolated_authoritative_rgb_responsibility_v2",
+                    "maskOutsideMutationAllowed": False,
+                    "freeBlendWeightsPresent": False,
+                }
+            return complete_rgb
 
         def decode_stage4_post_decode_object_rgb(
             self,

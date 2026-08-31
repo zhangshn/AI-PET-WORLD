@@ -8,6 +8,9 @@ import {
   runJointConditionLocalTransportPostCheckpointRecovery,
 } from "./lib/ai-painter-stage4-joint-condition-local-transport-full-data-screen-post-checkpoint-recovery-v1.mjs"
 import {
+  routeJointConditionFullDataScreenTerminal,
+} from "./lib/ai-painter-stage4-joint-condition-local-transport-lifecycle-v1.mjs"
+import {
   advanceCurrentExecutionRegistry,
   readCurrentExecutionRegistry,
 } from "../src/server/ai-painter-current-execution-registry.mjs"
@@ -119,6 +122,12 @@ try {
 
 const finalization = result.finalizationValue
 const qualified = finalization.status === "full_data_screen_qualified"
+const nextTask = routeJointConditionFullDataScreenTerminal({
+  status: finalization.status,
+  sourcePackageIdentity: sourcePlan.packageIdentity,
+  sourceRunId: sourcePlan.runId,
+  sourceOutputRoot: sourcePlan.outputRoot,
+})
 const terminalPath = path.join(recoveryAbsolute, "phase-terminal.json")
 const machineReviewPath = path.join(recoveryAbsolute, "machine-review-timeline.json")
 const lateQualificationPath = path.join(recoveryAbsolute, "late-stability-qualification.json")
@@ -178,6 +187,12 @@ writeExclusive(capsulePath, {
   capsuleId: `local-ai-${recoveryId}`,
   module: { id: "ai-painter-r5-stage4", nameZh: "AI Painter R5 / Stage4" },
   currentStage: { number: 4, total: 5, status: finalization.status },
+  nextAllowedAction: {
+    taskId: nextTask.taskId,
+    action: nextTask.nextMachineAction,
+    automaticRetryStarted: false,
+    trainingRestartAllowed: false,
+  },
   evidence: evidenceFiles.map((file) => ({
     kind: path.basename(file).replace(/\W+/gu, "_"),
     ...binding(projectRoot, file),
@@ -218,12 +233,16 @@ const registry = await advanceCurrentExecutionRegistry({
   projectRoot,
   capabilityVersion: sourcePlan.capabilityVersion,
   packageId: recoveryId,
-  taskId: "joint_condition_local_transport_full_data_screen_recovery_terminal_recorded",
-  taskKind: "post_checkpoint_recovery_result",
+  taskId: nextTask.taskId,
+  taskKind: nextTask.taskKind,
+  taskGoal: nextTask.taskGoal,
+  priority: nextTask.priority,
+  queueStatus: nextTask.queueStatus,
+  nextMachineAction: nextTask.nextMachineAction,
   runId: sourcePlan.runId,
-  lifecycleStage: finalization.status,
-  executionState: "completed",
-  activity: finalization.status,
+  lifecycleStage: nextTask.lifecycleStage,
+  executionState: nextTask.executionState,
+  activity: nextTask.activity,
   taskCapsulePath: projectPath(projectRoot, capsulePath),
   terminalEvidencePath: terminalBinding.path,
   latestTrainingTerminal: {

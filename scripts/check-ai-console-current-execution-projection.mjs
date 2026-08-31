@@ -25,11 +25,24 @@ assert.match(projectionSource, /activeExecution/u)
 assert.match(projectionSource, /latestTrainingTerminal/u)
 assert.match(projectionSource, /selectedHistoricalRun/u)
 assert.match(projectionSource, /machine_review_timeline_sha256_mismatch/u)
+assert.match(projectionSource, /nextMachineAction: task\.nextMachineAction/u)
+assert.match(projectionSource, /queueStatus: task\.queueStatus/u)
+assert.doesNotMatch(projectionSource, /nextMachineAction:\s*null/u)
 assert.doesNotMatch(projectionSource, /readdir|globSync|fast-glob|mtimeMs|birthtime/u)
 assert.match(apiSource, /readAiPainterCurrentExecutionSnapshot/u)
 assert.match(apiSource, /Cache-Control/u)
 assert.match(pageStatusSource, /\/api\/ai-console\/observability\/current-execution/u)
 assert.match(pageStatusSource, /refreshIntervalMs = 1_000/u)
+
+if (process.argv.includes("--static-only")) {
+  console.log(JSON.stringify({
+    status: "passed",
+    mode: "static_projection_contract",
+    reason: "current runtime evidence is not part of the source checkout",
+    dynamicEvidenceCoveredBy: "scripts/tests/test-ai-painter-current-execution-registry-atomic-advance.mjs",
+  }, null, 2))
+  process.exit(0)
+}
 
 const registryRead = await readCurrentExecutionRegistry(projectRoot)
 assert.equal(registryRead.ok, true, registryRead.errorCode ?? "current registry must verify")
@@ -41,6 +54,13 @@ assert.equal(typeof registry.taskId, "string")
 assert.equal(typeof registry.runId, "string")
 assert.equal(typeof registry.lifecycleStage, "string")
 assert.equal(typeof registry.executionState, "string")
+if (Object.prototype.hasOwnProperty.call(registry, "taskGoal")) {
+  assert.equal(typeof registry.taskGoal, "string")
+  assert.ok(Number.isInteger(registry.priority))
+  assert.equal(typeof registry.queueStatus, "string")
+  assert.equal(typeof registry.nextMachineAction === "string" || registry.nextMachineAction === null, true)
+  assert.equal(typeof registry.queuedAtUtc, "string")
+}
 assert.ok(Object.prototype.hasOwnProperty.call(registry, "activeExecution"))
 assert.ok(Object.prototype.hasOwnProperty.call(registry, "latestTrainingTerminal"))
 assert.ok(Object.prototype.hasOwnProperty.call(registry, "selectedHistoricalRun"))

@@ -59,6 +59,11 @@ export type AiPainterCurrentExecutionSnapshot = {
   currentProjectTask: {
     taskId: string | null
     taskKind: string | null
+    taskGoal: string | null
+    priority: number | null
+    queueStatus: string | null
+    nextMachineAction: string | null
+    queuedAtUtc: string | null
     capabilityVersion: string | null
     packageId: string | null
     runId: string | null
@@ -124,6 +129,11 @@ export async function readAiPainterCurrentExecutionSnapshot(
       currentProjectTask: {
         taskId,
         taskKind: stringOrNull(registry.taskKind),
+        taskGoal: stringOrNull(registry.taskGoal),
+        priority: integerOrNull(registry.priority),
+        queueStatus: stringOrNull(registry.queueStatus),
+        nextMachineAction: stringOrNull(registry.nextMachineAction),
+        queuedAtUtc: stringOrNull(registry.queuedAtUtc),
         capabilityVersion: stringOrNull(registry.capabilityVersion),
         packageId: stringOrNull(registry.packageId),
         runId,
@@ -160,30 +170,38 @@ export async function queryAiPainterCurrentTaskProjection(): Promise<AiConsolePr
   const snapshot = await readAiPainterCurrentExecutionSnapshot()
   if (!snapshot.ok || !snapshot.currentProjectTask) return staleProjection(snapshot)
   const task = snapshot.currentProjectTask
+  const unavailableFields = [
+    ["taskGoal", task.taskGoal],
+    ["priority", task.priority],
+    ["queueStatus", task.queueStatus],
+    ["nextMachineAction", task.nextMachineAction],
+    ["queuedAtUtc", task.queuedAtUtc],
+  ].filter(([, value]) => value === null).map(([field]) => field as string)
   return createProjection({
     ...projectionProvenance(snapshot),
     records: [{
       taskId: task.taskId,
-      taskGoal: null,
+      taskGoal: task.taskGoal,
       capabilityDomain: "ai_painter",
-      priority: null,
+      priority: task.priority,
       lifecycleStatus: task.lifecycleStage,
       lifecycleStage: task.lifecycleStage,
       executionState: task.executionState,
-      queueStatus: null,
-      nextMachineAction: null,
+      queueStatus: task.queueStatus,
+      nextMachineAction: task.nextMachineAction,
       taskRevision: snapshot.registryRevision,
       registryRevision: snapshot.registryRevision,
       runId: task.runId,
       activeExecution: snapshot.activeExecution !== null,
+      queuedAtUtc: task.queuedAtUtc,
       recordedAtUtc: snapshot.recordedAtUtc,
       recordedAtAsiaShanghai: snapshot.recordedAtAsiaShanghai,
       evidenceIntegrity: snapshot.integrityStatus,
       evidenceSha256: task.terminalSha256,
     }],
-    dataStatus: "partial",
-    reasonCode: "task_goal_priority_queue_and_next_action_not_registered",
-    unavailableFields: ["taskGoal", "priority", "queueStatus", "nextMachineAction", "queuedAtUtc"],
+    dataStatus: unavailableFields.length === 0 ? "connected" : "partial",
+    reasonCode: unavailableFields.length === 0 ? null : "current_task_control_metadata_not_registered",
+    unavailableFields,
   })
 }
 
@@ -511,6 +529,10 @@ function requiredSha256(value: unknown, code: string): string {
 function requiredInteger(value: unknown, code: string): number {
   if (!Number.isInteger(value)) throw new Error(code)
   return value as number
+}
+
+function integerOrNull(value: unknown): number | null {
+  return Number.isInteger(value) ? value as number : null
 }
 
 function requiredNonNegativeInteger(value: unknown, code: string): number {

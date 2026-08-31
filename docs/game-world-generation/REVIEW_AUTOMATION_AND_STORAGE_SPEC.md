@@ -1,14 +1,14 @@
 # 审核、自动闭环与存储正式规格
 
-更新时间：2026-08-26 15:30:00 +08:00
+更新时间：2026-08-31 01:53:20 +08:00
 
 状态：active-long-term-review-automation-storage-contract
 
-文档版本：`AI-PAINTER-REVIEW-STORAGE-1.4`
+文档版本：`AI-PAINTER-REVIEW-STORAGE-1.6`
 
-生效日期：`2026-08-26`
+生效日期：`2026-08-31`
 
-替代版本：`AI-PAINTER-REVIEW-STORAGE-1.3`
+替代版本：`AI-PAINTER-REVIEW-STORAGE-1.5`
 
 文档状态：`active_normative_target`
 
@@ -75,13 +75,32 @@ change_candidate
 
 生成前审核失败不得调用图像算力，并保存无图阻断记录；生成后审核失败必须保存真实失败图、失败码、位置、指标、时间和证据路径。
 
+每个能力版本必须绑定唯一`reviewThresholdContract`，且审核器在运行前重新计算该文件及实现程序的SHA-256。合同至少完整列出：
+
+```text
+reviewContractIdentity / schemaVersion
+contractPath / contractSha256
+reviewerProgramPath / reviewerProgramSha256
+thresholds[] {
+  metricId, value, unit, comparator, applicability,
+  samplingWindow, aggregation, failureCode
+}
+referenceSourceIdentities[]
+conditionAndMaskContractIdentities[]
+nonDegradationPolicy
+```
+
+报告中出现阈值名称、“使用冻结阈值”或一个格式正确的SHA字符串不能代替完整合同和重算验证。任一数值、单位、比较符、适用对象或程序血缘未绑定时，不得开始训练或正式审核。
+
+当前Stage4 V2审核阈值的唯一机器合同是`data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json`。候选中立审核边界必须读取该真实文件并重算SHA-256，同时读取当前执行登记与同一执行包记录，逐项交叉验证`registryRevision`、`packageId`、数据发布身份、候选RGB、条件包、参考RGB、四类对象掩码及阈值合同绑定。调用方自报的布尔状态、格式正确的SHA、空登记文件、`latest`指针、历史运行目录或跨执行包证据均不构成可信血缘。正式审核运行器只有在未来Smoke或训练执行包物化时才能登记为当前入口；历史审核运行器只可用于绑定证据复核，不是当前调度权威。
+
 ## 4. 道路、水体与岸线审核
 
 道路颜色信号必须按季节与地表状态选择，并通过条件支持的连通分量、覆盖、交集、质心、空间网格、边界接触和完整跨度审核。暖色裸土、旱季草层和岩石高光不能直接计为道路。
 
 水体审核由正式 `terrain_water` 条件决定有水或无水分支：
 
-- 有水：验证淡水信号、覆盖、空间位置、连通、入口/出口、流向和岸线；
+- 有水：验证淡水信号、覆盖、空间位置、连通和岸线；只有正式阈值合同的`applicability`与条件包声明同时命中时，才额外验证其声明的边界侧、入口/出口和流向。north/south或特定port不是所有有水样本的通用要求；
 - 无水：只识别强蓝主导且局部连续的意外水面，不能把阴影或蓝绿色树冠误判为水。
 
 道路、水文和岸线必须分别执行语义拓扑去重。换槽位、换坐标、换宽度、镜像、旋转、轻微形变或修改局部装饰不能绕过同一模板判定。
@@ -105,6 +124,8 @@ reviewerVersion
 inputImagePath / inputImageSha256
 taskPackageId / conditionPackId
 scores / thresholds / passed
+reviewThresholdContractPath / reviewThresholdContractSha256
+reviewerProgramPath / reviewerProgramSha256
 issueCodes / affectedRegions
 evidencePaths
 trainingEligibility / runtimeEligibility
@@ -181,7 +202,21 @@ repairConstraints
 
 内部任务票据是能力版本内的幂等、防重、状态转换、资源配额和证据记录，不是从Owner派生的权限。本地程序为合法的下一状态生成一次性任务票据；票据记录执行包、能力版本、输入证据、程序血缘、动作、状态转换、输出命名空间和消费身份，不能用聊天内容或`latest.json`替代。
 
-机器审核完成后，程序必须用冻结规则自动进入唯一后续状态：通过则进入资格、发布或Finalization；真实视觉失败则进入`failed_closed`；基础设施失败只有在能力版本明确允许且恢复次数未耗尽时才能恢复；需要修改模型、数据、Loss、审核实现、程序或训练路线时，当前执行进入`failed_closed`并登记`failureCode=capability_change_required`，随后建立新的`change_candidate`能力版本。审核程序和确定性裁决程序负责正式结论，Codex只可提供技术建议。
+机器审核完成后，程序必须用冻结规则自动进入唯一后续状态：通过则进入资格、发布或Finalization；真实视觉失败时，来源训练/审核执行保持`failed_closed`不可变终态，本地能力生命周期编排器必须随后建立独立`failure_boundary_adjudication`后继任务；基础设施失败只有在能力版本明确允许且恢复次数未耗尽时才能恢复；需要修改模型、数据、Loss、审核实现、程序或训练路线时，裁决任务只能关闭旧候选并建立新的`change_candidate`能力版本。审核程序和确定性裁决程序负责正式结论，Codex只可提供技术建议。
+
+后继裁决任务必须使用新`taskId`和`registryRevision`，其稳定初始映射为：
+
+```text
+taskKind = failure_boundary_adjudication
+lifecycleStage = formal_stage_validation_completed
+executionState = package_materialized
+sourceTerminal = { path, sha256, status: failed_closed }
+latestTrainingTerminal = 原训练终态
+nextMachineAction = 已注册的CPU只读裁决入口
+activeExecution = null（直到裁决任务实际启动）
+```
+
+裁决任务实际启动后，仅`executionState`按`adjudicating -> finalizing -> completed / failed_closed`推进；`lifecycleStage`继续表示来源能力已经完成到`formal_stage_validation_completed`。只有裁决确认需要能力变更时才另建`lifecycleStage=change_candidate`的新能力身份。建立或运行裁决任务不得改写来源失败终态、启动GPU、加载失败Checkpoint或自动重训。裁决只能产生唯一有证据结论、新的隔离`change_candidate`或证据不足失败关闭，不得生成Owner等待状态。
 
 所有内部票据、决策报告、拒绝理由和状态转换保存到不可变运行目录并索引到SQLite。票据重放、跨包证据、状态跳跃、未登记的程序血缘变化、超出尝试上限或自由动作注入必须在写入前失败关闭。
 
@@ -266,8 +301,14 @@ runId
 lifecycleStage
 executionState
 activity
+nextMachineAction {
+  actionId, entrypointId, capabilityVersion,
+  sourceEvidence { path, sha256 }, programLineage,
+  prerequisites, forbiddenSideEffects
+} | null
 taskCapsule { path, sha256 }
 terminalEvidence { path, sha256, status }
+sourceTerminal { path, sha256, status } | null
 latestTrainingTerminal { runId, path, sha256, status } | null
 supersedes { registryRevision, taskId, runId } | null
 recordedAtUtc
@@ -279,6 +320,8 @@ transactionId
 `data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json`只登记允许调用的程序入口及其代码血缘，不保存项目当前任务，也不得作为本节当前执行登记的替代。前者回答“哪些入口合法”，后者回答“项目现在推进什么、是否有真实活动执行、最近训练终态是什么”。
 
 `recordedAtUtc`用于审计和显示；合法先后关系只由`registryRevision`和`eventSequence`决定。文件系统修改时间、目录名、Run ID字典序、来源类型和页面轮询时间均不得参与当前身份选择。
+
+`nextMachineAction`是已登记程序入口的机器动作合同，不是界面文案或建议。它必须与当前`taskId`和能力版本同修订提交；不存在合法后续动作时可以为空，但不得因程序忘记登记而默认为空。控制台只投影已验证的`nextMachineAction`中的显示字段，不执行它，不根据失败码反向生成它。
 
 ### 11.3 唯一写入者与原子事务
 
@@ -343,6 +386,18 @@ package_materialized
 
 页面可以显示“数据准备”“训练”“验证”“审核”“裁决”“归档”等活动标签，但活动标签只是正式状态的`activity`展示。页面显示“空闲”时表示没有活动执行包，不得将“空闲”写为运行终态。
 
+三层状态与控制台投影的固定关系为：
+
+| 机器字段 | 回答的问题 | 控制台允许的使用 | 禁止映射 |
+|---|---|---|---|
+| `currentProjectTask.lifecycleStage` | 项目当前在能力链上要推进什么 | 顶部当前任务和下一机器动作 | 不得用最近训练终态覆盖 |
+| `activeExecution.executionState` | 当前执行包正在进行哪个正式步骤 | 运行/验证/审核/裁决/收口动态状态 | 无进程时不得显示运行中 |
+| `machineReview.status` | 当前候选的机器审核证据处于哪一步 | 审核详情、指标和失败码 | 不得把`review_failed`显示成“等待验证” |
+| `latestTrainingTerminal` | 最近一次训练已经如何结束 | 历史终态及证据入口 | 不得代替当前裁决任务 |
+| `nextMachineAction` | 本地编排器已注册的唯一后续动作 | 只读展示动作、前置和禁止副作用 | 页面不得生成、改写或执行 |
+
+“训练完成，等待验证”只能在同一执行包已合法进入`validating`且存在有效活动执行时显示。训练终态已经失败关闭、审核已结束或当前任务已是`adjudicating`时，该文案属于错误投影。
+
 ### 11.7 读取失败与中断恢复
 
 控制台读取当前登记时必须验证Schema、修订、写入者、事务、路径边界和SHA-256。任一验证失败时：
@@ -366,6 +421,9 @@ stateProjectionIntegrity = evidence_conflict
 5. 文件更新成功但SQLite事务中断时，恢复程序只能完成原修订或恢复上一完整修订；
 6. 旧`running`文件存在但PID或心跳无效时，`activeExecution`为空并显示证据冲突；
 7. 任意新增命名空间未经当前登记写入时，不得影响控制台的当前身份。
+8. Full-data screen机器审核失败时，来源执行终态字节不变，新修订建立`failure_boundary_adjudication`当前任务并保留原`latestTrainingTerminal`。
+9. `nextMachineAction`缺少入口登记、程序血缘、来源证据或前置条件时返回证据冲突，不得显示或执行部分动作。
+10. 控制台查看历史失败Run时，当前裁决状态、`nextMachineAction`和最近训练终态不变。
 
 ## 12. 物理存储与 SQLite
 

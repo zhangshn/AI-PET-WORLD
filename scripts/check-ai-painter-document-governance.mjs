@@ -81,15 +81,15 @@ const implementationBearingDocuments = [
 ]
 
 const exactDocumentVersions = new Map([
-  ["docs/DOCUMENT_AUTHORITY_INDEX.md", "DOCUMENT-AUTHORITY-1.5"],
+  ["docs/DOCUMENT_AUTHORITY_INDEX.md", "DOCUMENT-AUTHORITY-1.6"],
   ["docs/DOCUMENTATION_POLICY.md", "DOCUMENTATION-POLICY-1.3"],
   ["docs/BUSINESS_SPEC.md", "AI-PET-WORLD-BUSINESS-1.3"],
-  ["docs/ARCHITECTURE.md", "AI-PET-WORLD-ARCHITECTURE-1.6"],
+  ["docs/ARCHITECTURE.md", "AI-PET-WORLD-ARCHITECTURE-1.7"],
   ["docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "LOCAL-AI-CAPABILITY-MIGRATION-1.5"],
   ["docs/DIRECTORY_STRUCTURE.md", "AI-PET-WORLD-DIRECTORY-1.10"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.6"],
-  ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "AI-PAINTER-DATA-PROVENANCE-1.2"],
-  ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "AI-PAINTER-REVIEW-STORAGE-1.4"],
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.8"],
+  ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "AI-PAINTER-DATA-PROVENANCE-1.3"],
+  ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "AI-PAINTER-REVIEW-STORAGE-1.6"],
   ["docs/world-visual-data-dictionary/README.md", "WORLD-VISUAL-DICTIONARY-REFERENCE-1.0"],
 ])
 
@@ -142,7 +142,7 @@ for (const [relativePath, expected] of [
   ["docs/ARCHITECTURE.md", "blocked_policy_boundary"],
   ["docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "Owner可以主动改变业务目标、观察、暂停或紧急停止，但不进入本地AI正常运行状态机"],
   ["docs/DIRECTORY_STRUCTURE.md", "内部票据只承担幂等、防重、状态转换和证据追溯"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.6"],
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.8"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "### 12.2 自主能力生命周期与机器发布规范"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "createdBy = local_ai_capability_lifecycle_orchestrator"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "单包自动闭环"],
@@ -199,7 +199,16 @@ for (const relativePath of [
 
 requireText("docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "它们描述业务责任，不等同于 Stage 0、Stage 1、Stage 2 的训练分辨率")
 requireText("docs/ARCHITECTURE.md", "该内部责任链不得与 `Stage 0/1/2` 的训练分辨率阶段混淆")
-requireText("docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "当前能力实现使用 12 通道潜变量")
+requireRegex(
+  "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+  /现有迁移实现使用\s*12\s*通道潜变量/u,
+  "current 12-channel latent implementation classified as a versioned value",
+)
+requireRegex(
+  "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+  /complete-world-ai-assisted-cold-start-v7\.json[^\n]*(?:未发布旧实现|历史迁移输入)[^\n]*(?:不得被当前检查器|不得.*当前)/,
+  "V7 migration input retirement semantics",
+)
 requireText("docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "它们可以通过新能力版本替换，但不得被写成永久业务规则")
 requireText("docs/DOCUMENT_AUTHORITY_INDEX.md", "文档是否生效与程序是否已全部实现是两个独立结论")
 requireText("docs/DOCUMENTATION_POLICY.md", "active_normative_target")
@@ -209,7 +218,32 @@ for (const machineContract of [
   "data/ai-painter/system-governance/ai-painter-capability-lifecycle-contract-v1.json",
   "data/ai-painter/system-governance/ai-painter-autonomous-closed-loop-contract-v1.json",
   "data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json",
+  "data/ai-painter/system-governance/stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2.json",
+  "data/ai-painter/system-governance/stage4-semantic-transport-v2-trainer-loss-support-contract-v1.json",
+  "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+  "data/ai-painter/system-governance/ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract-v1.json",
 ]) requireFile(machineContract)
+
+const stage4V2ParentPath = "data/ai-painter/system-governance/stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2.json"
+if (fs.existsSync(path.join(ROOT, stage4V2ParentPath))) {
+  const parent = readJson(stage4V2ParentPath)
+  for (const [role, binding, expectedPath] of [
+    ["trainer/loss", parent.lossContract, "data/ai-painter/system-governance/stage4-semantic-transport-v2-trainer-loss-support-contract-v1.json"],
+    ["review threshold", parent.reviewThresholdContract, "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json"],
+    ["foundation Autoencoder", parent.foundationAssetBinding, "data/ai-painter/system-governance/ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract-v1.json"],
+  ]) {
+    if (binding?.path !== expectedPath) failures.push(`Stage4 V2 ${role} binding path mismatch`)
+    if (!/^[a-f0-9]{64}$/u.test(binding?.sha256 ?? "")) failures.push(`Stage4 V2 ${role} binding SHA-256 is invalid`)
+    else if (fs.existsSync(path.join(ROOT, expectedPath)) && sha256(expectedPath) !== binding.sha256) failures.push(`Stage4 V2 ${role} binding SHA-256 mismatch`)
+  }
+}
+
+for (const [relativePath, expected] of [
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "CPU阶段仅校验路径、文件SHA、结构与加载程序，不反序列化权重"],
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "未来加载、训练前和训练后必须补齐相同状态SHA及优化器排除证据"],
+  ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "逐项交叉验证`registryRevision`、`packageId`、数据发布身份、候选RGB、条件包、参考RGB、四类对象掩码及阈值合同绑定"],
+  ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "north/south或特定port不是所有有水样本的通用要求"],
+]) requireText(relativePath, expected)
 
 for (const relativePath of activeAuthorityDocuments.filter((value) => value !== "docs/DOCUMENT_AUTHORITY_INDEX.md")) {
   for (const forbidden of [

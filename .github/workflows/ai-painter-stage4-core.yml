@@ -1,0 +1,85 @@
+name: AI Painter Stage4 core contracts
+
+on:
+  pull_request:
+    paths:
+      - "docs/ARCHITECTURE.md"
+      - "docs/DOCUMENT_AUTHORITY_INDEX.md"
+      - "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md"
+      - "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md"
+      - "docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md"
+      - "docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md"
+      - "ml/ai-painter/config/**"
+      - "ml/ai-painter/src/**"
+      - "ml/ai-painter/tests/**"
+      - "scripts/*ai-painter-stage4-*.mjs"
+      - "scripts/lib/*stage4*.mjs"
+      - "scripts/tests/*stage4*.mjs"
+      - "scripts/tests/test-ai-painter-current-execution-registry-atomic-advance.mjs"
+      - "scripts/check-ai-painter-current-entrypoints.mjs"
+      - "scripts/check-ai-painter-current-execution-registry.mjs"
+      - "scripts/check-ai-console-current-execution-projection.mjs"
+      - "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs"
+      - "src/server/ai-painter-current-execution-registry.*"
+      - "src/server/ai-console/ai-painter-current-execution-projection.ts"
+      - "data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json"
+      - "data/ai-painter/system-governance/stage4-*.json"
+      - "data/ai-painter/system-governance/stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ai-painter-stage4-core.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/ARCHITECTURE.md"
+      - "docs/DOCUMENT_AUTHORITY_INDEX.md"
+      - "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md"
+      - "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md"
+      - "docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md"
+      - "docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md"
+      - "ml/ai-painter/config/**"
+      - "ml/ai-painter/src/**"
+      - "ml/ai-painter/tests/**"
+      - "scripts/*ai-painter-stage4-*.mjs"
+      - "scripts/lib/*stage4*.mjs"
+      - "scripts/tests/*stage4*.mjs"
+      - "scripts/tests/test-ai-painter-current-execution-registry-atomic-advance.mjs"
+      - "scripts/check-ai-painter-current-entrypoints.mjs"
+      - "scripts/check-ai-painter-current-execution-registry.mjs"
+      - "scripts/check-ai-console-current-execution-projection.mjs"
+      - "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs"
+      - "src/server/ai-painter-current-execution-registry.*"
+      - "src/server/ai-console/ai-painter-current-execution-projection.ts"
+      - "data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json"
+      - "data/ai-painter/system-governance/stage4-*.json"
+      - "data/ai-painter/system-governance/stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ai-painter-stage4-core.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: "ml/ai-painter/pyproject.toml"
+      - run: npm ci
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e "ml/ai-painter[training]"
+      - run: npm run check:ai-painter-stage4-core

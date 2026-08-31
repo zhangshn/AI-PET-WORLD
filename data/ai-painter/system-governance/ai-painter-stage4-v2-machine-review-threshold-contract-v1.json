@@ -1,0 +1,358 @@
+{
+  "schemaVersion": "ai-painter-stage4-v2-machine-review-threshold-contract-v1",
+  "contractId": "ai-painter-stage4-v2-machine-review-threshold-contract-v1",
+  "status": "cpu_supported_inactive",
+  "immutable": true,
+  "architectureId": "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2",
+  "scope": "single_candidate_independent_stage4_v2_screen_review_threshold_authority",
+  "activation": {
+    "cpuContractValidationAllowed": true,
+    "formalReviewExecutionAllowed": false,
+    "gpuAllowed": false,
+    "trainingAllowed": false,
+    "formalInferenceAllowed": false,
+    "runtimeFrameAllowed": false,
+    "worldEntryAllowed": false
+  },
+  "formalReviewBoundary": {
+    "implementation": {
+      "path": "scripts/lib/ai-painter-stage4-v2-screen-review-contract-boundary.mjs",
+      "sha256": "71574b70a04b54e63714c7a783cb52bb6e7cb576cab963536cdbc42e8c02911b",
+      "role": "strict_explicit_input_validation_and_composition_boundary"
+    },
+    "runnerState": "pending_execution_package_materialization",
+    "dispatchable": false,
+    "requiredExplicitBindings": [
+      "executionPackageIdentity",
+      "candidateRgb.path_and_sha256",
+      "conditionPack.path_and_sha256",
+      "referenceRgb.path_and_sha256",
+      "four_object_masks.paths_and_sha256",
+      "thresholdContract.path_and_sha256"
+    ],
+    "latestPointerAllowed": false,
+    "historicalRunSelectionAllowed": false,
+    "crossExecutionPackageEvidenceAllowed": false,
+    "thresholdOverrideAllowed": false,
+    "trustedAuthoritySource": "verified_immutable_current_execution_package_lineage",
+    "authoritativeLineageSchema": "ai-painter-stage4-v2-current-execution-package-lineage-v1",
+    "authoritativeLineageStatus": "verified_immutable_current_execution_package",
+    "authoritativeLineageOrigin": "current_execution_registry_committed_transaction",
+    "authoritativeRegistryTransactionSchema": "ai-painter-current-execution-registry-transaction-v1",
+    "authoritativeRegistryTransactionStatus": "committed",
+    "authoritativeCurrentRegistrySchema": "ai-painter-current-execution-registry-v1",
+    "authoritativeCurrentExecutionState": "package_materialized",
+    "authoritativeTaskCapsuleSchema": "ai-painter-local-task-capsule-v1",
+    "authoritativeSourceTerminalSchema": "stage4-v2-cpu-contract-acceptance-terminal-v1",
+    "authoritativeSourceTerminalStatus": "stage4_v2_cpu_contract_acceptance_passed_inactive",
+    "authoritativeSourceTerminalExecutionState": "completed",
+    "authoritativeLineageSelfAttestationSufficient": false,
+    "requestSelfAttestationSufficient": false,
+    "candidateFileMetadataVerificationRequired": true,
+    "conditionPackContentVerificationRequired": true,
+    "referenceAndMaskFileMetadataVerificationRequired": true,
+    "thresholdContractContentVerificationRequired": true
+  },
+  "implementationProvenance": {
+    "conditionAlignment": {
+      "path": "scripts/lib/ai-assisted-condition-alignment.mjs",
+      "sha256": "c01ea4efba9835e488e42c7ed44d2aef434ee3db21b06e84e70379722bcc145e",
+      "role": "algorithm_provenance_reference_not_dispatchable"
+    },
+    "professionalAesthetic": {
+      "path": "scripts/lib/ai-assisted-professional-aesthetic.mjs",
+      "sha256": "d07af489c4398e05abe94060fa773a65710ed9e57a72df2514352075fdf2e7e8",
+      "role": "algorithm_provenance_reference_not_dispatchable",
+      "reason": "current_source_uses_latest_pointer_and_requires_explicit_fingerprint_adapter_before_formal_v2_dispatch"
+    },
+    "styleFeatureExtractor": {
+      "path": "scripts/lib/ai-assisted-style-fingerprint.mjs",
+      "sha256": "924f7db154c15c84df1b9e50b40dd57cc20c22d1b9b0ce72741bfd8835888d15",
+      "role": "feature_extraction_provenance_reference_not_dispatchable"
+    },
+    "historicalScreenReviewRunner": {
+      "path": "scripts/run-ai-painter-stage4-spatial-affine-screen-review.mjs",
+      "sha256": "889082172e3000a91622d5b769dfc4feeae346e4c2aa194191356611e5a0166b",
+      "role": "historical_provenance_reference_not_dispatchable",
+      "v2Authority": false,
+      "dispatchable": false
+    }
+  },
+  "styleFingerprint": {
+    "path": ".runtime/ai-painter/style-fingerprints/ai-assisted-project-style-fingerprint-2026-08-02T00-28-21-150Z/style-fingerprint.json",
+    "sha256": "873d26eafb260a8e2d52608ea7108b2fe5d7d9c349f112dbd3bbd2e164e1c6d4",
+    "schemaVersion": "ai-assisted-project-style-fingerprint-v1",
+    "fingerprintId": "ai-assisted-project-style-fingerprint-2026-08-02T00-28-21-150Z",
+    "status": "project_style_fingerprint_ready",
+    "positiveSampleCount": 112,
+    "negativeSampleCount": 2,
+    "selectionMode": "explicit_immutable_path_and_sha256_only"
+  },
+  "commonMeasurementContract": {
+    "rgbChannelDomain": {
+      "minimum": 0,
+      "maximum": 255,
+      "unit": "uint8_channel_intensity"
+    },
+    "luminance": {
+      "redCoefficient": 0.2126,
+      "greenCoefficient": 0.7152,
+      "blueCoefficient": 0.0722,
+      "unit": "linear_weight_over_uint8_channel_intensity"
+    },
+    "spatialDistributionGrid": {
+      "columns": 8,
+      "rows": 6,
+      "unit": "grid_cells"
+    }
+  },
+  "conditionAlignmentThresholds": {
+    "water": {
+      "channelId": "terrain_water",
+      "presentClassifier": {
+        "mode": "condition_present_broad_freshwater_color_signal_v1",
+        "allRulesRequired": true,
+        "rules": [
+          { "metric": "blue_divided_by_red", "comparator": ">", "value": 1.12, "unit": "ratio" },
+          { "metric": "green_divided_by_red", "comparator": ">", "value": 1.08, "unit": "ratio" },
+          { "metric": "blue_divided_by_green", "comparator": ">", "value": 0.72, "unit": "ratio" },
+          { "metric": "blue", "comparator": ">=", "value": 55, "unit": "uint8_channel_intensity" }
+        ]
+      },
+      "absentClassifier": {
+        "mode": "condition_absent_strong_blue_dominance_v2",
+        "allRulesRequired": true,
+        "rules": [
+          { "metric": "blue_divided_by_red", "comparator": ">", "value": 1.25, "unit": "ratio" },
+          { "metric": "blue_divided_by_green", "comparator": ">", "value": 1.08, "unit": "ratio" },
+          { "metric": "blue", "comparator": ">=", "value": 65, "unit": "uint8_channel_intensity" },
+          { "metric": "blue_minus_red", "comparator": ">=", "value": 22, "unit": "uint8_channel_intensity_delta" }
+        ]
+      },
+      "absentSignalIsolation": {
+        "blockSizePixels": { "comparator": "=", "value": 16, "unit": "pixels" },
+        "minimumBlockSignalRatio": { "comparator": ">=", "value": 0.35, "unit": "pixel_fraction" }
+      },
+      "alignment": {
+        "minimumSpatialIntersection": { "comparator": ">=", "value": 0.5, "unit": "normalized_grid_mass_intersection" },
+        "maximumCentroidDistance": { "comparator": "<=", "value": 0.12, "unit": "normalized_canvas_euclidean_distance" },
+        "minimumCoverageRatio": { "comparator": ">=", "value": 0.35, "unit": "actual_to_expected_nonzero_ratio" },
+        "maximumCoverageRatio": { "comparator": "<=", "value": 2.5, "unit": "actual_to_expected_nonzero_ratio" },
+        "maximumAbsentSignalRatio": { "comparator": "<=", "value": 0.005, "unit": "canvas_pixel_fraction" }
+      }
+    },
+    "path": {
+      "channelId": "terrain_path_ground",
+      "wetSeasonClassifier": {
+        "mode": "humid_and_transition_season_warm_earth_route_v1",
+        "allRulesRequired": true,
+        "rules": [
+          { "metric": "red_divided_by_green", "comparator": ">", "value": 1.03, "unit": "ratio" },
+          { "metric": "green_divided_by_blue", "comparator": ">", "value": 1.12, "unit": "ratio" },
+          { "metric": "red", "comparator": ">", "value": 80, "unit": "uint8_channel_intensity" },
+          { "metric": "red", "comparator": "<", "value": 230, "unit": "uint8_channel_intensity" },
+          { "metric": "green", "comparator": ">", "value": 55, "unit": "uint8_channel_intensity" },
+          { "metric": "green", "comparator": "<", "value": 190, "unit": "uint8_channel_intensity" },
+          { "metric": "blue", "comparator": "<", "value": 135, "unit": "uint8_channel_intensity" },
+          { "metric": "luminance", "comparator": ">", "value": 70, "unit": "weighted_uint8_intensity" }
+        ]
+      },
+      "drySeasonClassifier": {
+        "mode": "dry_season_red_brown_route_separated_from_straw_grass_v1",
+        "allRulesRequired": true,
+        "rules": [
+          { "metric": "red_divided_by_green", "comparator": ">", "value": 1.4, "unit": "ratio" },
+          { "metric": "green_divided_by_blue", "comparator": ">", "value": 1.12, "unit": "ratio" },
+          { "metric": "red_minus_green", "comparator": ">", "otherMetric": "green_minus_blue", "unit": "uint8_channel_intensity_delta" },
+          { "metric": "red", "comparator": ">", "value": 80, "unit": "uint8_channel_intensity" },
+          { "metric": "red", "comparator": "<", "value": 230, "unit": "uint8_channel_intensity" },
+          { "metric": "green", "comparator": ">", "value": 55, "unit": "uint8_channel_intensity" },
+          { "metric": "green", "comparator": "<", "value": 190, "unit": "uint8_channel_intensity" },
+          { "metric": "blue", "comparator": "<", "value": 135, "unit": "uint8_channel_intensity" },
+          { "metric": "luminance", "comparator": ">", "value": 70, "unit": "weighted_uint8_intensity" }
+        ]
+      },
+      "signalIsolation": {
+        "supportCorridorRadiusPixels": { "comparator": "=", "value": 48, "unit": "pixels" },
+        "connectivity": { "comparator": "=", "value": 8, "unit": "pixel_neighbors" },
+        "retentionAlternativeOne": {
+          "directExpectedOverlap": { "comparator": ">", "value": 0, "unit": "pixels" }
+        },
+        "retentionAlternativeTwo": {
+          "supportPixelCount": { "comparator": ">=", "value": 8, "unit": "pixels" },
+          "supportRatio": { "comparator": ">=", "value": 0.02, "unit": "component_pixel_fraction" }
+        }
+      },
+      "alignment": {
+        "minimumSpatialIntersection": { "comparator": ">=", "value": 0.25, "unit": "normalized_grid_mass_intersection" },
+        "maximumCentroidDistance": { "comparator": "<=", "value": 0.25, "unit": "normalized_canvas_euclidean_distance" },
+        "minimumCoverageRatio": { "comparator": ">=", "value": 0.25, "unit": "actual_to_expected_nonzero_ratio" },
+        "maximumCoverageRatio": { "comparator": "<=", "value": 3.0, "unit": "actual_to_expected_nonzero_ratio" },
+        "maximumAbsentSignalRatio": { "comparator": "<=", "value": 0, "unit": "canvas_pixel_fraction" }
+      }
+    },
+    "objects": {
+      "supportRadiusPixels": { "comparator": "=", "value": 12, "unit": "pixels" },
+      "localAcceptanceLogic": "minimumColorDistance_or_minimumEdgeDifference_or_minimumEdgeRatio",
+      "channels": {
+        "object_footprints": {
+          "minimumColorDistance": { "comparator": ">=", "value": 1.0, "unit": "rgb_euclidean_uint8_intensity" },
+          "minimumEdgeDifference": { "comparator": ">=", "value": 0.04, "unit": "normalized_luminance_gradient" },
+          "minimumEdgeRatio": { "comparator": ">=", "value": 1.002, "unit": "ratio" }
+        },
+        "object_tree": {
+          "minimumColorDistance": { "comparator": ">=", "value": 1.05, "unit": "rgb_euclidean_uint8_intensity" },
+          "minimumEdgeDifference": { "comparator": ">=", "value": 0.055, "unit": "normalized_luminance_gradient" },
+          "minimumEdgeRatio": { "comparator": ">=", "value": 1.0025, "unit": "ratio" }
+        },
+        "object_rock": {
+          "minimumColorDistance": { "comparator": ">=", "value": 1.5, "unit": "rgb_euclidean_uint8_intensity" },
+          "minimumEdgeDifference": { "comparator": ">=", "value": 0.05, "unit": "normalized_luminance_gradient" },
+          "minimumEdgeRatio": { "comparator": ">=", "value": 1.003, "unit": "ratio" }
+        },
+        "object_vegetation": {
+          "minimumColorDistance": { "comparator": ">=", "value": 0.8, "unit": "rgb_euclidean_uint8_intensity" },
+          "minimumEdgeDifference": { "comparator": ">=", "value": 0.035, "unit": "normalized_luminance_gradient" },
+          "minimumEdgeRatio": { "comparator": ">=", "value": 1.002, "unit": "ratio" }
+        }
+      }
+    },
+    "referenceSemantics": {
+      "standardAcceptanceLogic": "maximumMaskedRgbMae_and_maximumMaskedEdgeMae_and_minimumMaskedLumaCorrelation",
+      "highFidelityFallbackLogic": "highFidelityFallbackMaximumRgbMae_and_highFidelityFallbackMaximumEdgeMae",
+      "channels": {
+        "object_footprints": { "maximumMaskedRgbMae": { "comparator": "<=", "value": 0.18, "unit": "normalized_rgb_mae" } },
+        "object_tree": { "maximumMaskedRgbMae": { "comparator": "<=", "value": 0.18, "unit": "normalized_rgb_mae" } },
+        "object_rock": { "maximumMaskedRgbMae": { "comparator": "<=", "value": 0.2, "unit": "normalized_rgb_mae" } },
+        "object_vegetation": { "maximumMaskedRgbMae": { "comparator": "<=", "value": 0.18, "unit": "normalized_rgb_mae" } }
+      },
+      "shared": {
+        "maximumMaskedEdgeMae": { "comparator": "<=", "value": 0.12, "unit": "normalized_luminance_edge_mae" },
+        "minimumMaskedLumaCorrelation": { "comparator": ">=", "value": 0.08, "unit": "pearson_correlation" },
+        "highFidelityFallbackMaximumRgbMae": { "comparator": "<=", "value": 0.08, "unit": "normalized_rgb_mae" },
+        "highFidelityFallbackMaximumEdgeMae": { "comparator": "<=", "value": 0.06, "unit": "normalized_luminance_edge_mae" }
+      }
+    },
+    "boundary": {
+      "bandPixels": { "comparator": "=", "value": 6, "unit": "pixels" },
+      "requiredSideDefinition": { "metric": "expectedBoundarySignalCount", "comparator": ">", "value": 0, "unit": "pixels" },
+      "minimumSupportedContactPixels": { "comparator": ">=", "value": 6, "unit": "pixels" },
+      "requiredSideMinimumFormula": "max(6_pixels,round(expectedBoundarySignalCount*0.1))",
+      "requiredSideExpectedFraction": { "comparator": ">=", "value": 0.1, "unit": "expected_boundary_signal_fraction" },
+      "unexpectedRawComponentMinimumSize": { "comparator": ">=", "value": 500, "unit": "pixels" },
+      "unexpectedRawComponentMinimumContactPixels": { "comparator": ">=", "value": 6, "unit": "pixels" }
+    },
+    "flowingWaterConnectivity": {
+      "applicability": {
+        "allRulesRequired": true,
+        "rebuild64SequenceSeriesId": "thailand-rebuild64-20260731",
+        "regionalLandscapeTypes": [
+          "wet-season-drainage-hollow",
+          "river-floodplain",
+          "riparian-tropical-forest",
+          "dry-season-exposed-riverbank"
+        ],
+        "waterMaskPresence": { "comparator": ">", "value": 0, "unit": "expected_nonzero_pixels" }
+      },
+      "requiredBoundarySides": ["north", "south"],
+      "requiredBoundarySideCount": { "comparator": "=", "value": 2, "unit": "sides" },
+      "requiredPorts": ["upstream_inlet", "downstream_outlet"],
+      "requiredBoundarySidesOnlyWhenApplicabilityMatches": true
+    }
+  },
+  "professionalAestheticThresholds": {
+    "derivation": {
+      "positiveSampleSource": "styleFingerprint.positiveSamples",
+      "minimumPositiveSampleCount": { "comparator": ">=", "value": 5, "unit": "samples" },
+      "actualPositiveSampleCount": { "comparator": "=", "value": 112, "unit": "samples" },
+      "upperEnvelopeFormula": "round6(maximum_positive_feature_value*1.05+0.000001)",
+      "upperEnvelopeMargin": { "comparator": "=", "value": 1.05, "unit": "multiplier" },
+      "epsilon": { "comparator": "=", "value": 0.000001, "unit": "dimensionless" },
+      "roundingDecimalPlaces": { "comparator": "=", "value": 6, "unit": "decimal_places" }
+    },
+    "multiscaleTextureUpperEnvelope": {
+      "comparison": "candidate_value_greater_than_threshold_is_violation",
+      "unit": "normalized_dimensionless_style_feature",
+      "axes": {
+        "native_edge_density_004": 0.855874,
+        "native_edge_density_008": 0.562074,
+        "native_edge_density_014": 0.296174,
+        "native_gradient_mean": 0.111929,
+        "native_laplacian_mean": 0.317459,
+        "half_edge_density_004": 0.891644,
+        "half_edge_density_008": 0.611024,
+        "half_edge_density_014": 0.326163,
+        "half_gradient_mean": 0.119572,
+        "half_laplacian_mean": 0.460406,
+        "quarter_edge_density_004": 0.911364,
+        "quarter_edge_density_008": 0.645688,
+        "quarter_edge_density_014": 0.351684,
+        "quarter_gradient_mean": 0.125905,
+        "quarter_laplacian_mean": 0.480829
+      },
+      "diagnosticViolationCount": { "comparator": "between_inclusive", "minimum": 1, "maximum": 3, "unit": "axes" },
+      "failureViolationCount": { "comparator": ">=", "value": 4, "unit": "axes" }
+    },
+    "quietRegionUpperEnvelope": {
+      "feature": "block_variance_q10",
+      "comparator": "<=",
+      "value": 0.128601,
+      "unit": "normalized_luminance_block_variance"
+    },
+    "textureHierarchyUpperEnvelope": {
+      "featureFormula": "block_variance_q10/max(block_variance_q90,0.000000001)",
+      "comparator": "<=",
+      "value": 0.821317,
+      "unit": "variance_ratio",
+      "denominatorFloor": { "comparator": "=", "value": 0.000000001, "unit": "normalized_luminance_block_variance" }
+    }
+  },
+  "failureCodes": {
+    "waterAndPath": [
+      "condition_terrain_water_unexpected_signal",
+      "condition_terrain_water_spatial_distribution_mismatch",
+      "condition_terrain_water_centroid_drift",
+      "condition_terrain_water_coverage_mismatch",
+      "condition_terrain_water_required_boundary_contact_missing",
+      "condition_terrain_water_uncontracted_boundary_contact",
+      "condition_terrain_path_ground_unexpected_signal",
+      "condition_terrain_path_ground_spatial_distribution_mismatch",
+      "condition_terrain_path_ground_centroid_drift",
+      "condition_terrain_path_ground_coverage_mismatch",
+      "condition_terrain_path_ground_required_boundary_contact_missing",
+      "condition_terrain_path_ground_uncontracted_boundary_contact"
+    ],
+    "objects": [
+      "condition_object_footprints_visual_response_missing",
+      "condition_object_footprints_reference_semantic_mismatch",
+      "condition_object_tree_visual_response_missing",
+      "condition_object_tree_reference_semantic_mismatch",
+      "condition_object_rock_visual_response_missing",
+      "condition_object_rock_reference_semantic_mismatch",
+      "condition_object_vegetation_visual_response_missing",
+      "condition_object_vegetation_reference_semantic_mismatch"
+    ],
+    "hydrology": [
+      "condition_terrain_water_connectivity_blueprint_missing",
+      "condition_terrain_water_upstream_downstream_ports_missing",
+      "condition_terrain_water_inlet_outlet_raster_missing"
+    ],
+    "professionalAesthetic": [
+      "professional_multiscale_texture_noise_overload",
+      "professional_quiet_region_missing",
+      "professional_texture_hierarchy_collapsed"
+    ],
+    "diagnosticOnly": [
+      "professional_single_axis_texture_envelope_exceeded_diagnostic"
+    ]
+  },
+  "reviewTrainingSeparation": {
+    "reviewResultsUsedAsTrainingTarget": false,
+    "machineAuditPassFailUsedAsLoss": false,
+    "failureCodesUsedAsLoss": false,
+    "failedPreviewPixelsUsedAsTrainingTarget": false,
+    "thresholdAdaptationDuringTraining": false,
+    "thresholdLoweringAllowed": false,
+    "reviewRole": "post_generation_acceptance_and_failure_evidence_only"
+  }
+}

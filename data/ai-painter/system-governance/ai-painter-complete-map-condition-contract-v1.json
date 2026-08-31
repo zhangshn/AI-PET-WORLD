@@ -1,0 +1,414 @@
+{
+  "schemaVersion": "ai-painter-complete-map-condition-contract-v1",
+  "contractId": "ai-painter-complete-map-condition-contract-v1",
+  "conditionContractIdentity": "ai-painter-complete-map-23-channel-condition-v1",
+  "status": "active_current_machine_condition_contract",
+  "authority": "local_ai_pet_world_program",
+  "scope": {
+    "product": "AI-PET-WORLD",
+    "subsystem": "AI Painter",
+    "outputScope": "native_complete_world_map",
+    "nativeWidth": 1024,
+    "nativeHeight": 768,
+    "frameScope": "complete_runtime_frame",
+    "playerFacingPixelsGenerated": false
+  },
+  "currentPackageRegistry": {
+    "schemaVersion": "ai-painter-current-condition-package-registry-v1",
+    "path": ".runtime/ai-painter/current-condition-package-registry/current.json",
+    "uniqueWriter": "local_ai_condition_package_orchestrator",
+    "requiredBindings": [
+      "conditionContractIdentity",
+      "conditionContractPath",
+      "conditionContractSha256",
+      "conditionManifestPath",
+      "conditionManifestSha256",
+      "conditionPackagePath",
+      "conditionPackageSha256"
+    ],
+    "legacyLatestPointerFallbackAllowed": false,
+    "missingRegistryStatus": "no_current_condition_package_registered"
+  },
+  "identityBindings": {
+    "bindingContainer": "identityBindings",
+    "conditionPackageSha256Canonicalization": {
+      "algorithm": "sha256",
+      "serialization": "utf8_json_stringify_in_property_insertion_order",
+      "excludedFields": [
+        "conditionPackSha256",
+        "identityBindings.conditionPackageSha256"
+      ]
+    },
+    "requiredFields": [
+      "conditionContractIdentity",
+      "conditionContractPath",
+      "conditionContractSha256",
+      "conditionPackageId",
+      "conditionPackagePath",
+      "conditionPackageSha256",
+      "taskPackageId",
+      "taskPackagePath",
+      "taskPackageSha256",
+      "taskManifestPath",
+      "taskManifestSha256",
+      "worldId",
+      "regionId",
+      "tick",
+      "factHash",
+      "visualFactManifestId",
+      "visualFactManifestPath",
+      "visualFactManifestSha256",
+      "dictionaryVersionId",
+      "datasetReleaseIdentity"
+    ],
+    "pathSha256Pairs": [
+      {
+        "identityField": "conditionContractIdentity",
+        "pathField": "conditionContractPath",
+        "sha256Field": "conditionContractSha256"
+      },
+      {
+        "identityField": "conditionPackageId",
+        "pathField": "conditionPackagePath",
+        "sha256Field": "conditionPackageSha256"
+      },
+      {
+        "identityField": "taskPackageId",
+        "pathField": "taskPackagePath",
+        "sha256Field": "taskPackageSha256"
+      },
+      {
+        "identityField": "visualFactManifestId",
+        "pathField": "visualFactManifestPath",
+        "sha256Field": "visualFactManifestSha256"
+      }
+    ],
+    "exactMatchAcrossConditionPackageManifestDatasetAndExecution": [
+      "conditionContractIdentity",
+      "conditionContractPath",
+      "conditionContractSha256",
+      "conditionPackageId",
+      "conditionPackagePath",
+      "conditionPackageSha256",
+      "taskPackageId",
+      "taskPackagePath",
+      "taskPackageSha256",
+      "taskManifestPath",
+      "taskManifestSha256",
+      "worldId",
+      "regionId",
+      "tick",
+      "factHash",
+      "visualFactManifestId",
+      "visualFactManifestPath",
+      "visualFactManifestSha256",
+      "dictionaryVersionId",
+      "datasetReleaseIdentity"
+    ],
+    "crossRunOrCrossSampleSubstitutionAllowed": false,
+    "pathWithoutSha256Allowed": false,
+    "sha256WithoutReadablePathAllowed": false
+  },
+  "authoritativeInputInvariance": {
+    "worldFactsMustPreexistConditionCompilation": true,
+    "visualFactManifestMustPreexistConditionCompilation": true,
+    "conditionCompilerMayModifyWorldFacts": false,
+    "conditionCompilerMayModifyVisualFactManifest": false,
+    "conditionCompilerMayInferMissingWorldFacts": false,
+    "rgbMayReplaceWorldFacts": false,
+    "rgbMayReplaceVisualFactManifest": false,
+    "derivedChannelsMustReferenceAuthoritativeInputs": true,
+    "changesWorldFacts": false,
+    "changesVisualFactManifest": false
+  },
+  "tensorContract": {
+    "channelCount": 23,
+    "channelOrder": [
+      "terrain_grass",
+      "terrain_water",
+      "terrain_path_ground",
+      "terrain_shoreline",
+      "terrain_natural_boundary",
+      "terrain_mud_patch",
+      "terrain_tall_grass",
+      "walkable",
+      "collision",
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation",
+      "focal_area",
+      "object_instance",
+      "coordinate_x",
+      "coordinate_y",
+      "signed_distance_path",
+      "signed_distance_water",
+      "signed_distance_shoreline",
+      "signed_distance_object_ground",
+      "signed_distance_boundary",
+      "moisture_proximity"
+    ],
+    "typePartitions": {
+      "discrete": [
+        "terrain_grass",
+        "terrain_water",
+        "terrain_path_ground",
+        "terrain_shoreline",
+        "terrain_natural_boundary",
+        "terrain_mud_patch",
+        "terrain_tall_grass",
+        "walkable",
+        "collision",
+        "object_footprints",
+        "object_tree",
+        "object_rock",
+        "object_vegetation",
+        "focal_area",
+        "object_instance"
+      ],
+      "continuous": [
+        "coordinate_x",
+        "coordinate_y",
+        "signed_distance_path",
+        "signed_distance_water",
+        "signed_distance_shoreline",
+        "signed_distance_object_ground",
+        "signed_distance_boundary",
+        "moisture_proximity"
+      ]
+    },
+    "storage": {
+      "oneFilePerChannel": true,
+      "encoding": "lossless_single_channel_png",
+      "colorSpace": "grayscale",
+      "dtype": "uint8",
+      "valueRangeInclusive": [
+        0,
+        255
+      ],
+      "shapeOrder": "CHW",
+      "nativeShape": [
+        1,
+        768,
+        1024
+      ]
+    },
+    "modelInput": {
+      "dtype": "float32",
+      "normalizationFormula": "float32(storage_uint8) / 255.0",
+      "normalizedRangeInclusive": [
+        0.0,
+        1.0
+      ],
+      "clippingAllowed": false,
+      "missingChannelFillAllowed": false,
+      "channelReorderAllowed": false
+    },
+    "resize": {
+      "contractId": "discrete_nearest_continuous_bilinear_v1",
+      "typePartitionMustOccurBeforeResize": true,
+      "featureMixingBeforeTypedResizeAllowed": false,
+      "discrete": {
+        "mode": "nearest",
+        "alignCorners": null,
+        "intermediateValuesMayBeIntroduced": false,
+        "storageCodepointsMustRemainExact": true
+      },
+      "continuous": {
+        "mode": "bilinear",
+        "alignCorners": false,
+        "intermediateValuesMayBeIntroduced": true
+      },
+      "resamplingMayChangeWorldOrManifestIdentity": false
+    }
+  },
+  "channelDefinitions": [
+    {
+      "index": 0,
+      "id": "terrain_grass",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative grass terrain coverage"
+    },
+    {
+      "index": 1,
+      "id": "terrain_water",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative water surface coverage"
+    },
+    {
+      "index": 2,
+      "id": "terrain_path_ground",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative route and path ground coverage"
+    },
+    {
+      "index": 3,
+      "id": "terrain_shoreline",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative shoreline transition coverage"
+    },
+    {
+      "index": 4,
+      "id": "terrain_natural_boundary",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative in-world natural boundary coverage"
+    },
+    {
+      "index": 5,
+      "id": "terrain_mud_patch",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative mud terrain coverage"
+    },
+    {
+      "index": 6,
+      "id": "terrain_tall_grass",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative tall-grass terrain coverage"
+    },
+    {
+      "index": 7,
+      "id": "walkable",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative walkable area coverage"
+    },
+    {
+      "index": 8,
+      "id": "collision",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative collision area coverage"
+    },
+    {
+      "index": 9,
+      "id": "object_footprints",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "union of authoritative approved object footprints"
+    },
+    {
+      "index": 10,
+      "id": "object_tree",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative tree footprint coverage"
+    },
+    {
+      "index": 11,
+      "id": "object_rock",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative rock footprint coverage"
+    },
+    {
+      "index": 12,
+      "id": "object_vegetation",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "authoritative non-tree non-rock vegetation footprint coverage"
+    },
+    {
+      "index": 13,
+      "id": "focal_area",
+      "type": "discrete",
+      "encoding": "binary_mask_0_or_255",
+      "semantic": "task-declared focal review or responsibility area; empty when no authoritative focal area exists"
+    },
+    {
+      "index": 14,
+      "id": "object_instance",
+      "type": "discrete",
+      "encoding": "uint8_instance_label_0_background_1_to_254_instance_identity",
+      "semantic": "sample-local stable object instance labels bound to the condition package instance table"
+    },
+    {
+      "index": 15,
+      "id": "coordinate_x",
+      "type": "continuous",
+      "encoding": "linear_0_to_255_left_to_right",
+      "semantic": "complete-map horizontal coordinate"
+    },
+    {
+      "index": 16,
+      "id": "coordinate_y",
+      "type": "continuous",
+      "encoding": "linear_0_to_255_top_to_bottom",
+      "semantic": "complete-map vertical coordinate"
+    },
+    {
+      "index": 17,
+      "id": "signed_distance_path",
+      "type": "continuous",
+      "encoding": "biased_signed_distance_uint8_boundary_128_higher_inside_lower_outside",
+      "semantic": "signed proximity to authoritative path ground"
+    },
+    {
+      "index": 18,
+      "id": "signed_distance_water",
+      "type": "continuous",
+      "encoding": "biased_signed_distance_uint8_boundary_128_higher_inside_lower_outside",
+      "semantic": "signed proximity to authoritative water coverage"
+    },
+    {
+      "index": 19,
+      "id": "signed_distance_shoreline",
+      "type": "continuous",
+      "encoding": "biased_signed_distance_uint8_boundary_128_higher_inside_lower_outside",
+      "semantic": "signed proximity to authoritative shoreline coverage"
+    },
+    {
+      "index": 20,
+      "id": "signed_distance_object_ground",
+      "type": "continuous",
+      "encoding": "biased_signed_distance_uint8_boundary_128_higher_inside_lower_outside",
+      "semantic": "signed proximity to authoritative object footprints"
+    },
+    {
+      "index": 21,
+      "id": "signed_distance_boundary",
+      "type": "continuous",
+      "encoding": "biased_signed_distance_uint8_boundary_128_higher_inside_lower_outside",
+      "semantic": "signed proximity to authoritative natural boundary coverage"
+    },
+    {
+      "index": 22,
+      "id": "moisture_proximity",
+      "type": "continuous",
+      "encoding": "water_derived_proximity_uint8_255_at_water_0_at_or_beyond_radius",
+      "semantic": "deterministic moisture proximity derived from authoritative water geometry"
+    }
+  ],
+  "missingChannelPolicy": {
+    "all23ChannelsRequiredForTrainingAndInference": true,
+    "silentZeroFillAllowed": false,
+    "modelGuessAllowed": false,
+    "unavailableChannelMustBeRecorded": true,
+    "unavailableChannelIsEligibleForTrainingOrInference": false
+  },
+  "forbiddenFieldNames": [
+    "ownerAuthorizationId",
+    "ownerTrainingAuthorization",
+    "ownerActionRequest",
+    "ownerReleaseDecision",
+    "ownerSignatureRequired",
+    "trainingAuthorizationStatus"
+  ],
+  "forbiddenBehaviors": [
+    "use_cold_start_v7_as_current_condition_authority",
+    "inherit_historical_owner_or_authorization_state",
+    "reorder_or_rename_channels_without_new_contract_identity",
+    "resize_all_channels_with_one_interpolation_mode",
+    "mix_channels_before_type_specific_resize",
+    "replace_or_modify_world_facts",
+    "replace_or_modify_visual_fact_manifest",
+    "cross_run_or_cross_sample_condition_injection",
+    "silent_missing_channel_fill"
+  ]
+}

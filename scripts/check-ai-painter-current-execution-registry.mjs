@@ -139,6 +139,11 @@ try {
   const reread = await readCurrentExecutionRegistry(fixtureRoot)
   assert.equal(reread.ok, true)
   assert.equal(reread.registry.registryRevision, 1)
+  assert.equal(typeof reread.registry.taskGoal, "string")
+  assert.equal(reread.registry.priority, 1)
+  assert.equal(reread.registry.queueStatus, "ready")
+  assert.equal(reread.registry.nextMachineAction, taskTerminal.nextAction)
+  assert.match(reread.registry.queuedAtUtc, /^\d{4}-\d{2}-\d{2}T/u)
 
   candidate.selectedCandidate.candidateKind = "tampered-candidate"
   await writeJson(fixtureRoot, candidatePath, candidate)

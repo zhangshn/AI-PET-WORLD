@@ -1,14 +1,14 @@
 # 训练数据与来源正式规则
 
-更新时间：2026-08-24 12:43:09 +08:00
+更新时间：2026-08-30 18:21:44 +08:00
 
 状态：active-long-term-data-and-provenance-contract
 
-文档版本：`AI-PAINTER-DATA-PROVENANCE-1.2`
+文档版本：`AI-PAINTER-DATA-PROVENANCE-1.3`
 
 生效日期：`2026-08-24`
 
-替代版本：`AI-PAINTER-DATA-PROVENANCE-1.1`
+替代版本：`AI-PAINTER-DATA-PROVENANCE-1.2`
 
 文档状态：`active_normative_target`
 
@@ -36,7 +36,7 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 
 ## 2. MVP 容量与扩容合同
 
-V7 首次 MVP 容量固定为 64 张独立完整地图，split 固定为：
+当前批准的基础数据发布版本容量固定为64张独立完整地图，split固定如下。该“64份”是数据发布合同，不是`complete-world-ai-assisted-cold-start-v7`历史模型配置的现行资格，也不把历史训练入口恢复为可执行状态：
 
 | split | 数量 | 用途 |
 |---|---:|---|
@@ -44,6 +44,8 @@ V7 首次 MVP 容量固定为 64 张独立完整地图，split 固定为：
 | validation | 8 | 选择 Checkpoint |
 | challenge | 4 | 独立未见条件验证，训练期不得读取内容或指标 |
 | regression | 4 | 历史失败回归，不能参与权重选择 |
+
+当前Stage4后继候选的机器发布合同为[`ai-painter-stage4-v2-mvp64-dataset-release-v1.json`](../../data/ai-painter/system-governance/ai-painter-stage4-v2-mvp64-dataset-release-v1.json)。该合同明确区分116条来源总索引与64条训练发布子集，并以来源索引中的`v7CapacityContributions`原数组顺序逐条匹配`samples`，重算每张RGB、条件包和容量贡献证据的SHA-256。字段名中的`v7`仅是既有来源Schema的一部分，不构成V7模型、旧训练入口、旧Owner字段或历史运行的当前资格。当前读取器只能消费发布合同的64条`samples`；禁止按目录时间、`latest`、数字槽位或历史配置推断活动数据。
 
 后续增强容量为 128 张，目标 split 为 `96/16/8/8`。扩容不改变单条资格、去重、来源或审核门槛；达到机器数据发布资格后，由本地系统按训练计划自主决定是否形成新能力版本。
 
@@ -209,6 +211,21 @@ dataset-package/
 数据包发布后不可覆盖。修复标签、替换图片、改变 split、更新字典或增删样本必须建立新版本并保留父版本。
 
 数据包必须绑定字典、来源政策、导演、任务、条件、审核规则和训练配置快照。四个 split 必须同时按图片哈希、来源窗口、结构哈希、条件哈希、主题架构和实例细节隔离，防止同源、变换派生或语义近邻泄漏。
+
+`manifest.json`和`source-index.json`是`datasetReleaseIdentity`的必备构成文件，不是可选附件或本机私有文件。数据发布记录和每个训练能力都必须分别绑定：
+
+```text
+datasetPackagePath / datasetPackageSha256
+manifestPath / manifestSha256
+sourceIndexPath / sourceIndexSha256
+trainSplitPath / trainSplitSha256
+validationSplitPath / validationSplitSha256
+challengeSplitPath / challengeSplitSha256
+regressionSplitPath / regressionSplitSha256
+datasetSelectionReproductionSha256
+```
+
+训练预检必须先从`manifest.json`核对包身份、容量、split计数、字典、条件和发布身份，再从`source-index.json`的正式样本集合读取每条完整记录，最后与四个split文件和Python Dataset实际选中行逐项比较。顶层对象不得当作样本数组，顶层索引总数不得当作批准容量。任一文件缺失、未进入正式代码/数据基线、哈希不符、样本重复、split不符或实际选中行不一致时，必须在GPU消费前失败关闭。
 
 AI 辅助冷启动数据包固定保存到：
 

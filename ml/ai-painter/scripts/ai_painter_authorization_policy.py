@@ -98,6 +98,12 @@ _SPATIAL_AFFINE_LOCAL_MODE_IDS = frozenset({
     "joint_condition_local_transport_stage4_smoke",
     "joint_condition_local_transport_stage4_full_data_screen",
 })
+_STAGE4_V2_LOCAL_MACHINE_TICKET_MODE_IDS = frozenset({
+    "stage4_semantic_transport_v2_controlled_smoke",
+})
+_LOCAL_MACHINE_TICKET_V2_MODE_IDS = (
+    _SPATIAL_AFFINE_LOCAL_MODE_IDS | _STAGE4_V2_LOCAL_MACHINE_TICKET_MODE_IDS
+)
 _LOCAL_CPU_INACTIVE_MODE_IDS = frozenset({
     "spatial_affine_decoder_stage4_inactive",
     "full_backbone_spatial_affine_denoiser_stage4_inactive",
@@ -1020,7 +1026,7 @@ def _validate_local_ai_capability_ticket(
         }
     if not isinstance(ticket_identity, Mapping):
         raise ValueError("local AI capability execution requires an internal capability ticket")
-    if spec.mode_id in _SPATIAL_AFFINE_LOCAL_MODE_IDS:
+    if spec.mode_id in _LOCAL_MACHINE_TICKET_V2_MODE_IDS:
         if set(ticket_identity) != set(_LOCAL_TICKET_V2_IDENTITY_FIELDS):
             raise ValueError("local AI capability ticket v2 identity fields are invalid")
         if (
@@ -1176,7 +1182,7 @@ def resolve_stage_execution_grant(
         _validate_local_ai_capability_ticket(config, spec, root)
         if spec.mode_id in (
             _AUTHORITATIVE_SEMANTIC_CARRIER_LOCAL_MODE_IDS
-            | _SPATIAL_AFFINE_LOCAL_MODE_IDS
+            | _LOCAL_MACHINE_TICKET_V2_MODE_IDS
         )
         else _validate_owner_training_authorization(training, spec, root, verify_owner_files)
     )

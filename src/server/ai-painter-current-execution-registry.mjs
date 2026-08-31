@@ -23,8 +23,34 @@ const CAPSULE_SCHEMA = "ai-painter-local-task-capsule-v1"
 const REGISTRY_TRANSACTION_SCHEMA = "ai-painter-current-execution-registry-transaction-v1"
 const REGISTRY_DEPENDENCY_SCHEMA = "ai-painter-current-execution-registry-dependency-manifest-v1"
 const REGISTRY_WRITER_CLAIM_PATH = `${CURRENT_EXECUTION_REGISTRY_ROOT}/writer.claim.json`
+const ACTIVE_EXECUTION_SCHEMA = "ai-painter-current-active-execution-v1"
+const ACTIVE_EXECUTION_LOCK_SCHEMA = "ai-painter-current-active-execution-lock-v1"
+const ACTIVE_EXECUTION_HEARTBEAT_SCHEMA = "ai-painter-current-active-execution-heartbeat-v1"
+const ACTIVE_EXECUTION_HEARTBEAT_MIN_TTL_SECONDS = 1
+const ACTIVE_EXECUTION_HEARTBEAT_MAX_TTL_SECONDS = 3600
+const ACTIVE_EXECUTION_HEARTBEAT_MAX_FUTURE_SKEW_MS = 300_000
+const ACTIVE_EXECUTION_STATES = new Set([
+  "preflight",
+  "executing",
+  "validating",
+  "reviewing",
+  "adjudicating",
+  "finalizing",
+])
+const TERMINAL_EXECUTION_STATES = new Set([
+  "completed",
+  "failed_closed",
+  "blocked_policy_boundary",
+])
 
 export async function readCurrentExecutionRegistry(projectRoot = process.cwd()) {
+  return readCurrentExecutionRegistryInternal(projectRoot)
+}
+
+async function readCurrentExecutionRegistryInternal(
+  projectRoot,
+  { expiredActiveRecovery = null } = {},
+) {
   try {
     const current = await readBoundJson(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH)
     requireValue(current.value?.schemaVersion === REGISTRY_SCHEMA, "registry_schema_invalid")
@@ -32,6 +58,7 @@ export async function readCurrentExecutionRegistry(projectRoot = process.cwd()) 
     requireValue(Number.isInteger(current.value.eventSequence) && current.value.eventSequence > 0, "registry_event_sequence_invalid")
     requireValue(current.value.writerIdentity === "local_ai_capability_lifecycle_orchestrator", "registry_writer_invalid")
     requireValue(typeof current.value.transactionId === "string" && current.value.transactionId.length > 0, "registry_transaction_id_invalid")
+    verifyTaskControlMetadataIfPresent(current.value)
 
     const transactionPath = `${CURRENT_EXECUTION_REGISTRY_ROOT}/transactions/${current.value.transactionId}/transaction.json`
     const transaction = await readBoundJson(projectRoot, transactionPath)
@@ -46,6 +73,12 @@ export async function readCurrentExecutionRegistry(projectRoot = process.cwd()) 
     await verifyPublishedRegistryEvent(projectRoot, current.value, current.sha256)
 
     const archivedNamespaces = normalizeArchivedNamespaces(current.value.archivedEvidenceNamespaces)
+    await verifyStoredActiveExecution(
+      projectRoot,
+      current.value,
+      archivedNamespaces,
+      expiredActiveRecovery,
+    )
     const taskCapsule = await readRegistryBinding(
       projectRoot,
       current.value.taskCapsule,
@@ -62,7 +95,7 @@ export async function readCurrentExecutionRegistry(projectRoot = process.cwd()) 
       archivedNamespaces,
       "current_task_terminal",
     )
-    requireValue(terminalEvidence.value?.executionState === "completed", "current_task_terminal_not_completed")
+    requireValue(isTerminalExecutionState(terminalEvidence.value?.executionState), "current_task_terminal_not_completed")
     requireValue(terminalEvidence.value?.status === current.value.terminalEvidence.status, "current_task_terminal_status_mismatch")
 
     const latestTrainingTerminal = await readLatestTrainingTerminal(
@@ -114,12 +147,12 @@ export async function initializeCurrentExecutionRegistry({
 
   requireValue(sourceCapsule.value?.schemaVersion === "ai-painter-local-task-capsule-v2", "source_task_capsule_schema_invalid")
   requireValue(sourceTerminal.value?.schemaVersion === "stage4-post-decode-failure-bounded-planning-terminal-v1", "source_task_terminal_schema_invalid")
-  requireValue(sourceTerminal.value?.executionState === "completed", "source_task_terminal_not_completed")
+  requireValue(isTerminalExecutionState(sourceTerminal.value?.executionState), "source_task_terminal_not_completed")
   requireValue(sourceTerminal.value?.status === "bounded_candidate_planning_completed", "source_task_terminal_status_invalid")
   requireValue(currentCandidate.value?.schemaVersion === "stage4-post-decode-bounded-candidate-v1", "source_candidate_schema_invalid")
   requireValue(currentCandidate.value?.status === "cpu_inactive_candidate_planned_not_implemented", "source_candidate_status_invalid")
   requireValue(latestTrainingTerminal.value?.schemaVersion === "stage4-post-decode-object-rgb-stage0-terminal-v1", "latest_training_terminal_schema_invalid")
-  requireValue(latestTrainingTerminal.value?.executionState === "completed", "latest_training_terminal_not_completed")
+  requireValue(isTerminalExecutionState(latestTrainingTerminal.value?.executionState), "latest_training_terminal_not_completed")
   requireValue(latestTrainingTerminal.value?.status === "post_decode_object_rgb_stage0_real_visual_failure", "latest_training_terminal_status_invalid")
   requireValue(sourceCapsule.value?.latestTerminal?.path === normalizeRelativePath(currentTaskTerminalPath), "source_capsule_terminal_path_mismatch")
   requireValue(sourceCapsule.value?.latestTerminal?.sha256 === sourceTerminal.sha256, "source_capsule_terminal_hash_mismatch")
@@ -165,6 +198,11 @@ export async function initializeCurrentExecutionRegistry({
     packageSha256: sourceTerminal.sha256,
     taskId: sourceTerminal.value.nextAction,
     taskKind: "cpu_inactive_candidate_implementation",
+    taskGoal: "Implement the bounded CPU-inactive Stage4 candidate and preserve every bound evidence identity.",
+    priority: 1,
+    queueStatus: "ready",
+    nextMachineAction: sourceTerminal.value.nextAction,
+    queuedAtUtc: recordedAtUtc,
     runId: sourceTerminal.value.planningRunId,
     lifecycleStage: "change_candidate",
     executionState: "package_materialized",
@@ -273,6 +311,11 @@ export async function prepareCurrentExecutionRegistryAdvance({
   packageId,
   taskId,
   taskKind,
+  taskGoal = null,
+  priority = null,
+  queueStatus = null,
+  nextMachineAction = undefined,
+  queuedAtUtc = null,
   runId,
   lifecycleStage,
   executionState,
@@ -280,12 +323,21 @@ export async function prepareCurrentExecutionRegistryAdvance({
   taskCapsulePath,
   terminalEvidencePath,
   latestTrainingTerminal = null,
+  activeExecution = null,
   expectedPreviousRegistryRevision = null,
   expectedPreviousRegistrySha256 = null,
   dependencyManifest = null,
   _testHooks = null,
+  _expiredActiveRecovery = null,
 }) {
-  const previous = await readCurrentExecutionRegistry(projectRoot)
+  const previous = _expiredActiveRecovery === null
+    ? await readCurrentExecutionRegistry(projectRoot)
+    : await readCurrentExecutionRegistryInternal(projectRoot, {
+        expiredActiveRecovery: {
+          ..._expiredActiveRecovery,
+          processProbe: _testHooks?.probeActiveExecutionProcess ?? null,
+        },
+      })
   requireValue(previous.ok === true, "current_execution_registry_not_verified")
   if (expectedPreviousRegistryRevision !== null) {
     requireValue(
@@ -302,7 +354,33 @@ export async function prepareCurrentExecutionRegistryAdvance({
   for (const value of [capabilityVersion, packageId, taskId, taskKind, runId, lifecycleStage, executionState, activity]) {
     requireValue(typeof value === "string" && value.length > 0, "registry_advance_identity_invalid")
   }
+  const taskControl = normalizeTaskControlMetadata({
+    taskId,
+    taskKind,
+    taskGoal,
+    priority,
+    queueStatus,
+    nextMachineAction,
+    queuedAtUtc,
+    executionState,
+    activity,
+  })
   const archivedNamespaces = previous.archivedNamespaces
+  const normalizedActiveExecution = await normalizeAndVerifyActiveExecution({
+    projectRoot,
+    activeExecution,
+    capabilityVersion,
+    packageId,
+    runId,
+    executionState,
+    archivedNamespaces,
+  })
+  if (normalizedActiveExecution === null) {
+    requireValue(!ACTIVE_EXECUTION_STATES.has(executionState), "registry_active_execution_missing")
+  } else {
+    requireValue(taskControl.queueStatus === "running", "registry_active_execution_queue_status_invalid")
+    requireValue(taskControl.nextMachineAction === null, "registry_active_execution_next_action_forbidden")
+  }
   const normalizedCapsulePath = normalizeRelativePath(taskCapsulePath)
   const normalizedTerminalPath = normalizeRelativePath(terminalEvidencePath)
   rejectArchivedPath(normalizedCapsulePath, archivedNamespaces)
@@ -312,14 +390,14 @@ export async function prepareCurrentExecutionRegistryAdvance({
   requireValue(capsule.value?.schemaVersion === CAPSULE_SCHEMA, "advanced_task_capsule_schema_invalid")
   requireValue(capsule.value?.integrity?.status === "verified", "advanced_task_capsule_integrity_invalid")
   await verifyCapsuleEvidence(projectRoot, capsule.value, archivedNamespaces)
-  requireValue(terminal.value?.executionState === "completed", "advanced_terminal_not_completed")
+  requireValue(isTerminalExecutionState(terminal.value?.executionState), "advanced_terminal_not_completed")
   requireValue(typeof terminal.value?.status === "string" && terminal.value.status.length > 0, "advanced_terminal_status_invalid")
   let nextLatestTrainingTerminal = previous.registry.latestTrainingTerminal
   if (latestTrainingTerminal !== null) {
     requireValue(typeof latestTrainingTerminal.runId === "string" && latestTrainingTerminal.runId.length > 0, "latest_training_run_id_invalid")
     const latestTerminal = await readBoundJson(projectRoot, normalizeRelativePath(latestTrainingTerminal.path))
     requireValue(latestTerminal.sha256 === latestTrainingTerminal.sha256, "latest_training_terminal_sha256_invalid")
-    requireValue(latestTerminal.value?.executionState === "completed", "latest_training_terminal_not_completed")
+    requireValue(isTerminalExecutionState(latestTerminal.value?.executionState), "latest_training_terminal_not_completed")
     requireValue(latestTerminal.value?.status === latestTrainingTerminal.status, "latest_training_terminal_status_invalid")
     const normalizedEvidence = {}
     for (const [kind, binding] of Object.entries(latestTrainingTerminal.evidence ?? {})) {
@@ -356,7 +434,14 @@ export async function prepareCurrentExecutionRegistryAdvance({
   let durablePrepared = false
   let transactionRoot = null
   try {
-    const lockedPrevious = await readCurrentExecutionRegistry(projectRoot)
+    const lockedPrevious = _expiredActiveRecovery === null
+      ? await readCurrentExecutionRegistry(projectRoot)
+      : await readCurrentExecutionRegistryInternal(projectRoot, {
+          expiredActiveRecovery: {
+            ..._expiredActiveRecovery,
+            processProbe: _testHooks?.probeActiveExecutionProcess ?? null,
+          },
+        })
     requireValue(lockedPrevious.ok === true, "current_execution_registry_not_verified_after_claim")
     requireValue(lockedPrevious.registrySha256 === previous.registrySha256, "registry_changed_before_writer_claim")
     requireValue(lockedPrevious.registry.registryRevision === previous.registry.registryRevision, "registry_revision_changed_before_writer_claim")
@@ -372,6 +457,11 @@ export async function prepareCurrentExecutionRegistryAdvance({
     packageSha256: terminal.sha256,
     taskId,
     taskKind,
+    taskGoal: taskControl.taskGoal,
+    priority: taskControl.priority,
+    queueStatus: taskControl.queueStatus,
+    nextMachineAction: taskControl.nextMachineAction,
+    queuedAtUtc: taskControl.queuedAtUtc,
     runId,
     lifecycleStage,
     executionState,
@@ -382,7 +472,7 @@ export async function prepareCurrentExecutionRegistryAdvance({
       sha256: terminal.sha256,
       status: terminal.value.status,
     },
-    activeExecution: null,
+    activeExecution: normalizedActiveExecution,
     latestTrainingTerminal: nextLatestTrainingTerminal,
     selectedHistoricalRun: null,
     archivedEvidenceNamespaces: previous.registry.archivedEvidenceNamespaces,
@@ -490,6 +580,105 @@ export async function advanceCurrentExecutionRegistry(options) {
   })
 }
 
+export async function recoverExpiredActiveExecutionToFailedClosed({
+  projectRoot = process.cwd(),
+  capabilityVersion,
+  packageId,
+  runId,
+  taskCapsulePath,
+  terminalEvidencePath,
+  dependencyManifest = null,
+  expectedPreviousRegistryRevision,
+  expectedPreviousRegistrySha256,
+  _testHooks = null,
+}) {
+  for (const value of [capabilityVersion, packageId, runId]) {
+    requireValue(
+      typeof value === "string" && value.length > 0,
+      "registry_expired_active_recovery_identity_invalid",
+    )
+  }
+  requireValue(
+    Number.isInteger(expectedPreviousRegistryRevision)
+      && expectedPreviousRegistryRevision > 0,
+    "registry_expired_active_recovery_revision_invalid",
+  )
+  requireValue(
+    typeof expectedPreviousRegistrySha256 === "string"
+      && /^[a-f0-9]{64}$/u.test(expectedPreviousRegistrySha256),
+    "registry_expired_active_recovery_registry_sha256_invalid",
+  )
+
+  const recoveryContext = {
+    capabilityVersion,
+    packageId,
+    runId,
+  }
+  const stale = await readCurrentExecutionRegistryInternal(projectRoot, {
+    expiredActiveRecovery: {
+      ...recoveryContext,
+      processProbe: _testHooks?.probeActiveExecutionProcess ?? null,
+    },
+  })
+  requireValue(stale.ok === true, "registry_expired_active_recovery_source_not_verified")
+  requireValue(
+    stale.registry.registryRevision === expectedPreviousRegistryRevision,
+    "registry_expired_active_recovery_revision_mismatch",
+  )
+  requireValue(
+    stale.registrySha256 === expectedPreviousRegistrySha256,
+    "registry_expired_active_recovery_registry_sha256_mismatch",
+  )
+
+  const terminal = await readBoundJson(projectRoot, normalizeRelativePath(terminalEvidencePath))
+  requireValue(
+    terminal.value?.executionState === "failed_closed",
+    "registry_expired_active_recovery_terminal_not_failed_closed",
+  )
+  requireValue(
+    terminal.value?.capabilityVersion === capabilityVersion,
+    "registry_expired_active_recovery_terminal_capability_mismatch",
+  )
+  requireValue(
+    terminal.value?.packageId === packageId,
+    "registry_expired_active_recovery_terminal_package_mismatch",
+  )
+  requireValue(
+    terminal.value?.runId === runId,
+    "registry_expired_active_recovery_terminal_run_mismatch",
+  )
+
+  const prepared = await prepareCurrentExecutionRegistryAdvance({
+    projectRoot,
+    capabilityVersion,
+    packageId,
+    taskId: `${runId}-expired-active-recovery`,
+    taskKind: "expired_active_execution_recovery_failed_closed",
+    taskGoal: "Fail-close an expired active execution after verifying dead process identity, immutable evidence, and recovery lineage without replaying GPU work.",
+    priority: 1,
+    queueStatus: "failed_closed",
+    nextMachineAction: null,
+    queuedAtUtc: new Date().toISOString(),
+    runId,
+    lifecycleStage: "active_execution_recovery",
+    executionState: "failed_closed",
+    activity: "host_interruption_recovery_failed_closed",
+    taskCapsulePath,
+    terminalEvidencePath,
+    activeExecution: null,
+    expectedPreviousRegistryRevision,
+    expectedPreviousRegistrySha256,
+    dependencyManifest,
+    _testHooks,
+    _expiredActiveRecovery: recoveryContext,
+  })
+  return finalizePreparedCurrentExecutionRegistryAdvance({
+    projectRoot,
+    transactionId: prepared.transactionId,
+    _testHooks,
+  })
+}
+
 export async function finalizePreparedCurrentExecutionRegistryAdvance({
   projectRoot = process.cwd(),
   transactionId,
@@ -545,6 +734,11 @@ async function finalizePreparedAdvanceInternal({ projectRoot, transactionId, _te
   requireValue(stagedCurrentValue.transactionId === transactionId, "registry_staged_current_transaction_mismatch")
   requireValue(stagedCurrentValue.registryRevision === pending.value.registryRevision, "registry_staged_current_revision_mismatch")
   requireValue(stagedCurrentValue.eventSequence === pending.value.eventSequence, "registry_staged_current_sequence_mismatch")
+  await verifyStoredActiveExecution(
+    projectRoot,
+    stagedCurrentValue,
+    normalizeArchivedNamespaces(stagedCurrentValue.archivedEvidenceNamespaces),
+  )
   const stagedEventValue = parseSingleJsonLine(stagedEvent.bytes, "registry_staged_event_invalid")
   requireValue(stagedEventValue.transactionId === transactionId, "registry_staged_event_transaction_mismatch")
   requireValue(stagedEventValue.currentSha256 === pending.value.currentSha256, "registry_staged_event_current_hash_mismatch")
@@ -1017,7 +1211,9 @@ function normalizeDependencyManifest(value) {
   requireValue(value?.schemaVersion === REGISTRY_DEPENDENCY_SCHEMA, "registry_dependency_manifest_schema_invalid")
   requireValue(value?.mode === "external", "registry_dependency_manifest_mode_invalid")
   requireValue(value.outerJournal && typeof value.outerJournal.path === "string", "registry_dependency_outer_journal_missing")
+  requireValue(/^[a-f0-9]{64}$/u.test(value.outerJournal.sha256 ?? ""), "registry_dependency_outer_journal_hash_missing")
   requireValue(typeof value.outerJournal.requiredState === "string", "registry_dependency_outer_journal_state_missing")
+  requireValue(typeof value.outerJournal.operationId === "string" && value.outerJournal.operationId.length > 0, "registry_dependency_outer_journal_operation_missing")
   requireValue(Array.isArray(value.bindings), "registry_dependency_bindings_missing")
   requireValue(value.programEvent && typeof value.programEvent.event === "object", "registry_dependency_program_event_missing")
   requireValue(value.programEvent.event.id === value.programEvent.eventId, "registry_dependency_program_event_identity_mismatch")
@@ -1035,8 +1231,9 @@ async function verifyDependencyManifest(projectRoot, manifest) {
   }
   requireValue(manifest.mode === "external", "registry_dependency_manifest_mode_invalid")
   const outerJournal = await readBoundJson(projectRoot, manifest.outerJournal.path)
-  if (manifest.outerJournal.sha256) requireValue(outerJournal.sha256 === manifest.outerJournal.sha256, "registry_dependency_outer_journal_hash_mismatch")
+  requireValue(outerJournal.sha256 === manifest.outerJournal.sha256, "registry_dependency_outer_journal_hash_mismatch")
   requireValue(outerJournal.value?.state === manifest.outerJournal.requiredState, "registry_dependency_outer_journal_incomplete")
+  requireValue(outerJournal.value?.operationId === manifest.outerJournal.operationId, "registry_dependency_outer_journal_operation_mismatch")
   for (const binding of manifest.bindings) await readRawBinding(projectRoot, binding, `registry_dependency_${binding.role ?? "binding"}`)
 
   const expectedEvent = manifest.programEvent.event
@@ -1140,6 +1337,336 @@ function parseCompleteJsonLines(bytes, code) {
   } catch {
     throw new Error(code)
   }
+}
+
+function isTerminalExecutionState(value) {
+  return typeof value === "string" && TERMINAL_EXECUTION_STATES.has(value)
+}
+
+async function verifyStoredActiveExecution(
+  projectRoot,
+  registry,
+  archivedNamespaces,
+  expiredActiveRecovery = null,
+) {
+  if (expiredActiveRecovery !== null) {
+    requirePlainObject(expiredActiveRecovery, "registry_expired_active_recovery_invalid")
+    requireValue(registry.activeExecution !== null && registry.activeExecution !== undefined, "registry_expired_active_recovery_missing")
+    requireValue(
+      registry.capabilityVersion === expiredActiveRecovery.capabilityVersion,
+      "registry_expired_active_recovery_capability_mismatch",
+    )
+    requireValue(
+      registry.packageId === expiredActiveRecovery.packageId,
+      "registry_expired_active_recovery_package_mismatch",
+    )
+    requireValue(
+      registry.runId === expiredActiveRecovery.runId,
+      "registry_expired_active_recovery_run_mismatch",
+    )
+  }
+  const normalized = await normalizeAndVerifyActiveExecution({
+    projectRoot,
+    activeExecution: registry.activeExecution ?? null,
+    capabilityVersion: registry.capabilityVersion,
+    packageId: registry.packageId,
+    runId: registry.runId,
+    executionState: registry.executionState,
+    archivedNamespaces,
+    expiredActiveRecovery,
+  })
+  if (normalized === null) {
+    requireValue(!ACTIVE_EXECUTION_STATES.has(registry.executionState), "registry_active_execution_missing")
+    return
+  }
+  requireValue(registry.queueStatus === "running", "registry_active_execution_queue_status_invalid")
+  requireValue(registry.nextMachineAction === null, "registry_active_execution_next_action_forbidden")
+  requireValue(
+    JSON.stringify(normalized) === JSON.stringify(registry.activeExecution),
+    "registry_active_execution_not_canonical",
+  )
+}
+
+async function normalizeAndVerifyActiveExecution({
+  projectRoot,
+  activeExecution,
+  capabilityVersion,
+  packageId,
+  runId,
+  executionState,
+  archivedNamespaces,
+  expiredActiveRecovery = null,
+}) {
+  if (activeExecution === null) return null
+  requirePlainObject(activeExecution, "registry_active_execution_invalid")
+  requireExactKeys(activeExecution, [
+    "schemaVersion",
+    "capabilityVersion",
+    "packageId",
+    "runId",
+    "executionState",
+    "processId",
+    "processStartIdentity",
+    "programLineage",
+    "lock",
+    "heartbeat",
+  ], "registry_active_execution_fields_invalid")
+  requireValue(activeExecution.schemaVersion === ACTIVE_EXECUTION_SCHEMA, "registry_active_execution_schema_invalid")
+  requireValue(activeExecution.capabilityVersion === capabilityVersion, "registry_active_execution_capability_mismatch")
+  requireValue(activeExecution.packageId === packageId, "registry_active_execution_package_mismatch")
+  requireValue(activeExecution.runId === runId, "registry_active_execution_run_mismatch")
+  requireValue(activeExecution.executionState === executionState, "registry_active_execution_state_mismatch")
+  requireValue(ACTIVE_EXECUTION_STATES.has(activeExecution.executionState), "registry_active_execution_state_invalid")
+  requireValue(
+    Number.isInteger(activeExecution.processId)
+      && activeExecution.processId > 0
+      && activeExecution.processId <= 0x7fffffff,
+    "registry_active_execution_pid_invalid",
+  )
+  requireValue(
+    typeof activeExecution.processStartIdentity === "string"
+      && activeExecution.processStartIdentity === activeExecution.processStartIdentity.trim()
+      && activeExecution.processStartIdentity.length > 0
+      && activeExecution.processStartIdentity.length <= 1024,
+    "registry_active_execution_process_start_invalid",
+  )
+  const processProbe = typeof expiredActiveRecovery?.processProbe === "function"
+    ? expiredActiveRecovery.processProbe(activeExecution)
+    : queryProcessIdentity(activeExecution.processId)
+  requireValue(
+    processProbe.status !== "indeterminate",
+    "registry_active_execution_process_identity_unavailable",
+  )
+  if (expiredActiveRecovery === null) {
+    requireValue(processProbe.status === "active", "registry_active_execution_process_not_active")
+    requireValue(
+      processProbe.identity === activeExecution.processStartIdentity,
+      "registry_active_execution_process_start_identity_mismatch",
+    )
+  } else {
+    requireValue(
+      processProbe.status === "dead"
+        || (processProbe.status === "active"
+          && processProbe.identity !== activeExecution.processStartIdentity),
+      "registry_expired_active_recovery_process_still_active",
+    )
+  }
+
+  const normalizedProgramLineage = {}
+  requirePlainObject(activeExecution.programLineage, "registry_active_execution_program_lineage_invalid")
+  const lineageEntries = Object.entries(activeExecution.programLineage)
+  requireValue(lineageEntries.length > 0, "registry_active_execution_program_lineage_missing")
+  for (const [role, binding] of lineageEntries) {
+    requireValue(/^[A-Za-z0-9._-]{1,80}$/u.test(role), "registry_active_execution_program_role_invalid")
+    requireValue(!["__proto__", "prototype", "constructor"].includes(role), "registry_active_execution_program_role_invalid")
+    requirePlainObject(binding, `registry_active_execution_program_${role}_binding_invalid`)
+    requireExactKeys(binding, ["path", "sha256"], `registry_active_execution_program_${role}_fields_invalid`)
+    const normalizedPath = normalizeRelativePath(binding.path)
+    rejectArchivedPath(normalizedPath, archivedNamespaces)
+    const verified = await readRawBinding(projectRoot, binding, `registry_active_execution_program_${role}`)
+    normalizedProgramLineage[role] = { path: verified.path, sha256: verified.sha256 }
+  }
+
+  requirePlainObject(activeExecution.lock, "registry_active_execution_lock_binding_invalid")
+  requireExactKeys(activeExecution.lock, ["path", "sha256"], "registry_active_execution_lock_fields_invalid")
+  const lockPath = normalizeRelativePath(activeExecution.lock.path)
+  rejectArchivedPath(lockPath, archivedNamespaces)
+  const lock = await readRegistryBinding(
+    projectRoot,
+    activeExecution.lock,
+    archivedNamespaces,
+    "registry_active_execution_lock",
+  )
+  requireExactKeys(lock.value, [
+    "schemaVersion",
+    "capabilityVersion",
+    "packageId",
+    "runId",
+    "processId",
+    "processStartIdentity",
+  ], "registry_active_execution_lock_record_fields_invalid")
+  requireValue(lock.value?.schemaVersion === ACTIVE_EXECUTION_LOCK_SCHEMA, "registry_active_execution_lock_schema_invalid")
+  verifyActiveExecutionIdentityRecord(lock.value, activeExecution, "registry_active_execution_lock")
+
+  requirePlainObject(activeExecution.heartbeat, "registry_active_execution_heartbeat_binding_invalid")
+  requireExactKeys(activeExecution.heartbeat, ["path", "ttlSeconds"], "registry_active_execution_heartbeat_fields_invalid")
+  const heartbeatPath = normalizeRelativePath(activeExecution.heartbeat.path)
+  rejectArchivedPath(heartbeatPath, archivedNamespaces)
+  requireValue(heartbeatPath !== lockPath, "registry_active_execution_lock_heartbeat_path_collision")
+  requireValue(
+    Number.isInteger(activeExecution.heartbeat.ttlSeconds)
+      && activeExecution.heartbeat.ttlSeconds >= ACTIVE_EXECUTION_HEARTBEAT_MIN_TTL_SECONDS
+      && activeExecution.heartbeat.ttlSeconds <= ACTIVE_EXECUTION_HEARTBEAT_MAX_TTL_SECONDS,
+    "registry_active_execution_heartbeat_ttl_invalid",
+  )
+  const heartbeat = await readBoundJson(projectRoot, heartbeatPath)
+  requireExactKeys(heartbeat.value, [
+    "schemaVersion",
+    "capabilityVersion",
+    "packageId",
+    "runId",
+    "executionState",
+    "processId",
+    "processStartIdentity",
+    "heartbeatAtUtc",
+    "ttlSeconds",
+  ], "registry_active_execution_heartbeat_record_fields_invalid")
+  requireValue(
+    heartbeat.value?.schemaVersion === ACTIVE_EXECUTION_HEARTBEAT_SCHEMA,
+    "registry_active_execution_heartbeat_schema_invalid",
+  )
+  verifyActiveExecutionIdentityRecord(heartbeat.value, activeExecution, "registry_active_execution_heartbeat")
+  requireValue(
+    heartbeat.value.executionState === activeExecution.executionState,
+    "registry_active_execution_heartbeat_state_mismatch",
+  )
+  requireValue(
+    heartbeat.value.ttlSeconds === activeExecution.heartbeat.ttlSeconds,
+    "registry_active_execution_heartbeat_ttl_mismatch",
+  )
+  requireValue(
+    typeof heartbeat.value.heartbeatAtUtc === "string"
+      && heartbeat.value.heartbeatAtUtc.endsWith("Z")
+      && Number.isFinite(Date.parse(heartbeat.value.heartbeatAtUtc)),
+    "registry_active_execution_heartbeat_timestamp_invalid",
+  )
+  const heartbeatAgeMs = Date.now() - Date.parse(heartbeat.value.heartbeatAtUtc)
+  requireValue(
+    heartbeatAgeMs >= -ACTIVE_EXECUTION_HEARTBEAT_MAX_FUTURE_SKEW_MS,
+    "registry_active_execution_heartbeat_from_future",
+  )
+  if (expiredActiveRecovery === null) {
+    requireValue(
+      heartbeatAgeMs <= activeExecution.heartbeat.ttlSeconds * 1000,
+      "registry_active_execution_heartbeat_expired",
+    )
+  } else {
+    requireValue(
+      heartbeatAgeMs > activeExecution.heartbeat.ttlSeconds * 1000,
+      "registry_expired_active_recovery_heartbeat_not_expired",
+    )
+  }
+
+  return {
+    schemaVersion: ACTIVE_EXECUTION_SCHEMA,
+    capabilityVersion,
+    packageId,
+    runId,
+    executionState,
+    processId: activeExecution.processId,
+    processStartIdentity: activeExecution.processStartIdentity,
+    programLineage: normalizedProgramLineage,
+    lock: { path: lockPath, sha256: lock.sha256 },
+    heartbeat: {
+      path: heartbeatPath,
+      ttlSeconds: activeExecution.heartbeat.ttlSeconds,
+    },
+  }
+}
+
+function verifyActiveExecutionIdentityRecord(record, activeExecution, codePrefix) {
+  requireValue(record.capabilityVersion === activeExecution.capabilityVersion, `${codePrefix}_capability_mismatch`)
+  requireValue(record.packageId === activeExecution.packageId, `${codePrefix}_package_mismatch`)
+  requireValue(record.runId === activeExecution.runId, `${codePrefix}_run_mismatch`)
+  requireValue(record.processId === activeExecution.processId, `${codePrefix}_pid_mismatch`)
+  requireValue(
+    record.processStartIdentity === activeExecution.processStartIdentity,
+    `${codePrefix}_process_start_mismatch`,
+  )
+}
+
+function requirePlainObject(value, code) {
+  requireValue(value !== null && typeof value === "object" && !Array.isArray(value), code)
+}
+
+function requireExactKeys(value, expectedKeys, code) {
+  requirePlainObject(value, code)
+  const actual = Object.keys(value).sort()
+  const expected = [...expectedKeys].sort()
+  requireValue(actual.length === expected.length && actual.every((key, index) => key === expected[index]), code)
+}
+
+function normalizeTaskControlMetadata({
+  taskId,
+  taskKind,
+  taskGoal,
+  priority,
+  queueStatus,
+  nextMachineAction,
+  queuedAtUtc,
+  executionState,
+  activity,
+}) {
+  const normalizedGoal = taskGoal === null
+    ? `Execute ${taskKind} task ${taskId} within the bound AI Painter capability lifecycle.`
+    : taskGoal
+  requireValue(
+    typeof normalizedGoal === "string" && normalizedGoal.trim().length >= 4 && normalizedGoal.length <= 2000,
+    "registry_task_goal_invalid",
+  )
+  const normalizedPriority = priority === null ? 5 : priority
+  requireValue(
+    Number.isInteger(normalizedPriority) && normalizedPriority >= 1 && normalizedPriority <= 9,
+    "registry_task_priority_invalid",
+  )
+  const inferredQueueStatus = executionState === "package_materialized"
+    ? "ready"
+    : executionState === "failed_closed"
+      ? "failed_closed"
+      : executionState === "blocked_policy_boundary"
+        ? "blocked_policy_boundary"
+        : activity === "running"
+          ? "running"
+          : "completed"
+  const normalizedQueueStatus = queueStatus === null ? inferredQueueStatus : queueStatus
+  requireValue(
+    ["ready", "running", "completed", "failed_closed", "blocked_policy_boundary"].includes(normalizedQueueStatus),
+    "registry_task_queue_status_invalid",
+  )
+  const normalizedNextMachineAction = nextMachineAction === undefined
+    ? (normalizedQueueStatus === "ready" ? taskId : null)
+    : nextMachineAction
+  requireValue(
+    normalizedNextMachineAction === null
+      || (typeof normalizedNextMachineAction === "string" && normalizedNextMachineAction.length > 0),
+    "registry_next_machine_action_invalid",
+  )
+  requireValue(
+    normalizedQueueStatus !== "ready" || normalizedNextMachineAction !== null,
+    "registry_ready_task_next_machine_action_missing",
+  )
+  const normalizedQueuedAtUtc = queuedAtUtc === null ? new Date().toISOString() : queuedAtUtc
+  requireValue(
+    typeof normalizedQueuedAtUtc === "string"
+      && Number.isFinite(Date.parse(normalizedQueuedAtUtc))
+      && normalizedQueuedAtUtc.endsWith("Z"),
+    "registry_task_queued_at_utc_invalid",
+  )
+  return {
+    taskGoal: normalizedGoal.trim(),
+    priority: normalizedPriority,
+    queueStatus: normalizedQueueStatus,
+    nextMachineAction: normalizedNextMachineAction,
+    queuedAtUtc: normalizedQueuedAtUtc,
+  }
+}
+
+function verifyTaskControlMetadataIfPresent(registry) {
+  const fields = ["taskGoal", "priority", "queueStatus", "nextMachineAction", "queuedAtUtc"]
+  if (fields.every((field) => !Object.prototype.hasOwnProperty.call(registry, field))) return
+  requireValue(fields.every((field) => Object.prototype.hasOwnProperty.call(registry, field)), "registry_task_control_metadata_incomplete")
+  const normalized = normalizeTaskControlMetadata({
+    taskId: registry.taskId,
+    taskKind: registry.taskKind,
+    taskGoal: registry.taskGoal,
+    priority: registry.priority,
+    queueStatus: registry.queueStatus,
+    nextMachineAction: registry.nextMachineAction,
+    queuedAtUtc: registry.queuedAtUtc,
+    executionState: registry.executionState,
+    activity: registry.activity,
+  })
+  requireValue(normalized.taskGoal === registry.taskGoal, "registry_task_goal_not_normalized")
 }
 
 function sha256Bytes(bytes) {
