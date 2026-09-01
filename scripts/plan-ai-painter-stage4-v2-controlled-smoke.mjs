@@ -18,6 +18,10 @@ import {
   captureImmutableCurrentRegistryEvidence,
 } from "./lib/ai-painter-immutable-current-registry-evidence-v1.mjs";
 import {
+  buildStage4V2SmokeProgramGraph,
+  validateStage4V2QualificationProgramGraph,
+} from "./lib/ai-painter-program-graph-manifest-v1.mjs";
+import {
   bindAbsolute,
   buildDerivedTrainerExecution,
   FIXED_EPOCH_COUNT,
@@ -137,6 +141,10 @@ export async function materializeStage4V2ControlledSmoke({
     currentTaskCapsuleBinding,
     currentTerminalBinding,
   } = immutableInputs;
+  const programGraph = buildStage4V2SmokeProgramGraph({
+    projectRoot: root,
+    programLineage,
+  });
   const issuer = ensureStage4V2SmokeTicketIssuer({ projectRoot: root, keyProtector: machineKeyProtector });
   const inputEvidence = uniqueBindings([
     currentEvidence.transaction,
@@ -205,6 +213,17 @@ export async function materializeStage4V2ControlledSmoke({
   invokeMaterializationHook(_testHooks, "afterGenericPackageMaterialized", {
     identity, genericPackageBinding, genericManifestBinding,
   });
+  const programGraphPath = path.join(packageRoot, "program-graph-manifest.json");
+  writeOrVerifyMaterializationJson(programGraphPath, programGraph,
+    "Smoke program graph manifest recovery differs");
+  const programGraphBinding = bindAbsolute(root, programGraphPath);
+  recordMaterializationStep({
+    root, materialization, step: "program_graph_manifest",
+    evidence: [programGraphBinding],
+  });
+  invokeMaterializationHook(_testHooks, "afterProgramGraphManifestPersisted", {
+    identity, programGraphManifest: programGraphBinding,
+  });
   const payload = {
     schemaVersion: "ai-painter-stage4-v2-controlled-smoke-package-payload-v1",
     status: "materialized_not_executed",
@@ -239,6 +258,7 @@ export async function materializeStage4V2ControlledSmoke({
     ticketIssuer: issuer.issuerBinding,
     inputEvidence,
     programLineage,
+    programGraphManifest: programGraphBinding,
     executionBoundary: {
       gpuForwardAllowed: true, optimizerAllowed: true, backwardAllowed: true,
       weightMutationAllowed: true, checkpointWriteAllowed: true, trainingAllowed: true,
@@ -318,6 +338,7 @@ export async function materializeStage4V2ControlledSmoke({
     capabilityVersion: STAGE4_V2_CAPABILITY,
     autonomousClosedLoopPackage: { path: generic.packagePath, sha256: generic.packageSha256 },
     packagePayload: payloadBinding,
+    programGraphManifest: programGraphBinding,
     smokeTicket: ticketBinding,
     ticketIssuer: issuer.issuerBinding,
     replayLedger,
@@ -371,7 +392,7 @@ export async function materializeStage4V2ControlledSmoke({
     identity, terminalBinding,
   });
   const capsule = buildCapsule({ payload, terminal, terminalBinding, evidence: [
-    payloadBinding, ticketBinding, smokeManifestBinding,
+    payloadBinding, programGraphBinding, ticketBinding, smokeManifestBinding,
     qualification.terminalBinding, materialization.intentBinding,
   ] });
   const capsulePath = path.join(packageRoot, "task-capsule.json");
@@ -388,12 +409,14 @@ export async function materializeStage4V2ControlledSmoke({
     root, materialization,
     evidence: [
       genericPackageBinding, genericManifestBinding, payloadBinding,
-      ticketBinding, smokeManifestBinding, terminalBinding, capsuleBinding,
+      programGraphBinding, ticketBinding, smokeManifestBinding, terminalBinding,
+      capsuleBinding,
     ],
   });
   return publishMaterializedSmokePlanner({
     root, current, qualification, identity, terminal, terminalBinding,
-    capsuleBinding, smokeManifestBinding, payloadBinding, ticketBinding,
+    capsuleBinding, smokeManifestBinding, payloadBinding, programGraphBinding,
+    ticketBinding,
     materializationCompletionBinding,
     commitCurrentRegistry, appendProgramEvent, currentRegistryAdvancer,
     externalDependencyCommitter, _testHooks,
@@ -402,7 +425,8 @@ export async function materializeStage4V2ControlledSmoke({
 
 async function publishMaterializedSmokePlanner({
   root, current, qualification, identity, terminal, terminalBinding,
-  capsuleBinding, smokeManifestBinding, payloadBinding, ticketBinding,
+  capsuleBinding, smokeManifestBinding, payloadBinding, programGraphBinding,
+  ticketBinding,
   materializationCompletionBinding,
   commitCurrentRegistry, appendProgramEvent, currentRegistryAdvancer,
   externalDependencyCommitter, _testHooks,
@@ -434,6 +458,7 @@ async function publishMaterializedSmokePlanner({
   };
   const bindings = [
     { role: "controlled_smoke_package_payload", ...payloadBinding },
+    { role: "controlled_smoke_program_graph", ...programGraphBinding },
     { role: "controlled_smoke_ticket", ...ticketBinding },
     { role: "controlled_smoke_manifest", ...smokeManifestBinding },
     { role: "controlled_smoke_materialization_terminal", ...terminalBinding },
@@ -527,6 +552,13 @@ function collectQualification(root, current) {
   const payload = readBoundJson(root, manifest.packagePayload);
   assert.equal(payload.schemaVersion, "ai-painter-stage4-v2-readonly-gpu-package-payload-v1");
   assert.equal(payload.runId, current.registry.runId);
+  assert.deepEqual(payload.programGraphManifest, manifest.programGraphManifest,
+    "qualification payload/manifest program graph binding mismatch");
+  validateStage4V2QualificationProgramGraph({
+    projectRoot: root,
+    manifestBinding: payload.programGraphManifest,
+    programLineage: payload.programLineage,
+  });
   const terminalBinding = current.registry.terminalEvidence;
   const terminal = readBoundJson(root, terminalBinding);
   assert.equal(terminal.status, "stage4_v2_readonly_gpu_qualification_passed");
@@ -667,7 +699,7 @@ export function collectAndVerifySmokeImmutableInputs({
     machineReviewAdapter: REVIEW_ADAPTER_PATH,
     pythonAdapter: PYTHON_ADAPTER_PATH,
     pythonTrainingAdapter: PYTHON_TRAINING_ADAPTER_PATH,
-    frozenTrainer: qualification.payload.programLineage?.trainer?.path,
+    trainer: qualification.payload.programLineage?.trainer?.path,
     trainerSupport: qualification.payload.programLineage?.trainerSupport?.path,
     modelFactory: qualification.payload.programLineage?.modelFactory?.path,
     modeRegistry: "ml/ai-painter/scripts/ai_painter_stage_mode_registry.py",
@@ -828,6 +860,7 @@ function buildCapsule({ payload, terminal, terminalBinding, evidence }) {
 
 const MATERIALIZATION_STEPS = Object.freeze([
   "generic_package",
+  "program_graph_manifest",
   "package_payload",
   "smoke_ticket",
   "ticket_registered",

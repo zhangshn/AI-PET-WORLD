@@ -11,6 +11,9 @@ import {
   sha256File,
   writeExclusiveJson,
 } from "./ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs";
+import {
+  validateStage4V2SmokeProgramGraph,
+} from "./ai-painter-program-graph-manifest-v1.mjs";
 
 export const STAGE4_V2_CAPABILITY =
   "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
@@ -120,10 +123,16 @@ export function validateStage4V2SmokePackagePayload(payload, { projectRoot, veri
   for (const [role, binding] of Object.entries(payload.machineReviewInputs.reviewPrograms ?? {})) validateBinding(binding, role);
   assert.ok(Array.isArray(payload.inputEvidence) && payload.inputEvidence.length > 0);
   assert.ok(payload.programLineage && Object.keys(payload.programLineage).length > 0);
+  validateBinding(payload.programGraphManifest, "programGraphManifest");
   if (verifyEvidence) {
     const root = path.resolve(projectRoot);
     for (const binding of payload.inputEvidence) bindProjectFile(root, binding.path, binding.sha256);
     for (const binding of Object.values(payload.programLineage)) bindProjectFile(root, binding.path, binding.sha256);
+    validateStage4V2SmokeProgramGraph({
+      projectRoot: root,
+      manifestBinding: payload.programGraphManifest,
+      programLineage: payload.programLineage,
+    });
     bindProjectFile(root, payload.readonlyGpuQualificationTerminal.path, payload.readonlyGpuQualificationTerminal.sha256);
     bindProjectFile(root, payload.datasetRelease.path, payload.datasetRelease.sha256);
     bindProjectFile(root, payload.autoencoderCheckpoint.path, payload.autoencoderCheckpoint.sha256);

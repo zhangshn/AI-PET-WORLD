@@ -35,6 +35,7 @@ export const STAGE4_V2_SMOKE_MACHINE_KEY_ROOT =
   ".runtime/ai-painter/machine-keys/stage4-v2-controlled-smoke-ticket-issuer-v1";
 
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{7,191}$/u;
+const SAFE_PROGRAM_ROLE = /^[A-Za-z][A-Za-z0-9._-]{0,127}$/u;
 const SHA256 = /^[a-f0-9]{64}$/u;
 const DPAPI_ENTROPY = Buffer.from(
   "ai-pet-world/stage4-v2/controlled-smoke-ticket/v1",
@@ -602,7 +603,7 @@ function readBoundJson(root, binding) { bindProjectFile(root, binding.path, bind
 function bindAbsolute(root, absolute) { return Object.freeze({ path: projectLogicalPath(root, absolute), sha256: sha256File(absolute), byteSize: fs.statSync(absolute).size }); }
 function validateBinding(value, label) { assert.ok(value && typeof value.path === "string" && SHA256.test(value.sha256 ?? ""), `${label} is invalid`); }
 function validateBindingList(values, label) { assert.ok(Array.isArray(values) && values.length > 0, `${label} is empty`); const paths = new Set(); for (const value of values) { validateBinding(value, label); assert.equal(paths.has(value.path), false, `${label} contains duplicate path`); paths.add(value.path); } }
-function validateProgramLineage(value) { assert.ok(value && !Array.isArray(value)); for (const [role, binding] of Object.entries(value)) { requireId(role, "program role"); validateBinding(binding, role); } }
+function validateProgramLineage(value) { assert.ok(value && !Array.isArray(value)); for (const [role, binding] of Object.entries(value)) { assert.match(role, SAFE_PROGRAM_ROLE, "program role is invalid"); validateBinding(binding, role); } }
 function validateDerivedExecution(value, outputDirectory) {
   assert.ok(value && typeof value === "object" && !Array.isArray(value), "derived trainer execution is missing");
   requireId(value.ticketId, "derived trainer ticketId");

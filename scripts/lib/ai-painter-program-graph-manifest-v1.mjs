@@ -11,9 +11,80 @@ import {
 
 export const AI_PAINTER_PROGRAM_GRAPH_SCHEMA =
   "ai-painter-program-graph-manifest-v1";
+export const STAGE4_V2_QUALIFICATION_PROGRAM_GRAPH_ID =
+  "stage4-v2-readonly-gpu-qualification-program-graph-v1";
+export const STAGE4_V2_SMOKE_PROGRAM_GRAPH_ID =
+  "stage4-v2-controlled-smoke-program-graph-v1";
+
+const QUALIFICATION_CONTINUATION_PATH =
+  "scripts/lib/ai-painter-stage4-v2-qualification-continuation-v1.mjs";
+const AUTONOMOUS_CLOSED_LOOP_PATH =
+  "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs";
+const SMOKE_PLANNER_PATH = "scripts/plan-ai-painter-stage4-v2-controlled-smoke.mjs";
+const SMOKE_BACKGROUND_LAUNCHER_PATH =
+  "scripts/launch-ai-painter-stage4-v2-controlled-smoke-background.mjs";
+const SMOKE_CHILD_RUNNER_PATH = "scripts/run-ai-painter-stage4-v2-controlled-smoke.mjs";
+const SMOKE_FORMAL_PLANNER_PATH =
+  "scripts/plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs";
+const SMOKE_FAILURE_ADJUDICATOR_PATH =
+  "scripts/adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs";
+const QUALIFICATION_FAILURE_ADJUDICATOR_PATH =
+  "scripts/adjudicate-ai-painter-stage4-v2-readonly-gpu-qualification-failure.mjs";
+const SMOKE_ADAPTER_PATH =
+  "scripts/lib/ai-painter-stage4-v2-controlled-smoke-adapters-v1.mjs";
 
 const SAFE_ROLE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u;
 const JS_EXTENSIONS = new Set([".mjs", ".js", ".cjs", ".json"]);
+
+export function buildStage4V2QualificationProgramGraph({
+  projectRoot = process.cwd(), programLineage,
+} = {}) {
+  return buildAiPainterProgramGraphManifest({
+    projectRoot,
+    ...stage4V2GraphDefinition({
+      graphId: STAGE4_V2_QUALIFICATION_PROGRAM_GRAPH_ID,
+      programLineage,
+    }),
+  });
+}
+
+export function validateStage4V2QualificationProgramGraph({
+  projectRoot = process.cwd(), manifestBinding, programLineage,
+} = {}) {
+  return validateAiPainterProgramGraphManifest({
+    projectRoot,
+    manifestBinding,
+    ...stage4V2GraphDefinition({
+      graphId: STAGE4_V2_QUALIFICATION_PROGRAM_GRAPH_ID,
+      programLineage,
+    }),
+  });
+}
+
+export function buildStage4V2SmokeProgramGraph({
+  projectRoot = process.cwd(), programLineage,
+} = {}) {
+  return buildAiPainterProgramGraphManifest({
+    projectRoot,
+    ...stage4V2GraphDefinition({
+      graphId: STAGE4_V2_SMOKE_PROGRAM_GRAPH_ID,
+      programLineage,
+    }),
+  });
+}
+
+export function validateStage4V2SmokeProgramGraph({
+  projectRoot = process.cwd(), manifestBinding, programLineage,
+} = {}) {
+  return validateAiPainterProgramGraphManifest({
+    projectRoot,
+    manifestBinding,
+    ...stage4V2GraphDefinition({
+      graphId: STAGE4_V2_SMOKE_PROGRAM_GRAPH_ID,
+      programLineage,
+    }),
+  });
+}
 
 export function buildAiPainterProgramGraphManifest({
   projectRoot = process.cwd(),
@@ -158,6 +229,10 @@ export function validateAiPainterProgramGraphManifest({
   projectRoot = process.cwd(),
   manifestBinding,
   expectedGraphId = null,
+  graphId = null,
+  entrypoints = null,
+  dynamicSuccessors = null,
+  nonLiteralDynamicDispatches = null,
 } = {}) {
   assert.ok(manifestBinding?.path && manifestBinding?.sha256,
     "program graph manifest binding is missing");
@@ -167,31 +242,82 @@ export function validateAiPainterProgramGraphManifest({
     rebound.path, { mustExist: true, kind: "file" }));
   assert.equal(manifest.schemaVersion, AI_PAINTER_PROGRAM_GRAPH_SCHEMA,
     "program graph manifest schema mismatch");
-  if (expectedGraphId !== null) {
-    assert.equal(manifest.graphId, expectedGraphId,
+  const requiredGraphId = graphId ?? expectedGraphId;
+  if (requiredGraphId !== null) {
+    assert.equal(manifest.graphId, requiredGraphId,
       "program graph manifest identity mismatch");
   }
+  const useDeclaredProfile = entrypoints !== null
+    || dynamicSuccessors !== null
+    || nonLiteralDynamicDispatches !== null;
   const rebuilt = buildAiPainterProgramGraphManifest({
     projectRoot,
     graphId: manifest.graphId,
-    entrypoints: manifest.entrypoints?.map(({ role, path: value, language }) => ({
-      role, path: value, language,
-    })),
-    dynamicSuccessors: manifest.dynamicSuccessors?.map(
-      ({ role, path: value, language }) => ({ role, path: value, language }),
-    ),
-    nonLiteralDynamicDispatches: manifest.nonLiteralDynamicDispatches?.map(
-      ({ role, importer, targets, siteCount }) => ({
-        role,
-        importerPath: importer.path,
-        targetPaths: targets.map((target) => target.path),
-        siteCount,
-      }),
-    ),
+    entrypoints: useDeclaredProfile ? entrypoints
+      : manifest.entrypoints?.map(({ role, path: value, language }) => ({
+          role, path: value, language,
+        })),
+    dynamicSuccessors: useDeclaredProfile ? dynamicSuccessors
+      : manifest.dynamicSuccessors?.map(
+          ({ role, path: value, language }) => ({ role, path: value, language }),
+        ),
+    nonLiteralDynamicDispatches: useDeclaredProfile
+      ? nonLiteralDynamicDispatches
+      : manifest.nonLiteralDynamicDispatches?.map(
+          ({ role, importer, targets, siteCount }) => ({
+            role,
+            importerPath: importer.path,
+            targetPaths: targets.map((target) => target.path),
+            siteCount,
+          }),
+        ),
   });
   assert.deepEqual(manifest, rebuilt,
     "program graph manifest differs from the current import closure");
   return Object.freeze({ manifest: Object.freeze(manifest), binding: rebound });
+}
+
+function stage4V2GraphDefinition({ graphId, programLineage }) {
+  assert.ok(programLineage && typeof programLineage === "object"
+    && !Array.isArray(programLineage),
+  "Stage4 V2 program lineage is missing");
+  const entrypoints = Object.entries(programLineage).map(([role, binding]) => ({
+    role,
+    path: binding?.path,
+  }));
+  return {
+    graphId,
+    entrypoints,
+    dynamicSuccessors: [
+      { role: "qualificationContinuationRuntime", path: QUALIFICATION_CONTINUATION_PATH },
+      { role: "autonomousClosedLoopRuntime", path: AUTONOMOUS_CLOSED_LOOP_PATH },
+      { role: "controlledSmokePhaseAdapter", path: SMOKE_ADAPTER_PATH },
+      { role: "controlledSmokePlanner", path: SMOKE_PLANNER_PATH },
+      { role: "controlledSmokeBackgroundLauncher", path: SMOKE_BACKGROUND_LAUNCHER_PATH },
+      { role: "controlledSmokeChildRunner", path: SMOKE_CHILD_RUNNER_PATH },
+      { role: "controlledSmokeFormalPlanner", path: SMOKE_FORMAL_PLANNER_PATH },
+      { role: "controlledSmokeFailureAdjudicator", path: SMOKE_FAILURE_ADJUDICATOR_PATH },
+      { role: "qualificationFailureAdjudicator", path: QUALIFICATION_FAILURE_ADJUDICATOR_PATH },
+    ],
+    nonLiteralDynamicDispatches: [
+      {
+        role: "qualificationContinuationDispatch",
+        importerPath: QUALIFICATION_CONTINUATION_PATH,
+        targetPaths: [
+          SMOKE_PLANNER_PATH,
+          SMOKE_BACKGROUND_LAUNCHER_PATH,
+          QUALIFICATION_FAILURE_ADJUDICATOR_PATH,
+        ],
+        siteCount: 1,
+      },
+      {
+        role: "closedLoopPhaseAdapterDispatch",
+        importerPath: AUTONOMOUS_CLOSED_LOOP_PATH,
+        targetPaths: [SMOKE_ADAPTER_PATH],
+        siteCount: 1,
+      },
+    ],
+  };
 }
 
 function normalizeRoots(root, entries, label) {

@@ -28,6 +28,7 @@ import {
   SMOKE_BACKGROUND_LAUNCH_ACTION,
   SMOKE_RUN_TASK,
   STAGE4_V2_CAPABILITY,
+  validateStage4V2SmokePackagePayload,
   writeExclusiveJson,
   writeJsonAtomic,
 } from "./lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
@@ -120,6 +121,12 @@ export async function runStage4V2ControlledSmoke({
   assert.equal(smokeManifest.schemaVersion,
     "ai-painter-stage4-v2-controlled-smoke-package-manifest-v1");
   const payload = readBoundJson(root, smokeManifest.packagePayload);
+  assert.deepEqual(payload.programGraphManifest, smokeManifest.programGraphManifest,
+    "Smoke payload/manifest program graph binding mismatch");
+  validateStage4V2SmokePackagePayload(payload, {
+    projectRoot: root,
+    verifyEvidence: true,
+  });
   assert.equal(payload.programLineage.outerRunner.path,
     "scripts/run-ai-painter-stage4-v2-controlled-smoke.mjs");
   assert.equal(payload.programLineage.outerRunner.sha256, sha256File(ownPath));

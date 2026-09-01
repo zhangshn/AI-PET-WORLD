@@ -23,6 +23,9 @@ import {
   resolveProjectPath,
   sha256File,
 } from "./lib/ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs";
+import {
+  buildStage4V2QualificationProgramGraph,
+} from "./lib/ai-painter-program-graph-manifest-v1.mjs";
 
 const fixedNow = new Date("2026-09-01T02:00:00.000Z");
 const results = [];
@@ -166,6 +169,30 @@ await test("missing process start identity fails closed and is not retried", asy
     /failed-closed/u,
   );
   assert.equal(spawnCount, 1);
+});
+
+await test("program graph dependency replacement fails before process creation", async () => {
+  const fixture = buildFixture("program-graph-dependency-tamper");
+  fs.appendFileSync(path.join(
+    fixture.root,
+    "scripts/lib/ai-painter-stage4-v2-qualification-continuation-v1.mjs",
+  ), "// tampered after qualification materialization\n", "utf8");
+  let spawnCount = 0;
+  await assert.rejects(
+    launchStage4V2ReadonlyGpuQualificationBackground({
+      projectRoot: fixture.root,
+      currentRegistryReader: async () => fixture.current,
+      ticketValidator: () => ({ status: "verified_for_test" }),
+      backgroundSpawner: async () => {
+        spawnCount += 1;
+        return fakeSpawnResult(44004);
+      },
+      now: () => fixedNow,
+    }),
+    /program graph manifest differs|SHA-256/u,
+  );
+  assert.equal(spawnCount, 0,
+    "program graph replacement reached qualification process creation");
 });
 
 await test("crash after intent resumes exactly one pre-start launch", async () => {
@@ -500,6 +527,7 @@ function buildFixture(suffix) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), `ai-painter-v2-launch-${suffix}-`));
   writeText(root, "scripts/launch-ai-painter-stage4-v2-readonly-gpu-qualification-background.mjs", "// fixture launcher\n");
   writeText(root, "scripts/run-ai-painter-stage4-v2-readonly-gpu-qualification.mjs", "// fixture runner\n");
+  writeProgramGraphFixtureFiles(root);
   fs.mkdirSync(path.join(root, ".runtime", "ai-painter"), { recursive: true });
 
   const packageId = `stage4-v2-readonly-gpu-package-${suffix}`;
@@ -511,8 +539,16 @@ function buildFixture(suffix) {
   const ticketPath = `${packageDirectory}/pre-release-qualification-ticket.json`;
   const manifestPath = `${packageDirectory}/package-manifest.json`;
   const terminalPath = `${packageDirectory}/materialization-terminal.json`;
+  const programGraphPath = `${packageDirectory}/program-graph-manifest.json`;
   const launcher = bindProjectFile(root, "scripts/launch-ai-painter-stage4-v2-readonly-gpu-qualification-background.mjs");
   const runner = bindProjectFile(root, "scripts/run-ai-painter-stage4-v2-readonly-gpu-qualification.mjs");
+  const programLineage = { backgroundLauncher: launcher, nodeRunner: runner };
+  const programGraph = buildStage4V2QualificationProgramGraph({
+    projectRoot: root,
+    programLineage,
+  });
+  writeJson(root, programGraphPath, programGraph);
+  const programGraphBinding = bindProjectFile(root, programGraphPath);
   const payload = {
     schemaVersion: "ai-painter-stage4-v2-readonly-gpu-package-payload-v1",
     status: "materialized_not_executed",
@@ -522,7 +558,8 @@ function buildFixture(suffix) {
     executionClass: "readonly_gpu_qualification",
     outputDirectory,
     preflightDirectory,
-    programLineage: { backgroundLauncher: launcher, nodeRunner: runner },
+    programLineage,
+    programGraphManifest: programGraphBinding,
     failurePolicy: { automaticRetryAllowed: false, ownerAuthorizationRequired: false },
     executionBoundary: { trainingAllowed: false, smokeAllowed: false, stage0Allowed: false },
   };
@@ -537,6 +574,7 @@ function buildFixture(suffix) {
     runId,
     capabilityVersion: STAGE4_V2_CAPABILITY,
     packagePayload: payloadBinding,
+    programGraphManifest: programGraphBinding,
     preReleaseQualificationTicket: ticketBinding,
     outputDirectory,
     outputDirectoryCreated: false,
@@ -596,6 +634,28 @@ function buildFixture(suffix) {
     manifestBinding,
     current,
   };
+}
+
+function writeProgramGraphFixtureFiles(root) {
+  writeText(root,
+    "scripts/lib/ai-painter-stage4-v2-qualification-continuation-v1.mjs",
+    "export async function dispatch(url) { return import(url.href); }\n");
+  writeText(root,
+    "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs",
+    "export async function dispatch(url) { return import(url); }\n");
+  writeText(root,
+    "scripts/launch-ai-painter-stage4-v2-controlled-smoke-background.mjs",
+    "export async function launch() { return import('./run-ai-painter-stage4-v2-controlled-smoke.mjs'); }\n");
+  writeText(root,
+    "scripts/run-ai-painter-stage4-v2-controlled-smoke.mjs",
+    "export async function run(ok) { return ok ? import('./plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs') : import('./adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs'); }\n");
+  for (const logicalPath of [
+    "scripts/plan-ai-painter-stage4-v2-controlled-smoke.mjs",
+    "scripts/plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
+    "scripts/adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs",
+    "scripts/adjudicate-ai-painter-stage4-v2-readonly-gpu-qualification-failure.mjs",
+    "scripts/lib/ai-painter-stage4-v2-controlled-smoke-adapters-v1.mjs",
+  ]) writeText(root, logicalPath, `fixture:${logicalPath}\n`);
 }
 
 function fakeSpawnResult(processId) {

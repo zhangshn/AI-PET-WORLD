@@ -1628,6 +1628,8 @@ function loadPackage(context) {
   const manifest = readJsonObject(path.join(packageRoot, "smoke-package-manifest.json"));
   assert.equal(manifest.schemaVersion, "ai-painter-stage4-v2-controlled-smoke-package-manifest-v1");
   assert.deepEqual(manifest.packagePayload, binding);
+  assert.deepEqual(manifest.programGraphManifest, payload.programGraphManifest,
+    "Smoke manifest/payload program graph binding mismatch");
   const ticket = readBoundJson(context.projectRoot, manifest.smokeTicket);
   validateStage4V2SmokePackagePayload(payload, { projectRoot: context.projectRoot, verifyEvidence: true });
   return { payload, packageBinding: binding, packageRoot, manifest, ticket };

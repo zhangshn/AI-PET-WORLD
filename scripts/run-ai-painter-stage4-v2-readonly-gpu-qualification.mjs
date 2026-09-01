@@ -28,6 +28,9 @@ import {
   MATERIALIZED_RUN_TASK,
 } from "./plan-ai-painter-stage4-v2-readonly-gpu-qualification.mjs";
 import {
+  validateStage4V2QualificationProgramGraph,
+} from "./lib/ai-painter-program-graph-manifest-v1.mjs";
+import {
   validateStage4V2BackgroundLaunchIntent,
 } from "./launch-ai-painter-stage4-v2-readonly-gpu-qualification-background.mjs";
 import {
@@ -193,6 +196,16 @@ export async function runStage4V2ReadonlyGpuQualification({
     context.packagePayload = packagePayload;
     context.ticket = ticket;
     validatePackagePayload(packagePayload, manifest);
+    assert.deepEqual(
+      packagePayload.programGraphManifest,
+      manifest.programGraphManifest,
+      "qualification payload/manifest program graph binding mismatch",
+    );
+    validateStage4V2QualificationProgramGraph({
+      projectRoot: root,
+      manifestBinding: packagePayload.programGraphManifest,
+      programLineage: packagePayload.programLineage,
+    });
     const ticketValidation = validateStage4V2PreReleaseQualificationTicket({
       projectRoot: root,
       ticket,
@@ -1232,6 +1245,9 @@ function verifyPackageManifest(manifest, registry) {
   for (const field of ["gpuStarted", "optimizerCreated", "backwardExecuted", "weightsModified", "trainingStarted"]) {
     assert.equal(manifest[field], false, `materialized manifest ${field} must be false`);
   }
+  assert.ok(manifest.programGraphManifest?.path
+    && manifest.programGraphManifest?.sha256,
+  "qualification program graph manifest binding is missing");
 }
 
 function validatePackagePayload(payload, manifest) {
@@ -1263,6 +1279,9 @@ function validatePackagePayload(payload, manifest) {
   assert.equal(payload.failurePolicy?.historicalDirectoryScanAllowed, false);
   assert.equal(payload.failurePolicy?.callerVerifiedBooleanTrusted, false);
   assert.equal(payload.failurePolicy?.ownerAuthorizationRequired, false);
+  assert.ok(payload.programGraphManifest?.path
+    && payload.programGraphManifest?.sha256,
+  "qualification payload program graph binding is missing");
 }
 
 function verifyProgramLineageRoles(programLineage) {

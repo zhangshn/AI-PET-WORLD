@@ -20,6 +20,7 @@ import {
 const PREFIX_HOOKS = [
   "afterMaterializationIntentPersisted",
   "afterPackageDirectoryCreated",
+  "afterProgramGraphManifestPersisted",
   "afterPackagePayloadPersisted",
   "afterQualificationTicketPersisted",
   "afterTicketRegistered",
@@ -104,6 +105,7 @@ process.stdout.write(
 async function testTamperedMaterializationPrefixFailsClosed() {
   const cases = [
     ["intent", "afterMaterializationIntentPersisted", null, "ticketNonce"],
+    ["program graph", "afterProgramGraphManifestPersisted", "program-graph-manifest.json", "graphContentSha256"],
     ["payload", "afterPackagePayloadPersisted", "package-payload.json", "status"],
     ["ticket", "afterQualificationTicketPersisted", "pre-release-qualification-ticket.json", "status"],
     ["manifest", "afterPackageManifestPersisted", "package-manifest.json", "status"],
@@ -309,6 +311,30 @@ function createFixture() {
     "ml/ai-painter/successor.py",
     "ml/ai-painter/trainer.py",
     "ml/ai-painter/trainer-support.py",
+  ]) writeBytes(logicalPath, `fixture:${logicalPath}\n`);
+
+  writeBytes(
+    "scripts/lib/ai-painter-stage4-v2-qualification-continuation-v1.mjs",
+    "export async function dispatch(moduleUrl) { return import(moduleUrl.href); }\n",
+  );
+  writeBytes(
+    "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs",
+    "export async function dispatch(moduleUrl) { return import(moduleUrl); }\n",
+  );
+  writeBytes(
+    "scripts/launch-ai-painter-stage4-v2-controlled-smoke-background.mjs",
+    "export async function launch() { return import('./run-ai-painter-stage4-v2-controlled-smoke.mjs'); }\n",
+  );
+  writeBytes(
+    "scripts/run-ai-painter-stage4-v2-controlled-smoke.mjs",
+    "export async function run(ok) { return ok ? import('./plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs') : import('./adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs'); }\n",
+  );
+  for (const logicalPath of [
+    "scripts/plan-ai-painter-stage4-v2-controlled-smoke.mjs",
+    "scripts/plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
+    "scripts/adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs",
+    "scripts/adjudicate-ai-painter-stage4-v2-readonly-gpu-qualification-failure.mjs",
+    "scripts/lib/ai-painter-stage4-v2-controlled-smoke-adapters-v1.mjs",
   ]) writeBytes(logicalPath, `fixture:${logicalPath}\n`);
 
   const condition = writeObject("data/condition-contract.json");

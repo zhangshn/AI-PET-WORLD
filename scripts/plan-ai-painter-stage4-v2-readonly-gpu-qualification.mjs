@@ -22,7 +22,7 @@ import {
   captureImmutableCurrentRegistryEvidence,
 } from "./lib/ai-painter-immutable-current-registry-evidence-v1.mjs";
 import {
-  buildAiPainterProgramGraphManifest,
+  buildStage4V2QualificationProgramGraph,
 } from "./lib/ai-painter-program-graph-manifest-v1.mjs";
 import {
   DEFAULT_STAGE4_V2_QUALIFICATION_LEDGER_PATH,
@@ -135,7 +135,10 @@ export async function materializeStage4V2ReadonlyGpuQualification({
     keyProtector: machineKeyProtector,
   });
   const programLineage = collectProgramLineage(root, parent.contract);
-  const programGraph = buildQualificationProgramGraph(root, programLineage);
+  const programGraph = buildStage4V2QualificationProgramGraph({
+    projectRoot: root,
+    programLineage,
+  });
   const inputEvidence = uniqueBindings([
     parent.parentRegistryTransaction,
     parent.parentRegistrySnapshot,

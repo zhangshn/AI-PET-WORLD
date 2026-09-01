@@ -10,6 +10,9 @@ import {
   MATERIALIZED_RUN_TASK,
 } from "./plan-ai-painter-stage4-v2-readonly-gpu-qualification.mjs";
 import {
+  validateStage4V2QualificationProgramGraph,
+} from "./lib/ai-painter-program-graph-manifest-v1.mjs";
+import {
   QUALIFICATION_FAILURE_ACTION,
   QUALIFICATION_SUCCESS_PLAN_ACTION,
   continueStage4V2AfterReadonlyGpuQualification,
@@ -128,6 +131,16 @@ export async function launchStage4V2ReadonlyGpuQualificationBackground({
   const packagePayload = readBoundProjectJson(root, manifest.packagePayload);
   const ticket = readBoundProjectJson(root, manifest.preReleaseQualificationTicket);
   verifyLaunchablePayload(packagePayload, manifest);
+  assert.deepEqual(
+    packagePayload.programGraphManifest,
+    manifest.programGraphManifest,
+    "qualification payload/manifest program graph binding mismatch",
+  );
+  validateStage4V2QualificationProgramGraph({
+    projectRoot: root,
+    manifestBinding: packagePayload.programGraphManifest,
+    programLineage: packagePayload.programLineage,
+  });
   ticketValidator({
     projectRoot: root,
     ticket,
@@ -1566,6 +1579,9 @@ function verifyLaunchableManifest(manifest, registry) {
   assert.equal(manifest.ownerAuthorizationRequired, false);
   assert.equal(manifest.gpuStarted, false);
   assert.equal(manifest.trainingStarted, false);
+  assert.ok(manifest.programGraphManifest?.path
+    && manifest.programGraphManifest?.sha256,
+  "qualification program graph manifest binding is missing");
 }
 
 function verifyLaunchablePayload(payload, manifest) {
@@ -1584,6 +1600,9 @@ function verifyLaunchablePayload(payload, manifest) {
   assert.equal(payload.executionBoundary?.trainingAllowed, false);
   assert.equal(payload.executionBoundary?.smokeAllowed, false);
   assert.equal(payload.executionBoundary?.stage0Allowed, false);
+  assert.ok(payload.programGraphManifest?.path
+    && payload.programGraphManifest?.sha256,
+  "qualification payload program graph binding is missing");
 }
 
 function validateSpawnResult(launched) {

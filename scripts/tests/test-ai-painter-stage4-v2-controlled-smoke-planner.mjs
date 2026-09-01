@@ -11,6 +11,12 @@ import {
 import {
   readSmokePayload,
 } from "../lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
+import {
+  buildStage4V2QualificationProgramGraph,
+} from "../lib/ai-painter-program-graph-manifest-v1.mjs";
+import {
+  bindProjectFile,
+} from "../lib/ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs";
 
 const SOURCE_ROOT = process.cwd();
 const CAPABILITY = "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
@@ -23,6 +29,23 @@ const KEY_PROTECTOR = {
   protect: (bytes) => Buffer.from(bytes),
   unprotect: (bytes) => Buffer.from(bytes),
 };
+const QUALIFICATION_PROGRAM_PATHS = Object.freeze({
+  materializer: "scripts/plan-ai-painter-stage4-v2-readonly-gpu-qualification.mjs",
+  backgroundLauncher: "scripts/launch-ai-painter-stage4-v2-readonly-gpu-qualification-background.mjs",
+  nodeRunner: "scripts/run-ai-painter-stage4-v2-readonly-gpu-qualification.mjs",
+  ticketCore: "scripts/lib/ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs",
+  qualificationLifecycle: "scripts/lib/ai-painter-stage4-v2-qualification-lifecycle-v1.mjs",
+  pythonRunner: "ml/ai-painter/scripts/run_stage4_semantic_transport_v2_readonly_gpu_qualification.py",
+  modelFactory: "ml/ai-painter/src/ai_painter/complete_world/model.py",
+  successorModule: "scripts/plan-ai-painter-stage4-v2-controlled-smoke.mjs",
+  trainer: "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+  trainerSupport: "ml/ai-painter/scripts/ai_painter_stage4_semantic_transport_v2_trainer_support.py",
+});
+const SOURCE_QUALIFICATION_PROGRAM_GRAPH = buildStage4V2QualificationProgramGraph({
+  projectRoot: SOURCE_ROOT,
+  programLineage: Object.fromEntries(Object.entries(QUALIFICATION_PROGRAM_PATHS)
+    .map(([role, logicalPath]) => [role, bindProjectFile(SOURCE_ROOT, logicalPath)])),
+});
 
 const positive = fixture();
 try {
@@ -325,7 +348,7 @@ process.stdout.write(`Stage4 V2 Smoke real planner: 2 positive + ${prefixCrashHo
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "stage4-v2-smoke-planner-"));
-  for (const relative of [
+  for (const relative of new Set([
     "data/ai-painter/system-governance/ai-painter-autonomous-closed-loop-contract-v1.json",
     "scripts/lib/ai-painter-stage4-v2-controlled-smoke-adapters-v1.mjs",
     "scripts/lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs",
@@ -345,7 +368,8 @@ function fixture() {
     "src/server/ai-painter-current-execution-registry.mjs",
     "scripts/run-ai-painter-stage4-v2-controlled-smoke.mjs",
     "scripts/launch-ai-painter-stage4-v2-controlled-smoke-background.mjs",
-  ]) copy(root, relative);
+    ...SOURCE_QUALIFICATION_PROGRAM_GRAPH.files.map((entry) => entry.path),
+  ])) copy(root, relative);
   write(root, "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v6.json", {});
 
   const evidence = (name, value = { status: "fixture" }) => binding(
@@ -409,14 +433,19 @@ function fixture() {
       runId: "qualification-run",
     });
   const qualificationTerminal = binding(root, qualificationTerminalPath);
-  const qualificationProgramLineage = {
-    trainer: binding(root, path.join(root,
-      "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py")),
-    trainerSupport: binding(root, path.join(root,
-      "ml/ai-painter/scripts/ai_painter_stage4_semantic_transport_v2_trainer_support.py")),
-    modelFactory: binding(root, path.join(root,
-      "ml/ai-painter/src/ai_painter/complete_world/model.py")),
-  };
+  const qualificationProgramLineage = Object.fromEntries(
+    Object.entries(QUALIFICATION_PROGRAM_PATHS).map(([role, logicalPath]) => [
+      role,
+      binding(root, path.join(root, ...logicalPath.split("/"))),
+    ]),
+  );
+  const qualificationProgramGraphPath = write(root,
+    ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages/qualification-package/program-graph-manifest.json",
+    buildStage4V2QualificationProgramGraph({
+      projectRoot: root,
+      programLineage: qualificationProgramLineage,
+    }));
+  const qualificationProgramGraph = binding(root, qualificationProgramGraphPath);
   const qualificationPayloadPath = write(root,
     ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages/qualification-package/package-payload.json", {
       schemaVersion: "ai-painter-stage4-v2-readonly-gpu-package-payload-v1",
@@ -434,6 +463,7 @@ function fixture() {
         threshold,
       ],
       programLineage: qualificationProgramLineage,
+      programGraphManifest: qualificationProgramGraph,
     });
   const qualificationPayload = binding(root, qualificationPayloadPath);
   write(root,
@@ -441,6 +471,7 @@ function fixture() {
       schemaVersion: "ai-painter-stage4-v2-readonly-gpu-package-manifest-v1",
       packageId: "qualification-package",
       packagePayload: qualificationPayload,
+      programGraphManifest: qualificationProgramGraph,
     });
 
   const capsule = evidence("qualification-capsule.json");
