@@ -33,6 +33,7 @@ const checks = [
     "ml/ai-painter/tests/test_stage4_semantic_transport_v2_readonly_gpu_qualification.py",
     "ml/ai-painter/tests/test_stage4_semantic_transport_v2_controlled_smoke_materialization.py",
   ]],
+  ["program-graph-manifest-regression", node, ["scripts/tests/test-ai-painter-program-graph-manifest-v1.mjs"]],
   ["readonly-gpu-qualification-node-regression", node, ["scripts/test-ai-painter-stage4-v2-readonly-gpu-node.mjs"]],
   ["readonly-gpu-qualification-issuer-publication", node, ["scripts/tests/test-ai-painter-stage4-v2-readonly-gpu-issuer-publication.mjs"]],
   ["readonly-gpu-qualification-materialization-recovery", node, ["scripts/tests/test-ai-painter-stage4-v2-readonly-gpu-materialization-recovery.mjs"]],

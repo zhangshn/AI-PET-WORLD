@@ -201,6 +201,7 @@ const prefixCrashHooks = [
   "afterGenericPackageRootCreated",
   "afterGenericPackagePersisted",
   "afterGenericPackageMaterialized",
+  "afterProgramGraphManifestPersisted",
   "afterPayloadPersisted",
   "afterTicketPersisted",
   "afterTicketRegistered",
@@ -314,7 +315,9 @@ for (const [name, mutate, pattern] of [
   ["style_review_program_replacement", (f) => mutateValidBytes(f,
     ".runtime/fixtures/style-feature-extractor.mjs"), /style feature extractor SHA-256 mismatch/u],
   ["qualification_program_replacement", (f) => mutateValidBytes(f,
-    "ml/ai-painter/src/ai_painter/complete_world/model.py"), /qualification programLineage\.modelFactory SHA-256 mismatch/u],
+    "ml/ai-painter/src/ai_painter/complete_world/model.py"), /program graph manifest differs|qualification programLineage\.modelFactory SHA-256 mismatch/u],
+  ["qualification_transitive_program_replacement", (f) => mutateValidBytes(f,
+    "scripts/lib/ai-painter-program-event-store.mjs"), /program graph manifest differs/u],
   ["review_threshold_replacement", (f) => mutateValidBytes(f,
     "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json"), /qualification inputEvidence.*SHA-256 mismatch|machine review threshold contract SHA-256 mismatch/u],
   ["threshold", (f) => {
@@ -344,7 +347,7 @@ for (const [name, mutate, pattern] of [
   } finally { negative.cleanup(); }
 }
 
-process.stdout.write(`Stage4 V2 Smoke real planner: 2 positive + ${prefixCrashHooks.length} pre-terminal crash recoveries + 15 pre-materialization negative cases + 4 post-materialization program-lineage substitutions passed.\n`);
+process.stdout.write(`Stage4 V2 Smoke real planner: 2 positive + ${prefixCrashHooks.length} pre-terminal crash recoveries + 16 pre-materialization negative cases + 4 post-materialization program-lineage substitutions passed.\n`);
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "stage4-v2-smoke-planner-"));
