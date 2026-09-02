@@ -637,6 +637,9 @@ function buildFixture(suffix) {
 }
 
 function writeProgramGraphFixtureFiles(root) {
+  writeText(root, "scripts/lib/ai-painter-python-import-ast-v1.py",
+    fs.readFileSync(path.join(process.cwd(), "scripts", "lib",
+      "ai-painter-python-import-ast-v1.py"), "utf8"));
   writeText(root,
     "scripts/lib/ai-painter-stage4-v2-qualification-continuation-v1.mjs",
     "export async function dispatch(url) { return import(url.href); }\n");

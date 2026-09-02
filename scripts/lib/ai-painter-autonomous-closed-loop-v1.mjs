@@ -498,14 +498,14 @@ function ensureTerminalEvidence(store, spec, state, continuity, recordedAtUtc) {
 
 function recordCompletedReviewState(store, spec, result, evidence, recordedAtUtc) {
   const reviewState = result.status === "passed"
-    ? (result.reviewOutcome === "machine_reviews_failed" ? "review_completed_with_failed_result" : "review_passed")
+    ? (isCompletedMachineReviewFailure(result.reviewOutcome) ? "review_completed_with_failed_result" : "review_passed")
     : result.failureKind === "evidence" ? "review_evidence_conflict" : "review_failed";
   ensureCompletedReviewState(store, spec, result, evidence, recordedAtUtc, reviewState);
 }
 
 function ensureCompletedReviewState(store, spec, result, evidence, recordedAtUtc, expectedState = null) {
   const reviewState = expectedState ?? (result.status === "passed"
-    ? (result.reviewOutcome === "machine_reviews_failed" ? "review_completed_with_failed_result" : "review_passed")
+    ? (isCompletedMachineReviewFailure(result.reviewOutcome) ? "review_completed_with_failed_result" : "review_passed")
     : result.failureKind === "evidence" ? "review_evidence_conflict" : "review_failed");
   const statePath = path.join(store.executionRoot, "review-state.json");
   if (fs.existsSync(statePath)) {
@@ -514,6 +514,13 @@ function ensureCompletedReviewState(store, spec, result, evidence, recordedAtUtc
     assert(["review_pending", "review_running"].includes(current.state), "completed review state conflicts with recovered result");
   }
   recordReviewState(store, spec, reviewState, recordedAtUtc, evidence.sha256);
+}
+
+function isCompletedMachineReviewFailure(reviewOutcome) {
+  return [
+    "machine_reviews_failed",
+    "stage4_v2_machine_review_failed",
+  ].includes(reviewOutcome);
 }
 
 function appendRecoveryAudit(executionRoot, action, recordedAtUtc, detail) {

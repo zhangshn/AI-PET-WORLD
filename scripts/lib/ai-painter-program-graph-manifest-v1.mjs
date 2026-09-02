@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import * as acorn from "acorn";
 
 import {
   bindProjectFile,
@@ -35,6 +37,9 @@ const SMOKE_ADAPTER_PATH =
 
 const SAFE_ROLE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u;
 const JS_EXTENSIONS = new Set([".mjs", ".js", ".cjs", ".json"]);
+const PYTHON_AST_HELPER_PATH =
+  "scripts/lib/ai-painter-python-import-ast-v1.py";
+const PYTHON_IMPORT_AST_CACHE = new Map();
 
 export function buildStage4V2QualificationProgramGraph({
   projectRoot = process.cwd(), programLineage,
@@ -95,7 +100,10 @@ export function buildAiPainterProgramGraphManifest({
 } = {}) {
   const root = path.resolve(projectRoot);
   assert.match(graphId ?? "", SAFE_ROLE, "program graph identity is invalid");
-  const roots = normalizeRoots(root, entrypoints, "entrypoint");
+  const roots = normalizeRoots(root, [
+    ...(entrypoints ?? []),
+    { role: "programGraphPythonAstParser", path: PYTHON_AST_HELPER_PATH },
+  ], "entrypoint");
   const successors = normalizeRoots(root, dynamicSuccessors, "dynamic successor");
   const rootByPath = new Map();
   for (const value of [...roots, ...successors]) {
@@ -140,7 +148,7 @@ export function buildAiPainterProgramGraphManifest({
     const source = fs.readFileSync(absolute, "utf8").replace(/^\uFEFF/u, "");
     const imports = language === "javascript"
       ? parseJavascriptImports(source, logicalPath)
-      : parsePythonImports(source, logicalPath);
+      : parsePythonImports(source, logicalPath, root);
     for (const imported of imports) {
       if (imported.kind === "nonliteral_dynamic") {
         const observed = observedNonLiteralDispatches.get(logicalPath) ?? 0;
@@ -368,58 +376,113 @@ function normalizeDispatches(root, values) {
 }
 
 function parseJavascriptImports(source, logicalPath) {
-  const text = stripJavascriptComments(source);
   const values = [];
-  const staticPattern = /\b(?:import|export)\s+(?:[\w*$\s{},]*?\s+from\s+)?["']([^"']+)["']/gu;
-  for (const match of text.matchAll(staticPattern)) {
-    values.push({ kind: "static", specifier: match[1] });
+  let tree;
+  try {
+    tree = acorn.parse(source, {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      allowHashBang: true,
+    });
+  } catch (error) {
+    throw new Error(`program graph JavaScript AST parse failed: ${logicalPath}: ${error.message}`);
   }
-  const dynamicPattern = /\bimport\s*\(\s*([^)]*?)\s*\)/gu;
-  for (const match of text.matchAll(dynamicPattern)) {
-    const expression = match[1].trim();
-    const literal = /^(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)')$/u.exec(expression);
-    if (literal) {
-      values.push({
-        kind: "dynamic_literal",
-        specifier: JSON.parse(literal[1] !== undefined
-          ? `"${literal[1]}"`
-          : `"${literal[2].replaceAll('"', '\\"')}"`),
-      });
-    } else {
-      values.push({
-        kind: "nonliteral_dynamic",
-        specifier: `nonliteral:${logicalPath}`,
-      });
+  walkJavascriptAst(tree, (node) => {
+    if (["ImportDeclaration", "ExportNamedDeclaration", "ExportAllDeclaration"]
+      .includes(node.type) && typeof node.source?.value === "string") {
+      values.push({ kind: "static", specifier: node.source.value });
+      return;
     }
-  }
+    if (node.type === "ImportExpression") {
+      const literal = javascriptStaticString(node.source);
+      values.push(literal === null
+        ? { kind: "nonliteral_dynamic", specifier: `nonliteral:${logicalPath}` }
+        : { kind: "dynamic_literal", specifier: literal });
+      return;
+    }
+    if (node.type === "CallExpression"
+      && node.callee?.type === "Identifier"
+      && node.callee.name === "require") {
+      const literal = node.arguments?.length === 1
+        ? javascriptStaticString(node.arguments[0]) : null;
+      values.push(literal === null
+        ? { kind: "nonliteral_dynamic", specifier: `nonliteral:${logicalPath}` }
+        : { kind: "commonjs_literal", specifier: literal });
+    }
+  });
   return values;
 }
 
-function parsePythonImports(source, logicalPath) {
-  const values = [];
-  const fromPattern = /^\s*from\s+([A-Za-z0-9_.]+)\s+import\s+/gmu;
-  for (const match of source.matchAll(fromPattern)) {
-    values.push({ kind: "python_static", specifier: match[1] });
+function javascriptStaticString(node) {
+  if (node?.type === "Literal" && typeof node.value === "string") return node.value;
+  if (node?.type === "TemplateLiteral"
+    && node.expressions?.length === 0
+    && node.quasis?.length === 1) {
+    return node.quasis[0].value.cooked ?? node.quasis[0].value.raw;
   }
-  const importPattern = /^\s*import\s+([A-Za-z0-9_.,\s]+?)(?:\s+#.*)?$/gmu;
-  for (const match of source.matchAll(importPattern)) {
-    for (const item of match[1].split(",")) {
-      const specifier = item.trim().split(/\s+as\s+/u)[0];
-      if (specifier) values.push({ kind: "python_static", specifier });
+  return null;
+}
+
+function walkJavascriptAst(root, visit) {
+  const pending = [root];
+  while (pending.length > 0) {
+    const node = pending.pop();
+    if (!node || typeof node !== "object") continue;
+    if (typeof node.type === "string") visit(node);
+    for (const [key, value] of Object.entries(node)) {
+      if (["start", "end", "loc", "range"].includes(key)) continue;
+      if (Array.isArray(value)) {
+        for (let index = value.length - 1; index >= 0; index -= 1) {
+          if (value[index] && typeof value[index] === "object") pending.push(value[index]);
+        }
+      } else if (value && typeof value === "object") pending.push(value);
     }
   }
-  const dynamicCount = [
-    /\bimportlib\.import_module\s*\(/gu,
-    /\b__import__\s*\(/gu,
-    /\bspec_from_file_location\s*\(/gu,
-  ].reduce((total, pattern) => total + [...source.matchAll(pattern)].length, 0);
-  for (let index = 0; index < dynamicCount; index += 1) {
-    values.push({
-      kind: "nonliteral_dynamic",
-      specifier: `nonliteral:${logicalPath}`,
-    });
+}
+
+function parsePythonImports(source, logicalPath, root) {
+  const helper = resolveProjectPath(root, PYTHON_AST_HELPER_PATH, {
+    mustExist: true,
+    kind: "file",
+  });
+  const python = process.env.AI_PAINTER_PYTHON
+    ?? (process.platform === "win32"
+      && fs.existsSync(path.join(process.cwd(), "ml", "ai-painter", ".venv", "Scripts", "python.exe"))
+      ? path.join(process.cwd(), "ml", "ai-painter", ".venv", "Scripts", "python.exe")
+      : process.platform === "win32" ? "python" : "python3");
+  const cacheKey = crypto.createHash("sha256")
+    .update(fs.readFileSync(helper))
+    .update("\0")
+    .update(logicalPath)
+    .update("\0")
+    .update(source)
+    .digest("hex");
+  const cached = PYTHON_IMPORT_AST_CACHE.get(cacheKey);
+  if (cached) return cached.map((item) => ({ ...item }));
+  const result = spawnSync(python, [helper], {
+    input: Buffer.from(JSON.stringify({ source, logicalPath }), "utf8"),
+    encoding: "utf8",
+    windowsHide: true,
+    maxBuffer: 4 * 1024 * 1024,
+    env: {
+      ...process.env,
+      PYTHONUTF8: "1",
+      PYTHONIOENCODING: "utf-8",
+    },
+  });
+  assert.equal(result.status, 0,
+    `program graph Python AST parse failed: ${logicalPath}: ${result.stderr || result.error?.message}`);
+  const parsed = JSON.parse(result.stdout);
+  assert.ok(Array.isArray(parsed),
+    `program graph Python AST result is invalid: ${logicalPath}`);
+  for (const item of parsed) {
+    assert.ok(["python_static", "nonliteral_dynamic"].includes(item?.kind)
+      && typeof item.specifier === "string" && item.specifier.length > 0,
+    `program graph Python AST item is invalid: ${logicalPath}`);
   }
-  return values;
+  PYTHON_IMPORT_AST_CACHE.set(cacheKey,
+    parsed.map((item) => Object.freeze({ ...item })));
+  return parsed.map((item) => ({ ...item }));
 }
 
 function resolveJavascriptImport(root, importer, specifier) {
@@ -487,45 +550,6 @@ function addPythonPackageInitializers(root, target, output) {
     }
     directory = path.dirname(directory);
   }
-}
-
-function stripJavascriptComments(source) {
-  let output = "";
-  let quote = null;
-  let escaped = false;
-  for (let index = 0; index < source.length; index += 1) {
-    const current = source[index];
-    const next = source[index + 1];
-    if (quote !== null) {
-      output += current;
-      if (escaped) escaped = false;
-      else if (current === "\\") escaped = true;
-      else if (current === quote) quote = null;
-      continue;
-    }
-    if (["\"", "'", "`"].includes(current)) {
-      quote = current;
-      output += current;
-      continue;
-    }
-    if (current === "/" && next === "/") {
-      while (index < source.length && source[index] !== "\n") index += 1;
-      output += "\n";
-      continue;
-    }
-    if (current === "/" && next === "*") {
-      index += 2;
-      while (index < source.length
-        && !(source[index] === "*" && source[index + 1] === "/")) {
-        output += source[index] === "\n" ? "\n" : " ";
-        index += 1;
-      }
-      index += 1;
-      continue;
-    }
-    output += current;
-  }
-  return output;
 }
 
 function normalizeLogicalPath(root, value) {

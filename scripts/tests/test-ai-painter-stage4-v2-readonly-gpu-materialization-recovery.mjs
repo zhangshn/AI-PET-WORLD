@@ -16,6 +16,9 @@ import {
   STAGE4_V2_CAPABILITY,
   validateStage4V2PreReleaseQualificationTicket,
 } from "../lib/ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs";
+import {
+  deriveSmokeProgramPathsFromQualification,
+} from "../plan-ai-painter-stage4-v2-controlled-smoke.mjs";
 
 const PREFIX_HOOKS = [
   "afterMaterializationIntentPersisted",
@@ -78,6 +81,19 @@ for (const hookName of PREFIX_HOOKS) {
     assert.equal(fs.existsSync(path.join(intentDirectory, "materialization-published.json")), true,
       `${hookName} recovery omitted the publication receipt`);
     const packageRoot = path.join(fixture.root, recovered.packageManifest.path, "..");
+    const realQualificationPayload = JSON.parse(fs.readFileSync(path.join(
+      path.resolve(packageRoot), "package-payload.json",
+    ), "utf8"));
+    const smokeProgramPaths = deriveSmokeProgramPathsFromQualification(
+      realQualificationPayload,
+    );
+    assert.equal(smokeProgramPaths.trainer,
+      realQualificationPayload.programLineage.trainer.path,
+    `${hookName} real qualification payload did not hand off canonical trainer role`);
+    assert.equal(Object.hasOwn(smokeProgramPaths, "pythonTrainer"), false,
+      `${hookName} revived obsolete pythonTrainer alias`);
+    assert.equal(Object.hasOwn(smokeProgramPaths, "frozenTrainer"), false,
+      `${hookName} revived obsolete frozenTrainer alias`);
     const dependencyManifest = JSON.parse(fs.readFileSync(path.join(
       path.resolve(packageRoot),
       "registry-dependency-manifest.json",
@@ -299,6 +315,9 @@ function createFixture() {
     fs.writeFileSync(absolute, value);
     return bind(root, logicalPath);
   };
+  writeBytes("scripts/lib/ai-painter-python-import-ast-v1.py",
+    fs.readFileSync(path.join(process.cwd(), "scripts", "lib",
+      "ai-painter-python-import-ast-v1.py")));
 
   for (const logicalPath of [
     "scripts/plan-ai-painter-stage4-v2-readonly-gpu-qualification.mjs",

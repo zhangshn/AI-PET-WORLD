@@ -13,10 +13,14 @@ import {
   readBoundJson,
   readJsonObject,
   resolveProjectPath,
+  sha256File,
   STAGE4_V2_CAPABILITY,
   writeExclusiveJson,
 } from "./lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
-import { FORMAL_PLAN_ACTION } from "./run-ai-painter-stage4-v2-controlled-smoke.mjs";
+import {
+  FORMAL_PLAN_ACTION,
+  validateOuterFinalizationChain,
+} from "./run-ai-painter-stage4-v2-controlled-smoke.mjs";
 import {
   commitStage4V2ExternalRegistryDependencies,
 } from "./lib/ai-painter-stage4-v2-external-registry-dependency-v1.mjs";
@@ -62,11 +66,8 @@ export async function materializeStage4V2FormalStage0ToStage2Plan({
   }
   assert.equal(current.registry.lifecycleStage, "controlled_smoke_completed");
   assert.equal(current.registry.nextMachineAction, FORMAL_PLAN_ACTION);
-  const sourceTerminal = current.currentTaskTerminal;
-  assert.equal(sourceTerminal.schemaVersion, "ai-painter-stage4-v2-controlled-smoke-terminal-v1");
-  assert.equal(sourceTerminal.status, "stage4_v2_controlled_smoke_passed");
-  const smokeFinalization = readBoundJson(root, sourceTerminal.smokeFinalization);
-  assert.equal(smokeFinalization.status, "stage4_v2_controlled_smoke_passed");
+  const { sourceTerminal, smokeFinalization } =
+    verifyControlledSmokeSuccessHandoff(root, current);
   const plan = {
     schemaVersion: "ai-painter-stage4-v2-formal-stage0-to-stage2-plan-v1",
     status: "materialized_not_executed",
@@ -194,6 +195,108 @@ export async function materializeStage4V2FormalStage0ToStage2Plan({
     formalTrainingStarted: false,
     ownerAuthorizationRequired: false,
   });
+}
+
+export function verifyControlledSmokeSuccessHandoff(root, current) {
+  const sourceTerminal = current.currentTaskTerminal;
+  assert.equal(sourceTerminal.schemaVersion,
+    "ai-painter-stage4-v2-controlled-smoke-terminal-v1");
+  assert.equal(sourceTerminal.executionState, "completed");
+  assert.equal(sourceTerminal.status, "stage4_v2_controlled_smoke_passed");
+  assert.equal(sourceTerminal.packageId, current.registry.packageId);
+  assert.equal(sourceTerminal.runId, current.registry.runId);
+  assert.equal(sourceTerminal.capabilityVersion, STAGE4_V2_CAPABILITY);
+  assert.equal(sourceTerminal.nextMachineAction, FORMAL_PLAN_ACTION);
+  assert.equal(sourceTerminal.ownerAuthorizationRequired, false);
+  assert.equal(sourceTerminal.automaticSuccessorAllowed, true);
+  assert.equal(sourceTerminal.formalTrainingStarted, false);
+
+  const manifest = readBoundJson(root, sourceTerminal.packageManifest);
+  assert.equal(manifest.schemaVersion,
+    "ai-painter-stage4-v2-controlled-smoke-package-manifest-v1");
+  assert.equal(manifest.packageId, sourceTerminal.packageId);
+  assert.equal(manifest.runId, sourceTerminal.runId);
+  assert.equal(manifest.capabilityVersion, STAGE4_V2_CAPABILITY);
+  assert.deepEqual(manifest.packagePayload, sourceTerminal.packagePayload,
+    "controlled-Smoke manifest payload differs from terminal binding");
+  assert.deepEqual(manifest.programGraphManifest,
+    sourceTerminal.programGraphManifest,
+  "controlled-Smoke manifest program graph differs from terminal binding");
+  const payload = readBoundJson(root, sourceTerminal.packagePayload);
+  assert.equal(payload.schemaVersion,
+    "ai-painter-stage4-v2-controlled-smoke-package-payload-v1");
+  assert.equal(payload.packageId, sourceTerminal.packageId);
+  assert.equal(payload.runId, sourceTerminal.runId);
+  assert.equal(payload.capabilityVersion, STAGE4_V2_CAPABILITY);
+  assert.deepEqual(payload.programGraphManifest,
+    sourceTerminal.programGraphManifest,
+  "controlled-Smoke payload program graph differs from terminal binding");
+  const graph = readBoundJson(root, sourceTerminal.programGraphManifest);
+  assert.equal(graph.schemaVersion, "ai-painter-program-graph-manifest-v1");
+  assert.equal(graph.graphId, "stage4-v2-controlled-smoke-program-graph-v1");
+
+  const genericTerminal = readBoundJson(root,
+    sourceTerminal.autonomousClosedLoopTerminal);
+  const smokeFinalization = validateOuterFinalizationChain({
+    root,
+    payload,
+    genericTerminal,
+    smokeFinalizationBinding: sourceTerminal.smokeFinalization,
+  });
+  assert.equal(smokeFinalization.executionState, "completed");
+  assert.equal(smokeFinalization.status, "stage4_v2_controlled_smoke_passed");
+  assert.equal(smokeFinalization.capabilityVersion, STAGE4_V2_CAPABILITY);
+  const trainingManifest = readBoundJson(root,
+    smokeFinalization.trainingManifest);
+  assert.equal(trainingManifest.schemaVersion,
+    "ai-painter-stage4-v2-controlled-smoke-training-manifest-v1");
+  assert.equal(trainingManifest.status, "training_completed");
+  assert.equal(trainingManifest.packageId, payload.packageId);
+  assert.equal(trainingManifest.runId, payload.runId);
+  assert.equal(trainingManifest.architectureId, STAGE4_V2_CAPABILITY);
+  assert.equal(trainingManifest.epochCount, 30);
+  assert.deepEqual(trainingManifest.resolution, { width: 256, height: 192 });
+  assert.equal(trainingManifest.historicalDenoiserCheckpointRead, false);
+  assert.equal(trainingManifest.parentDenoiserCheckpoint, null);
+  assert.equal(trainingManifest.modelState?.changedByTraining, true);
+  assert.equal(trainingManifest.autoencoderState?.frozen, true);
+  assert.equal(trainingManifest.autoencoderState?.beforeSha256,
+    trainingManifest.autoencoderState?.afterSha256);
+  for (const [label, binding] of [
+    ["checkpoint", trainingManifest.checkpoint],
+    ["checkpointMetadata", trainingManifest.checkpointMetadata],
+    ["metrics", trainingManifest.metrics],
+    ["resourceTelemetry", trainingManifest.resourceTelemetry],
+    ...((trainingManifest.previews ?? []).map((preview) => [
+      `preview_epoch_${preview.epoch}`, preview,
+    ])),
+  ]) verifyBoundFile(root, binding, `controlled-Smoke ${label}`);
+
+  const review = readBoundJson(root, smokeFinalization.machineReview);
+  assert.equal(review.status, "stage4_v2_machine_review_passed");
+  assert.equal(review.architectureId, STAGE4_V2_CAPABILITY);
+  assert.equal(review.smokeRunId, payload.runId);
+  assert.equal(review.reviewNodeCount, 5);
+  assert.equal(review.passCount, 5);
+  assert.equal(review.failCount, 0);
+  const causal = readBoundJson(root, smokeFinalization.causalAdjudication);
+  assert.equal(causal.schemaVersion,
+    "ai-painter-stage4-v2-controlled-smoke-causal-adjudication-v1");
+  assert.equal(causal.packageId, payload.packageId);
+  assert.equal(causal.runId, payload.runId);
+  assert.equal(causal.decision, "controlled_smoke_qualified");
+  assert.equal(causal.previewPassCount, 5);
+  assert.equal(causal.previewFailCount, 0);
+  return { sourceTerminal, smokeFinalization, payload, trainingManifest };
+}
+
+function verifyBoundFile(root, binding, label) {
+  assert.ok(binding?.path && binding?.sha256, `${label} binding is missing`);
+  const target = resolveProjectPath(root, binding.path, {
+    mustExist: true,
+    kind: "file",
+  });
+  assert.equal(sha256File(target), binding.sha256, `${label} SHA-256 differs`);
 }
 
 function writeOrVerifyJson(target, value) {

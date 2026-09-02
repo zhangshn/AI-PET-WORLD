@@ -70,6 +70,10 @@ def execute_stage4_v2_controlled_smoke(
     dataset_package_path = dataset_package_path.resolve()
     autoencoder_checkpoint_path = autoencoder_checkpoint_path.resolve()
     output_dir = output_dir.resolve()
+    from run_stage4_semantic_transport_v2_controlled_smoke import (  # noqa: PLC0415
+        validate_active_config as validate_smoke_program_boundary,
+    )
+    validate_smoke_program_boundary(config_path, root)
     config = _read_object(config_path)
     execution = _validate_execution_config(config, output_dir, root)
     if _logical(root, dataset_package_path) != execution["datasetRelease"]["path"]:

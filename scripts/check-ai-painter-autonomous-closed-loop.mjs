@@ -208,6 +208,34 @@ try {
   reviewFailedDb.close();
   positive += 1;
 
+  const v2ReviewFailedSpec = makeSpec("closed-loop-v2-review-failed-result", adapterPath, evidencePath);
+  const v2ReviewFailedAdapters = passingAdapters();
+  v2ReviewFailedAdapters.review = async () => ({
+    status: "passed",
+    reviewOutcome: "stage4_v2_machine_review_failed",
+    passCount: 2,
+    failCount: 3,
+  });
+  const v2ReviewFailed = await runAutonomousClosedLoop({
+    root: fixtureRoot,
+    spec: v2ReviewFailedSpec,
+    packageSha256: digestJson(v2ReviewFailedSpec),
+    adapters: v2ReviewFailedAdapters,
+  });
+  assert.equal(v2ReviewFailed.state, "completed");
+  const v2ReviewFailedRoot = executionRoot(v2ReviewFailedSpec.packageIdentity);
+  assert.equal(JSON.parse(fs.readFileSync(
+    path.join(v2ReviewFailedRoot, "review-state.json"), "utf8",
+  )).state, "review_completed_with_failed_result");
+  const v2ReviewFailedDb = new DatabaseSync(
+    path.join(v2ReviewFailedRoot, "execution.sqlite"), { readOnly: true },
+  );
+  assert.equal(v2ReviewFailedDb.prepare(
+    "SELECT COUNT(*) AS count FROM review_transitions WHERE review_state = 'review_completed_with_failed_result'",
+  ).get().count, 1);
+  v2ReviewFailedDb.close();
+  positive += 1;
+
   const visualSpec = makeSpec("closed-loop-visual-failure", adapterPath, evidencePath);
   const visualAdapters = passingAdapters();
   visualAdapters.review = async () => ({ status: "failed", failureKind: "visual", failureCode: "frozen_review_failed" });

@@ -6,24 +6,52 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ai_painter_authorization_policy import (
-    execution_action_values_for_stage_config,
-    local_ai_ticket_bound_config_sha256,
-    resolve_stage_execution_grant,
-)
-from ai_painter_stage4_semantic_transport_v2_trainer_support import (
-    ARCHITECTURE_ID,
-    build_stage4_semantic_transport_v2_cpu_inactive_config,
-    validate_stage4_semantic_transport_v2_trainer_contract,
-)
-
-
 MODE_ID = "stage4_semantic_transport_v2_controlled_smoke"
 MODE_STATUS = "local_ai_stage4_semantic_transport_v2_controlled_smoke_active"
+PROGRAM_GRAPH_SCHEMA = "ai-painter-program-graph-manifest-v1"
+PROGRAM_GRAPH_ID = "stage4-v2-controlled-smoke-program-graph-v1"
+PYTHON_ADAPTER_PATH = Path(
+    "ml/ai-painter/scripts/run_stage4_semantic_transport_v2_controlled_smoke.py"
+)
+PYTHON_TRAINING_ADAPTER_PATH = Path(
+    "ml/ai-painter/scripts/stage4_semantic_transport_v2_controlled_smoke_training.py"
+)
 SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
 SEED = 20263722
 PREVIEW_EPOCHS = [1, 5, 10, 20, 30]
 RESOLUTION = {"width": 256, "height": 192}
+
+
+_PROJECT_MODULES_LOADED = False
+
+
+def _load_project_modules() -> None:
+    global _PROJECT_MODULES_LOADED
+    global ARCHITECTURE_ID
+    global build_stage4_semantic_transport_v2_cpu_inactive_config
+    global execution_action_values_for_stage_config
+    global local_ai_ticket_bound_config_sha256
+    global resolve_stage_execution_grant
+    global validate_stage4_semantic_transport_v2_trainer_contract
+    if _PROJECT_MODULES_LOADED:
+        return
+    from ai_painter_authorization_policy import (  # noqa: PLC0415
+        execution_action_values_for_stage_config as imported_action_values,
+        local_ai_ticket_bound_config_sha256 as imported_config_sha256,
+        resolve_stage_execution_grant as imported_resolve_grant,
+    )
+    from ai_painter_stage4_semantic_transport_v2_trainer_support import (  # noqa: PLC0415
+        ARCHITECTURE_ID as imported_architecture_id,
+        build_stage4_semantic_transport_v2_cpu_inactive_config as imported_config_builder,
+        validate_stage4_semantic_transport_v2_trainer_contract as imported_trainer_contract,
+    )
+    execution_action_values_for_stage_config = imported_action_values
+    local_ai_ticket_bound_config_sha256 = imported_config_sha256
+    resolve_stage_execution_grant = imported_resolve_grant
+    ARCHITECTURE_ID = imported_architecture_id
+    build_stage4_semantic_transport_v2_cpu_inactive_config = imported_config_builder
+    validate_stage4_semantic_transport_v2_trainer_contract = imported_trainer_contract
+    _PROJECT_MODULES_LOADED = True
 
 
 def canonical_json(value: Any) -> str:
@@ -43,6 +71,106 @@ def read_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"expected top-level JSON object: {path}")
     return value
+
+
+def _inside(path: Path, parent: Path) -> bool:
+    resolved = path.resolve()
+    root = parent.resolve()
+    return resolved == root or root in resolved.parents
+
+
+def _resolve_binding_path(root: Path, logical_path: str) -> Path:
+    candidate = (root / logical_path).resolve()
+    runtime_root = (root / ".runtime").resolve()
+    if not _inside(candidate, root) and not _inside(candidate, runtime_root):
+        raise ValueError("V2 Smoke program graph path escapes project/runtime roots")
+    if not candidate.is_file():
+        raise ValueError("V2 Smoke program graph bound file is missing")
+    return candidate
+
+
+def validate_package_program_graph(
+    *, root: Path, package_payload_path: Path, package_payload_sha256: str
+) -> dict[str, Any]:
+    payload_path = package_payload_path.resolve()
+    runtime_root = (root / ".runtime").resolve()
+    if not _inside(payload_path, root) and not _inside(payload_path, runtime_root):
+        raise ValueError("V2 Smoke package payload path escapes project/runtime roots")
+    if not payload_path.is_file() or sha256_file(payload_path) != package_payload_sha256:
+        raise ValueError("V2 Smoke package payload identity mismatch")
+    payload = read_json(payload_path)
+    graph_binding = payload.get("programGraphManifest")
+    program_lineage = payload.get("programLineage")
+    if not isinstance(graph_binding, dict) or not isinstance(program_lineage, dict):
+        raise ValueError("V2 Smoke package program graph boundary is missing")
+    graph_path = _resolve_binding_path(root, str(graph_binding.get("path", "")))
+    if sha256_file(graph_path) != graph_binding.get("sha256"):
+        raise ValueError("V2 Smoke program graph manifest SHA-256 changed")
+    graph = read_json(graph_path)
+    if graph.get("schemaVersion") != PROGRAM_GRAPH_SCHEMA:
+        raise ValueError("V2 Smoke program graph schema mismatch")
+    if graph.get("status") != "immutable_program_graph_verified":
+        raise ValueError("V2 Smoke program graph status mismatch")
+    if graph.get("graphId") != PROGRAM_GRAPH_ID:
+        raise ValueError("V2 Smoke program graph identity mismatch")
+    core = {key: value for key, value in graph.items() if key != "graphContentSha256"}
+    content_sha256 = hashlib.sha256(canonical_json(core).encode("utf-8")).hexdigest()
+    if graph.get("graphContentSha256") != content_sha256:
+        raise ValueError("V2 Smoke program graph content SHA-256 changed")
+    files = graph.get("files")
+    if not isinstance(files, list) or not files or graph.get("fileCount") != len(files):
+        raise ValueError("V2 Smoke program graph file inventory is invalid")
+    verified_files: dict[str, dict[str, Any]] = {}
+    for item in files:
+        if not isinstance(item, dict) or not isinstance(item.get("path"), str):
+            raise ValueError("V2 Smoke program graph file entry is invalid")
+        logical_path = item["path"]
+        if logical_path in verified_files:
+            raise ValueError("V2 Smoke program graph contains a duplicate file")
+        absolute = _resolve_binding_path(root, logical_path)
+        observed_sha256 = sha256_file(absolute)
+        if item.get("sha256") != observed_sha256:
+            raise ValueError("V2 Smoke program graph file SHA-256 changed")
+        if item.get("byteSize") != absolute.stat().st_size:
+            raise ValueError("V2 Smoke program graph file size changed")
+        verified_files[logical_path] = {
+            "path": logical_path,
+            "sha256": observed_sha256,
+            "byteSize": absolute.stat().st_size,
+        }
+    entrypoints = graph.get("entrypoints")
+    if not isinstance(entrypoints, list):
+        raise ValueError("V2 Smoke program graph entrypoints are missing")
+    entrypoint_by_role = {
+        item.get("role"): item.get("path")
+        for item in entrypoints
+        if isinstance(item, dict)
+    }
+    for role, declared in program_lineage.items():
+        if not isinstance(declared, dict):
+            raise ValueError("V2 Smoke program lineage binding is invalid")
+        file_entry = verified_files.get(declared.get("path"))
+        if file_entry is None or file_entry["sha256"] != declared.get("sha256"):
+            raise ValueError("V2 Smoke program graph/lineage binding mismatch")
+        if entrypoint_by_role.get(role) != declared.get("path"):
+            raise ValueError("V2 Smoke program graph entrypoint mismatch")
+    if program_lineage.get("pythonAdapter", {}).get("path") != PYTHON_ADAPTER_PATH.as_posix():
+        raise ValueError("V2 Smoke Python adapter identity mismatch")
+    if program_lineage.get("pythonTrainingAdapter", {}).get("path") != PYTHON_TRAINING_ADAPTER_PATH.as_posix():
+        raise ValueError("V2 Smoke Python training adapter identity mismatch")
+    return {
+        "packagePayload": {
+            "path": project_path(root, payload_path),
+            "sha256": package_payload_sha256,
+        },
+        "programGraphManifest": {
+            "path": graph_binding["path"],
+            "sha256": graph_binding["sha256"],
+        },
+        "programLineage": program_lineage,
+        "graphContentSha256": content_sha256,
+        "fileCount": len(files),
+    }
 
 
 def write_exclusive_json(path: Path, value: dict[str, Any]) -> None:
@@ -79,7 +207,11 @@ def invoke_test_hook(hooks: dict[str, Any] | None, name: str) -> None:
 
 
 def project_path(root: Path, path: Path) -> str:
-    return path.resolve().relative_to(root.resolve()).as_posix()
+    resolved = path.resolve()
+    runtime_root = (root / ".runtime").resolve()
+    if _inside(resolved, runtime_root):
+        return (Path(".runtime") / resolved.relative_to(runtime_root)).as_posix()
+    return resolved.relative_to(root.resolve()).as_posix()
 
 
 def derived_config_contract(
@@ -133,6 +265,7 @@ def build_active_config(
     autoencoder_checkpoint_sha256: str,
     dataset_release_path: str,
     dataset_release_sha256: str,
+    program_graph_audit: dict[str, Any],
 ) -> dict[str, Any]:
     base = read_json(base_config_path)
     support = build_stage4_semantic_transport_v2_cpu_inactive_config(root)
@@ -145,6 +278,13 @@ def build_active_config(
         "ownership": "project_owned_architecture_ai_assisted_cold_start_weights",
         "imageSize": {"width": 1024, "height": 768},
         "formalInferenceEligible": False,
+        "packagePayload": program_graph_audit["packagePayload"],
+        "programGraphManifest": program_graph_audit["programGraphManifest"],
+        "programLineage": program_graph_audit["programLineage"],
+        "programGraphAudit": {
+            "graphContentSha256": program_graph_audit["graphContentSha256"],
+            "fileCount": program_graph_audit["fileCount"],
+        },
     })
     training = {**base.get("training", {}), **support["training"]}
     training.update({
@@ -239,6 +379,17 @@ def build_active_config(
 
 def materialize(args: Any, _test_hooks: dict[str, Any] | None = None) -> dict[str, Any]:
     root = args.project_root.resolve()
+    program_graph_audit = validate_package_program_graph(
+        root=root,
+        package_payload_path=args.package_payload,
+        package_payload_sha256=args.package_payload_sha256,
+    )
+    _load_project_modules()
+    program_graph_audit = validate_package_program_graph(
+        root=root,
+        package_payload_path=args.package_payload,
+        package_payload_sha256=args.package_payload_sha256,
+    )
     for file_path, expected, label in (
         (args.signed_ticket, args.signed_ticket_sha256, "signed Smoke ticket"),
         (args.signed_consumption, args.signed_consumption_sha256, "signed Smoke consumption"),
@@ -260,6 +411,7 @@ def materialize(args: Any, _test_hooks: dict[str, Any] | None = None) -> dict[st
         autoencoder_checkpoint_sha256=args.autoencoder_checkpoint_sha256,
         dataset_release_path=args.dataset_release_path,
         dataset_release_sha256=args.dataset_release_sha256,
+        program_graph_audit=program_graph_audit,
     )
     ticket_path = args.active_config.parent / "trainer-capability-ticket.json"
     ticket_sha = sha256_json(built["ticket"])
@@ -337,6 +489,24 @@ def materialize(args: Any, _test_hooks: dict[str, Any] | None = None) -> dict[st
 
 def validate_active_config(config_path: Path, root: Path) -> dict[str, Any]:
     config = read_json(config_path)
+    package_payload = config.get("packagePayload", {})
+    audit = validate_package_program_graph(
+        root=root,
+        package_payload_path=_resolve_binding_path(
+            root, str(package_payload.get("path", ""))
+        ),
+        package_payload_sha256=str(package_payload.get("sha256", "")),
+    )
+    if config.get("programGraphManifest") != audit["programGraphManifest"]:
+        raise ValueError("V2 Smoke active config program graph binding mismatch")
+    if config.get("programLineage") != audit["programLineage"]:
+        raise ValueError("V2 Smoke active config program lineage mismatch")
+    if config.get("programGraphAudit") != {
+        "graphContentSha256": audit["graphContentSha256"],
+        "fileCount": audit["fileCount"],
+    }:
+        raise ValueError("V2 Smoke active config program graph audit mismatch")
+    _load_project_modules()
     if config.get("denoiserArchitecture") != ARCHITECTURE_ID:
         raise ValueError("V2 Smoke architecture mismatch")
     training = config.get("training", {})
@@ -403,6 +573,7 @@ def run_trainer(args: Any) -> int:
     from stage4_semantic_transport_v2_controlled_smoke_training import (
         execute_stage4_v2_controlled_smoke,
     )
+    validate_active_config(args.config, root)
     return int(execute_stage4_v2_controlled_smoke(
         config_path=args.config,
         dataset_package_path=args.dataset_package,
@@ -432,6 +603,8 @@ def parse_args() -> Any:
     parser.add_argument("--autoencoder-checkpoint-sha256")
     parser.add_argument("--dataset-release-path")
     parser.add_argument("--dataset-release-sha256")
+    parser.add_argument("--package-payload", type=Path)
+    parser.add_argument("--package-payload-sha256")
     parser.add_argument("--dataset-package", type=Path)
     parser.add_argument("--autoencoder-checkpoint", type=Path)
     parser.add_argument("--output-dir", type=Path)
@@ -444,7 +617,7 @@ def main() -> int:
     args = parse_args()
     if args.operation == "materialize":
         args.active_config = args.config
-        required = [args.config, args.signed_ticket, args.signed_ticket_sha256, args.signed_consumption, args.signed_consumption_sha256, args.dataset_package_id, args.package_id, args.run_id, args.output_namespace, args.derived_ticket_id, args.derived_config_contract_sha256, args.autoencoder_checkpoint_path, args.autoencoder_checkpoint_sha256, args.dataset_release_path, args.dataset_release_sha256]
+        required = [args.config, args.signed_ticket, args.signed_ticket_sha256, args.signed_consumption, args.signed_consumption_sha256, args.dataset_package_id, args.package_id, args.run_id, args.output_namespace, args.derived_ticket_id, args.derived_config_contract_sha256, args.autoencoder_checkpoint_path, args.autoencoder_checkpoint_sha256, args.dataset_release_path, args.dataset_release_sha256, args.package_payload, args.package_payload_sha256]
         if any(value is None for value in required):
             raise ValueError("materialize operation arguments are incomplete")
         print(json.dumps(materialize(args), ensure_ascii=False, indent=2))

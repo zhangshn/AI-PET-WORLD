@@ -456,6 +456,15 @@ function testPythonEvidenceBoundary(root) {
   const datasetPath = evidenceInputs.datasetPath;
   const signedTicketPath = writeFixture(root, `${prefix}/ticket.json`, { status: "issued" });
   const consumptionPath = writeFixture(root, `${prefix}/consumption.json`, { status: "consumed_once" });
+  const programGraphPath = writeFixture(root, `${prefix}/program-graph-manifest.json`, {
+    schemaVersion: "ai-painter-program-graph-manifest-v1",
+    status: "immutable_program_graph_verified",
+    graphId: "stage4-v2-readonly-gpu-qualification-program-graph-v1",
+    graphContentSha256: "3".repeat(64),
+    fileCount: 17,
+  });
+  const programGraphBinding = bindProjectFile(root,
+    projectLogicalPath(root, programGraphPath));
   const activeConfig = {
     ticket: {
       ticketId: "ticket-fixture",
@@ -464,6 +473,7 @@ function testPythonEvidenceBoundary(root) {
       consumptionPath: projectLogicalPath(root, consumptionPath),
       consumptionSha256: bindProjectFile(root, projectLogicalPath(root, consumptionPath)).sha256,
     },
+    programGraphManifest: programGraphBinding,
   };
   const activePath = writeFixture(root, `${prefix}/active-config.json`, activeConfig);
   const activeBinding = bindProjectFile(root, projectLogicalPath(root, activePath));
@@ -498,6 +508,12 @@ function testPythonEvidenceBoundary(root) {
       consumption: pickBinding(bindProjectFile(root, projectLogicalPath(root, consumptionPath))),
       status: "consumed_once",
     },
+    programGraphManifest: {
+      binding: pickBinding(programGraphBinding),
+      graphId: "stage4-v2-readonly-gpu-qualification-program-graph-v1",
+      graphContentSha256: "3".repeat(64),
+      fileCount: 17,
+    },
     gpuDiagnostic: pickBinding(bindProjectFile(root, projectLogicalPath(root, diagnosticPath))),
     cudaTelemetry: pickBinding(bindProjectFile(root, projectLogicalPath(root, telemetryPath))),
     stateIntegrity: pickBinding(bindProjectFile(root, projectLogicalPath(root, statePath))),
@@ -512,9 +528,30 @@ function testPythonEvidenceBoundary(root) {
       conditionContract: evidenceInputs.conditionContract,
     },
     fixedInputs: evidenceInputs.fixedInputs,
+    programGraphManifest: programGraphBinding,
   };
   const verified = validatePythonQualificationEvidence({ root, packagePayload: payload, activeConfigBinding: activeBinding, outputRoot });
   assert.equal(verified.qualificationResult.path, `${prefix}/output/qualification-result.json`);
+  const qualificationResultPath = path.join(outputRoot, "qualification-result.json");
+  const originalQualificationResult = JSON.parse(
+    fs.readFileSync(qualificationResultPath, "utf8"),
+  );
+  const missingGraphResult = structuredClone(originalQualificationResult);
+  delete missingGraphResult.programGraphManifest;
+  fs.writeFileSync(qualificationResultPath,
+    `${JSON.stringify(missingGraphResult, null, 2)}\n`, "utf8");
+  assert.throws(() => validatePythonQualificationEvidence({
+    root, packagePayload: payload, activeConfigBinding: activeBinding, outputRoot,
+  }), /Python program graph/u);
+  const forgedGraphResult = structuredClone(originalQualificationResult);
+  forgedGraphResult.programGraphManifest.graphContentSha256 = "4".repeat(64);
+  fs.writeFileSync(qualificationResultPath,
+    `${JSON.stringify(forgedGraphResult, null, 2)}\n`, "utf8");
+  assert.throws(() => validatePythonQualificationEvidence({
+    root, packagePayload: payload, activeConfigBinding: activeBinding, outputRoot,
+  }), /content identity mismatch/u);
+  fs.writeFileSync(qualificationResultPath,
+    `${JSON.stringify(originalQualificationResult, null, 2)}\n`, "utf8");
   const originalDiagnostic = JSON.parse(fs.readFileSync(diagnosticPath, "utf8"));
   const originalTelemetry = JSON.parse(fs.readFileSync(telemetryPath, "utf8"));
   mutateEvidenceAndRefreshResult({

@@ -14,6 +14,12 @@ import {
 import {
   validateStage4V2ControlledSmokeBackgroundLaunchIntent,
 } from "../lib/ai-painter-stage4-v2-controlled-smoke-launch-intent-v1.mjs";
+import {
+  buildDerivedTrainerExecution,
+} from "../lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
+import {
+  buildStage4V2SmokeProgramGraph,
+} from "../lib/ai-painter-program-graph-manifest-v1.mjs";
 
 const RECEIPT_ROOT = ".runtime/ai-painter/stage4-v2-controlled-smoke-background-launches";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "stage4-v2-smoke-supervisor-"));
@@ -329,6 +335,11 @@ async function testTopLevelLaunchIntent() {
       fs.appendFileSync(path.join(value.root,
         ...value.snapshotBinding.path.split("/")), " \n", "utf8");
     }, /SHA-256 mismatch/u],
+    ["program_graph_dependency", (value) => {
+      fs.appendFileSync(path.join(value.root,
+        "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs"),
+      "// post-materialization replacement\n", "utf8");
+    }, /program graph manifest differs/u],
   ]) {
     const negative = materializeLaunchFixture(path.join(
       root, `top-level-launch-negative-${name}`));
@@ -408,23 +419,109 @@ async function testTopLevelPostSpawnRecovery() {
 
 function materializeLaunchFixture(projectRoot) {
   fs.mkdirSync(projectRoot, { recursive: true });
-  const runnerSource = path.join(process.cwd(),
-    "scripts/run-ai-painter-stage4-v2-controlled-smoke.mjs");
   const runnerPath = path.join(projectRoot,
     "scripts/run-ai-painter-stage4-v2-controlled-smoke.mjs");
   fs.mkdirSync(path.dirname(runnerPath), { recursive: true });
-  fs.copyFileSync(runnerSource, runnerPath);
+  fs.writeFileSync(runnerPath, "export const fixtureRunner = true;\n", "utf8");
+  writeProgramGraphFixtureFiles(projectRoot);
   const runner = bindFile(projectRoot, runnerPath);
   const packageId = "stage4-v2-launch-fixture-package";
   const runId = "stage4-v2-launch-fixture-run";
   const packageRoot = path.join(projectRoot, ".runtime", "fixture", packageId);
   fs.mkdirSync(packageRoot, { recursive: true });
+  const programLineage = { outerRunner: runner };
+  const programGraphPath = writeFixtureJson(projectRoot,
+    `.runtime/fixture/${packageId}/program-graph-manifest.json`,
+    buildStage4V2SmokeProgramGraph({
+      projectRoot,
+      programLineage,
+    }));
+  const programGraphManifest = bindFile(projectRoot, programGraphPath);
+  const evidence = (name) => bindFile(projectRoot, writeFixtureJson(
+    projectRoot, `.runtime/fixture/${packageId}/evidence/${name}.json`,
+    { status: "fixture", name },
+  ));
+  const qualificationTerminal = evidence("qualification-terminal");
+  const datasetRelease = evidence("dataset-release");
+  const autoencoderCheckpoint = evidence("autoencoder-checkpoint");
+  const thresholdContract = evidence("threshold-contract");
+  const conditionPack = { ...evidence("condition-pack"), channelCount: 23 };
+  const referenceRgb = evidence("reference-rgb");
+  const styleFingerprint = evidence("style-fingerprint");
+  const objectMasks = [
+    "object_footprints", "object_tree", "object_rock", "object_vegetation",
+  ].map((role) => ({ role, ...evidence(role) }));
+  const reviewPrograms = {
+    conditionAlignment: evidence("condition-alignment"),
+    professionalAesthetic: evidence("professional-aesthetic"),
+    styleFeatureExtractor: evidence("style-feature-extractor"),
+  };
+  const outputDirectory = `.runtime/ai-painter/stage4-v2-controlled-smoke-executions/${runId}`;
+  const payload = {
+    schemaVersion: "ai-painter-stage4-v2-controlled-smoke-package-payload-v1",
+    status: "materialized_not_executed",
+    packageId,
+    runId,
+    architectureId: "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2",
+    capabilityVersion: "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2",
+    executionClass: "controlled_smoke",
+    authorityClass: "local_ai_pre_release_capability_lifecycle",
+    ownerAuthorizationRequired: false,
+    datasetPackageId: "stage4-v2-fixture-dataset",
+    outputDirectory,
+    reviewExecutionBindingId:
+      `stage4-v2-smoke-review-${crypto.createHash("sha256").update(JSON.stringify({ packageId, runId })).digest("hex").slice(0, 24)}`,
+    readonlyGpuQualificationTerminal: qualificationTerminal,
+    datasetRelease,
+    autoencoderCheckpoint,
+    machineReviewInputs: {
+      thresholdContract,
+      conditionPack,
+      referenceRgb,
+      objectMasks,
+      styleFingerprint,
+      reviewPrograms,
+    },
+    fixedInputs: {
+      seed: 20263722,
+      sampleId: "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+      sampleSplit: "validation",
+      resolution: { width: 256, height: 192 },
+      epochCount: 30,
+      previewEpochs: [1, 5, 10, 20, 30],
+      batchSize: 1,
+      conditionChannels: 23,
+    },
+    derivedTrainerExecution: buildDerivedTrainerExecution({
+      packageId,
+      runId,
+      datasetPackageId: "stage4-v2-fixture-dataset",
+      outputDirectory,
+    }),
+    inputEvidence: [qualificationTerminal, datasetRelease, autoencoderCheckpoint],
+    programLineage,
+    programGraphManifest,
+    executionBoundary: {
+      trainingAllowed: true,
+      optimizerAllowed: true,
+      backwardAllowed: true,
+      weightMutationAllowed: true,
+      checkpointWriteAllowed: true,
+      stage0Allowed: false,
+    },
+    failurePolicy: {
+      automaticRetryAllowed: false,
+      historicalDenoiserCheckpointAllowed: false,
+      outputReuseAllowed: false,
+    },
+  };
   const payloadPath = writeFixtureJson(projectRoot,
-    `.runtime/fixture/${packageId}/package-payload.json`, { packageId, runId });
+    `.runtime/fixture/${packageId}/package-payload.json`, payload);
   const payloadBinding = bindFile(projectRoot, payloadPath);
   const manifestPath = writeFixtureJson(projectRoot,
     `.runtime/fixture/${packageId}/smoke-package-manifest.json`, {
       packagePayload: payloadBinding,
+      programGraphManifest,
     });
   const manifestBinding = bindFile(projectRoot, manifestPath);
   const terminalPath = writeFixtureJson(projectRoot,
@@ -487,6 +584,32 @@ function materializeLaunchFixture(projectRoot) {
       currentTaskTerminal: JSON.parse(fs.readFileSync(terminalPath, "utf8")),
     },
   };
+}
+
+function writeProgramGraphFixtureFiles(projectRoot) {
+  writeFixtureText(projectRoot,
+    "scripts/lib/ai-painter-stage4-v2-qualification-continuation-v1.mjs",
+    "export async function dispatch(url) { return import(url.href); }\n");
+  writeFixtureText(projectRoot,
+    "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs",
+    "export async function dispatch(url) { return import(url); }\n");
+  writeFixtureText(projectRoot,
+    "scripts/launch-ai-painter-stage4-v2-controlled-smoke-background.mjs",
+    "export async function launch() { return import('./run-ai-painter-stage4-v2-controlled-smoke.mjs'); }\n");
+  for (const logicalPath of [
+    "scripts/plan-ai-painter-stage4-v2-controlled-smoke.mjs",
+    "scripts/plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
+    "scripts/adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs",
+    "scripts/adjudicate-ai-painter-stage4-v2-readonly-gpu-qualification-failure.mjs",
+    "scripts/lib/ai-painter-stage4-v2-controlled-smoke-adapters-v1.mjs",
+  ]) writeFixtureText(projectRoot, logicalPath, `fixture:${logicalPath}\n`);
+}
+
+function writeFixtureText(projectRoot, logicalPath, bytes) {
+  const target = path.join(projectRoot, ...logicalPath.split("/"));
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, bytes, "utf8");
+  return target;
 }
 
 function fakeBackgroundProcess(processId) {

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import ast
 import inspect
 import json
 from pathlib import Path
@@ -34,6 +35,7 @@ import train_ai_assisted_conditional_denoiser as trainer  # noqa: E402
 class Stage4SemanticTransportV2ReadonlyGpuQualificationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        runner._load_project_modules()
         cls.model_config = runner.build_qualification_model_config()
 
     def setUp(self):
@@ -56,6 +58,47 @@ class Stage4SemanticTransportV2ReadonlyGpuQualificationTests(unittest.TestCase):
 
     def _binding(self, relative_path: Path) -> dict[str, str]:
         return runner.binding(ROOT / relative_path)
+
+    def _program_graph_binding(self, program_lineage: dict) -> dict[str, str]:
+        files = []
+        entrypoints = []
+        for role, program_binding in sorted(program_lineage.items()):
+            absolute = ROOT / program_binding["path"]
+            files.append(
+                {
+                    "role": role,
+                    "path": program_binding["path"],
+                    "sha256": program_binding["sha256"],
+                    "byteSize": absolute.stat().st_size,
+                    "language": "python",
+                    "importedBy": [],
+                }
+            )
+            entrypoints.append(
+                {
+                    "role": role,
+                    "path": program_binding["path"],
+                    "language": "python",
+                }
+            )
+        core = {
+            "schemaVersion": runner.PROGRAM_GRAPH_SCHEMA,
+            "status": "immutable_program_graph_verified",
+            "graphId": runner.PROGRAM_GRAPH_ID,
+            "entrypoints": entrypoints,
+            "dynamicSuccessors": [],
+            "nonLiteralDynamicDispatches": [],
+            "files": files,
+            "imports": [],
+            "externalModules": [],
+            "fileCount": len(files),
+            "importEdgeCount": 0,
+            "ownerAuthorizationRequired": False,
+        }
+        graph = {**core, "graphContentSha256": runner._canonical_sha256(core)}
+        graph_path = self.case_root / "program-graph-manifest.json"
+        self._write_json(graph_path, graph)
+        return runner.binding(graph_path)
 
     def _active_case(self) -> tuple[Path, Path, dict]:
         run_id = f"stage4-v2-readonly-{uuid4().hex}"
@@ -87,6 +130,13 @@ class Stage4SemanticTransportV2ReadonlyGpuQualificationTests(unittest.TestCase):
             (ROOT / runner.FOUNDATION_CONTRACT_PATH).read_text(encoding="utf-8")
         )
         output_dir = self.case_root / "output" / run_id
+        program_lineage = {
+            "pythonRunner": self._binding(runner.RUNNER_PATH),
+            "modelFactory": self._binding(runner.MODEL_FACTORY_PATH),
+            "successorModule": self._binding(runner.SUCCESSOR_MODULE_PATH),
+            "trainer": self._binding(runner.TRAINER_PATH),
+            "trainerSupport": self._binding(runner.TRAINER_SUPPORT_PROGRAM_PATH),
+        }
         active = {
             "schemaVersion": runner.ACTIVE_CONFIG_SCHEMA,
             "status": "readonly_gpu_qualification_active",
@@ -109,15 +159,8 @@ class Stage4SemanticTransportV2ReadonlyGpuQualificationTests(unittest.TestCase):
                     runner.FOUNDATION_CONTRACT_PATH
                 ),
             },
-            "programLineage": {
-                "runner": self._binding(runner.RUNNER_PATH),
-                "modelFactory": self._binding(runner.MODEL_FACTORY_PATH),
-                "successorModule": self._binding(runner.SUCCESSOR_MODULE_PATH),
-                "trainer": self._binding(runner.TRAINER_PATH),
-                "trainerSupport": self._binding(
-                    runner.TRAINER_SUPPORT_PROGRAM_PATH
-                ),
-            },
+            "programLineage": program_lineage,
+            "programGraphManifest": self._program_graph_binding(program_lineage),
             "fixedInputs": {
                 "seed": runner.SEED,
                 "resolution": {"width": 256, "height": 192},
@@ -162,6 +205,57 @@ class Stage4SemanticTransportV2ReadonlyGpuQualificationTests(unittest.TestCase):
         self.assertEqual(audit["ticket"]["status"], "consumed_once")
         self.assertFalse(audit["safety"]["optimizerAllowed"])
         self.assertFalse(audit["safety"]["backwardAllowed"])
+        self.assertEqual(
+            audit["programGraphManifest"]["graphId"], runner.PROGRAM_GRAPH_ID
+        )
+
+    def test_project_imports_are_deferred_behind_program_graph_validation(self):
+        source = (ROOT / runner.RUNNER_PATH).read_text(encoding="utf-8")
+        module = ast.parse(source)
+        top_level_modules = set()
+        for statement in module.body:
+            if isinstance(statement, ast.Import):
+                top_level_modules.update(alias.name for alias in statement.names)
+            elif isinstance(statement, ast.ImportFrom) and statement.module:
+                top_level_modules.add(statement.module)
+        self.assertFalse(
+            any(name.startswith("ai_painter") for name in top_level_modules)
+        )
+        self.assertNotIn(
+            "train_ai_assisted_conditional_denoiser", top_level_modules
+        )
+        validation_source = inspect.getsource(runner.validate_readonly_gpu_inputs)
+        self.assertLess(
+            validation_source.index("validate_active_config_value("),
+            validation_source.index("_load_project_modules()"),
+        )
+        run_source = inspect.getsource(runner.run_readonly_gpu_qualification)
+        self.assertLess(
+            run_source.index("validate_program_graph_manifest_binding("),
+            run_source.index("require_formal_cuda()"),
+        )
+
+    def test_program_graph_file_substitution_is_rejected_from_real_bytes(self):
+        config_path, output_dir, active = self._active_case()
+        graph_path = ROOT / active["programGraphManifest"]["path"]
+        graph = json.loads(graph_path.read_text(encoding="utf-8"))
+        graph["files"][0]["sha256"] = "0" * 64
+        core = {
+            key: value
+            for key, value in graph.items()
+            if key != "graphContentSha256"
+        }
+        graph["graphContentSha256"] = runner._canonical_sha256(core)
+        self._write_json(graph_path, graph)
+        active["programGraphManifest"] = runner.binding(graph_path)
+        self._write_json(config_path, active)
+        with self.assertRaisesRegex(ValueError, "program_graph_file_sha256_changed"):
+            runner.validate_active_config_value(
+                active,
+                config_path=config_path,
+                config_sha256=runner.file_sha256(config_path),
+                output_dir=output_dir,
+            )
 
     def test_active_config_rejects_replay_mutation_and_training_gates(self):
         mutations = []
@@ -184,8 +278,22 @@ class Stage4SemanticTransportV2ReadonlyGpuQualificationTests(unittest.TestCase):
         mutations.append(denoiser_checkpoint_open)
 
         stale_runner = deepcopy(active)
-        stale_runner["programLineage"]["runner"]["sha256"] = "0" * 64
+        stale_runner["programLineage"]["pythonRunner"]["sha256"] = "0" * 64
         mutations.append(stale_runner)
+
+        obsolete_runner_role = deepcopy(active)
+        obsolete_runner_role["programLineage"]["runner"] = (
+            obsolete_runner_role["programLineage"].pop("pythonRunner")
+        )
+        mutations.append(obsolete_runner_role)
+
+        missing_program_graph = deepcopy(active)
+        missing_program_graph.pop("programGraphManifest")
+        mutations.append(missing_program_graph)
+
+        stale_program_graph = deepcopy(active)
+        stale_program_graph["programGraphManifest"]["sha256"] = "0" * 64
+        mutations.append(stale_program_graph)
 
         unconsumed = deepcopy(active)
         unconsumed["ticket"]["status"] = "issued"

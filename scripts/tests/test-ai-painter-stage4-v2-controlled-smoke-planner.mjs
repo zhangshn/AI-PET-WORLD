@@ -9,6 +9,9 @@ import {
   materializeStage4V2ControlledSmoke,
 } from "../plan-ai-painter-stage4-v2-controlled-smoke.mjs";
 import {
+  materializeStage4V2ReadonlyGpuQualification,
+} from "../plan-ai-painter-stage4-v2-readonly-gpu-qualification.mjs";
+import {
   readSmokePayload,
 } from "../lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
 import {
@@ -84,11 +87,14 @@ try {
   assert.equal(terminal.trainingStarted, false);
 } finally { positive.cleanup(); }
 
+await testRealQualificationPlannerToSmokePlanner();
+
 for (const [role, relative] of [
   ["launchIntentValidator", "scripts/lib/ai-painter-stage4-v2-controlled-smoke-launch-intent-v1.mjs"],
   ["immutableRegistryEvidence", "scripts/lib/ai-painter-immutable-current-registry-evidence-v1.mjs"],
   ["genericBackgroundLauncher", "scripts/lib/ai-painter-autonomous-background-launcher-v1.mjs"],
   ["exactlyOnceBackgroundSpawn", "scripts/lib/ai-painter-exactly-once-background-spawn-v1.mjs"],
+  ["transitiveProgramGraphDependency", "scripts/lib/ai-painter-program-event-store.mjs"],
 ]) {
   const lineageTamper = fixture();
   try {
@@ -102,11 +108,13 @@ for (const [role, relative] of [
     });
     const manifest = readBound(lineageTamper.root, result.packageManifest);
     const payload = readBound(lineageTamper.root, manifest.packagePayload);
-    assert.equal(payload.programLineage[role].path, relative,
-      `Smoke payload omitted ${role} program lineage`);
+    if (role !== "transitiveProgramGraphDependency") {
+      assert.equal(payload.programLineage[role].path, relative,
+        `Smoke payload omitted ${role} program lineage`);
+    }
     mutateValidBytes(lineageTamper, relative);
     assert.throws(() => readSmokePayload(lineageTamper.root, payload.packageId),
-      /SHA-256 mismatch/u,
+      /SHA-256 mismatch|program graph manifest differs/u,
       `Smoke package accepted post-materialization ${role} substitution`);
   } finally { lineageTamper.cleanup(); }
 }
@@ -286,6 +294,41 @@ for (const [name, mutate, pattern] of [
   ["qualification_terminal", (f) => {
     f.current.currentTaskTerminal.status = "stage4_v2_readonly_gpu_qualification_failed";
   }, /qualification_passed/u],
+  ["qualification_finalization_replacement", (f) => {
+    fs.appendFileSync(findSingle(f.root,
+      ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages",
+      "finalization.json"), " ", "utf8");
+  }, /SHA-256|hash|differs/u],
+  ["qualification_active_config_replacement", (f) => {
+    fs.appendFileSync(findSingle(f.root,
+      ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages",
+      "active-config.json"), " ", "utf8");
+  }, /SHA-256|hash|differs/u],
+  ["qualification_result_replacement", (f) => {
+    fs.appendFileSync(findSingle(f.root,
+      ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages",
+      "qualification-result.json"), " ", "utf8");
+  }, /SHA-256|hash|differs/u],
+  ["qualification_gpu_diagnostic_replacement", (f) => {
+    fs.appendFileSync(findSingle(f.root,
+      ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages",
+      "gpu-diagnostic.json"), " ", "utf8");
+  }, /SHA-256|hash|differs/u],
+  ["qualification_cuda_telemetry_replacement", (f) => {
+    fs.appendFileSync(findSingle(f.root,
+      ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages",
+      "cuda-telemetry.json"), " ", "utf8");
+  }, /SHA-256|hash|differs/u],
+  ["qualification_preflight_replacement", (f) => {
+    fs.appendFileSync(findSingle(f.root,
+      ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages",
+      "preflight-report.json"), " ", "utf8");
+  }, /SHA-256|hash|differs/u],
+  ["qualification_ticket_consumption_replacement", (f) => {
+    fs.appendFileSync(findSingle(f.root,
+      ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages",
+      "ticket-consumption.json"), " ", "utf8");
+  }, /SHA-256|hash|differs/u],
   ["lifecycle", (f) => {
     f.current.registry.lifecycleStage = "cpu_contract_verified";
   }, /snapshot content mismatch|readonly_gpu_qualified/u],
@@ -330,7 +373,7 @@ for (const [name, mutate, pattern] of [
     const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
     manifest.packagePayload = binding(f.root, qualificationPayloadPath);
     fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-  }, /SHA-256|hash|mismatch/u],
+  }, /SHA-256|hash|mismatch|differs/u],
 ]) {
   const negative = fixture();
   try {
@@ -347,7 +390,248 @@ for (const [name, mutate, pattern] of [
   } finally { negative.cleanup(); }
 }
 
-process.stdout.write(`Stage4 V2 Smoke real planner: 2 positive + ${prefixCrashHooks.length} pre-terminal crash recoveries + 16 pre-materialization negative cases + 4 post-materialization program-lineage substitutions passed.\n`);
+process.stdout.write(`Stage4 V2 Smoke real planner: 3 positive (including real qualification-planner to Smoke-planner handoff) + ${prefixCrashHooks.length} pre-terminal crash recoveries + 23 pre-materialization negative cases + 5 post-materialization program-graph substitutions passed.\n`);
+
+async function testRealQualificationPlannerToSmokePlanner() {
+  const value = fixture();
+  try {
+    const root = value.root;
+    const datasetPath = path.join(root,
+      "data/ai-painter/system-governance/ai-painter-stage4-v2-mvp64-dataset-release-v1.json");
+    const dataset = JSON.parse(fs.readFileSync(datasetPath, "utf8"));
+    const validationSample = dataset.samples.find((sample) => sample.sampleId === SAMPLE_ID);
+    assert.ok(validationSample, "real-chain fixture lost validation sample 194");
+    dataset.samples.forEach((sample, index) => {
+      if (sample.sampleId === SAMPLE_ID) sample.split = "validation";
+      else if (index < 48) sample.split = "train";
+      else if (index < 56) sample.split = "validation";
+      else if (index < 60) sample.split = "challenge";
+      else sample.split = "regression";
+    });
+    const firstTrain = dataset.samples.find((sample) => sample.sampleId !== SAMPLE_ID);
+    firstTrain.sampleId =
+      "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3";
+    fs.writeFileSync(datasetPath, `${JSON.stringify(dataset, null, 2)}\n`, "utf8");
+    const datasetRelease = binding(root, datasetPath);
+    const thresholdPath = path.join(root,
+      "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json");
+    const threshold = binding(root, thresholdPath);
+    const condition = binding(root, write(root,
+      ".runtime/fixtures/real-chain-condition-contract.json", { status: "fixture" }));
+    const loss = binding(root, write(root,
+      ".runtime/fixtures/real-chain-loss-contract.json", { status: "fixture" }));
+    const autoencoder = binding(root, path.join(root,
+      ".runtime/fixtures/project-autoencoder.pt"));
+    const autoencoderManifest = binding(root, write(root,
+      ".runtime/fixtures/real-chain-autoencoder-source.json", { status: "fixture" }));
+    const foundation = binding(root, write(root,
+      ".runtime/fixtures/real-chain-foundation-contract.json", {
+        assetIdentity: "fixture-autoencoder",
+        capabilityReleaseStatus: "not_released",
+        lineageInterpretation: { denoiserWeightsMayBeLoaded: false },
+        checkpoint: autoencoder,
+        sourceManifest: autoencoderManifest,
+      }));
+    const sourceManifest = dataset.sourcePackage.manifest;
+    const sourceIndex = dataset.sourcePackage.sourceIndex;
+    const programBindings = {
+      modelFactory: binding(root, path.join(root,
+        ...QUALIFICATION_PROGRAM_PATHS.modelFactory.split("/"))),
+      successorModule: binding(root, path.join(root,
+        ...QUALIFICATION_PROGRAM_PATHS.successorModule.split("/"))),
+      trainer: binding(root, path.join(root,
+        ...QUALIFICATION_PROGRAM_PATHS.trainer.split("/"))),
+      trainerSupport: binding(root, path.join(root,
+        ...QUALIFICATION_PROGRAM_PATHS.trainerSupport.split("/"))),
+    };
+    const parentContract = binding(root, write(root,
+      ".runtime/fixtures/real-chain-v2-parent-contract.json", {
+        schemaVersion:
+          "stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2",
+        contractId:
+          "stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2",
+        architectureId: CAPABILITY,
+        status: "cpu_supported_inactive",
+        activationGates: { gpuNow: false, trainingNow: false },
+        conditionContract: condition,
+        datasetBinding: { ...datasetRelease, sourceManifest, sourceIndex },
+        lossContract: loss,
+        reviewThresholdContract: threshold,
+        foundationAssetBinding: { ...foundation, identity: "fixture-autoencoder" },
+        programBindings,
+      }));
+    const cpuReport = binding(root, write(root,
+      ".runtime/fixtures/real-chain-cpu-report.json", { status: "fixture" }));
+    const sourceTerminal = binding(root, write(root,
+      ".runtime/fixtures/real-chain-source-terminal.json", { status: "fixture" }));
+    const sourceClassification = binding(root, write(root,
+      ".runtime/fixtures/real-chain-source-classification.json", { status: "fixture" }));
+    const cpuTerminal = binding(root, write(root,
+      ".runtime/fixtures/real-chain-cpu-terminal.json", {
+        schemaVersion: "stage4-v2-cpu-contract-acceptance-terminal-v1",
+        executionState: "completed",
+        status: "stage4_v2_cpu_contract_acceptance_passed_inactive",
+        activationState: "inactive",
+        ownerAuthorizationRequired: false,
+        safety: { gpuStarted: false, trainingStarted: false },
+        cpuAcceptanceReport: cpuReport,
+        sourceAdjudication: {
+          terminal: sourceTerminal,
+          classification: sourceClassification,
+        },
+        successorContract: parentContract,
+      }));
+    const cpuCapsule = binding(root, write(root,
+      ".runtime/fixtures/real-chain-cpu-capsule.json", { status: "fixture" }));
+    let visible = installCurrentRegistry(root, {
+      registryRevision: 100,
+      eventSequence: 100,
+      transactionId: "real-chain-cpu-current",
+      capabilityVersion: CAPABILITY,
+      packageId: "real-chain-cpu-package",
+      runId: "real-chain-cpu-run",
+      taskId: "plan_stage4_v2_readonly_gpu_qualification",
+      taskKind: "cpu_readonly_gpu_qualification_planning",
+      nextMachineAction: "plan:ai-painter-stage4-v2-readonly-gpu-qualification",
+      lifecycleStage: "cpu_contract_verified",
+      executionState: "package_materialized",
+      activeExecution: null,
+      taskCapsule: cpuCapsule,
+      terminalEvidence: cpuTerminal,
+    });
+    const programEvents = new Map();
+    const qualifiedPackage = await materializeStage4V2ReadonlyGpuQualification({
+      projectRoot: root,
+      now: new Date("2026-09-01T00:10:00.000Z"),
+      machineKeyProtector: KEY_PROTECTOR,
+      currentRegistryReader: async () => visible,
+      registryWriter: async (input) => {
+        visible = {
+          ok: true,
+          registrySha256: "a".repeat(64),
+          registry: {
+            ...input,
+            registryRevision: 101,
+            eventSequence: 101,
+            activeExecution: null,
+            terminalEvidence: binding(root, path.join(root,
+              ...input.terminalEvidencePath.split("/"))),
+            taskCapsule: binding(root, path.join(root,
+              ...input.taskCapsulePath.split("/"))),
+          },
+          currentTaskTerminal: JSON.parse(fs.readFileSync(path.join(root,
+            ...input.terminalEvidencePath.split("/")), "utf8")),
+        };
+        return visible;
+      },
+      programEventWriter: (event) => {
+        programEvents.set(event.id, structuredClone(event));
+        return {
+          event,
+          ledger: { path: ".runtime/fixtures/events.jsonl", sha256: "1".repeat(64) },
+          latest: { path: ".runtime/fixtures/latest.json", sha256: "2".repeat(64) },
+          catalog: {
+            ledgerArtifact: { path: ".runtime/fixtures/events.jsonl", sha256: "1".repeat(64) },
+            latestArtifact: { path: ".runtime/fixtures/latest.json", sha256: "2".repeat(64) },
+          },
+        };
+      },
+    });
+    assert.equal(programEvents.size, 1,
+      "real qualification planner did not commit one materialization event");
+    const qualificationManifest = readBound(root, qualifiedPackage.packageManifest);
+    const qualificationPayload = readBound(root, qualificationManifest.packagePayload);
+    assert.equal(qualificationPayload.programLineage.pythonRunner.path,
+      QUALIFICATION_PROGRAM_PATHS.pythonRunner);
+    assert.equal(Object.hasOwn(qualificationPayload.programLineage, "runner"), false,
+      "real qualification planner revived obsolete runner role");
+
+    const qualificationRoot = path.dirname(path.join(root,
+      ...qualifiedPackage.packageManifest.path.split("/")));
+    const passedTerminal = materializePassedQualificationEvidence(root, {
+      directory: path.relative(root, qualificationRoot).replaceAll("\\", "/"),
+      packageId: qualifiedPackage.packageId,
+      runId: qualifiedPackage.runId,
+      payloadBinding: qualificationManifest.packagePayload,
+      payload: qualificationPayload,
+    });
+    const qualificationCapsule = binding(root, write(root,
+      ".runtime/fixtures/real-chain-qualified-capsule.json", { status: "fixture" }));
+    visible = installCurrentRegistry(root, {
+      registryRevision: 102,
+      eventSequence: 102,
+      transactionId: "real-chain-qualified-current",
+      capabilityVersion: CAPABILITY,
+      packageId: qualifiedPackage.packageId,
+      runId: qualifiedPackage.runId,
+      taskId: "plan_stage4_v2_controlled_smoke",
+      taskKind: "readonly_gpu_qualification",
+      nextMachineAction: PLAN_ACTION,
+      lifecycleStage: "readonly_gpu_qualified",
+      executionState: "completed",
+      activeExecution: null,
+      taskCapsule: qualificationCapsule,
+      terminalEvidence: passedTerminal,
+    });
+    const lifecycleRoot = `.runtime/ai-painter/capability-lifecycle/${CAPABILITY}`;
+    write(root, `${lifecycleRoot}/readonly-evidence-real-chain.json`, {
+      schemaVersion: "ai-painter-capability-stage-evidence-v1",
+      bindings: [passedTerminal],
+    });
+    write(root, `${lifecycleRoot}/state.json`, {
+      schemaVersion: "ai-painter-capability-lifecycle-state-v1",
+      state: "readonly_gpu_qualified",
+      latestEvidence: { path: "readonly-evidence-real-chain.json" },
+    });
+    const smoke = await materializeStage4V2ControlledSmoke({
+      projectRoot: root,
+      now: new Date("2026-09-01T00:20:00.000Z"),
+      machineKeyProtector: KEY_PROTECTOR,
+      commitCurrentRegistry: false,
+      appendProgramEvent: false,
+      currentRegistryReader: async () => visible,
+    });
+    const smokeManifest = readBound(root, smoke.packageManifest);
+    const smokePayload = readBound(root, smokeManifest.packagePayload);
+    assert.deepEqual(smokePayload.readonlyGpuQualificationTerminal, passedTerminal);
+    assert.deepEqual(smokePayload.programLineage.trainer,
+      qualificationPayload.programLineage.trainer,
+    "full Smoke planner did not consume the real qualification planner lineage");
+    assert.equal(smoke.trainingStarted, false);
+    assert.equal(smoke.gpuStarted, false);
+  } finally {
+    value.cleanup();
+  }
+}
+
+function installCurrentRegistry(root, fields) {
+  const registry = {
+    schemaVersion: "ai-painter-current-execution-registry-v1",
+    ...fields,
+  };
+  const currentPath = write(root,
+    ".runtime/ai-painter/current-execution-registry/current.json", registry);
+  const stagedPath = write(root,
+    `.runtime/ai-painter/current-execution-registry/transactions/${registry.transactionId}/current.staged.json`,
+    registry);
+  const stagedBinding = binding(root, stagedPath);
+  write(root,
+    `.runtime/ai-painter/current-execution-registry/transactions/${registry.transactionId}/transaction.json`, {
+      schemaVersion: "ai-painter-current-execution-registry-transaction-v1",
+      transactionId: registry.transactionId,
+      status: "committed",
+      registryRevision: registry.registryRevision,
+      currentSha256: sha256(currentPath),
+      currentStaged: stagedBinding,
+    });
+  return {
+    ok: true,
+    registrySha256: sha256(currentPath),
+    registry,
+    currentTaskTerminal: JSON.parse(fs.readFileSync(path.join(root,
+      ...registry.terminalEvidence.path.split("/")), "utf8")),
+  };
+}
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "stage4-v2-smoke-planner-"));
@@ -427,15 +711,6 @@ function fixture() {
     });
   const threshold = binding(root, thresholdPath);
   const autoencoder = evidence("project-autoencoder.pt", { frozen: true });
-  const qualificationTerminalPath = write(root,
-    ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages/qualification-package/terminal.json", {
-      schemaVersion: "ai-painter-stage4-v2-readonly-gpu-terminal-v1",
-      executionState: "completed",
-      status: "stage4_v2_readonly_gpu_qualification_passed",
-      packageId: "qualification-package",
-      runId: "qualification-run",
-    });
-  const qualificationTerminal = binding(root, qualificationTerminalPath);
   const qualificationProgramLineage = Object.fromEntries(
     Object.entries(QUALIFICATION_PROGRAM_PATHS).map(([role, logicalPath]) => [
       role,
@@ -454,8 +729,11 @@ function fixture() {
       schemaVersion: "ai-painter-stage4-v2-readonly-gpu-package-payload-v1",
       packageId: "qualification-package",
       runId: "qualification-run",
+      capabilityVersion: CAPABILITY,
+      outputDirectory: ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification/qualification-run",
       bindings: { datasetRelease, reviewThresholdContract: threshold },
       autoencoderBinding: autoencoder,
+      fixedInputs: { seed: 20263722, resolution: { width: 256, height: 192 } },
       inputEvidence: [
         datasetRelease,
         sourceManifest,
@@ -469,13 +747,26 @@ function fixture() {
       programGraphManifest: qualificationProgramGraph,
     });
   const qualificationPayload = binding(root, qualificationPayloadPath);
-  write(root,
+  const qualificationManifestPath = write(root,
     ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages/qualification-package/package-manifest.json", {
       schemaVersion: "ai-painter-stage4-v2-readonly-gpu-package-manifest-v1",
+      status: "materialized_not_executed",
       packageId: "qualification-package",
+      runId: "qualification-run",
+      capabilityVersion: CAPABILITY,
       packagePayload: qualificationPayload,
       programGraphManifest: qualificationProgramGraph,
+      outputDirectory: ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification/qualification-run",
     });
+  const qualificationTerminal = materializePassedQualificationEvidence(root, {
+    directory: ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages/qualification-package",
+    packageId: "qualification-package",
+    runId: "qualification-run",
+    payloadBinding: qualificationPayload,
+    payload: JSON.parse(fs.readFileSync(qualificationPayloadPath, "utf8")),
+  });
+  const qualificationTerminalPath = path.join(root,
+    ...qualificationTerminal.path.split("/"));
 
   const capsule = evidence("qualification-capsule.json");
   const transactionId = "current-execution-registry-fixture";
@@ -532,6 +823,174 @@ function fixture() {
     currentRegistryDigest: directoryDigest(currentRegistryRoot),
     cleanup: () => fs.rmSync(root, { recursive: true, force: true }),
   };
+}
+
+function materializePassedQualificationEvidence(root, {
+  directory,
+  packageId,
+  runId,
+  payloadBinding,
+  payload,
+}) {
+  const evidence = (name, value) => binding(root, write(root,
+    `${directory}/${name}`, value));
+  const recordedAtUtc = "2026-09-01T00:15:00.000Z";
+  const activeConfig = evidence("active-config.json", {
+    schemaVersion: "ai-painter-stage4-v2-readonly-gpu-active-config-v1",
+    status: "active",
+    packageId,
+    runId,
+    capabilityVersion: CAPABILITY,
+    outputDirectory: payload.outputDirectory,
+    ticket: { ticketId: "fixture-ticket", status: "consumed_once" },
+    bindings: payload.bindings,
+    programLineage: payload.programLineage,
+    programGraphManifest: payload.programGraphManifest,
+    fixedInputs: payload.fixedInputs,
+    autoencoderBinding: payload.autoencoderBinding,
+    safety: {
+      gpuForwardAllowed: true,
+      autogradGradAllowed: true,
+      autoencoderCheckpointReadAllowed: true,
+      denoiserCheckpointReadAllowed: false,
+      optimizerAllowed: false,
+      backwardAllowed: false,
+      weightMutationAllowed: false,
+      checkpointWriteAllowed: false,
+      trainingAllowed: false,
+      smokeAllowed: false,
+      stage0Allowed: false,
+      formalInferenceAllowed: false,
+      runtimeFrameAllowed: false,
+      worldEntryAllowed: false,
+    },
+    recordedAtUtc,
+  });
+  const gpuDiagnostic = evidence("gpu-diagnostic.json", {
+    schemaVersion: "ai-painter-stage4-v2-readonly-gpu-diagnostic-v1",
+    status: "passed",
+    packageId,
+    runId,
+    architectureId: CAPABILITY,
+    resolution: payload.fixedInputs.resolution,
+    all210ParametersReached: true,
+    sample194All210ParametersReached: true,
+  });
+  const cudaTelemetry = evidence("cuda-telemetry.json", {
+    schemaVersion: "ai-painter-stage4-v2-readonly-gpu-cuda-telemetry-v1",
+    status: "measured",
+    packageId,
+    runId,
+    measuredResolution: payload.fixedInputs.resolution,
+    peakGpuMemoryBytes: 1024,
+    preflightMemoryUsedAsDiagnosticPeak: false,
+  });
+  const stateIntegrity = evidence("state-integrity.json", {
+    schemaVersion: "ai-painter-stage4-v2-readonly-gpu-state-integrity-v1",
+    status: "verified_unchanged",
+    denoiserUnchanged: true,
+    autoencoderUnchanged: true,
+    allParameterGradFieldsRemainNone: true,
+    autoencoderRequiresGradParameterCount: 0,
+  });
+  const preflightReport = evidence("preflight-report.json", {
+    schemaVersion: "ai-painter-stage4-v2-readonly-gpu-preflight-report-v1",
+    status: "passed_ticket_not_consumed_gpu_workload_not_started",
+    packageId,
+    runId,
+    packagePayload: payloadBinding,
+    outputDirectory: payload.outputDirectory,
+    outputDirectoryExists: false,
+    ticketConsumed: false,
+    ownerAuthorizationRequired: false,
+    optimizerCreated: false,
+    backwardExecuted: false,
+    weightsModified: false,
+    trainingStarted: false,
+  });
+  const ticketConsumption = evidence("ticket-consumption.json", {
+    schemaVersion: "ai-painter-stage4-v2-pre-release-qualification-ticket-consumption-v1",
+    status: "consumed_once",
+    ticketId: "fixture-ticket",
+    ticketSha256: "1".repeat(64),
+    packageId,
+    packagePayloadSha256: payloadBinding.sha256,
+    runId,
+    action: "qualify:fixture",
+    outputDirectory: payload.outputDirectory,
+    issuerIdentity: "fixture",
+    issuerKeyId: "fixture",
+    machineSignatureVerified: true,
+    evidenceRecomputedAtConsumption: true,
+    ownerAuthorizationRequired: false,
+    consumedAtUtc: recordedAtUtc,
+  });
+  const qualificationResult = evidence("qualification-result.json", {
+    schemaVersion: "ai-painter-stage4-v2-readonly-gpu-qualification-v1",
+    executionState: "completed",
+    status: "stage4_v2_readonly_gpu_qualification_passed",
+    packageId,
+    runId,
+    architectureId: CAPABILITY,
+    activeConfig,
+    programGraphManifest: { binding: payload.programGraphManifest },
+    ticket: { ticketId: "fixture-ticket", status: "consumed_once" },
+    gpuDiagnostic,
+    cudaTelemetry,
+    stateIntegrity,
+    ownerAuthorizationRequired: false,
+    automaticSmokeStarted: false,
+  });
+  const registration = {
+    status: "eligible_not_registered",
+    nextTaskId: "plan_stage4_v2_controlled_smoke",
+    nextMachineAction: PLAN_ACTION,
+    capabilityVersion: CAPABILITY,
+    parentQualificationRunId: runId,
+    fixedInputs: payload.fixedInputs,
+    ownerAuthorizationRequired: false,
+    automaticExecutionAllowed: true,
+  };
+  const finalization = evidence("finalization.json", {
+    schemaVersion: "ai-painter-stage4-v2-readonly-gpu-finalization-v1",
+    executionState: "completed",
+    status: "stage4_v2_readonly_gpu_qualification_passed",
+    packageId,
+    runId,
+    capabilityVersion: CAPABILITY,
+    ticketConsumption,
+    preflightReport,
+    activeConfig,
+    gpuDiagnostic,
+    cudaTelemetry,
+    stateIntegrity,
+    qualificationResult,
+    controlledSmokeRegistration: registration,
+    checkpointWritten: false,
+    optimizerCreated: false,
+    backwardExecuted: false,
+    weightsModified: false,
+    trainingStarted: false,
+    completedAtUtc: recordedAtUtc,
+  });
+  return evidence("qualification-passed-terminal.json", {
+    schemaVersion: "ai-painter-stage4-v2-readonly-gpu-terminal-v1",
+    executionState: "completed",
+    status: "stage4_v2_readonly_gpu_qualification_passed",
+    packageId,
+    runId,
+    capabilityVersion: CAPABILITY,
+    finalization,
+    qualificationResult,
+    stateIntegrity,
+    controlledSmokeRegistration: registration,
+    nextMachineAction: PLAN_ACTION,
+    ownerAuthorizationRequired: false,
+    checkpointWritten: false,
+    weightsModified: false,
+    trainingStarted: false,
+    recordedAtUtc,
+  });
 }
 
 function copy(root, relative) {

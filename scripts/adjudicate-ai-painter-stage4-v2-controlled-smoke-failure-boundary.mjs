@@ -98,8 +98,11 @@ export async function adjudicateStage4V2ControlledSmokeFailureBoundary({
     };
     writeExclusiveJson(intentPath, intent);
   }
-  assert.deepEqual(intent.sourceTerminal, current.registry.terminalEvidence,
-    "failure adjudication intent belongs to another terminal");
+  validateFailureAdjudicationIntent(intent, {
+    packageId: terminal.packageId,
+    runId: terminal.runId,
+    sourceTerminal: current.registry.terminalEvidence,
+  });
   const result = {
     schemaVersion: "ai-painter-stage4-v2-controlled-smoke-failure-boundary-terminal-v1",
     executionState: "completed",
@@ -233,6 +236,30 @@ export async function adjudicateStage4V2ControlledSmokeFailureBoundary({
     trainingStarted: false,
     ownerAuthorizationRequired: false,
   });
+}
+
+export function validateFailureAdjudicationIntent(intent, {
+  packageId,
+  runId,
+  sourceTerminal,
+}) {
+  assert.equal(typeof intent?.recordedAtUtc, "string",
+    "failure adjudication intent recordedAtUtc is missing");
+  const recordedAt = new Date(intent.recordedAtUtc);
+  assert.equal(Number.isNaN(recordedAt.getTime()), false,
+    "failure adjudication intent recordedAtUtc is invalid");
+  assert.equal(recordedAt.toISOString(), intent.recordedAtUtc,
+    "failure adjudication intent recordedAtUtc is not canonical UTC");
+  assert.deepEqual(intent, {
+    schemaVersion: "ai-painter-stage4-v2-controlled-smoke-failure-adjudication-intent-v1",
+    status: "prepared",
+    capabilityVersion: STAGE4_V2_CAPABILITY,
+    packageId,
+    runId,
+    sourceTerminal,
+    recordedAtUtc: intent.recordedAtUtc,
+  }, "failure adjudication intent identity or immutable scope differs");
+  return true;
 }
 
 function rejectFailedSmokeCapability(root, resultBinding, recordedAtUtc) {

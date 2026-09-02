@@ -51,7 +51,8 @@ const checks = [
   ["controlled-smoke-registry-dependencies", node, ["scripts/tests/test-ai-painter-stage4-v2-smoke-registry-dependencies.mjs"]],
   ["controlled-smoke-ticket-recovery", node, ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-ticket-v1.mjs"]],
   ["controlled-smoke-issuer-publication", node, ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-issuer-publication.mjs"]],
-  ["controlled-smoke-planner", node, ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-planner.mjs"]],
+  ["controlled-smoke-planner", node,
+    ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-planner.mjs"], 360_000],
   ["controlled-smoke-execute-recovery", node, ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-execute-recovery.mjs"]],
   ["controlled-smoke-trainer-process-recovery", node, ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-trainer-process-recovery.mjs"]],
   ["controlled-smoke-evidence-telemetry", node, ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-evidence-chain.mjs"]],
@@ -61,42 +62,59 @@ const checks = [
   ["controlled-smoke-background-supervisor", node, ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-background-supervisor.mjs"]],
   ["controlled-smoke-host-recovery", node, ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-host-recovery.mjs"]],
   ["controlled-smoke-lifecycle-publication", node, ["scripts/tests/test-ai-painter-stage4-v2-lifecycle-publication.mjs"]],
+  ["controlled-smoke-failure-adjudication-intent", node, ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-failure-adjudication-intent.mjs"]],
   ["formal-plan-registry-dependencies", node, ["scripts/tests/test-ai-painter-stage4-v2-formal-plan-registry-dependencies.mjs"]],
   ["console-current-projection", node, ["scripts/check-ai-console-current-execution-projection.mjs", ...projectionArgs]],
 ];
 
 const results = [];
-for (const [identity, command, args] of checks) {
+const failures = [];
+for (const [identity, command, args, timeout = 240_000] of checks) {
   const result = spawnSync(command, args, {
+    cwd: root,
+    encoding: "utf8",
+    windowsHide: true,
+    timeout,
+  });
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  const status = result.status === 0 ? "passed" : "failed";
+  const failure = result.error
+    ? `${result.error.name}: ${result.error.message}`
+    : status === "failed" ? `exit code ${result.status}` : null;
+  results.push({ identity, status, ...(failure ? { failure } : {}) });
+  if (failure) failures.push({ identity, failure });
+}
+
+const typeScriptCli = path.join(root, "node_modules", "typescript", "bin", "tsc");
+if (!fs.existsSync(typeScriptCli)) {
+  const failure = "local TypeScript CLI is missing; run npm ci before Stage4 core checks";
+  results.push({ identity: "typescript-noemit", status: "failed", failure });
+  failures.push({ identity: "typescript-noemit", failure });
+} else {
+  const typecheck = spawnSync(node, [typeScriptCli, "--noEmit"], {
     cwd: root,
     encoding: "utf8",
     windowsHide: true,
     timeout: 240_000,
   });
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  assert.equal(result.status, 0, `${identity} failed with exit code ${result.status}`);
-  results.push({ identity, status: "passed" });
+  if (typecheck.stdout) process.stdout.write(typecheck.stdout);
+  if (typecheck.stderr) process.stderr.write(typecheck.stderr);
+  const status = typecheck.status === 0 ? "passed" : "failed";
+  const failure = typecheck.error
+    ? `${typecheck.error.name}: ${typecheck.error.message}`
+    : status === "failed" ? `exit code ${typecheck.status}` : null;
+  results.push({ identity: "typescript-noemit", status, ...(failure ? { failure } : {}) });
+  if (failure) failures.push({ identity: "typescript-noemit", failure });
 }
 
-const typeScriptCli = path.join(root, "node_modules", "typescript", "bin", "tsc");
-assert.ok(fs.existsSync(typeScriptCli), "local TypeScript CLI is missing; run npm ci before Stage4 core checks");
-const typecheck = spawnSync(node, [typeScriptCli, "--noEmit"], {
-  cwd: root,
-  encoding: "utf8",
-  windowsHide: true,
-  timeout: 240_000,
-});
-if (typecheck.stdout) process.stdout.write(typecheck.stdout);
-if (typecheck.stderr) process.stderr.write(typecheck.stderr);
-if (typecheck.error) throw typecheck.error;
-assert.equal(typecheck.status, 0, `TypeScript noEmit failed with exit code ${typecheck.status}`);
-results.push({ identity: "typescript-noemit", status: "passed" });
-
-process.stdout.write(`${JSON.stringify({
-  status: "passed",
+const summary = {
+  status: failures.length === 0 ? "passed" : "failed",
   currentProjectionMode: projectionArgs.length === 0 ? "live_immutable_evidence" : "static_contract_plus_atomic_fixture",
   checks: results,
+  failures,
   gpuStarted: false,
   trainingStarted: false,
-}, null, 2)}\n`);
+};
+process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+if (failures.length > 0) process.exitCode = 1;

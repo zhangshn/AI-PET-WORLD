@@ -1884,6 +1884,7 @@ function buildActiveConfig({ packagePayload, ticket, ticketBinding, consumptionB
     },
     bindings: packagePayload.bindings,
     programLineage: packagePayload.programLineage,
+    programGraphManifest: packagePayload.programGraphManifest,
     fixedInputs: packagePayload.fixedInputs,
     autoencoderBinding: packagePayload.autoencoderBinding,
     preflightReport: preflightBinding,
@@ -1999,6 +2000,16 @@ export function validatePythonQualificationEvidence({ root, packagePayload, acti
   assert.equal(result.ticket?.ticketId, activeConfig.ticket?.ticketId,
     "qualification ticket identity mismatch");
   assert.equal(result.ticket?.status, "consumed_once", "qualification ticket was not consumed once");
+  const graphManifest = readBoundProjectJson(root, packagePayload.programGraphManifest);
+  assertBindingIdentity(result.programGraphManifest?.binding,
+    packagePayload.programGraphManifest, "qualification Python program graph");
+  assert.equal(result.programGraphManifest?.graphId, graphManifest.graphId,
+    "qualification Python program graph identity mismatch");
+  assert.equal(result.programGraphManifest?.graphContentSha256,
+    graphManifest.graphContentSha256,
+  "qualification Python program graph content identity mismatch");
+  assert.equal(result.programGraphManifest?.fileCount, graphManifest.fileCount,
+    "qualification Python program graph file count mismatch");
   assertProjectBinding(root, result.ticket?.ticket, "qualification signed ticket");
   assertProjectBinding(root, result.ticket?.consumption, "qualification ticket consumption");
   assertBindingIdentity(result.ticket.ticket, {

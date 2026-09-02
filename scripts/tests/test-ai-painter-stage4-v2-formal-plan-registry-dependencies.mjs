@@ -17,12 +17,119 @@ const runId = "stage4-v2-controlled-smoke-formal-fixture-run";
 try {
   const evidenceRoot = path.join(fixtureRoot, ".runtime", "fixture-evidence");
   fs.mkdirSync(evidenceRoot, { recursive: true });
-  const finalizationPath = path.join(evidenceRoot, "smoke-finalization.json");
-  fs.writeFileSync(finalizationPath, `${JSON.stringify({
-    schemaVersion: "fixture-smoke-finalization-v1",
+  const writeEvidence = (name, value) => {
+    const target = path.join(evidenceRoot, name);
+    fs.writeFileSync(target, typeof value === "string"
+      ? value : `${JSON.stringify(value, null, 2)}\n`, "utf8");
+    return bind(fixtureRoot, target);
+  };
+  const programGraph = writeEvidence("program-graph.json", {
+    schemaVersion: "ai-painter-program-graph-manifest-v1",
+    graphId: "stage4-v2-controlled-smoke-program-graph-v1",
+  });
+  const payload = writeEvidence("package-payload.json", {
+    schemaVersion: "ai-painter-stage4-v2-controlled-smoke-package-payload-v1",
+    packageId,
+    runId,
+    capabilityVersion,
+    outputDirectory: ".runtime/fixture-evidence",
+    programGraphManifest: programGraph,
+  });
+  const packageManifest = writeEvidence("smoke-package-manifest.json", {
+    schemaVersion: "ai-painter-stage4-v2-controlled-smoke-package-manifest-v1",
+    packageId,
+    runId,
+    capabilityVersion,
+    packagePayload: payload,
+    programGraphManifest: programGraph,
+  });
+  const resourceTelemetry = writeEvidence("resource-telemetry.json", {
+    schemaVersion: "fixture-resource-telemetry-v1",
+  });
+  const checkpoint = writeEvidence("best-smoke-checkpoint.pt", "fixture-checkpoint");
+  const checkpointMetadata = writeEvidence("best-smoke-checkpoint.metadata.json", {
+    schemaVersion: "fixture-checkpoint-metadata-v1",
+  });
+  const metrics = writeEvidence("epoch-metrics.json", {
+    schemaVersion: "ai-painter-stage4-v2-controlled-smoke-epoch-metrics-v1",
+  });
+  const previews = [1, 5, 10, 20, 30].map((epoch) => ({
+    epoch,
+    ...writeEvidence(`preview-epoch-${epoch}.png`, `preview-${epoch}`),
+  }));
+  const trainingManifest = writeEvidence("manifest.json", {
+    schemaVersion: "ai-painter-stage4-v2-controlled-smoke-training-manifest-v1",
+    status: "training_completed",
+    packageId,
+    runId,
+    architectureId: capabilityVersion,
+    resolution: { width: 256, height: 192 },
+    epochCount: 30,
+    previews,
+    checkpoint,
+    checkpointMetadata,
+    metrics,
+    resourceTelemetry,
+    historicalDenoiserCheckpointRead: false,
+    parentDenoiserCheckpoint: null,
+    modelState: { changedByTraining: true },
+    autoencoderState: {
+      frozen: true,
+      beforeSha256: "1".repeat(64),
+      afterSha256: "1".repeat(64),
+    },
+  });
+  const machineReview = writeEvidence("machine-review.json", {
+    schemaVersion: "ai-painter-stage4-v2-machine-review-result-v1",
+    status: "stage4_v2_machine_review_passed",
+    architectureId: capabilityVersion,
+    smokeRunId: runId,
+    reviewNodeCount: 5,
+    passCount: 5,
+    failCount: 0,
+  });
+  const reviewExecutionBinding = writeEvidence("review-execution.json", {
+    schemaVersion: "fixture-review-execution-v1",
+  });
+  const reviewPhaseEvidence = writeEvidence("review-phase.json", {
+    schemaVersion: "fixture-review-phase-v1",
+    result: { machineReview },
+  });
+  const causalAdjudication = writeEvidence("causal-adjudication.json", {
+    schemaVersion: "ai-painter-stage4-v2-controlled-smoke-causal-adjudication-v1",
+    status: "completed_deterministic_adjudication",
+    packageId,
+    runId,
+    decision: "controlled_smoke_qualified",
+    previewPassCount: 5,
+    previewFailCount: 0,
+    sourceMachineReview: machineReview,
+    sourceReviewExecutionBinding: reviewExecutionBinding,
+    sourceReviewPhaseEvidence: reviewPhaseEvidence,
+  });
+  const adjudicationPhaseEvidence = writeEvidence("adjudication-phase.json", {
+    schemaVersion: "fixture-adjudication-phase-v1",
+    result: { adjudication: causalAdjudication },
+  });
+  const finalizationBinding = writeEvidence("smoke-finalization.json", {
+    schemaVersion: "ai-painter-stage4-v2-controlled-smoke-finalization-v1",
+    executionState: "completed",
     status: "stage4_v2_controlled_smoke_passed",
-  }, null, 2)}\n`, "utf8");
-  const finalizationBinding = bind(fixtureRoot, finalizationPath);
+    packageId,
+    runId,
+    capabilityVersion,
+    trainingManifest,
+    machineReview,
+    reviewExecutionBinding,
+    reviewPhaseEvidence,
+    causalAdjudication,
+    adjudicationPhaseEvidence,
+    resourceTelemetry,
+  });
+  const genericTerminal = writeEvidence("closed-loop-terminal.json", {
+    schemaVersion: "ai-painter-autonomous-closed-loop-terminal-v1",
+    finalResult: { finalization: finalizationBinding },
+  });
   const sourceTerminalPath = path.join(evidenceRoot, "smoke-terminal.json");
   const sourceTerminal = {
     schemaVersion: "ai-painter-stage4-v2-controlled-smoke-terminal-v1",
@@ -30,7 +137,16 @@ try {
     status: "stage4_v2_controlled_smoke_passed",
     packageId,
     runId,
+    capabilityVersion,
+    packageManifest,
+    packagePayload: payload,
+    programGraphManifest: programGraph,
+    autonomousClosedLoopTerminal: genericTerminal,
     smokeFinalization: finalizationBinding,
+    nextMachineAction: "plan:ai-painter-stage4-v2-formal-stage0-to-stage2",
+    ownerAuthorizationRequired: false,
+    automaticSuccessorAllowed: true,
+    formalTrainingStarted: false,
     recordedAtUtc: fixedAt,
   };
   fs.writeFileSync(sourceTerminalPath,

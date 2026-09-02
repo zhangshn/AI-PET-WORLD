@@ -33,27 +33,10 @@ for import_root in (SOURCE_ROOT, SCRIPT_DIR):
     if str(import_root) not in sys.path:
         sys.path.insert(0, str(import_root))
 
-from ai_painter.complete_world import build_complete_world_system  # noqa: E402
-from ai_painter.complete_world.dataset import (  # noqa: E402
-    AiAssistedConditionalDenoiserDataset,
-)
-from ai_painter_stage4_semantic_transport_v2_trainer_support import (  # noqa: E402
-    ARCHITECTURE_ID,
-    FORMAL_CONDITION_CHANNEL_ORDER,
-    FORMAL_CONTINUOUS_CONDITION_ORDER,
-    FORMAL_DISCRETE_CONDITION_ORDER,
-    RESPONSIBILITY_IDENTITIES,
-    build_stage4_semantic_transport_v2_cpu_inactive_config,
-    stage4_semantic_transport_v2_optimizer_parameters,
-    state_dict_sha256,
-    validate_stage4_semantic_transport_v2_autoencoder_boundary,
-    validate_stage4_semantic_transport_v2_trainer_contract,
-)
-import train_ai_assisted_conditional_denoiser as trainer  # noqa: E402
-
-
 ACTIVE_CONFIG_SCHEMA = "ai-painter-stage4-v2-readonly-gpu-active-config-v1"
 QUALIFICATION_SCHEMA = "ai-painter-stage4-v2-readonly-gpu-qualification-v1"
+PROGRAM_GRAPH_SCHEMA = "ai-painter-program-graph-manifest-v1"
+PROGRAM_GRAPH_ID = "stage4-v2-readonly-gpu-qualification-program-graph-v1"
 DATASET_RELEASE_SCHEMA = "ai-painter-stage4-v2-dataset-release-contract-v1"
 DATASET_RELEASE_IDENTITY = (
     "ai-painter-stage4-v2-mvp64-"
@@ -126,6 +109,64 @@ TRAINER_SUPPORT_PROGRAM_PATH = Path(
     "ml/ai-painter/scripts/"
     "ai_painter_stage4_semantic_transport_v2_trainer_support.py"
 )
+
+
+_PROJECT_MODULES_LOADED = False
+
+
+def _load_project_modules() -> None:
+    """Import project code only after the active program graph was verified."""
+
+    global _PROJECT_MODULES_LOADED
+    global AiAssistedConditionalDenoiserDataset
+    global ARCHITECTURE_ID
+    global FORMAL_CONDITION_CHANNEL_ORDER
+    global FORMAL_CONTINUOUS_CONDITION_ORDER
+    global FORMAL_DISCRETE_CONDITION_ORDER
+    global RESPONSIBILITY_IDENTITIES
+    global build_complete_world_system
+    global build_stage4_semantic_transport_v2_cpu_inactive_config
+    global stage4_semantic_transport_v2_optimizer_parameters
+    global state_dict_sha256
+    global trainer
+    global validate_stage4_semantic_transport_v2_autoencoder_boundary
+    global validate_stage4_semantic_transport_v2_trainer_contract
+    if _PROJECT_MODULES_LOADED:
+        return
+    from ai_painter.complete_world import (  # noqa: PLC0415
+        build_complete_world_system as imported_build_complete_world_system,
+    )
+    from ai_painter.complete_world.dataset import (  # noqa: PLC0415
+        AiAssistedConditionalDenoiserDataset as imported_dataset,
+    )
+    from ai_painter_stage4_semantic_transport_v2_trainer_support import (  # noqa: PLC0415
+        ARCHITECTURE_ID as imported_architecture_id,
+        FORMAL_CONDITION_CHANNEL_ORDER as imported_condition_order,
+        FORMAL_CONTINUOUS_CONDITION_ORDER as imported_continuous_order,
+        FORMAL_DISCRETE_CONDITION_ORDER as imported_discrete_order,
+        RESPONSIBILITY_IDENTITIES as imported_responsibility_identities,
+        build_stage4_semantic_transport_v2_cpu_inactive_config as imported_config_builder,
+        stage4_semantic_transport_v2_optimizer_parameters as imported_optimizer_parameters,
+        state_dict_sha256 as imported_state_dict_sha256,
+        validate_stage4_semantic_transport_v2_autoencoder_boundary as imported_autoencoder_boundary,
+        validate_stage4_semantic_transport_v2_trainer_contract as imported_trainer_contract,
+    )
+    import train_ai_assisted_conditional_denoiser as imported_trainer  # noqa: PLC0415
+
+    build_complete_world_system = imported_build_complete_world_system
+    AiAssistedConditionalDenoiserDataset = imported_dataset
+    ARCHITECTURE_ID = imported_architecture_id
+    FORMAL_CONDITION_CHANNEL_ORDER = imported_condition_order
+    FORMAL_CONTINUOUS_CONDITION_ORDER = imported_continuous_order
+    FORMAL_DISCRETE_CONDITION_ORDER = imported_discrete_order
+    RESPONSIBILITY_IDENTITIES = imported_responsibility_identities
+    build_stage4_semantic_transport_v2_cpu_inactive_config = imported_config_builder
+    stage4_semantic_transport_v2_optimizer_parameters = imported_optimizer_parameters
+    state_dict_sha256 = imported_state_dict_sha256
+    validate_stage4_semantic_transport_v2_autoencoder_boundary = imported_autoencoder_boundary
+    validate_stage4_semantic_transport_v2_trainer_contract = imported_trainer_contract
+    trainer = imported_trainer
+    _PROJECT_MODULES_LOADED = True
 
 REQUIRED_TRUE_SAFETY_FIELDS = (
     "gpuForwardAllowed",
@@ -235,6 +276,130 @@ def verify_binding(
     if {"path": value.get("path"), "sha256": value.get("sha256")} != observed:
         raise ValueError(f"stage4_v2_readonly_gpu_{label}_sha256_changed")
     return path, observed
+
+
+def _canonical_sha256(value: Any) -> str:
+    payload = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return sha256(payload).hexdigest()
+
+
+def _assert_no_symlink_path(path: Path, *, project_root: Path) -> None:
+    resolved_root = project_root.resolve()
+    resolved_runtime_root = (project_root / ".runtime").resolve()
+    candidate = path if path.is_absolute() else project_root / path
+    if _inside(candidate, resolved_root):
+        traversal_root = resolved_root
+        traversal_path = Path(os.path.abspath(candidate))
+    elif _inside(candidate, resolved_runtime_root):
+        # The project deliberately places .runtime on a fixed local junction.
+        # Trust that root identity, but still reject reparse points below it.
+        traversal_root = resolved_runtime_root
+        traversal_path = candidate.resolve()
+    else:
+        raise ValueError("stage4_v2_readonly_gpu_program_graph_path_escape")
+    current = traversal_root
+    relative = traversal_path.relative_to(traversal_root)
+    for part in relative.parts:
+        current = current / part
+        if current.is_symlink():
+            raise ValueError("stage4_v2_readonly_gpu_program_graph_symlink_forbidden")
+
+
+def validate_program_graph_manifest_binding(
+    value: Any,
+    *,
+    program_lineage: Mapping[str, Any],
+    project_root: Path = PROJECT_ROOT,
+) -> dict[str, Any]:
+    """Re-hash the persisted Node graph before any project module import."""
+
+    manifest_path, manifest_binding = verify_binding(
+        value,
+        label="program_graph_manifest",
+        project_root=project_root,
+    )
+    _assert_no_symlink_path(manifest_path, project_root=project_root)
+    manifest = _read_json(manifest_path, "program_graph_manifest")
+    if manifest.get("schemaVersion") != PROGRAM_GRAPH_SCHEMA:
+        raise ValueError("stage4_v2_readonly_gpu_program_graph_schema_invalid")
+    if manifest.get("status") != "immutable_program_graph_verified":
+        raise ValueError("stage4_v2_readonly_gpu_program_graph_status_invalid")
+    if manifest.get("graphId") != PROGRAM_GRAPH_ID:
+        raise ValueError("stage4_v2_readonly_gpu_program_graph_identity_invalid")
+    graph_hash = manifest.get("graphContentSha256")
+    core = {key: item for key, item in manifest.items() if key != "graphContentSha256"}
+    if graph_hash != _canonical_sha256(core):
+        raise ValueError("stage4_v2_readonly_gpu_program_graph_content_sha256_changed")
+    files = manifest.get("files")
+    if not isinstance(files, list) or not files:
+        raise ValueError("stage4_v2_readonly_gpu_program_graph_files_missing")
+    if manifest.get("fileCount") != len(files):
+        raise ValueError("stage4_v2_readonly_gpu_program_graph_file_count_changed")
+    verified_files: dict[str, dict[str, Any]] = {}
+    for index, item in enumerate(files):
+        if not isinstance(item, Mapping):
+            raise ValueError(
+                f"stage4_v2_readonly_gpu_program_graph_file_{index}_invalid"
+            )
+        logical_path = item.get("path")
+        if not isinstance(logical_path, str) or not logical_path:
+            raise ValueError(
+                f"stage4_v2_readonly_gpu_program_graph_file_{index}_path_invalid"
+            )
+        if logical_path in verified_files:
+            raise ValueError("stage4_v2_readonly_gpu_program_graph_file_duplicate")
+        absolute = project_root / Path(logical_path)
+        _assert_no_symlink_path(absolute, project_root=project_root)
+        absolute = resolve_project_path(
+            logical_path,
+            project_root=project_root,
+            must_exist=True,
+            expect_file=True,
+        )
+        observed_size = absolute.stat().st_size
+        observed_sha256 = file_sha256(absolute)
+        if item.get("byteSize") != observed_size:
+            raise ValueError("stage4_v2_readonly_gpu_program_graph_byte_size_changed")
+        if item.get("sha256") != observed_sha256:
+            raise ValueError("stage4_v2_readonly_gpu_program_graph_file_sha256_changed")
+        verified_files[logical_path] = {
+            "path": logical_path,
+            "sha256": observed_sha256,
+            "byteSize": observed_size,
+        }
+    entrypoints = manifest.get("entrypoints")
+    if not isinstance(entrypoints, list):
+        raise ValueError("stage4_v2_readonly_gpu_program_graph_entrypoints_missing")
+    entrypoint_bindings = {
+        item.get("role"): item.get("path")
+        for item in entrypoints
+        if isinstance(item, Mapping)
+    }
+    for role, declared in program_lineage.items():
+        if not isinstance(declared, Mapping):
+            raise ValueError("stage4_v2_readonly_gpu_program_lineage_binding_invalid")
+        logical_path = declared.get("path")
+        file_entry = verified_files.get(logical_path)
+        if file_entry is None or file_entry["sha256"] != declared.get("sha256"):
+            raise ValueError("stage4_v2_readonly_gpu_program_graph_lineage_mismatch")
+        if entrypoint_bindings.get(role) != logical_path:
+            raise ValueError("stage4_v2_readonly_gpu_program_graph_entrypoint_mismatch")
+    python_runner = program_lineage.get("pythonRunner")
+    if not isinstance(python_runner, Mapping) or python_runner.get("path") != RUNNER_PATH.as_posix():
+        raise ValueError("stage4_v2_readonly_gpu_python_runner_identity_invalid")
+    return {
+        "binding": manifest_binding,
+        "graphId": PROGRAM_GRAPH_ID,
+        "graphContentSha256": graph_hash,
+        "fileCount": len(files),
+        "files": verified_files,
+    }
 
 
 def _write_json_exclusive(path: Path, value: Mapping[str, Any]) -> None:
@@ -385,7 +550,7 @@ def validate_active_config_value(
         )
 
     expected_programs = {
-        "runner": RUNNER_PATH,
+        "pythonRunner": RUNNER_PATH,
         "modelFactory": MODEL_FACTORY_PATH,
         "successorModule": SUCCESSOR_MODULE_PATH,
         "trainer": TRAINER_PATH,
@@ -402,6 +567,11 @@ def validate_active_config_value(
             project_root=project_root,
             expected_path=expected_path,
         )
+    program_graph = validate_program_graph_manifest_binding(
+        active.get("programGraphManifest"),
+        program_lineage=declared_programs,
+        project_root=project_root,
+    )
 
     autoencoder = active.get("autoencoderBinding")
     autoencoder_path, autoencoder_binding = verify_binding(
@@ -425,6 +595,7 @@ def validate_active_config_value(
         "ticket": ticket,
         "bindings": verified_bindings,
         "programLineage": verified_programs,
+        "programGraphManifest": program_graph,
         "autoencoderCheckpoint": autoencoder_path,
         "autoencoderBinding": autoencoder_binding,
         "fixedInputs": dict(fixed),
@@ -1336,6 +1507,12 @@ def validate_readonly_gpu_inputs(
         output_dir=output_dir,
         project_root=project_root,
     )
+    _load_project_modules()
+    validate_program_graph_manifest_binding(
+        active.get("programGraphManifest"),
+        program_lineage=active.get("programLineage", {}),
+        project_root=project_root,
+    )
     governance = _validate_governance_chain(audit, project_root=project_root)
     model_config = build_qualification_model_config(project_root=project_root)
     formal_inputs = resolve_formal_inputs(
@@ -1359,6 +1536,12 @@ def run_readonly_gpu_qualification(inputs: Mapping[str, Any]) -> dict[str, Any]:
     output_dir = Path(inputs["outputDir"])
     if output_dir.exists():
         raise ValueError("stage4_v2_readonly_gpu_output_reuse_forbidden")
+    active_config = inputs["activeConfig"]
+    validate_program_graph_manifest_binding(
+        active_config.get("programGraphManifest"),
+        program_lineage=active_config.get("programLineage", {}),
+        project_root=PROJECT_ROOT,
+    )
     device = require_formal_cuda()
     output_dir.parent.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(exist_ok=False)
@@ -1590,6 +1773,7 @@ def run_readonly_gpu_qualification(inputs: Mapping[str, Any]) -> dict[str, Any]:
         "architectureId": ARCHITECTURE_ID,
         "activeConfig": active_audit["config"],
         "ticket": active_audit["ticket"],
+        "programGraphManifest": active_audit["programGraphManifest"],
         "gpuDiagnostic": binding(diagnostic_path),
         "cudaTelemetry": binding(telemetry_path),
         "stateIntegrity": binding(state_path),

@@ -23,6 +23,10 @@ await test("static, literal-dynamic, declared non-literal and Python closures ar
     assert.equal(first.files.some((item) => item.path === "scripts/dep.mjs"), true);
     assert.equal(first.files.some((item) => item.path === "scripts/dynamic.mjs"), true);
     assert.equal(first.files.some((item) => item.path === "scripts/alternate.mjs"), true);
+    assert.equal(first.files.some((item) => item.path === "scripts/common.cjs"), true,
+      "CommonJS literal dependency was not represented");
+    assert.equal(first.files.some((item) => item.path === "scripts/fake.mjs"), false,
+      "JavaScript string content was misclassified as an import");
     assert.equal(first.files.some((item) => item.path === "ml/ai-painter/scripts/helper.py"), true);
     assert.equal(first.imports.some((item) => item.from === "scripts/dep.mjs"
       && item.to === "scripts/root.mjs"), true,
@@ -133,6 +137,30 @@ await test("path escape is rejected before graph construction", () => {
   }
 });
 
+await test("qualification and Smoke revalidate graph before spawn, consume or GPU boundaries", () => {
+  const root = process.cwd();
+  assertOrderedWithinExport(root,
+    "scripts/launch-ai-painter-stage4-v2-readonly-gpu-qualification-background.mjs",
+    "export async function launchStage4V2ReadonlyGpuQualificationBackground",
+    "validateStage4V2QualificationProgramGraph({",
+    "const launchDirectory =");
+  assertOrderedWithinExport(root,
+    "scripts/run-ai-painter-stage4-v2-readonly-gpu-qualification.mjs",
+    "export async function runStage4V2ReadonlyGpuQualification",
+    "validateStage4V2QualificationProgramGraph({",
+    "const preflightRoot =");
+  assertOrderedWithinExport(root,
+    "scripts/launch-ai-painter-stage4-v2-controlled-smoke-background.mjs",
+    "export async function launchStage4V2ControlledSmokeBackground",
+    "validateStage4V2SmokePackagePayload(payload",
+    "const currentEvidence =");
+  assertOrderedWithinExport(root,
+    "scripts/run-ai-painter-stage4-v2-controlled-smoke.mjs",
+    "export async function runStage4V2ControlledSmoke",
+    "validateStage4V2SmokePackagePayload(payload",
+    "writeExclusiveJson(lockPath");
+});
+
 process.stdout.write(`${JSON.stringify({
   status: "passed",
   testCount: results.length,
@@ -148,9 +176,14 @@ async function test(name, body) {
 
 function createFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ai-painter-program-graph-"));
+  const parserPath = "scripts/lib/ai-painter-python-import-ast-v1.py";
+  const parserTarget = path.join(root, ...parserPath.split("/"));
+  fs.mkdirSync(path.dirname(parserTarget), { recursive: true });
+  fs.copyFileSync(path.join(process.cwd(), ...parserPath.split("/")), parserTarget);
   write(root, "scripts/root.mjs",
-    "import './dep.mjs';\nexport async function load() { return import('./dynamic.mjs'); }\n");
+    "import './dep.mjs';\nconst common = require('./common.cjs');\nconst text = \"import('./fake.mjs')\";\nexport async function load() { return import('./dynamic.mjs'); }\nexport { common, text };\n");
   write(root, "scripts/dep.mjs", "import './root.mjs';\nexport const dep = true;\n");
+  write(root, "scripts/common.cjs", "module.exports = true;\n");
   write(root, "scripts/dynamic.mjs", "export const dynamic = true;\n");
   write(root, "scripts/alternate.mjs", "export const alternate = true;\n");
   write(root, "scripts/dispatcher.mjs",
@@ -232,4 +265,18 @@ function canonical(value) {
       .map((key) => [key, canonical(value[key])]));
   }
   return value;
+}
+
+function assertOrderedWithinExport(root, logicalPath, exportMarker,
+  verificationMarker, boundaryMarker) {
+  const source = fs.readFileSync(path.join(root, ...logicalPath.split("/")), "utf8");
+  const start = source.indexOf(exportMarker);
+  assert.ok(start >= 0, `${logicalPath} export marker is missing`);
+  const body = source.slice(start);
+  const verification = body.indexOf(verificationMarker);
+  const boundary = body.indexOf(boundaryMarker);
+  assert.ok(verification >= 0, `${logicalPath} graph verification is missing`);
+  assert.ok(boundary >= 0, `${logicalPath} protected boundary is missing`);
+  assert.ok(verification < boundary,
+    `${logicalPath} graph verification occurs after the protected boundary`);
 }

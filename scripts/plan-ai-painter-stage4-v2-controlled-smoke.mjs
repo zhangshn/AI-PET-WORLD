@@ -548,10 +548,16 @@ function collectQualification(root, current) {
   const manifestBinding = bindPath(root, manifestPath);
   const manifest = readBoundJson(root, manifestBinding);
   assert.equal(manifest.schemaVersion, "ai-painter-stage4-v2-readonly-gpu-package-manifest-v1");
+  assert.equal(manifest.status, "materialized_not_executed");
   assert.equal(manifest.packageId, current.registry.packageId);
   const payload = readBoundJson(root, manifest.packagePayload);
   assert.equal(payload.schemaVersion, "ai-painter-stage4-v2-readonly-gpu-package-payload-v1");
+  assert.equal(payload.packageId, current.registry.packageId);
   assert.equal(payload.runId, current.registry.runId);
+  assert.equal(manifest.runId, payload.runId);
+  assert.equal(manifest.capabilityVersion, STAGE4_V2_CAPABILITY);
+  assert.equal(payload.capabilityVersion, STAGE4_V2_CAPABILITY);
+  assert.equal(manifest.outputDirectory, payload.outputDirectory);
   assert.deepEqual(payload.programGraphManifest, manifest.programGraphManifest,
     "qualification payload/manifest program graph binding mismatch");
   validateStage4V2QualificationProgramGraph({
@@ -561,8 +567,159 @@ function collectQualification(root, current) {
   });
   const terminalBinding = current.registry.terminalEvidence;
   const terminal = readBoundJson(root, terminalBinding);
-  assert.equal(terminal.status, "stage4_v2_readonly_gpu_qualification_passed");
+  validateQualificationExecutionChain(root, {
+    manifestBinding,
+    manifest,
+    payloadBinding: manifest.packagePayload,
+    payload,
+    terminalBinding,
+    terminal,
+  });
   return { manifestBinding, payloadBinding: manifest.packagePayload, payload, terminalBinding, terminal };
+}
+
+export function validateQualificationExecutionChain(root, {
+  manifestBinding,
+  manifest,
+  payloadBinding,
+  payload,
+  terminalBinding,
+  terminal,
+}) {
+  for (const [label, binding] of Object.entries({
+    manifestBinding, payloadBinding, terminalBinding,
+  })) {
+    assert.ok(binding?.path && binding?.sha256,
+      `qualification ${label} is missing`);
+  }
+  assert.equal(terminal.schemaVersion,
+    "ai-painter-stage4-v2-readonly-gpu-terminal-v1");
+  assert.equal(terminal.executionState, "completed");
+  assert.equal(terminal.status, "stage4_v2_readonly_gpu_qualification_passed");
+  assert.equal(terminal.packageId, payload.packageId);
+  assert.equal(terminal.runId, payload.runId);
+  assert.equal(terminal.capabilityVersion, STAGE4_V2_CAPABILITY);
+  assert.equal(terminal.ownerAuthorizationRequired, false);
+  assert.equal(terminal.checkpointWritten, false);
+  assert.equal(terminal.weightsModified, false);
+  assert.equal(terminal.trainingStarted, false);
+  assert.equal(terminal.nextMachineAction, SMOKE_PLAN_ACTION);
+
+  const finalization = readBoundJson(root, terminal.finalization);
+  assert.equal(finalization.schemaVersion,
+    "ai-painter-stage4-v2-readonly-gpu-finalization-v1");
+  for (const field of ["executionState", "status", "packageId", "runId", "capabilityVersion"]) {
+    assert.equal(finalization[field], terminal[field],
+      `qualification finalization ${field} differs from terminal`);
+  }
+  assert.deepEqual(finalization.qualificationResult, terminal.qualificationResult,
+    "qualification result binding differs across finalization and terminal");
+  assert.deepEqual(finalization.stateIntegrity, terminal.stateIntegrity,
+    "qualification state-integrity binding differs across finalization and terminal");
+  assert.deepEqual(finalization.controlledSmokeRegistration,
+    terminal.controlledSmokeRegistration,
+  "qualification Smoke registration differs across finalization and terminal");
+  for (const field of [
+    "checkpointWritten", "optimizerCreated", "backwardExecuted", "weightsModified",
+    "trainingStarted",
+  ]) assert.equal(finalization[field], false, `qualification finalization ${field} is open`);
+  const preflight = readBoundJson(root, finalization.preflightReport);
+  assert.equal(preflight.schemaVersion,
+    "ai-painter-stage4-v2-readonly-gpu-preflight-report-v1");
+  assert.equal(preflight.packageId, payload.packageId);
+  assert.equal(preflight.runId, payload.runId);
+  assert.deepEqual(preflight.packagePayload, payloadBinding,
+    "qualification preflight package payload differs from the qualified payload");
+  assert.equal(preflight.status,
+    "passed_ticket_not_consumed_gpu_workload_not_started");
+  assert.equal(preflight.ticketConsumed, false);
+  assert.equal(preflight.trainingStarted, false);
+  const consumption = readBoundJson(root, finalization.ticketConsumption);
+  assert.equal(consumption.schemaVersion,
+    "ai-painter-stage4-v2-pre-release-qualification-ticket-consumption-v1");
+  assert.equal(consumption.status, "consumed_once");
+  assert.equal(consumption.packageId, payload.packageId);
+  assert.equal(consumption.runId, payload.runId);
+  assert.equal(consumption.packagePayloadSha256, payloadBinding.sha256);
+  assert.equal(consumption.machineSignatureVerified, true);
+  assert.equal(consumption.evidenceRecomputedAtConsumption, true);
+  assert.equal(consumption.ownerAuthorizationRequired, false);
+
+  const activeConfig = readBoundJson(root, finalization.activeConfig);
+  assert.equal(activeConfig.schemaVersion,
+    "ai-painter-stage4-v2-readonly-gpu-active-config-v1");
+  assert.equal(activeConfig.status, "active");
+  assert.equal(activeConfig.packageId, payload.packageId);
+  assert.equal(activeConfig.runId, payload.runId);
+  assert.equal(activeConfig.capabilityVersion, STAGE4_V2_CAPABILITY);
+  assert.equal(activeConfig.outputDirectory, payload.outputDirectory);
+  assert.deepEqual(activeConfig.bindings, payload.bindings,
+    "qualification active-config bindings differ from package payload");
+  assert.deepEqual(activeConfig.fixedInputs, payload.fixedInputs,
+    "qualification active-config fixed inputs differ from package payload");
+  assert.deepEqual(activeConfig.programLineage, payload.programLineage,
+    "qualification active-config program lineage differs from package payload");
+  assert.deepEqual(activeConfig.programGraphManifest, payload.programGraphManifest,
+    "qualification active-config program graph differs from package payload");
+  for (const field of [
+    "denoiserCheckpointReadAllowed", "optimizerAllowed", "backwardAllowed",
+    "weightMutationAllowed", "checkpointWriteAllowed", "trainingAllowed", "smokeAllowed",
+    "stage0Allowed", "formalInferenceAllowed", "runtimeFrameAllowed", "worldEntryAllowed",
+  ]) assert.equal(activeConfig.safety?.[field], false,
+  `qualification active config safety ${field} is open`);
+
+  const result = readBoundJson(root, finalization.qualificationResult);
+  assert.equal(result.schemaVersion,
+    "ai-painter-stage4-v2-readonly-gpu-qualification-v1");
+  assert.equal(result.executionState, terminal.executionState);
+  assert.equal(result.status, terminal.status);
+  assert.equal(result.packageId, payload.packageId);
+  assert.equal(result.runId, payload.runId);
+  assert.equal(result.architectureId, STAGE4_V2_CAPABILITY);
+  assert.deepEqual(result.activeConfig, finalization.activeConfig);
+  assert.deepEqual(result.programGraphManifest?.binding,
+    payload.programGraphManifest);
+  assert.equal(result.ticket?.status, "consumed_once");
+  assert.equal(result.ownerAuthorizationRequired, false);
+  assert.equal(result.automaticSmokeStarted, false);
+  for (const role of ["gpuDiagnostic", "cudaTelemetry", "stateIntegrity"]) {
+    assert.deepEqual(result[role], finalization[role],
+      `qualification ${role} binding differs from finalization`);
+  }
+  const diagnostic = readBoundJson(root, finalization.gpuDiagnostic);
+  assert.equal(diagnostic.schemaVersion,
+    "ai-painter-stage4-v2-readonly-gpu-diagnostic-v1");
+  assert.equal(diagnostic.status, "passed");
+  assert.equal(diagnostic.packageId, payload.packageId);
+  assert.equal(diagnostic.runId, payload.runId);
+  assert.equal(diagnostic.architectureId, STAGE4_V2_CAPABILITY);
+  assert.deepEqual(diagnostic.resolution, payload.fixedInputs?.resolution,
+    "qualification diagnostic resolution differs from fixed inputs");
+  assert.equal(diagnostic.all210ParametersReached, true);
+  assert.equal(diagnostic.sample194All210ParametersReached, true);
+  const cuda = readBoundJson(root, finalization.cudaTelemetry);
+  assert.equal(cuda.schemaVersion,
+    "ai-painter-stage4-v2-readonly-gpu-cuda-telemetry-v1");
+  assert.equal(cuda.status, "measured");
+  assert.deepEqual(cuda.measuredResolution, payload.fixedInputs?.resolution,
+    "qualification CUDA resolution differs from fixed inputs");
+  assert.ok(Number.isSafeInteger(cuda.peakGpuMemoryBytes)
+    && cuda.peakGpuMemoryBytes > 0,
+  "qualification CUDA peak memory is invalid");
+  assert.equal(cuda.preflightMemoryUsedAsDiagnosticPeak, false);
+  const state = readBoundJson(root, finalization.stateIntegrity);
+  assert.equal(state.schemaVersion,
+    "ai-painter-stage4-v2-readonly-gpu-state-integrity-v1");
+  assert.equal(state.status, "verified_unchanged");
+  assert.equal(state.denoiserUnchanged, true);
+  assert.equal(state.autoencoderUnchanged, true);
+  assert.equal(state.allParameterGradFieldsRemainNone, true);
+  assert.equal(state.autoencoderRequiresGradParameterCount, 0);
+
+  assert.deepEqual(manifest.packagePayload, payloadBinding);
+  assert.equal(manifest.packageId, terminal.packageId);
+  assert.equal(manifest.runId, terminal.runId);
+  return true;
 }
 
 export function collectAndVerifySmokeImmutableInputs({
@@ -692,30 +849,9 @@ export function collectAndVerifySmokeImmutableInputs({
     },
   };
 
-  const programPaths = {
-    nodeAdapter: ADAPTER_PATH,
-    commonContract: COMMON_PATH,
-    ticketAuthority: TICKET_PATH,
-    machineReviewAdapter: REVIEW_ADAPTER_PATH,
-    pythonAdapter: PYTHON_ADAPTER_PATH,
-    pythonTrainingAdapter: PYTHON_TRAINING_ADAPTER_PATH,
-    trainer: qualification.payload.programLineage?.trainer?.path,
-    trainerSupport: qualification.payload.programLineage?.trainerSupport?.path,
-    modelFactory: qualification.payload.programLineage?.modelFactory?.path,
-    modeRegistry: "ml/ai-painter/scripts/ai_painter_stage_mode_registry.py",
-    authorizationPolicy: "ml/ai-painter/scripts/ai_painter_authorization_policy.py",
-    currentRegistry: "src/server/ai-painter-current-execution-registry.mjs",
-    outerRunner: OUTER_RUNNER_PATH,
-    backgroundLauncher: BACKGROUND_LAUNCHER_PATH,
-    launchIntentValidator: LAUNCH_INTENT_VALIDATOR_PATH,
-    immutableRegistryEvidence: IMMUTABLE_REGISTRY_EVIDENCE_PATH,
-    genericBackgroundLauncher: GENERIC_BACKGROUND_LAUNCHER_PATH,
-    exactlyOnceBackgroundSpawn: EXACTLY_ONCE_SPAWN_PATH,
-  };
-  for (const [role, logicalPath] of Object.entries(programPaths)) {
-    assert.ok(typeof logicalPath === "string" && logicalPath.length > 0,
-      `Smoke program path missing: ${role}`);
-  }
+  const programPaths = deriveSmokeProgramPathsFromQualification(
+    qualification.payload,
+  );
   const programLineage = Object.fromEntries(Object.entries(programPaths)
     .map(([role, logicalPath]) => [role, bindPath(root, logicalPath)]));
   const baseConfigBinding = bindPath(root, BASE_CONFIG_PATH);
@@ -741,12 +877,40 @@ export function collectAndVerifySmokeImmutableInputs({
     sample,
     machineReviewInputs,
     objectMasks,
-    programPaths: Object.freeze(programPaths),
+    programPaths,
     programLineage: Object.freeze(programLineage),
     baseConfigBinding,
     currentTaskCapsuleBinding,
     currentTerminalBinding,
   });
+}
+
+export function deriveSmokeProgramPathsFromQualification(qualificationPayload) {
+  const programPaths = {
+    nodeAdapter: ADAPTER_PATH,
+    commonContract: COMMON_PATH,
+    ticketAuthority: TICKET_PATH,
+    machineReviewAdapter: REVIEW_ADAPTER_PATH,
+    pythonAdapter: PYTHON_ADAPTER_PATH,
+    pythonTrainingAdapter: PYTHON_TRAINING_ADAPTER_PATH,
+    trainer: qualificationPayload?.programLineage?.trainer?.path,
+    trainerSupport: qualificationPayload?.programLineage?.trainerSupport?.path,
+    modelFactory: qualificationPayload?.programLineage?.modelFactory?.path,
+    modeRegistry: "ml/ai-painter/scripts/ai_painter_stage_mode_registry.py",
+    authorizationPolicy: "ml/ai-painter/scripts/ai_painter_authorization_policy.py",
+    currentRegistry: "src/server/ai-painter-current-execution-registry.mjs",
+    outerRunner: OUTER_RUNNER_PATH,
+    backgroundLauncher: BACKGROUND_LAUNCHER_PATH,
+    launchIntentValidator: LAUNCH_INTENT_VALIDATOR_PATH,
+    immutableRegistryEvidence: IMMUTABLE_REGISTRY_EVIDENCE_PATH,
+    genericBackgroundLauncher: GENERIC_BACKGROUND_LAUNCHER_PATH,
+    exactlyOnceBackgroundSpawn: EXACTLY_ONCE_SPAWN_PATH,
+  };
+  for (const [role, logicalPath] of Object.entries(programPaths)) {
+    assert.ok(typeof logicalPath === "string" && logicalPath.length > 0,
+      `Smoke program path missing: ${role}`);
+  }
+  return Object.freeze(programPaths);
 }
 
 function verifyQualificationImmutableLineage(root, payload) {

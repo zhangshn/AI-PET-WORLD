@@ -135,6 +135,8 @@ export async function stage4V2SmokeExecute(context) {
       "--autoencoder-checkpoint-sha256", loaded.payload.autoencoderCheckpoint.sha256,
       "--dataset-release-path", loaded.payload.datasetRelease.path,
       "--dataset-release-sha256", loaded.payload.datasetRelease.sha256,
+      "--package-payload", resolveProjectPath(context.projectRoot, loaded.packageBinding.path),
+      "--package-payload-sha256", loaded.packageBinding.sha256,
     ]);
     const activeConfigBinding = bindAbsolute(context.projectRoot, activeConfig);
     const outputRoot = resolveProjectPath(context.projectRoot, loaded.payload.outputDirectory);
