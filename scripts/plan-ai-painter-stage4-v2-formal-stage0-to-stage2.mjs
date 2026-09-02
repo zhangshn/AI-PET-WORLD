@@ -25,6 +25,8 @@ import {
   commitStage4V2ExternalRegistryDependencies,
 } from "./lib/ai-painter-stage4-v2-external-registry-dependency-v1.mjs";
 
+const FORMAL_EXECUTOR_ACTION = "run:ai-painter-stage4-v2-formal-stage0-to-stage2";
+
 const PLAN_ROOT = ".runtime/ai-painter/stage4-v2-formal-stage0-to-stage2-plans";
 const isMain = process.argv[1]
   && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
@@ -72,6 +74,8 @@ export async function materializeStage4V2FormalStage0ToStage2Plan({
     schemaVersion: "ai-painter-stage4-v2-formal-stage0-to-stage2-plan-v1",
     status: "materialized_not_executed",
     capabilityVersion: STAGE4_V2_CAPABILITY,
+    packageId: current.registry.packageId,
+    runId: current.registry.runId,
     parentControlledSmokeTerminal: current.registry.terminalEvidence,
     parentControlledSmokeFinalization: sourceTerminal.smokeFinalization,
     orderedStages: [
@@ -83,6 +87,11 @@ export async function materializeStage4V2FormalStage0ToStage2Plan({
     automaticMachineReviewRequired: true,
     automaticCausalAdjudicationRequired: true,
     ownerAuthorizationRequired: false,
+    executor: {
+      action: FORMAL_EXECUTOR_ACTION,
+      status: "registered_not_started",
+      requiresStageInputs: true,
+    },
     gpuAuthorizationCreated: false,
     trainingStarted: false,
     recordedAtUtc: sourceTerminal.recordedAtUtc,
@@ -100,7 +109,7 @@ export async function materializeStage4V2FormalStage0ToStage2Plan({
     runId: current.registry.runId,
     plan: planBinding,
     formalTrainingStarted: false,
-    nextMachineAction: null,
+    nextMachineAction: FORMAL_EXECUTOR_ACTION,
     ownerAuthorizationRequired: false,
     recordedAtUtc: plan.recordedAtUtc,
     recordedAtAsiaShanghai: formatShanghai(plan.recordedAtUtc),
@@ -118,7 +127,7 @@ export async function materializeStage4V2FormalStage0ToStage2Plan({
     currentStage: { number: 4, total: 5, labelZh: "Stage 0→1→2完整训练", status: terminal.status },
     candidateTerminal: { runId: current.registry.runId, status: terminal.status, recordedAtUtc: terminal.recordedAtUtc },
     latestBlocker: { code: "formal_training_not_started_in_controlled_smoke_scope", summaryZh: "正式Stage 0→1→2闭环计划已形成；本次受控Smoke执行范围未启动正式训练。" },
-    nextAllowedAction: null,
+    nextAllowedAction: FORMAL_EXECUTOR_ACTION,
     forbiddenActions: ["start_formal_training_from_smoke_scope", "reuse_smoke_checkpoint_as_formal_parent", "lower_machine_review_threshold"],
     taskIdentity: { modelId: STAGE4_V2_CAPABILITY, runId: current.registry.runId },
     latestTerminal: terminalBinding,
@@ -173,7 +182,7 @@ export async function materializeStage4V2FormalStage0ToStage2Plan({
     taskGoal: "Preserve the materialized Stage4 V2 formal Stage 0 through Stage 2 closed-loop plan without starting training in the Smoke scope.",
     priority: 1,
     queueStatus: "completed",
-    nextMachineAction: null,
+    nextMachineAction: FORMAL_EXECUTOR_ACTION,
     queuedAtUtc: terminal.recordedAtUtc,
     runId: current.registry.runId,
     lifecycleStage: "controlled_smoke_completed",

@@ -44,7 +44,6 @@ import {
 } from "./ai-painter-stage4-v2-controlled-smoke-ticket-v1.mjs";
 import { runResourcePreflight } from "../run-ai-painter-stage4-v2-readonly-gpu-qualification.mjs";
 
-const PYTHON = "ml/ai-painter/.venv/Scripts/python.exe";
 const TRAINING_TIMEOUT_MS = 4 * 60 * 60 * 1000;
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
 const PHASE_STATE = Object.freeze({
@@ -73,11 +72,11 @@ export async function stage4V2SmokePreflight(context) {
     const resource = runResourcePreflight({ root: context.projectRoot, commandRunner: spawnSync });
     const checks = [
       runCheck(context.projectRoot, process.execPath, ["--check", loaded.payload.programLineage.nodeAdapter.path]),
-      runCheck(context.projectRoot, resolveProjectPath(context.projectRoot, PYTHON), [
+      runCheck(context.projectRoot, resolveProjectPython(context.projectRoot), [
         "-B", "-m", "py_compile", loaded.payload.programLineage.pythonAdapter.path,
         loaded.payload.programLineage.pythonTrainingAdapter.path,
       ]),
-      runCheck(context.projectRoot, resolveProjectPath(context.projectRoot, PYTHON), [
+      runCheck(context.projectRoot, resolveProjectPython(context.projectRoot), [
         "-B", "-c", "import torch; assert torch.cuda.is_available(); print(torch.version.cuda)",
       ]),
     ];
@@ -115,7 +114,7 @@ export async function stage4V2SmokeExecute(context) {
       consumedAtUtc: new Date().toISOString(),
     });
     const activeConfig = path.join(loaded.packageRoot, "active-config.json");
-    runCheck(context.projectRoot, resolveProjectPath(context.projectRoot, PYTHON), [
+      runCheck(context.projectRoot, resolveProjectPython(context.projectRoot), [
       "-B", loaded.payload.programLineage.pythonAdapter.path,
       "--operation", "materialize",
       "--project-root", context.projectRoot,
@@ -159,7 +158,7 @@ export async function stage4V2SmokeExecute(context) {
     const trainerProcess = prepareTrainerProcessIntent({
       projectRoot: context.projectRoot, payload: loaded.payload,
       packageRoot: loaded.packageRoot,
-      command: resolveProjectPath(context.projectRoot, PYTHON),
+      command: resolveProjectPython(context.projectRoot),
       args: trainerArgs, activeConfigBinding,
     });
     const existingTrainer = observeTrainerProcess({
@@ -191,7 +190,7 @@ export async function stage4V2SmokeExecute(context) {
     assert.ok(["absent", "dead"].includes(existingTrainer.status),
       "a second Smoke Trainer cannot start while another process is active");
     const child = runTrainingChild({
-      command: resolveProjectPath(context.projectRoot, PYTHON),
+      command: resolveProjectPython(context.projectRoot),
       args: trainerArgs,
       cwd: context.projectRoot,
       progressPath: path.join(outputRoot, "progress.json"),
@@ -2052,6 +2051,25 @@ function verifyBinding(root, binding, label) {
   const absolute = resolveProjectPath(root, binding.path, { mustExist: true, kind: "file" });
   assert.equal(sha256File(absolute), binding.sha256, `${label} SHA mismatch`);
 }
+
+function resolveProjectPython(root) {
+  const configured = process.env.AI_PAINTER_PYTHON?.trim();
+  const candidates = configured
+    ? [configured]
+    : process.platform === "win32"
+      ? ["ml/ai-painter/.venv/Scripts/python.exe", "python"]
+      : ["ml/ai-painter/.venv/bin/python", "python3", "python"];
+  for (const candidate of candidates) {
+    if (candidate === "python" || candidate === "python3") return candidate;
+    try {
+      return resolveProjectPath(root, candidate, { mustExist: true, kind: "file" });
+    } catch {
+      // Try the next interpreter available on this host.
+    }
+  }
+  throw new Error("ai_painter_python_runtime_unavailable_for_host");
+}
+
 function bindingCore(binding) {
   assert.equal(typeof binding?.path, "string", "binding path is missing");
   assert.match(binding?.sha256 ?? "", /^[a-f0-9]{64}$/u,

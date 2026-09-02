@@ -30,163 +30,16 @@ import { projectAutonomousStage4TaskCapsule } from "@/server/ai-painter-task-cap
 
 const execFileAsync = promisify(execFile);
 const root = process.cwd();
-const modelSources = [
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "project-owned-complete-world-conditional-denoiser-v7",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7",
-    runPrefix: "ai-assisted-conditional-denoiser-v7-",
-    artifactDirectory: null,
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "project-owned-complete-world-conditional-denoiser-v7-repair-r1",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r1",
-    runPrefix: "ai-assisted-v7-repair-r1-stage-",
-    artifactDirectory: null,
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "project-owned-complete-world-conditional-denoiser-v7-repair-r2",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r2",
-    runPrefix: "ai-assisted-v7-repair-r2-",
-    artifactDirectory: null,
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "project-owned-complete-world-conditional-denoiser-v7-repair-r3",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r3",
-    runPrefix: "ai-assisted-v7-repair-r3-",
-    artifactDirectory: null,
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4",
-    runPrefix: "ai-assisted-v7-r5-stage4-full-training-",
-    artifactDirectory: null,
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke",
-    runPrefix: "ai-assisted-v7-r5-stage4-",
-    artifactDirectory: null,
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "stage4-semantic-mixture-formal-training",
-    ),
-    relativeRoot: ".runtime/ai-painter/stage4-semantic-mixture-formal-training",
-    runPrefix: "",
-    artifactDirectory: "training-output",
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "stage4-authoritative-semantic-carrier-formal-stage0",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/stage4-authoritative-semantic-carrier-formal-stage0",
-    runPrefix: "",
-    artifactDirectory: "training-output",
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "stage4-post-decode-object-rgb-formal-stage0",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/stage4-post-decode-object-rgb-formal-stage0",
-    runPrefix: "",
-    artifactDirectory: "training-output",
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "stage4-post-decode-full-condition-responsibility-formal-stage0",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/stage4-post-decode-full-condition-responsibility-formal-stage0",
-    runPrefix: "",
-    artifactDirectory: "training-output",
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "stage4-direct-clean-latent-formal-stage0",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/stage4-direct-clean-latent-formal-stage0",
-    runPrefix: "stage4-direct-clean-latent-stage0-",
-    artifactDirectory: "training-output",
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "stage4-direct-responsibility-residual-controlled-smokes",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/stage4-direct-responsibility-residual-controlled-smokes",
-    runPrefix: "stage4-direct-responsibility-residual-controlled-smoke-",
-    artifactDirectory: "training-output",
-  },
-  {
-    absoluteRoot: path.join(
-      /* turbopackIgnore: true */ root,
-      ".runtime",
-      "ai-painter",
-      "stage4-direct-responsibility-residual-formal-stage0",
-    ),
-    relativeRoot:
-      ".runtime/ai-painter/stage4-direct-responsibility-residual-formal-stage0",
-    runPrefix: "stage4-direct-responsibility-residual-stage0-",
-    artifactDirectory: "training-output",
-  },
-] as const;
+type CurrentExecutionRegistrySnapshot = Awaited<
+  ReturnType<typeof readCurrentExecutionRegistry>
+>;
+
+type CurrentTrainingSource = {
+  absoluteRoot: string;
+  relativeRoot: string;
+  runId: string;
+  artifactDirectory: string | null;
+};
 const configPath =
   "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json";
 const datasetPointerPath =
@@ -277,7 +130,6 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     datasetPointer,
     control,
     runtimeStatus,
-    rawStages,
     gpu,
     hardware,
     ledger,
@@ -292,7 +144,6 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     readJson(datasetPointerPath),
     readTrainingControlState(),
     readTrainingRuntimeStatus(),
-    readTrainingStages(),
     readGpu(),
     readHardware(),
     readTrainingProcessLedger(),
@@ -303,6 +154,7 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     readRelevantLocalProcesses(),
     readCurrentExecutionRegistry(root),
   ]);
+  const rawStages = await readTrainingStages(currentRegistry);
   const rawTaskCapsule = currentRegistry.ok
     ? (currentRegistry.taskCapsule as AiPainterTaskCapsule)
     : buildUnknownRegistryTaskCapsule(currentRegistry.errorCode);
@@ -2195,14 +2047,92 @@ function projectRelativePath(value: string) {
     : value;
 }
 
-async function readTrainingStages(): Promise<TrainingStageDetail[]> {
+/**
+ * The dashboard is a projection of the single current-execution registry. It
+ * must never discover runs by scanning a hand-maintained list of historical
+ * directories: that was the source of stale Smoke pointers. The registry's
+ * latest-training evidence is the only source of a stage root; all paths are
+ * resolved relative to the project and are rejected if they escape it.
+ */
+async function discoverCurrentTrainingSources(
+  registry: CurrentExecutionRegistrySnapshot,
+): Promise<CurrentTrainingSource[]> {
+  if (!registry.ok) return [];
+  const latest = object(registry.registry.latestTrainingTerminal);
+  const evidence = object(latest?.evidence);
+  const evidencePaths = [
+    text(latest?.path),
+    ...Object.values(evidence ?? {}).flatMap((value) => {
+      const item = object(value);
+      return item ? [text(item.path)] : [];
+    }),
+  ].filter((value): value is string => Boolean(value));
+  const sources = new Map<string, CurrentTrainingSource>();
+  for (const evidencePath of evidencePaths) {
+    const source = await resolveTrainingSourceFromEvidencePath(evidencePath);
+    if (source) sources.set(`${source.relativeRoot}/${source.runId}`, source);
+  }
+  return [...sources.values()];
+}
+
+async function resolveTrainingSourceFromEvidencePath(
+  relativeEvidencePath: string,
+): Promise<CurrentTrainingSource | null> {
+  const normalized = relativeEvidencePath.replaceAll("\\", "/");
+  if (
+    !normalized ||
+    normalized.startsWith("/") ||
+    normalized.split("/").some((segment) => segment === "..")
+  )
+    return null;
+  let candidate = path.dirname(resolveInsideRoot(normalized));
+  const projectRoot = path.resolve(root);
+  while (
+    candidate === projectRoot ||
+    candidate.startsWith(`${projectRoot}${path.sep}`)
+  ) {
+    const artifactDirectory = path.join(candidate, "training-output");
+    const artifactEntries = await readdir(artifactDirectory, {
+      withFileTypes: true,
+    }).catch(() => null);
+    if (artifactEntries !== null) {
+      const runRoot = candidate;
+      const parentRoot = path.dirname(runRoot);
+      const relativeRoot = projectRelativePath(parentRoot);
+      const runId = path.basename(runRoot);
+      if (
+        runId &&
+        relativeRoot &&
+        !relativeRoot.startsWith("..") &&
+        relativeRoot !== runId
+      ) {
+        return {
+          absoluteRoot: parentRoot,
+          relativeRoot,
+          runId,
+          artifactDirectory: "training-output",
+        };
+      }
+      return null;
+    }
+    const parent = path.dirname(candidate);
+    if (parent === candidate) break;
+    candidate = parent;
+  }
+  return null;
+}
+
+async function readTrainingStages(
+  registry: CurrentExecutionRegistrySnapshot,
+): Promise<TrainingStageDetail[]> {
   const stages: TrainingStageDetail[] = [];
-  for (const source of modelSources) {
+  const sources = await discoverCurrentTrainingSources(registry);
+  for (const source of sources) {
     const entries = await readdir(source.absoluteRoot, {
       withFileTypes: true,
     }).catch(() => []);
     for (const entry of entries) {
-      if (!entry.isDirectory() || !entry.name.startsWith(source.runPrefix))
+      if (!entry.isDirectory() || entry.name !== source.runId)
         continue;
       const artifactSuffix = source.artifactDirectory
         ? `/${source.artifactDirectory}`
@@ -2267,7 +2197,9 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
               : stageStatus === "running" || stageStatus === "starting"
                 ? "running"
                 : "quarantined",
-        resolutionStage: stageNumber(entry.name),
+        resolutionStage:
+          number(record.resolutionStage ?? record.stageIndex ?? record.stage) ??
+          stageNumber(entry.name),
         resolution: resolution
           ? {
               width: number(resolution.width) ?? 0,

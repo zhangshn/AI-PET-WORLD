@@ -5,7 +5,9 @@
  * world-runtime-store-adapter instead of depending on this implementation.
  */
 
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
+import { mkdir, open, readFile, rename, rm } from "node:fs/promises"
+import { createHash, randomUUID } from "node:crypto"
+import { hostname } from "node:os"
 import path from "node:path"
 
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
@@ -17,6 +19,10 @@ import type {
   WorldRuntimeStoreReadResult,
   WorldRuntimeStoreWriteResult,
 } from "./world-runtime-schema"
+import {
+  assertRuntimePath,
+  assertRuntimePathSegment,
+} from "./runtime-path-security"
 
 const RUNTIME_DIR = path.join(
   process.cwd(),
@@ -45,6 +51,7 @@ export async function readWorldRuntimeSaveRecord(
 export async function writeWorldRuntimeSaveRecord(input: {
   record: WorldRuntimeSaveRecord
   filePath?: string
+  expectedTick?: number
 }): Promise<WorldRuntimeStoreWriteResult> {
   return localFileRuntimeStore.write(input)
 }
@@ -56,7 +63,9 @@ function getDefaultLocalFileWorldRuntimeSavePath(): string {
 async function readLocalFileWorldRuntimeSaveRecord(
   filePath?: string
 ): Promise<WorldRuntimeStoreReadResult> {
-  const resolvedFilePath = filePath ?? (await resolveLatestWorldRuntimeSavePath())
+  const resolvedFilePath = filePath
+    ? await assertRuntimePath(filePath, RUNTIME_DIR)
+    : await resolveLatestWorldRuntimeSavePath()
 
   if (!resolvedFilePath) {
     return {
@@ -118,14 +127,55 @@ async function readLocalFileWorldRuntimeSaveRecord(
 async function writeLocalFileWorldRuntimeSaveRecord(input: {
   record: WorldRuntimeSaveRecord
   filePath?: string
+  expectedTick?: number
 }): Promise<WorldRuntimeStoreWriteResult> {
-  const filePath = input.filePath ?? getWorldRuntimeSavePath(input.record)
-  const tempPath = `${filePath}.tmp`
+  const filePath = await assertRuntimePath(
+    input.filePath ?? getWorldRuntimeSavePath(input.record),
+    RUNTIME_DIR,
+  )
+  const lockPath = `${filePath}.lock`
+  let lock: Awaited<ReturnType<typeof open>> | null = null
 
   try {
     await mkdir(path.dirname(filePath), { recursive: true })
-    await writeFile(tempPath, `${JSON.stringify(input.record, null, 2)}\n`, "utf8")
-    await rename(tempPath, filePath)
+    try {
+      lock = await open(lockPath, "wx")
+      await lock.writeFile(`${JSON.stringify({
+        schemaVersion: "world-runtime-write-lock-v1",
+        pid: process.pid,
+        host: hostname(),
+        ownerId: input.record.ownerId,
+        worldId: input.record.worldId,
+        createdAtUtc: new Date().toISOString(),
+      })}\n`, "utf8")
+      await lock.sync()
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code === "EEXIST") {
+        return {
+          ok: false,
+          code: "conflict",
+          path: filePath,
+          message: "Another runtime writer currently owns this world.",
+          warnings: ["runtime_write_lock_exists"],
+          tags: ["world_runtime_store_write", "failed", "runtime_save_write_conflict"],
+        }
+      }
+      throw error
+    }
+    if (input.expectedTick !== undefined) {
+      const existing = await readExistingRuntimeRecord(filePath)
+      if (existing && existing.tick !== input.expectedTick) {
+        return {
+          ok: false,
+          code: "conflict",
+          path: filePath,
+          message: "Runtime tick compare-and-set rejected the stale writer.",
+          warnings: [`expected_tick:${input.expectedTick}`, `actual_tick:${existing.tick}`],
+          tags: ["world_runtime_store_write", "failed", "runtime_save_write_conflict", "runtime_tick_cas_rejected"],
+        }
+      }
+    }
+    await writeJsonAtomic(filePath, input.record)
     if (!input.filePath) {
       await writeLatestWorldRuntimeIndex({
         record: input.record,
@@ -148,7 +198,33 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: {
       warnings: [error instanceof Error ? error.message : String(error)],
       tags: ["world_runtime_store_write", "failed", "old_save_preserved"],
     }
+  } finally {
+    if (lock) await lock.close().catch(() => {})
+    await rm(lockPath, { force: true }).catch(() => {})
   }
+}
+
+async function readExistingRuntimeRecord(filePath: string): Promise<WorldRuntimeSaveRecord | null> {
+  try {
+    const parsed = JSON.parse(await readFile(filePath, "utf8")) as Partial<WorldRuntimeSaveRecord>
+    return isWorldRuntimeSaveRecord(parsed) ? parsed : null
+  } catch (error) {
+    if (isNodeFileError(error) && error.code === "ENOENT") return null
+    throw error
+  }
+}
+
+async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> {
+  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`
+  await mkdir(path.dirname(filePath), { recursive: true })
+  const handle = await open(tempPath, "wx")
+  try {
+    await handle.writeFile(`${JSON.stringify(value, null, 2)}\n`, "utf8")
+    await handle.sync()
+  } finally {
+    await handle.close().catch(() => {})
+  }
+  await rename(tempPath, filePath)
 }
 
 function getWorldRuntimeSavePath(record: WorldRuntimeSaveRecord): string {
@@ -157,16 +233,34 @@ function getWorldRuntimeSavePath(record: WorldRuntimeSaveRecord): string {
 
 async function resolveLatestWorldRuntimeSavePath(): Promise<string | null> {
   try {
-    const raw = await readFile(getDefaultLocalFileWorldRuntimeSavePath(), "utf8")
+    const indexPath = await assertRuntimePath(
+      getDefaultLocalFileWorldRuntimeSavePath(),
+      RUNTIME_DIR,
+    )
+    const raw = await readFile(indexPath, "utf8")
     const parsed = JSON.parse(raw) as Partial<{
       path: string
       ownerId: string
       worldId: string
+      tick: number
+      recordSha256: string
     }>
 
-    if (typeof parsed.path !== "string") return null
+    if (
+      typeof parsed.path !== "string" ||
+      typeof parsed.ownerId !== "string" ||
+      typeof parsed.worldId !== "string" ||
+      !Number.isInteger(parsed.tick) ||
+      !/^[a-f0-9]{64}$/u.test(parsed.recordSha256 ?? "")
+    ) return null
 
-    return parsed.path
+    assertRuntimePathSegment(parsed.ownerId, "ownerId")
+    assertRuntimePathSegment(parsed.worldId, "worldId")
+    const resolved = await assertRuntimePath(parsed.path, RUNTIME_DIR)
+    if (resolved !== getWorldRuntimeSavePath({ ownerId: parsed.ownerId, worldId: parsed.worldId } as WorldRuntimeSaveRecord)) return null
+    const record = await readExistingRuntimeRecord(resolved)
+    if (!record || record.ownerId !== parsed.ownerId || record.worldId !== parsed.worldId || record.tick !== parsed.tick || sha256Json(record) !== parsed.recordSha256) return null
+    return resolved
   } catch (error) {
     if (isNodeFileError(error) && error.code === "ENOENT") {
       return null
@@ -180,20 +274,27 @@ async function writeLatestWorldRuntimeIndex(input: {
   record: WorldRuntimeSaveRecord
   filePath: string
 }): Promise<void> {
-  const indexPath = getDefaultLocalFileWorldRuntimeSavePath()
-  const tempPath = `${indexPath}.tmp`
+  const indexPath = await assertRuntimePath(
+    getDefaultLocalFileWorldRuntimeSavePath(),
+    RUNTIME_DIR,
+  )
   const index = {
-    version: "v2.6-runtime-00",
+    schemaVersion: "world-runtime-latest-index-v1",
     ownerId: input.record.ownerId,
     worldId: input.record.worldId,
+    tick: input.record.tick,
     path: input.filePath,
+    recordSha256: sha256Json(input.record),
     updatedAt: input.record.savedAt,
-    tags: ["world_runtime_latest_index"],
   }
 
-  await mkdir(path.dirname(indexPath), { recursive: true })
-  await writeFile(tempPath, `${JSON.stringify(index, null, 2)}\n`, "utf8")
-  await rename(tempPath, indexPath)
+  await writeJsonAtomic(indexPath, index)
+}
+
+function sha256Json(value: unknown): string {
+  return createHash("sha256")
+    .update(`${JSON.stringify(value, null, 2)}\n`, "utf8")
+    .digest("hex")
 }
 
 function isWorldRuntimeSaveRecord(

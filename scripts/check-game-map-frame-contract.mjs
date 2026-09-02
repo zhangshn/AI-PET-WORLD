@@ -39,6 +39,8 @@ const approvedFrameSource = read("src/world/game-map-frame/game-map-approved-fra
 const sample = read("src/world/game-map-frame/natural-home-mvp-sample.ts")
 const index = read("src/world/game-map-frame/index.ts")
 const worldPage = read("src/app/world/world-live-runtime-page.tsx")
+const worldImageRoute = read("src/app/api/world/game-map-runtime-frame/image/route.ts")
+const legacyImageRoute = read("src/app/api/ai-painter/game-map-runtime-frame/image/route.ts")
 const currentExecutionGuide = read("docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md")
 const packageJson = read("package.json")
 const currentRuntimeWriter = read("scripts/write-current-game-map-runtime-frame.mjs")
@@ -940,6 +942,29 @@ check(
     !currentExecutionGuide.includes("当前唯一下一步")
 )
 check("Complete-world command remains owned by package scripts", packageJson.includes('"run:complete-game-world"'))
+check(
+  "World image route rehashes served bytes",
+  worldImageRoute.includes('createHash("sha256")') &&
+    worldImageRoute.includes("blocked_world_runtime_image_content_sha_mismatch") &&
+    worldImageRoute.includes("observedSha256 !== compositeOutput.imageSha256")
+)
+check(
+  "World image route enforces physical runtime path",
+  worldImageRoute.includes("assertRuntimePath") &&
+    worldImageRoute.includes("blocked_world_runtime_image_outside_workspace")
+)
+check(
+  "World image route derives Content-Type from imageFormat",
+  worldImageRoute.includes('format === "webp"') &&
+    worldImageRoute.includes('format === "jpg"') &&
+    worldImageRoute.includes("image/jpeg")
+)
+check(
+  "Legacy image route rehashes served bytes",
+  legacyImageRoute.includes('createHash("sha256")') &&
+    legacyImageRoute.includes("game_map_runtime_image_content_sha_mismatch") &&
+    legacyImageRoute.includes("x-world-runtime-image-sha256")
+)
 
 let failed = 0
 for (const item of checks) {

@@ -22,6 +22,10 @@ on:
       - "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs"
       - "src/server/ai-painter-current-execution-registry.*"
       - "src/server/ai-console/ai-painter-current-execution-projection.ts"
+      - "src/app/**"
+      - "src/server/**"
+      - "src/world/**"
+      - "src/ai/**"
       - "data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json"
       - "data/ai-painter/system-governance/stage4-*.json"
       - "data/ai-painter/system-governance/stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2.json"
@@ -50,6 +54,10 @@ on:
       - "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs"
       - "src/server/ai-painter-current-execution-registry.*"
       - "src/server/ai-console/ai-painter-current-execution-projection.ts"
+      - "src/app/**"
+      - "src/server/**"
+      - "src/world/**"
+      - "src/ai/**"
       - "data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json"
       - "data/ai-painter/system-governance/stage4-*.json"
       - "data/ai-painter/system-governance/stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2.json"
@@ -72,14 +80,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24.14.0"
           cache: npm
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
           cache-dependency-path: "ml/ai-painter/pyproject.toml"
       - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint -- --quiet
+      - run: npm run test:integration
+      - run: npm run build
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e "ml/ai-painter[training]"
       - run: npm run check:ai-painter-stage4-core

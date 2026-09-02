@@ -100,7 +100,12 @@
     {
       "packageScript": "plan:ai-painter-stage4-v2-formal-stage0-to-stage2",
       "entryFile": "scripts/plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
-      "role": "stage4_v2_formal_stage0_to_stage2_plan_only_materialization"
+      "role": "stage4_v2_formal_stage0_to_stage2_plan_materialization"
+    },
+    {
+      "packageScript": "run:ai-painter-stage4-v2-formal-stage0-to-stage2",
+      "entryFile": "scripts/run-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
+      "role": "stage4_v2_formal_stage0_to_stage2_execution"
     },
     {
       "packageScript": "check:ai-painter-stage4-core",

@@ -21,11 +21,14 @@ export type WorldCreationStyleSource =
 
 export type WorldCreationRuntimeInput = {
   createWorldInput: CreateWorldInput
+  /** Unique server-issued identity for this world instance. */
+  worldInstanceId: string
 }
 
 export type WorldCreationRuntimeResult = {
   worldId: string
   ownerId: string
+  worldInstanceId: string
   birthSignature: string
   worldSalt: string
   butlerProfile: ButlerProfile

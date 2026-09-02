@@ -2,9 +2,13 @@ import { NextResponse } from "next/server"
 
 import { runAndPersistOneRuntimeTick } from "@/world/runtime/world-runtime-gateway"
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
-import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
+import { verifyLocalOperatorMutation } from "@/server/ai-console-control/operator-session"
 
 export async function POST(request: Request) {
+  const operatorSession = verifyLocalOperatorMutation(request)
+  if (!operatorSession.ok) {
+    return NextResponse.json({ ok: false, code: operatorSession.errorCode, message: "需要本机 AI Console 操作会话。" }, { status: operatorSession.status })
+  }
   const readResult = await readWorldRuntimeSaveRecord()
 
   if (readResult.status !== "found" || !readResult.record) {
@@ -24,23 +28,6 @@ export async function POST(request: Request) {
     )
   }
 
-  try {
-    await claimOwnerWriteAuthorization(request, {
-      action: "world.tick",
-      target: {
-        ownerId: readResult.record.ownerId,
-        worldId: readResult.record.worldId,
-        currentTick: readResult.record.tick,
-      },
-      payload: { requestedTransition: "one-runtime-tick" },
-    })
-  } catch (error) {
-    if (error instanceof OwnerWriteAuthorizationError) {
-      return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: error.status })
-    }
-    throw error
-  }
-
   const result = await runAndPersistOneRuntimeTick({ now: Date.now() })
 
   return NextResponse.json(
@@ -53,8 +40,8 @@ export async function POST(request: Request) {
       persisted: result.persisted,
       audit: result.audit,
       messages: result.messages,
-      tags: ["world_runtime_tick_api", ...result.tags],
+      tags: ["world_runtime_tick_api", `local_operator:${operatorSession.session.actorIdentity}`, ...result.tags],
     },
-    { status: result.persisted ? 200 : 500 }
+    { status: result.persisted ? 200 : result.tags.includes("runtime_save_write_conflict") ? 409 : 500 }
   )
 }

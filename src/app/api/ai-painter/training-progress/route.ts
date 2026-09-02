@@ -814,6 +814,17 @@ function buildLiveControlState(
   runtimeStatus: Awaited<ReturnType<typeof readTrainingRuntimeStatus>>,
   childProcessAlive: boolean,
 ) {
+  if (runtimeStatus.statusSource === "corrupted_runtime_heartbeat") {
+    return {
+      ...control,
+      status: "blocked" as const,
+      currentStep: "训练心跳损坏，需要本地恢复；禁止把运行状态降级为空闲",
+      liveDetected: false,
+      statusSource: "corrupted_runtime_heartbeat",
+      controlFileStatus: control.status,
+      runtimeStatus,
+    }
+  }
   if (runtimeStatus.heartbeat && !runtimeStatus.stale && runtimeStatus.status !== "completed_round") {
     return {
       ...control,

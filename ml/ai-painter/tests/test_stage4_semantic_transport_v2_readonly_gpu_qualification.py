@@ -347,6 +347,47 @@ class Stage4SemanticTransportV2ReadonlyGpuQualificationTests(unittest.TestCase):
         self.assertEqual(len(resolved["trainAssets"]["channels"]), 23)
         self.assertEqual(len(resolved["validationAssets"]["channels"]), 23)
 
+    def test_resolution_matrix_never_infers_large_profiles_from_smoke(self):
+        matrix = runner.build_resolution_profile_matrix(
+            measured_profile_id="smoke",
+            measured={
+                "gpuPeakMemoryBytes": 1024,
+                "cpuMemoryPeakBytes": 2048,
+                "batchSize": 1,
+                "durationSeconds": 1.25,
+                "throughput": 1.6,
+                "oom": False,
+                "outputValid": True,
+                "sourceFactCoverage": True,
+                "imageDimensions": {"width": 256, "height": 192},
+            },
+        )
+        self.assertEqual(
+            [item["profileId"] for item in matrix],
+            ["smoke", "qualification", "target"],
+        )
+        self.assertEqual(matrix[0]["measurementStatus"], "measured")
+        for item in matrix[1:]:
+            self.assertEqual(item["measurementStatus"], "not_measured")
+            self.assertEqual(item["blockedReason"], "gpu_measurement_not_run")
+            self.assertTrue(item["requiredBeforeFormalStage0"])
+
+    def test_resolution_matrix_rejects_incomplete_real_measurement(self):
+        with self.assertRaisesRegex(ValueError, "measurement_missing_cpuMemoryPeakBytes"):
+            runner.build_resolution_profile_matrix(
+                measured_profile_id="smoke",
+                measured={
+                    "gpuPeakMemoryBytes": 1024,
+                    "batchSize": 1,
+                    "durationSeconds": 1.25,
+                    "throughput": 1.6,
+                    "oom": False,
+                    "outputValid": True,
+                    "sourceFactCoverage": True,
+                    "imageDimensions": {"width": 256, "height": 192},
+                },
+            )
+
     def test_cpu_inventory_is_exact_and_private_namespaces_are_disjoint(self):
         torch.manual_seed(runner.SEED)
         model = build_complete_world_system(self.model_config)

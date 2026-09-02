@@ -695,8 +695,8 @@ export async function invokeRegisteredLocalAction({ root, action, entrypoint }) 
   const absolute = resolveProjectPath(root, entrypoint.entryFile.path, { mustExist: true, kind: "file" });
   const moduleUrl = pathToFileURL(absolute);
   moduleUrl.searchParams.set("sha256", entrypoint.entryFile.sha256);
-  const module = await import(moduleUrl.href);
-  const callable = module[definition.exportName];
+  const loadedModule = await import(moduleUrl.href);
+  const callable = loadedModule[definition.exportName];
   assert.equal(typeof callable, "function", `${action} export ${definition.exportName} is missing`);
   return callable({ projectRoot: root });
 }

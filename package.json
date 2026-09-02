@@ -2,9 +2,20 @@
   "name": "ai-pet-world",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@11.9.0",
+  "engines": {
+    "node": ">=24.14.0 <25",
+    "npm": ">=11.9.0 <12"
+  },
   "scripts": {
     "dev": "next dev --webpack",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "node --test scripts/tests/test-ai-painter-stage4-v2-cpu-contract-acceptance.mjs scripts/tests/test-ai-painter-stage4-v2-formal-plan-registry-dependencies.mjs scripts/tests/test-ai-painter-stage4-v2-formal-stage0-to-stage2-executor.mjs",
+    "test:integration": "node scripts/check-world-runtime-auth-contract.mjs && node scripts/check-game-map-frame-contract.mjs",
+    "test:e2e": "node scripts/check-ai-pet-world-e2e-readiness.mjs",
     "build": "node scripts/build-next-production.mjs",
+    "run:ai-painter-stage4-v2-formal-stage0-to-stage2": "node scripts/run-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
     "start": "next start",
     "lint": "eslint",
     "check:encoding": "node scripts/check-source-encoding.mjs",

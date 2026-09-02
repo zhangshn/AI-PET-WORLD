@@ -54,7 +54,6 @@ import {
   writeExclusiveJson,
 } from "./lib/ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs";
 
-const PYTHON_RELATIVE = "ml/ai-painter/.venv/Scripts/python.exe";
 const PYTHON_RUNNER_ROLE = "pythonRunner";
 const QUALIFICATION_TIMEOUT_MS = 30 * 60 * 1000;
 const ACTIVE_EXECUTION_HEARTBEAT_TTL_SECONDS = 60;
@@ -72,6 +71,11 @@ const QUALIFICATION_RESPONSIBILITY_PATH_TENSOR_COUNT = 12;
 const QUALIFICATION_RGB_HEAD_TENSOR_COUNT = 4;
 const QUALIFICATION_AUTOENCODER_PARAMETER_TENSOR_COUNT = 64;
 const QUALIFICATION_AUTOENCODER_PARAMETER_SCALAR_COUNT = 2_527_887;
+const QUALIFICATION_RESOLUTION_PROFILES = Object.freeze([
+  Object.freeze({ profileId: "smoke", stage: "smoke", width: 256, height: 192 }),
+  Object.freeze({ profileId: "qualification", stage: "qualification", width: 512, height: 384 }),
+  Object.freeze({ profileId: "target", stage: "target", width: 1024, height: 768 }),
+]);
 const FAILURE_TASK = "adjudicate_stage4_v2_readonly_gpu_qualification_failure";
 const FAILURE_ACTION = "adjudicate:ai-painter-stage4-v2-readonly-gpu-qualification-failure";
 const SMOKE_TASK = "materialize_stage4_v2_controlled_smoke_contract";
@@ -363,6 +367,7 @@ export async function runStage4V2ReadonlyGpuQualification({
     const activeExecutionEvidence = freezeActiveExecutionEvidence(context, completedAtUtc);
     const finalization = {
       schemaVersion: "ai-painter-stage4-v2-readonly-gpu-finalization-v1",
+      artifactClass: "production_qualification",
       executionState: "completed",
       status: "stage4_v2_readonly_gpu_qualification_passed",
       packageId: packagePayload.packageId,
@@ -400,6 +405,7 @@ export async function runStage4V2ReadonlyGpuQualification({
     const finalizationBinding = bindAbsolute(root, paths.finalization);
     const terminal = {
       schemaVersion: "ai-painter-stage4-v2-readonly-gpu-terminal-v1",
+      artifactClass: "production_qualification",
       executionState: "completed",
       status: "stage4_v2_readonly_gpu_qualification_passed",
       packageId: packagePayload.packageId,
@@ -1262,6 +1268,10 @@ function validatePackagePayload(payload, manifest) {
   assert.deepEqual(payload.ticketIssuer, manifest.ticketIssuer);
   assert.equal(payload.fixedInputs?.seed, 20263722);
   assert.deepEqual(payload.fixedInputs?.resolution, { width: 256, height: 192 });
+  if (payload.fixedInputs?.resolutionProfiles !== undefined) {
+    assert.deepEqual(payload.fixedInputs.resolutionProfiles, QUALIFICATION_RESOLUTION_PROFILES,
+      "qualification resolution profile matrix identity changed");
+  }
   assert.equal(payload.fixedInputs?.batchSize, 1);
   assert.equal(payload.fixedInputs?.diffusionTimestep, 500);
   assert.equal(payload.fixedInputs?.conditionChannels, 23);
@@ -1584,7 +1594,7 @@ function runCpuAndProgramPreflight({ root, packagePayload, commandRunner, now })
     assert.ok(Array.isArray(args) && args.length > 0, "prerequisite checker args are missing");
     commands.push({
       id: prerequisite.id,
-      command: command === "node" ? process.execPath : resolveProjectPath(root, PYTHON_RELATIVE, { mustExist: true, kind: "file" }),
+      command: command === "node" ? process.execPath : resolveProjectPython(root),
       args,
     });
   }
@@ -1600,7 +1610,7 @@ function runCpuAndProgramPreflight({ root, packagePayload, commandRunner, now })
   });
   commands.push({
     id: "python_runner_syntax",
-    command: resolveProjectPath(root, PYTHON_RELATIVE, { mustExist: true, kind: "file" }),
+    command: resolveProjectPython(root),
     args: ["-B", "-m", "py_compile", packagePayload.programLineage.pythonRunner.path],
   });
   const results = commands.map((command) => {
@@ -1636,7 +1646,7 @@ function runCpuAndProgramPreflight({ root, packagePayload, commandRunner, now })
 }
 
 function runPythonCudaPreflight({ root, commandRunner, now }) {
-  const python = resolveProjectPath(root, PYTHON_RELATIVE, { mustExist: true, kind: "file" });
+  const python = resolveProjectPython(root);
   const probe = [
     "import json,sys,torch",
     "print(json.dumps({'pythonVersion':sys.version.split()[0],'torchVersion':torch.__version__,'cudaBuildVersion':torch.version.cuda,'cudaAvailable':torch.cuda.is_available(),'cudaDeviceCount':torch.cuda.device_count() if torch.cuda.is_available() else 0}))",
@@ -1909,7 +1919,7 @@ function buildActiveConfig({ packagePayload, ticket, ticketBinding, consumptionB
 }
 
 function invokePythonQualification({ root, packagePayload, activeConfigBinding, outputRoot }) {
-  const python = resolveProjectPath(root, PYTHON_RELATIVE, { mustExist: true, kind: "file" });
+  const python = resolveProjectPython(root);
   const runner = resolveProjectPath(root, packagePayload.programLineage[PYTHON_RUNNER_ROLE].path, { mustExist: true, kind: "file" });
   return runNonBlockingChildProcess({
     command: python,
@@ -1970,7 +1980,7 @@ export function runNonBlockingChildProcess({
   });
 }
 
-export function validatePythonQualificationEvidence({ root, packagePayload, activeConfigBinding, outputRoot }) {
+export function validatePythonQualificationEvidence({ root, packagePayload, activeConfigBinding, outputRoot, allowSyntheticTestFixture = false }) {
   const paths = {
     gpuDiagnostic: path.join(outputRoot, "gpu-diagnostic.json"),
     cudaTelemetry: path.join(outputRoot, "cuda-telemetry.json"),
@@ -1991,6 +2001,24 @@ export function validatePythonQualificationEvidence({ root, packagePayload, acti
   assert.equal(cuda.schemaVersion, "ai-painter-stage4-v2-readonly-gpu-cuda-telemetry-v1");
   assert.equal(state.schemaVersion, "ai-painter-stage4-v2-readonly-gpu-state-integrity-v1");
   assert.equal(result.schemaVersion, "ai-painter-stage4-v2-readonly-gpu-qualification-v1");
+  if (result.artifactClass === "synthetic_test_fixture") {
+    assert.equal(allowSyntheticTestFixture, true, "synthetic qualification fixture is not allowed in production validation");
+  } else {
+    assert.equal(result.artifactClass, "production_qualification", "qualification artifact is not a real qualification result");
+    assert.equal(result.syntheticTestFixture, false, "production qualification is marked synthetic");
+    const evidenceSet = {
+      activeConfig: result.activeConfig,
+      ticket: result.ticket,
+      programGraphManifest: result.programGraphManifest,
+      gpuDiagnostic: result.gpuDiagnostic,
+      cudaTelemetry: result.cudaTelemetry,
+      stateIntegrity: result.stateIntegrity,
+    };
+    assert.match(result.evidenceSha256 ?? "", /^[a-f0-9]{64}$/u,
+      "production qualification evidence hash is missing");
+    assert.equal(result.evidenceSha256, canonicalSha256(evidenceSet),
+      "production qualification evidence hash is stale or forged");
+  }
   assert.equal(result.packageId, packagePayload.packageId, "qualification result package mismatch");
   assert.equal(result.runId, packagePayload.runId, "qualification result run mismatch");
   assert.equal(result.architectureId, STAGE4_V2_CAPABILITY, "qualification result architecture mismatch");
@@ -2076,6 +2104,20 @@ export function validatePythonQualificationEvidence({ root, packagePayload, acti
     "preflight memory was substituted for diagnostic peak memory");
   assert.equal(cuda.native1024x768PeakClaimed, false,
     "Stage 0 qualification falsely claimed native 1024x768 peak memory");
+  // Older stored qualification evidence may predate AP-05's explicit matrix.
+  // Preserve compatibility for those immutable records, while requiring the
+  // complete matrix whenever a producer claims to emit it.
+  if (diagnostic.resolutionProfiles !== undefined || cuda.resolutionProfiles !== undefined) {
+    assert.ok(diagnostic.resolutionProfiles !== undefined && cuda.resolutionProfiles !== undefined,
+      "resolution profile matrix must be present in both diagnostic and CUDA telemetry");
+    validateResolutionProfileMatrix(diagnostic.resolutionProfiles, cuda.resolutionProfiles);
+    assert.equal(diagnostic.coverageStatus,
+      "smoke_measured_qualification_and_target_pending",
+      "qualification coverage status is missing or over-claimed");
+    assert.equal(cuda.coverageStatus,
+      "smoke_measured_qualification_and_target_pending",
+      "CUDA coverage status is missing or over-claimed");
+  }
 
   assert.equal(state.status, "verified_unchanged", "model state integrity did not pass");
   assert.equal(state.denoiserUnchanged, true, "Denoiser state changed");
@@ -2432,6 +2474,48 @@ function validateQualificationCudaTelemetry(cuda) {
     "CUDA total duration is invalid");
 }
 
+function validateResolutionProfileMatrix(diagnosticProfiles, telemetryProfiles) {
+  for (const [label, profiles] of [["diagnostic", diagnosticProfiles], ["telemetry", telemetryProfiles]]) {
+    assert.ok(Array.isArray(profiles) && profiles.length === QUALIFICATION_RESOLUTION_PROFILES.length,
+      `${label} resolution profile matrix is incomplete`);
+    for (const expected of QUALIFICATION_RESOLUTION_PROFILES) {
+      const actual = profiles.find((item) => item?.profileId === expected.profileId);
+      assert.ok(actual, `${label} resolution profile is missing: ${expected.profileId}`);
+      assert.deepEqual(
+        { profileId: actual.profileId, stage: actual.stage, width: actual.width, height: actual.height },
+        expected,
+        `${label} resolution profile identity changed: ${expected.profileId}`,
+      );
+      if (expected.profileId === "smoke") {
+        assert.equal(actual.measurementStatus, "measured",
+          `${label} smoke resolution was not measured`);
+        for (const key of ["gpuPeakMemoryBytes", "cpuMemoryPeakBytes", "batchSize"]) {
+          assert.ok(Number.isInteger(actual[key]) && actual[key] > 0,
+            `${label} smoke ${key} is invalid`);
+        }
+        for (const key of ["durationSeconds", "throughput"]) {
+          assert.equal(typeof actual[key], "number",
+            `${label} smoke ${key} is invalid`);
+          assert.ok(Number.isFinite(actual[key]) && actual[key] >= 0,
+            `${label} smoke ${key} is invalid`);
+        }
+        assert.equal(actual.oom, false, `${label} smoke reported OOM`);
+        assert.equal(actual.outputValid, true, `${label} smoke output is invalid`);
+        assert.equal(actual.sourceFactCoverage, true, `${label} smoke source coverage is incomplete`);
+        assert.deepEqual(actual.imageDimensions, { width: 256, height: 192 },
+          `${label} smoke image dimensions changed`);
+      } else {
+        assert.equal(actual.measurementStatus, "not_measured",
+          `${label} ${expected.profileId} must remain explicitly unmeasured`);
+        assert.equal(actual.blockedReason, "gpu_measurement_not_run",
+          `${label} ${expected.profileId} missing blocking reason`);
+        assert.equal(actual.requiredBeforeFormalStage0, true,
+          `${label} ${expected.profileId} missing Stage 0 prerequisite`);
+      }
+    }
+  }
+}
+
 function assertProjectBinding(root, binding, label) {
   assert.ok(binding && typeof binding === "object" && !Array.isArray(binding), `${label} binding is missing`);
   return bindProjectFile(root, binding.path, binding.sha256);
@@ -2760,6 +2844,24 @@ function normalizeLogicalPath(root, input) {
   return input.split(path.sep).join("/");
 }
 
+function resolveProjectPython(root) {
+  const configured = process.env.AI_PAINTER_PYTHON?.trim();
+  const candidates = configured
+    ? [configured]
+    : process.platform === "win32"
+      ? ["ml/ai-painter/.venv/Scripts/python.exe", "python"]
+      : ["ml/ai-painter/.venv/bin/python", "python3", "python"];
+  for (const candidate of candidates) {
+    if (candidate === "python" || candidate === "python3") return candidate;
+    try {
+      return resolveProjectPath(root, candidate, { mustExist: true, kind: "file" });
+    } catch {
+      // Continue to the next platform-appropriate interpreter.
+    }
+  }
+  throw new Error("ai_painter_python_runtime_unavailable_for_host");
+}
+
 function pythonEnvironment(root, cudaVisible) {
   const env = { ...process.env };
   const entries = [
@@ -2828,6 +2930,18 @@ function writeJsonAtomic(filePath, value) {
 
 function shaText(value) {
   return createHash("sha256").update(String(value), "utf8").digest("hex");
+}
+
+function canonicalSha256(value) {
+  const canonical = (item) => {
+    if (Array.isArray(item)) return item.map(canonical);
+    if (item && typeof item === "object") {
+      return Object.fromEntries(Object.keys(item).sort()
+        .map((key) => [key, canonical(item[key])]));
+    }
+    return item;
+  };
+  return shaText(JSON.stringify(canonical(value)));
 }
 
 function tail(value, limit = 2000) {

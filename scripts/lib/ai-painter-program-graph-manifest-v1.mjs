@@ -28,6 +28,8 @@ const SMOKE_BACKGROUND_LAUNCHER_PATH =
 const SMOKE_CHILD_RUNNER_PATH = "scripts/run-ai-painter-stage4-v2-controlled-smoke.mjs";
 const SMOKE_FORMAL_PLANNER_PATH =
   "scripts/plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs";
+const SMOKE_FORMAL_EXECUTOR_PATH =
+  "scripts/run-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs";
 const SMOKE_FAILURE_ADJUDICATOR_PATH =
   "scripts/adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs";
 const QUALIFICATION_FAILURE_ADJUDICATOR_PATH =
@@ -304,6 +306,7 @@ function stage4V2GraphDefinition({ graphId, programLineage }) {
       { role: "controlledSmokeBackgroundLauncher", path: SMOKE_BACKGROUND_LAUNCHER_PATH },
       { role: "controlledSmokeChildRunner", path: SMOKE_CHILD_RUNNER_PATH },
       { role: "controlledSmokeFormalPlanner", path: SMOKE_FORMAL_PLANNER_PATH },
+      { role: "controlledSmokeFormalExecutor", path: SMOKE_FORMAL_EXECUTOR_PATH },
       { role: "controlledSmokeFailureAdjudicator", path: SMOKE_FAILURE_ADJUDICATOR_PATH },
       { role: "qualificationFailureAdjudicator", path: QUALIFICATION_FAILURE_ADJUDICATOR_PATH },
     ],

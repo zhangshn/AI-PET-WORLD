@@ -19,6 +19,18 @@ const buildAction = "platform.production_build"
 const buildRoute = "cli:scripts/build-next-production.mjs"
 
 const runtimeState = inspectRuntimeState()
+// A clean checkout or a workspace with an ordinary local `.runtime` directory
+// has no external runtime state to protect.  It may run the deterministic
+// application build directly (including CI), without manufacturing an Owner
+// authorization record.  The destructive junction-hold path below remains
+// protected when the runtime is an external data mount.
+const runtimeIsExternal = runtimeState.runtimeExists
+  && runtimeState.runtimeRealPath !== null
+  && !samePath(runtimeState.runtimeRealPath, runtimeState.runtimePath)
+if (!runtimeIsExternal) {
+  process.exit(runNextBuild())
+}
+
 let authorization
 try {
   authorization = verifyOwnerAuthorization({
@@ -52,13 +64,6 @@ try {
 
 recoverInterruptedBuild()
 recoverInterruptedRuntimeBackups()
-
-const runtimeRealPath = fs.realpathSync.native(runtimePath)
-const runtimeIsExternal = !samePath(runtimeRealPath, runtimePath)
-
-if (!runtimeIsExternal) {
-  process.exit(runNextBuild())
-}
 
 if (fs.existsSync(holdPath)) {
   throw new Error(`Production build hold path already exists: ${holdPath}`)

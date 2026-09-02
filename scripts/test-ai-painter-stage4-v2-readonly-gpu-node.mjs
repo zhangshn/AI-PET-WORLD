@@ -33,8 +33,15 @@ import {
   runNonBlockingChildProcess,
   startActiveExecutionHeartbeat,
   stopActiveExecutionHeartbeat,
-  validatePythonQualificationEvidence,
+  validatePythonQualificationEvidence as validatePythonQualificationEvidenceProduction,
 } from "./run-ai-painter-stage4-v2-readonly-gpu-qualification.mjs";
+
+function validatePythonQualificationEvidence(input) {
+  return validatePythonQualificationEvidenceProduction({
+    ...input,
+    allowSyntheticTestFixture: true,
+  });
+}
 
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "ai-painter-stage4-v2-node-"));
 try {
@@ -496,6 +503,8 @@ function testPythonEvidenceBoundary(root) {
   const originalState = JSON.parse(fs.readFileSync(statePath, "utf8"));
   writeFixture(root, `${prefix}/output/qualification-result.json`, {
     schemaVersion: "ai-painter-stage4-v2-readonly-gpu-qualification-v1",
+    artifactClass: "synthetic_test_fixture",
+    syntheticTestFixture: true,
     status: "stage4_v2_readonly_gpu_qualification_passed",
     executionState: "completed",
     packageId: "evidence-package",
@@ -530,7 +539,7 @@ function testPythonEvidenceBoundary(root) {
     fixedInputs: evidenceInputs.fixedInputs,
     programGraphManifest: programGraphBinding,
   };
-  const verified = validatePythonQualificationEvidence({ root, packagePayload: payload, activeConfigBinding: activeBinding, outputRoot });
+  const verified = validatePythonQualificationEvidence({ root, packagePayload: payload, activeConfigBinding: activeBinding, outputRoot, allowSyntheticTestFixture: true });
   assert.equal(verified.qualificationResult.path, `${prefix}/output/qualification-result.json`);
   const qualificationResultPath = path.join(outputRoot, "qualification-result.json");
   const originalQualificationResult = JSON.parse(
@@ -541,14 +550,14 @@ function testPythonEvidenceBoundary(root) {
   fs.writeFileSync(qualificationResultPath,
     `${JSON.stringify(missingGraphResult, null, 2)}\n`, "utf8");
   assert.throws(() => validatePythonQualificationEvidence({
-    root, packagePayload: payload, activeConfigBinding: activeBinding, outputRoot,
+    root, packagePayload: payload, activeConfigBinding: activeBinding, outputRoot, allowSyntheticTestFixture: true,
   }), /Python program graph/u);
   const forgedGraphResult = structuredClone(originalQualificationResult);
   forgedGraphResult.programGraphManifest.graphContentSha256 = "4".repeat(64);
   fs.writeFileSync(qualificationResultPath,
     `${JSON.stringify(forgedGraphResult, null, 2)}\n`, "utf8");
   assert.throws(() => validatePythonQualificationEvidence({
-    root, packagePayload: payload, activeConfigBinding: activeBinding, outputRoot,
+    root, packagePayload: payload, activeConfigBinding: activeBinding, outputRoot, allowSyntheticTestFixture: true,
   }), /content identity mismatch/u);
   fs.writeFileSync(qualificationResultPath,
     `${JSON.stringify(originalQualificationResult, null, 2)}\n`, "utf8");

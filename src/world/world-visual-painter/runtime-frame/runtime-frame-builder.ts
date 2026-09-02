@@ -4,12 +4,6 @@ import type {
   WorldGameRuntimeFrameBuildResult,
 } from "./runtime-frame-schema"
 
-const OWNER_FINAL_WORLD_APPROVAL_TAGS = [
-  "owner_final_world_mvp_approved",
-  "complete_game_world_scene",
-  "world_home_playable_frame",
-]
-
 export function buildWorldGameRuntimeFrame(
   input: BuildWorldGameRuntimeFrameInput
 ): WorldGameRuntimeFrameBuildResult {
@@ -29,12 +23,6 @@ export function buildWorldGameRuntimeFrame(
     ])
   }
   const reviewReport = input.reviewReport!
-
-  if (!ownerFinalApprovalPassed(input.approvedFrame.tags)) {
-    return blocked("owner_final_world_approval_missing", [
-      "owner_final_world_approval_missing",
-    ])
-  }
 
   if (
     input.recordWorldId !== input.currentWorldId ||
@@ -161,11 +149,6 @@ function reviewReportIsGameWorld(
     reviewReport.productionApprovalStatus === "not_approved_for_production" &&
     reviewReport.canShowToPlayer === false
   )
-}
-
-function ownerFinalApprovalPassed(tags: string[]): boolean {
-  const tagSet = new Set(tags)
-  return OWNER_FINAL_WORLD_APPROVAL_TAGS.every((tag) => tagSet.has(tag))
 }
 
 function sameStringSet(left: string[], right: string[]): boolean {

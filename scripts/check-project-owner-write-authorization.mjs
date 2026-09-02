@@ -21,10 +21,12 @@ const expectedAuthorizedRoutes = new Map([
   ["src/app/api/ai-painter/candidate-reviews/route.ts", "ai_painter.candidate_review"],
   ["src/app/api/ai-painter/original-images/[categoryId]/[recordId]/owner-review/route.ts", "ai_painter.original_image.owner_review"],
   ["src/app/api/ai-painter/training-control/route.ts", "ai_painter.training_control."],
-  ["src/app/api/world/create/route.ts", "world.create"],
-  ["src/app/api/world/tick/route.ts", "world.tick"],
-  ["src/app/api/world/visual/generate/route.ts", "world.visual.generate"],
-  ["src/app/api/world/visual/judge/route.ts", "world.visual.judge"],
+])
+const localOperatorRoutes = new Set([
+  "src/app/api/world/create/route.ts",
+  "src/app/api/world/tick/route.ts",
+  "src/app/api/world/visual/generate/route.ts",
+  "src/app/api/world/visual/judge/route.ts",
 ])
 
 const mutationRoutes = listFiles(routeRoot)
@@ -34,7 +36,7 @@ const mutationRoutes = listFiles(routeRoot)
 
 assert.deepEqual(
   mutationRoutes,
-  [...expectedAuthorizedRoutes.keys(), ...allowedReadOnlyMutationHandlers].sort(),
+  [...expectedAuthorizedRoutes.keys(), ...localOperatorRoutes, ...allowedReadOnlyMutationHandlers].sort(),
   "Every mutation-shaped API handler must be explicitly classified",
 )
 
@@ -44,6 +46,12 @@ for (const [route, action] of expectedAuthorizedRoutes) {
   assert.ok(source.includes(action), `${route} must bind action ${action}`)
   assert.match(source, /target:\s*\{/u, `${route} must bind a concrete target`)
   assert.match(source, /payload:\s*/u, `${route} must bind the write payload`)
+}
+
+for (const route of localOperatorRoutes) {
+  const source = fs.readFileSync(path.join(root, route), "utf8")
+  assert.match(source, /verifyLocalOperatorMutation\s*\(/u, `${route} must verify the local operator session`)
+  assert.doesNotMatch(source, /claimOwnerWriteAuthorization\s*\(/u, `${route} must not require a per-request Owner authorization`)
 }
 
 const readOnlyZiwei = fs.readFileSync(path.join(root, "src/app/api/ziwei/full-chart/route.ts"), "utf8")

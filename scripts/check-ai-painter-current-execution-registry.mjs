@@ -14,11 +14,6 @@ const serverSource = await readFile(
   path.join(projectRoot, "src/server/ai-painter-current-training.ts"),
   "utf8",
 )
-const modelSourcesBody = between(
-  serverSource,
-  "const modelSources = [",
-  "] as const;",
-)
 const buildSnapshotBody = between(
   serverSource,
   "async function buildSnapshot()",
@@ -26,13 +21,11 @@ const buildSnapshotBody = between(
 )
 
 assert.match(serverSource, /readCurrentExecutionRegistry/)
+assert.match(serverSource, /discoverCurrentTrainingSources/)
+assert.doesNotMatch(serverSource, /const modelSources\s*=/u)
 assert.match(buildSnapshotBody, /readCurrentExecutionRegistry\(root\)/)
 assert.doesNotMatch(buildSnapshotBody, /readCurrentR5Stage4TaskCapsule\(/)
 assert.doesNotMatch(buildSnapshotBody, /readLatestPostDecodeFormalExecution\(/)
-assert.doesNotMatch(
-  modelSourcesBody,
-  /stage4-post-decode-object-rgb-controlled-smokes/,
-)
 assert.doesNotMatch(
   serverSource,
   /stage4-post-decode-object-rgb-controlled-smokes/,

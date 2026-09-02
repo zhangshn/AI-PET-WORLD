@@ -78,8 +78,14 @@ export function parseCreateWorldInput(
 export function buildWorldCreationRuntime(
   input: WorldCreationRuntimeInput
 ): WorldCreationRuntimeResult {
+  if (!isValidWorldInstanceId(input.worldInstanceId)) {
+    throw new Error("worldInstanceId must be a non-empty server-issued identity")
+  }
   const birthSignature = buildBirthSignature(input.createWorldInput)
-  const stableToken = buildStableToken(birthSignature)
+  // Birth information remains the stable personality/world seed, while the
+  // instance identity prevents two worlds with identical birth input from
+  // sharing owner IDs, world IDs, or persisted paths.
+  const stableToken = buildStableToken(`${birthSignature}:${input.worldInstanceId}`)
   const fallbackStyle = buildDeterministicConstructionStyle(birthSignature)
   const styleResult = buildRuntimeStyle({
     createWorldInput: input.createWorldInput,
@@ -89,6 +95,7 @@ export function buildWorldCreationRuntime(
   return {
     worldId: `world-${stableToken}`,
     ownerId: `owner-${stableToken}`,
+    worldInstanceId: input.worldInstanceId,
     birthSignature,
     worldSalt: `local-runtime-${input.createWorldInput.createdAt}`,
     butlerProfile: styleResult.butlerProfile,
@@ -103,6 +110,10 @@ export function buildWorldCreationRuntime(
       warnings: styleResult.warnings,
     },
   }
+}
+
+function isValidWorldInstanceId(value: string): boolean {
+  return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/u.test(value)
 }
 
 export function buildBirthSignature(input: CreateWorldInput): string {

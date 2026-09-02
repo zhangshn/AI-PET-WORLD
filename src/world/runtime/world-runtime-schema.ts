@@ -119,6 +119,7 @@ export type WorldRuntimeStoreReadResult = {
 export type WorldRuntimeStoreWriteResult = {
   ok: boolean
   path: string
+  code?: "conflict" | "invalid_path" | "persistence_error"
   message: string
   warnings: string[]
   tags: string[]
@@ -126,6 +127,7 @@ export type WorldRuntimeStoreWriteResult = {
 
 export type WorldRuntimeStoreAdapterKind =
   | "local_file_runtime_store"
+  | "configured_file_runtime_store"
   | "database_runtime_store"
   | "browser_local_runtime_store"
 
@@ -135,6 +137,7 @@ export type WorldRuntimeStoreAdapter = {
   write(input: {
     record: WorldRuntimeSaveRecord
     filePath?: string
+    expectedTick?: number
   }): Promise<WorldRuntimeStoreWriteResult>
   getDefaultSavePath(): string
 }

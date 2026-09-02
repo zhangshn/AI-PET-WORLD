@@ -46,9 +46,26 @@ export default function CreateWorldRoutePage() {
     setIsCreating(true)
 
     try {
+      const sessionResponse = await fetch("/api/ai-console/control/session", {
+        credentials: "same-origin",
+        method: "GET",
+      })
+      const session = (await sessionResponse.json().catch(() => null)) as {
+        ok?: boolean
+        csrfToken?: string
+      } | null
+      if (!sessionResponse.ok || !session?.ok || !session.csrfToken) {
+        setErrorMessage("本机操作会话未建立，暂时不能创建世界。")
+        setIsCreating(false)
+        return
+      }
       const response = await fetch("/api/world/create", {
         body: serializeCreateWorldInput(createWorldInput),
-        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-AI-Console-CSRF": session.csrfToken,
+        },
         method: "POST",
       })
       const result = (await response.json().catch(() => null)) as {

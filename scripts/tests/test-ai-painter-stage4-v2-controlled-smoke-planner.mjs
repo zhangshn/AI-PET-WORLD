@@ -925,19 +925,30 @@ function materializePassedQualificationEvidence(root, {
     ownerAuthorizationRequired: false,
     consumedAtUtc: recordedAtUtc,
   });
+  const qualificationEvidenceSet = {
+    activeConfig,
+    ticket: { ticketId: "fixture-ticket", status: "consumed_once" },
+    programGraphManifest: { binding: payload.programGraphManifest },
+    gpuDiagnostic,
+    cudaTelemetry,
+    stateIntegrity,
+  };
   const qualificationResult = evidence("qualification-result.json", {
     schemaVersion: "ai-painter-stage4-v2-readonly-gpu-qualification-v1",
+    artifactClass: "production_qualification",
+    syntheticTestFixture: false,
     executionState: "completed",
     status: "stage4_v2_readonly_gpu_qualification_passed",
     packageId,
     runId,
     architectureId: CAPABILITY,
     activeConfig,
-    programGraphManifest: { binding: payload.programGraphManifest },
-    ticket: { ticketId: "fixture-ticket", status: "consumed_once" },
+    programGraphManifest: qualificationEvidenceSet.programGraphManifest,
+    ticket: qualificationEvidenceSet.ticket,
     gpuDiagnostic,
     cudaTelemetry,
     stateIntegrity,
+    evidenceSha256: canonicalSha256(qualificationEvidenceSet),
     ownerAuthorizationRequired: false,
     automaticSmokeStarted: false,
   });
@@ -975,6 +986,7 @@ function materializePassedQualificationEvidence(root, {
   });
   return evidence("qualification-passed-terminal.json", {
     schemaVersion: "ai-painter-stage4-v2-readonly-gpu-terminal-v1",
+    artifactClass: "production_qualification",
     executionState: "completed",
     status: "stage4_v2_readonly_gpu_qualification_passed",
     packageId,
@@ -1015,6 +1027,19 @@ function binding(root, absolute) {
 }
 function sha256(absolute) {
   return crypto.createHash("sha256").update(fs.readFileSync(absolute)).digest("hex");
+}
+function canonicalSha256(value) {
+  const canonical = (item) => {
+    if (Array.isArray(item)) return item.map(canonical);
+    if (item && typeof item === "object") {
+      return Object.fromEntries(Object.keys(item).sort()
+        .map((key) => [key, canonical(item[key])]));
+    }
+    return item;
+  };
+  return crypto.createHash("sha256")
+    .update(JSON.stringify(canonical(value)))
+    .digest("hex");
 }
 function readBound(root, value) {
   const target = path.join(root, ...value.path.split("/"));

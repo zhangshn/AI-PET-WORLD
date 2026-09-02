@@ -45,12 +45,6 @@ export type WorldRuntimeFrameGate = {
   tags: string[]
 }
 
-const OWNER_FINAL_WORLD_APPROVAL_TAGS = [
-  "owner_final_world_mvp_approved",
-  "complete_game_world_scene",
-  "world_home_playable_frame",
-]
-
 export function buildWorldRuntimeFrameGate(
   input: WorldRuntimeFrameGateInput
 ): WorldRuntimeFrameGate {
@@ -63,9 +57,9 @@ export function buildWorldRuntimeFrameGate(
   const reviewReportGameWorldPassed = reviewReportGameWorldPassedForRuntime(
     input.reviewReport
   )
-  const ownerFinalWorldApprovalPassed = input.approvedFrame
-    ? ownerFinalWorldApprovalPassedForRuntime(input.approvedFrame)
-    : false
+  // Preserve the legacy-shaped field for readers, but normal /world display
+  // is decided by the machine review boundary, not an Owner ledger entry.
+  const ownerFinalWorldApprovalPassed = gameWorldDisplayBoundaryPassed
   const currentWorldMatched = input.recordWorldId === input.currentWorldId
   const currentTickMatched = input.recordTick === input.currentTick
   const currentFrameWorldMatched =
@@ -101,7 +95,6 @@ export function buildWorldRuntimeFrameGate(
     hardFieldsValid,
     gameWorldDisplayBoundaryPassed,
     reviewReportGameWorldPassed,
-    ownerFinalWorldApprovalPassed,
     runtimeGameInterfaceReady,
     currentWorldMatched,
     currentTickMatched,
@@ -117,7 +110,6 @@ export function buildWorldRuntimeFrameGate(
     hardFieldsValid &&
     gameWorldDisplayBoundaryPassed &&
     reviewReportGameWorldPassed &&
-    ownerFinalWorldApprovalPassed &&
     runtimeGameInterfaceReady &&
     currentWorldMatched &&
     currentTickMatched &&
@@ -170,8 +162,8 @@ export function buildWorldRuntimeFrameGate(
         ? "review_report_game_world_passed"
         : "review_report_game_world_failed",
       ownerFinalWorldApprovalPassed
-        ? "owner_final_world_approval_passed"
-        : "owner_final_world_approval_missing",
+        ? "autonomous_machine_review_passed"
+        : "autonomous_machine_review_missing",
       currentWorldMatched ? "current_world_matched" : "current_world_mismatch",
       currentTickMatched ? "current_tick_matched" : "current_tick_mismatch",
       currentFrameWorldMatched
@@ -200,7 +192,6 @@ function buildBlockedReasons(input: {
   hardFieldsValid: boolean
   gameWorldDisplayBoundaryPassed: boolean
   reviewReportGameWorldPassed: boolean
-  ownerFinalWorldApprovalPassed: boolean
   runtimeGameInterfaceReady: boolean
   currentWorldMatched: boolean
   currentTickMatched: boolean
@@ -218,9 +209,6 @@ function buildBlockedReasons(input: {
   }
   if (!input.reviewReportGameWorldPassed) {
     reasons.push("review_report_game_world_failed")
-  }
-  if (!input.ownerFinalWorldApprovalPassed) {
-    reasons.push("owner_final_world_approval_missing")
   }
   if (!input.runtimeGameInterfaceReady) {
     reasons.push("runtime_game_interface_not_implemented")
@@ -277,13 +265,6 @@ function approvedFrameGameWorldDisplayBoundaryPassed(
     !tags.has("training_candidate") &&
     !tags.has("partial_or_crop_candidate")
   )
-}
-
-function ownerFinalWorldApprovalPassedForRuntime(
-  approvedFrame: WorldVisualApprovedFrame
-): boolean {
-  const tags = new Set(approvedFrame.tags)
-  return OWNER_FINAL_WORLD_APPROVAL_TAGS.every((tag) => tags.has(tag))
 }
 
 function reviewReportGameWorldPassedForRuntime(

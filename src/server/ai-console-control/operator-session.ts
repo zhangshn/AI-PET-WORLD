@@ -2,7 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 
 const sessionCookieName = "ai_console_operator_session"
 const sessionLifetimeSeconds = 30 * 60
-const sessionSigningSecret = randomBytes(32)
+const sessionSigningSecret = loadSessionSigningSecret()
 
 type OperatorSessionPayload = {
   schemaVersion: "ai_console_operator_session_v1"
@@ -137,4 +137,22 @@ function safeStringEqual(left: string, right: string): boolean {
   const leftBuffer = Buffer.from(left, "utf8")
   const rightBuffer = Buffer.from(right, "utf8")
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer)
+}
+
+function loadSessionSigningSecret(): Buffer {
+  const configured = process.env.AI_PET_WORLD_OPERATOR_SESSION_SECRET?.trim()
+  if (configured) {
+    const secret = Buffer.from(configured, "utf8")
+    if (secret.length < 32) {
+      throw new Error("AI_PET_WORLD_OPERATOR_SESSION_SECRET must contain at least 32 bytes")
+    }
+    return secret
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("AI_PET_WORLD_OPERATOR_SESSION_SECRET is required in production")
+  }
+  // Development/test fallback is deliberately process-local. Production
+  // deployments must provide a stable secret so detached workers can verify
+  // the same session after a restart.
+  return randomBytes(32)
 }

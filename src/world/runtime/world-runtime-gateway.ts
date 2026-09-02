@@ -3,6 +3,7 @@
  */
 
 import { buildButlerRuntimeProfileFromLifeCore } from "@/world/butler/butler-personality-adapter"
+import { randomUUID } from "node:crypto"
 import {
   buildWorldCreationRuntime,
   type CreateWorldInput,
@@ -41,9 +42,11 @@ export type WorldRuntimeCreateResult = {
 
 export async function createRuntimeWorldFromCreateWorldInput(input: {
   createWorldInput: CreateWorldInput
+  worldInstanceId?: string
 }): Promise<WorldRuntimeCreateResult> {
   const saveRecord = buildRuntimeSaveRecordFromCreateWorldInput({
     createWorldInput: input.createWorldInput,
+    worldInstanceId: input.worldInstanceId ?? randomUUID(),
   })
   const writeResult = await writeWorldRuntimeSaveRecord({ record: saveRecord })
 
@@ -143,6 +146,9 @@ export async function runAndPersistOneRuntimeTick(input?: {
     })
     const writeResult = await writeWorldRuntimeSaveRecord({
       record: initialRecord,
+      // -1 is the explicit empty-store CAS sentinel. Two concurrent first
+      // ticks cannot both publish tick 0.
+      expectedTick: -1,
     })
     const audit = auditWorldRuntimeTick({
       nextHomeMapState: initialRecord.homeMapState,
@@ -209,6 +215,7 @@ export async function runAndPersistOneRuntimeTick(input?: {
   const writeResult = enrichedTickResult.audit.ok
     ? await writeWorldRuntimeSaveRecord({
         record: enrichedTickResult.nextSaveRecord,
+        expectedTick: saveRecord.tick,
       })
     : {
         ok: false,
@@ -274,9 +281,11 @@ function attachButlerRuntimeAuditSummary(input: {
 
 function buildRuntimeSaveRecordFromCreateWorldInput(input: {
   createWorldInput: CreateWorldInput
+  worldInstanceId: string
 }): WorldRuntimeSaveRecord {
   const creationRuntime = buildWorldCreationRuntime({
     createWorldInput: input.createWorldInput,
+    worldInstanceId: input.worldInstanceId,
   })
   const butlerBuildResult = buildButlerRuntimeProfileFromLifeCore({
     playerId: creationRuntime.ownerId,
@@ -359,6 +368,7 @@ function buildInitialRuntimeSaveRecord(input: {
       ...DEFAULT_RUNTIME_INPUT,
       createdAt: input.now,
     },
+    worldInstanceId: "initial-runtime-world",
   })
   const butlerBuildResult = buildButlerRuntimeProfileFromLifeCore({
     playerId: creationRuntime.ownerId,
@@ -421,4 +431,3 @@ function buildInitialRuntimeSaveRecord(input: {
     ],
   }
 }
-

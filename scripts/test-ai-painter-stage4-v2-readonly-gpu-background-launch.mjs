@@ -655,6 +655,7 @@ function writeProgramGraphFixtureFiles(root) {
   for (const logicalPath of [
     "scripts/plan-ai-painter-stage4-v2-controlled-smoke.mjs",
     "scripts/plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
+    "scripts/run-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
     "scripts/adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs",
     "scripts/adjudicate-ai-painter-stage4-v2-readonly-gpu-qualification-failure.mjs",
     "scripts/lib/ai-painter-stage4-v2-controlled-smoke-adapters-v1.mjs",

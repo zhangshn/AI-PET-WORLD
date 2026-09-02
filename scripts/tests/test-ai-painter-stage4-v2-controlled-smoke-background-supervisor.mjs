@@ -23,6 +23,7 @@ import {
 
 const RECEIPT_ROOT = ".runtime/ai-painter/stage4-v2-controlled-smoke-background-launches";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "stage4-v2-smoke-supervisor-"));
+const repositoryRoot = process.cwd();
 
 try {
   await testTopLevelLaunchIntent();
@@ -587,6 +588,13 @@ function materializeLaunchFixture(projectRoot) {
 }
 
 function writeProgramGraphFixtureFiles(projectRoot) {
+  // The production program graph includes this Python AST helper as a bound
+  // entrypoint. Keep the fixture complete so the supervisor test exercises
+  // the same graph contract as a real package.
+  writeFixtureText(projectRoot,
+    "scripts/lib/ai-painter-python-import-ast-v1.py",
+    fs.readFileSync(path.join(repositoryRoot,
+      "scripts", "lib", "ai-painter-python-import-ast-v1.py"), "utf8"));
   writeFixtureText(projectRoot,
     "scripts/lib/ai-painter-stage4-v2-qualification-continuation-v1.mjs",
     "export async function dispatch(url) { return import(url.href); }\n");
@@ -599,6 +607,7 @@ function writeProgramGraphFixtureFiles(projectRoot) {
   for (const logicalPath of [
     "scripts/plan-ai-painter-stage4-v2-controlled-smoke.mjs",
     "scripts/plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
+    "scripts/run-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
     "scripts/adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs",
     "scripts/adjudicate-ai-painter-stage4-v2-readonly-gpu-qualification-failure.mjs",
     "scripts/lib/ai-painter-stage4-v2-controlled-smoke-adapters-v1.mjs",

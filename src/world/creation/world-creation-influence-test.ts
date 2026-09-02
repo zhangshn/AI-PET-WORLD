@@ -42,11 +42,13 @@ export function buildWorldCreationInfluenceTest(input: {
   const caseInputs = buildInfluenceCaseInputs(input.baseCreateWorldInput)
   const baseRuntime = buildWorldCreationRuntime({
     createWorldInput: caseInputs[0].input,
+    worldInstanceId: "influence-fixture",
   })
 
   const cases = caseInputs.map((caseInput) => {
     const runtime = buildWorldCreationRuntime({
       createWorldInput: caseInput.input,
+      worldInstanceId: "influence-fixture",
     })
 
     return {

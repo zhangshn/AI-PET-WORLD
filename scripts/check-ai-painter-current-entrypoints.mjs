@@ -89,6 +89,7 @@ for (const action of [
   "plan:ai-painter-stage4-v2-controlled-smoke",
   "adjudicate:ai-painter-stage4-v2-controlled-smoke-failure-boundary",
   "plan:ai-painter-stage4-v2-formal-stage0-to-stage2",
+  "run:ai-painter-stage4-v2-formal-stage0-to-stage2",
 ]) assert.ok(seen.has(action), `Stage4 V2 autonomous successor is not registered: ${action}`);
 
 const retiredSeen = new Set();
@@ -126,6 +127,7 @@ if (staticOnly) {
     "launch:ai-painter-stage4-v2-controlled-smoke-background",
     "adjudicate:ai-painter-stage4-v2-controlled-smoke-failure-boundary",
     "plan:ai-painter-stage4-v2-formal-stage0-to-stage2",
+    "run:ai-painter-stage4-v2-formal-stage0-to-stage2",
   ];
   for (const action of declaredSuccessors) {
     assertRegisteredCurrentAction(action, "static V2 successor closure");

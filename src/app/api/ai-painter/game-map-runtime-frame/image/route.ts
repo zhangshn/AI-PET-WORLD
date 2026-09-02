@@ -1,6 +1,9 @@
+import { createHash } from "node:crypto"
 import { readFile } from "node:fs/promises"
-import path, { resolve, sep } from "node:path"
+import path from "node:path"
 import { NextResponse } from "next/server"
+
+import { assertRuntimePath } from "@/world/runtime/runtime-path-security"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -36,36 +39,34 @@ export async function GET() {
       canShowInWorld?: boolean
     }
     const imagePath = record.runtimeFrame?.composition?.compositeOutput?.imageUrl
-    const imageSha256 = record.runtimeFrame?.composition?.compositeOutput?.imageSha256
-    const runtimeFrameId = record.runtimeFrame?.runtimeFrameId
     if (!imagePath) {
       return NextResponse.json({ ok: false, error: "game_map_runtime_image_missing" }, { status: 404 })
     }
 
-    const ownerGate = await readRuntimeFrameOwnerReviewGate({ runtimeFrameId, imageSha256 })
-    if (ownerGate.status === "rejected") {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "game_map_runtime_image_owner_rejected",
-          ownerGate,
-        },
-        { status: 404 },
-      )
+    const imageSha256 = record.runtimeFrame?.composition?.compositeOutput?.imageSha256
+    if (typeof imageSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(imageSha256)) {
+      return NextResponse.json({ ok: false, error: "game_map_runtime_image_hash_missing" }, { status: 404 })
     }
 
-    const workspaceRoot = resolve(process.cwd())
-    const resolvedImagePath = resolve(imagePath)
-    const rootPrefix = workspaceRoot.endsWith(sep) ? workspaceRoot : `${workspaceRoot}${sep}`
-    if (!resolvedImagePath.toLowerCase().startsWith(rootPrefix.toLowerCase())) {
+    const workspaceRoot = path.resolve(process.cwd())
+    let resolvedImagePath: string
+    try {
+      resolvedImagePath = await assertRuntimePath(path.resolve(imagePath), workspaceRoot)
+    } catch {
       return NextResponse.json({ ok: false, error: "game_map_runtime_image_outside_workspace" }, { status: 403 })
     }
 
     const bytes = await readFile(resolvedImagePath)
+    const observedSha256 = createHash("sha256").update(bytes).digest("hex")
+    if (observedSha256 !== imageSha256) {
+      return NextResponse.json({ ok: false, error: "game_map_runtime_image_content_sha_mismatch" }, { status: 409 })
+    }
+    const imageFormat = record.runtimeFrame?.composition?.compositeOutput?.imageFormat
     return new NextResponse(new Uint8Array(bytes), {
       headers: {
-        "content-type": "image/png",
+        "content-type": imageContentType(imageFormat),
         "cache-control": "no-store",
+        "x-world-runtime-image-sha256": observedSha256,
       },
     })
   } catch {
@@ -73,90 +74,10 @@ export async function GET() {
   }
 }
 
-async function readRuntimeFrameOwnerReviewGate(input: {
-  runtimeFrameId?: string
-  imageSha256?: string
-}) {
-  if (!input.runtimeFrameId || !input.imageSha256) {
-    return {
-      status: "missing_identity",
-      canShow: false,
-      reason: "runtime_frame_or_image_identity_missing",
-    }
-  }
-
-  const ledgerPath = path.join(
-    process.cwd(),
-    ".runtime",
-    "ai-painter",
-    "training-process-ledger",
-    "events.jsonl",
-  )
-
-  try {
-    const raw = await readFile(ledgerPath, "utf8")
-    const events = raw
-      .trim()
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map(parseLedgerLine)
-      .filter((event): event is Record<string, unknown> => {
-        return (
-          isRecord(event) &&
-          event.action === "owner_review_game_map_runtime_frame" &&
-          event.archiveId === input.runtimeFrameId &&
-          event.resourceSessionId === input.imageSha256
-        )
-      })
-    const latestDecision = events.at(-1)
-    if (!latestDecision) {
-      return {
-        status: "pending",
-        canShow: false,
-        reason: "owner_review_required_before_world_display",
-      }
-    }
-    if (
-      latestDecision.status === "success" ||
-      latestDecision.status === "passed" ||
-      latestDecision.status === "approved"
-    ) {
-      return {
-        status: "passed",
-        canShow: true,
-        reason: "owner_review_passed",
-        decisionTimestamp: stringValue(latestDecision.timestamp),
-      }
-    }
-    return {
-      status: "rejected",
-      canShow: false,
-      reason: stringValue(latestDecision.error) ?? "owner_review_failed_visual_not_final",
-      decisionTimestamp: stringValue(latestDecision.timestamp),
-    }
-  } catch {
-    return {
-      status: "ledger_unreadable",
-      canShow: false,
-      reason: "owner_review_ledger_unreadable",
-    }
-  }
-}
-
-function parseLedgerLine(line: string): unknown {
-  try {
-    return JSON.parse(line) as unknown
-  } catch {
-    return null
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null
-}
-
-function stringValue(value: unknown): string | null {
-  return typeof value === "string" && value.length > 0 ? value : null
+function imageContentType(format: string | undefined): string {
+  if (format === "webp") return "image/webp"
+  if (format === "jpg") return "image/jpeg"
+  return "image/png"
 }
 
 async function readFirstExistingFile(files: string[]) {

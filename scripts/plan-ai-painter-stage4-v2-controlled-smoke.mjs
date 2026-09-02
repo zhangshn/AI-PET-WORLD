@@ -596,6 +596,8 @@ export function validateQualificationExecutionChain(root, {
     "ai-painter-stage4-v2-readonly-gpu-terminal-v1");
   assert.equal(terminal.executionState, "completed");
   assert.equal(terminal.status, "stage4_v2_readonly_gpu_qualification_passed");
+  assert.equal(terminal.artifactClass, "production_qualification",
+    "Smoke must consume a real Qualification artifact, not a synthetic fixture");
   assert.equal(terminal.packageId, payload.packageId);
   assert.equal(terminal.runId, payload.runId);
   assert.equal(terminal.capabilityVersion, STAGE4_V2_CAPABILITY);
@@ -672,6 +674,22 @@ export function validateQualificationExecutionChain(root, {
   assert.equal(result.schemaVersion,
     "ai-painter-stage4-v2-readonly-gpu-qualification-v1");
   assert.equal(result.executionState, terminal.executionState);
+  assert.equal(result.artifactClass, "production_qualification",
+    "Smoke must consume a real Qualification result");
+  assert.equal(result.syntheticTestFixture, false,
+    "synthetic Qualification evidence cannot authorize Smoke planning");
+  const qualificationEvidenceSet = {
+    activeConfig: result.activeConfig,
+    ticket: result.ticket,
+    programGraphManifest: result.programGraphManifest,
+    gpuDiagnostic: result.gpuDiagnostic,
+    cudaTelemetry: result.cudaTelemetry,
+    stateIntegrity: result.stateIntegrity,
+  };
+  assert.match(result.evidenceSha256 ?? "", /^[a-f0-9]{64}$/u,
+    "Qualification evidence hash is missing");
+  assert.equal(result.evidenceSha256, sha256Of(qualificationEvidenceSet),
+    "Qualification evidence hash is stale or forged");
   assert.equal(result.status, terminal.status);
   assert.equal(result.packageId, payload.packageId);
   assert.equal(result.runId, payload.runId);

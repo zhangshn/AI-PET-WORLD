@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
-import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
+import { verifyLocalOperatorMutation } from "@/server/ai-console-control/operator-session"
 import {
   buildWorldVisualApprovedFrame,
   buildWorldVisualFactManifest,
@@ -13,6 +13,10 @@ import {
 } from "@/world/world-visual-painter"
 
 export async function POST(request: Request) {
+  const operatorSession = verifyLocalOperatorMutation(request)
+  if (!operatorSession.ok) {
+    return NextResponse.json({ ok: false, code: operatorSession.errorCode, message: "需要本机 AI Console 操作会话。" }, { status: operatorSession.status })
+  }
   const runtimeReadResult = await readWorldRuntimeSaveRecord()
 
   if (runtimeReadResult.status !== "found" || !runtimeReadResult.record) {
@@ -84,26 +88,6 @@ export async function POST(request: Request) {
   }
 
   const candidateRecord = candidateReadResult.record
-  try {
-    await claimOwnerWriteAuthorization(request, {
-      action: "world.visual.judge",
-      target: {
-        ownerId: runtimeReadResult.record.ownerId,
-        worldId: runtimeReadResult.record.worldId,
-        tick: runtimeReadResult.record.tick,
-        candidateId: candidateRecord.candidate.candidateId,
-      },
-      payload: {
-        sourceFactIds: factManifest.sourceFactIds,
-        requestedOutputs: ["visual-fix-plan", "controlled-mvp-approved-frame-if-passed"],
-      },
-    })
-  } catch (error) {
-    if (error instanceof OwnerWriteAuthorizationError) {
-      return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: error.status })
-    }
-    throw error
-  }
   const reviewReport = await buildWorldVisualReviewReport({
     factManifest,
     generationCondition: candidateRecord.generationCondition,
@@ -200,6 +184,7 @@ export async function POST(request: Request) {
           ? "controlled_mvp_approved_frame_written"
           : "controlled_mvp_approved_frame_blocked",
         "production_display_blocked",
+        `local_operator:${operatorSession.session.actorIdentity}`,
         "current_tick_gate_checked",
         "current_source_facts_gate_checked",
         ...(writeResult?.tags ?? []),

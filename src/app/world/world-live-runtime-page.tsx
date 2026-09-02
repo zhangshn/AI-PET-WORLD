@@ -1,6 +1,3 @@
-import { readFile } from "node:fs/promises"
-import path from "node:path"
-
 import type { CSSProperties, ReactNode } from "react"
 
 import { readLatestGameMapRuntimeFrameRecord } from "@/world/game-map-frame"
@@ -53,24 +50,6 @@ export async function WorldLiveRuntimePage() {
     isWorldDisplayRuntimeFrame(runtimeFrame)
   ) {
     const compositeOutput = runtimeFrame.composition.compositeOutput!
-    const ownerReview = await readOwnerRuntimeFrameReviewGate(runtimeFrame)
-
-    if (!ownerReview.canShow) {
-      return (
-        <WorldRuntimeFrameBlockedPage
-          factManifestSourceCount={factManifest.sourceFactIds.length}
-          ownerId={saveRecord.ownerId}
-          runtimeFrame={runtimeFrame}
-          runtimeFrameReadPath={runtimeFrameReadResult.path}
-          runtimeFrameReadStatus={runtimeFrameReadResult.status}
-          runtimeFrameReadWarnings={ownerReview.warnings}
-          tick={saveRecord.tick}
-          title="世界画面被人工最终复核阻断"
-          worldId={saveRecord.worldId}
-        />
-      )
-    }
-
     return (
       <WorldRuntimeSurface
         imageSrc={getRuntimeFrameImageSrc(
@@ -159,7 +138,7 @@ function WorldRuntimeFrameBlockedPage(props: {
             <span>
               当前是否通过：
               {props.runtimeFrame
-                ? (isWorldDisplayRuntimeFrame(props.runtimeFrame) ? "机器通过 / 等待人工" : "否")
+                ? (isWorldDisplayRuntimeFrame(props.runtimeFrame) ? "机器审核通过" : "否")
                 : "否"}
             </span>
           </GateItem>
@@ -303,105 +282,6 @@ function labelInteractionKind(kind: string): string {
   if (kind === "flower_patch") return "花丛"
   if (kind === "grass_detail") return "草地"
   return "可查看对象"
-}
-
-async function readOwnerRuntimeFrameReviewGate(
-  runtimeFrame: GameMapRuntimeFrame
-): Promise<{ canShow: boolean; warnings: string[] }> {
-  const compositeOutput = runtimeFrame.composition.compositeOutput
-  if (!compositeOutput) {
-    return { canShow: false, warnings: ["composite_output_missing"] }
-  }
-
-  const ledgerPath = path.join(
-    /* turbopackIgnore: true */ process.cwd(),
-    ".runtime",
-    "ai-painter",
-    "training-process-ledger",
-    "events.jsonl"
-  )
-
-  try {
-    const raw = await readFile(/* turbopackIgnore: true */ ledgerPath, "utf8")
-    const ownerFailures = raw
-      .trim()
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map(parseLedgerLine)
-      .filter((event): event is OwnerReviewLedgerEvent => {
-        return (
-          event !== null &&
-          event.action === "owner_review_game_map_runtime_frame" &&
-          event.status === "failed" &&
-          event.archiveId === runtimeFrame.runtimeFrameId &&
-          event.resourceSessionId === compositeOutput.imageSha256
-        )
-      })
-    const ownerPasses = raw
-      .trim()
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map(parseLedgerLine)
-      .filter((event): event is OwnerReviewLedgerEvent => {
-        return (
-          event !== null &&
-          event.action === "owner_review_game_map_runtime_frame" &&
-          isOwnerReviewPassedStatus(event.status) &&
-          event.archiveId === runtimeFrame.runtimeFrameId &&
-          event.resourceSessionId === compositeOutput.imageSha256
-        )
-      })
-
-    if (ownerFailures.length > 0) {
-      return {
-        canShow: false,
-        warnings: [
-          "owner_final_review_failed",
-          ownerFailures.at(-1)?.error ?? "owner_review_failed_visual_not_final",
-        ],
-      }
-    }
-    if (ownerPasses.length === 0) {
-      return {
-        canShow: false,
-        warnings: [
-          "owner_final_review_pending",
-          "owner_review_game_map_runtime_frame_pass_required",
-        ],
-      }
-    }
-  } catch {
-    return {
-      canShow: false,
-      warnings: [
-        "owner_final_review_ledger_unreadable",
-        "owner_review_game_map_runtime_frame_pass_required",
-      ],
-    }
-  }
-
-  return { canShow: true, warnings: [] }
-}
-
-type OwnerReviewLedgerEvent = {
-  action?: string
-  status?: string
-  archiveId?: string
-  resourceSessionId?: string
-  error?: string
-}
-
-function isOwnerReviewPassedStatus(status: string | undefined): boolean {
-  return status === "success" || status === "passed" || status === "approved"
-}
-
-function parseLedgerLine(line: string): OwnerReviewLedgerEvent | null {
-  try {
-    const value = JSON.parse(line) as OwnerReviewLedgerEvent
-    return typeof value === "object" && value !== null ? value : null
-  } catch {
-    return null
-  }
 }
 
 function getRuntimeFrameImageSrc(imageUrl: string, imageSha256: string): string {

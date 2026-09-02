@@ -463,8 +463,8 @@ function expectedPersistedSuccessor(current, payload) {
 }
 
 async function invokePersistedSmokeSuccessor({ projectRoot, nextMachineAction }) {
-  const module = await import("./run-ai-painter-stage4-v2-controlled-smoke.mjs");
-  return module.invokeStage4V2SmokeSuccessor({ projectRoot, nextMachineAction });
+  const loadedSmokeModule = await import("./run-ai-painter-stage4-v2-controlled-smoke.mjs");
+  return loadedSmokeModule.invokeStage4V2SmokeSuccessor({ projectRoot, nextMachineAction });
 }
 
 function validateRawSmokeCurrent({

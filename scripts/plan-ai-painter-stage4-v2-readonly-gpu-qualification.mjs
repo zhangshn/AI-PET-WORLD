@@ -64,6 +64,11 @@ const PARENT_CONTRACT_SCHEMA =
 const CPU_TERMINAL_SCHEMA = "stage4-v2-cpu-contract-acceptance-terminal-v1";
 const FIRST_TRAIN_SAMPLE = "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3";
 const FIXED_VALIDATION_SAMPLE = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6";
+const GPU_RESOLUTION_PROFILES = Object.freeze([
+  Object.freeze({ profileId: "smoke", stage: "smoke", width: 256, height: 192 }),
+  Object.freeze({ profileId: "qualification", stage: "qualification", width: 512, height: 384 }),
+  Object.freeze({ profileId: "target", stage: "target", width: 1024, height: 768 }),
+]);
 
 const isMain = process.argv[1]
   && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
@@ -199,6 +204,7 @@ export async function materializeStage4V2ReadonlyGpuQualification({
     fixedInputs: {
       seed: 20263722,
       resolution: { width: 256, height: 192 },
+      resolutionProfiles: GPU_RESOLUTION_PROFILES,
       batchSize: 1,
       diffusionTimestep: 500,
       firstTrainSampleId: FIRST_TRAIN_SAMPLE,

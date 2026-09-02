@@ -8,6 +8,10 @@ import { pathToFileURL } from "node:url";
 const repositoryRoot = process.cwd();
 const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(),
   "stage4-v2-formal-plan-dependencies-"));
+// Storage-catalog identities are project-scoped. Use an isolated fixture
+// catalog so a retry test cannot collide with a durable event from another
+// invocation while still exercising the real SQLite projection.
+process.env.AI_PET_WORLD_DATA_ROOT = path.join(fixtureRoot, ".data");
 const fixedAt = "2026-09-01T04:00:00.000Z";
 const capabilityVersion =
   "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
@@ -238,6 +242,17 @@ try {
     trainingStarted: false,
   }, null, 2)}\n`);
 } finally {
+  // The real event store keeps a process-local SQLite handle. Close it before
+  // removing the isolated fixture so Windows does not retain the database
+  // directory and turn a passed recovery test into a cleanup failure.
+  try {
+    const { closeStorageCatalog } = await import(
+      "../lib/ai-pet-world-storage-catalog.mjs");
+    closeStorageCatalog();
+  } catch {
+    // Preserve the original assertion/error if the fixture failed before the
+    // storage catalog was initialized.
+  }
   process.chdir(repositoryRoot);
   const relative = path.relative(path.resolve(os.tmpdir()), path.resolve(fixtureRoot));
   assert.ok(relative.startsWith("stage4-v2-formal-plan-dependencies-")

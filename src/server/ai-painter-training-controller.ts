@@ -1078,8 +1078,11 @@ function sanitizePathSegment(value: string) {
 }
 
 function startNpmScript(script: string) {
-  const command = process.env.ComSpec ?? "cmd.exe"
-  const child = spawn(command, ["/d", "/s", "/c", `npm run ${script}`], {
+  // Invoke the package manager directly so the same controller works on
+  // Windows and POSIX hosts without composing a shell command.  npm.cmd is
+  // the native Windows shim; npm is the executable on Linux/macOS.
+  const command = process.platform === "win32" ? "npm.cmd" : "npm"
+  const child = spawn(command, ["run", script], {
     env: process.env,
     windowsHide: true,
   })

@@ -92,8 +92,8 @@ export async function loadPhaseAdapters(spec, { root = process.cwd() } = {}) {
     const binding = spec.phaseAdapters[phase];
     const absolutePath = resolveExistingProjectFile(root, binding.path);
     assert(sha256File(absolutePath) === binding.sha256, `${phase} adapter SHA-256 mismatch`);
-    const module = await import(`${pathToFileURL(absolutePath).href}?sha256=${binding.sha256}`);
-    const adapter = module[binding.exportName];
+    const loadedModule = await import(`${pathToFileURL(absolutePath).href}?sha256=${binding.sha256}`);
+    const adapter = loadedModule[binding.exportName];
     assert(typeof adapter === "function", `${phase} adapter export is not a function`);
     adapters[phase] = adapter;
   }

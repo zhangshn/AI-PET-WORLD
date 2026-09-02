@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
-import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
+import { verifyLocalOperatorMutation } from "@/server/ai-console-control/operator-session"
 import {
   buildWorldVisualPainterDecision,
   writeWorldVisualCandidateRecord,
 } from "@/world/world-visual-painter"
 
 export async function POST(request: Request) {
+  const operatorSession = verifyLocalOperatorMutation(request)
+  if (!operatorSession.ok) {
+    return NextResponse.json({ ok: false, code: operatorSession.errorCode, message: "需要本机 AI Console 操作会话。" }, { status: operatorSession.status })
+  }
   const runtime = await readWorldRuntimeSaveRecord()
 
   if (runtime.status !== "found" || !runtime.record) {
@@ -22,23 +26,6 @@ export async function POST(request: Request) {
       },
       { status: 409 }
     )
-  }
-
-  try {
-    await claimOwnerWriteAuthorization(request, {
-      action: "world.visual.generate",
-      target: {
-        ownerId: runtime.record.ownerId,
-        worldId: runtime.record.worldId,
-        tick: runtime.record.tick,
-      },
-      payload: { output: "hidden-world-visual-candidate" },
-    })
-  } catch (error) {
-    if (error instanceof OwnerWriteAuthorizationError) {
-      return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: error.status })
-    }
-    throw error
   }
 
   const decision = await buildWorldVisualPainterDecision({
@@ -169,6 +156,7 @@ export async function POST(request: Request) {
         "hidden_candidate_written",
         "visual_judge_required",
         "approved_frame_required",
+        `local_operator:${operatorSession.session.actorIdentity}`,
         ...candidateWriteResult.tags,
       ],
     },

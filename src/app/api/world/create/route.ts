@@ -3,9 +3,14 @@
 import { serializeCreateWorldInput } from "@/world/creation/world-creation-client-schema"
 import { parseCreateWorldInput } from "@/world/creation/world-creation-runtime"
 import { createRuntimeWorldFromCreateWorldInput } from "@/world/runtime/world-runtime-gateway"
-import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
+import { verifyLocalOperatorMutation } from "@/server/ai-console-control/operator-session"
+import { randomUUID } from "node:crypto"
 
 export async function POST(request: Request) {
+  const authorization = verifyLocalOperatorMutation(request)
+  if (!authorization.ok) {
+    return NextResponse.json({ ok: false, code: authorization.errorCode, message: "需要本机 AI Console 操作会话。" }, { status: authorization.status })
+  }
   const body = await request.json().catch(() => null)
   const parsedInput = parseCreateWorldInput(
     typeof body === "string" ? body : serializeBody(body)
@@ -22,21 +27,10 @@ export async function POST(request: Request) {
     )
   }
 
-  let authorization
-  try {
-    authorization = await claimOwnerWriteAuthorization(request, {
-      action: "world.create",
-      target: { resource: "world-runtime", operation: "create" },
-      payload: parsedInput,
-    })
-  } catch (error) {
-    if (error instanceof OwnerWriteAuthorizationError) {
-      return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: error.status })
-    }
-    throw error
-  }
-
-  const result = await createRuntimeWorldFromCreateWorldInput({ createWorldInput: parsedInput })
+  const result = await createRuntimeWorldFromCreateWorldInput({
+    createWorldInput: parsedInput,
+    worldInstanceId: randomUUID(),
+  })
 
   if (!result.persisted) {
     return NextResponse.json(
@@ -58,7 +52,7 @@ export async function POST(request: Request) {
     tags: [
       "create_world_to_world_flow",
       "runtime_save_persisted",
-      `owner_authorization:${authorization.authorizationSha256}`,
+      `local_operator:${authorization.session.actorIdentity}`,
       "no_unplanned_life_fact",
     ],
   })

@@ -64,6 +64,7 @@ const checks = [
   ["controlled-smoke-lifecycle-publication", node, ["scripts/tests/test-ai-painter-stage4-v2-lifecycle-publication.mjs"]],
   ["controlled-smoke-failure-adjudication-intent", node, ["scripts/tests/test-ai-painter-stage4-v2-controlled-smoke-failure-adjudication-intent.mjs"]],
   ["formal-plan-registry-dependencies", node, ["scripts/tests/test-ai-painter-stage4-v2-formal-plan-registry-dependencies.mjs"]],
+  ["formal-stage0-to-stage2-executor", node, ["scripts/tests/test-ai-painter-stage4-v2-formal-stage0-to-stage2-executor.mjs"]],
   ["console-current-projection", node, ["scripts/check-ai-console-current-execution-projection.mjs", ...projectionArgs]],
 ];
 

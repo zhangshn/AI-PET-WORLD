@@ -17,6 +17,7 @@ from argparse import ArgumentParser
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
 import sys
@@ -48,6 +49,15 @@ IMAGE_SIZE = (256, 192)
 LATENT_SIZE = (64, 48)
 CONDITION_SHAPE = (1, 23, 192, 256)
 LATENT_SHAPE = (1, 12, 48, 64)
+# The qualification entry point currently executes only the smoke-resolution
+# graph.  The two larger profiles are still part of the formal resource
+# boundary and must be represented explicitly as unmeasured/blocked rather
+# than inferred from the 256x192 run.
+RESOLUTION_PROFILES = (
+    {"profileId": "smoke", "stage": "smoke", "width": 256, "height": 192},
+    {"profileId": "qualification", "stage": "qualification", "width": 512, "height": 384},
+    {"profileId": "target", "stage": "target", "width": 1024, "height": 768},
+)
 DIFFUSION_TIMESTEP = 500
 FIRST_TRAIN_SAMPLE_ID = (
     "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3"
@@ -187,6 +197,81 @@ REQUIRED_FALSE_SAFETY_FIELDS = (
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def build_resolution_profile_matrix(
+    *,
+    measured_profile_id: str | None = None,
+    measured: Mapping[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Build the explicit smoke/qualification/target resource coverage.
+
+    Only a real measurement may populate a profile.  Missing profiles are
+    deliberately emitted as ``not_measured`` with a blocking reason so a
+    caller cannot reinterpret the smoke result as target-resolution evidence.
+    """
+
+    if measured_profile_id is not None and measured_profile_id not in {
+        item["profileId"] for item in RESOLUTION_PROFILES
+    }:
+        raise ValueError("stage4_v2_readonly_gpu_resolution_profile_unknown")
+    measured = dict(measured or {})
+    required = (
+        "gpuPeakMemoryBytes",
+        "cpuMemoryPeakBytes",
+        "batchSize",
+        "durationSeconds",
+        "throughput",
+        "oom",
+        "outputValid",
+        "sourceFactCoverage",
+        "imageDimensions",
+    )
+    result: list[dict[str, Any]] = []
+    for profile in RESOLUTION_PROFILES:
+        profile_id = profile["profileId"]
+        if profile_id != measured_profile_id:
+            result.append({
+                **profile,
+                "measurementStatus": "not_measured",
+                "blockedReason": "gpu_measurement_not_run",
+                "requiredBeforeFormalStage0": profile_id != "smoke",
+                **{key: None for key in required},
+            })
+            continue
+        record = {**profile, "measurementStatus": "measured", **measured}
+        if record.get("imageDimensions") != {
+            "width": profile["width"],
+            "height": profile["height"],
+        }:
+            raise ValueError("stage4_v2_readonly_gpu_resolution_image_dimensions_invalid")
+        for key in required:
+            if record.get(key) is None:
+                raise ValueError(
+                    f"stage4_v2_readonly_gpu_resolution_measurement_missing_{key}"
+                )
+        if (
+            type(record["gpuPeakMemoryBytes"]) is not int
+            or record["gpuPeakMemoryBytes"] <= 0
+            or type(record["cpuMemoryPeakBytes"]) is not int
+            or record["cpuMemoryPeakBytes"] <= 0
+            or type(record["batchSize"]) is not int
+            or record["batchSize"] <= 0
+            or not isinstance(record["durationSeconds"], (int, float))
+            or isinstance(record["durationSeconds"], bool)
+            or not math.isfinite(float(record["durationSeconds"]))
+            or record["durationSeconds"] < 0
+            or not isinstance(record["throughput"], (int, float))
+            or isinstance(record["throughput"], bool)
+            or not math.isfinite(float(record["throughput"]))
+            or record["throughput"] < 0
+            or not isinstance(record["oom"], bool)
+            or not isinstance(record["outputValid"], bool)
+            or not isinstance(record["sourceFactCoverage"], bool)
+        ):
+            raise ValueError("stage4_v2_readonly_gpu_resolution_measurement_invalid")
+        result.append(record)
+    return result
 
 
 def file_sha256(path: Path) -> str:
@@ -1476,7 +1561,51 @@ def _cuda_phase_snapshot(label: str, started: float) -> dict[str, Any]:
         "peakReservedBytes": int(torch.cuda.max_memory_reserved(0)),
         "driverFreeBytes": int(free_bytes),
         "driverTotalBytes": int(total_bytes),
+        "cpuMemoryBytes": process_memory_bytes(),
     }
+
+
+def process_memory_bytes() -> int:
+    """Return the current process working-set/RSS without adding a dependency.
+
+    The value is telemetry only; unlike the CUDA peak it is never used as a
+    substitute for an unmeasured resolution profile.
+    """
+
+    if os.name == "nt":
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            class PROCESS_MEMORY_COUNTERS(ctypes.Structure):
+                _fields_ = [
+                    ("cb", wintypes.DWORD),
+                    ("PageFaultCount", wintypes.DWORD),
+                    ("PeakWorkingSetSize", ctypes.c_size_t),
+                    ("WorkingSetSize", ctypes.c_size_t),
+                    ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                    ("PagefileUsage", ctypes.c_size_t),
+                    ("PeakPagefileUsage", ctypes.c_size_t),
+                ]
+
+            counters = PROCESS_MEMORY_COUNTERS()
+            counters.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS)
+            process = ctypes.windll.kernel32.GetCurrentProcess()
+            get_counters = ctypes.windll.psapi.GetProcessMemoryInfo
+            get_counters(process, ctypes.byref(counters), counters.cb)
+            return int(counters.WorkingSetSize)
+        except (AttributeError, OSError, TypeError):
+            return 0
+    try:
+        import resource
+
+        value = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+        return value * (1024 if sys.platform != "darwin" else 1)
+    except (ImportError, OSError, ValueError):
+        return 0
 
 
 def validate_readonly_gpu_inputs(
@@ -1686,6 +1815,31 @@ def run_readonly_gpu_qualification(inputs: Mapping[str, Any]) -> dict[str, Any]:
     )
     torch.cuda.synchronize(0)
     free_after, total_after = torch.cuda.mem_get_info(0)
+    measured_duration = max(time.perf_counter() - execution_started, 0.0)
+    measured_peak_cpu = max(
+        (int(row.get("cpuMemoryBytes", 0)) for row in telemetry_rows),
+        default=0,
+    )
+    if measured_peak_cpu <= 0:
+        raise ValueError("stage4_v2_readonly_gpu_cpu_memory_measurement_unavailable")
+    resolution_matrix = build_resolution_profile_matrix(
+        measured_profile_id="smoke",
+        measured={
+            "gpuPeakMemoryBytes": max(
+                int(row["peakAllocatedBytes"]) for row in telemetry_rows
+            ),
+            "cpuMemoryPeakBytes": measured_peak_cpu,
+            "batchSize": 1,
+            "durationSeconds": round(measured_duration, 6),
+            "throughput": round(2 / measured_duration, 6)
+            if measured_duration > 0
+            else 0.0,
+            "oom": False,
+            "outputValid": True,
+            "sourceFactCoverage": True,
+            "imageDimensions": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+        },
+    )
     cuda_telemetry = {
         "schemaVersion": "ai-painter-stage4-v2-readonly-gpu-cuda-telemetry-v1",
         "status": "measured",
@@ -1696,6 +1850,8 @@ def run_readonly_gpu_qualification(inputs: Mapping[str, Any]) -> dict[str, Any]:
         "cudaRuntimeVersion": torch.version.cuda,
         "pythonVersion": sys.version.split()[0],
         "measuredResolution": {"width": 256, "height": 192},
+        "resolutionProfiles": resolution_matrix,
+        "coverageStatus": "smoke_measured_qualification_and_target_pending",
         "driverFreeBytesBefore": int(free_before),
         "driverTotalBytesBefore": int(total_before),
         "driverFreeBytesAfter": int(free_after),
@@ -1707,7 +1863,7 @@ def run_readonly_gpu_qualification(inputs: Mapping[str, Any]) -> dict[str, Any]:
         "peakReservedBytes": max(
             row["peakReservedBytes"] for row in telemetry_rows
         ),
-        "durationSeconds": round(time.perf_counter() - execution_started, 6),
+        "durationSeconds": round(measured_duration, 6),
         "preflightMemoryUsedAsDiagnosticPeak": False,
         "native1024x768PeakClaimed": False,
     }
@@ -1722,6 +1878,8 @@ def run_readonly_gpu_qualification(inputs: Mapping[str, Any]) -> dict[str, Any]:
         "resolution": {"width": 256, "height": 192},
         "latentShape": list(LATENT_SHAPE),
         "conditionShape": list(CONDITION_SHAPE),
+        "resolutionProfiles": resolution_matrix,
+        "coverageStatus": "smoke_measured_qualification_and_target_pending",
         "diffusionTimestep": DIFFUSION_TIMESTEP,
         "formalObjective": "formal_v6_composite_exact_reuse_v1",
         "latentNormalization": trainer.serialize_latent_normalization(
@@ -1764,8 +1922,19 @@ def run_readonly_gpu_qualification(inputs: Mapping[str, Any]) -> dict[str, Any]:
     _write_json_exclusive(diagnostic_path, diagnostic)
     _write_json_exclusive(telemetry_path, cuda_telemetry)
     _write_json_exclusive(state_path, state_integrity)
+    evidence_set = {
+        "activeConfig": active_audit["config"],
+        "ticket": active_audit["ticket"],
+        "programGraphManifest": active_audit["programGraphManifest"],
+        "gpuDiagnostic": binding(diagnostic_path),
+        "cudaTelemetry": binding(telemetry_path),
+        "stateIntegrity": binding(state_path),
+    }
     result = {
         "schemaVersion": QUALIFICATION_SCHEMA,
+        "artifactClass": "production_qualification",
+        "syntheticTestFixture": False,
+        "qualificationCommand": RUNNER_PATH.as_posix(),
         "status": "stage4_v2_readonly_gpu_qualification_passed",
         "executionState": "completed",
         "packageId": active_audit["packageId"],
@@ -1777,6 +1946,7 @@ def run_readonly_gpu_qualification(inputs: Mapping[str, Any]) -> dict[str, Any]:
         "gpuDiagnostic": binding(diagnostic_path),
         "cudaTelemetry": binding(telemetry_path),
         "stateIntegrity": binding(state_path),
+        "evidenceSha256": _canonical_sha256(evidence_set),
         "ownerAuthorizationRequired": False,
         "automaticSmokeStarted": False,
         "recordedAtUtc": utc_now(),

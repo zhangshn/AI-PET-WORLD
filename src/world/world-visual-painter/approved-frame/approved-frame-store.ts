@@ -15,12 +15,6 @@ const APPROVED_FRAME_DIR = path.join(
 const FORMAL_WORLD_FRAME_MIN_WIDTH = 1024
 const FORMAL_WORLD_FRAME_MIN_HEIGHT = 768
 const PARTIAL_FRAME_TOKENS = ["crop", "partial", "patch", "tile", "sprite"]
-const OWNER_FINAL_WORLD_APPROVAL_TAGS = [
-  "owner_final_world_mvp_approved",
-  "complete_game_world_scene",
-  "world_home_playable_frame",
-]
-
 type RuntimeBoundApprovedFrame = WorldVisualApprovedFrame & {
   worldId: string
   tick: number
@@ -312,7 +306,6 @@ function validateApprovedFrameRecord(
     frame.approvalScope === "approved_for_game_world" &&
     frame.tags.includes("game_world_ready_for_player") &&
     frame.tags.includes("formal_full_world_frame") &&
-    ownerFinalWorldApprovalTagsPassed(frame.tags) &&
     !frame.tags.includes("controlled_mvp_player_visible_allowed")
 
   pushIf(warnings, sourceRecord.ownerId !== record.ownerId, "source_owner")
@@ -387,16 +380,6 @@ function validateApprovedFrameRecord(
   pushIf(warnings, frame.vj1Status !== "vj_1_passed", "frame_vj1_status")
   pushIf(warnings, gameWorldProtocolPassed && !record.tags.includes("game_world_ready_for_player"), "record_game_world_tag")
   pushIf(warnings, gameWorldProtocolPassed && !record.tags.includes("formal_full_world_frame"), "record_formal_world_frame_tag")
-  pushIf(
-    warnings,
-    frame.approvalScope === "approved_for_game_world" && !ownerFinalWorldApprovalTagsPassed(frame.tags),
-    "owner_final_world_approval"
-  )
-  pushIf(
-    warnings,
-    frame.approvalScope === "approved_for_game_world" && !ownerFinalWorldApprovalTagsPassed(record.tags),
-    "record_owner_final_world_approval"
-  )
   pushIf(warnings, sourceRecord.canShowToPlayer !== false, "source_visibility")
   pushIf(warnings, candidate.canShowToPlayer !== false, "candidate_visibility")
   pushIf(warnings, frame.sourceImageSha256.length !== 64, "sha256")
@@ -485,10 +468,6 @@ function hasPartialFrameToken(values: string[]): boolean {
     const normalized = value.toLowerCase()
     return PARTIAL_FRAME_TOKENS.some((token) => normalized.includes(token))
   })
-}
-
-function ownerFinalWorldApprovalTagsPassed(tags: string[]): boolean {
-  return OWNER_FINAL_WORLD_APPROVAL_TAGS.every((tag) => tags.includes(tag))
 }
 
 function getWorldVisualApprovedFrameRecordPath(

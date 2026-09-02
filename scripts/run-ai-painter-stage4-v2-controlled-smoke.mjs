@@ -470,12 +470,12 @@ export async function invokeStage4V2SmokeSuccessor({
   projectRoot = process.cwd(), nextMachineAction,
 } = {}) {
   if (nextMachineAction === FORMAL_PLAN_ACTION) {
-    const module = await import("./plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs");
-    return module.materializeStage4V2FormalStage0ToStage2Plan({ projectRoot });
+    const loadedFormalModule = await import("./plan-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs");
+    return loadedFormalModule.materializeStage4V2FormalStage0ToStage2Plan({ projectRoot });
   }
   if (nextMachineAction === FAILURE_ACTION) {
-    const module = await import("./adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs");
-    return module.adjudicateStage4V2ControlledSmokeFailureBoundary({ projectRoot });
+    const loadedAdjudicationModule = await import("./adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary.mjs");
+    return loadedAdjudicationModule.adjudicateStage4V2ControlledSmokeFailureBoundary({ projectRoot });
   }
   throw new Error(`unsupported controlled-Smoke successor: ${nextMachineAction}`);
 }
