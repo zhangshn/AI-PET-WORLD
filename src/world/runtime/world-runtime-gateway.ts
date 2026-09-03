@@ -47,6 +47,7 @@ export async function createRuntimeWorldFromCreateWorldInput(input: {
   const saveRecord = buildRuntimeSaveRecordFromCreateWorldInput({
     createWorldInput: input.createWorldInput,
     worldInstanceId: input.worldInstanceId ?? randomUUID(),
+    serverCreatedAt: Date.now(),
   })
   const writeResult = await writeWorldRuntimeSaveRecord({ record: saveRecord })
 
@@ -92,8 +93,13 @@ export type WorldRuntimeViewReadResult = {
 
 export async function readWorldRuntimeForView(input?: {
   now?: number
+  worldId?: string
+  ownerId?: string
 }): Promise<WorldRuntimeViewReadResult> {
-  const readResult = await readWorldRuntimeSaveRecord()
+  const readResult = await readWorldRuntimeSaveRecord({
+    ...(input?.worldId ? { worldId: input.worldId } : {}),
+    ...(input?.ownerId ? { ownerId: input.ownerId } : {}),
+  })
 
   if (readResult.status === "found" && readResult.record) {
     return {
@@ -138,8 +144,13 @@ export async function readWorldRuntimeForView(input?: {
 
 export async function runAndPersistOneRuntimeTick(input?: {
   now?: number
+  worldId?: string
+  ownerId?: string
 }): Promise<WorldRuntimeTickResult> {
-  const readResult = await readWorldRuntimeSaveRecord()
+  const readResult = await readWorldRuntimeSaveRecord({
+    ...(input?.worldId ? { worldId: input.worldId } : {}),
+    ...(input?.ownerId ? { ownerId: input.ownerId } : {}),
+  })
   if (readResult.status !== "found" || !readResult.record) {
     const initialRecord = buildInitialRuntimeSaveRecord({
       now: input?.now ?? Date.now(),
@@ -282,10 +293,12 @@ function attachButlerRuntimeAuditSummary(input: {
 function buildRuntimeSaveRecordFromCreateWorldInput(input: {
   createWorldInput: CreateWorldInput
   worldInstanceId: string
+  serverCreatedAt?: number
 }): WorldRuntimeSaveRecord {
   const creationRuntime = buildWorldCreationRuntime({
     createWorldInput: input.createWorldInput,
     worldInstanceId: input.worldInstanceId,
+    serverCreatedAt: input.serverCreatedAt,
   })
   const butlerBuildResult = buildButlerRuntimeProfileFromLifeCore({
     playerId: creationRuntime.ownerId,

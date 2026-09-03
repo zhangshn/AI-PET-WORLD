@@ -8,6 +8,7 @@ import {
   type ButlerProfile,
   type ButlerProfileBirthInput,
 } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
+import { createHash } from "node:crypto"
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
 
 import { buildButlerConstructionStyleFromLifeCore } from "./life-core-to-world-style"
@@ -65,6 +66,10 @@ export function parseCreateWorldInput(
       time,
       hasBirthHour,
       perspective: parsedValue.perspective,
+      birthSeed:
+        typeof parsedValue.birthSeed === "string" && /^[a-f0-9]{64}$/u.test(parsedValue.birthSeed)
+          ? parsedValue.birthSeed
+          : undefined,
       createdAt:
         typeof parsedValue.createdAt === "number"
           ? parsedValue.createdAt
@@ -82,6 +87,10 @@ export function buildWorldCreationRuntime(
     throw new Error("worldInstanceId must be a non-empty server-issued identity")
   }
   const birthSignature = buildBirthSignature(input.createWorldInput)
+  const birthSeed = input.createWorldInput.birthSeed ?? buildBirthSeed(birthSignature)
+  const serverCreatedAt = Number.isFinite(input.serverCreatedAt)
+    ? Math.trunc(input.serverCreatedAt as number)
+    : Date.now()
   // Birth information remains the stable personality/world seed, while the
   // instance identity prevents two worlds with identical birth input from
   // sharing owner IDs, world IDs, or persisted paths.
@@ -97,12 +106,13 @@ export function buildWorldCreationRuntime(
     ownerId: `owner-${stableToken}`,
     worldInstanceId: input.worldInstanceId,
     birthSignature,
-    worldSalt: `local-runtime-${input.createWorldInput.createdAt}`,
+    birthSeed,
+    worldSalt: `local-runtime-${birthSeed}`,
     butlerProfile: styleResult.butlerProfile,
     butlerBirthInput: styleResult.butlerBirthInput,
     butlerMappingMode: styleResult.butlerMappingMode,
     butlerConstructionStyle: styleResult.constructionStyle,
-    now: input.createWorldInput.createdAt,
+    now: serverCreatedAt,
     styleSource: styleResult.source,
     debug: {
       source: "world_creation_runtime",
@@ -211,7 +221,11 @@ function buildStyleValue(signature: string, salt: string): number {
 }
 
 function buildStableToken(value: string): string {
-  return Math.abs(hashString(value)).toString(36)
+  return createHash("sha256").update(value, "utf8").digest("hex").slice(0, 32)
+}
+
+function buildBirthSeed(birthSignature: string): string {
+  return createHash("sha256").update(`birth-seed:${birthSignature}`, "utf8").digest("hex")
 }
 
 function hashToUnit(value: string): number {

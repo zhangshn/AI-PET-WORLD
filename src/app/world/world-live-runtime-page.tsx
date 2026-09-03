@@ -14,8 +14,21 @@ import type {
 const WORLD_DISPLAY_REQUIRED_TAG = "composite_game_map_runtime_frame"
 const WORLD_FORMAL_JUDGE_REQUIRED_TAG = "formal_game_map_visual_judge_passed"
 
-export async function WorldLiveRuntimePage() {
-  const runtimeView = await readWorldRuntimeForView()
+export async function WorldLiveRuntimePage(input: { worldId?: string } = {}) {
+  if (!input.worldId) {
+    return (
+      <main style={pageStyles.page}>
+        <section style={pageStyles.panel}>
+          <div style={pageStyles.brand}>AI-PET-WORLD</div>
+          <h1 style={pageStyles.title}>需要指定世界</h1>
+          <p style={pageStyles.body}>
+            /world 必须显式绑定 worldId；全局 latest 仅用于诊断，不作为业务身份。
+          </p>
+        </section>
+      </main>
+    )
+  }
+  const runtimeView = await readWorldRuntimeForView({ worldId: input.worldId })
 
   if (!runtimeView.isPersisted) {
     return (

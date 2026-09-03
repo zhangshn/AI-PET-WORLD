@@ -1,4 +1,5 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
+import { createHash, randomUUID } from "node:crypto"
 import path from "node:path"
 
 import type {
@@ -109,13 +110,34 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
       ],
     }
   }
-  const tempPath = `${filePath}.tmp`
+  const indexPath = getLatestWorldVisualApprovedFrameIndexPath(record)
+  const transactionPath = `${indexPath}.transaction.json`
 
   try {
     await mkdir(path.dirname(filePath), { recursive: true })
-    await writeFile(tempPath, `${JSON.stringify(record, null, 2)}\n`, "utf8")
-    await rename(tempPath, filePath)
+    await writeAtomic(transactionPath, {
+      schemaVersion: "world-approved-frame-transaction-v1",
+      state: "prepared",
+      recordPath: filePath,
+      indexPath,
+      ownerId: record.ownerId,
+      worldId: record.worldId,
+      tick: record.tick,
+      createdAtUtc: new Date().toISOString(),
+    })
+    await writeAtomic(filePath, record)
     await writeLatestWorldVisualApprovedFrameIndex({ record, filePath })
+    await writeAtomic(transactionPath, {
+      schemaVersion: "world-approved-frame-transaction-v1",
+      state: "committed",
+      recordPath: filePath,
+      indexPath,
+      ownerId: record.ownerId,
+      worldId: record.worldId,
+      tick: record.tick,
+      committedAtUtc: new Date().toISOString(),
+    })
+    await rm(transactionPath, { force: true })
 
     return {
       ok: true,
@@ -150,13 +172,37 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
   const indexPath = getLatestWorldVisualApprovedFrameIndexPath(input)
 
   try {
+    const transaction = await readTransactionJournal(`${indexPath}.transaction.json`)
+    if (transaction?.state === "prepared") {
+      return invalidRead(indexPath, "Approved frame transaction is incomplete.")
+    }
     const indexRaw = await readFile(indexPath, "utf8")
-    const index = JSON.parse(indexRaw) as Partial<{ path: string }>
-    if (typeof index.path !== "string") {
+    const index = JSON.parse(indexRaw) as Partial<{
+      path: string
+      ownerId: string
+      worldId: string
+      tick: number
+      recordSha256: string
+    }>
+    if (
+      typeof index.path !== "string" ||
+      index.ownerId !== input.ownerId ||
+      index.worldId !== input.worldId ||
+      index.tick !== input.currentTick ||
+      !/^[a-f0-9]{64}$/u.test(index.recordSha256 ?? "")
+    ) {
       return invalidRead(indexPath, "Latest approved frame index is invalid.")
     }
 
-    const raw = await readFile(index.path, "utf8")
+    const expectedRecordRoot = path.dirname(indexPath)
+    const recordPath = path.resolve(index.path)
+    if (path.dirname(recordPath) !== expectedRecordRoot) {
+      return invalidRead(indexPath, "Latest approved frame index path escapes its world namespace.")
+    }
+    const raw = await readFile(recordPath, "utf8")
+    if (sha256Text(raw) !== index.recordSha256) {
+      return invalidRead(recordPath, "Approved frame record hash does not match its index.")
+    }
     const parsed = JSON.parse(raw) as Partial<WorldVisualApprovedFrameRecord>
     const normalized = normalizeWorldVisualApprovedFrameRecord(parsed)
     if (!normalized) {
@@ -170,7 +216,7 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
       return {
         status: "invalid",
         record: null,
-        path: index.path,
+        path: recordPath,
         message: "Approved frame record failed VJ-0 read gate.",
         warnings,
         tags: [
@@ -187,7 +233,7 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
     return {
       status: "found",
       record: normalized,
-      path: index.path,
+      path: recordPath,
       message: "Approved frame record loaded.",
       warnings: [],
       tags: [
@@ -498,7 +544,6 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
   filePath: string
 }): Promise<void> {
   const indexPath = getLatestWorldVisualApprovedFrameIndexPath(input.record)
-  const tempPath = `${indexPath}.tmp`
   const runtimeFrame = input.record.approvedFrame as RuntimeBoundApprovedFrame
   const index = {
     version: "world-approved-frame-index-v1",
@@ -526,6 +571,7 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
     sourceImagePayloadQualityPassed:
       input.record.approvedFrame.sourceImagePayloadQualityPassed,
     path: input.filePath,
+    recordSha256: sha256Text(`${JSON.stringify(input.record, null, 2)}\n`),
     updatedAt: input.record.savedAt,
     tags: [
       "world_visual_approved_frame_latest_index",
@@ -545,8 +591,26 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
   }
 
   await mkdir(path.dirname(indexPath), { recursive: true })
-  await writeFile(tempPath, `${JSON.stringify(index, null, 2)}\n`, "utf8")
-  await rename(tempPath, indexPath)
+  await writeAtomic(indexPath, index)
+}
+
+async function writeAtomic(filePath: string, value: unknown): Promise<void> {
+  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`
+  await writeFile(tempPath, `${JSON.stringify(value, null, 2)}\n`, "utf8")
+  await rename(tempPath, filePath)
+}
+
+async function readTransactionJournal(filePath: string): Promise<{ state?: string } | null> {
+  try {
+    return JSON.parse(await readFile(filePath, "utf8")) as { state?: string }
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return null
+    throw error
+  }
+}
+
+function sha256Text(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex")
 }
 
 function invalidRead(

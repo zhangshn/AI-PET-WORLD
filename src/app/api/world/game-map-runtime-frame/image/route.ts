@@ -12,7 +12,22 @@ export const dynamic = "force-dynamic"
 const WORLD_FORMAL_JUDGE_REQUIRED_TAG = "formal_game_map_visual_judge_passed"
 
 export async function GET(request: NextRequest) {
-  const recordRead = await readLatestGameMapRuntimeFrameRecord()
+  const worldId = request.nextUrl.searchParams.get("worldId")
+  if (!worldId) {
+    return NextResponse.json(
+      { ok: false, status: "world_id_required_for_runtime_image" },
+      { status: 400 },
+    )
+  }
+  const requestedTick = request.nextUrl.searchParams.get("tick")
+  const tick = requestedTick === null ? undefined : Number(requestedTick)
+  if (requestedTick !== null && (!Number.isInteger(tick) || (tick as number) < 0)) {
+    return NextResponse.json({ ok: false, status: "runtime_tick_invalid" }, { status: 400 })
+  }
+  const recordRead = await readLatestGameMapRuntimeFrameRecord({
+    worldId,
+    ...(tick === undefined ? {} : { currentTick: tick }),
+  })
   const runtimeFrame = recordRead.record?.runtimeFrame ?? null
   const compositeOutput = runtimeFrame?.composition.compositeOutput ?? null
 

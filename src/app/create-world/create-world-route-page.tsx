@@ -71,6 +71,7 @@ export default function CreateWorldRoutePage() {
       const result = (await response.json().catch(() => null)) as {
         ok?: boolean
         message?: string
+        worldId?: string
       } | null
 
       if (!response.ok || !result?.ok) {
@@ -83,7 +84,12 @@ export default function CreateWorldRoutePage() {
         CREATE_WORLD_STORAGE_KEY,
         serializeCreateWorldInput(createWorldInput)
       )
-      router.push("/world")
+      if (!result.worldId) {
+        setErrorMessage("世界已创建，但缺少 worldId，已阻止进入未绑定的世界页面。")
+        setIsCreating(false)
+        return
+      }
+      router.push(`/world?worldId=${encodeURIComponent(result.worldId)}`)
     } catch {
       setErrorMessage("世界暂时没有创建成功，请稍后再试。")
       setIsCreating(false)

@@ -70,7 +70,7 @@ export async function buildWorldVisualPainterDecision(
     imageModelStatus,
     latestFixPlan,
   })
-  const generatedImage = imageModelStatus.canGenerate
+  const generatedImage = input.runGeneration && imageModelStatus.canGenerate
     ? await generateWorldVisualCandidateFromInternalModel({
         factManifest,
         generationCondition,

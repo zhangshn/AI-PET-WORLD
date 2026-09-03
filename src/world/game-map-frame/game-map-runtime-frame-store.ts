@@ -1,8 +1,10 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { mkdir, readFile, writeFile, rename, rm } from "node:fs/promises"
+import { randomUUID } from "node:crypto"
 import { join } from "node:path"
 
 import type { GameMapRuntimeFrame } from "./game-map-runtime-frame-schema"
 import { isGameMapRuntimeFrame } from "./game-map-runtime-frame-schema"
+import { assertRuntimePathSegment } from "../runtime/runtime-path-security"
 
 export type GameMapRuntimeFrameRecord = {
   recordId: string
@@ -70,6 +72,8 @@ export async function writeGameMapRuntimeFrameRecord(input: {
   }
 
   const recordPath = getGameMapRuntimeFrameRecordPath(record, input.outputRoot)
+  const worldLatestPath = getWorldLatestGameMapRuntimeFramePath(record.worldId, input.outputRoot)
+  const transactionPath = `${latestPath}.transaction.json`
 
   try {
     await mkdir(getGameMapRuntimeFrameRecordDir(record, input.outputRoot), {
@@ -78,16 +82,25 @@ export async function writeGameMapRuntimeFrameRecord(input: {
     await mkdir(getGameMapRuntimeFrameRoot(input.outputRoot), {
       recursive: true,
     })
-    await writeFile(
-      /* turbopackIgnore: true */ recordPath,
-      JSON.stringify(record, null, 2),
-      "utf8"
-    )
-    await writeFile(
-      /* turbopackIgnore: true */ latestPath,
-      JSON.stringify(record, null, 2),
-      "utf8"
-    )
+    await writeAtomic(transactionPath, {
+      schemaVersion: "game-map-runtime-frame-transaction-v1",
+      state: "prepared", recordPath, latestPath,
+      worldId: record.worldId, tick: record.tick,
+      createdAtUtc: new Date().toISOString(),
+    })
+    await writeAtomic(recordPath, record)
+    // Keep the root latest file as a diagnostic pointer only.  Business reads
+    // use the world-scoped latest index below, so one world's frame can never
+    // silently become another world's frame.
+    await writeAtomic(worldLatestPath, record)
+    await writeAtomic(latestPath, record)
+    await writeAtomic(transactionPath, {
+      schemaVersion: "game-map-runtime-frame-transaction-v1",
+      state: "committed", recordPath, latestPath,
+      worldId: record.worldId, tick: record.tick,
+      committedAtUtc: new Date().toISOString(),
+    })
+    await rm(transactionPath, { force: true })
 
     return {
       status: "written",
@@ -115,10 +128,24 @@ export async function readLatestGameMapRuntimeFrameRecord(input?: {
   currentTick?: number
   currentSourceFactIds?: string[]
   filePath?: string
+  outputRoot?: string
 }): Promise<GameMapRuntimeFrameReadResult> {
-  const filePath = input?.filePath ?? getLatestGameMapRuntimeFramePath()
+  if (!input?.filePath && !input?.worldId) {
+    return invalid(getLatestGameMapRuntimeFramePath(input?.outputRoot), ["world_id_required_for_runtime_frame_read"])
+  }
+  let filePath: string
+  try {
+    filePath = input?.filePath ?? getWorldLatestGameMapRuntimeFramePath(input!.worldId!, input?.outputRoot)
+  } catch {
+    return invalid(getLatestGameMapRuntimeFramePath(), ["world_id_invalid"])
+  }
 
   try {
+    const transaction = await readTransactionJournal(`${filePath}.transaction.json`)
+      ?? await readTransactionJournal(`${getLatestGameMapRuntimeFramePath(input?.outputRoot)}.transaction.json`)
+    if (transaction?.state === "prepared") {
+      return invalid(filePath, ["game_map_runtime_frame_transaction_incomplete"])
+    }
     const raw = await readFile(/* turbopackIgnore: true */ filePath, "utf8")
     const parsed = JSON.parse(raw) as Partial<GameMapRuntimeFrameRecord>
     const record = normalizeGameMapRuntimeFrameRecord(parsed)
@@ -164,6 +191,21 @@ export async function readLatestGameMapRuntimeFrameRecord(input?: {
       warnings: [`game_map_runtime_frame_read_failed:${code ?? "unknown"}`],
       tags: ["game_map_runtime_frame_read", "failed"],
     }
+  }
+}
+
+async function writeAtomic(filePath: string, value: unknown): Promise<void> {
+  const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`
+  await writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, "utf8")
+  await rename(temporaryPath, filePath)
+}
+
+async function readTransactionJournal(filePath: string): Promise<{ state?: string } | null> {
+  try {
+    return JSON.parse(await readFile(filePath, "utf8")) as { state?: string }
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return null
+    throw error
   }
 }
 
@@ -260,6 +302,11 @@ function getLatestGameMapRuntimeFramePath(outputRoot?: string): string {
     getGameMapRuntimeFrameRoot(outputRoot),
     "latest-runtime-frame.json"
   )
+}
+
+function getWorldLatestGameMapRuntimeFramePath(worldId: string, outputRoot?: string): string {
+  assertRuntimePathSegment(worldId, "worldId")
+  return join(getGameMapRuntimeFrameRoot(outputRoot), "worlds", worldId, "latest-runtime-frame.json")
 }
 
 function getGameMapRuntimeFrameRecordDir(

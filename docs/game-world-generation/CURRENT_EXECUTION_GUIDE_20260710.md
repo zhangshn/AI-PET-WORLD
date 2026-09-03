@@ -1,6 +1,6 @@
 # AI-PET-WORLD 唯一模块计划表
 
-更新时间：2026-09-01 09:45:00 +08:00
+更新时间：2026-09-03 11:30:00 +08:00
 
 状态：active-module-plan / AI Painter固定进度3/5（60%）；联合条件局部传输V1已以真实视觉失败关闭并退出当前路线；Stage4 V2 CPU合同验收已通过，当前无活动训练，唯一当前任务为只读GPU资格规划
 
@@ -63,5 +63,29 @@ AI Painter对外只提供一个完整世界视觉入口。长期四段责任顺�
 - 失败、退出、Smoke、诊断或历史Checkpoint不得作为正式阶段初始化或晋级来源。
 - 不得降低机器审核阈值、把失败预览像素或审核结果作为训练目标，也不得用部分产物补写成功终态。
 - Stage5、正式推理、Checkpoint正式晋级、能力版本发布、RuntimeFrame和进入`/world`不属于当前执行范围。
+
+## 7. 本地闭环审查批次（2026-09-03）
+
+本节记录本轮对现行代码的实际收口，不改变冻结合同、Stage4进度或能力发布状态。`fixed`表示代码和本地回归已证明修复；`partial_local`表示现行合同明确保留的未实现边界，不能解释为能力通过。
+
+1. **`fixed`** — 生产会话密钥改为请求时加载；构建不读取密钥，生产请求缺失密钥立即失败关闭。Stage4不变，运行时鉴权已收口。
+2. **`fixed`** — 会话Cookie使用根路径，覆盖创建世界等受保护API；CSRF与回环检查保持不变。Stage4不变。
+3. **`fixed`** — Judge仅在正式VJ-2通过时调用唯一RuntimeFrame管线；受控MVP不会伪装成正式世界帧。VJ-2未实现，正式展示仍关闭。
+4. **`fixed`** — `/world`及图片接口只接受当前世界、当前tick、正式RuntimeFrame展示闸门，不放宽发布门。
+5. **`fixed`** — 复用图像并缩放的适配器标记为开发测试/复用资产；只有不可变manifest声明本地Checkpoint前向执行、入口和输出证据时才允许生成。真实模型证据缺失，能力发布仍关闭。
+6. **`fixed`** — Runtime锁绑定唯一持有者令牌；未获得锁的进程不得删除其他进程锁。不改变训练互斥合同。
+7. **`fixed`** — 业务Runtime读写、tick、视觉生成/审核和RuntimeFrame图片读取均要求显式`worldId`；全局latest仅保留诊断指针，业务按worldId索引解析。Stage4不变。
+8. **`fixed`** — Runtime、RuntimeFrame和ApprovedFrame双文件写入增加可恢复transaction journal；发现未完成事务或索引哈希/身份不一致时读失败关闭。Stage4不变。
+9. **`fixed`** — Runtime读取补充嵌套world/owner、tick、event source、时间戳及结构字段一致性校验。Stage4不变。
+10. **`fixed`** — 服务端生成创建时间；新增独立birthSeed，客户端createdAt仅兼容保留并不再决定保存时间。Stage4不变。
+11. **`fixed`** — World ID改用SHA-256派生的128-bit以上标识，保留实例隔离。Stage4不变。
+12. **`fixed`** — 两个RuntimeFrame图片入口统一要求worldId及正式可展示门；候选/失败/旧tick不会直接返回图片。正式世界仍受VJ-2和发布门约束。
+13. **`fixed`** — GET状态、Director和Condition读取不再生成图片或写候选；生成仅由显式POST执行。Stage4不变。
+14. **`fixed`** — Stage4正式入口跨平台解析Python；Stage0→2执行器只接受阶段终态中的GPU/训练证据，不从退出码推断启动。Stage0→2仍未调度。
+15. **`fixed`** — 现有Node回归覆盖阻断、顺序及终态证据；GPU/训练未执行，测试通过不能替代能力通过。当前GPU/训练保持未启动。
+16. **`fixed`** — VJ-2未实现、VisualFix未形成真实闭环的状态保持阻断；像素代理不提升为语义通过。正式展示关闭。
+17. **`blocked`** — 性别与butlerMappingMode的长期业务选择在现行合同未形成唯一机器决定；本轮不猜测、不改写业务语义，不直接阻断当前Stage4 CPU合同。
+
+本批次仍保持：`fixedTotalProgress=3/5 (60%)`、`capabilityRelease=none_released`、GPU/正式训练未启动、VJ-2未实现、正式RuntimeFrame未通过发布门。上述代码修复不产生新的训练授权、Checkpoint来源或Owner等待状态。
 
 长期业务与技术边界分别见[业务规格](../BUSINESS_SPEC.md)、[总体架构](../ARCHITECTURE.md)、[本地自研AI能力与迁移架构](../LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md)和[AI Painter正式主体规格](AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md)。

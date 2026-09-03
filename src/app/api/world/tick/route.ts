@@ -9,7 +9,11 @@ export async function POST(request: Request) {
   if (!operatorSession.ok) {
     return NextResponse.json({ ok: false, code: operatorSession.errorCode, message: "需要本机 AI Console 操作会话。" }, { status: operatorSession.status })
   }
-  const readResult = await readWorldRuntimeSaveRecord()
+  const worldId = new URL(request.url).searchParams.get("worldId")
+  if (!worldId) {
+    return NextResponse.json({ ok: false, status: "world_id_required" }, { status: 400 })
+  }
+  const readResult = await readWorldRuntimeSaveRecord({ worldId })
 
   if (readResult.status !== "found" || !readResult.record) {
     return NextResponse.json(
@@ -28,7 +32,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const result = await runAndPersistOneRuntimeTick({ now: Date.now() })
+  const result = await runAndPersistOneRuntimeTick({ now: Date.now(), worldId })
 
   return NextResponse.json(
     {

@@ -115,14 +115,22 @@ function auditInternalModelAssets(modelAssetDir: string): {
     existsSync(/* turbopackIgnore: true */ latestPath) &&
     (existsSync(/* turbopackIgnore: true */ generatedPath) || Boolean(readLatestGeneratedPath(latestPath)))
 
-  if (!hasManifest && !hasLocalInferenceOutput) {
+  // A local image and a latest pointer are not proof of model inference: they
+  // can be fixtures, resized legacy assets, or copied artifacts.  A model is
+  // eligible only when its immutable manifest explicitly records the local
+  // checkpoint-forward execution contract and its evidence binding.
+  if (!hasManifest) {
     return {
       ok: false,
       reasonZh:
-        "缺少 model-manifest.json，且没有 latest.json + generated.png 本地推理输出。",
+        "缺少真实本地模型推理 manifest；latest.json 或 generated.png 不能替代模型执行证据。",
       reasonEn:
-        "model-manifest.json is missing, and latest.json + generated.png local inference output is not present.",
-      tags: ["model_manifest_or_local_inference_output_missing"],
+        "The real local model-inference manifest is missing; latest.json or generated.png cannot substitute for execution evidence.",
+      tags: [
+        "model_manifest_missing",
+        hasLocalInferenceOutput ? "local_output_without_inference_evidence" : "local_inference_output_missing",
+        "development_fixture_only",
+      ],
     }
   }
 
@@ -132,6 +140,17 @@ function auditInternalModelAssets(modelAssetDir: string): {
       reasonZh: "model-manifest.json 不是文件。",
       reasonEn: "model-manifest.json is not a file.",
       tags: ["model_manifest_not_file"],
+    }
+  }
+
+  const manifestAudit = readRealInferenceManifest(manifestPath)
+  if (!manifestAudit.ok) return manifestAudit
+  if (!hasLocalInferenceOutput) {
+    return {
+      ok: false,
+      reasonZh: "真实模型 manifest 已存在，但尚未绑定可读取的本地推理输出。",
+      reasonEn: "The real-model manifest exists, but no readable local inference output is bound yet.",
+      tags: ["real_inference_output_missing", "generation_blocked"],
     }
   }
 
@@ -169,12 +188,60 @@ function auditInternalModelAssets(modelAssetDir: string): {
 
   return {
     ok: true,
-    reasonZh: "模型资产目录和本地推理输出存在。",
-    reasonEn: "The model asset directory and local inference output exist.",
+    reasonZh: "真实本地模型前向推理证据和输出资产已就绪。",
+    reasonEn: "Real local model forward-inference evidence and output assets are ready.",
     tags: [
       "model_asset_dir_present",
-      hasManifest ? "model_manifest_present" : "local_inference_output_present",
+      "model_manifest_present",
+      "real_local_checkpoint_forward_evidence",
+      "local_inference_output_present",
     ],
+  }
+}
+
+function readRealInferenceManifest(manifestPath: string): {
+  ok: boolean
+  reasonZh: string
+  reasonEn: string
+  tags: string[]
+} {
+  try {
+    const value = JSON.parse(readFileSync(/* turbopackIgnore: true */ manifestPath, "utf8")) as {
+      schemaVersion?: unknown
+      inference?: {
+        kind?: unknown
+        executionEvidence?: unknown
+        entrypoint?: unknown
+        checkpointSha256?: unknown
+      }
+      weights?: { sha256?: unknown }
+    }
+    const inference = value.inference
+    const checkpointSha256 = inference?.checkpointSha256 ?? value.weights?.sha256
+    if (
+      value.schemaVersion !== "ai-painter-real-local-inference-manifest-v1" ||
+      inference?.kind !== "local_checkpoint_forward" ||
+      inference.executionEvidence !== "recorded" ||
+      typeof inference.entrypoint !== "string" ||
+      !inference.entrypoint.trim() ||
+      typeof checkpointSha256 !== "string" ||
+      !/^[a-f0-9]{64}$/u.test(checkpointSha256)
+    ) {
+      return {
+        ok: false,
+        reasonZh: "模型 manifest 没有完整的本地 Checkpoint 前向推理证据绑定。",
+        reasonEn: "The model manifest lacks a complete local-checkpoint forward-inference evidence binding.",
+        tags: ["real_inference_evidence_missing", "development_fixture_only"],
+      }
+    }
+    return { ok: true, reasonZh: "", reasonEn: "", tags: [] }
+  } catch {
+    return {
+      ok: false,
+      reasonZh: "模型 manifest 无法解析，不能证明真实推理。",
+      reasonEn: "The model manifest cannot be parsed, so real inference cannot be proven.",
+      tags: ["model_manifest_unreadable", "real_inference_evidence_missing"],
+    }
   }
 }
 

@@ -5,7 +5,8 @@
  * world-runtime-store-adapter instead of depending on this implementation.
  */
 
-import { mkdir, open, readFile, rename, rm } from "node:fs/promises"
+import { mkdir, open, readFile, rename, rm, readdir } from "node:fs/promises"
+import { existsSync } from "node:fs"
 import { createHash, randomUUID } from "node:crypto"
 import { hostname } from "node:os"
 import path from "node:path"
@@ -33,7 +34,7 @@ const LATEST_WORLD_FILE = "latest-world.json"
 
 export const localFileRuntimeStore: WorldRuntimeStoreAdapter = {
   kind: "local_file_runtime_store",
-  read: (input) => readLocalFileWorldRuntimeSaveRecord(input?.filePath),
+  read: (input) => readLocalFileWorldRuntimeSaveRecord(input),
   write: (input) => writeLocalFileWorldRuntimeSaveRecord(input),
   getDefaultSavePath: () => getDefaultLocalFileWorldRuntimeSavePath(),
 }
@@ -43,9 +44,9 @@ export function getDefaultWorldRuntimeSavePath(): string {
 }
 
 export async function readWorldRuntimeSaveRecord(
-  filePath?: string
+  input?: { filePath?: string; ownerId?: string; worldId?: string }
 ): Promise<WorldRuntimeStoreReadResult> {
-  return localFileRuntimeStore.read({ filePath })
+  return localFileRuntimeStore.read(input)
 }
 
 export async function writeWorldRuntimeSaveRecord(input: {
@@ -61,11 +62,15 @@ function getDefaultLocalFileWorldRuntimeSavePath(): string {
 }
 
 async function readLocalFileWorldRuntimeSaveRecord(
-  filePath?: string
+  input?: { filePath?: string; ownerId?: string; worldId?: string }
 ): Promise<WorldRuntimeStoreReadResult> {
-  const resolvedFilePath = filePath
-    ? await assertRuntimePath(filePath, RUNTIME_DIR)
-    : await resolveLatestWorldRuntimeSavePath()
+  const resolvedFilePath = input?.filePath
+    ? await assertRuntimePath(input.filePath, RUNTIME_DIR)
+    : input?.ownerId && input?.worldId
+      ? await assertRuntimePath(getWorldRuntimeSavePath({ ownerId: input.ownerId, worldId: input.worldId } as WorldRuntimeSaveRecord), RUNTIME_DIR)
+      : input?.worldId
+        ? await resolveWorldRuntimeSavePathByWorldId(input.worldId)
+      : await resolveLatestWorldRuntimeSavePath()
 
   if (!resolvedFilePath) {
     return {
@@ -79,6 +84,18 @@ async function readLocalFileWorldRuntimeSaveRecord(
   }
 
   try {
+    const transactionPath = `${resolvedFilePath}.transaction.json`
+    const transaction = await readTransactionJournal(transactionPath)
+    if (transaction?.state === "prepared") {
+      return {
+        status: "invalid",
+        record: null,
+        path: resolvedFilePath,
+        message: "Runtime save has an unfinished multi-file transaction.",
+        warnings: ["runtime_transaction_incomplete"],
+        tags: ["world_runtime_store_read", "invalid", "runtime_transaction_incomplete"],
+      }
+    }
     const raw = await readFile(resolvedFilePath, "utf8")
     const parsed = JSON.parse(raw) as Partial<WorldRuntimeSaveRecord>
 
@@ -90,6 +107,16 @@ async function readLocalFileWorldRuntimeSaveRecord(
         message: "Runtime save record exists but is not valid.",
         warnings: ["Invalid runtime save record shape."],
         tags: ["world_runtime_store_read", "invalid"],
+      }
+    }
+    if ((input?.worldId && parsed.worldId !== input.worldId) || (input?.ownerId && parsed.ownerId !== input.ownerId)) {
+      return {
+        status: "invalid",
+        record: null,
+        path: resolvedFilePath,
+        message: "Runtime save identity does not match the requested world.",
+        warnings: ["runtime_requested_identity_mismatch"],
+        tags: ["world_runtime_store_read", "invalid", "runtime_requested_identity_mismatch"],
       }
     }
 
@@ -124,6 +151,23 @@ async function readLocalFileWorldRuntimeSaveRecord(
   }
 }
 
+async function resolveWorldRuntimeSavePathByWorldId(worldId: string): Promise<string | null> {
+  assertRuntimePathSegment(worldId, "worldId")
+  let entries
+  try {
+    entries = await readdir(RUNTIME_DIR, { withFileTypes: true })
+  } catch (error) {
+    if (isNodeFileError(error) && error.code === "ENOENT") return null
+    throw error
+  }
+  const matches = entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(RUNTIME_DIR, entry.name, `${worldId}.json`))
+    .filter((candidate) => existsSync(candidate))
+  if (matches.length > 1) throw new Error("runtime_world_id_ambiguous")
+  return matches[0] ? assertRuntimePath(matches[0], RUNTIME_DIR) : null
+}
+
 async function writeLocalFileWorldRuntimeSaveRecord(input: {
   record: WorldRuntimeSaveRecord
   filePath?: string
@@ -135,6 +179,7 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: {
   )
   const lockPath = `${filePath}.lock`
   let lock: Awaited<ReturnType<typeof open>> | null = null
+  const lockToken = randomUUID()
 
   try {
     await mkdir(path.dirname(filePath), { recursive: true })
@@ -146,6 +191,7 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: {
         host: hostname(),
         ownerId: input.record.ownerId,
         worldId: input.record.worldId,
+        lockToken,
         createdAtUtc: new Date().toISOString(),
       })}\n`, "utf8")
       await lock.sync()
@@ -175,6 +221,16 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: {
         }
       }
     }
+    const transactionPath = `${filePath}.transaction.json`
+    await writeTransactionJournal(transactionPath, {
+      schemaVersion: "world-runtime-transaction-v1",
+      state: "prepared",
+      recordPath: filePath,
+      latestPath: input.filePath ? null : getDefaultLocalFileWorldRuntimeSavePath(),
+      worldId: input.record.worldId,
+      tick: input.record.tick,
+      createdAtUtc: new Date().toISOString(),
+    })
     await writeJsonAtomic(filePath, input.record)
     if (!input.filePath) {
       await writeLatestWorldRuntimeIndex({
@@ -182,6 +238,16 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: {
         filePath,
       })
     }
+    await writeTransactionJournal(transactionPath, {
+      schemaVersion: "world-runtime-transaction-v1",
+      state: "committed",
+      recordPath: filePath,
+      latestPath: input.filePath ? null : getDefaultLocalFileWorldRuntimeSavePath(),
+      worldId: input.record.worldId,
+      tick: input.record.tick,
+      committedAtUtc: new Date().toISOString(),
+    })
+    await rm(transactionPath, { force: true })
 
     return {
       ok: true,
@@ -200,7 +266,29 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: {
     }
   } finally {
     if (lock) await lock.close().catch(() => {})
-    await rm(lockPath, { force: true }).catch(() => {})
+    if (lock) await releaseOwnedLock(lockPath, lockToken)
+  }
+}
+
+async function releaseOwnedLock(lockPath: string, lockToken: string): Promise<void> {
+  try {
+    const lock = JSON.parse(await readFile(lockPath, "utf8")) as { lockToken?: unknown }
+    if (lock.lockToken === lockToken) await rm(lockPath, { force: true })
+  } catch (error) {
+    if (!(isNodeFileError(error) && error.code === "ENOENT")) return
+  }
+}
+
+async function writeTransactionJournal(filePath: string, value: unknown): Promise<void> {
+  await writeJsonAtomic(filePath, value)
+}
+
+async function readTransactionJournal(filePath: string): Promise<{ state?: string } | null> {
+  try {
+    return JSON.parse(await readFile(filePath, "utf8")) as { state?: string }
+  } catch (error) {
+    if (isNodeFileError(error) && error.code === "ENOENT") return null
+    throw error
   }
 }
 
@@ -300,22 +388,40 @@ function sha256Json(value: unknown): string {
 function isWorldRuntimeSaveRecord(
   value: Partial<WorldRuntimeSaveRecord>
 ): value is WorldRuntimeSaveRecord {
+  const tick = value.tick
+  if (typeof tick !== "number" || !Number.isInteger(tick) || tick < 0) return false
+  const homeMapState = value.homeMapState
+  if (!isHomeMapStateShape(homeMapState)) return false
+  const recentEvents = value.recentEvents
+  if (!isWorldRuntimeEventLogArray(recentEvents)) return false
   return (
     value.version === "v2.6-runtime-00" &&
-    typeof value.worldId === "string" &&
-    typeof value.ownerId === "string" &&
-    typeof value.tick === "number" &&
-    typeof value.savedAt === "string" &&
+    isNonEmptyIdentity(value.worldId) &&
+    isNonEmptyIdentity(value.ownerId) &&
+    Number.isInteger(tick) && tick >= 0 &&
+    isIsoTimestamp(value.savedAt) &&
     Boolean(value.butlerProfile) &&
     Boolean(value.butlerRuntimeProfile) &&
     Boolean(value.butlerBirthInput) &&
     typeof value.butlerMappingMode === "string" &&
     Boolean(value.butlerConstructionStyle) &&
     typeof value.worldCreationStyleSource === "string" &&
-    isHomeMapStateShape(value.homeMapState) &&
-    isWorldRuntimeEventLogArray(value.recentEvents) &&
-    Array.isArray(value.tags)
+    isHomeMapStateShape(homeMapState) &&
+    isWorldRuntimeEventLogArray(recentEvents) &&
+    Array.isArray(value.tags) &&
+    value.tags.every((tag) => typeof tag === "string") &&
+    homeMapState.worldId === value.worldId &&
+    homeMapState.ownerId === value.ownerId &&
+    recentEvents.every((event) => event.tick >= 0 && event.tick <= tick)
   )
+}
+
+function isNonEmptyIdentity(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0
+}
+
+function isIsoTimestamp(value: unknown): value is string {
+  return typeof value === "string" && Number.isFinite(Date.parse(value))
 }
 
 function isHomeMapStateShape(value: unknown): value is HomeMapState {
@@ -335,7 +441,11 @@ function isHomeMapStateShape(value: unknown): value is HomeMapState {
     Array.isArray(record.mapDiffs) &&
     typeof record.createdAt === "number" &&
     typeof record.updatedAt === "number" &&
-    Array.isArray(record.tags)
+    Number.isFinite(record.createdAt) &&
+    Number.isFinite(record.updatedAt) &&
+    record.updatedAt >= record.createdAt &&
+    Array.isArray(record.tags) &&
+    record.tags.every((tag) => typeof tag === "string")
   )
 }
 
@@ -380,13 +490,14 @@ function isWorldRuntimeEventLogShape(
   const record = value as Partial<WorldRuntimeEventLog>
 
   return (
-    typeof record.id === "string" &&
-    typeof record.tick === "number" &&
+    typeof record.id === "string" && record.id.length > 0 &&
+    typeof record.tick === "number" && Number.isInteger(record.tick) && record.tick >= 0 &&
     typeof record.title === "string" &&
     typeof record.body === "string" &&
-    typeof record.source === "string" &&
-    typeof record.createdAt === "string" &&
-    Array.isArray(record.tags)
+    (record.source === "runtime" || record.source === "butler" || record.source === "construction" || record.source === "safe_apply" || record.source === "audit") &&
+    isIsoTimestamp(record.createdAt) &&
+    Array.isArray(record.tags) &&
+    record.tags.every((tag) => typeof tag === "string")
   )
 }
 

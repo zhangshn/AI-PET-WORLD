@@ -11,7 +11,7 @@ import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
 import { evaluateV7TrainingGpuResourceGate } from "./lib/ai-assisted-v7-training-resource-gate.mjs"
 
 const ROOT = process.cwd()
-const PYTHON = path.resolve(ROOT, "ml/ai-painter/.venv/Scripts/python.exe")
+const PYTHON = resolvePythonExecutable()
 const TRAINER = path.resolve(ROOT, "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py")
 const COMPILER = path.resolve(ROOT, "ml/ai-painter/scripts/compile_stage4_semantic_mixture_full_training_config.py")
 const DATASET = "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
@@ -136,7 +136,7 @@ function validatePreflight() {
   expect(fileHash("ml/ai-painter/scripts/compile_stage4_semantic_mixture_full_training_config.py", boundCode.compiler), "compiler_hash_invalid")
   expect(fileHash("ml/ai-painter/scripts/check_stage4_semantic_mixture_full_training_modes_cpu.py", boundCode.cpuChecker), "cpu_checker_hash_invalid")
   expect(fileHash("scripts/run-stage4-semantic-mixture-formal-stage.mjs", boundCode.runner), "runner_hash_invalid")
-  expect(fs.existsSync(PYTHON) && fs.existsSync(TRAINER) && fs.existsSync(COMPILER), "runtime_missing")
+  expect(isPythonExecutableAvailable(PYTHON) && fs.existsSync(TRAINER) && fs.existsSync(COMPILER), "runtime_missing")
   if (stage === 0) {
     expect(!args.parentCheckpoint && !args.parentTerminal, "stage0_parent_forbidden")
   } else {
@@ -152,6 +152,19 @@ function validatePreflight() {
   const disk = fs.statfsSync(resolve(".runtime"))
   expect(Number(disk.bavail) * Number(disk.bsize) >= 20 * 1024 ** 3, "disk_budget_below_20_gib")
   return { schemaVersion: "stage4-semantic-mixture-formal-stage-preflight-v1", status: blockers.length ? "failed_readonly_preflight_closed" : "passed_readonly_preflight", stage, runId: args.runId, blockers, authorizationConsumed: false, gpuStarted: false, checkpointRead: false, hardware, recordedAtUtc: new Date().toISOString() }
+}
+
+function resolvePythonExecutable() {
+  const configured = process.env.AI_PAINTER_PYTHON?.trim()
+  if (configured) return path.isAbsolute(configured) ? configured : path.resolve(ROOT, configured)
+  const candidates = process.platform === "win32"
+    ? [path.join(ROOT, "ml/ai-painter/.venv/Scripts/python.exe"), path.join(ROOT, "ml/ai-painter/.venv/python.exe")]
+    : [path.join(ROOT, "ml/ai-painter/.venv/bin/python"), path.join(ROOT, "ml/ai-painter/.venv/bin/python3")]
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? (process.platform === "win32" ? "python.exe" : "python3")
+}
+
+function isPythonExecutableAvailable(value) {
+  return path.isAbsolute(value) ? fs.existsSync(value) : Boolean(spawnSync(value, ["--version"], { stdio: "ignore", windowsHide: true }).status === 0)
 }
 
 function consumeAuthorization() {

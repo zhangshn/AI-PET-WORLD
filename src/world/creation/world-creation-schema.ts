@@ -23,6 +23,8 @@ export type WorldCreationRuntimeInput = {
   createWorldInput: CreateWorldInput
   /** Unique server-issued identity for this world instance. */
   worldInstanceId: string
+  /** Server-issued creation timestamp. Client-provided timestamps are ignored. */
+  serverCreatedAt?: number
 }
 
 export type WorldCreationRuntimeResult = {
@@ -30,6 +32,7 @@ export type WorldCreationRuntimeResult = {
   ownerId: string
   worldInstanceId: string
   birthSignature: string
+  birthSeed: string
   worldSalt: string
   butlerProfile: ButlerProfile
   butlerBirthInput: ButlerProfileBirthInput

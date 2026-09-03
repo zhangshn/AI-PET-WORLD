@@ -423,7 +423,9 @@ async function testNonBlockingHeartbeat(root) {
   }, 13);
   const child = await runNonBlockingChildProcess({
     command: process.execPath,
-    args: ["-e", "setTimeout(() => process.stdout.write('done'), 180)"],
+    // Keep the child alive long enough to observe several scheduler ticks even
+    // on a busy Windows host. This tests heartbeat refresh, not spawn latency.
+    args: ["-e", "setTimeout(() => process.stdout.write('done'), 600)"],
     cwd: root,
     timeoutMs: 2_000,
     maxOutputBytes: 1024,

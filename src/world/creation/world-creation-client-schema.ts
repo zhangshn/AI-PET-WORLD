@@ -7,6 +7,9 @@ export type CreateWorldInput = {
   time: string | null
   hasBirthHour: boolean
   perspective: CreateWorldPerspective
+  /** Stable birth-derived seed; never used as creation time. */
+  birthSeed?: string
+  /** Legacy client field retained for wire compatibility; server ignores it. */
   createdAt: number
 }
 

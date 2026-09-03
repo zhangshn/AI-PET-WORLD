@@ -2,7 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 
 const sessionCookieName = "ai_console_operator_session"
 const sessionLifetimeSeconds = 30 * 60
-const sessionSigningSecret = loadSessionSigningSecret()
+let processLocalDevelopmentSecret: Buffer | null = null
 
 type OperatorSessionPayload = {
   schemaVersion: "ai_console_operator_session_v1"
@@ -17,7 +17,7 @@ export type VerifiedOperatorSession = Pick<OperatorSessionPayload, "actorIdentit
 
 export type OperatorSessionVerification =
   | { ok: true; session: VerifiedOperatorSession }
-  | { ok: false; status: 401 | 403; errorCode: string }
+  | { ok: false; status: 401 | 403 | 503; errorCode: string }
 
 export function verifyLocalControlRead(request: Request): { ok: true } | { ok: false; status: 403; errorCode: string } {
   return isLoopbackRequest(request)
@@ -27,9 +27,13 @@ export function verifyLocalControlRead(request: Request): { ok: true } | { ok: f
 
 export function issueLocalOperatorSession(request: Request):
   | { ok: true; session: VerifiedOperatorSession; setCookie: string }
-  | { ok: false; status: 403; errorCode: string } {
+  | { ok: false; status: 403 | 503; errorCode: string } {
   if (!isLoopbackRequest(request)) {
     return { ok: false, status: 403, errorCode: "local_operator_session_loopback_required" }
+  }
+
+  if (!loadSessionSigningSecret()) {
+    return { ok: false, status: 503, errorCode: "local_operator_session_secret_unavailable" }
   }
 
   const issuedAt = new Date()
@@ -46,7 +50,10 @@ export function issueLocalOperatorSession(request: Request):
   return {
     ok: true,
     session: payload,
-    setCookie: `${sessionCookieName}=${signedToken}; HttpOnly; SameSite=Strict; Path=/api/ai-console/control; Max-Age=${sessionLifetimeSeconds}`,
+    // The session protects multiple local mutation APIs, including
+    // /api/world/create.  A control-only path silently drops the cookie on
+    // those requests and makes a valid local session look unauthenticated.
+    setCookie: `${sessionCookieName}=${signedToken}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${sessionLifetimeSeconds}`,
   }
 }
 
@@ -61,6 +68,9 @@ export function verifyLocalOperatorMutation(request: Request): OperatorSessionVe
 
   const token = readCookie(request.headers.get("cookie"), sessionCookieName)
   if (!token) return { ok: false, status: 401, errorCode: "local_operator_session_required" }
+  if (!loadSessionSigningSecret()) {
+    return { ok: false, status: 503, errorCode: "local_operator_session_secret_unavailable" }
+  }
   const payload = verifySignedSessionPayload(token)
   if (!payload) return { ok: false, status: 401, errorCode: "local_operator_session_invalid" }
   if (Date.parse(payload.expiresAtUtc) <= Date.now()) {
@@ -75,15 +85,19 @@ export function verifyLocalOperatorMutation(request: Request): OperatorSessionVe
 }
 
 function signSessionPayload(payload: OperatorSessionPayload): string {
+  const secret = loadSessionSigningSecret()
+  if (!secret) throw new Error("AI_PET_WORLD_OPERATOR_SESSION_SECRET is unavailable")
   const encodedPayload = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url")
-  const signature = createHmac("sha256", sessionSigningSecret).update(encodedPayload, "utf8").digest("base64url")
+  const signature = createHmac("sha256", secret).update(encodedPayload, "utf8").digest("base64url")
   return `${encodedPayload}.${signature}`
 }
 
 function verifySignedSessionPayload(token: string): OperatorSessionPayload | null {
+  const secret = loadSessionSigningSecret()
+  if (!secret) return null
   const [encodedPayload, providedSignature, extra] = token.split(".")
   if (!encodedPayload || !providedSignature || extra) return null
-  const expectedSignature = createHmac("sha256", sessionSigningSecret).update(encodedPayload, "utf8").digest("base64url")
+  const expectedSignature = createHmac("sha256", secret).update(encodedPayload, "utf8").digest("base64url")
   if (!safeStringEqual(providedSignature, expectedSignature)) return null
 
   try {
@@ -139,20 +153,21 @@ function safeStringEqual(left: string, right: string): boolean {
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer)
 }
 
-function loadSessionSigningSecret(): Buffer {
+function loadSessionSigningSecret(): Buffer | null {
   const configured = process.env.AI_PET_WORLD_OPERATOR_SESSION_SECRET?.trim()
   if (configured) {
     const secret = Buffer.from(configured, "utf8")
     if (secret.length < 32) {
-      throw new Error("AI_PET_WORLD_OPERATOR_SESSION_SECRET must contain at least 32 bytes")
+      return null
     }
     return secret
   }
   if (process.env.NODE_ENV === "production") {
-    throw new Error("AI_PET_WORLD_OPERATOR_SESSION_SECRET is required in production")
+    return null
   }
   // Development/test fallback is deliberately process-local. Production
   // deployments must provide a stable secret so detached workers can verify
   // the same session after a restart.
-  return randomBytes(32)
+  processLocalDevelopmentSecret ??= randomBytes(32)
+  return processLocalDevelopmentSecret
 }

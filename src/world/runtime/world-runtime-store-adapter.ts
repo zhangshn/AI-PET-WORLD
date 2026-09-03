@@ -30,6 +30,8 @@ export async function getWorldRuntimeStoreAdapter(): Promise<WorldRuntimeStoreAd
 
 export async function readWorldRuntimeSaveRecord(input?: {
   filePath?: string
+  ownerId?: string
+  worldId?: string
 }): Promise<WorldRuntimeStoreReadResult> {
   const adapter = await getWorldRuntimeStoreAdapter()
   return adapter.read(input)

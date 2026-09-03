@@ -58,6 +58,8 @@ try {
         terminal: {
           status: "semantic_mixture_stage4_formal_stage_completed_closed",
           stage: stage.stage,
+          gpuStarted: true,
+          trainingStarted: true,
         },
       };
     },
@@ -71,8 +73,8 @@ try {
     status: "passed",
     blockedWithoutStageInputs: true,
     orderedStages: seenStages,
-    gpuStarted: false,
-    trainingStarted: false,
+    gpuStarted: true,
+    trainingStarted: true,
   }, null, 2)}\n`);
 } finally {
   fs.rmSync(root, { recursive: true, force: true });

@@ -548,4 +548,6 @@ export type WorldVisualPainterDecision = {
 
 export type BuildWorldVisualPainterDecisionInput = {
   saveRecord: WorldRuntimeSaveRecord
+  /** Generation is an explicit mutation; status/director/condition reads never generate. */
+  runGeneration?: boolean
 }

@@ -115,11 +115,13 @@ export async function executeStage4V2FormalStage0ToStage2({
         input,
         parent,
       })
-      gpuStarted = true
-      trainingStarted = true
       if (!result || result.exitCode !== 0 || result.terminal?.status !== "semantic_mixture_stage4_formal_stage_completed_closed") {
         throw new Error(`stage_${stage.stage}_failed_closed`)
       }
+      // A child exit code is not proof that CUDA or training ran. Only the
+      // stage terminal's independently recorded evidence may set these flags.
+      gpuStarted = gpuStarted || result.terminal?.gpuStarted === true
+      trainingStarted = trainingStarted || result.terminal?.trainingStarted === true
       completedStages.push({ stage: stage.stage, terminal: result.terminal })
       parent = result.terminal
     }

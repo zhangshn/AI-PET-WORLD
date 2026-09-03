@@ -11,13 +11,18 @@ import {
   writeWorldVisualApprovedFrameRecord,
   writeWorldVisualFixPlanRecord,
 } from "@/world/world-visual-painter"
+import { runCurrentWorldRuntimeFramePipeline } from "@/world/game-map-frame"
 
 export async function POST(request: Request) {
   const operatorSession = verifyLocalOperatorMutation(request)
   if (!operatorSession.ok) {
     return NextResponse.json({ ok: false, code: operatorSession.errorCode, message: "需要本机 AI Console 操作会话。" }, { status: operatorSession.status })
   }
-  const runtimeReadResult = await readWorldRuntimeSaveRecord()
+  const worldId = new URL(request.url).searchParams.get("worldId")
+  if (!worldId) {
+    return NextResponse.json({ ok: false, status: "world_id_required" }, { status: 400 })
+  }
+  const runtimeReadResult = await readWorldRuntimeSaveRecord({ worldId })
 
   if (runtimeReadResult.status !== "found" || !runtimeReadResult.record) {
     return NextResponse.json(
@@ -132,6 +137,27 @@ export async function POST(request: Request) {
       approvedFrame.approvalScope === "approved_for_controlled_mvp" &&
       approvedFrame.approvedForProduction === false
   )
+  const runtimeFramePipeline =
+    approvedFrame &&
+    writeResult?.ok &&
+    approvedFrame.approvalScope === "approved_for_game_world" &&
+    approvedFrame.vj2Status === "vj_2_passed"
+      ? await runCurrentWorldRuntimeFramePipeline({
+          saveRecord: runtimeReadResult.record,
+          sourceFactIds: factManifest.sourceFactIds,
+          approvedFrameRecord: {
+            ownerId: runtimeReadResult.record.ownerId,
+            worldId: runtimeReadResult.record.worldId,
+            tick: runtimeReadResult.record.tick,
+            sourceFactIds: factManifest.sourceFactIds,
+            tags: candidateRecord.tags,
+            approvedFrame: {
+              ...approvedFrame,
+              approvedForProduction: false,
+            },
+          },
+        })
+      : null
 
   return NextResponse.json(
     {
@@ -172,6 +198,19 @@ export async function POST(request: Request) {
       displayRuleEn: controlledMvpApproved
         ? "A controlled MVP ApprovedFrame has been written, but /world will still re-check current tick/sourceFactIds when reading it; this frame is not production approved."
         : "When VJ-0, ApprovedFrame persistence, or the controlled MVP boundary fails, the world image must remain hidden.",
+      runtimeFramePipeline: runtimeFramePipeline
+        ? {
+            status: runtimeFramePipeline.status,
+            passed: runtimeFramePipeline.passed,
+            blockedReasons: runtimeFramePipeline.blockedReasons,
+            writeStatus: runtimeFramePipeline.writeResult?.status ?? null,
+          }
+        : {
+            status: "not_started_until_game_world_vj2_passed",
+            passed: false,
+            blockedReasons: ["vj_2_not_implemented_or_controlled_mvp_scope"],
+            writeStatus: null,
+          },
       tags: [
         "world_visual_judge_api",
         "vj_0_hard_gate",
@@ -190,6 +229,9 @@ export async function POST(request: Request) {
         ...(writeResult?.tags ?? []),
         ...fixPlanWriteResult.tags,
         ...reviewReport.tags,
+        runtimeFramePipeline?.passed
+          ? "runtime_frame_pipeline_written"
+          : "runtime_frame_pipeline_not_started_or_blocked",
       ],
     },
     { status: controlledMvpApproved ? 200 : 422 }

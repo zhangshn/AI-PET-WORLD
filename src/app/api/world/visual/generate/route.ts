@@ -12,7 +12,11 @@ export async function POST(request: Request) {
   if (!operatorSession.ok) {
     return NextResponse.json({ ok: false, code: operatorSession.errorCode, message: "需要本机 AI Console 操作会话。" }, { status: operatorSession.status })
   }
-  const runtime = await readWorldRuntimeSaveRecord()
+  const worldId = new URL(request.url).searchParams.get("worldId")
+  if (!worldId) {
+    return NextResponse.json({ ok: false, status: "world_id_required" }, { status: 400 })
+  }
+  const runtime = await readWorldRuntimeSaveRecord({ worldId })
 
   if (runtime.status !== "found" || !runtime.record) {
     return NextResponse.json(
@@ -30,6 +34,7 @@ export async function POST(request: Request) {
 
   const decision = await buildWorldVisualPainterDecision({
     saveRecord: runtime.record,
+    runGeneration: true,
   })
 
   if (!decision.imageModelStatus.canGenerate) {

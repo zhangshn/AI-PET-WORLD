@@ -133,7 +133,7 @@ export type WorldRuntimeStoreAdapterKind =
 
 export type WorldRuntimeStoreAdapter = {
   kind: WorldRuntimeStoreAdapterKind
-  read(input?: { filePath?: string }): Promise<WorldRuntimeStoreReadResult>
+  read(input?: { filePath?: string; ownerId?: string; worldId?: string }): Promise<WorldRuntimeStoreReadResult>
   write(input: {
     record: WorldRuntimeSaveRecord
     filePath?: string
