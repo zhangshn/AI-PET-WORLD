@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "ai-painter-learning-capacity-experiment-policy-v1",
+  "status": "active_bounded_experiment_policy_not_formal_training_release",
+  "purpose": "Measure the existing local Painter's learning and execution at 256x192 using only explicitly selected existing train originals.",
+  "scope": "train_only_learning_capacity_no_generalization_claim",
+  "resolution": [256, 192],
+  "sampleIds": [
+    "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v4"
+  ],
+  "sourceManifest": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-split64-7cc2e07d1c90e4972d9d1311551de0d6ec896437df5b894f6f7e1319e5c8b398/manifest.json",
+    "sha256": "b30b9ceafa8a057e9e2c7501fa1c6a38d1b0968905df0d9be1245c437920daec"
+  },
+  "sourceReview": {
+    "path": ".runtime/ai-painter/dataset-release-checks/200140fdba6b1e71b3dd006e9abaabbc6113ef0e2611f889a052dd6b7f3d9291/report.json",
+    "sha256": "200140fdba6b1e71b3dd006e9abaabbc6113ef0e2611f889a052dd6b7f3d9291"
+  },
+  "foundationContract": {
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract-v1.json",
+    "sha256": "0bd33d11175f33e7b2fc684d84e1dc9e837d4c26d0961b4ac5f7e26c6c8534ea"
+  },
+  "foundationUse": "explicit_frozen_project_asset_for_experiment_only_not_inherited_activation",
+  "foundationLimitations": [
+    "Three historical manifest bindings remain incomplete; this experiment does not repair or certify them.",
+    "No claim that selected images or related sources were unseen by the foundation.",
+    "Load only the exact owned Autoencoder state; never load a failed Denoiser or optimizer."
+  ],
+  "training": { "epochs": 30, "batchSize": 1, "seed": 20260908, "checkpointRule": "final_step_only_no_selection", "replayAllowed": false },
+  "resources": { "maxWallSeconds": 1800, "cudaMemoryFraction": 0.70, "minimumFreeVramMiB": 2048, "maximumTemperatureC": 85, "minimumFreeDiskMiB": 2048, "maxOutputMiB": 512, "cpuThreads": 4, "automaticRetries": 0 },
+  "outputRoot": ".runtime/ai-painter/learning-capacity-experiments",
+  "qualification": {
+    "selectedTrainSourceAndTensorChecksRequired": true,
+    "cpuBehaviorTestsRequired": true,
+    "noUpdateGpuProbeRequired": true,
+    "formalDatasetQualified": false,
+    "formalGpuQualified": false,
+    "formalSmokePassed": false,
+    "formalTrainingAllowed": false,
+    "checkpointPromotable": false,
+    "formalInferenceEligible": false,
+    "runtimeFrameAllowed": false,
+    "worldEntryAllowed": false
+  },
+  "nonTrainContentAllowed": false,
+  "formal64AndSplitsChanged": false,
+  "thresholdChangesAllowed": false,
+  "modelArchitectureChangesAllowed": false,
+  "lossChangesAllowed": false,
+  "externalRequestsAllowed": false,
+  "shutdownByTrainingProgramAllowed": false
+}

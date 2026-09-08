@@ -13,6 +13,7 @@ import {
   buildStage4V2IsolatedImplementationEvidence,
   collectStage4V2LifecycleSources,
   reconcileStage4V2CapabilityLifecycle,
+  projectStage4V2CpuLifecycle,
   STAGE4_V2_CAPABILITY,
   STAGE4_V2_CPU_ACCEPTANCE_TERMINAL,
   STAGE4_V2_LIFECYCLE_ROOT,
@@ -45,6 +46,9 @@ test("fresh reconciliation creates the canonical V2 lifecycle and the second run
     assert.equal(first.status, "reconciled");
     assert.equal(first.lifecycleState, "cpu_contract_verified");
     assert.equal(first.lifecycleSequence, 2);
+    assert.equal(first.lifecycleCompatibility.rawLifecycleStage, "cpu_contract_accepted");
+    assert.equal(first.lifecycleCompatibility.lifecycleStage, "cpu_contract_verified");
+    assert.equal(first.lifecycleCompatibility.mode, "read_compatibility_only");
     assert.deepEqual(first.actions, [
       "created_change_candidate",
       "advanced_isolated_implementation",
@@ -109,6 +113,43 @@ test("reconciliation resumes a verified isolated implementation without duplicat
     assert.equal(result.lifecycleState, "cpu_contract_verified");
     assertLifecycleDatabase(fixture.root, "cpu_contract_verified", 3);
     assert.equal(sha256File(fixture.absolute(CURRENT_PATH)), currentBefore);
+  });
+});
+
+test("legacy CPU enum is mapped only after rehashing the full source chain; unknown or damaged sources stay unknown", () => {
+  withFixture((fixture) => {
+    const sourceTerminal = { path: fixture.cpuTerminalPath, sha256: sha256File(fixture.absolute(fixture.cpuTerminalPath)) };
+    const before = snapshotDirectory(fixture.root);
+    const args = { projectRoot: fixture.root, sourceTerminal, rawLifecycleStage: "cpu_contract_accepted" };
+    const compatible = projectStage4V2CpuLifecycle(args);
+    assert.equal(compatible.status, "verified");
+    assert.equal(compatible.lifecycleStage, "cpu_contract_verified");
+    assert.equal(compatible.rawLifecycleStage, "cpu_contract_accepted");
+    assert.equal(compatible.mode, "read_compatibility_only");
+    assert.deepEqual(compatible.sourceEvidence, sourceTerminal);
+    assert.equal(projectStage4V2CpuLifecycle({ ...args, rawLifecycleStage: "cpu_contract_verified" }).status, "unknown_or_stale");
+    assert.equal(projectStage4V2CpuLifecycle({ ...args, rawLifecycleStage: "cpu_passed" }).status, "unknown_or_stale");
+    assert.equal(projectStage4V2CpuLifecycle({ ...args, sourceTerminal: { ...sourceTerminal, sha256: "0".repeat(64) } }).lifecycleStage, "unknown_or_stale");
+    assert.deepEqual(snapshotDirectory(fixture.root), before);
+    const classification = fixture.read(fixture.classificationPath);
+    fixture.write(fixture.classificationPath, { ...classification, tampered: true });
+    const invalid = projectStage4V2CpuLifecycle(args);
+    assert.equal(invalid.status, "unknown_or_stale");
+    assert.equal(invalid.currentExecutionRegistryWritten, false);
+  });
+});
+
+test("V2 reconciliation does not inherit the generic lifecycle's optional GPU shortcut", () => {
+  withFixture((fixture) => {
+    reconcileStage4V2CapabilityLifecycle({ projectRoot: fixture.root });
+    advanceCapabilityLifecycle({ root: fixture.root, capabilityVersion: STAGE4_V2_CAPABILITY,
+      targetState: "controlled_smoke_completed", evidence: {
+        schemaVersion: "ai-painter-capability-stage-evidence-v1", capabilityVersion: STAGE4_V2_CAPABILITY,
+        targetState: "controlled_smoke_completed", status: "passed", bindings: [STAGE4_V2_CPU_ACCEPTANCE_TERMINAL],
+      } });
+    const before = snapshotDirectory(fixture.root);
+    assert.throws(() => reconcileStage4V2CapabilityLifecycle({ projectRoot: fixture.root }), /invalid stored V2 lifecycle transition/u);
+    assert.deepEqual(snapshotDirectory(fixture.root), before);
   });
 });
 

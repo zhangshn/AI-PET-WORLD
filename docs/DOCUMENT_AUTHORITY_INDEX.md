@@ -1,14 +1,14 @@
 # 项目文档权威索引
 
-更新时间：2026-08-30 18:21:44 +08:00
+更新时间：2026-09-06 03:34:57 +08:00
 
 状态：active-document-governance-index
 
-文档版本：`DOCUMENT-AUTHORITY-1.6`
+文档版本：`DOCUMENT-AUTHORITY-1.7`
 
-生效日期：`2026-08-30`
+生效日期：`2026-09-06`
 
-替代版本：`DOCUMENT-AUTHORITY-1.5`
+替代版本：`DOCUMENT-AUTHORITY-1.6`
 
 文档状态：`active_normative_target`
 
@@ -24,7 +24,7 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 | 项目总体架构 | `docs/ARCHITECTURE.md` | 系统分层、数据流、Runtime、能力版本、内部任务票据和模块边界 |
 | 本地AI能力迁移架构 | `docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md` | 本地AI原生能力、自主裁决、MVP筛选、Codex职能迁移与治理 |
 | 唯一模块计划表 | `docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md` | 当前模块、模块目标、阻断、完成条件与下一模块 |
-| AI Painter正式主体规格 | `docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | 长期业务责任、输入输出、四段机器接口、稳定需求编号、能力变更、身份链、自动审核、发布与回退边界 |
+| AI Painter正式主体规格 | `docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | 长期业务责任、输入输出、四段机器接口、稳定需求编号、能力变更、身份链、自动审核、发布与回退；第18节承担完整MVP生命视觉验收，第17.3节区分程序适配缺口 |
 | AI Painter数据与来源 | `docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md` | 来源、64份批准容量、split、数据包血缘和样本身份 |
 | AI Painter审核与存储 | `docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md` | 原生自动审核、自主裁决、内部任务票据、终态、发布、存储和RuntimeFrame生命周期 |
 | AI Painter机器合同登记 | `docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md`第17.1节 | 当前长期合同、能力发布受信注册表、历史合同替代索引和唯一机器检查入口 |
@@ -77,6 +77,10 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 Owner当前明确命令可以主动调整业务目标、给Codex等外部执行者限定任务范围，或暂停、紧急覆盖本地系统；聊天本身不是能力发布记录。本地自研AI按`GOV-OWNER-001`在生效业务与安全合同内自主形成新模型、Loss、数据选择、训练计划和能力版本，完成训练、固定验证、机器审核、RuntimeFrame发布或回退、世界运行和记录。所有能力变更必须形成不可变版本与机器证据，但不得把版本化治理重新解释为逐任务、逐阶段或逐版本的人工审批。
 
 AI Painter的四个生成责任阶段、稳定需求编号、机器合同登记、重大能力变更和正式身份链由总体架构与AI Painter正式主体规格共同定义；一个模型、三个隔离组件或其他模型家族只是可替换实现。唯一计划表记录当前候选状态，不得把实验结构升级为长期业务架构。数据路径以数据与来源规则及目录结构为准，审核、发布与终态以审核与存储规格为准，页面文档不得重新定义业务或训练顺序。
+
+完整产品MVP包括人物、五类现实动物与动态反馈闭环；静态自然地图与Stage4候选资格只是在该范围内的先行里程碑。业务规格第3节定义范围，总体架构第4.1节定义生命接口，AI Painter主体规格第18节定义可验证场景，数据规格第11.1节定义资料资格；不另建第二套生命文档树或计划表。既有数据、模型和机器合同不因文档范围扩展而原地取得新能力。
+
+水文、跨模态及阈值三份补充规格只细化来源与审核规范；旧两槽位机器合同不具有全MVP现行权威。旧资料的保留、替代、停用按数据规格第4.2及13.1节判断，不能只按名称、日期、文件数量或JSON／hash扩展名判断。
 
 ## 3. 唯一计划表规则
 
@@ -142,5 +146,7 @@ AI Painter正式文档基线的必须检查项固定为：
 8. 唯一计划表只记录当前模块状态；长期文档不得复制Run、Epoch、临时失败和操作指令。
 9. 已拒绝候选、现行候选和后继能力必须使用不同能力身份、入口和输出命名空间；影响条件采样、责任通路、模型参数图或RGB解码的修复不得原地改写旧候选身份。
 10. Stage4模型与生命周期核心回归必须覆盖23通道类型采样、逐责任语义保真、最终RGB责任、Autoencoder冻结、失败裁决继任、正式入口和控制台投影；未实际运行回归前不得声明程序符合。
+11. 完整MVP与静态地图里程碑分开；八组生命视觉验收场景对应明确代码责任、数据／合同、正反测试与证据，待研究资料不得伪装成有效规则。
+12. 正式生命周期只记录已获成功证据的资格；失败筛查不得写成正式阶段完成，旧枚举与新规范的迁移状态必须显式保留。
 
 上述检查全部通过后，可以宣告“当前正式文档基线一致”；仍不得宣告“全部程序已符合”、“AI Painter能力已发布”或“Stage4已突破60%”。

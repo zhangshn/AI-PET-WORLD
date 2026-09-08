@@ -105,12 +105,17 @@ export function buildNaturalAnonymousWaterCenterline({
   broadRiverControlFractions = null,
   preferredSinuosity = null,
   corridorHalfWidths = null,
+  downstreamDirection = undefined,
+  flowRelativeControls = false,
 }) {
   assert(
     profile?.status === "aggregate_public_water_naturalness_profile_ready",
     "anonymous water naturalness reference profile is missing",
   )
   const envelope = profile.anonymousGenerationEnvelope
+  assert(typeof flowRelativeControls === "boolean" && (!flowRelativeControls ||
+    (downstreamDirection !== undefined && broadRiverMode && Array.isArray(corridorHalfWidths))),
+    "flow-relative water controls require an explicit downstream direction")
   const dx = end.x - start.x
   const dy = end.y - start.y
   const directLength = Math.max(1, Math.hypot(dx, dy))
@@ -135,7 +140,7 @@ export function buildNaturalAnonymousWaterCenterline({
   const addCandidate = (points) => {
     const audit = auditAnonymousWaterNaturalness(points, profile)
     const corridorAudit = corridorHalfWidths
-      ? auditAnonymousWaterCorridorShape(points, corridorHalfWidths)
+      ? auditAnonymousWaterCorridorShape(points, corridorHalfWidths, { downstreamDirection })
       : null
     candidates.push({ points, audit, corridorAudit })
   }
@@ -161,7 +166,10 @@ export function buildNaturalAnonymousWaterCenterline({
         broadRiverBezierCenterline({
           start,
           end,
-          control: {
+          control: flowRelativeControls ? {
+            x: (start.x + end.x) / 2 + nx * directLength * 2 * (controlFraction + controlFractionJitter),
+            y: (start.y + end.y) / 2 + ny * directLength * 2 * (controlFraction + controlFractionJitter),
+          } : {
             x: width * (controlFraction + controlFractionJitter),
             y: controlY,
           },
@@ -258,6 +266,7 @@ export function buildNaturalAnonymousWaterCenterline({
     6,
   )
   selected.audit.broadRiverMode = broadRiverMode
+  if (flowRelativeControls) selected.audit.controlFrame = "explicit_flow_relative_v1"
   selected.audit.broadRiverControlFractions = broadRiverMode
     ? structuredClone(
         broadRiverControlFractions ?? [
@@ -377,11 +386,19 @@ export function auditAnonymousWaterNaturalness(points, profile) {
   }
 }
 
-export function auditAnonymousWaterCorridorShape(points, halfWidths) {
+export function auditAnonymousWaterCorridorShape(points, halfWidths, { downstreamDirection } = {}) {
   assert(
     points.length >= 3 && points.length === halfWidths.length,
     "water corridor shape audit inputs are invalid",
   )
+  assert(points.every(point => Number.isFinite(point.x) && Number.isFinite(point.y)) &&
+    halfWidths.every(value => Number.isFinite(value) && value > 0), "non-finite or non-positive water corridor input")
+  const direction = downstreamDirection === undefined ? { x: 0, y: 1 } : downstreamDirection
+  assert(direction && Number.isFinite(direction.x) && Number.isFinite(direction.y) &&
+    Number.isFinite(Math.hypot(direction.x, direction.y)) && Math.hypot(direction.x, direction.y) > 0,
+    "invalid downstream direction")
+  const length = Math.hypot(direction.x, direction.y)
+  const unitDirection = { x: direction.x / length, y: direction.y / length }
   let minimumBendRadiusPixels = Number.POSITIVE_INFINITY
   let minimumBendRadiusToHalfWidthRatio = Number.POSITIVE_INFINITY
   let minimumBendRadiusPointIndex = null
@@ -389,7 +406,11 @@ export function auditAnonymousWaterCorridorShape(points, halfWidths) {
   let downstreamBacktrackCount = 0
   let maximumHalfWidthStepPixels = 0
   for (let index = 1; index < points.length; index += 1) {
-    if (points[index].y + 1e-6 < points[index - 1].y) {
+    const downstreamStep = downstreamDirection === undefined
+      ? points[index].y - points[index - 1].y
+      : (points[index].x - points[index - 1].x) * unitDirection.x +
+        (points[index].y - points[index - 1].y) * unitDirection.y
+    if (downstreamDirection === undefined ? points[index].y + 1e-6 < points[index - 1].y : downstreamStep < -1e-6) {
       downstreamBacktrackCount += 1
     }
     maximumHalfWidthStepPixels = Math.max(
@@ -441,7 +462,9 @@ export function auditAnonymousWaterCorridorShape(points, halfWidths) {
     "water_width_step_too_abrupt",
   )
   return {
-    schemaVersion: "anonymous-water-corridor-shape-audit-v1",
+    schemaVersion: downstreamDirection === undefined ? "anonymous-water-corridor-shape-audit-v1"
+      : "anonymous-water-corridor-shape-audit-v2",
+    ...(downstreamDirection === undefined ? {} : { downstreamDirection: unitDirection }),
     status: failures.length === 0 ? "passed" : "failed",
     passed: failures.length === 0,
     failures,

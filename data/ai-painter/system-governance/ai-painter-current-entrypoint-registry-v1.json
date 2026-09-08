@@ -8,6 +8,16 @@
   "ownerInNormalStateMachine": false,
   "currentEntrypoints": [
     {
+      "packageScript": "prepare:ai-painter-learning-capacity-experiment",
+      "entryFile": "scripts/run-ai-painter-learning-capacity-experiment.mjs",
+      "role": "bounded_train_only_experiment_preparation_no_formal_qualification"
+    },
+    {
+      "packageScript": "run:ai-painter-learning-capacity-experiment",
+      "entryFile": "scripts/run-ai-painter-learning-capacity-experiment.mjs",
+      "role": "bounded_train_only_experiment_no_formal_stage_or_publication"
+    },
+    {
       "packageScript": "materialize:ai-painter-autonomous-closed-loop-package",
       "entryFile": "scripts/materialize-ai-painter-autonomous-closed-loop-package.mjs",
       "role": "closed_loop_package_materialization"

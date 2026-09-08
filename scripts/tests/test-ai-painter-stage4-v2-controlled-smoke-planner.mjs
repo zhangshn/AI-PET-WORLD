@@ -15,6 +15,9 @@ import {
   readSmokePayload,
 } from "../lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
 import {
+  stage4V2SmokePreflight, stage4V2SmokeExecute,
+} from "../lib/ai-painter-stage4-v2-controlled-smoke-adapters-v1.mjs";
+import {
   buildStage4V2QualificationProgramGraph,
 } from "../lib/ai-painter-program-graph-manifest-v1.mjs";
 import {
@@ -69,6 +72,23 @@ try {
   assert.equal(manifest.status, "materialized_not_executed");
   assert.equal(manifest.outputDirectoryCreated, false);
   const payload = readBound(positive.root, manifest.packagePayload);
+  // Exercise the real phase entrypoints, not just a standalone policy helper.
+  // Even a previously persisted preflight must not restore the old exception.
+  const packageRoot = path.dirname(path.join(positive.root, manifest.packagePayload.path));
+  const oldPreflight = path.join(packageRoot, "preflight-report.json");
+  fs.writeFileSync(oldPreflight, JSON.stringify({ status: "passed_ticket_not_consumed_training_not_started" }));
+  const beforeFiles = fs.readdirSync(packageRoot).sort();
+  const oldPreflightSha = sha256(oldPreflight);
+  for (const phase of [stage4V2SmokePreflight, stage4V2SmokeExecute]) {
+    const blocked = await phase({ projectRoot: positive.root, packageIdentity: payload.packageId,
+      outputRoot: payload.outputDirectory });
+    assert.equal(blocked.status, "failed");
+    assert.equal(blocked.failureKind, "program");
+    assert.equal(blocked.failureCode, "stage4_smoke_non_train_optimizer_source");
+    assert.deepEqual(fs.readdirSync(packageRoot).sort(), beforeFiles,
+      "split rejection must precede ticket consumption, process intent and config writes");
+    assert.equal(sha256(oldPreflight), oldPreflightSha, "old evidence was overwritten");
+  }
   assert.equal(payload.inputEvidence.some((item) =>
     item.path === ".runtime/ai-painter/current-execution-registry/current.json"), false,
   "Smoke payload persisted mutable current.json as evidence");
@@ -663,7 +683,10 @@ function fixture() {
     root, write(root, `.runtime/fixtures/${name}`, value),
   );
   const sourceManifest = evidence("source-manifest.json");
-  const sourceIndex = evidence("source-index.json");
+  const sourceIndex = evidence("source-index.json", {
+    samples: [{ sampleId: SAMPLE_ID, split: "validation" }],
+    v7CapacityContributions: [{ sampleId: SAMPLE_ID, split: "validation" }],
+  });
   const image = evidence("sample-194.png", { rgb: true });
   const masks = Object.fromEntries([
     "object_footprints", "object_tree", "object_rock", "object_vegetation",

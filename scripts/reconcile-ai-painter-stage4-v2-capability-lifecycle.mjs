@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+import { CPU_LIFECYCLE_STAGE, LEGACY_CPU_LIFECYCLE_STAGE, cpuLifecycleCompatibility } from "./lib/ai-painter-stage4-lifecycle-projection.mjs";
 
 import {
   advanceCapabilityLifecycle,
@@ -76,7 +77,7 @@ const EXPECTED_PARENT_PROGRAM_ROLES = Object.freeze([
 const TRANSITIONS = Object.freeze({
   change_candidate: ["isolated_implementation", "rejected"],
   isolated_implementation: ["cpu_contract_verified", "rejected"],
-  cpu_contract_verified: ["readonly_gpu_qualified", "controlled_smoke_completed", "rejected"],
+  cpu_contract_verified: ["readonly_gpu_qualified", "rejected"],
   readonly_gpu_qualified: ["controlled_smoke_completed", "rejected"],
   controlled_smoke_completed: ["formal_stage_validation_completed", "rejected"],
   formal_stage_validation_completed: ["independent_regression_completed", "rejected"],
@@ -182,6 +183,9 @@ export function reconcileStage4V2CapabilityLifecycle({
     lifecycleRoot: STAGE4_V2_LIFECYCLE_ROOT,
     actions,
     sourceEvidence: candidate.sourceEvidence,
+    lifecycleCompatibility: cpuLifecycleCompatibility(
+      sources.rawCpuLifecycleStage, sources.cpuTerminal,
+    ),
     currentExecutionRegistryWritten: false,
     gpuStarted: false,
     optimizerCreated: false,
@@ -207,6 +211,9 @@ export function collectStage4V2LifecycleSources({
     );
   }
   const terminal = readJson(root, cpuTerminal.path);
+  const rawCpuLifecycleStage = terminal.lifecycleStage ?? LEGACY_CPU_LIFECYCLE_STAGE;
+  assert.ok([CPU_LIFECYCLE_STAGE, LEGACY_CPU_LIFECYCLE_STAGE].includes(rawCpuLifecycleStage),
+    "CPU terminal lifecycle enum is unrecognized");
   assert.equal(terminal.schemaVersion, CPU_TERMINAL_SCHEMA, "V2 CPU acceptance terminal schema mismatch");
   assert.equal(terminal.architectureId, STAGE4_V2_CAPABILITY, "V2 CPU terminal capability mismatch");
   assert.equal(terminal.executionClass, "cpu_readonly", "V2 CPU terminal execution class mismatch");
@@ -381,7 +388,25 @@ export function collectStage4V2LifecycleSources({
     sourceAdjudicationTerminal,
     sourceRunId: classificationValue.sourceRunId,
     cpuRunId: terminal.runId,
+    rawCpuLifecycleStage,
   });
+}
+
+/** Explicit read-side compatibility: verify actual bound CPU evidence before mapping. */
+export function projectStage4V2CpuLifecycle({ projectRoot, sourceTerminal, rawLifecycleStage }) {
+  try {
+    assert.ok(sourceTerminal?.sha256, "CPU lifecycle source SHA is required");
+    const sources = collectStage4V2LifecycleSources({
+      projectRoot, cpuAcceptanceTerminalPath: sourceTerminal.path,
+      expectedCpuAcceptanceTerminalSha256: sourceTerminal.sha256,
+    });
+    assert.equal(rawLifecycleStage, sources.rawCpuLifecycleStage, "CPU lifecycle source enum conflict");
+    return { status: "verified", ...cpuLifecycleCompatibility(rawLifecycleStage, sources.cpuTerminal) };
+  } catch (error) {
+    return { status: "unknown_or_stale", lifecycleStage: "unknown_or_stale", rawLifecycleStage,
+      sourceEvidence: sourceTerminal ?? null, errorCode: error.message,
+      historicalEvidenceRewritten: false, currentExecutionRegistryWritten: false };
+  }
 }
 
 export function buildStage4V2CandidateSpec(sources) {
@@ -455,7 +480,10 @@ function verifyLifecycleStorage({ root, expectedCandidate, isolatedEvidence, cpu
 
   const databasePath = path.join(lifecycleRoot, "lifecycle.sqlite");
   assert.ok(fs.existsSync(databasePath), "V2 lifecycle SQLite database is missing");
-  const database = new DatabaseSync(databasePath, { readOnly: true });
+  assert.ok(!fs.existsSync(`${databasePath}-wal`) || fs.statSync(`${databasePath}-wal`).size === 0,
+    "V2 lifecycle SQLite has an uncheckpointed WAL");
+  const databaseSha256 = sha256File(databasePath);
+  const database = new DatabaseSync(`${pathToFileURL(databasePath).href}?mode=ro&immutable=1`, { readOnly: true });
   let capabilityRow;
   let transitions;
   try {
@@ -468,6 +496,9 @@ function verifyLifecycleStorage({ root, expectedCandidate, isolatedEvidence, cpu
   } finally {
     database.close();
   }
+  assert.equal(sha256File(databasePath), databaseSha256, "V2 lifecycle SQLite changed during verification");
+  assert.ok(!fs.existsSync(`${databasePath}-wal`) || fs.statSync(`${databasePath}-wal`).size === 0,
+    "V2 lifecycle SQLite changed during verification");
   assert.equal(capabilityRow?.state, state.state, "V2 lifecycle SQLite state conflict");
   assert.equal(capabilityRow?.change_class, "model_family", "V2 lifecycle SQLite change class conflict");
   assert.equal(capabilityRow?.owner_response_required, 0, "V2 lifecycle SQLite Owner gate conflict");

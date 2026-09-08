@@ -399,6 +399,7 @@ export async function prepareCurrentExecutionRegistryAdvance({
     requireValue(latestTerminal.sha256 === latestTrainingTerminal.sha256, "latest_training_terminal_sha256_invalid")
     requireValue(isTerminalExecutionState(latestTerminal.value?.executionState), "latest_training_terminal_not_completed")
     requireValue(latestTerminal.value?.status === latestTrainingTerminal.status, "latest_training_terminal_status_invalid")
+    requireValue(trainingTerminalRunId(latestTerminal.value) === latestTrainingTerminal.runId, "latest_training_run_id_mismatch")
     const normalizedEvidence = {}
     for (const [kind, binding] of Object.entries(latestTrainingTerminal.evidence ?? {})) {
       if (binding === null) {
@@ -804,11 +805,25 @@ async function finalizePreparedAdvanceInternal({ projectRoot, transactionId, _te
   return readCurrentExecutionRegistry(projectRoot)
 }
 
+function trainingTerminalRunId(terminal) {
+  if (terminal?.schemaVersion !== "ai-painter-learning-capacity-experiment-terminal-v1") return terminal?.runId
+  // The isolated schema originally used experimentIdentity, not runId. Keep
+  // immutable failed evidence readable without treating it as formal training.
+  requireValue(typeof terminal.experimentIdentity === "string" && terminal.experimentIdentity.length > 0, "experiment_terminal_identity_invalid")
+  requireValue(terminal.runId === undefined || terminal.runId === terminal.experimentIdentity, "experiment_terminal_identity_conflict")
+  for (const flag of ["formalTrainingQualified", "formalStageAdvanced", "checkpointPromotable", "worldEntryAllowed"]) {
+    requireValue(terminal[flag] === false, "experiment_terminal_formal_claim_forbidden")
+  }
+  requireValue(["experiment_completed_not_formal_qualified", "experiment_failed_closed"].includes(terminal.status), "experiment_terminal_status_invalid")
+  requireValue(terminal.executionState === (terminal.status === "experiment_failed_closed" ? "failed_closed" : "completed"), "experiment_terminal_state_invalid")
+  return terminal.experimentIdentity
+}
+
 async function readLatestTrainingTerminal(projectRoot, binding, archivedNamespaces) {
   if (binding === null || binding === undefined) return null
   requireValue(typeof binding.runId === "string" && binding.runId.length > 0, "latest_training_run_id_invalid")
   const terminal = await readRegistryBinding(projectRoot, binding, archivedNamespaces, "latest_training_terminal")
-  requireValue(terminal.value?.runId === binding.runId, "latest_training_run_id_mismatch")
+  requireValue(trainingTerminalRunId(terminal.value) === binding.runId, "latest_training_run_id_mismatch")
   requireValue(terminal.value?.status === binding.status, "latest_training_status_mismatch")
   const evidence = {}
   for (const [key, value] of Object.entries(binding.evidence ?? {})) {

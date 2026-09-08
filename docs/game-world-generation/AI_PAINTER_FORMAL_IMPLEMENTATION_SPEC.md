@@ -1,14 +1,14 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-08-31 01:53:20 +08:00
+更新时间：2026-09-08 03:41:56 +08:00
 
 状态：active-long-term-module-specification
 
-文档版本：`AI-PAINTER-SPEC-1.8`
+文档版本：`AI-PAINTER-SPEC-1.10`
 
-生效日期：`2026-08-31`
+生效日期：`2026-09-08`
 
-替代版本：`AI-PAINTER-SPEC-1.7`
+替代版本：`AI-PAINTER-SPEC-1.9`
 
 文档状态：`active_normative_target`
 
@@ -57,6 +57,8 @@ AI Painter 文档和程序必须明确区分以下三层：
 | 能力演进控制层 | 代码、模型、Loss、数据、审核、训练和正式发布的版本化机器门禁 | 约束本地AI自主演进，不表示人工审批 |
 
 正式业务运行和能力演进不得依赖 Codex 会话、聊天历史、Owner签名或逐步骤人工授权。本地AI对模型、数据、训练、审核实现和发布版本的变更仍必须通过隔离版本、回归、资源、安全和发布机器门，但机器治理不能被描述成人工许可。
+
+完整产品MVP包含自然世界、人物人格与初始外貌、五类现实动物、生命动态及反馈闭环；当前静态地图训练只是其中一个里程碑。本文第18节定义生命扩展的完整验收边界，不原地改写现有23通道合同或64份地图发布，不把文档生效当作新增能力已实现。
 
 ## 3. 权威输入合同
 
@@ -251,6 +253,8 @@ AI Painter 的长期内部责任固定为四段；它们描述业务责任，不
 - **AP-TRAIN-003**：训练必须保存模型前后哈希、指标、资源、Checkpoint、Manifest 与终态证据。
 - **AP-TRAIN-004**：后一训练分辨率只能消费同一正式链前一阶段的成功 Checkpoint。
 
+Smoke同样受split用途隔离约束：只有train可更新任何参数；validation只能前向评估，challenge和regression不得参与调参或Checkpoint选择。Smoke权重不得晋级为正式阶段初始化。即便诊断权重最终丢弃，也不能借此把validation改称train；若确需研究另一划分，须建立独立数据与能力身份，并且不能污染原发布的独立验收结论。
+
 ### 9.2 能力版本必须登记的可变参数
 
 潜变量通道、Autoencoder 身份及冻结/可训练状态、空间关系、模型家族、基础宽度、层数、条件融合、梯度聚合、回放策略、Epoch、Smoke 样本、优化器和资源计划都必须由能力版本精确登记。它们可以通过新能力版本替换，但不得被写成永久业务规则。
@@ -290,6 +294,19 @@ negativeAlignmentTests
 现有迁移实现使用12通道潜变量。当前Stage4 V2候选同样登记12通道潜变量、四倍Autoencoder空间关系和项目基础Autoencoder，并由V2父合同单独登记基础宽度、责任宽度和时间嵌入等活动实现值。这些数值是未发布能力版本的可变实现参数，不是长期业务常量，也不能单独授予GPU或训练资格。新能力的具体活动值只从该能力的不可变配置和机器证据读取；本文不固定未来模型宽度、模型候选或训练运行身份。
 
 失败Denoiser Checkpoint只能保存身份和证据；不得加载、复用、晋级或作为初始化。只有从当前能力明确绑定的非失败父资产启动的全新隔离能力版本可以继续研发。已批准项目基础Autoencoder按`foundationAssetBinding`加载不属于读取历史失败Denoiser；两类资产必须使用不同角色、身份和加载白名单验证。
+
+### 9.6 有界学习能力实验与正式资格隔离
+
+在明确收缩为技术可行性验证的任务中，可以按[`ai-painter-learning-capacity-experiment-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-learning-capacity-experiment-policy-v1.json)建立独立、不可发布的256×192小样本实验。此例外仅适用于学习能力与执行测量，不取代第8节64份正式训练门槛或第18.5节资格链，不改变正式数据、划分、模型审核阈值和Runtime边界。
+
+- 仅从精确绑定的既有train集合取样；源文件、来源权利证据、泰国区域、WorldFacts／条件／RGB身份和类型化读取必须重算。已知拒绝样本不作目标。旧记录中的Owner词语只解释来源，不作为当前实验放行条件。
+- 实验数据与能力使用独立身份，明确`train_only_learning_capacity_no_generalization_claim`；训练集上的测量仅为训练诊断，不命名为独立validation，不消费validation／challenge／regression内容或指标。原64份来源隔离阻断不因实验通过而消失。
+- 基础Autoencoder只可从精确项目资产绑定加载并全程冻结。可核验的项目资产来源、结构和字节必须有效；历史暴露／父绑定缺口逐项保留，不据此签发未见、独立或正式资格。若连资产来源或安全加载都无法核验，实验失败关闭，不自动重训基础模型。
+- 复用现有模型与Loss；次数、优化步、seed、资源、输出、无自动重试和终态预先冻结。先通过CPU反例及当前实验不更新参数的GPU前后向检查，再允许有界train优化。
+- 实验必须保存真实优化步来源、模型前后状态、冻结基础状态、固定种子推理、Checkpoint及新对象重载后的复现证据。输出不同不等于语义正确，Loss下降不等于泛化；最终步Checkpoint不进行选优且不可晋级正式Stage。
+- 使用既有当前执行登记、锁、心跳、超时和事务提交；关闭外部窗口不构成继续加轮权限。成功只表示实验执行完成，失败如实记录；两者均不修改Stage4资格或发布到`/world`。
+
+上述实验的来源、资源和代码证据由独立机器包验证；不得把CPU-only父合同的未激活标记改为已获GPU或训练资格，也不得把新增实验例外反向用于正式训练。
 
 ## 10. 自动验证与机器审核
 
@@ -507,7 +524,7 @@ AI Painter必须使用唯一当前执行登记，禁止由控制台或服务端�
 - **AP-ACCEPT-004.g**：历史Run选择只能改变只读查询上下文；不得改写全局当前任务、活动执行、最近训练终态、恢复点或下一动作。
 - **AP-ACCEPT-004.h**：当前登记文件、追加事件、SQLite索引和证据身份必须由同一个可恢复事务关联；中断恢复只能完成同一修订或回到上一完整修订，不得形成只更新指针而未登记证据的状态。
 - **AP-ACCEPT-004.i**：`nextMachineAction`必须由生命周期编排器写入当前登记，至少绑定`actionId`、`entrypointId`、能力版本、来源终态证据、程序血缘、先决条件和禁止副作用。控制台不得自行推导或补齐。
-- **AP-ACCEPT-004.j**：Full-data screen或正式机器审核失败时，来源训练/审核执行必须保持不可变`failed_closed`终态；编排器必须以新`registryRevision`建立`taskKind=failure_boundary_adjudication`、`lifecycleStage=formal_stage_validation_completed`、`executionState=package_materialized`的后继当前任务，同时保留原训练为`latestTrainingTerminal`。裁决启动后只将`executionState`推进为`adjudicating`；裁决确认能力变更时才建立新的`lifecycleStage=change_candidate`能力身份。该转换不需要Owner或Codex介入，但只读裁决不得直接重训。
+- **AP-ACCEPT-004.j**：Full-data screen或正式机器审核失败时，来源训练/审核执行必须保持不可变`failed_closed`终态；编排器必须以新`registryRevision`建立`taskKind=failure_boundary_adjudication`、`executionState=package_materialized`的后继当前任务，同时保留原训练为`latestTrainingTerminal`。`lifecycleStage`只能沿用最后有成功证据的正式资格节点，另存失败动作及训练分辨率阶段；筛查结束不等于`formal_stage_validation_completed`。裁决启动后只将`executionState`推进为`adjudicating`；裁决确认能力变更时才建立新的`lifecycleStage=change_candidate`能力身份。该转换不需要Owner或Codex介入，但只读裁决不得直接重训。
 
 训练失败后的合法机器裁决或候选规划应当成为新的`currentProjectTask`，原训练终态继续作为`latestTrainingTerminal`保留。没有活动进程时`activeExecution`必须为空，不得以历史`running`或GPU活动填充。详细Schema、事务、投影和恢复规则由`REVIEW_AUTOMATION_AND_STORAGE_SPEC.md`第11节定义。
 
@@ -597,9 +614,9 @@ AI Painter 正式能力必须同时满足：
 | `AP-PHASE-003` | Stage4 V2父合同登记四类对象责任、共享底座和逐责任专属命名空间 | V2为footprints、tree、rock、vegetation建立独立原生条件编码、传输、潜变量贡献和RGB责任输出 | 专属参数不共享、输出可达、单像素保留、掩码隔离及逐责任梯度回归已建立 | CPU合同检查输出；GPU与训练证据尚无 | `partial_legacy_implementation_not_certified` |
 | `AP-PHASE-004` | Stage4 V2父合同登记全局RGB责任、七类条件责任输出和冻结基础解码器 | V2最终RGB接口显式消费基础解码RGB、23通道及七类责任掩码/提案 | 掩码内响应、掩码外字节不变、条件责任证据和Autoencoder自冻结回归已建立 | CPU合同检查输出；GPU与训练证据尚无 | `partial_legacy_implementation_not_certified` |
 | `AP-TRAIN-001` | Stage4 V2父合同已绑定输入、输出、正式Loss、审核阈值、64份数据和基础Autoencoder谱系 | Trainer新增仅由精确V2架构身份触发的责任前向与最终RGB路径；旧入口不获得V2能力 | 正式V6 Loss公式/权重不变、阈值/失败像素不回流、错误架构和程序SHA替换均失败关闭 | CPU前置合同与模型/Trainer回归；GPU、Smoke和正式训练证据尚无 | `partial_legacy_implementation_not_certified` |
-| `AP-TRAIN-002` | Stage4 V2 64份数据发布合同固定64条及48/8/4/4用途 | 数据发布检查器从显式release读取，重算Manifest、source-index、64张RGB、64个条件包、1472个通道文件与64份贡献证据；Trainer后续只能消费同一release身份 | 缺失、重复、split篡改、跨源替换、`latest`、历史人工字段、条件合同替换和资格冒升均已拒绝；正式训练期读写隔离仍须由运行证据证明 | CPU数据发布检查已通过；训练运行证据尚无 | `partial_legacy_implementation_not_certified` |
+| `AP-TRAIN-002` | 现行V2仍绑定原64条release；独立split后继包已物化但未取得训练资格 | `split_release.py`直接读取四份绑定清单并重算来源与实际Dataset选择；`split_training.py`提供train优化步来源记录和验证期模型／优化器状态保护，尚未接入正式Smoke | 新读取器已用真实64张RGB与1472个通道完成CPU取数；文件篡改、跨split身份／窗口重叠、非train更新和验证期状态变化的负回归已建立；历史暴露／变换近邻审核、新能力绑定及真实Smoke仍待完成 | 不可变后继数据包及`.runtime/ai-painter/dataset-release-checks/`中的CPU选择报告；不构成GPU或训练资格 | `partial_legacy_implementation_not_certified` |
 | `AP-TRAIN-003` | 后继训练证据合同待物化 | 模型哈希、指标、Checkpoint与终态记录待统一 | 完整终态字段测试待建立 | 现行训练符合证据待生成 | `document_defined_program_pending` |
-| `AP-TRAIN-004` | 后继阶段父Checkpoint合同待物化 | 同包阶段继承与失败关闭待统一 | 父身份、跨包注入和失败恢复回归待建立 | 现行训练符合证据待生成 | `document_defined_program_pending` |
+| `AP-TRAIN-004` | 后继阶段执行包与父Checkpoint机器合同待完整物化 | 批执行器已取消历史默认入口，校验真实阶段终态、产物hash和同链前阶段父绑定；合格单阶段训练入口尚未登记 | CPU文件级正反回归已建立；真实Trainer加载、票据消费、资源监督及GPU阶段恢复仍待验证 | CPU回归仅证明编排防护，不是模型加载或正式训练通过 | `partial_legacy_implementation_not_certified` |
 | `AP-CHANGE-001` | V1失败裁决合同与Stage4 V2独立父合同已物化 | 生命周期编排器保留V1失败终态并以独立V2能力身份推进CPU验收 | V1/V2身份相等、旧Checkpoint/输出复用、错误当前任务和父合同替换均失败关闭 | 当前登记与CPU裁决/验收终态；GPU证据尚无 | `partial_legacy_implementation_not_certified` |
 | `AP-CHANGE-002` | 后继能力变更分类合同待物化 | 条件合同变更分类器待迁移 | 23通道任一语义改变测试待建立 | 未来变更分类报告 | `document_defined_program_pending` |
 | `AP-CHANGE-003` | Stage4 V2项目基础Autoencoder谱系合同已物化 | 模型构造层自冻结，Trainer支持层登记未来加载/训练前后状态与优化器排除证明 | 资产路径/SHA、结构程序、冻结锚点、状态阶段和优化器排除篡改均失败关闭 | CPU阶段仅证明静态谱系；未来GPU/训练状态证据尚无 | `partial_legacy_implementation_not_certified` |
@@ -619,3 +636,93 @@ AI Painter 正式能力必须同时满足：
 | `AP-ACCEPT-005` | 后继身份与发布合同待物化 | 发布注册表、票据消费和指针待迁移 | 跨版本/跨run/历史失败注入测试待建立 | 未来能力与候选发布记录 | `document_defined_program_pending` |
 
 需求编号一经发布不得改义、重排或复用；废止要求保留编号并标记`superseded`。机器合同、程序、CPU测试、GPU资格和运行证据必须直接登记需求ID；缺少任何一层只能保持待迁移或部分符合，不能由文档检查器、格式正确的SHA或历史成功证据提升为`machine_conformant`。
+
+### 17.3 程序适配缺口与验收责任
+
+下表是规范与现有实现的符合性差距，不是运行流水或第二张计划表；不得据此自动改代码、改机器合同或恢复训练。规范不为适应旧实现而降低要求。代码路径是责任落点，不代表其中全部逻辑已验证。
+
+| 需求归属 | 适配缺口 | 代码／机器责任 | 必须补齐的验收证据 |
+|---|---|---|---|
+| AP-TRAIN-002 | 原Smoke仍存在validation更新路径；新train优化步边界已有CPU行为回归，但尚未通过隔离能力版本接入Smoke，不能声称原问题已在正式训练中修复 | 原Smoke物化器／训练适配器及`ml/ai-painter/src/ai_painter/complete_world/split_training.py` | 新执行身份绑定训练和验证样本；逐optimizer step记录来源；非train更新计数为0；验证前后模型、缓冲区及优化器状态一致 |
+| AP-TRAIN-001、AP-TRAIN-002 | 后继四份split文件与真实Python取数已具备CPU证据；原V2绑定不自动迁移；历史暴露、变换派生／语义近邻及新能力绑定尚未闭环 | `ml/ai-painter/src/ai_painter/complete_world/split_release.py`、`ml/ai-painter/scripts/materialize_stage4_v2_split_release.py`及后继能力物化器 | 四份独立绑定与64条选择重现hash；实际图片／通道取数；内容hash与文件字节hash区分；来源窗口隔离；补齐历史审核后再决定训练资格 |
+| AP-ACCEPT-004 | CPU验收使用的`cpu_contract_accepted`与正式`cpu_contract_verified`枚举不一致；字符串下一动作不能代替结构化动作绑定 | `scripts/run-ai-painter-stage4-v2-cpu-contract-acceptance.mjs`、当前登记协议及生命周期编排器 | 显式版本化迁移、原始证据保留、读写两端同枚举；无法迁移返回unknown而非猜测 |
+| AP-ACCEPT-004 | 失败裁决不得把未运行的正式阶段标为完成 | `scripts/reconcile-ai-painter-stage4-v2-capability-lifecycle.mjs`及失败裁决登记路径 | CPU／GPU／Smoke／筛查／各正式阶段失败分别测试；最后成功资格与失败动作分开 |
+| AP-TRAIN-004 | 批执行器的旧入口回退已移除，真实文件父绑定、身份、重复启动及失败终态防护已有CPU回归；正式单阶段执行包、已登记Trainer入口及真实加载尚未闭环 | `scripts/run-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs`及对应执行器回归 | 每阶段精确V2模型身份；Stage1载入Stage0成功权重、Stage2载入Stage1成功权重的实际加载hash；票据消费、资源上限、心跳、超时与恢复真实回归；CPU模拟产物不得充当训练证据 |
+| AP-CHANGE-005、AP-ACCEPT-002 | 旧跨模态合同仅覆盖两个槽位，且阈值数字与规则文本不一致，不能充当全MVP现行门禁 | 来源规格第4.2节及跨模态补充规格 | 新作用域合同、公式与阈值一致、边界反例、全历史覆盖和新程序血缘；不得改旧文件字节 |
+| 文档基线检查 | 检查器版本断言已与权威文档同步；原文档检查入口通过只证明文档基线，不消除本表程序缺口 | `scripts/check-ai-painter-document-governance.mjs` | 持续校验版本、37条要求和状态语义；历史合同原始字节仍须通过独立核验；不得将文档通过提升为模型资格 |
+
+## 18. 完整MVP视觉与生命闭环合同
+
+### 18.1 范围与职责
+
+本节是在既有37条顶层需求下的完整MVP验收场景，不重用、改变或增加顶层AP编号。它定义应达到的结果；当前是否完成由第17.2节、唯一模块计划表及机器证据分别表达。
+
+| 责任模块 | 必须提供 | 不得承担 |
+|---|---|---|
+| 出生资料／人格映射 | 合法出生输入、资料精度、紫微／八字来源、映射模式、稳定人格及初始外貌档案 | 用程序默认男性或固定映射模式冒充用户选择；从缺失资料编造完整命盘 |
+| 生态数据与世界事实 | 泰国首区自然事实、五类动物名录、生境、形态及生命规则 | 把区域兼容包络当每个窗口的事实；把植物目录当动物名录 |
+| 本地AI与Runtime | 感知、记忆、动机、合法行动、实体状态与资源变化、保存恢复 | 由Painter决定病情、碰撞、资源扣除或行为是否成功 |
+| 世界导演／条件编译 | 同一tick的事实清单、对象位置、可见状态、生命条件扩展及明确不适用项 | 偷占既有自然物通道，或将未知状态静默填零 |
+| AI Painter | 从结构化输入生成身份一致、状态可辨的原生完整RGB | 逐帧换人、增加名录外生物、复用旧帧或局部贴图伪装新状态 |
+| 机器审核／发布 | 身份、来源、语义、质量、动态与Runtime一致性，以及原子发布／拒绝证据 | 只看图好看或退出码为0就判定成功 |
+
+### 18.2 人物初始外貌和资料完整度
+
+接口字段及归属采用总体架构第4.1节，具体来源与规则资格采用数据规格第11.1节。路由必须区分：合法日期且时辰完整→紫微规则可用时优先紫微；合法日期但缺时辰→八字`THREE_PILLARS`；日期缺失／非法／规则范围外→资料不可用。程序错误不是资料不足，不能用静默fallback包装为合格人格或外貌。
+
+外貌映射必须给出版本化参数表、单位／范围、证据引用、缺失值规则、稳定随机seed和冲突处理。同输入、同规则和同seed生成同档案；人物身份绑定实例而非仅绑定生日。现实自我／平行世界模式与性别呈现分别记录；平行世界具体外貌变换尚无有效规则时应标记该变换不可用，不自行取反或伪造已实现。
+
+《麻衣神相》仅是候选资料类别，不要求为完成文档而杜撰其内容。来源研究可以继续增加合格规则数据；规则公式或含义改变必须升版并重新验收，不能覆盖已存人物档案。
+
+### 18.3 五类动物与多态表达
+
+MVP数量单位固定为五个`animalTypeId`，不是五张图、五种颜色或五个模型。具体类型名称、分类层级及代表物种由一份版本化AnimalRoster显式声明；在名录尚未定稿时不擅自将“五个类型”等同于五个具体物种。每个类型至少有一个来源合格、适合首区生境的现实物种实例，不能用不同物种别名重复计数。
+
+每个已发布物种必须有：稳定实体ID、可识别外形、合理尺度与活动范围、可执行动作、基础健康／活动状态、资源或环境约束和可见体征。个体间允许有有界形态差异，同一个体的稳定形态不能随seed或刷新漂移。样本数量按身份、状态和跨场景覆盖审计决定，不能以现有64张自然地图证明动物数据充分。
+
+### 18.4 连续状态与模型边界
+
+稳定档案、Runtime状态、可见体征和完整RGB是四种不同记录；每次任务必须通过实体ID、档案hash、状态hash和世界tick关联。变化由合法状态转移或行动事件触发，不由图片噪声触发。
+
+必须覆盖健康／患病／恢复、活动／休息、形态差异及行动限制；各物种的不适用状态显式标记并有规则依据。健康规则是虚构世界规则，不是对真实用户的医疗推断。人格和外貌来源不直接设定患病事实。
+
+生命视觉可采用共享底座或隔离组件，仍须通过第6节四段责任与第7节实现模式约束。能力合同新增生命输入、时序约束、责任输出、Loss和审核映射后，必须重新执行资格链。自然地图Autoencoder或其他基础资产只能按有证据的资产角色复用，不能从文件日期、名字或旧成功记录继承能力。
+
+世界tick与视觉采样频率分别由版本化Runtime／资源合同定义。采样可以低于tick频率，但任务必须绑定真实快照，缺帧、过期及阻断必须如实报告；不得用高GPU占用证明“活着”，也不要求每个tick无条件启动GPU。资源合同须在执行前登记更新间隔、延迟预算、内存／显存／磁盘上限、超时、尝试上限及恢复策略；缺值禁止资源消费，不在本文编造硬件承诺。
+
+### 18.5 模型资格与失败恢复验收
+
+| 资格边界 | 前提及成功证据 | 失败后的合法行为 |
+|---|---|---|
+| CPU合同 | 输入／数据／模型／Loss／审核／基础资产身份齐全，行为正反测试通过 | 保存缺口，不用CPU通过代替GPU能力 |
+| 只读GPU资格 | 当前能力真实前向、梯度可达性与资源边界；无优化器更新，冻结资产前后状态一致 | 基础设施恢复仅限合同次数；语义失败交给只读裁决 |
+| 受控Smoke | 当前能力资格有效；仅train更新；固定复现、验证、审核、完整终态 | 保留失败，不晋级Smoke权重，不原样无限重跑 |
+| 全数据筛查（能力合同包含时） | 逐样本责任审核；明确其位于Smoke与正式阶段之间的实际位置 | 筛查失败不能登记正式阶段完成 |
+| Stage0／1／2 | 依次256×192、512×384、1024×768；每阶段成功终态、父权重hash、固定验证与审核 | 任一失败不消费其权重；修复产生独立能力身份，不跳级 |
+| 独立严格复验 | challenge／regression未参与训练及选择；最终候选与冻结规则接受独立验证 | 若用失败反馈修改候选，须明确已暴露集合并为新结论建立独立测试证据 |
+| 能力／Runtime发布 | 数据、模型、条件、审核、测试、Runtime及程序血缘齐全并原子登记 | 失败保持上一有效发布；无合法当前帧则展示阻断 |
+
+每次后继动作须有登记入口、前态、完整输入身份、幂等键、有效任务锁、心跳、超时、唯一终态和明确下一动作。失联、执行失败、待物化和无活动任务分别报告；不得把“窗口无输出”直接归因为网络或把CPU终态误当继续训练。后台继续执行能力须经过关闭控制台、进程中断、断点恢复及并发重复消费的实际回归。
+
+### 18.6 可验证的完整MVP验收矩阵
+
+以下`MVP-VIS-*`为场景编号；所有新增生命场景保持`document_defined_program_pending`，直到数据、机器合同、代码、正反测试及运行证据均齐全。表中代码为已有责任落点，不等于现有程序已提供完整功能；测试描述为待实现的验收要求，不冒称已有测试文件。
+
+| 场景 | 对应顶层要求 | 代码责任落点 | 必须验证的行为与证据 |
+|---|---|---|---|
+| MVP-VIS-01 自然首区 | AP-IN-002、AP-COND-001 | `scripts/build-earth-geospatial-naturalized-world-facts.mjs`、条件编译链 | 泰国窗口来源→自然化→WorldFacts→条件hash全链；无水／封闭水体不强加河口，旧区域平均值不冒充具体窗口测量 |
+| MVP-VIS-02 出生与外貌 | AP-IN-001、AP-IN-004 | `src/world/creation/world-creation-runtime.ts`、`src/ai/personality-core/butler-profile-core/` | 完整时辰／缺时辰／非法日期三路；同档案可复现；不同实例隔离；模式或规则缺失明确阻断 |
+| MVP-VIS-03 五类动物 | AP-IN-002、AP-PHASE-003 | `src/world/live-world/types/entity-types.ts`及生态名录适配责任 | 恰有五个类型、各有真实物种和生境依据；重名不重计；名录外或错误生境注入被拒绝 |
+| MVP-VIS-04 多态与身份 | AP-PHASE-003、AP-OUT-001 | `ml/ai-painter/src/ai_painter/complete_world/`及新增生命条件适配 | 同实体连续至少3个合法tick；健康→患病→恢复状态可追溯，形态身份稳定；独立体型样本可区分，未知症状不伪造 |
+| MVP-VIS-05 行动反馈 | AP-IN-002、AP-IN-004 | `src/ai/butler-autonomy/`、`src/world/runtime/world-runtime-tick-runner.ts` | 感知→目标→合法行动→资源／状态变化→记忆→再决策；状态限制确实改变行动结果；重复提交不重复扣资源 |
+| MVP-VIS-06 时序与存档 | AP-ID-004、AP-ACCEPT-004 | `src/world/runtime/world-runtime-store.ts`、`src/world/game-map-frame/` | 同tick状态一致；保存恢复保持实体／规则／随机状态；中途断电不产生半提交，旧帧不可冒充新tick |
+| MVP-VIS-07 训练隔离 | AP-TRAIN-002、AP-TRAIN-004 | `ml/ai-painter/scripts/`、`scripts/run-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs` | 样本更新来源逐步可查；四split及人物／同源序列分组隔离；父Checkpoint真实加载身份正确；篡改必须失败 |
+| MVP-VIS-08 展示发布 | AP-OUT-002、AP-ACCEPT-005 | `src/world/game-map-frame/game-map-runtime-frame-pipeline.ts`、`src/app/api/world/game-map-runtime-frame/image/route.ts` | 原生完整RGB、全部语义审核、实体状态与碰撞一致；跨world／tick／能力注入、失败候选、旧图均拒绝；发布指针原子更新 |
+
+视觉定量门槛必须在新能力的审核合同中预先冻结，包含公式、单位、比较符、适用范围、阈值和已标注正反样本。缺少可靠实体身份／健康语义审核器时该项为未通过，不得用像素相似度替代；通过人工阅读本规范不能替代这些机器证据。
+
+### 18.7 资料未齐时的明确处置
+
+尚待研究的数据包括具体五类动物及代表物种、外貌映射细则、相术候选文本、各物种可见健康状态、生命条件与时序审核阈值。其完成条件分别由本节及来源规格定义；这不是要求Owner逐任务审批。资料未齐只阻断依赖它的生命能力发布，不改变已冻结自然地图候选的输入，也不能把整个MVP标为完成。
+
+后续执行者必须先读权威链与唯一计划表，按本规范识别“缺数据／缺合同／缺实现／缺测试／缺运行证据”，再在自身合法任务范围内推进。不得为消除待办而反复改写业务目标、将缺口改称通过、降低审核门或启用历史候选。

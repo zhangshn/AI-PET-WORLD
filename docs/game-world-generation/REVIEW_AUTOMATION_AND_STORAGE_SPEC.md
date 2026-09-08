@@ -1,14 +1,14 @@
 # 审核、自动闭环与存储正式规格
 
-更新时间：2026-08-31 01:53:20 +08:00
+更新时间：2026-09-06 03:30:29 +08:00
 
 状态：active-long-term-review-automation-storage-contract
 
-文档版本：`AI-PAINTER-REVIEW-STORAGE-1.6`
+文档版本：`AI-PAINTER-REVIEW-STORAGE-1.7`
 
-生效日期：`2026-08-31`
+生效日期：`2026-09-06`
 
-替代版本：`AI-PAINTER-REVIEW-STORAGE-1.5`
+替代版本：`AI-PAINTER-REVIEW-STORAGE-1.6`
 
 文档状态：`active_normative_target`
 
@@ -208,7 +208,7 @@ repairConstraints
 
 ```text
 taskKind = failure_boundary_adjudication
-lifecycleStage = formal_stage_validation_completed
+lifecycleStage = 来源能力最后有成功证据的正式资格节点
 executionState = package_materialized
 sourceTerminal = { path, sha256, status: failed_closed }
 latestTrainingTerminal = 原训练终态
@@ -216,7 +216,7 @@ nextMachineAction = 已注册的CPU只读裁决入口
 activeExecution = null（直到裁决任务实际启动）
 ```
 
-裁决任务实际启动后，仅`executionState`按`adjudicating -> finalizing -> completed / failed_closed`推进；`lifecycleStage`继续表示来源能力已经完成到`formal_stage_validation_completed`。只有裁决确认需要能力变更时才另建`lifecycleStage=change_candidate`的新能力身份。建立或运行裁决任务不得改写来源失败终态、启动GPU、加载失败Checkpoint或自动重训。裁决只能产生唯一有证据结论、新的隔离`change_candidate`或证据不足失败关闭，不得生成Owner等待状态。
+裁决任务实际启动后，仅`executionState`按`adjudicating -> finalizing -> completed / failed_closed`推进；`lifecycleStage`沿用最后成功资格，另存`failedActionId`与`failedTrainingStage`。Full-data screen失败、执行自然结束或某一阶段尝试完毕都不等于`formal_stage_validation_completed`；只有正式阶段全部通过才可使用该节点。无法核实成功资格则返回`unknown_or_stale`，不能猜测。只有裁决确认需要能力变更时才另建`lifecycleStage=change_candidate`的新能力身份。建立或运行裁决任务不得改写来源失败终态、启动GPU、加载失败Checkpoint或自动重训。裁决只能产生唯一有证据结论、新的隔离`change_candidate`或证据不足失败关闭，不得生成Owner等待状态。
 
 所有内部票据、决策报告、拒绝理由和状态转换保存到不可变运行目录并索引到SQLite。票据重放、跨包证据、状态跳跃、未登记的程序血缘变化、超出尝试上限或自由动作注入必须在写入前失败关闭。
 
@@ -486,6 +486,22 @@ GET 页面不得改变台账、更新时间、审核、训练资格或当前指�
 本地自研 AI 能力迁移注册表保存每项能力的当前执行方、目标执行方、成熟度、测试证据、阻断和回退方案。控制台只读展示，不在页面内自动切换执行方。
 
 Codex 可以按项目任务建设代码、编译测试和处理复杂诊断；已达到本地闭环验收的能力由本地系统执行，Codex 降为只读监控与证据核验。迁移不能让 Codex 成为审核、发布或 Runtime 的必要依赖。
+
+### 15.1 生命视觉的审核责任
+
+完整MVP除既有自然地图门外，必须验证主体规格第18节八组场景：人物档案来源与身份、五类现实动物／生境、可见生命状态、时序稳定、行动约束、存档恢复、训练隔离及正式展示。VJ-0检查实体／档案／状态／世界身份与hash，VJ-1检查完整画面质量，VJ-2检查物种、姿态、状态表现、位置、遮挡和碰撞语义；任何层不适用必须有事实与审核合同依据，不能默认通过。
+
+健康状态的真值来自Runtime快照，审核器只判断视觉是否表达了已声明体征；不能凭RGB诊断后反写病情。身份一致性、姿态及症状审核器未建立时应记录缺验证能力并阻断生命版本发布，不能使用颜色或纹理分数冒充语义准确率。
+
+### 15.2 进度、故障与恢复的可观察性
+
+每个任务的资源合同必须绑定心跳周期、陈旧阈值、执行超时、最大恢复次数及恢复前置条件。监控至少返回：查询时间／时区、最后有效心跳、最后业务进展、当前动作、证据路径、阻断码与下一动作。心跳刷新不等于Epoch或业务进展，GPU利用率也不证明任务健康。
+
+“无活动执行”“正在执行但无新业务进展”“状态已陈旧”“已失败关闭”“下一包尚未物化”必须分别表达。未有进度证据不能承诺剩余时间；五阶段计数是里程碑计数而非剩余耗时或完整MVP百分比。聊天的十分钟提醒只是外部观察，不是本地任务心跳，也不能作为Runtime依赖。
+
+CPU资格必须映射正式`cpu_contract_verified`枚举；旧别名只能通过明确迁移规则解释并保留原值与来源。`nextMachineAction`必须按第11.2节提供结构化身份，裸字符串或脚本存在不能证明动作可以被安全消费。
+
+进程／主机中断恢复先核验任务锁、心跳租约、消费记录、事务日志、程序血缘与原始产物，再幂等补齐同一执行的终态或有限恢复；不能仅因PID不存在重训。恢复测试必须覆盖训练后未审核、审核后未登记、文件写入后SQLite未提交、正式帧发布中断四个窗口。
 
 ## 16. 验收标准
 

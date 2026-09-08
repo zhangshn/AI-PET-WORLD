@@ -1,12 +1,24 @@
 # 流动水体连接与全历史去重规范
 
-更新时间：2026-08-03 09:23:45 +08:00
+更新时间：2026-09-06 03:33:13 +08:00
 
 状态：active-flowing-water-contract
 
+文档版本：`AI-PAINTER-WATER-NOVELTY-1.1`
+
+生效日期：`2026-09-06`
+
+替代版本：`unversioned-baseline`
+
+文档状态：`active_normative_target`
+
+程序符合状态：`program_adoption_pending`
+
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
-正式机器合同：`data/ai-painter/system-governance/thailand-rebuild64-flowing-water-connectivity-and-all-history-novelty-contract-v1.json`
+权威关系：本文细化[数据与来源规格](TRAINING_DATA_AND_SOURCE_POLICY.md)及[审核与存储规格](REVIEW_AUTOMATION_AND_STORAGE_SPEC.md)的水文要求，不另建任务选择或运行权限。
+
+`data/ai-painter/system-governance/thailand-rebuild64-flowing-water-connectivity-and-all-history-novelty-contract-v1.json`仅是两个旧槽位的实例合同，不是全MVP现行机器权威。原文件保持不变，只按原作用域复核；通用实现须发布显式绑定region／sample／测量窗口、适用条件、算法、阈值和程序血缘的新合同。缺少该合同不得声称所有样本已通过本规范。
 
 ## 1. 业务目标
 
@@ -34,8 +46,8 @@ MVP 水文支撑来自正式 Sakaerat / Wang Nam Khiao 泰国测量包。不同�
 
 匿名投影可以改变游戏坐标，但河网类型、坡向、汇流和排水关系必须由当前测量窗口支撑，并保存来源、版本、许可、哈希和派生说明。未来区域必须使用自身来源包，不能复用泰国水文事实。
 
-## 5. 验收与授权边界
+## 5. 验收与执行边界
 
 条件包通过只证明水文事实、连接和生成前唯一性合格，不等于 RGB、训练或 Runtime 通过。生成后仍须执行条件响应、全历史 RGB、岸线、道路避水和完整世界审核。
 
-具体样本、测量窗口、比较数量、失败结果和哈希由机器证据保存。本文不授权 RGB 生成、训练、验证、RuntimeFrame 或 `/world`。
+具体样本、测量窗口、比较数量、失败结果和哈希由机器证据保存。本文不扩大Codex等外部执行者的当前任务范围；本地AI按`GOV-OWNER-001`及生效能力合同自主运行，本规范不是逐阶段人工审批门。

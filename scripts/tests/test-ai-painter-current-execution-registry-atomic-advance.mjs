@@ -23,6 +23,37 @@ const TEST_ACTIVE_PROCESS_START_IDENTITY = currentProcessStartIdentity()
 const REGISTRY_DEPENDENCY_SCHEMA =
   "ai-painter-current-execution-registry-dependency-manifest-v1"
 
+test("isolated experimental terminals retain exact identity without formal qualification", async (context) => {
+  for (const [name, mutate, error] of [
+    ["experiment identity only", () => {}, null],
+    ["matching runId alias", t => { t.runId = t.experimentIdentity }, null],
+    ["conflicting alias", t => { t.runId = "wrong" }, /experiment_terminal_identity_conflict/],
+    ["cross experiment", t => { t.experimentIdentity = "wrong" }, /latest_training_run_id_mismatch/],
+    ["formal claim", t => { t.formalTrainingQualified = true }, /experiment_terminal_formal_claim_forbidden/],
+    ["false terminal state", t => { t.executionState = "completed" }, /experiment_terminal_state_invalid/],
+    ["unknown schema cannot borrow identity", t => { t.schemaVersion = "unknown" }, /latest_training_run_id_mismatch/],
+  ]) {
+    await context.test(name, async () => withFixture(async ({ root, advance }) => {
+      const logical = "data/fixture/experiment-terminal.json"
+      const terminal = { schemaVersion: "ai-painter-learning-capacity-experiment-terminal-v1", experimentIdentity: "experiment-fixture",
+        executionState: "failed_closed", status: "experiment_failed_closed", formalTrainingQualified: false,
+        formalStageAdvanced: false, checkpointPromotable: false, worldEntryAllowed: false }
+      mutate(terminal)
+      await writeJson(root, logical, terminal)
+      const latestTrainingTerminal = { runId: "experiment-fixture", path: logical, sha256: await sha256File(root, logical), status: terminal.status, evidence: {} }
+      const before = await readFile(absolute(root, CURRENT_EXECUTION_REGISTRY_PATH), "utf8")
+      const run = () => advanceCurrentExecutionRegistry({ ...advance, latestTrainingTerminal, _testHooks: hooks() })
+      if (error) {
+        await assert.rejects(run(), error)
+        assert.equal(await readFile(absolute(root, CURRENT_EXECUTION_REGISTRY_PATH), "utf8"), before)
+      } else {
+        assert.equal((await run()).ok, true)
+        assert.equal((await readCurrentExecutionRegistry(root)).ok, true)
+      }
+    }))
+  }
+})
+
 test("generic advance publishes the registry last and verifies every local projection", async () => {
   await withFixture(async ({ root, advance }) => {
     const before = await readCurrentExecutionRegistry(root)

@@ -8,6 +8,8 @@
     "npm": ">=11.9.0 <12"
   },
   "scripts": {
+    "prepare:ai-painter-learning-capacity-experiment": "node scripts/run-ai-painter-learning-capacity-experiment.mjs prepare",
+    "run:ai-painter-learning-capacity-experiment": "node scripts/run-ai-painter-learning-capacity-experiment.mjs run",
     "dev": "next dev --webpack",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:integration",

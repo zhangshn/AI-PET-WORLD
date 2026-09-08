@@ -102,6 +102,7 @@ export async function auditPreRgbConditionGuideNovelty({
   let legacyStructuralIdentityCompatibilityCount = 0
   let legacyGuideOnlyCompositionReferenceCount = 0
   let crossModalHistoricalRgbComparisonIncompleteCount = 0
+  const historicalRgbAuditReadReceipts = []
   const historicalStructuralIdentityCompatibilityEvidence = []
 
   for (const record of index.records ?? []) {
@@ -145,6 +146,8 @@ export async function auditPreRgbConditionGuideNovelty({
           historicalRgbWater =
             await fingerprintHistoricalRgbWater(
               historicalRgbImagePath,
+              record.originalImage?.sha256,
+              (receipt) => historicalRgbAuditReadReceipts.push({ recordId: record.recordId, ...receipt }),
             )
         }
       }
@@ -566,10 +569,12 @@ export async function auditPreRgbConditionGuideNovelty({
       })),
     ],
     evidenceBoundary: {
-      historicalRgbRead: false,
+      historicalRgbRead: historicalRgbAuditReadReceipts.length > 0,
+      historicalRgbReadByAudit: historicalRgbAuditReadReceipts.length > 0,
+      historicalRgbAuditReadReceipts,
       historicalRgbReadByGenerator: false,
       historicalRgbWaterShapeSignaturesReadForAuditOnly:
-        candidate.water.pixelCount > 0,
+        comparisons.some((entry) => entry.crossModalHistoricalRgbWaterShapeComparisons.length > 0),
       historicalRgbPixelsOrPathsForwardedToGenerator: false,
       historicalConditionGuidesReadForAuditOnly: true,
       historicalBlueprintsReadForCompatibilityAuditOnly: true,
@@ -676,6 +681,7 @@ async function fingerprintGuide(filePath) {
 
 async function computeGuideFingerprint(filePath) {
   const bytes = fs.readFileSync(filePath)
+  if (bytes.length > 64 * 1024 * 1024) throw new Error("Historical RGB exceeds 64 MiB bound")
   const { data, info } = await sharp(bytes, { failOn: "error" })
     .removeAlpha()
     .raw()
@@ -882,14 +888,20 @@ function transformGuide(guide, transform) {
   }
 }
 
-async function fingerprintHistoricalRgbWater(filePath) {
-  const cacheKey = path.resolve(filePath)
+export async function fingerprintHistoricalRgbWater(filePath, expectedSha256, onRead = () => {}) {
+  if (!/^[a-f0-9]{64}$/.test(expectedSha256 ?? "")) throw new Error("Historical RGB SHA binding missing")
+  if (fs.statSync(filePath).size > 64 * 1024 * 1024) throw new Error("Historical RGB exceeds 64 MiB bound")
+  const bytes = fs.readFileSync(filePath)
+  const cacheKey = sha256(bytes)
+  onRead({ path: path.relative(ROOT, filePath).replaceAll("\\", "/"), sha256: cacheKey,
+    expectedSha256, byteLength: bytes.length, sha256MatchesRecord: cacheKey === expectedSha256 })
+  if (cacheKey !== expectedSha256) throw new Error("Historical RGB SHA binding mismatch")
+  // A path may be overwritten between audits. Always re-read and verify its
+  // bytes; only the deterministic fingerprint is shared by content identity.
   if (HISTORICAL_RGB_WATER_FINGERPRINT_CACHE.has(cacheKey)) {
     return HISTORICAL_RGB_WATER_FINGERPRINT_CACHE.get(cacheKey)
   }
-  const fingerprintPromise = computeHistoricalRgbWaterFingerprint(
-    cacheKey,
-  )
+  const fingerprintPromise = fingerprintBoundHistoricalRgbWater(bytes)
   HISTORICAL_RGB_WATER_FINGERPRINT_CACHE.set(
     cacheKey,
     fingerprintPromise,
@@ -897,10 +909,10 @@ async function fingerprintHistoricalRgbWater(filePath) {
   return fingerprintPromise
 }
 
-async function computeHistoricalRgbWaterFingerprint(filePath) {
+async function fingerprintBoundHistoricalRgbWater(bytes) {
   const { data, info } = await sharp(
-    fs.readFileSync(filePath),
-    { failOn: "error" },
+    bytes,
+    { failOn: "error", limitInputPixels: 16_777_216 },
   )
     .removeAlpha()
     .resize(
@@ -942,6 +954,37 @@ async function computeHistoricalRgbWaterFingerprint(filePath) {
       THRESHOLDS.crossModalNormalizedWaterHeight,
     ),
   }
+}
+
+// A byte-bound, read-only reuse of the existing water heuristic. This API does
+// not consult the legacy path cache, filter review labels, reconstruct missing
+// historical WorldFacts, or grant the caller a pre-RGB/semantic qualification.
+export async function auditBoundHistoricalRgbWater({ mask, width, height, historicalRgbBytes }) {
+  if (!(mask instanceof Uint8Array) || !Number.isInteger(width) || !Number.isInteger(height) ||
+      width <= 0 || height <= 0 || width > 1024 || height > 768 || mask.length !== width * height ||
+      !Buffer.isBuffer(historicalRgbBytes) || historicalRgbBytes.length > 64 * 1024 * 1024 ||
+      !mask.every(v => v === 0 || v === 1 || v === 255)) throw new Error("invalid bound water comparison input")
+  const rw = THRESHOLDS.crossModalWaterRasterWidth, rh = THRESHOLDS.crossModalWaterRasterHeight
+  const candidate = resampleBinaryMaskNearest(mask, width, height, rw, rh)
+  const historical = await fingerprintBoundHistoricalRgbWater(historicalRgbBytes)
+  const comparisons = ["direct", "horizontal_mirror", "vertical_mirror", "rotate_180"].map(transform => {
+    const transformed = transformBinaryMask(candidate, rw, rh, transform)
+    const normalized = normalizeBinaryMaskShape(transformed, rw, rh,
+      THRESHOLDS.crossModalNormalizedWaterWidth, THRESHOLDS.crossModalNormalizedWaterHeight)
+    const layoutIntersection = maskIntersectionOverUnion(transformed, historical.mask)
+    const normalizedShapeIntersection = maskIntersectionOverUnion(normalized, historical.normalizedMask)
+    return { transform, layoutIntersection, normalizedShapeIntersection,
+      matched: candidate.some(Boolean) && historical.pixelCount > 0 && historical.coverageRatio >= THRESHOLDS.crossModalHistoricalRgbMinimumWaterCoverageRatio &&
+        normalizedShapeIntersection >= THRESHOLDS.crossModalHistoricalRgbWaterShapeMaximumIoU &&
+        (layoutIntersection >= THRESHOLDS.crossModalHistoricalRgbWaterLayoutMinimumIoU ||
+          normalizedShapeIntersection >= THRESHOLDS.crossModalHistoricalRgbWaterShapeStrongIoU) }
+  })
+  return { method: "existing_cross_modal_water_heuristic_byte_bound_no_history_exclusions_v1",
+    matched: comparisons.some(c => c.matched), comparisons,
+    historicalWaterProxy: { pixelCount: historical.pixelCount, coverageRatio: historical.coverageRatio },
+    thresholds: Object.fromEntries(Object.entries(THRESHOLDS).filter(([key]) => key.startsWith("crossModal"))),
+    limitations: ["color_proxy_not_authoritative_water_annotation", "no_arbitrary_rotation_or_branch_semantic_qualification",
+      "does_not_reconstruct_missing_historical_conditions"], preRgbPassed: false, allHistoryNoveltyQualified: false, trainingAllowed: false }
 }
 
 function resampleBinaryMaskNearest(

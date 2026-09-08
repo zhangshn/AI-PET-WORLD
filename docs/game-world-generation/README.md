@@ -1,14 +1,14 @@
 # 完整游戏世界生成文档入口
 
-更新时间：2026-08-24 12:43:09 +08:00
+更新时间：2026-09-06 03:34:57 +08:00
 
 状态：active-game-world-generation-index
 
-文档版本：`AI-PAINTER-DOCUMENT-ENTRY-1.1`
+文档版本：`AI-PAINTER-DOCUMENT-ENTRY-1.2`
 
-替代版本：`AI-PAINTER-DOCUMENT-ENTRY-1.0`
+替代版本：`AI-PAINTER-DOCUMENT-ENTRY-1.1`
 
-生效日期：`2026-08-24`
+生效日期：`2026-09-06`
 
 文档状态：`active_internal_navigation`
 
@@ -21,14 +21,15 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 1. `../DOCUMENT_AUTHORITY_INDEX.md`
 2. `../BUSINESS_SPEC.md`
 3. `../ARCHITECTURE.md`
-4. `CURRENT_EXECUTION_GUIDE_20260710.md`：项目唯一模块计划表
-5. 当前模块直接涉及的一份正式规格
+4. `../LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md`
+5. `CURRENT_EXECUTION_GUIDE_20260710.md`：项目唯一模块计划表
+6. 当前模块直接涉及的一份正式规格
 
 ## 正式规格
 
 | 文件 | 稳定职责 |
 |---|---|
-| `AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | AI Painter业务输入输出、四段机器接口、需求追踪、自主能力生命周期、机器发布和模型实现边界 |
+| `AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | AI Painter业务输入输出、四段机器接口、需求追踪、自主能力生命周期、机器发布；第18节为完整MVP人物、动物与动态视觉合同 |
 | `TRAINING_DATA_AND_SOURCE_POLICY.md` | 训练样本、来源、数据包与审计规则 |
 | `REVIEW_AUTOMATION_AND_STORAGE_SPEC.md` | 审核、失败学习、自动写入和存储合同 |
 | `FLOWING_WATER_CONNECTIVITY_AND_NOVELTY_SPEC.md` | 流动水体端口、连通和全历史骨架唯一性 |
@@ -40,4 +41,4 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 
 世界视觉字典按需读取`../world-visual-data-dictionary/README.md`及任务涉及条目，不得从目录顺序推导训练顺序。
 
-历史机器合同不在本目录复制或删除；它们由正式主体规格登记的替代索引保留并停用。自主能力V3机器合同和CPU自治核心已经建立，正式训练、审核和Runtime持续执行器仍为`program_adoption_pending`。接入完成后，正式运行能力只能来自本地系统以完整机器证据形成的发布注册记录，不能由旧Owner合同、调用方布尔字段、Owner签名包或聊天记录自行声明。
+历史机器合同分类入口见主体规格第17.1节与数据规格第4.2节；程序符合性见主体规格第17.2／17.3节；模块进度见唯一计划表。README只提供导航，不复制运行状态或发布结论。

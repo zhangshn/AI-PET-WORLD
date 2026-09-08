@@ -172,6 +172,34 @@ export function readBoundJson(projectRoot, binding) {
   return readJsonObject(resolveProjectPath(projectRoot, binding.path));
 }
 
+// Execution safety check, not a new capability or data qualification. Historical
+// metadata remains readable, but an old successful preflight cannot waive this.
+export function validateSmokeTrainingDataUse(projectRoot, payload) {
+  const release = readBoundJson(projectRoot, payload.datasetRelease);
+  assert.equal(release.schemaVersion, "ai-painter-stage4-v2-dataset-release-contract-v1");
+  assert.equal(release.datasetReleaseIdentity, payload.datasetPackageId);
+  const source = readBoundJson(projectRoot, release.sourcePackage.sourceIndex);
+  const sampleId = payload.fixedInputs?.sampleId;
+  assert.ok(typeof sampleId === "string" && sampleId.length > 0, "training sampleId is missing");
+  const released = release.samples.filter((row) => row.sampleId === sampleId);
+  const selected = source.samples.filter((row) => row.sampleId === sampleId);
+  const contributions = source.v7CapacityContributions.filter((row) => row.sampleId === sampleId);
+  for (const rows of [released, selected, contributions]) {
+    assert.equal(rows.length, 1, "training sample must occur exactly once in release and source collections");
+  }
+  const splits = [released[0].split, selected[0].split, contributions[0].split];
+  if (splits.some((split) => split !== "train") || payload.fixedInputs.sampleSplit !== "train") {
+    const error = new Error(`Smoke optimizer may consume only train: ${sampleId}; declared=${payload.fixedInputs.sampleSplit}; release/source/contribution=${splits.join("/")}. A separately qualified successor is required; relabelling is forbidden.`);
+    error.code = "stage4_smoke_non_train_optimizer_source";
+    error.sampleId = sampleId;
+    error.observedSplits = splits;
+    throw error;
+  }
+  return { policy: "optimizer_train_sources_only_v1", sampleIds: [sampleId], split: "train",
+    datasetRelease: payload.datasetRelease, sourceIndex: release.sourcePackage.sourceIndex,
+    capabilityQualificationGranted: false };
+}
+
 export function writeJsonAtomic(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const temporary = `${filePath}.tmp-${process.pid}-${crypto.randomUUID()}`;

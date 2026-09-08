@@ -253,6 +253,8 @@ function buildCoarseHydrologyRoutePlan(
       "owner-authorized-thailand-rebuild64-semantic-topology-diversity-v4-20260801",
       "owner-authorized-thailand-rebuild64-flowing-water-connectivity-and-all-history-novelty-v5-20260801",
       "owner-authorized-thailand-rebuild64-cross-modal-rgb-collapse-prevention-v6-20260801",
+      "measurement-derived-complete-world-proposal-v1",
+      "measurement-derived-complete-world-proposal-v2",
     ].includes(routeSearchExpansionRevision);
   const lateralVariantCount = expandedRouteSearch ? 2 : 1;
   const candidateOriginFractions = Array.from(

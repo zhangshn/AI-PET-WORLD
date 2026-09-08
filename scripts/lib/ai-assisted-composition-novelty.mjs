@@ -91,31 +91,24 @@ export async function auditAiAssistedCompositionNovelty({ record, imagePath }) {
             THRESHOLDS.macroCompositionMinimumNormalizedWaterShapeIntersection ||
           comparison.routeLayoutIntersection >=
           THRESHOLDS.macroCompositionMinimumRouteLayoutIntersection)
+      // Every eligible historical image is a reference, regardless of review
+      // status. Legacy Owner labels classify evidence; they cannot waive a gate.
+      comparison.matchesHistoricalCompositionPattern = (
+          comparison.matchesMacroCompositionPattern ||
+          (
+            comparison.blurredThumbnailDifference <=
+              THRESHOLDS.rejectedCompositionMaximumBlurredThumbnailDifference &&
+            (comparison.waterLayoutIntersection >=
+              THRESHOLDS.rejectedCompositionMinimumWaterLayoutIntersection ||
+              comparison.routeLayoutIntersection >=
+              THRESHOLDS.rejectedCompositionMinimumRouteLayoutIntersection)
+          )
+        )
       comparison.matchesRejectedCompositionPattern = ownerReview?.decision === "owner_rejected"
         && effectiveOwnerReviewReasonCodes.includes("composition_duplicate")
-        && (
-          comparison.matchesMacroCompositionPattern ||
-          (
-            comparison.blurredThumbnailDifference <=
-              THRESHOLDS.rejectedCompositionMaximumBlurredThumbnailDifference &&
-            (comparison.waterLayoutIntersection >=
-              THRESHOLDS.rejectedCompositionMinimumWaterLayoutIntersection ||
-              comparison.routeLayoutIntersection >=
-              THRESHOLDS.rejectedCompositionMinimumRouteLayoutIntersection)
-          )
-        )
+        && comparison.matchesHistoricalCompositionPattern
       comparison.matchesApprovedCompositionPattern = ownerReview?.decision === "owner_approved"
-        && (
-          comparison.matchesMacroCompositionPattern ||
-          (
-            comparison.blurredThumbnailDifference <=
-              THRESHOLDS.rejectedCompositionMaximumBlurredThumbnailDifference &&
-            (comparison.waterLayoutIntersection >=
-              THRESHOLDS.rejectedCompositionMinimumWaterLayoutIntersection ||
-              comparison.routeLayoutIntersection >=
-              THRESHOLDS.rejectedCompositionMinimumRouteLayoutIntersection)
-          )
-        )
+        && comparison.matchesHistoricalCompositionPattern
       comparisons.push(comparison)
     } catch (error) {
       skippedRecordCount += 1
@@ -131,6 +124,7 @@ export async function auditAiAssistedCompositionNovelty({ record, imagePath }) {
     left.thumbnailDifference - right.thumbnailDifference
     || left.dHashDistance - right.dHashDistance)
   const exactMatches = comparisons.filter((entry) => entry.exactHashDuplicate || entry.nearExactDuplicate)
+  const historicalCompositionMatches = comparisons.filter((entry) => entry.matchesHistoricalCompositionPattern)
   const rejectedCompositionMatches = comparisons.filter((entry) => entry.matchesRejectedCompositionPattern)
   const approvedCompositionMatches = comparisons.filter((entry) => entry.matchesApprovedCompositionPattern)
   const issues = []
@@ -155,11 +149,11 @@ export async function auditAiAssistedCompositionNovelty({ record, imagePath }) {
       `候选图命中项目所有者已拒绝的重复构图模式：${rejectedCompositionMatches.map((entry) => entry.recordId).join("、")}。`,
     ))
   }
-  if (approvedCompositionMatches.length > 0) {
+  if (historicalCompositionMatches.length > 0) {
     issues.push(issue(
       "complete_map_composition_diversity_failed",
-      `Candidate reuses an approved complete-map composition template: ${approvedCompositionMatches.map((entry) => entry.recordId).join(", ")}.`,
-      `候选图复用了已通过完整地图的构图模板：${approvedCompositionMatches.map((entry) => entry.recordId).join("、")}。`,
+      `Candidate reuses a historical complete-map composition template, irrespective of review status: ${historicalCompositionMatches.map((entry) => entry.recordId).join(", ")}.`,
+      `候选图复用了历史完整地图的构图模板，历史审核状态不构成豁免：${historicalCompositionMatches.map((entry) => entry.recordId).join("、")}。`,
     ))
   }
 
@@ -170,7 +164,8 @@ export async function auditAiAssistedCompositionNovelty({ record, imagePath }) {
     candidateRecordId: record.recordId,
     candidateImagePath: projectPath(imagePath),
     candidateImageSha256: candidate.sha256,
-    method: "chronology_bounded_sha256_plus_64x48_grayscale_and_blurred_structure_plus_position_invariant_normalized_water_shape_plus_macro_water_route_layout_plus_9x8_difference_hash_v6",
+    method: "chronology_bounded_sha256_plus_64x48_grayscale_and_blurred_structure_plus_position_invariant_normalized_water_shape_plus_macro_water_route_layout_plus_9x8_difference_hash_review_status_independent_v7",
+    reviewStatusPolicy: "all_eligible_images_gate_independently_of_owner_or_machine_review_labels",
     thresholds: THRESHOLDS,
     historicalCompleteMapImagesCompared: comparisons.length,
     comparisonScope:
@@ -181,6 +176,7 @@ export async function auditAiAssistedCompositionNovelty({ record, imagePath }) {
     skippedHistoricalRecords,
     nearestComparisons: comparisons.slice(0, 8),
     exactMatches,
+    historicalCompositionMatches,
     rejectedCompositionMatches,
     approvedCompositionMatches,
     issues,

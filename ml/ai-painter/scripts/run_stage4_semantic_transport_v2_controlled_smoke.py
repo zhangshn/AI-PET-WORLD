@@ -562,11 +562,56 @@ def validate_active_config(config_path: Path, root: Path) -> dict[str, Any]:
     return config
 
 
+def validate_training_data_use(config: dict[str, Any], root: Path) -> dict[str, Any]:
+    """Recheck actual source membership before imports, CUDA or optimizer work.
+
+    Reading/validating an old configuration is still supported for forensics.
+    Executing it cannot inherit permission to train a validation sample.
+    """
+    execution = config.get("training", {}).get("stage4V2ControlledSmokeExecution", {})
+
+    def bound(binding):
+        logical = binding.get("path", "")
+        if (not isinstance(logical, str) or not logical or "\\" in logical
+                or ":" in logical or logical.startswith("/")
+                or any(part in {"", ".", "..", "latest", "latest.json"} for part in logical.split("/"))):
+            raise ValueError("invalid explicit training data path")
+        target = _resolve_binding_path(root, logical)
+        if sha256_file(target) != binding.get("sha256"):
+            raise ValueError("training data SHA-256 mismatch: " + logical)
+        return read_json(target)
+
+    release = bound(execution.get("datasetRelease", {}))
+    if release.get("schemaVersion") != "ai-painter-stage4-v2-dataset-release-contract-v1":
+        raise ValueError("training dataset release schema mismatch")
+    if release.get("datasetReleaseIdentity") != execution.get("derivedConfigContract", {}).get("datasetPackageId"):
+        raise ValueError("training dataset release identity mismatch")
+    source = bound(release["sourcePackage"]["sourceIndex"])
+    sample_id = execution.get("sampleId")
+    if not isinstance(sample_id, str) or not sample_id:
+        raise ValueError("training sampleId is missing")
+    splits = []
+    for collection in (release.get("samples", []), source.get("samples", []),
+                       source.get("v7CapacityContributions", [])):
+        rows = [row for row in collection if row.get("sampleId") == sample_id]
+        if len(rows) != 1:
+            raise ValueError("training sample must occur exactly once in release and source collections")
+        splits.append(rows[0].get("split"))
+    if execution.get("sampleSplit") != "train" or any(split != "train" for split in splits):
+        raise ValueError("stage4_smoke_non_train_optimizer_source: " + sample_id
+                         + "; declared=" + str(execution.get("sampleSplit"))
+                         + "; release/source/contribution=" + "/".join(map(str, splits))
+                         + "; separately qualified successor required; relabelling forbidden")
+    return {"policy": "optimizer_train_sources_only_v1", "sampleIds": [sample_id],
+            "split": "train", "capabilityQualificationGranted": False}
+
+
 def run_trainer(args: Any) -> int:
     root = args.project_root.resolve()
     if sha256_file(args.config) != args.expected_config_sha256:
         raise ValueError("V2 Smoke active config changed after materialization")
-    validate_active_config(args.config, root)
+    config = validate_active_config(args.config, root)
+    validate_training_data_use(config, root)
     # The frozen Trainer CLI still routes unknown Smoke modes through an old
     # R5 provenance branch.  V2 must never impersonate that historical
     # contract, so execution is delegated to an explicit lower-level adapter.

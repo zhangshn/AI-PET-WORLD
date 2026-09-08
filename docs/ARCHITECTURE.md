@@ -1,14 +1,14 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-08-30 18:21:44 +08:00
+更新时间：2026-09-06 03:23:06 +08:00
 
 状态：long-term-architecture-reference
 
-文档版本：`AI-PET-WORLD-ARCHITECTURE-1.7`
+文档版本：`AI-PET-WORLD-ARCHITECTURE-1.8`
 
-生效日期：`2026-08-26`
+生效日期：`2026-09-06`
 
-替代版本：`AI-PET-WORLD-ARCHITECTURE-1.6`
+替代版本：`AI-PET-WORLD-ARCHITECTURE-1.7`
 
 文档状态：`active_normative_target`
 
@@ -133,6 +133,8 @@ change_candidate
 
 能力生命周期回答“某个能力版本能否成为正式能力”。`rejected`和`rolled_back`都是不可变终态；新尝试必须建立新的能力版本身份。
 
+生命周期节点表示已经有成功证据的资格，不表示“曾经尝试过”。筛查、Smoke或正式阶段失败后，裁决任务沿用最后有成功证据的节点，不得因执行结束而填写`formal_stage_validation_completed`。实际失败步骤另存`failedActionId`、`failedTrainingStage`和来源终态；无法验证已达节点时返回`unknown_or_stale`，不得推断成功。
+
 ### 0.4.2 单次执行生命周期
 
 ```text
@@ -185,7 +187,7 @@ latestTrainingTerminal   最近一次训练的不可变终态
 selectedHistoricalRun    只读界面当前选中的历史记录
 ```
 
-`currentProjectTask`由本地能力生命周期编排器在合法状态转换成功后更新。训练失败后形成的审核、裁决或下一候选规划可以成为新的项目当前任务，但不改写该训练的失败终态。审核失败不允许把原执行从`failed_closed`改写为运行中；编排器必须建立一个新的`failure_boundary_adjudication`任务。该任务在裁决尚未改变能力版本结论时保持来源能力的`lifecycleStage=formal_stage_validation_completed`，其独立执行初始状态为`package_materialized`，并通过`supersedes`引用来源失败终态；裁决实际启动后，只有`executionState`按`adjudicating -> finalizing -> completed / failed_closed`推进。裁决确认需要能力变更时才另建`change_candidate`，不得把`adjudicating`写入能力生命周期字段。`activeExecution`必须同时满足任务锁、进程和心跳身份一致且未过期；不满足时为空。`selectedHistoricalRun`只是查询参数，不参与任何状态转换。
+`currentProjectTask`由本地能力生命周期编排器在合法状态转换成功后更新。训练失败后形成的审核、裁决或下一候选规划可以成为新的项目当前任务，但不改写该训练的失败终态。审核失败不允许把原执行从`failed_closed`改写为运行中；编排器必须建立一个新的`failure_boundary_adjudication`任务。该任务保持来源能力最后有成功证据的资格节点，不把失败筛查或未成功的正式阶段写成`formal_stage_validation_completed`；其独立执行初始状态为`package_materialized`，并通过`supersedes`引用来源失败终态；裁决实际启动后，只有`executionState`按`adjudicating -> finalizing -> completed / failed_closed`推进。裁决确认需要能力变更时才另建`change_candidate`，不得把`adjudicating`写入能力生命周期字段。`activeExecution`必须同时满足任务锁、进程和心跳身份一致且未过期；不满足时为空。`selectedHistoricalRun`只是查询参数，不参与任何状态转换。
 
 `nextMachineAction`不是页面推荐文案。它必须由同一编排器在当前执行登记中与任务、能力版本、先决证据、注册入口和程序血缘一起写入并验证。控制台只可投影该字段；它不得根据页面顺序、失败文案或历史目录生成下一动作。
 
@@ -539,14 +541,33 @@ RuntimeFrame运行证据按`working -> candidates -> accepted frame / rejected f
 | identity | worldId、ownerId、tick、sourceFactIds | 是 |
 | mapStructure | 地图结构、入口/出口、区域、自然通行、水岸；建设后才可包含家园与新道路 | 是 |
 | terrainLayer | 草地、水体、水岸、道路等地形定义 | 是 |
-| objectLayer | 树、石头、草丛、花等对象记录 | 是 |
-| visualLayer | AI Painter 生成的视觉材料引用 | 部分。它是表达，不是事实。 |
+| objectLayer | 自然对象及已接入的人物、动物实例身份与位置 | 是 |
+| visualLayer | 同一世界任务的已审核原生完整RGB引用 | 否。它是事实的表达，不反向建立事实。 |
 | walkableLayer | 可走区域 | 是 |
 | collisionLayer | 不可穿越区域 | 是 |
 | interactionLayer | 可查看、可点击、可建设、可采集区域 | 是 |
 | stateLayer | 生命周期、建造状态、资源状态、天气影响 | 是 |
 | audit | VisualJudge、hash、时间戳、模型版本、失败记录 | 否，但必须存在。 |
 | capabilityRelease | 由数据、模型、审核、Runtime、条件和测试证据形成的机器能力发布身份 | 是；不需要逐版本或逐帧人工验收。 |
+
+### 4.1 完整MVP生命实体与视觉接口
+
+以下为正式目标接口，新增字段需要版本化机器Schema与程序迁移，不表示现有类型已实现。生命扩展复用既有世界、人格、Runtime、Painter和发布入口，不另建动物后台或平行存档。
+
+| 对象 | 必需身份与内容 | 唯一责任边界 |
+|---|---|---|
+| 出生资料快照 | 出生日期、历法、时区、时辰完整度、映射模式、来源版本；原始敏感字段访问受限 | 创建／人格链校验；Painter仅接收派生档案及受限来源引用，不接收无关出生隐私 |
+| CharacterAppearanceProfile | `entityId`、`profileVersion`、`mappingRuleVersion`、来源模式、来源摘要hash、形态参数及单位、缺失项、生成seed、内容hash | 人格映射链生成初始外貌；性别呈现与人格映射模式分离；不得由Painter补定义 |
+| AnimalRoster | `rosterVersion`、五个`animalTypeId`、各类型真实`speciesId`及来源、适用生境、支持状态、完整度、hash | 世界生态数据链；类型不是模型数量，同一类型多张图片不增加类型计数 |
+| EntityStateSnapshot | `worldId`、`regionId`、`entityId`、`tick`、`stateVersion`、`profileHash`、物种、位置／朝向、动作、健康／营养／疲劳状态、状态原因、前态hash | Runtime按规则形成世界事实；状态转移不得改写稳定身份 |
+| 生命视觉事实扩展 | `VisualFactManifest`绑定实体快照及hash、可见体征、遮挡／接地、变化事实集合和不允许改变的身份特征 | 世界导演派生；Painter只能表达清单内事实 |
+| EntityVisualBinding | `candidateId`、实体ID、轮廓／占用范围、状态引用、完整RGB及审核引用 | Painter提供表达证据，审核器验证身份、状态与空间一致性；不决定生命状态 |
+
+数值参数由各版本规则表定义单位、闭区间、缺失语义、量化精度和合法组合。不存在权威值时显式不可用；`null`、0、健康、静止不能互相代替。档案生成同输入、规则、seed可复现；同出生资料的不同世界实例仍使用独立实体ID。
+
+当前23通道只覆盖其已登记的自然地图语义。人物、动物、体征和身份一致性不能偷占`object_tree`、`object_rock`或`object_vegetation`通道；必须发布显式生命条件扩展、兼容规则、责任映射与测试，继而建立新的能力身份。23通道自然地图能力可以作为有谱系的基础能力，不能自动宣称已支持生命实体。
+
+Runtime以同一`worldId + tick + expectedStateVersion`提交状态、行动结果、资源变化和事件，再产生视觉任务。状态提交与视觉候选发布是两个有引用关系的事务：视觉失败不回滚合法世界事实，也不冒充新tick画面。当前tick无合格帧时按展示闸门阻断；旧帧只能作为标明旧tick的历史记录，不能被当作当前帧。保存恢复必须连同档案、实体状态、事件位置及随机状态恢复，防止重复行动、重复耗费或逐帧换人。
 
 ## 5. 关键对象
 
@@ -642,6 +663,6 @@ VisualFactManifest + 世界导演 + 结构化游戏地图
 
 ## 9. 视觉模型实现关系
 
-`complete-world-ai-assisted-cold-start-v7`是AI Painter视觉生产子系统中已经退役的完整地图条件去噪迁移实现。其配置仅保留为历史证据和后继机器合同的编译输入，不是当前能力入口，也不得建立新训练或运行任务。AI-PET-WORLD产品代际、数据发布版本、模型能力版本和该历史配置名称是四种独立身份；任何一项均不得由另一项名称推导。所有现行或后继模型仍必须消费正式世界事实、世界导演和版本化23通道条件，输出经过机器审核、能力发布和RuntimeFrame绑定，并且不能生成或修改世界事实。
+`complete-world-ai-assisted-cold-start-v7`是AI Painter视觉生产子系统中已经退役的完整地图条件去噪迁移实现。其配置仅保留为历史证据，不得作为当前编译器、条件构建器、训练器或入口解析器的默认输入；需引用的合法事实或资产必须先成为独立、不可变、显式登记的新合同或资产绑定。AI-PET-WORLD产品代际、数据发布版本、模型能力版本和该历史配置名称是四种独立身份；任何一项均不得由另一项名称推导。所有现行或后继模型仍必须消费正式世界事实、世界导演和版本化条件，输出经过机器审核、能力发布和RuntimeFrame绑定，并且不能生成或修改世界事实。
 
 代码合同、CPU回归、数据容量、GPU训练、Checkpoint、训练后验证、正式推理和游戏世界完成是相互独立的状态。任何前置状态都不能被描述为后续能力通过；实际模型状态只从训练、验证和资格机器证据读取。

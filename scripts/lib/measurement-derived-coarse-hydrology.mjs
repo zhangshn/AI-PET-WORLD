@@ -74,17 +74,34 @@ const ANABRANCH_MEASUREMENT_ARC_SCALE_CANDIDATES = [
 export function buildMeasurementDerivedCoarseHydrologyProfile({
   assignment,
   root = process.cwd(),
+  naturalizedRunBinding,
 }) {
   assertAssignment(assignment);
 
-  const naturalizedPointer = readJson(
-    path.join(root, NATURALIZED_WORLD_FACT_LATEST_PATH),
-  );
+  // Explicit candidates must never fall back to a historical query pointer.
+  // Omission preserves the old replay path and its byte-identical profile.
+  if (naturalizedRunBinding !== undefined) {
+    const binding = naturalizedRunBinding;
+    assert(binding && typeof binding.path === "string" &&
+      /^[a-f0-9]{64}$/.test(binding.sha256 ?? "") &&
+      !binding.path.includes("\\") && !binding.path.includes(":") &&
+      binding.path.split("/").every((part) =>
+        !["", ".", "..", "latest", "latest.json"].includes(part)),
+    "explicit naturalized WorldFacts run binding is invalid");
+  }
+  const naturalizedPointer = naturalizedRunBinding === undefined
+    ? readJson(path.join(root, NATURALIZED_WORLD_FACT_LATEST_PATH))
+    : { runPath: naturalizedRunBinding.path };
   const naturalizedRunPath = resolveProjectPath(
     root,
     naturalizedPointer.runPath,
   );
-  const naturalizedRun = readJson(naturalizedRunPath);
+  const naturalizedRunBytes = fs.readFileSync(naturalizedRunPath);
+  if (naturalizedRunBinding !== undefined) {
+    assert(crypto.createHash("sha256").update(naturalizedRunBytes).digest("hex") === naturalizedRunBinding.sha256,
+      "explicit naturalized WorldFacts run hash mismatch");
+  }
+  const naturalizedRun = JSON.parse(naturalizedRunBytes.toString("utf8"));
   const naturalizedLineagePath = resolveProjectPath(
     root,
     naturalizedRun.lineagePath,
@@ -300,6 +317,12 @@ export function buildMeasurementDerivedCoarseHydrologyProfile({
       "quantized_dem_d8_support_ready_for_anonymous_multisegment_river_network",
     measurementFingerprint: assignment.fingerprints.direct,
     source: {
+      ...(naturalizedRunBinding === undefined ? {} : {
+        naturalizedWorldFactRun: {
+          path: naturalizedRunBinding.path,
+          sha256: naturalizedRunBinding.sha256,
+        },
+      }),
       naturalizedWorldFactRunId: naturalizedRun.runId,
       naturalizedWorldFactLineageSha256:
         naturalizedRun.lineageSha256,

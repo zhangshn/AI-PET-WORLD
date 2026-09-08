@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import zlib from "node:zlib"
+import { pathToFileURL } from "node:url"
 import {
   appendAiPainterProgramEvent,
   formatShanghai,
@@ -139,6 +140,9 @@ const rawRoot = path.join(runRoot, "raw-soilgrids")
 const normalizedRoot = path.join(runRoot, "normalized-soil")
 const hydrologyRoot = path.join(runRoot, "natural-hydrology")
 
+// Importing the numeric derivation must never start acquisition or update the
+// historical source registry, runtime events or latest pointer.
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
 appendAiPainterProgramEvent({
   timestamp: createdAtUtc,
   status: "running",
@@ -434,6 +438,7 @@ try {
   })
   throw error
 }
+}
 
 function buildSoilGridsWcsUrl(property, bounds) {
   const url = new URL("https://maps.isric.org/mapserv")
@@ -509,7 +514,12 @@ function downsampleAverage(
   return result
 }
 
-function deriveNaturalHydrology(elevation, width, height) {
+export function deriveNaturalHydrology(elevation, width, height, { includeRouting = false } = {}) {
+  assert(Number.isInteger(width) && width >= 2 && Number.isInteger(height) && height >= 2 &&
+    width * height <= 1024 * 768 && elevation instanceof Float32Array && elevation.length === width * height,
+    "hydrology derivation requires a bounded Float32 grid")
+  assert(elevation.every(Number.isFinite), "hydrology elevation contains non-finite values")
+  assert(typeof includeRouting === "boolean", "includeRouting must be a boolean")
   const size = width * height
   const filledElevation = new Float32Array(elevation)
   const visited = new Uint8Array(size)
@@ -608,6 +618,7 @@ function deriveNaturalHydrology(elevation, width, height) {
     slope,
     accumulation,
     drainageLikelihood,
+    ...(includeRouting ? { receiver, floodOrder } : {}),
     statistics: {
       minimumElevation: minimum(filledElevation),
       maximumElevation: maximum(filledElevation),

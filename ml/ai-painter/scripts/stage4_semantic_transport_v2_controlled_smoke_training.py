@@ -72,8 +72,10 @@ def execute_stage4_v2_controlled_smoke(
     output_dir = output_dir.resolve()
     from run_stage4_semantic_transport_v2_controlled_smoke import (  # noqa: PLC0415
         validate_active_config as validate_smoke_program_boundary,
+        validate_training_data_use,
     )
-    validate_smoke_program_boundary(config_path, root)
+    validated_config = validate_smoke_program_boundary(config_path, root)
+    validate_training_data_use(validated_config, root)
     config = _read_object(config_path)
     execution = _validate_execution_config(config, output_dir, root)
     if _logical(root, dataset_package_path) != execution["datasetRelease"]["path"]:

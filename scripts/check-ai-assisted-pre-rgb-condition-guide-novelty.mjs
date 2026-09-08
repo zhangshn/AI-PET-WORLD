@@ -40,10 +40,23 @@ const ok =
   audits.every(
     (audit, index) =>
       audit.passed === false &&
-      audit.status ===
-        "blocked_before_rgb_complete_map_theme_architecture_duplicate" &&
+      [
+        "blocked_before_rgb_complete_map_theme_architecture_duplicate",
+        "blocked_before_rgb_cross_modal_historical_water_shape_duplicate",
+      ].includes(audit.status) &&
       matchedRecordIds[index].includes(EXPECTED_MATCH) &&
-      audit.evidenceBoundary.historicalRgbRead === false &&
+      audit.issues.some((issue) =>
+        issue.code === "complete_map_theme_architecture_duplicate" &&
+        issue.matchedRecordId === EXPECTED_MATCH) &&
+      (audit.status !== "blocked_before_rgb_cross_modal_historical_water_shape_duplicate" ||
+        audit.crossModalHistoricalRgbWaterShapeMatches.length > 0) &&
+      audit.evidenceBoundary.historicalRgbReadByAudit === true &&
+      audit.evidenceBoundary.historicalRgbRead === true &&
+      audit.evidenceBoundary.historicalRgbAuditReadReceipts.length > 0 &&
+      audit.evidenceBoundary.historicalRgbAuditReadReceipts.every(receipt => receipt.sha256MatchesRecord &&
+        receipt.sha256 === receipt.expectedSha256 && receipt.byteLength > 0) &&
+      audit.evidenceBoundary.historicalRgbReadByGenerator === false &&
+      audit.evidenceBoundary.historicalRgbPixelsOrPathsForwardedToGenerator === false &&
       audit.evidenceBoundary.imageGenerationStarted === false,
   )
 

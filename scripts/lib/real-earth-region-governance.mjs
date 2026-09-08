@@ -297,6 +297,7 @@ export function buildIndependentTrainingRegionConnectivity({
   height,
   hasWater,
   anonymousCompositionArchitectureRevision = null,
+  regionIdentity = null,
 }) {
   assert(
     /^v7-capacity-slot-\d{3}$/.test(slotId ?? ""),
@@ -333,6 +334,7 @@ export function buildIndependentTrainingRegionConnectivity({
   const flowingWaterConnectivityRevisions = new Set([
     "owner-authorized-thailand-rebuild64-flowing-water-connectivity-and-all-history-novelty-v5-20260801",
     "owner-authorized-thailand-rebuild64-cross-modal-rgb-collapse-prevention-v6-20260801",
+    "measurement-derived-complete-world-proposal-v1",
   ]);
   const semanticTopologyRevision =
     "owner-authorized-thailand-rebuild64-semantic-topology-diversity-v4-20260801";
@@ -365,7 +367,10 @@ export function buildIndependentTrainingRegionConnectivity({
     width,
     height,
   );
-  const regionId = `training-world:thailand-mvp:${slotId}`;
+  assert(regionIdentity === null || (typeof regionIdentity === "string" &&
+    /^(?:training-world:thailand-mvp:replacement-[a-f0-9]{64}|training-hydrology-proposal:[a-f0-9]{64}:sakaerat-measurement-window-r\d{2}-c\d{2}-v3)$/.test(regionIdentity)),
+    "replacement region identity must be a content-bound training proposal");
+  const regionId = regionIdentity ?? `training-world:thailand-mvp:${slotId}`;
   const neighborRegionId =
     `training-world:thailand-mvp:adjacent-${pathSide}-${instanceDigest.slice(0, 8)}`;
   const blueprintId =
@@ -927,7 +932,7 @@ function digestBytes(value, count) {
   );
 }
 
-function canonicalSha256(value) {
+export function canonicalSha256(value) {
   return crypto
     .createHash("sha256")
     .update(JSON.stringify(sortKeys(value)))

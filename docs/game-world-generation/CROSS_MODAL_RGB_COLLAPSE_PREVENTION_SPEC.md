@@ -1,12 +1,24 @@
 # 条件图到 RGB 模板收敛防护规范
 
-更新时间：2026-08-03 09:23:45 +08:00
+更新时间：2026-09-06 03:33:13 +08:00
 
 状态：active-cross-modal-collapse-prevention-contract
 
+文档版本：`AI-PAINTER-CROSS-MODAL-1.1`
+
+生效日期：`2026-09-06`
+
+替代版本：`unversioned-baseline`
+
+文档状态：`active_normative_target`
+
+程序符合状态：`program_adoption_pending`
+
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
-机器合同：`data/ai-painter/system-governance/thailand-rebuild64-cross-modal-rgb-collapse-prevention-contract-v1.json`
+权威关系：本文细化[数据与来源规格](TRAINING_DATA_AND_SOURCE_POLICY.md)和[审核与存储规格](REVIEW_AUTOMATION_AND_STORAGE_SPEC.md)的跨模态审核；数值与比较符按[阈值对齐规格](CROSS_MODAL_RGB_GATE_THRESHOLD_ALIGNMENT_20260802.md)冻结。
+
+`data/ai-painter/system-governance/thailand-rebuild64-cross-modal-rgb-collapse-prevention-contract-v1.json`仅适用于两个旧槽位，且数字字段与规则字符串存在差异，不能作为全MVP现行执行合同。原字节保持不变；后继通用合同必须明确作用域、完整公式、适用条件、阈值、比较符、正反回归及程序血缘，不得从旧固定方位或文件中的`active`字段推导新权限。
 
 ## 1. 问题定义
 
@@ -27,8 +39,8 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 - 分别记录条件结构相似、RGB 结构相似、条件响应偏差和未知模板坍缩。
 - 命中历史模板时保存真实失败图、相似记录身份、指标和失败码；不得自动换 seed、重试或降低阈值。
 
-## 4. 数据与授权边界
+## 4. 数据与执行边界
 
 重新选择的测量窗口必须来自当前区域的正式来源候选包，并同时通过来源、条件唯一性和跨模态历史 RGB 门禁。旧失败 RGB 只用于审核签名，不能作为生成参考。
 
-本文定义算法和审核边界，不授权测量窗口变更、RGB 生成、训练、验证、RuntimeFrame 或 `/world`。具体样本和运行结论只保存在机器证据中。
+本文定义算法和审核边界，不扩大Codex等外部执行者的当前任务范围；本地AI依生效合同自主运行，不设置人工握手。具体样本和运行结论只保存在机器证据中。全历史比较只用于来源资格与审核，不允许将独立测试像素、匹配记录或审核分数回流为训练目标。

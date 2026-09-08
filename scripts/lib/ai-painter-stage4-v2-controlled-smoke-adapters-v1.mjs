@@ -35,6 +35,7 @@ import {
   SMOKE_RUN_TASK,
   STAGE4_V2_CAPABILITY,
   validateStage4V2SmokePackagePayload,
+  validateSmokeTrainingDataUse,
   writeExclusiveJson,
   writeJsonAtomic,
 } from "./ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
@@ -54,6 +55,7 @@ const PHASE_STATE = Object.freeze({
 export async function stage4V2SmokePreflight(context) {
   try {
     const loaded = loadPackage(context);
+    validateSmokeTrainingDataUse(context.projectRoot, loaded.payload);
     await advanceLivePhase(context, loaded.payload, "preflight");
     const target = path.join(loaded.packageRoot, "preflight-report.json");
     const recovered = recoverPreflightOutput({
@@ -95,13 +97,15 @@ export async function stage4V2SmokePreflight(context) {
     return recoverPreflightOutput({
       projectRoot: context.projectRoot, payload: loaded.payload, target,
     });
-  } catch (error) { return failed("infrastructure", "stage4_v2_smoke_preflight_failed", error); }
+  } catch (error) { return failed(error.code === "stage4_smoke_non_train_optimizer_source" ? "program" : "infrastructure",
+    error.code === "stage4_smoke_non_train_optimizer_source" ? error.code : "stage4_v2_smoke_preflight_failed", error); }
 }
 
 export async function stage4V2SmokeExecute(context) {
   let loaded;
   try {
     loaded = loadPackage(context);
+    validateSmokeTrainingDataUse(context.projectRoot, loaded.payload);
     await advanceLivePhase(context, loaded.payload, "execute");
     const consumptionPath = `${projectLogicalPath(context.projectRoot, loaded.packageRoot)}/smoke-ticket-consumption.json`;
     const consumed = consumeStage4V2SmokeTicket({
@@ -210,7 +214,8 @@ export async function stage4V2SmokeExecute(context) {
       activeConfigBinding,
       materialization,
     });
-  } catch (error) { return failed("program", "stage4_v2_smoke_training_failed", error); }
+  } catch (error) { return failed("program",
+    error.code === "stage4_smoke_non_train_optimizer_source" ? error.code : "stage4_v2_smoke_training_failed", error); }
 }
 
 /**

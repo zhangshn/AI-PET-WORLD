@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { execFileSync } from "node:child_process";
 import {
   appendAiPainterProgramEvent,
@@ -44,16 +45,35 @@ import {
   buildRealEarthRegionSourcePackage,
 } from "./lib/real-earth-region-governance.mjs";
 
+// Importing the geometry implementation must not execute the historical CLI.
+export function replacementPathOriginWithinContract(point, side, canvas, contract) {
+  if (!point || !canvas || !contract || !Number.isFinite(point.x) || !Number.isFinite(point.y) ||
+      !(canvas.width > 0) || !(canvas.height > 0) ||
+      contract.version !== "complete-map-boundary-port-to-interior-depth-v1" ||
+      contract.reviewThresholdChanged !== false || contract.completeMapRouteSpanThreshold !== 0.35 ||
+      !["minimumNormalizedDepth", "maximumNormalizedDepth", "minimumTangentialFraction", "maximumTangentialFraction"]
+        .every(key => Number.isFinite(contract[key]) && contract[key] > 0 && contract[key] < 1)) return false;
+  const x = point.x / canvas.width, y = point.y / canvas.height;
+  const depth = { west: x, east: 1 - x, north: y, south: 1 - y }[side];
+  const tangent = ["west", "east"].includes(side) ? y : x;
+  return depth >= contract.minimumNormalizedDepth && depth <= contract.maximumNormalizedDepth &&
+    depth > contract.completeMapRouteSpanThreshold && tangent >= contract.minimumTangentialFraction &&
+    tangent <= contract.maximumTangentialFraction;
+}
+
+// A replacement input produces an unpublished CPU proposal only; it never
+// enters the legacy event, latest-pointer, task or compilation branches below.
+export async function buildEarthGeospatialCompleteMapConditions({ replacementGeometryInput = null } = {}) {
 const ROOT = process.cwd();
-const V7_SLOT_ID = valueFor("--v7-slot-id");
-const V7_SLOT_CONTEXT = V7_SLOT_ID
+const V7_SLOT_ID = replacementGeometryInput?.slotContext?.assignment?.slotId ?? valueFor("--v7-slot-id");
+const V7_SLOT_CONTEXT = replacementGeometryInput?.slotContext ?? (V7_SLOT_ID
   ? loadV7SlotContext(V7_SLOT_ID)
-  : null;
+  : null);
 assert(
   V7_SLOT_CONTEXT,
   "legacy fixed shared complete-map geometry was removed; a measurement-backed --v7-slot-id is required",
 );
-const V7_SLOT_COARSE_HYDROLOGY_PROFILE =
+const V7_SLOT_COARSE_HYDROLOGY_PROFILE = replacementGeometryInput?.coarseHydrologyProfile ?? (
   V7_SLOT_CONTEXT &&
   landscapeRequiresVisibleWater(
     V7_SLOT_CONTEXT.assignment.regionalLandscapeType,
@@ -62,7 +82,7 @@ const V7_SLOT_COARSE_HYDROLOGY_PROFILE =
         assignment: V7_SLOT_CONTEXT.assignment,
         root: ROOT,
       })
-    : null;
+    : null);
 const AUTHORIZED_WATER_SEED_REVISION_SLOTS = new Set([
   "v7-capacity-slot-122",
   "v7-capacity-slot-123",
@@ -101,8 +121,10 @@ const EXPECTED_V7_SLOT_SEED_REVISION =
     : V7_SLOT_ID && AUTHORIZED_WATER_SEED_REVISION_SLOTS.has(V7_SLOT_ID)
       ? `owner-directed-${V7_SLOT_ID}-seed-revision-1-20260727`
       : null;
-const V7_SLOT_SEED_REVISION = valueFor("--v7-slot-seed-revision");
-const V7_SLOT_COMPOSITION_REVISION = valueFor(
+const V7_SLOT_SEED_REVISION = replacementGeometryInput ? (replacementGeometryInput.waterProjection
+  ? "measurement-replacement-geometry-proposal-v2" : "measurement-replacement-geometry-proposal-v1") : valueFor("--v7-slot-seed-revision");
+const V7_SLOT_COMPOSITION_REVISION = replacementGeometryInput ? (replacementGeometryInput.waterProjection
+  ? "measurement-derived-complete-world-proposal-v2" : "measurement-derived-complete-world-proposal-v1") : valueFor(
   "--v7-slot-composition-revision",
 );
 const THAILAND_REBUILD64_FULL_WORLD_DYNAMIC_READINESS_REVISION =
@@ -148,7 +170,7 @@ const authorizedSlot194SemanticTopologyRevision =
       ".runtime/ai-painter/owner-action-requests/owner-authorized-thailand-rebuild64-semantic-topology-diversity-upgrade-20260801/request.json",
     ),
   );
-if (V7_SLOT_SEED_REVISION) {
+if (V7_SLOT_SEED_REVISION && !replacementGeometryInput) {
   assert(
     V7_SLOT_SEED_REVISION === EXPECTED_V7_SLOT_SEED_REVISION ||
       authorizedSlot123SeedPreflightCandidate ||
@@ -156,7 +178,7 @@ if (V7_SLOT_SEED_REVISION) {
     "V7 slot seed revision is not authorized for this slot",
   );
 }
-if (V7_SLOT_COMPOSITION_REVISION) {
+if (V7_SLOT_COMPOSITION_REVISION && !replacementGeometryInput) {
   assert(
     EXPECTED_V7_SLOT_COMPOSITION_REVISIONS.includes(
       V7_SLOT_COMPOSITION_REVISION,
@@ -227,6 +249,39 @@ const WATER_NATURALNESS_LATEST_PATH = path.join(
 
 const createdAtUtc = new Date().toISOString();
 const createdAtAsiaShanghai = formatShanghai(createdAtUtc);
+if (replacementGeometryInput) {
+  const input = replacementGeometryInput;
+  assert(input.schemaVersion === "ai-painter-replacement-geometry-input-v1", "unsupported replacement geometry input");
+  assert(input.coarseHydrologyProfile?.measurementFingerprint === V7_SLOT_CONTEXT.assignment.fingerprints.direct,
+    "replacement hydrology is not bound to its measurement window");
+  assert(/^[a-f0-9]{64}$/.test(input.seedHex ?? ""), "replacement geometry seed missing");
+  assert(input.connectivity?.currentRegion?.regionId === input.regionId,
+    "replacement connectivity region identity mismatch");
+  const worldFacts = buildV7SlotWorldFacts({ conditionId: input.conditionId, seedHex: input.seedHex,
+    parentWorldFacts: input.parentWorldFacts, parentWorldFactRun: input.parentWorldFactRun,
+    parentWorldFactsSha256: input.parentWorldFactRun.worldFactsSha256, slotContext: V7_SLOT_CONTEXT });
+  delete worldFacts.ownerAuthorizationRef;
+  worldFacts.status = "unpublished_measurement_derived_world_facts_proposal";
+  worldFacts.regionId = input.regionId;
+  worldFacts.worldId = input.worldId;
+  if (input.waterProjection?.schemaVersion === "measured-joint-through-channel-projection-proposal-v1") {
+    assert(input.neighborContext?.role === "neighbor_geometry_context_not_capacity_sample" &&
+      input.neighborContext.candidateId === V7_SLOT_CONTEXT.assignment.candidateId &&
+      V7_SLOT_CONTEXT.assignment.split === null, "through-channel generation requires an unsplit neighbor context");
+    delete worldFacts.v7SlotBinding;
+    worldFacts.neighborContextBinding = structuredClone(input.neighborContext);
+  }
+  const geometry = buildV7SlotGameGeometry({ conditionId: input.conditionId,
+    random: mulberry32(Number.parseInt(input.seedHex.slice(0, 8), 16)), seedHex: input.seedHex,
+    worldFacts, connectivityBlueprint: input.connectivity, slotContext: V7_SLOT_CONTEXT,
+    routeNaturalnessProfile: input.routeNaturalnessProfile, waterNaturalnessProfile: input.waterNaturalnessProfile });
+  geometry.connectivityCoordinateProjection = structuredClone(input.connectivity.anonymousTrainingCoordinateProjection);
+  return { schemaVersion: "ai-painter-replacement-geometry-proposal-v1", createdAtUtc, createdAtAsiaShanghai,
+    status: "complete_geometry_proposed_not_pre_rgb_qualified", worldId: input.worldId, regionId: input.regionId,
+    worldFacts, geometry, structuralIdentities: buildCompleteMapStructuralIdentities({ connectivity: input.connectivity, geometry }),
+    outputBoundary: { conditionPackCreated: false, imageGenerationStarted: false, rgbCreated: false,
+      gpuTrainingStarted: false, trainingAllowed: false, runtimeFrameEligible: false, canEnterWorld: false } };
+}
 const runId = V7_SLOT_CONTEXT
   ? `earth-geospatial-v7-slot-condition-${V7_SLOT_ID}-${createdAtUtc.replace(
       /[:.]/g,
@@ -1287,6 +1342,8 @@ function buildV7SlotGameGeometry({
           THAILAND_REBUILD64_SEMANTIC_TOPOLOGY_REVISION,
           THAILAND_REBUILD64_FLOWING_WATER_CONNECTIVITY_REVISION,
           THAILAND_REBUILD64_CROSS_MODAL_RGB_COLLAPSE_PREVENTION_REVISION,
+          "measurement-derived-complete-world-proposal-v1",
+          "measurement-derived-complete-world-proposal-v2",
         ].includes(V7_SLOT_COMPOSITION_REVISION)
           ? V7_SLOT_COMPOSITION_REVISION
           : null,
@@ -1563,7 +1620,7 @@ function buildV7SlotGameGeometry({
         "current_region_path_graph_binding_without_real_geometry_copy",
       waterRequiredByCurrentWorldFacts: hasWater,
     },
-    geometryDerivation: {
+    geometryDerivation: describeMeasuredWaterDerivation({ base: {
       methodId: MEASUREMENT_DRIVEN_GEOMETRY_METHOD_ID,
       seedFingerprint: seedHex,
       seedRevision: V7_SLOT_SEED_REVISION ?? null,
@@ -1634,7 +1691,7 @@ function buildV7SlotGameGeometry({
       floodplainBasinSelectionByte:
         layoutProfile.topologySelection
           .floodplainBasinSelectionByte,
-    },
+    }, projection: replacementGeometryInput?.waterProjection ?? null }),
   };
 }
 
@@ -2378,6 +2435,7 @@ function buildAnonymousRouteAvoidingWater({
   ];
   const candidates = [];
   const failures = [];
+  const excludedOrigins = [];
   let evaluatedAttemptCount = 0;
   for (
     let originIndex = 0;
@@ -2389,6 +2447,12 @@ function buildAnonymousRouteAvoidingWater({
       x: Math.round(WIDTH * origin.x),
       y: Math.round(HEIGHT * origin.y),
     };
+    if (replacementGeometryInput?.waterProjection && !replacementPathOriginWithinContract(start,
+      pathConnection.boundarySide, { width: WIDTH, height: HEIGHT },
+      connectivityBlueprint.anonymousTrainingCoordinateProjection.pathPlan.interiorEntryDepthContract)) {
+      excludedOrigins.push({ originIndex, code: "route_origin_outside_existing_depth_contract" });
+      continue;
+    }
     for (
       let originAttempt = 1;
       originAttempt <= routePlan.candidateAttemptsPerOrigin;
@@ -2543,7 +2607,7 @@ function buildAnonymousRouteAvoidingWater({
     ],
     waterAvoidanceAudit: {
       schemaVersion:
-        "anonymous-route-water-avoidance-audit-v6",
+        replacementGeometryInput?.waterProjection ? "anonymous-route-water-avoidance-audit-v7" : "anonymous-route-water-avoidance-audit-v6",
       status: "passed",
       passed: true,
       topology,
@@ -2561,6 +2625,7 @@ function buildAnonymousRouteAvoidingWater({
       effectiveCandidateOriginCount: effectiveOrigins.length,
       passingCandidateCount: candidates.length,
       rejectedCandidateCount: failures.length,
+      ...(replacementGeometryInput?.waterProjection ? { excludedOrigins, originDepthContractChecked: true } : {}),
       fullCanvasCandidateSearch: true,
       sideEnvelopeFollowed: false,
       measurementDrivenRoutePlan:
@@ -2678,6 +2743,38 @@ function buildAnonymousWaterGeometry({
   internalHydrologyProfile = null,
   coarseHydrologyProfile = null,
 }) {
+  if (replacementGeometryInput?.waterProjection) {
+    const projection = replacementGeometryInput.waterProjection;
+    const { projectionSha256, ...payload } = projection;
+    assert(crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex") === projectionSha256,
+      "measured water projection bytes do not match identity");
+    const throughChannel = projection.schemaVersion === "measured-joint-through-channel-projection-proposal-v1";
+    assert((projection.schemaVersion === "measured-single-channel-game-projection-proposal-v2" || throughChannel) &&
+      projection.outputBoundary.worldFactsQualified === false && projection.outputBoundary.trainingAllowed === false &&
+      projection.candidateId === V7_SLOT_CONTEXT.assignment.candidateId &&
+      projection.canvas.width === WIDTH && projection.canvas.height === HEIGHT &&
+      connectivityBlueprint.hydrologyGraph.projectionSha256 === projectionSha256,
+      "measured water projection does not bind this unpublished connectivity");
+    const channel = projection.edges[0];
+    const ports = connectivityBlueprint.anonymousTrainingCoordinateProjection.waterPlan.externalWaterPorts;
+    assert(throughChannel ? (ports.length === 2 && ports[0].boundarySide === "west" && ports[0].flowRole === "upstream_inlet" &&
+      ports[1].boundarySide === "north" && ports[1].flowRole === "downstream_outlet" &&
+      projection.regionId === connectivityBlueprint.currentRegion.regionId &&
+      projection.outputBoundary.countsAsAdditionalSample === false) : ports.length === 1,
+    "measured water projection ports do not match its source topology");
+    return { centerline: structuredClone(channel.centerline), waterHalfWidths: structuredClone(channel.halfWidths),
+      branchCenterlines: [], branchHalfWidths: [], waterPolygons: structuredClone(projection.waterPolygons),
+      shorelinePolygons: structuredClone(projection.shorelinePolygons), naturalnessAudit: projection.audit.naturalness,
+      corridorShapeAudit: projection.audit.corridor,
+      internalHydrologyProfile: { family: throughChannel ? "measured_through_channel_projection_v1" : "measured_single_channel_projection_v1",
+        internalNetworkConnectionMode: throughChannel ? "measured_external_inlet_to_external_outlet" : "internal_supported_channel_to_measured_outlet",
+        sourceGraphIdentity: projection.sourceGraphIdentity },
+      internalHydrologyAudit: { passed: true, scope: "verified_source_chain_contraction_only", sourceGraphIdentity: projection.sourceGraphIdentity },
+      lateralContinuationAudit: null, coarseHydrologyProfile: null, mainChannelSelection: { projectionSha256 },
+      usedEdges: ports.map(p => boundarySideToCanvasEdge(p.boundarySide)), connectivityPorts: { externalWaterPortIds: ports.map(p => p.edgePortId),
+        upstreamPortId: throughChannel ? ports[0].edgePortId : null, downstreamPortId: ports.at(-1).edgePortId, boundarySides: ports.map(p => p.boundarySide),
+        boundaryWaterDirectionInvented: false } };
+  }
   const waterPlan =
     connectivityBlueprint.anonymousTrainingCoordinateProjection
       ?.waterPlan;
@@ -5017,114 +5114,6 @@ function ribbonPolygonVariable(points, halfWidths, width, height) {
   return [...left, ...right.reverse()];
 }
 
-function buildVariableWidthCorridorPolygons(
-  points,
-  halfWidths,
-  width,
-  height,
-) {
-  assert(
-    points.length >= 2 && halfWidths.length === points.length,
-    "variable-width corridor inputs are invalid",
-  );
-  const polygons = points.map((point, index) =>
-    circlePolygon(
-      point,
-      halfWidths[index],
-      20,
-      width,
-      height,
-    ),
-  );
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const start = points[index];
-    const end = points[index + 1];
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const length = Math.max(1, Math.hypot(dx, dy));
-    const nx = -dy / length;
-    const ny = dx / length;
-    const startWidth = halfWidths[index];
-    const endWidth = halfWidths[index + 1];
-    const corridorPolygon = convexHull([
-      {
-        x: clamp(Math.round(start.x + nx * startWidth), 0, width),
-        y: clamp(Math.round(start.y + ny * startWidth), 0, height),
-      },
-      {
-        x: clamp(Math.round(end.x + nx * endWidth), 0, width),
-        y: clamp(Math.round(end.y + ny * endWidth), 0, height),
-      },
-      {
-        x: clamp(Math.round(end.x - nx * endWidth), 0, width),
-        y: clamp(Math.round(end.y - ny * endWidth), 0, height),
-      },
-      {
-        x: clamp(Math.round(start.x - nx * startWidth), 0, width),
-        y: clamp(Math.round(start.y - ny * startWidth), 0, height),
-      },
-    ]);
-    if (corridorPolygon.length >= 3) {
-      polygons.push(corridorPolygon);
-    }
-  }
-  return polygons;
-}
-
-function circlePolygon(center, radius, sides, width, height) {
-  return convexHull(
-    Array.from({ length: sides }, (_, index) => {
-      const angle = (Math.PI * 2 * index) / sides;
-      return {
-        x: clamp(
-          Math.round(center.x + Math.cos(angle) * radius),
-          0,
-          width,
-        ),
-        y: clamp(
-          Math.round(center.y + Math.sin(angle) * radius),
-          0,
-          height,
-        ),
-      };
-    }),
-  );
-}
-
-function convexHull(points) {
-  const unique = [
-    ...new Map(
-      points.map((point) => [`${point.x},${point.y}`, point]),
-    ).values(),
-  ].sort((left, right) => left.x - right.x || left.y - right.y);
-  if (unique.length <= 2) return unique;
-  const cross = (origin, left, right) =>
-    (left.x - origin.x) * (right.y - origin.y) -
-    (left.y - origin.y) * (right.x - origin.x);
-  const lower = [];
-  for (const point of unique) {
-    while (
-      lower.length >= 2 &&
-      cross(lower.at(-2), lower.at(-1), point) <= 0
-    ) {
-      lower.pop();
-    }
-    lower.push(point);
-  }
-  const upper = [];
-  for (const point of [...unique].reverse()) {
-    while (
-      upper.length >= 2 &&
-      cross(upper.at(-2), upper.at(-1), point) <= 0
-    ) {
-      upper.pop();
-    }
-    upper.push(point);
-  }
-  lower.pop();
-  upper.pop();
-  return [...lower, ...upper];
-}
 
 function irregularEllipsePolygon(
   centerX,
@@ -5599,4 +5588,148 @@ function clamp(value, minimum, maximum) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+}
+
+const corridorClamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
+const corridorAssert = (ok, message) => { if (!ok) throw new Error(message); };
+
+// Legacy layout controls can still explain terrain/object/path placement, but
+// must not describe a substituted measured water surface as an eight-band one.
+export function describeMeasuredWaterDerivation({ base, projection }) {
+  if (!projection) return base;
+  const { projectionSha256, ...payload } = projection;
+  corridorAssert(crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex") === projectionSha256,
+    "measured water derivation projection identity mismatch");
+  corridorAssert(["measured-single-channel-game-projection-proposal-v2", "measured-joint-upstream-water-projection-proposal-v1",
+    "measured-joint-through-channel-projection-proposal-v1"].includes(projection.schemaVersion),
+    "unsupported measured water derivation schema");
+  const oldKeys = ["methodId", "macroTopologySource", "waterControlProfileSelectionByte", "waterControlProfileIndex",
+    "internalHydrologyFamily", "internalHydrologyProfileSha256", "coarseHydrologyMainChannelFamily",
+    "coarseHydrologyMainChannelProfileSha256", "coarseHydrologyMainChannelSource", "internalHydrologySelectionByte", "floodplainBasinSelectionByte"];
+  const result = { ...base };
+  for (const key of oldKeys) delete result[key];
+  return { ...result, methodId: "bound_measured_water_with_existing_non_water_layout_v1",
+    macroTopologySource: "measured_supported_channel_and_bound_anonymous_projection",
+    baseLayoutProvenance: { role: "retained_layout_selection_context_not_active_water_surface",
+      ...Object.fromEntries(oldKeys.filter(k => Object.hasOwn(base, k)).map(k => [k, structuredClone(base[k])])) },
+    activeWaterGeometry: { schemaVersion: projection.schemaVersion, projectionSha256,
+      sourceGraphIdentity: projection.sourceGraphIdentity, sourcePairingIdentity: projection.sourcePairingIdentity,
+      jointProjectionSha256: projection.jointProjectionSha256 ?? null,
+      waterPolygonsSha256: crypto.createHash("sha256").update(JSON.stringify(projection.waterPolygons)).digest("hex"),
+      shorelinePolygonsSha256: crypto.createHash("sha256").update(JSON.stringify(projection.shorelinePolygons)).digest("hex"),
+      exactSourceGeometryCopied: false, worldFactsQualified: false, trainingAllowed: false } };
+}
+
+export function buildVariableWidthCorridorPolygons(
+  points,
+  halfWidths,
+  width,
+  height,
+) {
+  corridorAssert(
+    points.length >= 2 && halfWidths.length === points.length,
+    "variable-width corridor inputs are invalid",
+  );
+  const polygons = points.map((point, index) =>
+    circlePolygon(
+      point,
+      halfWidths[index],
+      20,
+      width,
+      height,
+    ),
+  );
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.max(1, Math.hypot(dx, dy));
+    const nx = -dy / length;
+    const ny = dx / length;
+    const startWidth = halfWidths[index];
+    const endWidth = halfWidths[index + 1];
+    const corridorPolygon = convexHull([
+      {
+        x: corridorClamp(Math.round(start.x + nx * startWidth), 0, width),
+        y: corridorClamp(Math.round(start.y + ny * startWidth), 0, height),
+      },
+      {
+        x: corridorClamp(Math.round(end.x + nx * endWidth), 0, width),
+        y: corridorClamp(Math.round(end.y + ny * endWidth), 0, height),
+      },
+      {
+        x: corridorClamp(Math.round(end.x - nx * endWidth), 0, width),
+        y: corridorClamp(Math.round(end.y - ny * endWidth), 0, height),
+      },
+      {
+        x: corridorClamp(Math.round(start.x - nx * startWidth), 0, width),
+        y: corridorClamp(Math.round(start.y - ny * startWidth), 0, height),
+      },
+    ]);
+    if (corridorPolygon.length >= 3) {
+      polygons.push(corridorPolygon);
+    }
+  }
+  return polygons;
+}
+
+function circlePolygon(center, radius, sides, width, height) {
+  return convexHull(
+    Array.from({ length: sides }, (_, index) => {
+      const angle = (Math.PI * 2 * index) / sides;
+      return {
+        x: corridorClamp(
+          Math.round(center.x + Math.cos(angle) * radius),
+          0,
+          width,
+        ),
+        y: corridorClamp(
+          Math.round(center.y + Math.sin(angle) * radius),
+          0,
+          height,
+        ),
+      };
+    }),
+  );
+}
+
+function convexHull(points) {
+  const unique = [
+    ...new Map(
+      points.map((point) => [`${point.x},${point.y}`, point]),
+    ).values(),
+  ].sort((left, right) => left.x - right.x || left.y - right.y);
+  if (unique.length <= 2) return unique;
+  const cross = (origin, left, right) =>
+    (left.x - origin.x) * (right.y - origin.y) -
+    (left.y - origin.y) * (right.x - origin.x);
+  const lower = [];
+  for (const point of unique) {
+    while (
+      lower.length >= 2 &&
+      cross(lower.at(-2), lower.at(-1), point) <= 0
+    ) {
+      lower.pop();
+    }
+    lower.push(point);
+  }
+  const upper = [];
+  for (const point of [...unique].reverse()) {
+    while (
+      upper.length >= 2 &&
+      cross(upper.at(-2), upper.at(-1), point) <= 0
+    ) {
+      upper.pop();
+    }
+    upper.push(point);
+  }
+  lower.pop();
+  upper.pop();
+  return [...lower, ...upper];
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  await buildEarthGeospatialCompleteMapConditions();
 }
