@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "ai-painter-phase4-gpu-recheck-policy-v1",
+  "scope": "one_zero_update_gpu_recheck_after_cpu_memory_equivalence",
+  "executionMode": "gpu_qualification_only",
+  "executionLimit": 1,
+  "attemptPath": ".runtime/ai-painter/learning-capacity-experiments/phase4-gpu-recheck-v1-attempt.json",
+  "requiredPredecessor": "failed_closed_zero_update_cuda_out_of_memory",
+  "cpuEquivalence": {
+    "path": ".runtime/t-q4-01-controller/phase4-memory-equivalence-20260921.json",
+    "sha256": "601d7c06bfbed4e86c59de5cbf7cc6fec53de6b7e60d2225b0e6b131cfa54808"
+  },
+  "optimizerSteps": 0,
+  "optimizerCreationAllowed": false,
+  "automaticTrainingAllowed": false,
+  "automaticRetries": 0,
+  "cudaMemoryFraction": 0.7,
+  "maxGpuSeconds": 600,
+  "maxWallSeconds": 900,
+  "maximumTemperatureC": 85,
+  "lossChangeAllowed": false,
+  "originalDataChangeAllowed": false,
+  "checkpointOutputAllowed": false,
+  "formalQualificationAllowed": false,
+  "worldEntryAllowed": false
+}

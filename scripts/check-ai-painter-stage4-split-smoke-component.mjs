@@ -4,34 +4,32 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { parseArgs } from "node:util";
+import { pathToFileURL } from "node:url";
 import { persistAudit } from "./audit-ai-painter-stage4-split-release.mjs";
 import { createReader } from "./lib/ai-painter-stage4-dataset-audit.mjs";
-import { validateStage4CoreQualificationSummary } from "./check-ai-painter-stage4-core.mjs";
+import { validateStage4CoreQualificationSummary, stage4CoreArgsForComponent } from "./check-ai-painter-stage4-core.mjs";
+import { inspectSplitSmokeComponent } from "./lib/ai-painter-stage4-split-smoke-preflight.mjs";
 
+// Use the same versioned identity and lineage validation as the consumer.
+// Importing this module never starts the CPU runner or writes evidence.
+export function readSplitSmokeCpuComponent(root, binding) {
+  const inspected = inspectSplitSmokeComponent({ root, componentContractBinding: binding });
+  const reader = createReader(root);
+  for (const receipt of inspected.inputReceipts) {
+    const bytes = reader.bytes(receipt.path, receipt.sha256);
+    assert.equal(bytes.length, receipt.bytes, "component_receipt_size_conflict");
+  }
+  reader.verifyStable();
+  return { reader, contract: inspected.contract };
+}
+
+async function main() {
 const { values } = parseArgs({ options: { contract: { type: "string" }, sha256: { type: "string" },
   write: { type: "boolean", default: false } } });
 assert.ok(values.contract && /^[a-f0-9]{64}$/.test(values.sha256 ?? ""), "explicit --contract and --sha256 required");
 const root = process.cwd();
-const reader = createReader(root);
 const binding = { path: values.contract, sha256: values.sha256 };
-const contract = reader.bound(binding);
-assert.equal(contract.schemaVersion, "ai-painter-stage4-split-isolated-smoke-contract-v1");
-assert.equal(contract.status, "inactive_component_candidate_not_execution_qualified");
-assert.equal(contract.qualification.trainingAllowed, false);
-const manifest = reader.bound(contract.datasetManifest);
-reader.bound(contract.parentCapability);
-reader.bytes(contract.baseConfig.path, contract.baseConfig.sha256);
-for (const item of [...contract.programBindings, ...Object.values(contract.frozenProgramBindings)]) reader.bytes(item.path, item.sha256);
-for (const item of [manifest.sourceIndex, ...Object.values(manifest.splits)]) reader.bytes(item.path, item.sha256);
-const source = reader.bound(manifest.sourceIndex);
-for (const split of ["train", "validation"]) {
-  const id = contract.selections[split].sampleIds[0];
-  const row = source.samples.find((item) => item.sampleId === id);
-  assert.equal(row.split, split);
-  reader.bytes(row.image.path, row.image.sha256);
-  const pack = reader.bound(row.conditionPack);
-  for (const channel of pack.channels) reader.bytes(channel.path, channel.sha256);
-}
+const { reader, contract } = readSplitSmokeCpuComponent(root, binding);
 for (const logical of ["scripts/check-ai-painter-stage4-split-smoke-component.mjs", "scripts/check-ai-painter-stage4-core.mjs",
   "ml/ai-painter/tests/test_stage4_split_smoke.py", "scripts/audit-ai-painter-stage4-split-release.mjs",
   "scripts/lib/ai-painter-stage4-dataset-audit.mjs",
@@ -51,6 +49,12 @@ for (const logical of ["scripts/check-ai-painter-stage4-split-smoke-component.mj
   "ml/ai-painter/tests/test_stage4_split_formal_training.py",
   "scripts/run-ai-painter-stage4-v2-formal-stage0-to-stage2.mjs",
   "scripts/tests/test-ai-painter-stage4-v2-formal-stage0-to-stage2-executor.mjs"]) reader.bytes(logical);
+for (const logical of ["scripts/check-ai-painter-split-successor-cpu-contract.mjs",
+  "scripts/tests/test-ai-painter-historical-registry-receipt.mjs", "scripts/tests/test-ai-painter-current-entrypoint-command.mjs",
+  "scripts/lib/ai-painter-current-entrypoint-command.mjs", "scripts/check-ai-painter-current-entrypoints.mjs",
+  "scripts/tests/test-ai-console-current-projection-availability.mjs", "scripts/tests/helpers/current-execution-projection-cpu.mjs",
+  "scripts/tests/helpers/stage4-frozen-condition-compiler.mjs",
+  "scripts/check-ai-console-current-execution-projection.mjs"]) reader.bytes(logical);
 const registryPath = ".runtime/ai-painter/current-execution-registry/current.json";
 const registry = reader.json(registryPath);
 assert.equal(registry.activeExecution, null, "CPU verification must not overlap a current training execution");
@@ -120,7 +124,7 @@ const selection = await run(python, ["-B", "-c", selectionCode, JSON.stringify(b
 assert.equal(selection.exitCode, 0, selection.stderr);
 const selectedTensors = JSON.parse(selection.stdout);
 process.stderr.write(`${new Date().toISOString()} run_full_stage4_cpu_regressions\n`);
-const core = await run(process.execPath, ["scripts/check-ai-painter-stage4-core.mjs"], 600_000, true);
+const core = await run(process.execPath, stage4CoreArgsForComponent(binding, Boolean(contract.compilerLineage)), 900_000, true);
 const summaryOffset = core.stdout.lastIndexOf('\n{\n  "status":');
 const summary = summaryOffset < 0 ? null : JSON.parse(core.stdout.slice(summaryOffset + 1));
 reader.verifyStable();
@@ -143,3 +147,8 @@ console.log(JSON.stringify({ status: report.status, evidence, checks: summary?.c
   samples: selectedTensors.samples, inputReceipts: report.inputReceipts.length,
   trainingAllowed: false, runtimeAdapterRegistered: false }, null, 2));
 if (!passed) process.exitCode = 1;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  main().catch(error => { console.error(error); process.exitCode = 1; });
+}

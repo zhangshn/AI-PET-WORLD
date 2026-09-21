@@ -32,6 +32,53 @@ function uniqueFindings(values) {
   return [...new Map(values.map((v) => [canonical(v), v])).values()];
 }
 
+// A historical receipt for the mutable current pointer describes old bytes,
+// not an obligation for today's task to remain at that revision. Resolve only
+// the exact committed snapshot through the append-only event index; never scan
+// directories, pick a recent run, or substitute today's hash into old evidence.
+export function readHistoricalAuditReceipt(reader, receipt) {
+  const registryRoot = ".runtime/ai-painter/current-execution-registry";
+  const currentPath = `${registryRoot}/current.json`;
+  try {
+    const bytes = reader.bytes(receipt.path, receipt.sha256);
+    assert.equal(bytes.length, receipt.bytes, "audit_input_size_conflict");
+    return null;
+  } catch (error) {
+    if (receipt.path !== currentPath || error.message !== `SHA mismatch: ${currentPath}`) throw error;
+  }
+  const events = reader.bytes(`${registryRoot}/events.jsonl`).toString("utf8").trim().split(/\r?\n/u).filter(Boolean).map(JSON.parse);
+  const matches = events.filter(event => event.currentSha256 === receipt.sha256);
+  assert.equal(matches.length, 1, "historical_registry_snapshot_event_missing_or_ambiguous");
+  const event = matches[0];
+  assert.equal(event.schemaVersion, "ai-painter-current-execution-registry-event-v1", "historical_registry_event_schema_invalid");
+  assert.match(event.transactionId ?? "", /^current-execution-registry-(?:advance|migration)-[a-zA-Z0-9-]+$/u,
+    "historical_registry_transaction_id_invalid");
+  assert.ok(Number.isSafeInteger(event.registryRevision) && event.registryRevision > 0, "historical_registry_revision_invalid");
+  assert.ok(Number.isSafeInteger(event.eventSequence) && event.eventSequence > 0, "historical_registry_sequence_invalid");
+  const base = `${registryRoot}/transactions/${event.transactionId}`;
+  const transactionPath = `${base}/transaction.json`;
+  const transaction = reader.json(transactionPath);
+  assert.equal(transaction.schemaVersion, "ai-painter-current-execution-registry-transaction-v1", "historical_registry_transaction_schema_invalid");
+  assert.equal(transaction.status, "committed", "historical_registry_transaction_not_committed");
+  for (const key of ["transactionId", "registryRevision", "eventSequence", "currentSha256"])
+    assert.equal(transaction[key], event[key], `historical_registry_transaction_conflict:${key}`);
+  bindingEqual(transaction.currentStaged, {path: `${base}/current.staged.json`, sha256: receipt.sha256},
+    "historical_registry_snapshot_binding_conflict");
+  assert.equal(transaction.registryEventStaged?.path, `${base}/registry-event.staged.jsonl`, "historical_registry_event_path_conflict");
+  const stagedEvent = reader.bound(transaction.registryEventStaged);
+  equal(stagedEvent, event, "historical_registry_event_bytes_conflict");
+  const snapshotBytes = reader.bytes(transaction.currentStaged.path, receipt.sha256);
+  assert.equal(snapshotBytes.length, receipt.bytes, "historical_registry_snapshot_size_conflict");
+  const snapshot = JSON.parse(snapshotBytes);
+  assert.equal(snapshot.schemaVersion, "ai-painter-current-execution-registry-v1", "historical_registry_snapshot_schema_invalid");
+  assert.equal(snapshot.registryIdentity, "ai-painter-current-execution", "historical_registry_snapshot_identity_invalid");
+  for (const key of ["transactionId", "registryRevision", "eventSequence"])
+    assert.equal(snapshot[key], event[key], `historical_registry_snapshot_conflict:${key}`);
+  return { historicalReceipt: receipt, snapshot: transaction.currentStaged,
+    transaction: reader.receipts().find(r => r.path === transactionPath),
+    registryRevision: event.registryRevision, currentTaskSelected: false, qualificationGranted: false };
+}
+
 // The registry supplies an explicit immutable root, not permission and not a
 // guessed sibling manifest. Recovery semantics and source bytes are rechecked
 // by the historical reader; unrelated terminal formats cannot fill a gap.
@@ -101,12 +148,14 @@ function assessFoundationEvidence(reader, capability, contract, audit) {
 
 export function adjudicateStage4SplitData({ root, manifestBinding, baselineBinding,
   geometryBinding, exposureBinding, progress = () => {} }) {
-  const reader = createReader(root), blockers = [], historicalProgramBindings = [];
+  const reader = createReader(root), blockers = [], historicalProgramBindings = [], historicalRegistryBindings = [];
   const sourceEvidence = { baseline: baselineBinding, geometry: geometryBinding, exposure: exposureBinding };
   let datasetReleaseIdentity = null;
   let findings = null;
   const add = (code, scope, details) => blockers.push({ code, scope, details });
   try {
+    const registry = reader.json(".runtime/ai-painter/current-execution-registry/current.json");
+    assert.equal(registry.activeExecution, null, "data_adjudication_overlaps_active_execution");
     // Bind this evaluator before reading evidence; mid-read edits fail below.
     for (const logical of PROGRAMS) reader.bytes(logical);
     const manifest = reader.bound(manifestBinding);
@@ -148,10 +197,14 @@ export function adjudicateStage4SplitData({ root, manifestBinding, baselineBindi
         assert.match(receipt.sha256 ?? "", /^[a-f0-9]{64}$/u, "audit_input_sha_missing");
         assert.ok(Number.isSafeInteger(receipt.bytes) && receipt.bytes >= 0, "audit_input_size_invalid");
         const program = /^(scripts|ml)\/.*\.(?:mjs|js|ts|tsx|py)$/u.test(receipt.path);
-        const bytes = reader.bytes(receipt.path, program ? undefined : receipt.sha256);
-        if (program) historicalProgramBindings.push({ ...receipt, actualSha256: sha256(bytes),
-          matchesCurrentBytes: receipt.sha256 === sha256(bytes), currentQualificationGranted: false });
-        else assert.equal(bytes.length, receipt.bytes, "audit_input_size_conflict");
+        if (program) {
+          const bytes = reader.bytes(receipt.path);
+          historicalProgramBindings.push({ ...receipt, actualSha256: sha256(bytes),
+            matchesCurrentBytes: receipt.sha256 === sha256(bytes), currentQualificationGranted: false });
+        } else {
+          const recovered = readHistoricalAuditReceipt(reader, receipt);
+          if (recovered) historicalRegistryBindings.push(recovered);
+        }
       }
     }
     progress("historical_report_data_receipts_rehashed");
@@ -185,8 +238,6 @@ export function adjudicateStage4SplitData({ root, manifestBinding, baselineBindi
     // Reproduce the immutable historical report under its original semantics,
     // then assess the same bytes with the corrected reader. Never rewrite old
     // evidence or silently treat its old gap count as today's verdict.
-    const registry = reader.json(".runtime/ai-painter/current-execution-registry/current.json");
-    assert.equal(registry.activeExecution, null, "data_adjudication_overlaps_active_execution");
     const recoveryRoots = recoveryRootsFromRegistry(reader, registry);
     const currentExposure = auditHistoricalExposure({ root, reader, rows: source.samples, inventory: exposure.inventory,
       semanticsVersion: 3, recoveryRoots, progress });
@@ -271,6 +322,7 @@ export function adjudicateStage4SplitData({ root, manifestBinding, baselineBindi
     status: stale ? "unknown_or_stale" : "blocked_data_qualification",
     datasetManifest: manifestBinding, datasetReleaseIdentity, sourceEvidence, blockers, findings,
     historicalProgramBindings: uniqueFindings(historicalProgramBindings),
+    historicalRegistryBindings: uniqueFindings(historicalRegistryBindings),
     evidenceScope: "historical_rgb_input_bytes_verified_geometry_use_and_foundation_replayed_no_new_rgb_semantic_review",
     requirements: ["AP-TRAIN-002", "AP-CHANGE-004"], inputReceipts: reader.receipts(),
     trainingAllowed: false, qualification: { trainingAllowed: false, dataQualified: false },

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
+import { parseArgs } from "node:util";
 
 const root = process.cwd();
 const node = process.execPath;
@@ -82,7 +83,17 @@ const checks = [
   ["split-smoke-real-trainer-cpu-integration", python, ["-m", "unittest", "ml/ai-painter/tests/test_stage4_split_smoke.py"]],
   ["split-formal-full-epoch-cpu-integration", python, ["-B", "-m", "unittest", "ml/ai-painter/tests/test_stage4_split_formal_training.py"]],
   ["console-current-projection", node, ["scripts/check-ai-console-current-execution-projection.mjs", ...projectionArgs]],
+  ["historical-registry-receipt-regression", node, ["--test", "scripts/tests/test-ai-painter-historical-registry-receipt.mjs"]],
+  ["current-entrypoint-command-regression", node, ["--test", "scripts/tests/test-ai-painter-current-entrypoint-command.mjs"]],
+  ["console-review-availability-regression", node, ["--test", "scripts/tests/test-ai-console-current-projection-availability.mjs"]],
 ];
+
+export function stage4CoreArgsForComponent(binding, hasSuccessorGraph) {
+  if (!hasSuccessorGraph) return ["scripts/check-ai-painter-stage4-core.mjs"];
+  assert.ok(typeof binding?.path === "string" && binding.path.length > 0, "explicit CPU component path required");
+  assert.match(binding.sha256 ?? "", /^[a-f0-9]{64}$/u, "explicit CPU component hash required");
+  return ["scripts/check-ai-painter-stage4-core.mjs", "--component", binding.path, "--sha256", binding.sha256];
+}
 
 // The runner and its evidence consumer share ONE inventory. Exporting this
 // immutable list must not launch tests or mutate the caller's exit status.
@@ -109,9 +120,14 @@ export function validateStage4CoreQualificationSummary(summary) {
 }
 
 function runStage4Core() {
+  const { values } = parseArgs({ options: { component: { type: "string" }, sha256: { type: "string" } } });
+  const componentContract = values.component || values.sha256 ? { path: values.component, sha256: values.sha256 } : null;
+  if (componentContract) stage4CoreArgsForComponent(componentContract, true);
+  const activeChecks = checks.map(check => componentContract && check[0] === "successor-model-cpu-contract"
+    ? [check[0], node, ["scripts/check-ai-painter-split-successor-cpu-contract.mjs", "--component", componentContract.path, "--sha256", componentContract.sha256]] : check);
   const results = [];
   const failures = [];
-  for (const [identity, command, args, timeout = 240_000] of checks) {
+  for (const [identity, command, args, timeout = 240_000] of activeChecks) {
     const started = performance.now();
     process.stderr.write(`[stage4-core] ${new Date().toISOString()} start ${identity}\n`);
     const result = spawnSync(command, args, {
@@ -158,6 +174,7 @@ function runStage4Core() {
 
   const summary = {
     status: failures.length === 0 ? "passed" : "failed",
+    ...(componentContract ? { componentContract, inheritedParentQualification: false } : {}),
     currentProjectionMode: projectionArgs.length === 0 ? "live_immutable_evidence" : "static_contract_plus_atomic_fixture",
     checks: results,
     failures,

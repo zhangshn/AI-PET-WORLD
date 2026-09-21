@@ -1,14 +1,14 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-08-30 12:26:57 +08:00
+更新时间：2026-09-13 03:26:51 +08:00
 
 状态：active-directory-reference
 
-文档版本：`AI-PET-WORLD-DIRECTORY-1.10`
+文档版本：`AI-PET-WORLD-DIRECTORY-1.11`
 
-生效日期：`2026-08-30`
+生效日期：`2026-09-13`
 
-替代版本：`AI-PET-WORLD-DIRECTORY-1.9`
+替代版本：`AI-PET-WORLD-DIRECTORY-1.10`
 
 文档状态：`active_normative_target`
 
@@ -108,7 +108,12 @@ AI Painter 是类地球世界的视觉表达系统，不能决定世界事实：
 | `src/app/ai-console/` | 整个本地自研AI平台的固定应用壳、四个外层业务Frame、十个内层模块Frame和52个二级工作页。 |
 | `src/app/ai-console/ai-console-theme.module.css` | V19明亮企业控制台主题；统一暖灰白Canvas、白色主体、冷灰白导航/字段层、十模块身份、四Frame身份、状态和资源数据通道，供一级页、七类二级呈现、控制合同与实时观察面共同继承。 |
 | `src/app/api/ai-console/` | 新平台自有的目录、工作页只读查询、精确证据详情和独立控制API；`observability/current-execution`是唯一AI Painter当前执行查询入口，只读取受验证当前登记，不调用旧页面API；控制面开放主登记核验与V11至V16固定新平台登记。 |
-| `src/server/ai-console/` | 新平台受信只读投影协议、固定主登记读取器与模块适配器；`ai-painter-current-execution-projection.ts`是唯一允许连接AI Painter运行事实的桥接器，只读取固定当前执行登记及其显式绑定证据，禁止历史目录扫描；其他模块继续读取各自固定新平台登记。 |
+| `src/server/ai-console/` | 新平台受信投影与模块适配器；当前身份只经`ai-painter-current-execution-projection.ts`读取固定当前登记，禁止扫描回退。独立历史观察按控制台数据API合同第3.2.4节读取派生索引并适配原始证据，不改当前身份或资格；其他模块仍读取固定新平台登记。 |
+| `.runtime/ai-console/training/history-index-v1.sqlite` | V23可恢复派生历史观察索引，仅后台有界写入、GET只读；源证据缺失与冲突不靠改写历史消除。 |
+| `scripts/index-ai-console-training-history.mjs`、`src/instrumentation.ts` | 独立历史后台批次及Node服务生命周期接入，不使用训练启动器、不由GET启动、不影响当前执行或实时资源观察。 |
+| `scripts/lib/ai-console-training-history-index-writer.mjs`、`ai-console-training-history-discovery.mjs` | 派生历史索引写入与受限发现实现，禁止放入只读投影目录或被GET间接导入。 |
+| `D:/AI-PET-WORLD-DATA/catalog/ai-pet-world-catalog.sqlite` | 既有存储目录与迁移索引，历史观察仅参数化只读访问；路径推导run_id和迁移时摘要不等于当前Run及内容核验。 |
+| `D:/AI-PET-WORLD-DATA/cold/runs/` | 已登记冷层归档根；历史读取须核验迁移映射与归档清单，不以整个D盘为允许根，不复制第二套可写业务身份。 |
 | `src/server/ai-console-observability/` | V20新平台本机精确实时观察服务与V17训练遥测登记；固定只读探针采样CPU、内存、磁盘、GPU、显存、温度、功耗和训练特征进程，并输出序号、毫秒起止时间、采样耗时和逐通道时间。训练语义只读新平台独立遥测库。该目录不属于Stage4训练、验证或审核实现。 |
 | `src/server/ai-console-control/` | 新平台受控写入与持久化服务；负责回环操作员会话、同源与CSRF复核、任务登记、能力候选/资格/非活动发布登记、模型结构/非活动训练计划登记、主登记核验、幂等回执、控制事务、正式证据索引、终态任务胶囊库和政策边界报告库；当前不包含训练运行或Runtime执行器。 |
 | `data/ai-console/` | 新平台独立主登记与Schema；当前固定登记15个基础记录集，并定义控制、任务、能力生命周期、训练设计、审核裁决、证据、任务胶囊和政策边界报告Schema，使用`new_ai_console_only`来源边界、可信写入器、单调修订和SHA-256，不保存或迁移旧训练页面内容。 |

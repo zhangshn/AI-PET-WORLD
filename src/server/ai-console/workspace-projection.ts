@@ -6,6 +6,7 @@ import { queryAiConsoleDataProjection } from "./data-projection"
 import { queryAiConsoleEvidenceProjection } from "./evidence-projection"
 import { queryAiConsoleRuntimeProjection } from "./runtime-projection"
 import { queryAiConsolePrimaryRegistryProjection } from "./registry-projection"
+import { queryTrainingHistoryProjection } from "./training-history-projection"
 import { queryAiConsoleSystemProjection } from "./system-projection"
 import { queryAiConsoleTaskProjection } from "./task-projection"
 import { queryAiConsoleTrainingDesignProjection } from "./training-design-projection"
@@ -46,6 +47,9 @@ export async function queryAiConsoleWorkspaceProjection(
   }
   if (workspace.moduleSlug === "reviews" && (workspace.slug === "contracts" || workspace.slug === "failures")) {
     return queryAiConsoleReviewAdjudicationProjection(workspace.slug)
+  }
+  if ((workspace.moduleSlug === "training" && (workspace.slug === "runs" || workspace.slug === "checkpoints")) || (workspace.moduleSlug === "archive" && workspace.slug === "training")) {
+    return queryTrainingHistoryProjection(workspace.slug === 'checkpoints')
   }
   if (workspace.moduleSlug === "training" || workspace.moduleSlug === "reviews" || workspace.moduleSlug === "archive") {
     return queryAiConsolePrimaryRegistryProjection(workspace)

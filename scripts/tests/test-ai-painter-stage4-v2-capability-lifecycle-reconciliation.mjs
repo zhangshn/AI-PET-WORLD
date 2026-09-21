@@ -7,6 +7,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+import { FROZEN_COMPILER, readFrozenCompilerFixture } from "./helpers/stage4-frozen-condition-compiler.mjs";
 
 import {
   buildStage4V2CandidateSpec,
@@ -276,7 +277,16 @@ function createFixture(root) {
     ...Object.values(actualContract.prerequisiteBindings).map((binding) => binding.path),
     ...Object.values(actualContract.programBindings).map((binding) => binding.path),
   ]);
-  for (const logicalPath of evidencePaths) copyProjectFile(logicalPath, root);
+  for (const logicalPath of evidencePaths) {
+    if (logicalPath === FROZEN_COMPILER.path) {
+      // This suite replays the frozen historical V2 lifecycle. Its fixture
+      // must contain the exact historical source, not today's compiler.
+      assert.equal(actualContract.programBindings.conditionCompiler.sha256, FROZEN_COMPILER.sha256);
+      const target = absolute(root, logicalPath);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, readFrozenCompilerFixture(PROJECT_ROOT));
+    } else copyProjectFile(logicalPath, root);
+  }
   const classificationPath = actualTerminal.sourceAdjudication.classification.path;
 
   return {

@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "ai-painter-decoder-reconstruction-experiment-policy-v1",
+  "status": "active_bounded_experiment_not_formal_foundation_release",
+  "purpose": "Separately authorized reconstruction experiment: test whether decoder-only updates improve two existing train RGBs while encoder/latent definitions, architecture and reconstruction objective remain unchanged.",
+  "scope": "train_only_decoder_reconstruction_no_generation_or_generalization_claim",
+  "resolution": [
+    256,
+    192
+  ],
+  "sampleIds": [
+    "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v4"
+  ],
+  "sourcePackage": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/painter-learning-capacity-39b8f18b0f6af84ce212a121bf4f31dd5b856fe5d6916f6a341f81caffdb6ae8/experiment.json",
+    "sha256": "07b127bdfeb31754959e9520d64fe1f9248194ac96e8c7ee22461024e1cfcf58"
+  },
+  "sourceResult": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/painter-learning-capacity-39b8f18b0f6af84ce212a121bf4f31dd5b856fe5d6916f6a341f81caffdb6ae8/result.json",
+    "sha256": "e4f08cbe423984dc2040cd9fc458a665bf0f636c28dcf0bfd66ee28ea0bca138"
+  },
+  "diagnosis": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/timestep-diagnosis-66761fa3aa1a311a729a88f264c361fc1f7b8678b60b8a773d07ec507396628e/result.json",
+    "sha256": "ff1d083f25aed05da567beeb9ff950da2beca5156cff8f6ac6145829f860ed71"
+  },
+  "historicalControllerSnapshot": {
+    "originalPath": "scripts/run-ai-painter-learning-capacity-experiment.mjs",
+    "path": ".runtime/ai-painter/learning-capacity-experiments/source-snapshots/e976149b72007c03ee9192659a3b9b3d29cc4f42131036fd4cfaab5ea103bff9/run-ai-painter-learning-capacity-experiment.mjs",
+    "sha256": "e976149b72007c03ee9192659a3b9b3d29cc4f42131036fd4cfaab5ea103bff9"
+  },
+  "reconstructionConfig": {
+    "path": "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v2.json",
+    "sha256": "6146dfd1a96a09f0ce7a35c4d3ebaecbb4c6428d57f58fe0d82222cf6b82718f"
+  },
+  "training": {
+    "epochs": 500,
+    "batchSize": 1,
+    "seed": 20260908,
+    "optimizer": "AdamW",
+    "learningRate": 0.0002,
+    "weightDecay": 0.01,
+    "observationSteps": [
+      0,
+      100,
+      400,
+      1000
+    ],
+    "checkpointRule": "final_step_only_no_selection",
+    "updateScope": "autoencoder.decoder_only",
+    "encoderFrozen": true,
+    "denoiserParticipates": false,
+    "lossVersion": "pixel_edge_laplacian_v2",
+    "lossWeights": {
+      "pixel": 1,
+      "edge": 0.75,
+      "laplacian": 0.25
+    }
+  },
+  "resources": {
+    "maxWallSeconds": 600,
+    "cudaMemoryFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumTemperatureC": 85,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 4,
+    "automaticRetries": 0
+  },
+  "outputRoot": ".runtime/ai-painter/learning-capacity-experiments",
+  "qualification": {
+    "formalDatasetQualified": false,
+    "formalGpuQualified": false,
+    "formalSmokePassed": false,
+    "formalTrainingAllowed": false,
+    "checkpointPromotable": false,
+    "formalInferenceEligible": false,
+    "runtimeFrameAllowed": false,
+    "worldEntryAllowed": false,
+    "usableAsReleasedFoundation": false
+  },
+  "prohibited": {
+    "nonTrainContent": true,
+    "sourceOverwrite": true,
+    "encoderUpdate": true,
+    "denoiserUpdate": true,
+    "modelArchitectureChange": true,
+    "lossChange": true,
+    "formalThresholdChange": true,
+    "automaticRetry": true,
+    "worldPublication": true,
+    "shutdown": true
+  },
+  "comparison": {
+    "baseline": "Exact source Autoencoder on the same two train RGBs; no Denoiser or final responsibility compositor.",
+    "required": "Per-image RGB/edge/Laplacian/color/region comparison at every fixed observation plus direct image inspection. Reconstruction images consume targets and are never generative candidates.",
+    "downstream": "A changed decoder cannot silently replace the existing foundation; any matched Denoiser experiment needs a distinct package and new checks.",
+    "limitations": "Retain the source foundation's three historical binding gaps. No unseen-data, semantic-judge, generalization or game-display qualification."
+  }
+}

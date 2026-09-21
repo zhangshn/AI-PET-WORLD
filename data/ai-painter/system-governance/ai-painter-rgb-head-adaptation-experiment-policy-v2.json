@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "ai-painter-rgb-head-adaptation-experiment-policy-v2",
+  "scope": "two_seen_train_images_rgb_heads_only_no_formal_qualification",
+  "comparisonResult": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/decoder-comparison-f7a8eaab347cbf82051671c34ca70f8129daae8143f205835399288a6369bda4/result.json",
+    "sha256": "9134e3e461aef9b4400fdc80afd56e997ce8b4c55c7c05d5bbd0adcc3061a691"
+  },
+  "sampleIds": [
+    "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v4"
+  ],
+  "resolution": [
+    256,
+    192
+  ],
+  "trainableHeads": [
+    "terrain_path_ground",
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation"
+  ],
+  "training": {
+    "epochs": 500,
+    "batchSize": 1,
+    "seed": 20260908,
+    "optimizer": "AdamW",
+    "learningRate": 0.0001,
+    "weightDecay": 0.01,
+    "observationSteps": [
+      0,
+      100,
+      400,
+      1000
+    ],
+    "checkpointRule": "final_step_only_no_selection",
+    "cachedGeneratedLatents": "exact_bound_cpu_pure_noise_rollout_tensors_for_the_same_two_train_samples",
+    "target": "original_train_rgb_not_reconstruction_or_model_output",
+    "objective": "existing_v6_rgb_terms_and_weights_exact_gradient_equivalent_for_rgb_heads"
+  },
+  "resources": {
+    "maxWallSeconds": 600,
+    "cudaMemoryFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumTemperatureC": 85,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 4,
+    "automaticRetries": 0
+  },
+  "frozen": [
+    "autoencoder_encoder",
+    "autoencoder_decoder",
+    "denoiser_velocity_and_condition_path",
+    "unused_rgb_heads",
+    "architecture",
+    "loss_formulas_and_weights",
+    "source_files",
+    "formal_thresholds"
+  ],
+  "qualification": {
+    "formalDatasetQualified": false,
+    "formalGpuQualified": false,
+    "formalTrainingAllowed": false,
+    "checkpointPromotable": false,
+    "formalInferenceEligible": false,
+    "worldEntryAllowed": false
+  },
+  "prohibited": [
+    "holdout_content",
+    "source_overwrite",
+    "whole_model_retraining",
+    "head_bypass",
+    "automatic_retry",
+    "world_publication",
+    "shutdown"
+  ],
+  "interpretation": "Bounded adaptation on already seen train samples. Cache replay is explicitly limited to the two bound generated latent tensors, not a relaxation of the original Denoiser run policy. Retain all foundation provenance gaps and formal Stage4 blockers.",
+  "predecessorPolicy": "data/ai-painter/system-governance/ai-painter-rgb-head-adaptation-experiment-policy-v1.json",
+  "correction": "The zero-step v1 GPU precheck revealed nonempty object_footprints masks. Include that existing object RGB branch; keep both empty water branches frozen. The total optimizer budget remains 1000, with no weight updates consumed by v1."
+}

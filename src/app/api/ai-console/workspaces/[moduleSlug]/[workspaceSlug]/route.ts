@@ -1,5 +1,6 @@
 import { getAiConsoleWorkspace } from "@/app/ai-console/ai-console-workspace-catalog"
 import { queryAiConsoleWorkspaceProjection } from "@/server/ai-console/workspace-projection"
+import { guardHistoryRequest } from '@/server/ai-console/training-history-http'
 
 export const dynamic = "force-dynamic"
 
@@ -7,6 +8,10 @@ const SAFE_SLUG = /^[a-z][a-z0-9-]{1,47}$/u
 
 export async function GET(request: Request, context: { params: Promise<{ moduleSlug: string; workspaceSlug: string }> }) {
   const { moduleSlug, workspaceSlug } = await context.params
+  if ((moduleSlug === 'training' && ['runs', 'checkpoints'].includes(workspaceSlug)) || (moduleSlug === 'archive' && workspaceSlug === 'training')) {
+    const rejected = guardHistoryRequest(request, ['view'])
+    if (rejected) return rejected
+  }
   if (!SAFE_SLUG.test(moduleSlug) || !SAFE_SLUG.test(workspaceSlug)) {
     return queryError("invalid_workspace_identity", 400)
   }

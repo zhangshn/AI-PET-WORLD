@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "ai-painter-decoder-binding-ab-experiment-policy-v1",
+  "scope": "two_seen_train_images_decoder_binding_ab_no_formal_qualification",
+  "sourceTrajectory": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/trajectory-diagnosis-b7eb0c032ae580f08b7a487546cd53566d1ee934b77d8a1663cff93dce311d0c/result.json",
+    "sha256": "f70f6f87457d6fa73557b7bcf7b246c75f8d444e63f0777b774e27f9fd5d2fbc"
+  },
+  "resolution": [256, 192],
+  "sampleIds": [
+    "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v4"
+  ],
+  "arms": ["original_decoder_control", "reconstruction_decoder_adaptation"],
+  "training": {
+    "optimizerStepsPerArm": 1000,
+    "totalOptimizerStepLimit": 2000,
+    "batchSize": 1,
+    "epochsPerArm": 500,
+    "seed": 20260908,
+    "optimizer": "AdamW",
+    "learningRate": 0.0001,
+    "weightDecay": 0.01,
+    "optimizerState": "fresh_identical_per_arm_no_resume",
+    "timestepSampling": "unchanged_deterministic_full_schedule_cover_v2",
+    "target": "original_train_rgb",
+    "objective": "unchanged_full_v6_predict_and_measure",
+    "trainable": "existing_denoiser_except_all_rgb_responsibility_heads",
+    "checkpointRule": "final_step_only_no_selection"
+  },
+  "resources": {
+    "maxWallSeconds": 900,
+    "maxGpuSeconds": 600,
+    "cudaMemoryFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumTemperatureC": 85,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 4,
+    "automaticRetries": 0
+  },
+  "comparison": {
+    "seedsBySample": [[20264008, 20264108, 20264208], [20264009, 20264109, 20264209]],
+    "inferenceSteps": 50,
+    "targetUsedForInitialization": false,
+    "sameInitialDenoiser": true,
+    "sameTrainingNoiseAndTimesteps": true,
+    "measureBothArmsWithCurrentDecoder": true,
+    "retainAllResults": true
+  },
+  "frozen": ["both_autoencoders", "all_rgb_responsibility_heads", "normalization", "source_rgb_and_conditions", "architecture", "loss_formulas_and_weights", "formal_thresholds"],
+  "qualification": {
+    "formalDatasetQualified": false,
+    "formalGpuQualified": false,
+    "formalTrainingAllowed": false,
+    "checkpointPromotable": false,
+    "formalInferenceEligible": false,
+    "worldEntryAllowed": false
+  },
+  "interpretation": "One bounded paired learning experiment under formal specification section 9.6. Only the frozen decoder used by the training objective differs between arms. Both outputs are measured with the same current reconstructed decoder to isolate training-binding effects; the control is not a rollback. The inherited two-image timestep parity blind spot is held constant and remains disclosed. No formal qualification or automatic follow-up is granted."
+}

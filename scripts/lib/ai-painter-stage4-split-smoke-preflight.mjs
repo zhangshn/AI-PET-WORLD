@@ -1,9 +1,10 @@
-// Read-only v1 proposal adapter, NOT a Smoke runner or qualification publisher.
+// Read-only versioned proposal adapter, NOT a Smoke runner or qualification publisher.
 // Historical CPU component evidence has no GPU, real-training or V2 authority.
 import assert from "node:assert/strict";
 import { createReader, sha256, validateMembership } from "./ai-painter-stage4-dataset-audit.mjs";
 import { adjudicateStage4SplitData } from "./ai-painter-stage4-split-data-adjudication.mjs";
-import { validateStage4CoreQualificationSummary } from "../check-ai-painter-stage4-core.mjs";
+import { validateStage4CoreQualificationSummary, stage4CoreArgsForComponent } from "../check-ai-painter-stage4-core.mjs";
+import { verifyConditionCompilerLineageCandidate } from "./ai-painter-stage4-condition-compiler-lineage.mjs";
 
 export const SPLIT_SMOKE_PREFLIGHT_SCHEMA = "ai-painter-stage4-split-smoke-preflight-v1";
 const PARENT = {
@@ -15,6 +16,8 @@ const PROGRAMS = [
   "ml/ai-painter/src/ai_painter/complete_world/split_release.py",
   "ml/ai-painter/src/ai_painter/complete_world/split_training.py",
 ];
+const PROGRAMS_V2 = [...PROGRAMS, "scripts/lib/ai-painter-stage4-split-smoke-preflight.mjs",
+  "scripts/lib/ai-painter-stage4-condition-compiler-lineage.mjs"];
 const CPU_PROGRAMS = [
   "scripts/check-ai-painter-stage4-split-smoke-component.mjs", "scripts/check-ai-painter-stage4-core.mjs",
   "ml/ai-painter/tests/test_stage4_split_smoke.py", "scripts/audit-ai-painter-stage4-split-release.mjs",
@@ -24,6 +27,11 @@ const CPU_PROGRAMS = [
   "scripts/reconcile-ai-painter-stage4-v2-capability-lifecycle.mjs",
   "scripts/tests/test-ai-painter-stage4-lifecycle-state-semantics.mjs",
   "scripts/tests/test-ai-painter-stage4-v2-capability-lifecycle-reconciliation.mjs",
+  "scripts/check-ai-painter-split-successor-cpu-contract.mjs", "scripts/lib/ai-painter-current-entrypoint-command.mjs",
+  "scripts/check-ai-painter-current-entrypoints.mjs", "scripts/check-ai-console-current-execution-projection.mjs",
+  "scripts/tests/helpers/current-execution-projection-cpu.mjs",
+  "scripts/tests/test-ai-painter-historical-registry-receipt.mjs", "scripts/tests/test-ai-painter-current-entrypoint-command.mjs",
+  "scripts/tests/test-ai-console-current-projection-availability.mjs",
 ];
 const EVALUATORS = [
   "scripts/lib/ai-painter-stage4-split-smoke-preflight.mjs",
@@ -56,10 +64,12 @@ function binding(value) {
 function keys(value, expected, message) { equal(Object.keys(value ?? {}).sort(), [...expected].sort(), message); }
 function byteBinding(reader, value) { const b = binding(value); reader.bytes(b.path, b.sha256); return b; }
 
-function readComponent(reader, contractBinding) {
+function readComponent(reader, contractBinding, root) {
   const contract = reader.bound(contractBinding);
-  keys(contract, [...CORE_KEYS, "capabilityVersion", "immutable", "status", "qualification"], "unsupported_component_fields");
-  assert.equal(contract.schemaVersion, "ai-painter-stage4-split-isolated-smoke-contract-v1", "unsupported_component_schema");
+  const v2 = contract.schemaVersion === "ai-painter-stage4-split-isolated-smoke-contract-v2";
+  assert.ok(v2 || contract.schemaVersion === "ai-painter-stage4-split-isolated-smoke-contract-v1", "unsupported_component_schema");
+  const coreKeys = v2 ? [...CORE_KEYS, "compilerLineage"] : CORE_KEYS;
+  keys(contract, [...coreKeys, "capabilityVersion", "immutable", "status", "qualification"], "unsupported_component_fields");
   assert.equal(contract.status, "inactive_component_candidate_not_execution_qualified", "component_not_inactive");
   assert.equal(contract.immutable, true, "component_not_immutable");
   equal(contract.qualification, QUALIFICATION, "component_qualification_conflict");
@@ -70,14 +80,22 @@ function readComponent(reader, contractBinding) {
   assert.equal(contract.modelArchitectureId, parent.architectureId, "architecture_binding_conflict");
   equal(contract.frozenProgramBindings, parent.programBindings, "frozen_program_bindings_conflict");
   assert.equal(Object.keys(parent.programBindings).length, 18, "unsupported_parent_program_set");
-  equal(contract.programBindings.map((v) => v.path), PROGRAMS, "unsupported_component_program_set");
-  for (const b of [...Object.values(contract.frozenProgramBindings), ...contract.programBindings]) byteBinding(reader, b);
+  equal(contract.programBindings.map((v) => v.path), v2 ? PROGRAMS_V2 : PROGRAMS, "unsupported_component_program_set");
+  let effective = contract.frozenProgramBindings;
+  if (v2) {
+    const graph = reader.bound(binding(contract.compilerLineage));
+    verifyConditionCompilerLineageCandidate(root, binding(contract.compilerLineage));
+    equal(graph.parentCapability, PARENT, "compiler_lineage_parent_conflict");
+    effective = graph.effectiveProgramBindings;
+    for (const b of graph.evaluatorBindings) byteBinding(reader, b);
+  }
+  for (const b of [...Object.values(effective), ...contract.programBindings]) byteBinding(reader, b);
   equal(contract.baseConfig, { path: "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v6.json",
     sha256: "fadda5b15947de94bd689ce82e1bfa0ce88c18c7c4445549a79660594d6cc97c" }, "unsupported_base_config");
   byteBinding(reader, contract.baseConfig);
   assert.match(contract.derivedCpuConfigSha256 ?? "", /^[a-f0-9]{64}$/u, "derived_config_binding_missing");
-  const core = Object.fromEntries(CORE_KEYS.map((key) => [key, contract[key]]));
-  assert.equal(contract.capabilityVersion, `stage4-split-isolated-smoke-v1-${digest(core)}`, "component_identity_not_reproduced");
+  const core = Object.fromEntries(coreKeys.map((key) => [key, contract[key]]));
+  assert.equal(contract.capabilityVersion, `stage4-split-isolated-smoke-${v2 ? "v2" : "v1"}-${digest(core)}`, "component_identity_not_reproduced");
 
   const manifest = reader.bound(binding(contract.datasetManifest));
   assert.equal(manifest.status, "immutable_split_candidate_not_training_qualified", "dataset_not_inactive_candidate");
@@ -120,6 +138,16 @@ function readComponent(reader, contractBinding) {
   return { contract, selections };
 }
 
+/** Component identity only: no CPU/data grant, process, dispatch or registry write. */
+export function inspectSplitSmokeComponent({ root, componentContractBinding }) {
+  const reader = createReader(root);
+  const result = readComponent(reader, binding(componentContractBinding), root);
+  reader.verifyStable();
+  return { ...result, status: "component_identity_verified_not_execution_qualified",
+    inputReceipts: reader.receipts(), trainingAllowed: false, gpuAllowed: false,
+    nextMachineAction: null, runtimeAdapterRegistered: false };
+}
+
 function executionPassed(execution, label) {
   assert.ok(execution && execution.exitCode === 0 && execution.signal === null && execution.interrupted === null,
     `${label}_execution_not_successful`);
@@ -138,7 +166,7 @@ function readCpu(reader, cpuBinding, contractBinding, contract, selections, requ
   assert.equal(report.syntheticCpuOptimizerExecutedByTests, true, "cpu_synthetic_test_scope_missing");
   executionPassed(report.selectionExecution, "selection");
   executionPassed(report.coreExecution, "core");
-  equal(report.coreExecution.args, ["scripts/check-ai-painter-stage4-core.mjs"], "cpu_core_entrypoint_conflict");
+  equal(report.coreExecution.args, stage4CoreArgsForComponent(contractBinding, Boolean(contract.compilerLineage)), "cpu_core_entrypoint_conflict");
   const args = report.selectionExecution.args;
   assert.ok(args.length === 4 && args[0] === "-B" && args[1] === "-c" && typeof args[2] === "string",
     "cpu_selection_entrypoint_conflict");
@@ -148,6 +176,10 @@ function readCpu(reader, cpuBinding, contractBinding, contract, selections, requ
   assert.ok(offset >= 0, "cpu_core_summary_missing");
   equal(JSON.parse(report.coreExecution.stdout.slice(offset + 1)), report.coreSummary, "cpu_core_output_conflict");
   validateStage4CoreQualificationSummary(report.coreSummary);
+  if (contract.compilerLineage) {
+    equal(report.coreSummary.componentContract, contractBinding, "cpu_core_component_binding_conflict");
+    assert.equal(report.coreSummary.inheritedParentQualification, false, "cpu_core_parent_qualification_inherited");
+  }
   const tensors = report.selectedTensors;
   assert.equal(tensors?.status, "real_selected_tensors_verified_cpu_only", "cpu_selected_tensors_missing");
   for (const key of ["optimizerCreated", "modelCreated", "gpuStarted"]) assert.equal(tensors[key], false, "cpu_tensor_scope_conflict");
@@ -196,7 +228,7 @@ export function preflightSplitSmoke(options) {
     // to an old CPU report. Its own existing program receipts must still match.
     for (const logical of EVALUATORS) reader.bytes(logical);
     phase = "component";
-    ({ contract, selections } = readComponent(reader, componentContractBinding));
+    ({ contract, selections } = readComponent(reader, componentContractBinding, options.root));
     for (const logical of CPU_PROGRAMS) reader.bytes(logical);
     const requiredCpuReceipts = reader.receipts().filter((r) => !EVALUATORS.includes(r.path));
     checks.component = "explicit_bindings_verified";
@@ -239,12 +271,13 @@ export function preflightSplitSmoke(options) {
   const inputReceipts = reader?.receipts() ?? [];
   const canPlan = stable && checks.component === "explicit_bindings_verified" && checks.cpu === "bound_cpu_component_report_verified";
   const proposal = canPlan ? {
-    schemaVersion: "ai-painter-stage4-split-smoke-plan-candidate-v1", status: "blocked_unregistered_proposal",
+    schemaVersion: contract.compilerLineage ? "ai-painter-stage4-split-smoke-plan-candidate-v2" : "ai-painter-stage4-split-smoke-plan-candidate-v1", status: "blocked_unregistered_proposal",
     actionId: "resolve_split_smoke_data_and_execution_prerequisites", dispatchable: false, entrypointId: null,
     capabilityVersion: contract.capabilityVersion, parentCapability: contract.parentCapability,
     inheritedParentQualification: false, datasetManifest: contract.datasetManifest,
     datasetReleaseIdentity: contract.datasetReleaseIdentity, selections,
     componentContract: componentContractBinding, cpuComponentEvidence: cpuEvidenceBinding,
+    ...(contract.compilerLineage ? { compilerLineage: contract.compilerLineage } : {}),
     dataEvidenceBindings, programBindings: contract.programBindings, frozenProgramBindings: contract.frozenProgramBindings,
     evaluatorBindings: inputReceipts.filter((r) => EVALUATORS.includes(r.path)),
     inputReceipts, blockers, trainingAllowed: false,

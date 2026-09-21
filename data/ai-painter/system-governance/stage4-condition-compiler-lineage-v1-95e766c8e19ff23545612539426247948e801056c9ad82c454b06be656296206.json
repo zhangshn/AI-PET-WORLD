@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "ai-painter-stage4-condition-compiler-lineage-candidate-v1",
+  "scope": "condition_compiler_extraction_program_binding_only",
+  "parentCapability": {
+    "path": "data/ai-painter/system-governance/stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2.json",
+    "sha256": "9e4eb98a1bdcc4afe03aa7fcecfb8350ddaff8030a62e143c289461d7041eef3"
+  },
+  "replacedHistoricalBinding": {
+    "path": "scripts/compile-current-world-visual-conditions.mjs",
+    "sha256": "ec3caf37b3169cf50342cccc4ade2b8277903e77dc3a70cee3a60d886e136447"
+  },
+  "historicalSource": {
+    "commit": "542c1c05e7ab75123db85b656725ec96ac4eb003",
+    "path": "scripts/compile-current-world-visual-conditions.mjs",
+    "sha256": "ec3caf37b3169cf50342cccc4ade2b8277903e77dc3a70cee3a60d886e136447"
+  },
+  "effectiveProgramBindings": {
+    "modelFactory": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "22d4d980be37b2c706c6ba7dbe5deb7d0f2f7a060e11af19024f96ffd2aa6bd0"
+    },
+    "successorModule": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/stage4_semantic_transport_v2.py",
+      "sha256": "8cf06a8d3e32ae830151d35aa237710eab8d6aa651c2647058b5821ffe198e97"
+    },
+    "cpuContractTest": {
+      "path": "ml/ai-painter/tests/test_stage4_semantic_transport_v2.py",
+      "sha256": "8cc50ed0a0a11f529446b5a482a4f1423708498a4c55f1a48d521b069b478086"
+    },
+    "currentConditionValidator": {
+      "path": "scripts/check-current-world-visual-conditions.mjs",
+      "sha256": "c23acf310de715603ee26095cc10131f7a0d9337e3c049616b98c1ed5fab6dcd"
+    },
+    "typedResizeBehaviorValidator": {
+      "path": "ml/ai-painter/scripts/check_typed_condition_resize_behavior.py",
+      "sha256": "da041974c99fb2eed6c444180530b545b0c0cd4efd2c8961e8c831bca6f4c93c"
+    },
+    "conditionSemanticAlignmentValidator": {
+      "path": "scripts/check-ai-painter-contract-semantic-alignment.mjs",
+      "sha256": "e58d23d01fccd09f863a59a11ecf2a543d05d0bd32dc773ff91438899e864a7c"
+    },
+    "datasetReleaseValidator": {
+      "path": "scripts/check-ai-painter-stage4-v2-mvp64-dataset-release.mjs",
+      "sha256": "8adbbcb8eb79b8246866ee3ca2f24d66d821e6a2d3515daa4d57bbbad8cb9f63"
+    },
+    "trainer": {
+      "path": "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+      "sha256": "a0c56725542f9e0e36958b5941e3f70b440cf036add924f8d5ee9c54dc55f33d"
+    },
+    "trainerSupport": {
+      "path": "ml/ai-painter/scripts/ai_painter_stage4_semantic_transport_v2_trainer_support.py",
+      "sha256": "d331417e87f544194e3efb631f4b4ed5d187cbc75d1990bb7b4e32b5e8826adf"
+    },
+    "trainerSupportCpuChecker": {
+      "path": "ml/ai-painter/scripts/check_stage4_semantic_transport_v2_trainer_support_cpu.py",
+      "sha256": "5907dd2aa7375d331ff53c8cd4a20013ba07ed4e23783b6b7650ff5c6846582f"
+    },
+    "trainerSupportCpuTest": {
+      "path": "ml/ai-painter/tests/test_stage4_semantic_transport_v2_trainer_support.py",
+      "sha256": "5e27cfa7b9c27c24d9b9bda3bf4c34852a4f8d3d65fa153796c29e060a678c4d"
+    },
+    "reviewThresholdValidator": {
+      "path": "scripts/check-ai-painter-stage4-v2-machine-review-threshold-contract.mjs",
+      "sha256": "6643825feb3ed684192d7afc963c685474b9dab27e28824c2bc5f5b99e0e8901"
+    },
+    "reviewCompositionBoundary": {
+      "path": "scripts/lib/ai-painter-stage4-v2-screen-review-contract-boundary.mjs",
+      "sha256": "71574b70a04b54e63714c7a783cb52bb6e7cb576cab963536cdbc42e8c02911b"
+    },
+    "foundationAssetValidator": {
+      "path": "scripts/check-ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract.mjs",
+      "sha256": "746bd1ee0088d3d7ff25a272cc18b02288beb75ea2d4c4d213b5000e103f78b7"
+    },
+    "cpuContractValidator": {
+      "path": "scripts/check-ai-painter-stage4-full-resolution-typed-semantic-transport-rgb-responsibility.mjs",
+      "sha256": "5b91b36f1a02a3bdc6cdda088fccb49576fa8d20f046e065e00132c39c009998"
+    },
+    "cpuAcceptanceRunner": {
+      "path": "scripts/run-ai-painter-stage4-v2-cpu-contract-acceptance.mjs",
+      "sha256": "f8809b507234c08b348c5304d1ad4761765e0929123a561e5773d0f1af19d2ce"
+    },
+    "cpuAcceptanceTest": {
+      "path": "scripts/test-ai-painter-stage4-v2-cpu-contract-acceptance.mjs",
+      "sha256": "e4e2f8da821767a331deb1aca2b3815fa141940c23db8311e5b75c23a954d634"
+    },
+    "conditionCompiler": {
+      "path": "scripts/compile-current-world-visual-conditions.mjs",
+      "sha256": "b07188f053f4bfe1c48b702b1ab2dd4ed8c5009275215ec4e16257abd6c38465"
+    },
+    "conditionRaster": {
+      "path": "scripts/lib/current-world-condition-raster.mjs",
+      "sha256": "49e06032c80e5b20131213d731e19b2b6d1a86679e7aa421c09f58b760053e3d"
+    }
+  },
+  "dependencyEdges": [
+    {
+      "from": "conditionCompiler",
+      "to": "conditionRaster",
+      "importedSymbols": [
+        "rasterizePolygons",
+        "rasterizeFootprints",
+        "fillBounds"
+      ]
+    }
+  ],
+  "evaluatorBindings": [
+    {
+      "path": "scripts/lib/ai-painter-stage4-condition-compiler-lineage.mjs",
+      "sha256": "4283d08a027a6330d20d5cb78b316dfe1e37ed5436126001a9df2ab6a4aed770"
+    },
+    {
+      "path": "scripts/lib/ai-painter-stage4-dataset-audit.mjs",
+      "sha256": "a137047df1190aeb4a60bce02761e9a8a10d48e7be19ba34d7e127db750a13eb"
+    }
+  ],
+  "qualification": {
+    "trainingAllowed": false,
+    "gpuAllowed": false,
+    "capabilityReleased": false,
+    "smokeAdapterRegistered": false,
+    "inheritedParentQualification": false
+  },
+  "requiredBeforeExecution": [
+    "new_smoke_component_identity_and_adapter",
+    "independent_cpu_evidence",
+    "data_source_and_exposure_qualification",
+    "foundation_lineage_qualification",
+    "current_candidate_gpu_qualification",
+    "lifecycle_resource_and_recovery_verification"
+  ],
+  "candidateId": "stage4-condition-compiler-lineage-v1-95e766c8e19ff23545612539426247948e801056c9ad82c454b06be656296206",
+  "immutable": true,
+  "status": "inactive_program_binding_candidate_not_execution_qualified"
+}

@@ -25,6 +25,8 @@ from ai_painter.complete_world.split_release import (
 )
 
 POLICY = "data/ai-painter/system-governance/ai-painter-learning-capacity-experiment-policy-v1.json"
+FOLLOWUP_POLICY = "data/ai-painter/system-governance/ai-painter-learning-capacity-experiment-policy-v2.json"
+BUDGET_POLICY = "data/ai-painter/system-governance/ai-painter-learning-capacity-experiment-policy-v3.json"
 SCHEMA = "ai-painter-learning-capacity-experiment-package-v1"
 CHECKPOINT_SCHEMA = "ai-painter-learning-capacity-experiment-checkpoint-v1"
 PROGRAMS = (
@@ -35,8 +37,10 @@ PROGRAMS = (
     "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
     "ml/ai-painter/scripts/ai_painter_stage4_semantic_transport_v2_trainer_support.py",
     "ml/ai-painter/src/ai_painter/complete_world/model.py",
+    "ml/ai-painter/src/ai_painter/complete_world/diffusion.py",
     "ml/ai-painter/tests/test_learning_capacity_experiment.py",
     "src/server/ai-painter-current-execution-registry.mjs",
+    "ml/ai-painter/scripts/diagnose_learning_capacity_noise.py",
 )
 
 
@@ -71,6 +75,54 @@ def file_binding(root, logical):
     return {"path": logical, "sha256": digest(project_file(root, logical).read_bytes())}
 
 
+@contextmanager
+def preserve_training_random_state():
+    """Extra observations must not change future train noise or loader seeds."""
+    import random
+    import numpy as np
+    import torch
+    python_state, numpy_state = random.getstate(), np.random.get_state()
+    devices = list(range(torch.cuda.device_count())) if torch.cuda.is_initialized() else []
+    try:
+        with torch.random.fork_rng(devices=devices):
+            yield
+    finally:
+        random.setstate(python_state)
+        np.random.set_state(numpy_state)
+
+
+def validate_followup_policy(policy, parent):
+    require(policy["schemaVersion"] == "ai-painter-learning-capacity-experiment-policy-v2", "followup policy schema mismatch")
+    require(set(policy) == set(parent) | {"parentPolicy", "referenceExperiment", "diagnosisEvidence", "comparison"}, "followup policy fields changed")
+    for key in parent:
+        if key not in {"schemaVersion", "purpose", "training"}:
+            require(policy[key] == parent[key], f"followup changed frozen boundary: {key}")
+    require(policy["training"] == {**parent["training"], "epochs": 300, "timestepCoverageStride": 137,
+            "observationSteps": [60, 300, 600], "preserveTrainingRandomStateDuringObservation": True}, "followup training budget changed")
+    require(policy["comparison"]["formalQualificationAllowed"] is False, "comparison cannot grant qualification")
+
+
+def timestep_coverage(config, epochs=30):
+    from train_ai_assisted_conditional_denoiser import training_timesteps
+    values = [[int(training_timesteps(config, epoch, index, 2, 1, int(config["diffusionSteps"]), "cpu").item())
+               for epoch in range(epochs)] for index in range(2)]
+    return [{"minimum": min(row), "maximum": max(row), "unique": len(set(row)),
+             "decileCounts": [sum(t * 10 // int(config["diffusionSteps"]) == band for t in row) for band in range(10)]}
+            for row in values]
+
+
+def validate_budget_policy(policy, parent):
+    require(policy["schemaVersion"] == "ai-painter-learning-capacity-experiment-policy-v3", "budget policy schema mismatch")
+    require(parent["schemaVersion"] == "ai-painter-learning-capacity-experiment-policy-v2", "budget parent schema mismatch")
+    require(set(policy) == set(parent), "budget policy fields changed")
+    mutable = {"schemaVersion", "purpose", "training", "parentPolicy", "referenceExperiment", "diagnosisEvidence", "comparison"}
+    for key in parent:
+        if key not in mutable:
+            require(policy[key] == parent[key], f"budget changed frozen boundary: {key}")
+    require(policy["training"] == {**parent["training"], "epochs": 3000, "observationSteps": [600, 1800, 3600, 6000]}, "6000-step budget changed")
+    require(policy["comparison"]["formalQualificationAllowed"] is False, "comparison cannot grant qualification")
+
+
 def save_json(path, value, *, mutable=False):
     data = canonical_bytes(value) + b"\n"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -98,15 +150,27 @@ def selected_rows(source, ids):
     return rows
 
 
-def prepare(root):
+def prepare(root, policy_path=POLICY):
     """Read metadata and selected train content only; do not import CUDA/model."""
     from ai_painter_stage4_semantic_transport_v2_trainer_support import (
         build_stage4_semantic_transport_v2_cpu_inactive_config,
         validate_stage4_semantic_transport_v2_trainer_contract,
         FORMAL_OBJECTIVE_CONTRACT_PATH,
     )
-    policy_binding = file_binding(root, POLICY)
+    require(policy_path in (POLICY, FOLLOWUP_POLICY, BUDGET_POLICY), "unregistered experiment policy")
+    policy_binding = file_binding(root, policy_path)
     policy = bound_json(root, policy_binding)
+    followup = policy_path != POLICY
+    budget_followup = policy_path == BUDGET_POLICY
+    if budget_followup:
+        require(policy["parentPolicy"]["path"] == FOLLOWUP_POLICY, "budget parent policy mismatch")
+        parent = bound_json(root, policy["parentPolicy"])
+        require(parent["parentPolicy"]["path"] == POLICY, "budget ancestor policy mismatch")
+        validate_followup_policy(parent, bound_json(root, parent["parentPolicy"]))
+        validate_budget_policy(policy, parent)
+    elif followup:
+        require(policy["parentPolicy"]["path"] == POLICY, "followup parent policy mismatch")
+        validate_followup_policy(policy, bound_json(root, policy["parentPolicy"]))
     require(policy["scope"] == "train_only_learning_capacity_no_generalization_claim", "experiment scope changed")
     require(policy["resolution"] == [256, 192], "experiment resolution changed")
     require(policy["nonTrainContentAllowed"] is False, "non-train content forbidden")
@@ -121,6 +185,8 @@ def prepare(root):
     require(all(r["sampleId"] in membership["sampleIds"] for r in rows), "selected train membership mismatch")
     review = bound_json(root, policy["sourceReview"])
     receipts = [policy_binding, policy["sourceManifest"], manifest["sourceIndex"], manifest["splits"]["train"], policy["sourceReview"]]
+    if budget_followup:
+        receipts.append(parent["parentPolicy"])
     import numpy as np
     from PIL import Image
     for row in rows:
@@ -168,6 +234,33 @@ def prepare(root):
     config["predictionTarget"] = "velocity"
     config["training"]["batchSize"] = 1
     config["training"]["seed"] = policy["training"]["seed"]
+    comparison_evidence = None
+    if followup:
+        reference = bound_json(root, policy["referenceExperiment"])
+        diagnosis = bound_json(root, policy["diagnosisEvidence"])
+        require(reference["status"] == "experiment_executed_not_visual_qualified"
+                and reference["selectedSampleIds"] == policy["sampleIds"], "reference experiment mismatch")
+        diagnosis_status = "cpu_timestep_diagnosis_completed_not_visual_qualified" if budget_followup else "cpu_noise_diagnosis_completed_not_visual_qualified"
+        require(diagnosis["status"] == diagnosis_status
+                and diagnosis["sourceResult"] == policy["referenceExperiment"], "diagnosis reference mismatch")
+        reference_package = bound_json(root, diagnosis["sourcePackage"])
+        require(reference_package["experimentIdentity"] == reference["experimentIdentity"], "reference package mismatch")
+        reference_payload = {k: v for k, v in reference_package.items() if k != "experimentIdentity"}
+        require(reference_package["experimentIdentity"] == "painter-learning-capacity-" + digest(canonical_bytes(reference_payload)), "reference payload mismatch")
+        if budget_followup:
+            require(reference["optimizerSteps"] == 600, "budget reference must be the completed 600-step experiment")
+            config["training"]["timestepCoverageStride"] = policy["training"]["timestepCoverageStride"]
+        require(reference_package["config"] == config and reference_package["selectedRows"] == rows
+                and reference_package["foundation"] == foundation["checkpoint"], "comparison changed model, data, Loss or initialization config")
+        original_coverage = timestep_coverage(config)
+        config["training"]["timestepCoverageStride"] = policy["training"]["timestepCoverageStride"]
+        corrected_coverage = timestep_coverage(config)
+        require(all(all(count > 0 for count in row["decileCounts"]) for row in corrected_coverage), "short experiment misses timestep bands")
+        comparison_evidence = {"previous60StepTimeCoverage": original_coverage, "current60StepTimeCoverage": corrected_coverage,
+                               "modelLossLearningRateDataUnchanged": True, "previousCheckpointLoadedForTraining": False,
+                               "referenceInitialDenoiserStateSha256": reference["initialDenoiserStateSha256"],
+                               "limits": policy["comparison"]}
+        receipts.extend([policy["parentPolicy"], policy["referenceExperiment"], policy["diagnosisEvidence"], diagnosis["sourcePackage"]])
     programs = [file_binding(root, logical) for logical in PROGRAMS]
     support = bound_json(root, config["training"]["stage4SemanticTransportV2TrainerSupport"] | {
         "path": config["training"]["stage4SemanticTransportV2TrainerSupport"]["contractPath"],
@@ -195,6 +288,8 @@ def prepare(root):
         "training": policy["training"], "resources": policy["resources"], "resolution": policy["resolution"],
         "qualification": policy["qualification"],
     }
+    if comparison_evidence is not None:
+        payload["comparisonEvidence"] = comparison_evidence
     identity = "painter-learning-capacity-" + digest(canonical_bytes(payload))
     package = {**payload, "experimentIdentity": identity}
     output = project_file(root, policy["outputRoot"] + "/" + identity)
@@ -234,7 +329,7 @@ def verify_package(root, binding):
     require([r["sampleId"] for r in package["selectedRows"]] == policy["sampleIds"], "experiment sample scope mismatch")
     for receipt in package["inputReceipts"]:
         read_bound(root, receipt)
-    require(prepare(root) == binding, "package does not reproduce the current experimental policy and inputs")
+    require(prepare(root, package["policy"]["path"]) == binding, "package does not reproduce the current experimental policy and inputs")
     return package
 
 
@@ -283,7 +378,7 @@ def execute(root, binding):
             build_diffusion_schedule, compute_latent_normalization, train_epoch,
             evaluate_velocity_prediction, set_seed, normalize_latent, denormalize_latent,
             add_noise, velocity_target, predict_and_measure, inference_timesteps,
-            deterministic_velocity_step, decode_final_visible_rgb, save_tensor_png,
+            deterministic_velocity_step, decode_final_visible_rgb, save_tensor_png, recover_from_velocity,
         )
         torch.set_num_threads(package["resources"]["cpuThreads"])
         config = package["config"]
@@ -314,6 +409,8 @@ def execute(root, binding):
         del checkpoint
         frozen_before = frozen(model, phase="loaded")
         initial_state = state_hash(model.denoiser.state_dict())
+        if "comparisonEvidence" in package:
+            require(initial_state == package["comparisonEvidence"]["referenceInitialDenoiserStateSha256"], "reference random initialization differs")
         normalization = compute_latent_normalization(model, dataset, device)
         diffusion = build_diffusion_schedule(config, device)
 
@@ -330,7 +427,7 @@ def execute(root, binding):
             save_json(output / "progress.json", value, mutable=True)
             print(json.dumps(value), flush=True)
 
-        def render(index, filename, *, conditions_override=None):
+        def render(index, filename, *, conditions_override=None, base_filename=None, trajectory=None):
             item = dataset[index]
             conditions = item["conditions"].unsqueeze(0).to(device) if conditions_override is None else conditions_override
             generator = torch.Generator(device=device).manual_seed(package["training"]["seed"] + 3000 + index)
@@ -341,8 +438,19 @@ def execute(root, binding):
                     velocity = model.predict_velocity(latent, timestep_batch, conditions)
                     grid = inference_timesteps(config["diffusionSteps"], config["inferenceSteps"], device)
                     previous = int(grid[step_index + 1].item()) if step_index + 1 < len(grid) else -1
+                    if trajectory is not None and step_index in (0, len(grid) // 4, len(grid) // 2, 3 * len(grid) // 4, len(grid) - 1):
+                        from diagnose_learning_capacity_noise import image_metrics
+                        predicted_clean, _ = recover_from_velocity(latent, velocity, int(timestep.item()), diffusion["alphasCumulative"])
+                        prediction = decode_final_visible_rgb(model, denormalize_latent(predicted_clean, normalization), conditions, config).clamp(0, 1)
+                        trajectory.append({"timestep": int(timestep.item()), "rgb": image_metrics(torch, prediction.cpu(), item["image"][None])})
                     latent = deterministic_velocity_step(latent, velocity, int(timestep.item()), previous, diffusion["alphasCumulative"])
-                rgb = decode_final_visible_rgb(model, denormalize_latent(latent, normalization), conditions, config).clamp(0, 1)
+                if base_filename is not None:
+                    rgb, evidence = decode_final_visible_rgb(model, denormalize_latent(latent, normalization), conditions, config,
+                        return_stage4_semantic_responsibility_evidence=True)
+                    save_tensor_png(evidence["baseDecodedRgb"][0].clamp(0, 1), output / base_filename)
+                    rgb = rgb.clamp(0, 1)
+                else:
+                    rgb = decode_final_visible_rgb(model, denormalize_latent(latent, normalization), conditions, config).clamp(0, 1)
             require(bool(torch.isfinite(rgb).all()), "nonfinite inference output")
             save_tensor_png(rgb[0], output / filename)
             return rgb.detach().cpu()
@@ -382,6 +490,49 @@ def execute(root, binding):
             render(index, f"before-{index}.png")
         optimizer = torch.optim.AdamW(trainable, lr=float(config["training"]["denoiserLearningRate"]))
         epoch_metrics = []
+        observation_records = []
+        observation_steps = package["training"].get("observationSteps", [])
+
+        def observe(step, boundary):
+            from diagnose_learning_capacity_noise import image_metrics
+            rows = []
+            with preserve_training_random_state(), boundary.evaluation():
+                for index in range(len(dataset)):
+                    limits()
+                    item = dataset[index]
+                    target = item["image"][None]
+                    conditions = item["conditions"][None].to(device)
+                    trajectory = [] if package["policy"]["path"] == BUDGET_POLICY else None
+                    sampled = render(index, f"step-{step}-{index}.png", base_filename=f"step-{step}-base-{index}.png", trajectory=trajectory)
+                    with exact_inference_runtime(torch):
+                        clean_latent = model.autoencoder.encode(target.to(device))
+                        ae = model.autoencoder.decode(clean_latent)
+                        oracle, evidence = decode_final_visible_rgb(model, clean_latent, conditions, config,
+                            return_stage4_semantic_responsibility_evidence=True)
+                    if step == observation_steps[0]:
+                        save_tensor_png(ae[0], output / f"ae-reconstruction-{index}.png")
+                    save_tensor_png(oracle[0].clamp(0, 1), output / f"step-{step}-target-latent-final-{index}.png")
+                    coverage = torch.stack(evidence["responsibilityMasks"]).sum(dim=0).clamp(0, 1).cpu()
+                    masks = {"uncovered_by_rgb_responsibility_masks": 1 - coverage}
+                    order = package["inputIdentity"]["channelOrder"]
+                    masks.update({key: conditions[:, order.index(key):order.index(key) + 1].cpu()
+                                  for key in ("terrain_path_ground", "object_tree", "object_rock", "object_vegetation")})
+                    regional = {}
+                    for key, mask in masks.items():
+                        count = float(mask.sum())
+                        regional[key] = {"pixelWeight": count, "rgbMae": float(((sampled - target).abs() * mask).sum() / (3 * count)) if count > 0 else None}
+                    rows.append({"sampleId": item["sampleId"], "split": "train",
+                        "fullSampling": image_metrics(torch, sampled, target), "regions": regional,
+                        "fullSamplingTrajectory": trajectory,
+                        "aeReconstruction": image_metrics(torch, ae.cpu(), target),
+                        "targetLatentFinal": image_metrics(torch, oracle.cpu(), target)})
+            record = {"optimizerSteps": step, "rows": rows, "recordedAtUtc": now(),
+                      "trainingRandomStatePreserved": True, "modelAndOptimizerUnchangedDuringObservation": True,
+                      "checkpointSelected": False, "formalVisualQualification": False}
+            save_json(output / f"observation-step-{step}.json", record)
+            observation_records.append(record)
+            progress("fixed_train_only_observation_completed", observedStep=step)
+
         training_clock = time.perf_counter()
         with TrainSplitBoundary(model, optimizer, dataset) as boundary:
             for epoch in range(package["training"]["epochs"]):
@@ -393,6 +544,8 @@ def execute(root, binding):
                 require(all(math.isfinite(float(v)) for v in values.values() if isinstance(v, (int, float))), "nonfinite training metric")
                 epoch_metrics.append(values)
                 progress("training", epoch=epoch + 1, metrics=values)
+                if steps in observation_steps:
+                    observe(steps, boundary)
             with boundary.evaluation():
                 final_metrics = evaluate_velocity_prediction(model, loader, diffusion, normalization, device,
                     package["training"]["seed"] + 2000, config["training"]["fixedValidationTimesteps"], config)
@@ -400,6 +553,7 @@ def execute(root, binding):
         training_seconds = time.perf_counter() - training_clock
         del boundary
         require(steps == package["training"]["epochs"] * len(dataset), "optimizer step count mismatch")
+        require([r["optimizerSteps"] for r in observation_records] == observation_steps, "fixed observation coverage incomplete")
         final_state = state_hash(model.denoiser.state_dict())
         require(final_state != initial_state, "training did not update Denoiser")
         frozen_after = frozen(model, phase="after_training", expected_state_sha256=frozen_before["stateSha256"])
@@ -440,7 +594,7 @@ def execute(root, binding):
         swapped_rgb = render(0, "condition-response-0.png", conditions_override=swapped_conditions)
         condition_response = float((after_reload - swapped_rgb).abs().mean())
         artifacts = [file_binding(root, str(p.relative_to(root)).replace("\\", "/")) for p in output.iterdir()
-                     if p.is_file() and (p.suffix == ".png" or p.name in {"experimental-checkpoint.pt", "gpu-probe.json"})]
+                     if p.is_file() and (p.suffix == ".png" or p.name.startswith("observation-step-") or p.name in {"experimental-checkpoint.pt", "gpu-probe.json"})]
         for receipt in package["inputReceipts"]:
             read_bound(root, receipt)
         result = {"status": "experiment_executed_not_visual_qualified", "executionState": "completed",
@@ -449,6 +603,8 @@ def execute(root, binding):
                   "selectedSampleIds": [r["sampleId"] for r in package["selectedRows"]],
                   "trainOnlyBaselineMetrics": baseline, "trainOnlyFinalMetrics": final_metrics,
                   "epochMetrics": epoch_metrics, "stepEvidence": step_evidence,
+                  "fixedTrainOnlyObservations": observation_records,
+                  "comparisonEvidence": package.get("comparisonEvidence"),
                   "initialDenoiserStateSha256": initial_state, "finalDenoiserStateSha256": final_state,
                   "foundationBefore": frozen_before, "foundationAfter": frozen_after,
                   "checkpointReloadExact": True, "checkpointReloadMaxAbsoluteDifference": reload_max_difference,
@@ -476,10 +632,11 @@ def main():
     parser.add_argument("mode", choices=["prepare", "run"])
     parser.add_argument("--package")
     parser.add_argument("--sha256")
+    parser.add_argument("--policy", choices=[POLICY, FOLLOWUP_POLICY, BUDGET_POLICY], default=POLICY)
     args = parser.parse_args()
     root = Path.cwd()
     if args.mode == "prepare":
-        print(json.dumps(prepare(root)))
+        print(json.dumps(prepare(root, args.policy)))
         return 0
     require(args.package and args.sha256, "exact package binding required")
     return execute(root, {"path": args.package, "sha256": args.sha256})

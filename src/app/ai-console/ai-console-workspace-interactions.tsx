@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { AiConsoleTrainingHistory } from './ai-console-training-history'
 import { aiCapabilityDomains } from "./ai-console-catalog"
 import { AiConsoleCapabilityLifecycleControl, AiConsoleRegistryVerificationControl, AiConsoleReviewAdjudicationControl, AiConsoleRuntimeReleaseControl, AiConsoleTaskRegistryControl, AiConsoleTrainingDesignControl, AiConsoleWorldControl } from "./ai-console-control-surface"
 import type {
@@ -534,7 +535,13 @@ function WorkspaceProjection({ activeArea, projection, workspace }: { activeArea
   )
 }
 
-export function AiConsoleWorkspaceWorkbench({ initialProjection, workspace }: { initialProjection?: WorkspaceQueryPayload; workspace: AiConsoleWorkspaceDefinition }) {
+export function AiConsoleWorkspaceWorkbench(props: { initialProjection?: WorkspaceQueryPayload; workspace: AiConsoleWorkspaceDefinition }) {
+  const { workspace } = props
+  if ((workspace.moduleSlug === 'training' && ['runs', 'checkpoints'].includes(workspace.slug)) || (workspace.moduleSlug === 'archive' && workspace.slug === 'training')) return <AiConsoleTrainingHistory />
+  return <AiConsoleStandardWorkspaceWorkbench {...props} />
+}
+
+function AiConsoleStandardWorkspaceWorkbench({ initialProjection, workspace }: { initialProjection?: WorkspaceQueryPayload; workspace: AiConsoleWorkspaceDefinition }) {
   const [activeArea, setActiveArea] = useState(workspace.workAreas[0] ?? "默认视图")
   const [contractState, setContractState] = useState<"connecting" | "ready" | "rejected">(initialProjection ? "ready" : "connecting")
   const [projection, setProjection] = useState<WorkspaceQueryPayload | null>(initialProjection ?? null)

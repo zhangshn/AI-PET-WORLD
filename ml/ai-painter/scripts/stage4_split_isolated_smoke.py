@@ -16,6 +16,11 @@ from ai_painter.complete_world.split_release import (
 from ai_painter.complete_world.split_training import TrainSplitBoundary, state_hash
 
 SCHEMA = "ai-painter-stage4-split-isolated-smoke-contract-v1"
+SCHEMA_V2 = "ai-painter-stage4-split-isolated-smoke-contract-v2"
+COMPILER_LINEAGE = {
+    "path": "data/ai-painter/system-governance/stage4-condition-compiler-lineage-v1-95e766c8e19ff23545612539426247948e801056c9ad82c454b06be656296206.json",
+    "sha256": "d40eb85a7ae6c0ef0c3a7041bdf2ec86253abb1185d22b208b0c815abf0d6cd1",
+}
 PARENT = {
     "path": "data/ai-painter/system-governance/stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2.json",
     "sha256": "9e4eb98a1bdcc4afe03aa7fcecfb8350ddaff8030a62e143c289461d7041eef3",
@@ -25,6 +30,31 @@ PROGRAMS = (
     "ml/ai-painter/src/ai_painter/complete_world/split_release.py",
     "ml/ai-painter/src/ai_painter/complete_world/split_training.py",
 )
+PROGRAMS_V2 = PROGRAMS + (
+    "scripts/lib/ai-painter-stage4-split-smoke-preflight.mjs",
+    "scripts/lib/ai-painter-stage4-condition-compiler-lineage.mjs",
+)
+
+
+def verify_compiler_lineage(root, lineage_binding, parent):
+    # One explicit, reviewed transition. Never accept caller-rehashed replacement
+    # programs, edit the historical parent, or fall back to this graph for v1.
+    if lineage_binding != COMPILER_LINEAGE:
+        raise ValueError("unsupported compiler lineage binding")
+    graph = bound_json(root, lineage_binding)
+    if (graph["parentCapability"] != PARENT
+            or graph["replacedHistoricalBinding"] != parent["programBindings"]["conditionCompiler"]
+            or graph["status"] != "inactive_program_binding_candidate_not_execution_qualified"
+            or any(graph["qualification"].values())):
+        raise ValueError("compiler lineage parent or qualification conflict")
+    effective = graph["effectiveProgramBindings"]
+    unchanged = {key: value for key, value in parent["programBindings"].items() if key != "conditionCompiler"}
+    if (set(effective) != set(unchanged) | {"conditionCompiler", "conditionRaster"}
+            or any(effective[key] != value for key, value in unchanged.items())):
+        raise ValueError("compiler lineage altered unrelated frozen programs")
+    for binding in [*effective.values(), *graph["evaluatorBindings"]]:
+        read_bound(root, binding)
+    return graph
 
 
 def selected_indices(dataset, sample_ids, expected_split):
@@ -41,12 +71,15 @@ def selected_indices(dataset, sample_ids, expected_split):
     return [by_id[sample_id] for sample_id in sample_ids]
 
 
-def build_inactive_contract(root, dataset_binding, train_sample_id, validation_sample_id):
+def build_inactive_contract(root, dataset_binding, train_sample_id, validation_sample_id, *, compiler_lineage=None):
     from ai_painter_stage4_semantic_transport_v2_trainer_support import build_stage4_semantic_transport_v2_cpu_inactive_config
     root = Path(root).resolve()
     parent = bound_json(root, PARENT)
-    for binding in parent["programBindings"].values():
-        read_bound(root, binding)
+    if compiler_lineage is None:
+        for binding in parent["programBindings"].values():
+            read_bound(root, binding)
+    else:
+        verify_compiler_lineage(root, compiler_lineage, parent)
     manifest, rows = load_package(root, dataset_binding)
     selections = {}
     for split, sample_id in (("train", train_sample_id), ("validation", validation_sample_id)):
@@ -58,7 +91,7 @@ def build_inactive_contract(root, dataset_binding, train_sample_id, validation_s
     if train_sample_id == validation_sample_id:
         raise ValueError("Smoke train/validation identities overlap")
     core = {
-        "schemaVersion": SCHEMA, "parentCapability": PARENT,
+        "schemaVersion": SCHEMA if compiler_lineage is None else SCHEMA_V2, "parentCapability": PARENT,
         "modelArchitectureId": parent["architectureId"],
         "datasetManifest": deepcopy(dataset_binding),
         "datasetReleaseIdentity": manifest["datasetReleaseIdentity"],
@@ -74,9 +107,12 @@ def build_inactive_contract(root, dataset_binding, train_sample_id, validation_s
                        "lossOverrideAllowed": False, "thresholdOverrideAllowed": False},
         "frozenProgramBindings": parent["programBindings"],
         "programBindings": [{"path": logical, "sha256": digest(project_file(root, logical).read_bytes())}
-                            for logical in PROGRAMS],
+                            for logical in (PROGRAMS if compiler_lineage is None else PROGRAMS_V2)],
     }
-    identity = "stage4-split-isolated-smoke-v1-" + digest(canonical_bytes(core))
+    if compiler_lineage is not None:
+        core["compilerLineage"] = deepcopy(compiler_lineage)
+    version = "v1" if compiler_lineage is None else "v2"
+    identity = "stage4-split-isolated-smoke-" + version + "-" + digest(canonical_bytes(core))
     return {**core, "capabilityVersion": identity, "immutable": True,
             "status": "inactive_component_candidate_not_execution_qualified",
             "qualification": {"cpuComponentEvidenceRequired": True, "historicalDataAuditRequired": True,
@@ -87,9 +123,15 @@ def build_inactive_contract(root, dataset_binding, train_sample_id, validation_s
 
 def verify_inactive_contract(root, contract_binding):
     contract = bound_json(Path(root), contract_binding)
+    schema = contract.get("schemaVersion")
+    if schema not in {SCHEMA, SCHEMA_V2}:
+        raise ValueError("unsupported Smoke contract schema")
+    if (schema == SCHEMA_V2) != ("compilerLineage" in contract):
+        raise ValueError("Smoke schema and compiler lineage conflict")
+    kwargs = {"compiler_lineage": contract["compilerLineage"]} if schema == SCHEMA_V2 else {}
     expected = build_inactive_contract(root, contract["datasetManifest"],
                                       contract["selections"]["train"]["sampleIds"][0],
-                                      contract["selections"]["validation"]["sampleIds"][0])
+                                      contract["selections"]["validation"]["sampleIds"][0], **kwargs)
     if contract != expected:
         raise ValueError("Smoke contract no longer reproduces its data/program identity")
     return contract
@@ -189,11 +231,17 @@ def main():
     parser.add_argument("--dataset-sha256", required=True)
     parser.add_argument("--train-sample", required=True)
     parser.add_argument("--validation-sample", required=True)
+    parser.add_argument("--compiler-lineage")
+    parser.add_argument("--compiler-lineage-sha256")
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
+    if bool(args.compiler_lineage) != bool(args.compiler_lineage_sha256):
+        parser.error("compiler lineage requires both explicit path and SHA-256")
+    lineage = ({"path": args.compiler_lineage, "sha256": args.compiler_lineage_sha256}
+               if args.compiler_lineage else None)
     root = Path.cwd()
     contract = build_inactive_contract(root, {"path": args.dataset_manifest, "sha256": args.dataset_sha256},
-                                       args.train_sample, args.validation_sample)
+                                       args.train_sample, args.validation_sample, compiler_lineage=lineage)
     data = canonical_bytes(contract) + b"\n"
     logical = "data/ai-painter/system-governance/" + contract["capabilityVersion"] + ".json"
     binding = {"path": logical, "sha256": digest(data)}

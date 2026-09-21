@@ -5,15 +5,32 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { readCurrentExecutionRegistry, advanceCurrentExecutionRegistry } from "../src/server/ai-painter-current-execution-registry.mjs";
 
 const root = process.cwd();
 const python = path.join(root, "ml/ai-painter/.venv/Scripts/python.exe");
-const worker = "ml/ai-painter/scripts/painter_learning_capacity_experiment.py";
+const defaultWorker = "ml/ai-painter/scripts/painter_learning_capacity_experiment.py";
+const reconstructionPolicy = "data/ai-painter/system-governance/ai-painter-decoder-reconstruction-experiment-policy-v1.json";
 const env = { ...process.env, PYTHONPATH: [path.join(root, "ml/ai-painter/src"), path.join(root, "ml/ai-painter/scripts")].join(path.delimiter), PYTHONIOENCODING: "utf-8", PYTHONUNBUFFERED: "1", CUBLAS_WORKSPACE_CONFIG: ":4096:8" };
 const sha = data => createHash("sha256").update(data).digest("hex");
 const bind = logical => ({ path: logical, sha256: sha(fs.readFileSync(path.join(root, logical))) });
 const read = logical => JSON.parse(fs.readFileSync(path.join(root, logical), "utf8"));
+export function replaceHeartbeatFile(temporary, target, { rename = fs.renameSync, pause = milliseconds => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds) } = {}) {
+  // Windows readers can briefly deny replacement. Keep the old file intact;
+  // retry only this atomic rename, never delete it or restart model work.
+  for (let attempt = 0; ; attempt += 1) {
+    try { rename(temporary, target); return; }
+    catch (error) {
+      if (!["EPERM", "EACCES", "EBUSY"].includes(error.code) || attempt >= 5) throw error;
+      pause(25 * (attempt + 1));
+    }
+  }
+}
+export function guardedHeartbeat(heartbeat, onFailure) {
+  try { heartbeat(); return true; }
+  catch (error) { onFailure(error); return false; }
+}
 function write(logical, value, mutable = false) {
   const target = path.join(root, logical);
   fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -21,7 +38,7 @@ function write(logical, value, mutable = false) {
   const fd = fs.openSync(temporary, mutable ? "w" : "wx");
   try { fs.writeFileSync(fd, JSON.stringify(value, null, 2) + "\n"); fs.fsyncSync(fd); }
   finally { fs.closeSync(fd); }
-  if (mutable) fs.renameSync(temporary, target);
+  if (mutable) replaceHeartbeatFile(temporary, target);
 }
 function runCpu(args, timeout = 120000) {
   const result = spawnSync(python, args, { cwd: root, env, encoding: "utf8", windowsHide: true, timeout, maxBuffer: 2 ** 22 });
@@ -35,8 +52,11 @@ function processIdentity() {
   const value = JSON.parse(result.stdout.replace(/^\uFEFF/u, ""));
   return `${process.pid}:${value.creationDate}`;
 }
+export function ownedWorkerIsRunning(child) {
+  return Boolean(child && child.exitCode === null && child.signalCode === null && Number.isInteger(child.pid) && child.pid > 0);
+}
 function stopOwnedWorker(child) {
-  if (!child || child.exitCode !== null || !Number.isInteger(child.pid)) return;
+  if (!ownedWorkerIsRunning(child)) return;
   if (process.platform === "win32") {
     // The venv redirector owns the real interpreter. Stop only this spawned tree.
     spawnSync("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true, timeout: 10000, encoding: "utf8" });
@@ -45,18 +65,29 @@ function stopOwnedWorker(child) {
 
 async function main() {
   const mode = process.argv[2];
-  assert(["prepare", "run"].includes(mode) && process.argv.length === 3, "usage: node scripts/run-ai-painter-learning-capacity-experiment.mjs prepare|run");
+  assert(["prepare", "run"].includes(mode), "usage: node scripts/run-ai-painter-learning-capacity-experiment.mjs prepare|run [--policy path]");
+  const policy = process.argv[3] === "--policy" && process.argv.length === 5 ? process.argv[4] : null;
+  assert(process.argv.length === 3 || policy !== null, "invalid experiment arguments");
+  const policyArgs = policy === null ? [] : ["--policy", policy];
+  const reconstruction = policy === reconstructionPolicy;
+  const worker = reconstruction ? "ml/ai-painter/scripts/painter_decoder_reconstruction_experiment.py" : defaultWorker;
+  const testPattern = reconstruction ? "test_decoder_reconstruction_experiment.py" : "test_learning_capacity_experiment.py";
   const entry = read("data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json");
   assert(entry.currentEntrypoints.some(e => e.entryFile === "scripts/run-ai-painter-learning-capacity-experiment.mjs"), "experiment controller is not registered");
   const previous = await readCurrentExecutionRegistry(root);
   assert(previous.ok && previous.registry.activeExecution === null, "current registry is invalid or an execution is active");
-  const cpu = runCpu(["-m", "unittest", "discover", "-s", "ml/ai-painter/tests", "-p", "test_learning_capacity_experiment.py", "-v"]);
-  const packageBinding = JSON.parse(runCpu([worker, "prepare"]).stdout.trim());
+  const controllerTests = spawnSync(process.execPath, ["--test", "scripts/tests/test-ai-painter-experiment-heartbeat.mjs"], {
+    cwd: root, env, encoding: "utf8", windowsHide: true, timeout: 20000, maxBuffer: 2 ** 20,
+  });
+  assert(!controllerTests.error && controllerTests.status === 0, `controller behavior tests failed: ${controllerTests.error?.message ?? ""}\n${controllerTests.stdout}\n${controllerTests.stderr}`);
+  const cpu = runCpu(["-m", "unittest", "discover", "-s", "ml/ai-painter/tests", "-p", testPattern, "-v"]);
+  const packageBinding = JSON.parse(runCpu([worker, "prepare", ...policyArgs]).stdout.trim());
   const pkg = read(packageBinding.path);
   assert.equal(bind(packageBinding.path).sha256, packageBinding.sha256);
   const directory = path.posix.dirname(packageBinding.path);
   const cpuPath = `${directory}/cpu-tests.json`;
-  if (!fs.existsSync(path.join(root, cpuPath))) write(cpuPath, { status: "experiment_cpu_behavior_tests_passed", executionState: "completed", recordedAtUtc: new Date().toISOString(), stdout: cpu.stdout, stderr: cpu.stderr, package: packageBinding });
+  if (!fs.existsSync(path.join(root, cpuPath))) write(cpuPath, { status: "experiment_cpu_behavior_tests_passed", executionState: "completed", recordedAtUtc: new Date().toISOString(), stdout: cpu.stdout, stderr: cpu.stderr, package: packageBinding,
+    controllerBehaviorTests: { program: bind("scripts/tests/test-ai-painter-experiment-heartbeat.mjs"), exitCode: controllerTests.status, stdout: controllerTests.stdout, stderr: controllerTests.stderr } });
   console.log(JSON.stringify({ status: "experiment_prepared_not_gpu_started", package: packageBinding, cpu: bind(cpuPath) }));
   if (mode === "prepare") return;
   assert(!fs.existsSync(path.join(root, directory, "controller-started.json")), "experiment already consumed; no automatic restart");
@@ -68,20 +99,26 @@ async function main() {
   write(lockPath, { schemaVersion: "ai-painter-current-active-execution-lock-v1", ...identity });
   const heartbeat = () => write(heartbeatPath, { schemaVersion: "ai-painter-current-active-execution-heartbeat-v1", ...identity, executionState: "executing", heartbeatAtUtc: new Date().toISOString(), ttlSeconds: 120 }, true);
   heartbeat();
-  const timer = setInterval(heartbeat, 10000);
+  let registered = false;
+  let child = null;
+  let heartbeatFailure = null;
+  const timer = setInterval(() => guardedHeartbeat(heartbeat, error => {
+    heartbeatFailure ??= error;
+    clearInterval(timer);
+    stopOwnedWorker(child);
+  }), 10000);
   const active = { schemaVersion: "ai-painter-current-active-execution-v1", ...identity, executionState: "executing", programLineage: { controller: bind("scripts/run-ai-painter-learning-capacity-experiment.mjs"), worker: bind(worker) }, lock: bind(lockPath), heartbeat: { path: heartbeatPath, ttlSeconds: 120 } };
   const capsule = (logical, evidence) => write(logical, { schemaVersion: "ai-painter-local-task-capsule-v1", taskId: runId, integrity: { status: "verified" }, evidence: evidence.map((b, i) => ({ ...b, kind: `experiment_${i}`, sha256Verified: true })) });
   const cpuCapsule = `${directory}/cpu-capsule.json`;
   capsule(cpuCapsule, [packageBinding, bind(cpuPath)]);
-  let registered = false;
-  let child = null;
   try {
     const activeResult = await advanceCurrentExecutionRegistry({ projectRoot: root, capabilityVersion: runId, packageId: runId, taskId: runId,
-      taskKind: "bounded_train_only_learning_capacity_experiment", taskGoal: "256x192 real training and checkpoint reload experiment; no formal qualification or publication", queueStatus: "running", nextMachineAction: null,
+      taskKind: "bounded_train_only_learning_capacity_experiment", taskGoal: reconstruction ? "256x192 decoder-only train reconstruction; encoder frozen; no Denoiser or formal qualification" : "256x192 real training and checkpoint reload experiment; no formal qualification or publication", queueStatus: "running", nextMachineAction: null,
       runId, lifecycleStage: "isolated_implementation", executionState: "executing", activity: "experiment_running_not_formal_stage4", taskCapsulePath: cpuCapsule, terminalEvidencePath: cpuPath,
       activeExecution: active, expectedPreviousRegistryRevision: previous.registry.registryRevision, expectedPreviousRegistrySha256: previous.registrySha256 });
     assert(activeResult.ok, "experiment active registry commit failed");
     registered = true;
+    if (heartbeatFailure) throw heartbeatFailure;
     let timedOut = false;
     const code = await new Promise((resolve, reject) => {
       child = spawn(python, [worker, "run", "--package", packageBinding.path, "--sha256", packageBinding.sha256], { cwd: root, env, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
@@ -94,6 +131,8 @@ async function main() {
       child.once("error", error => { clearTimeout(timeout); log.end(); reject(error); });
       child.once("close", exitCode => { clearTimeout(timeout); log.end(); resolve(exitCode); });
     });
+    clearInterval(timer);
+    if (heartbeatFailure) throw heartbeatFailure;
     const resultPath = `${directory}/result.json`;
     const result = fs.existsSync(path.join(root, resultPath)) ? read(resultPath) : null;
     const success = code === 0 && result?.status === "experiment_executed_not_visual_qualified" && result?.checkpointReloadExact === true;
@@ -117,11 +156,25 @@ async function main() {
     console.log(JSON.stringify({ status: read(terminalPath).status, terminal: bind(terminalPath), registryRevision: done.registry.registryRevision }));
     if (!success) process.exitCode = 1;
   } catch (error) {
-    if (child && child.exitCode === null) {
+    if (ownedWorkerIsRunning(child)) {
       await new Promise(resolve => { child.once("close", resolve); stopOwnedWorker(child); setTimeout(resolve, 10000); });
     }
     const errorPath = `${directory}/controller-failure.json`;
-    if (!fs.existsSync(path.join(root, errorPath))) write(errorPath, { status: "experiment_controller_failed_closed", executionState: "failed_closed", registered, error: error.stack, recordedAtUtc: new Date().toISOString() });
+    let interruptedProgress = null;
+    let progressReadError = null;
+    try {
+      const progressPath = `${directory}/progress.json`;
+      if (fs.existsSync(path.join(root, progressPath))) {
+        const value = read(progressPath);
+        assert.equal(value.experimentIdentity, runId, "interrupted progress identity mismatch");
+        interruptedProgress = value;
+      }
+    } catch (progressError) { progressReadError = progressError.message; }
+    if (!fs.existsSync(path.join(root, errorPath))) write(errorPath, { status: "experiment_controller_failed_closed", executionState: "failed_closed", registered,
+      experimentIdentity: runId, runId, gpuStarted: interruptedProgress?.gpuStarted ?? null,
+      trainingStarted: interruptedProgress?.trainingStarted ?? null,
+      lastConfirmedOptimizerSteps: interruptedProgress?.optimizerSteps ?? null, actualFinalOptimizerSteps: null,
+      progressReadError, error: error.stack, recordedAtUtc: new Date().toISOString() });
     if (registered) {
       const current = await readCurrentExecutionRegistry(root);
       if (current.ok && current.registry.runId === runId && current.registry.activeExecution !== null) {
@@ -131,6 +184,8 @@ async function main() {
           taskId: runId, taskKind: "bounded_train_only_learning_capacity_experiment", queueStatus: "failed_closed", nextMachineAction: null,
           runId, lifecycleStage: "isolated_implementation", executionState: "failed_closed", activity: "experiment_controller_failed_closed",
           taskCapsulePath: failureCapsule, terminalEvidencePath: errorPath, activeExecution: null,
+          latestTrainingTerminal: interruptedProgress?.trainingStarted === true
+            ? { runId, ...bind(errorPath), status: "experiment_controller_failed_closed", evidence: { manifest: bind(errorPath) } } : null,
           expectedPreviousRegistryRevision: current.registry.registryRevision, expectedPreviousRegistrySha256: current.registrySha256 });
       }
     }
@@ -138,4 +193,6 @@ async function main() {
   } finally { clearInterval(timer); }
 }
 
-main().catch(error => { console.error(error.stack); process.exitCode = 1; });
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  main().catch(error => { console.error(error.stack); process.exitCode = 1; });
+}

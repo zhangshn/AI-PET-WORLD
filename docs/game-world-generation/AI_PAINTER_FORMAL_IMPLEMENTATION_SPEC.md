@@ -1,14 +1,14 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-09-08 03:41:56 +08:00
+更新时间：2026-09-21 00:52:11 +08:00
 
 状态：active-long-term-module-specification
 
-文档版本：`AI-PAINTER-SPEC-1.10`
+文档版本：`AI-PAINTER-SPEC-1.13`
 
-生效日期：`2026-09-08`
+生效日期：`2026-09-21`
 
-替代版本：`AI-PAINTER-SPEC-1.9`
+替代版本：`AI-PAINTER-SPEC-1.12`
 
 文档状态：`active_normative_target`
 
@@ -307,6 +307,18 @@ negativeAlignmentTests
 - 使用既有当前执行登记、锁、心跳、超时和事务提交；关闭外部窗口不构成继续加轮权限。成功只表示实验执行完成，失败如实记录；两者均不修改Stage4资格或发布到`/world`。
 
 上述实验的来源、资源和代码证据由独立机器包验证；不得把CPU-only父合同的未激活标记改为已获GPU或训练资格，也不得把新增实验例外反向用于正式训练。
+
+#### 9.6.1 单次周期性残差受控例外
+
+仅[`ai-painter-endpoint-phase4-experiment-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-endpoint-phase4-experiment-policy-v1.json)定义的独立`endpoint-ab-v4`实验允许增加一个训练目标派生的周期性残差损失，不继承或修改旧策略的`lossChangesAllowed:false`。两组从同一绑定的实验父权重开始，均保留完整原损失和每四个epoch一次的既有终点RGB损失；候选组仅在相同终点增加该项。原图、23通道、冻结资产、采样、种子、既有审核阈值与不可发布边界保持不变。
+
+新项以最终RGB减去train目标的残差为输入，计算4×4相位各自空间均值，去掉各颜色通道的全局偏差后，对全部相位及颜色通道计算平滑RMS。完整公式、固定系数、形状、数值保护和错误处理以本例外机器策略及绑定实现／测试为准；目标不得参与纯噪声初始化或推理条件。不得直接平滑输出图或惩罚原图自身纹理。
+
+该例外只消费一个执行身份，总计最多400次更新（每组200），执行前冻结全部参数；CPU及本候选不更新权重的GPU检查必须通过，失败或预算耗尽即关闭，不自动续训、重复消费或搜索系数。须保留原有六组九指标裁决及真实图像、语义缺陷，指标改善不等于VJ-2或Stage4通过。此例外不允许以新增同类Loss继续延长失败路线；后继路线须另行审查。
+
+零更新GPU显存失败后的内存生命周期复核仅按[`ai-painter-phase4-gpu-recheck-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-phase4-gpu-recheck-policy-v1.json)使用独立身份执行一次。它必须绑定已关闭且零更新的失败、真实CPU等价性证据和修复后程序，保持同一损失及70%显存上限；禁止创建优化器、训练、输出Checkpoint或自动衔接后继任务。该复核不恢复原400步实验的消费资格，也不替换最近训练终态；只登记自己的GPU复核终态。
+
+GPU复核成功后的受控训练仅通过[`ai-painter-phase4-controlled-training-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-phase4-controlled-training-policy-v1.json)建立一个新的不可重复消费执行身份，原零更新失败和复核身份不重用。新包保持相同原图、条件、父模型、损失公式和资源限制，重新通过当前程序CPU及GPU检查后，总计最多400步，固定最终Checkpoint并复验全部12张输出；沿用原有九指标及语义边界，不选优、不发布、不自动衔接后继实验。
 
 ## 10. 自动验证与机器审核
 

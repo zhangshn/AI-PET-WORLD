@@ -152,7 +152,8 @@ class SplitSmokeTests(unittest.TestCase):
             smoke.run_split_smoke_epoch(**self.kwargs)
 
     def test_contract_tampering_cannot_inherit_the_inactive_identity(self):
-        expected = {"datasetManifest": {"path": "manifest.json", "sha256": "a" * 64},
+        expected = {"schemaVersion": smoke.SCHEMA,
+                    "datasetManifest": {"path": "manifest.json", "sha256": "a" * 64},
                     "selections": {"train": {"sampleIds": ["train-a"]},
                                    "validation": {"sampleIds": ["validation-a"]}},
                     "status": "inactive_component_candidate_not_execution_qualified",

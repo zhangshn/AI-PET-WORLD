@@ -1,10 +1,10 @@
 # AI控制台文档入口
 
-更新时间：2026-08-30 12:26:57 +08:00
+更新时间：2026-09-13 03:26:51 +08:00
 
 状态：active-module-document-index
 
-文档版本：`AI-CONSOLE-DOC-INDEX-2.5`
+文档版本：`AI-CONSOLE-DOC-INDEX-2.6`
 
 生效日期：`2026-08-27`
 
@@ -31,9 +31,13 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 ## 关联边界
 
 - `src/app/ai-console/`：AI控制台一级总入口、十个专业模块总览与52个二级业务投影工作台；页面具备业务视图切换、字段筛选、页内定位、上下游、证据关系和可信连接状态，验证控制页支持按完整命令身份精确复核新平台控制回执。
-- `src/app/api/ai-console/`：新平台自有的目录、二级页面查询合同和独立控制API；AP-01至AP-10均通过受信适配器返回。除新平台登记外，只允许`observability/current-execution`通过下述唯一桥接器读取AI Painter正式当前执行登记；不得调用旧页面、旧页面API或旧世界Runtime。
+- `src/app/api/ai-console/`：新平台自有目录、查询合同和独立控制API。当前身份只经`observability/current-execution`正式桥接；历史数据另按数据API合同第3.2.4节使用同一`training/history` API族只读查询独立观察索引。不得调用旧页面、旧页面API或旧世界Runtime。
 - `src/server/ai-console/`：新平台统一只读投影协议、工作页路由、固定主登记读取器和模块投影适配器。AP-01的当前任务/活动执行、AP-03训练总览和AP-04当前审核/结果使用同一AI Painter当前执行投影；队列、设计合同、审核合同及其他平台记录继续读取各自固定新平台登记。
-- `src/server/ai-console/ai-painter-current-execution-projection.ts`：唯一允许的AI Painter运行事实桥接器；只调用正式当前执行登记读取器，严格区分当前项目任务、活动执行、最近训练终态和显式历史选择，并重新计算绑定机器审核时间线的SHA-256。禁止扫描Smoke、Stage、Run、审核或历史目录补值。
+- `src/server/ai-console/ai-painter-current-execution-projection.ts`：唯一当前身份桥接器；只调用正式当前执行登记读取器，严格区分四类身份并重算绑定审核摘要。禁止扫描历史补值。独立历史观察不是当前身份来源。
+- `src/server/ai-console/training-history-*.mjs`及`training-history-*.ts`：历史索引只读查询、版本适配、安全证据读取及API投影，不得导入写入器；不得导入新平台任务、资格或当前训练遥测。
+- `scripts/lib/ai-console-training-history-index-writer.mjs`与`ai-console-training-history-discovery.mjs`：独立历史观察后台的索引写入和受限发现，资源与恢复规则见数据API合同第3.2.4节；与只读投影目录分离，不修改原始证据。
+- `scripts/index-ai-console-training-history.mjs`与`src/instrumentation.ts`：独立历史观察后台的有界批次与Node服务生命周期接入；GET不启动扫描，构建/Edge/预览不启动写入。索引停止只影响历史新鲜度，不影响当前执行或资源观察。
+- `.runtime/ai-console/training/history-index-v1.sqlite`：可恢复的派生历史观察索引；不是正式训练证据、任务库或能力发布身份。
 - `src/app/api/ai-console/observability/current-execution/route.ts`：当前执行无缓存GET；不接受Run、路径或来源参数，不写入文件或数据库，冲突时返回`unknown_or_stale`而不是回退历史记录。
 - `src/app/ai-console/ai-console-current-execution-status.tsx`：一级页面当前执行状态面板；每1000毫秒读取上述受信GET，动态显示登记修订、任务、Run、生命周期、活动执行、最近训练终态、机器审核和历史选择状态。
 - `src/server/ai-console-observability/`：V20新平台本机精确实时观察服务；使用固定只读探针采样CPU、内存、磁盘、NVIDIA GPU、显存、温度、功耗和训练特征进程，并为每次快照登记毫秒级序号、开始/完成时间、采样耗时及通道时间。进程观测不得冒充正式`activeExecution`、Run、Epoch或Loss。

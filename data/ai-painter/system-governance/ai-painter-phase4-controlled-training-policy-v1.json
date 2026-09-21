@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "ai-painter-phase4-controlled-training-policy-v1",
+  "scope": "one_bounded_training_after_verified_zero_update_gpu_recheck",
+  "executionMode": "bounded_training_after_gpu_recheck",
+  "executionLimit": 1,
+  "attemptPath": ".runtime/ai-painter/learning-capacity-experiments/phase4-controlled-training-v1-attempt.json",
+  "requiredPredecessor": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/painter-endpoint-ab-v4-efb2f066a86c243532a80bf617a40f1bd03f0640313da250c73f65a1051005ed/finalize.json",
+    "sha256": "ddf9a9375338c2defbbc3ea8eb5947d2a391c988247f38174355d087b1f9633e"
+  },
+  "trainingStrategy": "full18_rgb11_every4_plus_candidate_phase4_v1",
+  "optimizerStepsPerArm": 200,
+  "totalOptimizerStepLimit": 400,
+  "cpuBehaviorTestsRequired": true,
+  "freshCurrentPackageGpuProbesRequired": true,
+  "cudaMemoryFraction": 0.7,
+  "maxGpuSeconds": 600,
+  "maxWallSeconds": 900,
+  "maximumTemperatureC": 85,
+  "maxOutputMiB": 128,
+  "automaticRetries": 0,
+  "automaticSuccessorAllowed": false,
+  "lossFormulaChangeAllowed": false,
+  "originalDataChangeAllowed": false,
+  "thresholdChangeAllowed": false,
+  "checkpointRule": "final_step_only_no_selection",
+  "reviewRule": "all_six_nine_metrics_no_selection_v1",
+  "requiredReplayImages": 12,
+  "formalQualificationAllowed": false,
+  "worldEntryAllowed": false
+}

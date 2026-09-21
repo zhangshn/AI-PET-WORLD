@@ -6,8 +6,10 @@ import childProcess from "node:child_process";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { preflightSplitSmoke } from "../lib/ai-painter-stage4-split-smoke-preflight.mjs";
-import { STAGE4_CORE_CHECK_IDENTITIES } from "../check-ai-painter-stage4-core.mjs";
+import { preflightSplitSmoke, inspectSplitSmokeComponent } from "../lib/ai-painter-stage4-split-smoke-preflight.mjs";
+import { STAGE4_CORE_CHECK_IDENTITIES, stage4CoreArgsForComponent } from "../check-ai-painter-stage4-core.mjs";
+import { readSplitSmokeCpuComponent } from "../check-ai-painter-stage4-split-smoke-component.mjs";
+import { FROZEN_COMPILER, readFrozenCompilerFixture } from "./helpers/stage4-frozen-condition-compiler.mjs";
 
 const PROJECT = fileURLToPath(new URL("../../", import.meta.url));
 const CONTRACT = "data/ai-painter/system-governance/stage4-split-isolated-smoke-v1-d996ea91c73e7bcdf6c119fabe12d11d7e74a4d116e7e3e3de53faf350dd3dca.json";
@@ -27,6 +29,11 @@ const PROGRAMS = [
   "scripts/lib/ai-painter-stage4-lifecycle-projection.mjs", "scripts/reconcile-ai-painter-stage4-v2-capability-lifecycle.mjs",
   "scripts/tests/test-ai-painter-stage4-lifecycle-state-semantics.mjs",
   "scripts/tests/test-ai-painter-stage4-v2-capability-lifecycle-reconciliation.mjs",
+  "scripts/check-ai-painter-split-successor-cpu-contract.mjs", "scripts/lib/ai-painter-current-entrypoint-command.mjs",
+  "scripts/check-ai-painter-current-entrypoints.mjs", "scripts/check-ai-console-current-execution-projection.mjs",
+  "scripts/tests/helpers/current-execution-projection-cpu.mjs",
+  "scripts/tests/test-ai-painter-historical-registry-receipt.mjs", "scripts/tests/test-ai-painter-current-entrypoint-command.mjs",
+  "scripts/tests/test-ai-console-current-projection-availability.mjs",
 ];
 const CORE_KEYS = ["schemaVersion", "parentCapability", "modelArchitectureId", "datasetManifest", "datasetReleaseIdentity",
   "baseConfig", "derivedCpuConfigSha256", "selections", "schedule", "boundaries", "frozenProgramBindings", "programBindings"];
@@ -56,7 +63,7 @@ function noExecution(result) {
     assert.equal(result.planCandidate.inheritedParentQualification, false);
   }
 }
-function fixture(t) {
+function fixture(t, { v2 = false } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "stage4-split-preflight-test-"));
   t.after(() => {
     const target = fs.realpathSync(root), allowed = fs.realpathSync(os.tmpdir());
@@ -72,12 +79,30 @@ function fixture(t) {
   const bindings = [contract.parentCapability, contract.baseConfig,
     ...Object.values(contract.frozenProgramBindings)];
   for (const b of bindings) {
-    const bytes = fs.readFileSync(path.join(PROJECT, b.path));
+    // Test the historical protocol against its exact historical compiler in an
+    // isolated fixture, not against moving working-tree bytes. No production
+    // reader gets a fallback and every frozen digest is still enforced.
+    const bytes = b.path === FROZEN_COMPILER.path
+      ? readFrozenCompilerFixture(PROJECT) : fs.readFileSync(path.join(PROJECT, b.path));
     assert.equal(sha(bytes), b.sha256, `production frozen bytes changed: ${b.path}`);
     write(root, b.path, bytes);
   }
   contract.programBindings = contract.programBindings.map(b =>
     write(root, b.path, fs.readFileSync(path.join(PROJECT, b.path))));
+  if (v2) {
+    const graphPath = "data/ai-painter/system-governance/stage4-condition-compiler-lineage-v1-95e766c8e19ff23545612539426247948e801056c9ad82c454b06be656296206.json";
+    const graphBytes = fs.readFileSync(path.join(PROJECT, graphPath)), graph = JSON.parse(graphBytes);
+    contract.schemaVersion = "ai-painter-stage4-split-isolated-smoke-contract-v2";
+    contract.compilerLineage = write(root, graphPath, graphBytes);
+    for (const b of [...Object.values(graph.effectiveProgramBindings), ...graph.evaluatorBindings]) {
+      const content = fs.readFileSync(path.join(PROJECT, b.path));
+      assert.equal(sha(content), b.sha256);
+      write(root, b.path, content);
+    }
+    for (const logical of ["scripts/lib/ai-painter-stage4-split-smoke-preflight.mjs",
+      "scripts/lib/ai-painter-stage4-condition-compiler-lineage.mjs"])
+      contract.programBindings.push(write(root, logical, fs.readFileSync(path.join(PROJECT, logical))));
+  }
   write(root, CONTRACT, fs.readFileSync(path.join(PROJECT, CONTRACT)));
   for (const logical of PROGRAMS) write(root, logical, fs.readFileSync(path.join(PROJECT, logical)));
   const channels = Array.from({ length: 23 }, (_, i) => ({ id: `channel-${i}`,
@@ -109,10 +134,12 @@ function fixture(t) {
     sampleIds: [`${split}-0`], rowsSha256: digest(rows.filter((r) => r.sampleId === `${split}-0`)), splitFile: splits[split],
   };
   const saveContract = () => {
-    contract.capabilityVersion = `stage4-split-isolated-smoke-v1-${digest(Object.fromEntries(CORE_KEYS.map((k) => [k, contract[k]])))}`;
+    const coreKeys = v2 ? [...CORE_KEYS, "compilerLineage"] : CORE_KEYS;
+    contract.capabilityVersion = `stage4-split-isolated-smoke-${v2 ? "v2" : "v1"}-${digest(Object.fromEntries(coreKeys.map((k) => [k, contract[k]])))}`;
     return write(root, "fixture/component.json", contract);
   };
   const componentContractBinding = saveContract();
+  write(root, ".runtime/ai-painter/current-execution-registry/current.json", { registryRevision: 7, activeExecution: null });
   const dataEvidenceBindings = Object.fromEntries(["baseline", "geometry", "exposure"].map((name) => [`${name}Binding`,
     write(root, `fixture/${name}.json`, { schemaVersion: "fixture-untrusted-qualified-report", status: "qualified",
       qualification: { trainingAllowed: true, dataQualified: true }, trainingAllowed: true })]));
@@ -121,6 +148,7 @@ function fixture(t) {
       imageTensorSha256: sha(Buffer.from(`fixture-tensor-${split}`)), conditionsTensorSha256: sha(Buffer.from(`fixture-condition-${split}`)),
       datasetSelectionSha256: digest(rows.filter((r) => r.split === split)) })) };
   const coreSummary = { status: "passed", failures: [],
+    ...(v2 ? {componentContract: componentContractBinding, inheritedParentQualification: false} : {}),
     checks: STAGE4_CORE_CHECK_IDENTITIES.map(identity => ({ identity, status: "passed" })),
     currentProjectionMode: "live_immutable_evidence", gpuStarted: false, trainingStarted: false };
   const execution = { command: "fixture-no-process-was-executed", exitCode: 0, signal: null, interrupted: null };
@@ -128,7 +156,7 @@ function fixture(t) {
     schemaVersion: "ai-painter-stage4-split-smoke-component-cpu-verification-v1", status: "cpu_component_verified_runtime_inactive",
     contract: componentContractBinding, qualification: contract.qualification, selectedTensors: tensors,
     selectionExecution: { ...execution, args: ["-B", "-c", "fixture-code-never-executed", JSON.stringify(componentContractBinding)], stdout: JSON.stringify(tensors) },
-    coreSummary, coreExecution: { ...execution, args: ["scripts/check-ai-painter-stage4-core.mjs"], stdout: `fixture checks\n${JSON.stringify(coreSummary, null, 2)}` },
+    coreSummary, coreExecution: { ...execution, args: stage4CoreArgsForComponent(componentContractBinding, v2), stdout: `fixture checks\n${JSON.stringify(coreSummary, null, 2)}` },
     syntheticCpuOptimizerExecutedByTests: true, realDatasetOptimizerExecuted: false, gpuStarted: false,
     trainingStarted: false, runtimeAdapterRegistered: false, currentRegistryModified: false, inputReceipts: snapshot(root),
   };
@@ -136,6 +164,46 @@ function fixture(t) {
   const options = { root, componentContractBinding, cpuEvidenceBinding: saveCpu(), dataEvidenceBindings };
   return { root, options, contract, report, rows, channels, saveContract, saveCpu };
 }
+
+for (const v2 of [false, true]) test(`CPU writer accepts verified v${v2 ? 2 : 1} identity without execution`, t => {
+  const f = fixture(t, { v2 }), before = snapshot(f.root);
+  const result = readSplitSmokeCpuComponent(f.root, f.options.componentContractBinding);
+  assert.deepEqual(result.contract, f.contract);
+  assert.equal(result.contract.qualification.trainingAllowed, false);
+  const inspected = inspectSplitSmokeComponent({root: f.root, componentContractBinding: f.options.componentContractBinding});
+  assert.deepEqual(result.reader.receipts(), inspected.inputReceipts);
+  assert.deepEqual(snapshot(f.root), before);
+});
+
+test("CPU writer keeps old compiler hash enforcement and rejects modified v2 dependencies", t => {
+  for (const v2 of [false, true]) {
+    const f = fixture(t, { v2 });
+    write(f.root, FROZEN_COMPILER.path, Buffer.from("not the bound compiler"));
+    assert.throws(() => readSplitSmokeCpuComponent(f.root, f.options.componentContractBinding), /SHA mismatch/);
+  }
+});
+
+test("CPU writer rejects forged self-reported training qualification", t => {
+  const f = fixture(t, { v2: true });
+  f.contract.qualification.trainingAllowed = true;
+  assert.throws(() => readSplitSmokeCpuComponent(f.root, f.saveContract()), /component_qualification_conflict/);
+});
+
+for (const [name, mutate, expected] of [
+  ["legacy core command", r => { r.coreExecution.args = ["scripts/check-ai-painter-stage4-core.mjs"]; }, "cpu_core_entrypoint_conflict"],
+  ["different core candidate", r => { r.coreSummary.componentContract.sha256 = "0".repeat(64); }, "cpu_core_component_binding_conflict"],
+  ["inherited parent success", r => { r.coreSummary.inheritedParentQualification = true; }, "cpu_core_parent_qualification_inherited"],
+]) test(`v2 CPU evidence rejects ${name}`, t => {
+  const f = fixture(t, {v2: true});
+  // Separate reference identity from its echoed summary before tampering.
+  f.report.coreSummary = structuredClone(f.report.coreSummary);
+  mutate(f.report);
+  f.report.coreExecution.stdout = `fixture checks\n${JSON.stringify(f.report.coreSummary, null, 2)}`;
+  f.options.cpuEvidenceBinding = f.saveCpu();
+  const result = preflightSplitSmoke(f.options);
+  noExecution(result);
+  assert.ok(result.blockers.some(b => b.details?.reason === expected), JSON.stringify(result.blockers));
+});
 
 test("bound file-chain produces only a non-dispatchable CPU repair proposal; real data API rejects forged audit grant", (t) => {
   const f = fixture(t), before = snapshot(f.root);
@@ -152,6 +220,72 @@ test("bound file-chain produces only a non-dispatchable CPU repair proposal; rea
   assert.equal(result.cpuComponentEvidence.tensorsReexecuted, false);
   assert.deepEqual(snapshot(f.root), before);
   assert.equal(preflightSplitSmoke(f.options).planCandidate.planCandidateId, result.planCandidate.planCandidateId);
+});
+
+test("current compiler cannot silently satisfy the historical parent binding", (t) => {
+  const f = fixture(t);
+  const current = fs.readFileSync(path.join(PROJECT, FROZEN_COMPILER.path));
+  assert.notEqual(sha(current), FROZEN_COMPILER.sha256);
+  write(f.root, FROZEN_COMPILER.path, current);
+  const result = preflightSplitSmoke(f.options);
+  noExecution(result);
+  assert.equal(result.checks.component, "unknown_or_stale");
+  assert.equal(result.planCandidate, null);
+  assert.ok(result.blockers.some(b => b.details?.reason === `SHA mismatch: ${FROZEN_COMPILER.path}`));
+});
+
+test("v2 graph reaches the data gate without inheriting training or GPU qualification", t => {
+  const f = fixture(t, { v2: true }), before = snapshot(f.root);
+  const inspected = inspectSplitSmokeComponent({root: f.root, componentContractBinding: f.options.componentContractBinding});
+  assert.equal(inspected.status, "component_identity_verified_not_execution_qualified");
+  assert.equal(inspected.trainingAllowed, false);
+  const result = preflightSplitSmoke(f.options);
+  noExecution(result);
+  assert.equal(result.checks.component, "explicit_bindings_verified", JSON.stringify(result.blockers));
+  assert.equal(result.checks.cpu, "bound_cpu_component_report_verified", JSON.stringify(result.blockers));
+  assert.equal(result.checks.data, "unknown_or_stale");
+  assert.equal(result.planCandidate.schemaVersion, "ai-painter-stage4-split-smoke-plan-candidate-v2");
+  assert.deepEqual(result.planCandidate.compilerLineage, f.contract.compilerLineage);
+  assert.deepEqual(snapshot(f.root), before);
+});
+
+for (const [name, mutate] of [
+  ["lineage omitted", f => {delete f.contract.compilerLineage;}],
+  ["lineage hash forged", f => {f.contract.compilerLineage.sha256 = "0".repeat(64);}],
+  ["v1 schema with v2 graph", f => {f.contract.schemaVersion = "ai-painter-stage4-split-isolated-smoke-contract-v1";}],
+  ["validation used as optimizer split", f => {f.contract.boundaries.optimizerSplit = "validation";}],
+  ["training claimed", f => {f.contract.qualification.trainingAllowed = true;}],
+  ["reader omitted", f => {f.contract.programBindings.pop();}],
+  ["historical parent overwritten", f => {f.contract.frozenProgramBindings.conditionCompiler.sha256 = "0".repeat(64);}],
+]) test(`v2 rejects ${name} even with a recomputed candidate identity`, t => {
+  const f = fixture(t, {v2: true}); mutate(f);
+  f.options.componentContractBinding = f.saveContract();
+  const result = preflightSplitSmoke(f.options);
+  noExecution(result);
+  assert.equal(result.checks.component, "unknown_or_stale");
+  assert.equal(result.planCandidate, null);
+});
+
+for (const logical of ["scripts/lib/current-world-condition-raster.mjs",
+  "scripts/compile-current-world-visual-conditions.mjs",
+  "scripts/lib/ai-painter-stage4-split-smoke-preflight.mjs"]) {
+  test(`v2 rejects changed dependency: ${logical}`, t => {
+    const f = fixture(t, {v2: true});
+    fs.appendFileSync(path.join(f.root, logical), "\n// drift\n");
+    const result = preflightSplitSmoke(f.options);
+    noExecution(result); assert.equal(result.checks.component, "unknown_or_stale");
+    assert.equal(result.planCandidate, null);
+  });
+}
+
+test("v2 cannot reuse CPU evidence bound to a different component", t => {
+  const f = fixture(t, {v2: true});
+  f.report.contract = {path: CONTRACT, sha256: sha(fs.readFileSync(path.join(PROJECT, CONTRACT)))};
+  f.options.cpuEvidenceBinding = f.saveCpu();
+  const result = preflightSplitSmoke(f.options);
+  noExecution(result); assert.equal(result.checks.component, "explicit_bindings_verified");
+  assert.equal(result.checks.cpu, "unknown_or_stale");
+  assert.equal(result.planCandidate, null);
 });
 
 for (const extra of [{ trainingAllowed: true }, { dataQualified: true }, { adjudicateStage4SplitData: () => ({ trainingAllowed: true }) },
@@ -277,7 +411,7 @@ for (const badPath of ["latest/report.json", "fixture/../fixture/cpu-report.json
   });
 }
 
-test("no writes, optimizer/GPU subprocesses or registry lookup on rejected data fixture", (t) => {
+test("rejected data allows only registry reads, never writes, optimizer/GPU subprocesses or dispatch", (t) => {
   const f = fixture(t), before = snapshot(f.root), restored = [];
   const prohibit = (object, name) => {
     const previous = object[name];
@@ -290,7 +424,9 @@ test("no writes, optimizer/GPU subprocesses or registry lookup on rejected data 
   try { result = preflightSplitSmoke(f.options); } finally { restored.reverse().forEach((restore) => restore()); }
   noExecution(result);
   assert.equal(result.checks.cpu, "bound_cpu_component_report_verified", JSON.stringify(result.blockers));
-  assert.ok(!result.inputReceipts.some((r) => r.path.includes("current-execution-registry")));
+  const registryPath = ".runtime/ai-painter/current-execution-registry/current.json";
+  assert.equal(result.inputReceipts.find(r => r.path === registryPath)?.sha256,
+    sha(fs.readFileSync(path.join(f.root, registryPath))));
   assert.deepEqual(snapshot(f.root), before);
 });
 

@@ -6,7 +6,6 @@ import { projectMeasuredSingleChannel, auditProjectedWaterBoundary, bindProjecte
 import { canonicalSha256 } from "../lib/real-earth-region-governance.mjs";
 import { buildVariableWidthCorridorPolygons, replacementPathOriginWithinContract, describeMeasuredWaterDerivation } from "../build-earth-geospatial-complete-map-conditions.mjs";
 import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
 import vm from "node:vm";
 import { rasterizePolygons, rasterizeFootprints, fillBounds } from "../lib/current-world-condition-raster.mjs";
 import { auditBoundHistoricalRgbWater, fingerprintHistoricalRgbWater } from "../lib/ai-assisted-pre-rgb-condition-guide-novelty.mjs";
@@ -14,6 +13,8 @@ import sharp from "sharp";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { readFrozenCompilerFixture, readFrozenHydrologyFixture } from "./helpers/stage4-frozen-condition-compiler.mjs";
 
 function fixture(side = "east") {
   const opposites = { east: "west", west: "east", north: "south", south: "north" };
@@ -99,7 +100,7 @@ test("binding replaces fabricated water ports without granting pending path conn
   assert.throws(() => bindProjectedWaterConnectivity(prior, corrupt), /identity mismatch/);
 });
 test("extracted shared corridor construction is identical to the repository baseline", () => {
-  const old = execFileSync("git", ["show", "HEAD:scripts/build-earth-geospatial-complete-map-conditions.mjs"], { encoding: "utf8" });
+  const old = readFrozenHydrologyFixture(fileURLToPath(new URL("../../", import.meta.url)), "corridor").toString("utf8");
   const start = old.indexOf("function buildVariableWidthCorridorPolygons("), end = old.indexOf("function irregularEllipsePolygon(", start);
   assert(start >= 0 && end > start, "baseline geometry functions missing");
   const legacy = vm.runInNewContext(`(function(){ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -170,7 +171,7 @@ for (const [name, mutate] of [
 });
 
 test("shared native polygon and footprint raster bytes equal the existing compiler", () => {
-  const source = execFileSync("git", ["show", "HEAD:scripts/compile-current-world-visual-conditions.mjs"], { encoding: "utf8" });
+  const source = readFrozenCompilerFixture(fileURLToPath(new URL("../../", import.meta.url))).toString("utf8");
   const start = source.indexOf("function rasterizePolygons("), end = source.indexOf("function coordinateChannel(", start);
   assert(start >= 0 && end > start);
   const old = vm.runInNewContext(`(function(){const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -232,7 +233,7 @@ async function rgbWaterFixture() {
 test("byte-bound historical water replay retains existing thresholds and detects normalized reuse", async () => {
   const input = await rgbWaterFixture(), result = await auditBoundHistoricalRgbWater(input);
   assert(result.matched);
-  const old = execFileSync("git", ["show", "HEAD:scripts/lib/ai-assisted-pre-rgb-condition-guide-novelty.mjs"], { encoding: "utf8" });
+  const old = readFrozenHydrologyFixture(fileURLToPath(new URL("../../", import.meta.url)), "novelty").toString("utf8");
   const start = old.indexOf("const THRESHOLDS ="), end = old.indexOf("const COMPOSITE_SKELETON_COLOR_CODES", start);
   assert(start >= 0 && end > start);
   const thresholds = vm.runInNewContext(`${old.slice(start, end)}; THRESHOLDS`);

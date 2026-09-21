@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { verifyCurrentEntrypointCommand } from "./lib/ai-painter-current-entrypoint-command.mjs";
 import {
   readCurrentExecutionRegistry,
 } from "../src/server/ai-painter-current-execution-registry.mjs";
@@ -34,15 +35,17 @@ assert.equal(retiredIndex.resolverMaySchedule, false);
 
 const seen = new Set();
 const seenFiles = new Set();
+const seenCommands = new Set();
 const results = [];
 const enforcementFiles = new Set(registry.tokenEnforcementFiles ?? []);
 for (const entry of registry.currentEntrypoints) {
   assert.ok(!seen.has(entry.packageScript), `duplicate current package script: ${entry.packageScript}`);
   seen.add(entry.packageScript);
-  assert.ok(!seenFiles.has(entry.entryFile), `duplicate current entry file: ${entry.entryFile}`);
-  seenFiles.add(entry.entryFile);
   const command = packageJson.scripts?.[entry.packageScript];
-  assert.equal(command, `node ${entry.entryFile}`, `current package entry mismatch: ${entry.packageScript}`);
+  const verifiedCommand = verifyCurrentEntrypointCommand(entry, command);
+  assert.ok(!seenCommands.has(verifiedCommand.commandIdentity), `duplicate current command: ${command}`);
+  seenCommands.add(verifiedCommand.commandIdentity);
+  seenFiles.add(entry.entryFile);
   const absolute = path.resolve(root, entry.entryFile);
   assert.ok(absolute.startsWith(`${path.resolve(root)}${path.sep}`));
   assert.ok(fs.existsSync(absolute), `current entry file missing: ${entry.entryFile}`);
@@ -55,7 +58,8 @@ for (const entry of registry.currentEntrypoints) {
       assert.ok(!source.includes(token), `current entry graph contains forbidden token ${token}: ${path.relative(root, file)}`);
     }
   }
-  results.push({ packageScript: entry.packageScript, entryFile: entry.entryFile, entrySha256: sha256File(absolute), graphFileCount: graph.size });
+  results.push({ packageScript: entry.packageScript, entryFile: entry.entryFile, args: verifiedCommand.args,
+    entrySha256: sha256File(absolute), graphFileCount: graph.size });
 }
 assert.ok(
   seen.has("launch:ai-painter-stage4-v2-readonly-gpu-qualification-background"),

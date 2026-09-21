@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { createHash } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
+import { loadCurrentExecutionProjectionForCpu } from "./tests/helpers/current-execution-projection-cpu.mjs"
 import {
   CURRENT_EXECUTION_REGISTRY_PATH,
   readCurrentExecutionRegistry,
@@ -68,7 +69,15 @@ assert.ok(Object.prototype.hasOwnProperty.call(registry, "selectedHistoricalRun"
 const latest = registry.latestTrainingTerminal
 assert.ok(latest && typeof latest === "object")
 const timelineBinding = latest.evidence?.machineReviewTimeline
-assert.ok(timelineBinding && typeof timelineBinding === "object")
+const { readAiPainterCurrentExecutionSnapshot } = loadCurrentExecutionProjectionForCpu(projectRoot)
+const snapshot = await readAiPainterCurrentExecutionSnapshot(projectRoot)
+assert.equal(snapshot.ok, true, snapshot.reasonCode ?? "live projection must verify")
+assert.equal(snapshot.registryRevision, registry.registryRevision, "registry changed during projection check")
+assert.equal(snapshot.currentProjectTask?.taskId, registry.taskId)
+assert.equal(snapshot.latestTrainingTerminal?.runId, latest.runId)
+let machineReview
+if (timelineBinding !== undefined) {
+assert.ok(timelineBinding && typeof timelineBinding === "object", "malformed timeline binding")
 const timelineBytes = await readProjectFile(timelineBinding.path)
 assert.equal(sha256(timelineBytes), timelineBinding.sha256)
 const timeline = JSON.parse(timelineBytes.toString("utf8"))
@@ -77,6 +86,21 @@ assert.equal(timeline.reviews.length, timeline.completedReviewCount)
 assert.equal(timeline.previewPassCount + timeline.previewFailCount, timeline.completedReviewCount)
 assert.ok(timeline.completedReviewCount <= timeline.targetReviewCount)
 assert.notEqual(sha256(Buffer.concat([timelineBytes, Buffer.from("\n", "utf8")])), timelineBinding.sha256)
+assert.equal(snapshot.machineReview.availability, "available")
+assert.equal(snapshot.machineReview.sourceSha256, timelineBinding.sha256)
+machineReview = { availability: "available", passed: timeline.previewPassCount, failed: timeline.previewFailCount,
+  target: timeline.targetReviewCount, evidenceSha256: timelineBinding.sha256 }
+} else {
+  // A train-only experiment need not have a formal machine-review timeline.
+  // Validate the real projection's missing-data state, not a fabricated pass.
+  assert.equal(snapshot.machineReview.availability, "unavailable")
+  assert.ok(["machine_review_timeline_not_bound", "latest_training_evidence_not_structured"].includes(snapshot.machineReview.reasonCode))
+  assert.equal(snapshot.machineReview.completedReviewCount, null)
+  assert.equal(snapshot.machineReview.previewPassCount, null)
+  assert.equal(snapshot.machineReview.previewFailCount, null)
+  assert.deepEqual(snapshot.machineReview.reviews, [])
+  machineReview = { availability: "unavailable", reasonCode: snapshot.machineReview.reasonCode, passed: null, failed: null, target: null }
+}
 await assert.rejects(() => readProjectFile("../outside-current-execution.json"))
 
 console.log(JSON.stringify({
@@ -87,12 +111,7 @@ console.log(JSON.stringify({
   runId: registry.runId,
   activeExecution: registry.activeExecution !== null,
   latestTrainingStatus: latest.status,
-  machineReview: {
-    passed: timeline.previewPassCount,
-    failed: timeline.previewFailCount,
-    target: timeline.targetReviewCount,
-    evidenceSha256: timelineBinding.sha256,
-  },
+  machineReview,
 }, null, 2))
 
 async function readText(relativePath) {

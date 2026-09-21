@@ -1,10 +1,10 @@
 # AI控制台数据字典与API合同
 
-更新时间：2026-08-30 12:26:57 +08:00
+更新时间：2026-09-13 03:26:51 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-DATA-API-1.4`
+文档版本：`AI-CONSOLE-DATA-API-1.7`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
@@ -118,6 +118,41 @@ machineReview
 ```
 
 `currentProjectTask`、`activeExecution`、`latestTrainingTerminal`和`selectedHistoricalRun`不得互相替代。`machineReview`只允许来自当前登记显式绑定的不可变时间线，必须重新计算文件SHA-256并验证Run、目标节点数、通过数、失败数和逐节点身份。任何路径越界、摘要、修订、计数或身份冲突使`ok=false`、`dataStatus=unknown_or_stale`；禁止扫描其他AI Painter目录寻找替代记录。
+
+### 3.2.3 V22训练历史与精确制品查询
+
+历史投影复用`workspaces/training/runs`、`workspaces/training/checkpoints`及`workspaces/archive/training`，Schema保持原页面封套并采用`sourceIdentity=ai-painter-training-history`。V23按第3.2.4节扩展为独立历史观察，保留本节当前登记来源的验证规则，不替换当前执行或训练遥测来源。
+
+```http
+GET /api/ai-console/training/history?cursor={opaqueCursor}&limit={1..50}
+GET /api/ai-console/training/history/{runId}
+GET /api/ai-console/training/history/{runId}/artifacts/{artifactId}
+```
+
+- 历史列表Schema为`ai_console_training_history_v1`，详情为`ai_console_training_run_detail_v1`；包含`dataStatus`、`sourceRevision`、`observedAtUtc`、`records`或`record`、`reasonCode`、`unavailableFields`、`provenance`。列表另含`nextCursor`、`coverage`、`refreshIntervalMs=2000`；`total`仅在完整核验覆盖范围后填写，否则为null。默认页长20，最大50。游标绑定源修订与位置，非法游标拒绝，修订冲突不得混页。
+- 来源由正式读取器验证固定当前登记，再沿`supersedes`/事务与固定SQLite修订、事件精确核对历史快照SHA、事务提交状态及Run身份；只使用已提交修订，不扫描训练目录。历史链断裂返回`unknown_or_stale`及具体范围，不跳过冲突寻找旧成功；明确未支持的证据Schema使用`partial`并保留可证身份，不能省略后宣称完整历史。单次遍历最多2048个修订，超限明确返回覆盖限制。
+- Run记录保留`runId`、`taskId`、`runKind`、`terminalStatus`、`sourceRevision`、原始开始/完成时间与证据引用；缺失时间不使用目录mtime代替。原图/输出/条件/Checkpoint和指标按受验证请求、结果、终态显式关联；样本、split、实验臂、种子、分辨率与优化步来源可追溯。观察数据不产生训练选择或正式资格。
+- 详情在原Schema内增加可选`record.events`与`record.eventCoverage`，属于只读向后兼容字段。`events`按`eventSequence`升序，每项为`eventSequence`、`registryRevision`、`transactionId`、`taskId`、`runId`、`action`、`recordedAtUtc`、`currentSha256`及`evidenceReferences`；只能来自已通过同一事务/SQLite/快照核验且事件自身`runId`等于所选Run的登记事件，不从携带的`latestTrainingTerminal`反推事件归属。`eventCoverage`包含`scope=verified_registry_events_only`、`complete`、`gap`，完整性不得超过已核验历史链；这不是逐优化步日志完整性的声明。事件时间保留原始UTC，可另作明确标注的北京时间呈现；缺失结束时间时可显示“登记时间”，不得将其填入`finishedAtUtc`。旧Schema的终态和登记事件仍可查询；只有受验证绑定明确且对应Schema已适配时才展开图像/指标，不按文件名猜测制品。
+- `runId`必须与已核验历史记录精确匹配；`artifactId`是由Run、制品角色、逻辑路径与绑定SHA确定的64位身份，不接受任意路径或来源参数。浏览器选中历史只修改页面状态，不写当前登记中的历史选择字段。制品请求复核父证据及实际字节，拒绝路径越界、符号链接逃逸和内容变化；项目已登记数据挂载须验证逻辑根与解析后根，不以整个磁盘为允许根。
+- 图片仅支持经签名头及摘要验证的PNG/JPEG，单文件上限16MiB；JSON证据读取上限8MiB，文本展示上限64KiB并标记截断。Checkpoint仅返回绑定元数据、长度与核验状态，不下载/反序列化权重，不将尚未重算的摘要标成实际字节已验证。读取限额失败使用明确原因码，禁止默默丢弃记录。
+- 所有接口仅允许回环访问，复用Host/转发Host校验，采用`Cache-Control: no-store`与`X-Content-Type-Options: nosniff`；JSON及图片返回确定的Content-Type。非法身份/参数400、不存在404、证据或游标冲突409、字节超限413、源不可读503；错误不返回正常空表。GET不创建库、写文件、启动进程或调用旧API。
+- 历史2秒刷新不得驱动每次全量权重/图片读取。可复用同修订的内存元数据计算，但须重新确认当前源身份并显示真实核验/观察时间；制品每次返回前核对父绑定与实际字节。客户端有请求超时、取消、单请求在途、断线/陈旧显示及自动恢复；不更改现有当前执行1秒与资源250毫秒合同。
+
+本节是受验证机器证据的只读桥接例外，不改变第5节各新平台写入器的`new_ai_console_only`边界，不允许导入旧页面状态、重写资格或将历史指标注入当前训练遥测。
+
+### 3.2.4 V23独立历史观察与完整内容查询
+
+本节扩展历史发现和查询范围，不放宽当前执行选择、证据校验、资源观察或正式发布门。规范已生效不等于程序已全量接入。
+
+1. 历史来源分为`registry`、`storage_catalog`、`archive_manifest`、`runtime_manifest`、`generated_result`。第3.2.3节的连续登记链仍严格校验；其断链只影响该来源的覆盖及事件证明，不得隐藏其他来源独立可核验的记录。不得伪造跨缺口连续事件，也不得将独立历史记录作为当前身份降级值。
+2. 复用既有存储catalog的只读分页查询作发现线索；其目录推导的run_id、mtime和历史SHA不能直接证明Run身份、业务时间或今日完整性。独立后台发现器补充已登记热层`.runtime/ai-painter/`及冷层`cold/runs/`的清单/终态/索引元数据，显式绑定的项目数据制品按需读取，不全盘搜索其他用户文件。逻辑根、物理根和迁移映射必须验证；拒绝越界链接。清单内部身份、原始证据及版本适配共同建立关联，不从目录名猜业务含义。
+3. 派生观察索引固定为`.runtime/ai-console/training/history-index-v1.sqlite`，与现有存储catalog、当前登记和新平台资格库分离。唯一后台写入器保存来源、原始路径/摘要、身份提取规则、文件状态、覆盖水位、失败原因及单调`indexRevision`，原子发布可查询批次；中断可幂等续接。不得写回原始训练证据或改变任何资格。GET只读，不初始化索引、启动扫描或修改水位；后台每批最多2000项、5秒，单实例、不重叠，资源预算耗尽明确保留未完成覆盖。新目录元数据发现目标30秒，内容核验有积压时显示真实延迟；不得宣称2秒轮询等于全部文件2秒内完成核验。
+4. 原有API族继续使用。列表新增`indexRevision`与`coverage.sources`，每来源返回范围、水位、最后发现/核验时间、是否完整和缺口；`total`表示本查询已核验范围的总数，覆盖未完成时仍为null，另可返回明确标注的已发现数量。分页游标绑定来源快照组合，不以当前registry修订替代独立索引修订。同一可信Run仅在身份与绑定一致时合并；冲突保留各来源及原因，不能任取最新。
+5. 记录新增稳定`recordId`及`identityStatus`。有明确Run身份时保持原runId查询兼容；无身份或身份冲突时用保留前缀`source-`加服务端计算的64位来源身份查询，不将该值写成runId。详情路由中的身份只从已索引记录精确解析。发现但未核验、未知Schema的证据仍可列出来源和缺口，不能冒充可信训练记录或静默消失。
+6. 详情按显式绑定提供原图、条件、输出图、逐轮/逐样本指标、训练日志、审核报告、配置和Checkpoint元数据。原登记事件、历史程序日志和训练步骤分开标注来源与完整性。每项分别使用`available`、`not_recorded`、`missing`、`unsupported_schema`、`over_limit`、`hash_conflict`或`unreadable`，一项不可用不抹去其他项。元数据、内容摘要已重算及正式资格是三个独立状态。
+7. 保留8MiB单JSON读取、16MiB图片及64KiB文本单页限制；完整查看通过后台有界解析与分页派生索引实现，不静默截断后冒充完整。详情可选`section=artifacts|metrics|events|logs`、`cursor`、`limit`(默认20、上限50)；每页绑定recordId、来源摘要和索引修订。大文件解析超过预算返回明确积压/超限状态并可续接，不能在GET反复全文解析。原始证据仅允许受支持的训练证据格式、受控JSON字段或纯文本日志预览，屏蔽凭据/环境秘密；未知格式显示安全元数据和识别缺口，不提供任意文件代理。Checkpoint保持仅元数据、无下载和反序列化。
+8. 复用回环访问、身份校验、no-store、nosniff、路径与摘要检查。图片按需加载与分页，索引摘要不替代发送前真实字节核验。列表/详情2秒刷新保持单请求在途、取消、超时、断线状态和选中记录稳定；索引停止时显示陈旧水位，当前执行1秒和资源250毫秒链路不依赖历史索引器。
+9. 验收必须覆盖：登记断链下独立历史仍可查；旧训练清单的指标/原图/输出/审核/CP关联；未知Schema及逐项缺失；新增证据无需重启自动出现；大内容分页无丢失/混页；重复Run冲突；缓存源变化、摘要篡改、路径逃逸、敏感内容拒绝；断线恢复及当前态/资源功能不退化。覆盖未核验完不得宣告“磁盘全部历史已接入”。
 
 ### 3.3 本地控制会话
 
