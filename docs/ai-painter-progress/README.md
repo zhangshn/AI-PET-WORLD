@@ -1,14 +1,18 @@
 # 退役AI Painter页面资料索引
 
-更新时间：2026-08-30 11:57:50 +08:00
+更新时间：2026-09-21 18:40:21 +08:00
 
 状态：historical-retired-reference
 
-文档版本：`AI-PAINTER-PROGRESS-RETIREMENT-1.0`
+文档版本：`AI-PAINTER-PROGRESS-RETIREMENT-1.1`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
 ## 1. 退役结论
+
+本目录为原地归档区，不再作为现行文档库。保留路径是为了历史引用可追溯，不表示继续调用；默认开发阅读、训练和知识检索必须排除正文，仅明确历史复核可以读取。治理检查只核验归档状态和隔离边界，不执行正文中的旧要求。旧版正式业务／架构／主体规格通过Git历史追溯，不另复制一套归档文档树。
+
+`check-ai-painter-model-training-alignment.mjs`、`check-ai-painter-generated-results-page-lock.mjs`和`check-ai-painter-admin-backend-automation.mjs`为停用入口：直接调用必须在读取旧文档前非零退出，不能自动替换为新检查并冒称旧检查通过。现行检查使用`check:ai-painter-document-contracts`、`check:ai-painter-progress-retirement`及控制台正式检查；现行训练准入仍由实际能力合同决定。
 
 `/ai-painter-progress`及其全部子页面已退出当前产品与程序架构。现行统一入口固定为：
 

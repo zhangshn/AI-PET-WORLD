@@ -286,6 +286,30 @@ def materialize_package(root: Path, *, parent_binding: dict | None = None) -> di
 
 def load_package(root: Path, binding: dict) -> tuple[dict, list[dict]]:
     manifest = bound_json(root, binding)
+    if manifest.get("schemaVersion") == "ai-painter-stage4-regrouped64-review-candidate-v1":
+        # Read a review candidate through the same CPU Dataset without turning
+        # it into a qualified release. The immutable proposal and every member
+        # file must reproduce before a row can be selected.
+        from .regrouped_candidate import build_candidate
+        payload = manifest.get("identityPayload", {})
+        parent_binding, proposal_binding = payload.get("parentManifest"), payload.get("proposal")
+        _require(parent_binding is not None and proposal_binding is not None,
+                 "review candidate provenance binding missing")
+        expected, artifacts = build_candidate(root, parent_binding, proposal_binding)
+        _require(manifest == expected, "review candidate does not reproduce its provenance")
+        relative = f"{PACKAGE_ROOT}/{manifest['packageId']}"
+        _require(binding["path"] == relative + "/manifest.json", "review candidate namespace mismatch")
+        for name, data in artifacts.items():
+            _require(project_file(root, relative + "/" + name).read_bytes() == data,
+                     "review candidate bytes mismatch: " + name)
+        parent_manifest, _ = load_package(root, parent_binding)
+        view = deepcopy(manifest)
+        view["datasetReleaseIdentity"] = manifest["packageId"]
+        view["identityPayload"] = {**payload,
+                                   "channelOrder": parent_manifest["identityPayload"]["channelOrder"],
+                                   "continuousChannelIds": parent_manifest["identityPayload"]["continuousChannelIds"]}
+        view["reviewOnly"] = True
+        return view, json.loads(artifacts["source-index.json"])["samples"]
     _require(manifest.get("schemaVersion") == SCHEMA, "split package schema mismatch")
     # Never select the old default during a read. The immutable manifest itself
     # must bind the precise source version used to derive this candidate.

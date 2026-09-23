@@ -1,6 +1,10 @@
 import fs from "node:fs"
 import path from "node:path"
 
+// Retired entrypoint: fail before reading archived specifications or runtime evidence.
+console.error(JSON.stringify({status: "retired_document_entrypoint_blocked", entrypoint: "check-ai-painter-generated-results-page-lock.mjs", replacement: "docs/DOCUMENT_AUTHORITY_INDEX.md", currentQualificationGranted: false}))
+process.exit(2)
+
 const ROOT = process.cwd()
 const REQUIRED_SENTENCE = "不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。"
 const SPEC_PATH = "docs/ai-painter-progress/GENERATED_RESULTS_PAGE_LOCKED_SPEC.md"

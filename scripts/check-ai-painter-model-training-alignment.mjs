@@ -7,6 +7,10 @@ import {
   loadWorldVisualDictionaryContract,
 } from "./lib/world-visual-dictionary-contract.mjs"
 
+// Retired entrypoint: fail before reading archived specifications or runtime evidence.
+console.error(JSON.stringify({status: "retired_document_entrypoint_blocked", entrypoint: "check-ai-painter-model-training-alignment.mjs", replacement: "docs/DOCUMENT_AUTHORITY_INDEX.md", currentQualificationGranted: false}))
+process.exit(2)
+
 const ROOT = process.cwd()
 const REQUIRED_SENTENCE = "不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。"
 const ALIGNMENT_DOC = "docs/ai-painter-progress/AI_MODEL_TRAINING_ARCHITECTURE_ALIGNMENT.md"

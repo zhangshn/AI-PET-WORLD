@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "ai-painter-foundation-cpu-load-probe-policy-v1",
+  "status": "active_readonly_compatibility_probe_only",
+  "scope": "independent_cpu_load_probe_not_static_lineage_validation",
+  "legacyContractUnchanged": true,
+  "foundationContract": {
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-project-foundation-autoencoder-lineage-contract-v1.json",
+    "sha256": "0bd33d11175f33e7b2fc684d84e1dc9e837d4c26d0961b4ac5f7e26c6c8534ea"
+  },
+  "workerPath": "ml/ai-painter/scripts/probe_foundation_cpu_load.py",
+  "runnerPath": "scripts/check-ai-painter-foundation-cpu-load.mjs",
+  "outputRoot": ".runtime/ai-painter/foundation-cpu-load-probes",
+  "resources": {"device": "cpu", "threads": 1, "maxWallSeconds": 60, "maxCheckpointBytes": 16777216},
+  "probe": {"inputShape": [1, 3, 16, 16], "seed": 20260922, "forwardCount": 1, "backwardCount": 1},
+  "operations": {
+    "exactBoundAutoencoderDeserialization": true,
+    "restrictedWeightsOnlyLoaderRequired": true,
+    "unsafeLoaderFallbackAllowed": false,
+    "syntheticInputGradientProbe": true,
+    "realDatasetReadAllowed": false,
+    "optimizerCreationAllowed": false,
+    "parameterUpdateAllowed": false,
+    "checkpointWriteAllowed": false,
+    "denoiserCheckpointLoadAllowed": false,
+    "gpuAllowed": false,
+    "productionRegistryWriteAllowed": false
+  },
+  "claims": {
+    "cpuLoadAndFreezeEvidenceOnly": true,
+    "historicalIsolationQualified": false,
+    "dataQualified": false,
+    "gpuQualified": false,
+    "trainingAllowed": false,
+    "capabilityReleased": false
+  }
+}

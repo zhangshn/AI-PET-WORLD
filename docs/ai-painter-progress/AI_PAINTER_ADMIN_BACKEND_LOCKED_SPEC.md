@@ -1,8 +1,10 @@
 # AI Painter 后台管理自动化锁定规格
 
-更新时间：2026-08-24 12:43:09 +08:00
+更新时间：2026-09-21 18:40:21 +08:00
 
-状态：active-ai-painter-admin-backend-contract
+状态：historical-retired-reference
+
+> 已原地归档：以下正文只保留历史设计，不是当前规范；不得用于当前开发、训练、审核、任务选择或默认知识检索。仅在明确复核历史时读取。现行替代入口为[统一控制台规格](../ai-console/README.md)及[AI Painter正式规格](../game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md)。
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 

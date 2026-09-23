@@ -245,7 +245,7 @@ function readStageActivity(root, terminal, plan, stage, input) {
   return { gpuStarted: terminal.gpuStarted === true, trainingStarted: terminal.trainingStarted === true }
 }
 
-function validateStageTerminal(root, terminal, plan, stage, input, parent) {
+export function validateStageTerminal(root, terminal, plan, stage, input, parent) {
   assert.equal(terminal.schemaVersion, "ai-painter-stage4-v2-formal-stage-terminal-v1", "stage terminal schema mismatch")
   assert.equal(terminal.status, "stage4_v2_formal_stage_passed", "stage did not pass")
   assert.equal(terminal.executionState, "completed", "stage execution incomplete")

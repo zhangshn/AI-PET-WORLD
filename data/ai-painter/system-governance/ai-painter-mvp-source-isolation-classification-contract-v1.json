@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "ai-painter-mvp-source-isolation-classification-contract-v1",
+  "contractId": "ai-painter-mvp-source-isolation-classification-contract-v1",
+  "status": "active_normative_machine_contract",
+  "policyVersion": "AI-PAINTER-DATA-PROVENANCE-1.7",
+  "scope": "single_primitive_natural_world_mvp",
+  "relationClasses": {
+    "must_link": [
+      "same_or_transformed_rgb_target",
+      "shared_supervision_template_or_label",
+      "sample_specific_geometry_context",
+      "sample_target_or_repair_feedback"
+    ],
+    "cross_split_block": [
+      "positive_area_primary_source_window_overlap",
+      "duplicate_world_theme_instance_or_condition_identity",
+      "current_lineage_non_train_optimizer_use",
+      "current_lineage_challenge_training_selection_or_metric_use"
+    ],
+    "not_automatic_dependency": [
+      "same_public_provider",
+      "same_mvp_region",
+      "touching_primary_window_border",
+      "metadata_only_neighbor_discovery"
+    ],
+    "conditionally_independent_public_covariate": [
+      "shared_public_dem_operand",
+      "shared_public_landcover_donor",
+      "shared_frozen_regional_preprocessing"
+    ]
+  },
+  "publicCovariateRequirements": {
+    "licensedSourceBound": true,
+    "preprocessingFrozenBeforeSplit": true,
+    "deterministicProgramBound": true,
+    "sampleRgbRead": false,
+    "sampleSupervisionTargetRead": false,
+    "sampleRepairOrEvaluationFeedbackRead": false,
+    "sampleSpecificGeometryContextRead": false,
+    "positiveAreaPrimaryWindowOverlap": false
+  },
+  "unknownDisposition": "indeterminate_due_to_missing_evidence",
+  "evaluationClaim": "unseen_structure_and_condition_to_rgb_mapping_for_single_region_mvp",
+  "claimsNotEstablished": [
+    "cross_country_generalization",
+    "cross_ecoregion_generalization",
+    "fully_independent_public_raster_source",
+    "dataset_or_gpu_qualification"
+  ]
+}

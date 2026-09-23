@@ -1,6 +1,10 @@
 import fs from "node:fs"
 import path from "node:path"
 
+// Retired entrypoint: fail before reading archived specifications or runtime evidence.
+console.error(JSON.stringify({status: "retired_document_entrypoint_blocked", entrypoint: "check-ai-painter-admin-backend-automation.mjs", replacement: "docs/DOCUMENT_AUTHORITY_INDEX.md", currentQualificationGranted: false}))
+process.exit(2)
+
 const cwd = process.cwd()
 const failures = []
 const packageJson = JSON.parse(fs.readFileSync(path.resolve("package.json"), "utf8"))

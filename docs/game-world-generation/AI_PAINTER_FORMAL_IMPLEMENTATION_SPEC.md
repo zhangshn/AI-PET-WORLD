@@ -1,14 +1,14 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-09-21 00:52:11 +08:00
+更新时间：2026-09-22 13:11:21 +08:00
 
 状态：active-long-term-module-specification
 
-文档版本：`AI-PAINTER-SPEC-1.13`
+文档版本：`AI-PAINTER-SPEC-1.17`
 
-生效日期：`2026-09-21`
+生效日期：`2026-09-22`
 
-替代版本：`AI-PAINTER-SPEC-1.12`
+替代版本：`AI-PAINTER-SPEC-1.16`
 
 文档状态：`active_normative_target`
 
@@ -288,6 +288,18 @@ negativeAlignmentTests
 ### 9.4 Autoencoder冻结与资产角色
 
 能力系统构造完成时必须自行将已绑定的项目基础Autoencoder设为评估模式、对全部参数执行`requires_grad_(False)`，并阻止上层`train()`调用将它恢复为可训练状态。Trainer必须再次验证模式、可训练参数集为空、前后状态哈希不变和优化器参数组不包含Autoencoder。模型层自保证与Trainer门禁两者任一缺失都失败关闭。
+
+#### 9.4.1 独立CPU只读基础资产加载验证
+
+[`ai-painter-foundation-cpu-load-probe-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-foundation-cpu-load-probe-policy-v1.json)定义独立的CPU兼容性验证入口，不属于旧谱系合同的静态CPU资格检查，不改写或继承旧合同的激活字段。它只读取该政策精确绑定的项目Autoencoder与来源清单，以`weights_only=True`受限反序列化加载；不允许退回不受限加载器或增加反序列化类型白名单。文件、元数据、结构或来源绑定不符即失败关闭。
+
+该入口只检查实际加载、父模型模式切换后的冻结保持，以及固定合成输入的一次前后向状态不变性；不读取真实训练图片，不创建优化器、不更新参数、不加载Denoiser权重、不输出Checkpoint、不使用GPU、不更新正式运行登记。程序、解释器、输入、资源上限及运行身份必须绑定，由现有受管进程执行，保留成功或失败、清理状态与文件前后哈希。
+
+成功只能说明指定资产在指定程序下可加载并在本次CPU探针中保持冻结；不能证明历史数据独立、训练中的优化器排除、真实训练冻结、GPU资格、视觉质量或能力发布。证据不足时不得据此决定重训或替换基础模型。程序和反例测试须先通过，实际执行结果另存机器证据。
+
+候选初始化的只读连接检查由[`ai-painter-candidate-cpu-initialization-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-candidate-cpu-initialization-policy-v1.json)独立限定。它绑定候选合同及上述基础资产加载政策，重算基础Checkpoint和来源清单的文件身份，以受限加载器取得Autoencoder状态，再由当前候选程序按登记种子创建新的Denoiser。必须对两个新建模型的初始状态进行一致性核验，记录实际加载文件、来源元数据、候选配置与状态身份；不得接收历史Denoiser、修改旧静态合同或继承旧训练资格。
+
+该连接检查可以为验证候选身份重算清单、RGB和条件文件的原始字节哈希，但不得解码为训练图片／条件张量，不进行前向、反向、优化、Checkpoint写入、GPU运行或生产登记。它只证明本次候选初始化的文件与程序绑定，不证明数据用途隔离、模型选择历史、训练中的冻结保持或训练资格。入口为[`scripts/check-ai-painter-candidate-cpu-initialization.mjs`](../../scripts/check-ai-painter-candidate-cpu-initialization.mjs)，仍由既有受管CPU进程承担资源监督和清理。
 
 ### 9.5 当前迁移实现值
 
@@ -578,6 +590,8 @@ AI Painter 正式能力必须同时满足：
 
 ### 17.1 唯一机器合同登记
 
+独立CPU基础资产加载验证的唯一政策为[`ai-painter-foundation-cpu-load-probe-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-foundation-cpu-load-probe-policy-v1.json)，由第9.4.1节限定；其检查入口为[`scripts/check-ai-painter-foundation-cpu-load.mjs`](../../scripts/check-ai-painter-foundation-cpu-load.mjs)。它不替代下表的静态谱系合同，不作为自动训练调度或能力发布入口。
+
 | 合同角色 | 唯一路径 | 权威层级 |
 |---|---|---|
 | 完整地图与未来动态就绪业务合同 | [`data/ai-painter/system-governance/complete-map-world-business-contract-v3.json`](../../data/ai-painter/system-governance/complete-map-world-business-contract-v3.json) | 长期业务机器合同 |
@@ -668,6 +682,12 @@ AI Painter 正式能力必须同时满足：
 ### 18.1 范围与职责
 
 本节是在既有37条顶层需求下的完整MVP验收场景，不重用、改变或增加顶层AP编号。它定义应达到的结果；当前是否完成由第17.2节、唯一模块计划表及机器证据分别表达。
+
+业务规格第3.2节定义分段交付：原始自然世界先行验收只消费自然事实、完整地图、运行层及保存恢复；人物、动物、房屋和建设不是该能力的前置条件。对应本节MVP-VIS-01、06、07、08的自然世界适用部分，必须记录实际适用范围，不能据此把整组场景或完整MVP标记通过。随后单独接入人格及人物行动，动物与建设各按自己的依赖和资格接入。
+
+自然世界阶段不要求预建人工路网或建筑；有事实支持的自然通行仍须成立，事实中已有道路、水体和主要对象仍须对齐。前期不开展与可读性、事实一致性无关的纹理／装饰精修；也不得以道路后置为由自动忽略训练RGB与条件冲突。适用性只能由新候选的事实和冻结审核合同确定，不能由结果失败后临时改判“不适用”。第9节训练资格、第18.5节阶段顺序、原生1024×768发布及历史证据保护不变。
+
+单一原始自然世界先行MVP的全历史创作唯一性适用性采用数据与来源规格第9.1节：状态为`deferred_out_of_current_mvp_scope`，规则与实现保留供后续恢复，不作为本阶段阻断且不算通过。当前数据集内部去重、历史用途／模型谱系隔离、来源权利和事实一致性仍是准入要求。新作用域的数据、能力、训练、审核及发布必须一致绑定该边界；旧合同与旧失败不原地改写。程序适配与反例未验证前不得声称已解除机器阻断，也不得把该例外扩展到其余资格门。
 
 | 责任模块 | 必须提供 | 不得承担 |
 |---|---|---|

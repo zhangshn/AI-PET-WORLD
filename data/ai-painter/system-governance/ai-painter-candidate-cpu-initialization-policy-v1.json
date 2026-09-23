@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "ai-painter-candidate-cpu-initialization-policy-v1",
+  "status": "active_readonly_initialization_check_only",
+  "scope": "candidate_bound_foundation_loading_and_fresh_denoiser_initialization_not_training",
+  "foundationLoadPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-foundation-cpu-load-probe-policy-v1.json",
+    "sha256": "e01ada89734708bd3bca15b52b2fec9954a7d87e913da9b30f93a63f9c8ab46c"
+  },
+  "componentContract": {
+    "path": "data/ai-painter/system-governance/stage4-split-isolated-smoke-v2-5e5401aeb2a031342607dc404eb6547cfb3097871927964f0b169553a3021a0a.json",
+    "sha256": "618f63949f25a5488cfc1b5496a5d273ba8f296b54d4684a17f622fcc3865470"
+  },
+  "workerPath": "ml/ai-painter/scripts/initialize_authenticated_split_smoke_cpu.py",
+  "runnerPath": "scripts/check-ai-painter-candidate-cpu-initialization.mjs",
+  "outputRoot": ".runtime/ai-painter/candidate-cpu-initializations",
+  "resources": {"device": "cpu", "threads": 1, "maxWallSeconds": 60, "maxCheckpointBytes": 16777216},
+  "operations": {
+    "exactBoundAutoencoderDeserialization": true,
+    "restrictedWeightsOnlyRequired": true,
+    "candidateManifestAndRawDataBindingRecheck": true,
+    "datasetImageOrConditionTensorDecode": false,
+    "freshModelConstructionCount": 2,
+    "optimizerCreation": false,
+    "parameterOptimization": false,
+    "denoiserCheckpointLoading": false,
+    "checkpointWriting": false,
+    "gpu": false,
+    "productionRegistryWriting": false
+  },
+  "claims": {
+    "candidateInitializationOnly": true,
+    "dataQualified": false,
+    "trainingFreezeProven": false,
+    "gpuQualified": false,
+    "trainingAllowed": false,
+    "capabilityReleased": false
+  },
+  "legacyStaticFoundationContractUnchanged": true
+}
