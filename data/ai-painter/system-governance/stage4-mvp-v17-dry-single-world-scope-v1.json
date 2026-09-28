@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "stage4-mvp-v17-dry-single-world-scope-v1",
+  "status": "frozen_scope_not_execution_authorization",
+  "capabilityVersion": "stage4_mvp_native_rgb_structured_object_v17",
+  "purpose": "one_preselected_dry_fact_natural_world_visual_slice_at_256x192",
+  "formalStage0QualificationGranted": false,
+  "stage4ProgressIncreaseGranted": false,
+  "runtimePublicationGranted": false,
+  "dataset": {
+    "manifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+      "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"
+    },
+    "validationMembership": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/validation.json",
+      "sha256": "1daa22941edae95ad408caf5e4eb57ab1354141ff20cd788e637569d52587761"
+    },
+    "splitCounts": { "train": 48, "validation": 8, "challenge": 4, "regression": 4 },
+    "originalRgbAndSplitBytesMayChange": false
+  },
+  "preselectedSubject": {
+    "validationOrdinal": 0,
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+    "worldId": "training-world:earth-reference-v7-v7-capacity-slot-189-d49b79ca0bf5",
+    "regionId": "training-world:thailand-mvp:v7-capacity-slot-189",
+    "tick": 0,
+    "factHash": "10aa828746411522685f69ae272c508468e5e4c00806cab45be6b960a043a954",
+    "visualFactManifestSha256": "beac5a44e8f5654a703985c7e7a547a3b38839a9253aad8e46da8a1f7270461a",
+    "visualFactManifestFile": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-189-2026-07-31T15-18-14-787Z/complete-map-condition-task/visual-fact-manifest.json",
+      "sha256": "fc0a0dd0fa86a7e41dd2dfef6e575b71e3157529e60db1a213190ffd35b3719a"
+    },
+    "taskPackage": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-189-2026-07-31T15-18-14-787Z/complete-map-condition-task/task-package.json",
+      "sha256": "1968e9b67a07d06d7c346aacceea1f065f7797305dd3e3cdb36cf5a437860afc"
+    },
+    "worldFactBlueprint": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-189-2026-07-31T15-18-14-787Z/complete-map-condition-task/world-fact-blueprint.json",
+      "sha256": "5a3310854233b6bd1c6acae3cefbe0e1a64375a94d91814558d6987863564881"
+    },
+    "conditionPack": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-189-2026-07-31T15-18-14-787Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+      "sha256": "7096a2f5ce56099407b82797787297237f2e1193904407eb9d80f392a9297991"
+    },
+    "worldFactHasWater": false,
+    "conditionWaterPixelCount": 0,
+    "conditionShorelinePixelCount": 0
+  },
+  "reviewScope": {
+    "candidateResolution": [256, 192],
+    "candidateCountToReview": 1,
+    "checkpointSelectionMayUseOnlyFrozenValidation": true,
+    "reviewMustUsePreselectedSubject": true,
+    "required": [
+      "bound_source_and_world_fact_identity",
+      "complete_rgb_from_current_local_model_checkpoint",
+      "all_seven_responsibility_outputs_bound_to_candidate",
+      "applicable_terrain_and_natural_object_semantics",
+      "absence_of_hallucinated_water",
+      "professional_aesthetic_and_minimum_detail"
+    ],
+    "waterAndShorelinePositiveCapability": "unverified_not_passed",
+    "waterOrShorelinePresentInSubject": "fail_scope_preflight_before_gpu",
+    "otherValidationRowsAsVisualQualification": false,
+    "challengeOrRegressionContentReadAllowed": false,
+    "reviewScoresAsTrainingTargetsAllowed": false,
+    "reviewThresholdLoweringAllowed": false,
+    "outputStatusOnSuccess": "dry_single_world_visual_slice_passed_not_formal_stage0",
+    "outputStatusOnFailure": "dry_single_world_visual_slice_failed_closed"
+  },
+  "numericThresholdAdoption": {
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+    "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df",
+    "sections": ["commonMeasurementContract", "conditionAlignmentThresholds", "professionalAestheticThresholds", "failureCodes", "reviewTrainingSeparation"],
+    "inheritInactiveV2Activation": false,
+    "numericOverridesAllowed": false
+  },
+  "minimumDetailGate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json",
+    "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"
+  },
+  "authorityBoundary": "scope_choice_only;_future_program_contract_must_bind_this_file_sha256_and_prove_preflight,_training,_candidate,_review_and_failure_terminal_before_any_qualification"
+}

@@ -14,6 +14,7 @@ import { DatabaseSync } from "node:sqlite";
 
 import { canonicalJson, sha256Of } from "./ai-painter-autonomous-package-decision-core-v3.mjs";
 import {
+  STAGE4_V2_CAPABILITY,
   bindProjectFile,
   projectLogicalPath,
   readJsonObject,
@@ -22,17 +23,16 @@ import {
   writeExclusiveJson,
 } from "./ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs";
 
-export const STAGE4_V2_CAPABILITY =
-  "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
+export { STAGE4_V2_CAPABILITY };
 export const STAGE4_V2_SMOKE_ACTION = "stage4_v2_controlled_smoke.execute";
 export const STAGE4_V2_SMOKE_TICKET_SCHEMA =
   "ai-painter-stage4-v2-controlled-smoke-ticket-v1";
 export const STAGE4_V2_SMOKE_ISSUER_SCHEMA =
   "ai-painter-stage4-v2-controlled-smoke-ticket-issuer-v1";
 export const STAGE4_V2_SMOKE_LEDGER_PATH =
-  ".runtime/ai-painter/stage4-v2-controlled-smoke-ticket-ledger.sqlite";
+  ".runtime/ai-painter/stage4-v2-program-v6-controlled-smoke-ticket-ledger.sqlite";
 export const STAGE4_V2_SMOKE_MACHINE_KEY_ROOT =
-  ".runtime/ai-painter/machine-keys/stage4-v2-controlled-smoke-ticket-issuer-v1";
+  ".runtime/ai-painter/machine-keys/stage4-v2-program-v6-controlled-smoke-ticket-issuer-v1";
 
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{7,191}$/u;
 const SAFE_PROGRAM_ROLE = /^[A-Za-z][A-Za-z0-9._-]{0,127}$/u;
@@ -641,7 +641,7 @@ function windowsDpapiMachineProtector() {
   assert.equal(process.platform, "win32", "Smoke machine key protection requires Windows DPAPI");
   const run = (operation, input, entropy) => {
     const script = [
-      "$ErrorActionPreference='Stop'", "$s=[Console]::OpenStandardInput()", "$m=[IO.MemoryStream]::new()", "$s.CopyTo($m)", "$d=$m.ToArray()",
+      "$ErrorActionPreference='Stop'", "Add-Type -AssemblyName System.Security", "$s=[Console]::OpenStandardInput()", "$m=[IO.MemoryStream]::new()", "$s.CopyTo($m)", "$d=$m.ToArray()",
       `$e=[Convert]::FromBase64String('${Buffer.from(entropy).toString("base64")}')`,
       operation === "protect" ? "$r=[Security.Cryptography.ProtectedData]::Protect($d,$e,[Security.Cryptography.DataProtectionScope]::LocalMachine)" : "$r=[Security.Cryptography.ProtectedData]::Unprotect($d,$e,[Security.Cryptography.DataProtectionScope]::LocalMachine)",
       "$o=[Console]::OpenStandardOutput()", "$o.Write($r,0,$r.Length)",

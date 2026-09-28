@@ -572,6 +572,11 @@ export function inspectRetryLineage(reader, checkedRows, selectedSampleIds) {
     const repair = row.retryDeclaration;
     const request = reader.json(row.retryRequestPath);
     assert.equal(request.outputRecordId, row.sampleId, 'retry request sample differs');
+    assert.equal(typeof request.sourceRecordId, 'string',
+      'retry source capacity slot missing');
+    assert(request.sourceRecordId.length > 0, 'retry source capacity slot missing');
+    assert.equal(request.sourceRecordId, row.capacitySlotId,
+      'retry request comes from a different capacity slot');
     assert.equal(request.promptEvidencePath, row.retryPromptBinding.path,
       'retry request prompt path differs');
     assert.equal(request.promptEvidenceSha256, row.retryPromptBinding.sha256,
@@ -586,6 +591,7 @@ export function inspectRetryLineage(reader, checkedRows, selectedSampleIds) {
       rows.push({sampleId: row.sampleId, split: row.split,
         failedRecordId: null, declaredPriorAttemptsNotBound: true,
         declaredPriorRequestCount: request.sequenceGate.priorRequestCount,
+        retryRequestSameCapacitySlot: true,
         generatorTransportVerified: false});
       continue;
     }
@@ -597,6 +603,8 @@ export function inspectRetryLineage(reader, checkedRows, selectedSampleIds) {
     const failed = reader.json(indexed.recordPath);
     assert.equal(failed.recordId, failedId, 'retry failed record identity differs');
     assert.equal(failed.status, 'rejected', 'retry source not rejected');
+    assert.equal(failed.conditionBinding?.capacitySlotId, request.sourceRecordId,
+      'retry feedback comes from a different capacity slot');
     assert.equal(failed.originalImage?.sha256, repair.sourceFailedImageSha256,
       'retry failed RGB identity differs');
     assert(timestamp(failed.createdAtUtc, 'failed record')
@@ -611,6 +619,7 @@ export function inspectRetryLineage(reader, checkedRows, selectedSampleIds) {
     'retry repair codes differ from failed review');
     rows.push({sampleId: row.sampleId, split: row.split,
       failedRecordId: failedId, failedImageSha256: repair.sourceFailedImageSha256,
+      failedFeedbackSameCapacitySlot: true,
       failedRecordInSelected64: false, failedRgbReferenceDeclared: false,
       failureReviewBound: true, generatorTransportVerified: false});
   }
@@ -621,6 +630,9 @@ export function inspectRetryLineage(reader, checkedRows, selectedSampleIds) {
     [split, retries.filter(row => row.split === split).length])),
   rows, declaredRetryReferenceToSelectedSampleCount: 0,
   historicalFeedbackPresent: rows.some(row => row.failureReviewBound),
+  projectControlledCrossSampleFeedbackExcluded: rows.every(row =>
+    row.failedFeedbackSameCapacitySlot === true
+      || row.retryRequestSameCapacitySlot === true),
   generatorTransportVerified: false, trainingAllowed: false};
 }
 
@@ -689,6 +701,7 @@ export function inspectSharedStylePrior(reader, checkedRows, selectedSampleIds) 
     sourceRecordIds: sourceIds, projectImageDerivedAggregate: true,
     selectedRecordIdentityOverlap: false, selectedExactRgbByteOverlap: false,
     directHistoricalRgbReferencesDeclared: false,
+    projectControlledDirectRgbInputsExcluded: true,
     generatorTransportVerified: false, crossSampleFeedbackExcluded: false,
     dataQualificationGranted: false};
 }
@@ -737,6 +750,7 @@ export async function inspectSourcePairing(root, manifestBinding, sourcePlanBind
     styleDeclarations.push({sampleId: row.sampleId, imageSha256: row.image.sha256,
       styleDeclaration});
     retryDeclarations.push({sampleId: row.sampleId, split: row.split,
+      capacitySlotId: row.capacitySlotId,
       promptAtUtc: checked.promptAtUtc, retryDeclaration,
       retryRequestPath: checked.retryRequestPath,
       retryPromptBinding: checked.retryPromptBinding});
@@ -778,7 +792,11 @@ export async function inspectSourcePairing(root, manifestBinding, sourcePlanBind
     publicHydrologyReplay, publicLandCoverReplay, rawMeasurementReplay,
     conditionReplays, sharedStylePrior, retryLineage, historicalSemanticAudit,
     sampleWindowPlanBindings: planBindings,
-    qualifications: {historicalProgramBound: false, crossSampleFeedbackExcluded: false,
+    qualifications: {historicalProgramBound: false,
+      projectControlledCrossSampleFeedbackExcluded:
+        retryLineage.projectControlledCrossSampleFeedbackExcluded
+          && sharedStylePrior.projectControlledDirectRgbInputsExcluded,
+      crossSampleFeedbackExcluded: false,
       fullSemanticAlignmentVerified: false, trainingAllowed: false, gpuAllowed: false},
     inputReceipts: reader.receipts()};
 }

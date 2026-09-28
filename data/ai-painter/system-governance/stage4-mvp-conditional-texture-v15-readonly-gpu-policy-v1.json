@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "stage4-mvp-conditional-texture-v15-readonly-gpu-policy-v1",
+  "status": "active_single_readonly_qualification",
+  "capabilityVersion": "stage4_mvp_native_rgb_conditional_texture_v15",
+  "candidateContract": {"path": "data/ai-painter/system-governance/stage4-mvp-native-rgb-conditional-texture-v15-contract.json", "sha256": "0eefe7adb74e421d874bab580b8894ac2f220b60f8065417341f9f92089f9e69"},
+  "cpuQualification": {"path": ".runtime/ai-painter/stage4-mvp-conditional-texture-v15-cpu-acceptances/cpu-v15-fa2bc92e53ff9a369fd7fab9d267a58e9aff8e58ec4e26fe/report.json", "sha256": "bd59a966909814db3a2f92d5463f57b37490594937d355a3da242b8ca2c706dc"},
+  "datasetManifest": {"path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json", "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"},
+  "program": {"path": "ml/ai-painter/scripts/run_stage4_mvp_conditional_texture_v15_readonly_gpu_qualification.py", "sha256": "4428b2db2cf46b21bf15b0fd607b72ba07fb33741752345c56fc715e69ac3b62"},
+  "execution": {
+    "maxGpuMemoryFraction": 0.7,
+    "maxWallSeconds": 120,
+    "optimizerAllowed": false,
+    "trainingAllowed": false,
+    "checkpointAllowed": false,
+    "validationRead": false,
+    "challengeRead": false,
+    "regressionRead": false
+  }
+}

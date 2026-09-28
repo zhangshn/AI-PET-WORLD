@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "stage4-mvp-conditional-texture-bf16-v16-readonly-gpu-policy-v1",
+  "status": "active_single_readonly_qualification",
+  "capabilityVersion": "stage4_mvp_native_rgb_conditional_texture_bf16_v16",
+  "candidateContract": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-native-rgb-conditional-texture-bf16-v16-contract.json",
+    "sha256": "bc9660854b0e5f991ee846ff24bb99bc40f515614632a3d41c829005a4226021"
+  },
+  "cpuQualification": {
+    "path": ".runtime/ai-painter/stage4-mvp-conditional-texture-bf16-v16-cpu-acceptances/cpu-v16-246b7ac38878f03c4bf600dcc1e8813dc2f54af107536a92/report.json",
+    "sha256": "b472143e8c54fec239e5bacf2d96aede890fe5380c467bceaed7b43fec0b551f"
+  },
+  "datasetManifest": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"
+  },
+  "program": {
+    "path": "ml/ai-painter/scripts/run_stage4_mvp_conditional_texture_bf16_v16_readonly_gpu_qualification.py",
+    "sha256": "3884fcc097473aa6e225b68d7dcdc45762f377a584f04512cbf03cfeb13dbc0c"
+  },
+  "precisionExecutionPlan": {
+    "generatorAutocast": "bfloat16",
+    "discriminatorAutocast": "bfloat16",
+    "gradientScaler": "disabled",
+    "nonfiniteGradient": "fail_closed_with_network_parameter_sample_and_step",
+    "optimizerUpdateSkipAllowed": false,
+    "optimizer": "AdamW",
+    "generatorLearningRate": 0.0001,
+    "discriminatorLearningRate": 0.0001
+  },
+  "execution": {
+    "maxGpuMemoryFraction": 0.7,
+    "maxWallSeconds": 120,
+    "optimizerAllowed": false,
+    "trainingAllowed": false,
+    "checkpointAllowed": false,
+    "validationRead": false,
+    "challengeRead": false,
+    "regressionRead": false
+  }
+}

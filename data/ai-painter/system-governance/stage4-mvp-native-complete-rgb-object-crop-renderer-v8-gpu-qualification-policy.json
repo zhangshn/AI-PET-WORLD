@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "stage4-mvp-native-complete-rgb-object-crop-renderer-v8-gpu-qualification-policy-v1",
+  "policyId": "stage4-mvp-native-complete-rgb-object-crop-renderer-v8-gpu-qualification-policy-v1",
+  "status": "active_single_readonly_qualification",
+  "authority": "local_ai_pet_world_program",
+  "capabilityVersion": "stage4_mvp_native_complete_rgb_object_crop_renderer_v8",
+  "candidateContract": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-native-complete-rgb-object-crop-renderer-v8-contract.json",
+    "sha256": "358fe3da4f8e62d13e578625e52fe21929760f881a886dfe7aa09ab2e6682c9b"
+  },
+  "cpuQualification": {
+    "path": ".runtime/ai-painter/stage4-mvp-native-rgb-object-crop-renderer-v8-qualifications/cpu-report.json",
+    "sha256": "ffdf749f3f380bdff9e7fa6b72f464713eabbd18b35cc842b5da564eeecfc109"
+  },
+  "execution": {
+    "resolution": [256, 192],
+    "split": "train",
+    "oneNonemptySamplePerResponsibility": true,
+    "maxGpuMemoryFraction": 0.7,
+    "optimizerAllowed": false,
+    "backwardCallAllowed": false,
+    "autogradProbeAllowed": true,
+    "weightModificationAllowed": false,
+    "checkpointWriteAllowed": false,
+    "trainingAllowed": false
+  },
+  "automaticRetry": false
+}

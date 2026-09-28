@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "stage4-mvp-local-texture-v12-gpu-qualification-policy-v1",
+  "policyId": "stage4-mvp-local-texture-v12-gpu-qualification-policy-v1",
+  "status": "active_single_readonly_qualification",
+  "capabilityVersion": "stage4_mvp_native_complete_rgb_local_texture_renderer_v12",
+  "candidateContract": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-native-rgb-local-texture-v12-contract.json",
+    "sha256": "ee6595483c71972df92f4a072ea94b0fef66102e4a31b5543ae00864af69dfc4"
+  },
+  "cpuExecutionPreflight": {
+    "path": ".runtime/ai-painter/stage4-mvp-local-texture-v12-execution-qualifications/execution-cpu-v12-43be89f61fca089673d1da708608bbb98d49b7abb87f96bc/report.json",
+    "sha256": "c71900ee3c573bf4c34153d2c685512ba8d3058ac586e213e377a60678fd9a69"
+  },
+  "program": {
+    "path": "ml/ai-painter/scripts/run_stage4_mvp_local_texture_v12_readonly_gpu_qualification.py",
+    "sha256": "89de41a7277d050eefa5a96dfb082226aa8d1749978cc5a0675a0cef5e071674"
+  },
+  "execution": {
+    "resolution": [256, 192],
+    "split": "train",
+    "maxGpuMemoryFraction": 0.7,
+    "optimizerAllowed": false,
+    "backwardCallAllowed": false,
+    "autogradProbeAllowed": true,
+    "weightModificationAllowed": false,
+    "checkpointWriteAllowed": false,
+    "trainingAllowed": false
+  },
+  "automaticRetry": false
+}

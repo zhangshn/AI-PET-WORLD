@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "stage4-mvp-v16-stage0-review-contract-v1",
+  "contractId": "stage4-mvp-v16-stage0-review-contract-v1",
+  "capabilityVersion": "stage4_mvp_native_rgb_conditional_texture_bf16_v16",
+  "status": "active_for_v16_stage0_machine_review",
+  "activation": {
+    "formalReviewExecutionAllowed": true,
+    "trainingAllowed": false,
+    "gpuAllowed": false,
+    "runtimeFrameAllowed": false
+  },
+  "numericThresholdAdoption": {
+    "binding": {
+      "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+      "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"
+    },
+    "sections": [
+      "commonMeasurementContract",
+      "conditionAlignmentThresholds",
+      "professionalAestheticThresholds",
+      "failureCodes",
+      "reviewTrainingSeparation"
+    ],
+    "inheritV2Activation": false,
+    "thresholdOverridesAllowed": false
+  },
+  "minimumDetailGate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json",
+    "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"
+  },
+  "candidateContractPath": "data/ai-painter/system-governance/stage4-mvp-native-rgb-conditional-texture-bf16-v16-contract.json",
+  "candidateCapabilityVersion": "stage4_mvp_native_rgb_conditional_texture_bf16_v16",
+  "shorelineReview": {
+    "channelId": "terrain_shoreline",
+    "independentGate": true,
+    "metricId": "shoreline_masked_rgb_mae_1024_nearest_v1",
+    "maximumMaskedRgbMae": {
+      "comparator": "<=",
+      "value": 0.18,
+      "unit": "normalized_rgb_mae"
+    },
+    "thresholdSource": {
+      "binding": {
+        "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+        "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"
+      },
+      "jsonPointer": "/conditionAlignmentThresholds/referenceSemantics/channels/object_footprints/maximumMaskedRgbMae",
+      "adoption": "new_additive_shoreline_gate_not_v2_shoreline_authority"
+    },
+    "maskRule": "terrain_shoreline_uint8_positive_at_1024x768",
+    "candidateNormalization": "256x192_to_1024x768_nearest",
+    "referenceResolution": [
+      1024,
+      768
+    ],
+    "emptyMask": "not_applicable_require_at_least_one_positive_validation_sample",
+    "failureCode": "condition_terrain_shoreline_reference_rgb_mismatch",
+    "status": "active_for_v16_stage0_machine_review",
+    "positiveNegativeTests": {
+      "path": "scripts/tests/test-ai-painter-stage4-mvp-v16-review-lineage.mjs",
+      "sha256": "c7396328910769b594ed970de18a72c52474aa29924580eb7c39a63439aeba0a"
+    }
+  },
+  "decisionRule": "all_8_validation_semantic_aesthetic_and_minimum_detail_plus_direct_shoreline_required",
+  "programs": {
+    "runner": {
+      "path": "scripts/run-ai-painter-stage4-mvp-v16-stage0-machine-review.mjs",
+      "sha256": "3ab6e9fa73b202ab39dd0c83cc30edbc9e5ca18d24add709976144f349024b22"
+    },
+    "lineageAndAuditors": {
+      "path": "scripts/lib/ai-painter-stage4-mvp-v16-review-lineage.mjs",
+      "sha256": "95129329616fef1eb873e491556c4caa6747891bf65f4a4853be15ecff6fb7d3"
+    },
+    "frozenGenericAudit": {
+      "path": "scripts/lib/ai-painter-stage4-mvp-v13-review-lineage.mjs",
+      "sha256": "b30b3c8224e86cb04451f16e7b149c51860c9e0a56c25e0242c99e6c160b48e0"
+    }
+  },
+  "authorityBoundary": {
+    "registrySource": "verified_committed_current_execution_registry",
+    "executionPackageMustBindThisContract": true,
+    "candidateManifestMustBindOneCurrentRun": true,
+    "validationOnly": true,
+    "challengeOrRegressionReadAllowed": false,
+    "reviewScoresAsTrainingTargetAllowed": false,
+    "historicalV13CanSatisfyV16": false,
+    "historicalV15CanSatisfyV16": false,
+    "oldV2ActivationInherited": false,
+    "allEightRequired": true,
+    "minimumDetailIsAdditionalMandatoryGate": true,
+    "missingShorelineCannotQualify": true,
+    "reportIsNotRuntimePublication": true
+  }
+}

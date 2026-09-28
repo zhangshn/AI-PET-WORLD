@@ -18,7 +18,7 @@ function fixture(t, { split = "train", declared = split, sourceSplit = split, co
     datasetReleaseIdentity: "fixture-release", sourcePackage: { sourceIndex: write("source.json", source) },
     samples: [{ sampleId: "sample-a", split }] };
   const payload = { datasetRelease: write("release.json", release), datasetPackageId: "fixture-release",
-    fixedInputs: { sampleId: "sample-a", sampleSplit: declared } };
+    fixedInputs: { trainingSampleId: "sample-a", trainingSampleSplit: declared } };
   return { root, payload, source, release, write };
 }
 
@@ -70,7 +70,7 @@ test("real frozen sample 194 remains validation and is rejected without mutating
   const release = JSON.parse(fs.readFileSync(binding.path));
   assert.throws(() => validateSmokeTrainingDataUse(process.cwd(), {
     datasetRelease: binding, datasetPackageId: release.datasetReleaseIdentity,
-    fixedInputs: { sampleId: "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6", sampleSplit: "validation" },
+    fixedInputs: { trainingSampleId: "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6", trainingSampleSplit: "validation" },
   }), { code: "stage4_smoke_non_train_optimizer_source" });
   assert.equal(bindAbsolute(process.cwd(), path.resolve(binding.path)).sha256, binding.sha256);
 });

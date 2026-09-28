@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import {
+  STAGE4_V2_ARCHITECTURE,
   STAGE4_V2_CAPABILITY,
   bindProjectFile,
   buildStage4V2PreReleaseQualificationTicket,
@@ -511,7 +512,7 @@ function testPythonEvidenceBoundary(root) {
     executionState: "completed",
     packageId: "evidence-package",
     runId: "evidence-run",
-    architectureId: STAGE4_V2_CAPABILITY,
+    architectureId: STAGE4_V2_ARCHITECTURE,
     activeConfig: pickBinding(activeBinding),
     ticket: {
       ticketId: "ticket-fixture",
@@ -818,7 +819,7 @@ function buildDetailedQualificationDiagnostic(inputs) {
     status: "passed",
     packageId: "evidence-package",
     runId: "evidence-run",
-    architectureId: STAGE4_V2_CAPABILITY,
+    architectureId: STAGE4_V2_ARCHITECTURE,
     datasetReleaseIdentity: "dataset-release-fixture",
     seed: fixedInputs.seed,
     resolution: fixedInputs.resolution,
@@ -1104,11 +1105,18 @@ function testQualificationLifecycleFirstCrashRecovery(root) {
 function testWddmProcessClassification() {
   const graphics = classifyGpuProcesses({
     computeRows: parseNvidiaComputeProcesses("42, [Insufficient Permissions], 721 MiB\n"),
-    pmonRows: parseNvidiaPmonProcesses("0 42 G 0 0 chrome.exe\n"),
+    pmonRows: parseNvidiaPmonProcesses("0 42 C+G 0 0 chrome.exe\n"),
     wmiRows: { 42: { processId: 42, name: "chrome.exe", executablePath: "C:\\Program Files\\Chrome\\chrome.exe", commandLine: "chrome.exe" } },
   });
   assert.deepEqual(graphics.blockers, []);
   assert.equal(graphics.rows[0].classification, "idle_wddm_graphics");
+  const otherIdleWddmGraphics = classifyGpuProcesses({
+    computeRows: parseNvidiaComputeProcesses("44, wallpaper64.exe, [N/A]\n"),
+    pmonRows: parseNvidiaPmonProcesses("0 44 C+G 0 0 wallpaper64.exe\n"),
+    wmiRows: {},
+  });
+  assert.deepEqual(otherIdleWddmGraphics.blockers, []);
+  assert.equal(otherIdleWddmGraphics.rows[0].classification, "idle_wddm_graphics");
   const compute = classifyGpuProcesses({
     computeRows: parseNvidiaComputeProcesses("43, python.exe, 2048 MiB\n"),
     pmonRows: parseNvidiaPmonProcesses("0 43 C 15 20 python.exe\n"),

@@ -32,7 +32,7 @@ class SmokeSplitPolicyTests(unittest.TestCase):
         return {"training": {"stage4V2ControlledSmokeExecution": {
             "datasetRelease": self.write("release.json", release),
             "derivedConfigContract": {"datasetPackageId": "fixture-release"},
-            "sampleId": "sample-a", "sampleSplit": declared or split,
+            "trainingSampleId": "sample-a", "trainingSampleSplit": declared or split,
         }}}
 
     def test_train_only_is_not_capability_qualification(self):
@@ -96,6 +96,40 @@ class SmokeSplitPolicyTests(unittest.TestCase):
             model.assert_not_called()
             optimizer.assert_not_called()
         self.assertFalse(output.exists())
+
+    def test_runtime_junction_paths_keep_their_project_logical_identity(self):
+        import stage4_semantic_transport_v2_controlled_smoke_training as training
+
+        with tempfile.TemporaryDirectory(prefix="stage4-smoke-runtime-target-") as target:
+            runtime = self.root / ".runtime"
+            try:
+                runtime.symlink_to(Path(target), target_is_directory=True)
+            except OSError as error:
+                self.skipTest(f"directory symlinks are unavailable: {error}")
+            physical_output = Path(target) / "ai-painter" / "controlled-smoke" / "run"
+            logical_output = ".runtime/ai-painter/controlled-smoke/run"
+            self.assertEqual(
+                training._project_file(self.root, logical_output),
+                physical_output.resolve(),
+            )
+            self.assertEqual(
+                training._logical(self.root, physical_output), logical_output,
+            )
+            with self.assertRaisesRegex(ValueError, "outside trusted"):
+                training._logical(self.root, Path(target).parent / "untrusted")
+
+    def test_python_accounting_hash_matches_node_canonical_property_order(self):
+        import stage4_semantic_transport_v2_controlled_smoke_training as training
+
+        value = {
+            "z": True,
+            "perEpoch": {"1": {"v": 1}, "10": {"v": 10}, "2": {"v": 2}},
+            "a": "x",
+        }
+        self.assertEqual(
+            training._canonical_sha256(value),
+            "eb174b0c0394cc9fc78e57689dbe620843a95f976272b481cf803bd0e316cbd5",
+        )
 
 
 if __name__ == "__main__":

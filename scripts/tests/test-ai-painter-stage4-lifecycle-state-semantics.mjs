@@ -116,6 +116,55 @@ test("Stage4 CPU-to-Smoke skip is rejected even when the generic lifecycle store
   });
 });
 
+test("readonly-GPU requalification appends immutable same-state evidence without replacing history", async () => {
+  await fixture(async (root) => {
+    qualification(root, "readonly_gpu_qualified");
+    const before = JSON.parse(fs.readFileSync(path.join(root, PREFIX, "state.json"), "utf8"));
+    write(root, ".runtime/fixture/requalification.json", {
+      status: "passed",
+      syntheticFixtureOnly: true,
+      revision: 2,
+    });
+    const source = binding(root, ".runtime/fixture/requalification.json");
+    const refreshed = advanceCapabilityLifecycle({
+      root,
+      capabilityVersion: CAPABILITY,
+      targetState: "readonly_gpu_qualified",
+      evidence: {
+        schemaVersion: "ai-painter-capability-stage-evidence-v1",
+        capabilityVersion: CAPABILITY,
+        targetState: "readonly_gpu_qualified",
+        status: "passed",
+        evidenceKind: "same_state_requalification",
+        bindings: [source],
+      },
+      allowSameStateEvidenceRefresh: true,
+      recordedAtUtc: "2026-09-24T11:00:00.000Z",
+    });
+    assert.equal(refreshed.state, "readonly_gpu_qualified");
+    assert.equal(refreshed.sequence, before.sequence + 1);
+    assert.equal(fs.existsSync(path.join(root, PREFIX, before.latestEvidence.path)), true);
+    const projected = readLastSuccessfulStage4Qualification({
+      projectRoot: root,
+      capabilityVersion: CAPABILITY,
+    });
+    assert.equal(projected.status, "verified", JSON.stringify(projected));
+    assert.equal(projected.lifecycleStage, "readonly_gpu_qualified");
+    const database = new DatabaseSync(path.join(root, PREFIX, "lifecycle.sqlite"), { readOnly: true });
+    try {
+      const row = database.prepare(
+        "SELECT from_state, to_state FROM lifecycle_transitions WHERE capability_version = ? AND sequence = ?",
+      ).get(CAPABILITY, refreshed.sequence);
+      assert.deepEqual({ ...row }, {
+        from_state: "readonly_gpu_qualified",
+        to_state: "readonly_gpu_qualified",
+      });
+    } finally {
+      database.close();
+    }
+  });
+});
+
 for (const replaced of ["candidate.json", "evidence/002-cpu_contract_verified.json", "source.json"]) {
   test(`mid-read replacement of ${replaced} cannot remain verified`, async () => {
     await fixture(async (root) => {

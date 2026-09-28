@@ -105,16 +105,23 @@ export function readLastSuccessfulStage4Qualification({ projectRoot, capabilityV
         // Stage4 V2 requires GPU qualification; absence of a GPU requirement
         // field does not permit skipping this stage.
         const success = nextIndex === previousIndex + 1;
+        const requalification = event.state === "readonly_gpu_qualified"
+          && previous === "readonly_gpu_qualified";
         const rejection = event.state === "rejected" && previousIndex >= 0 && previous !== "released";
         const rollback = event.state === "rolled_back" && previous === "released";
-        assert.ok(previousIndex >= 0 && (success || rejection || rollback), "lifecycle_transition_invalid");
+        assert.ok(previousIndex >= 0 && (success || requalification || rejection || rollback),
+          "lifecycle_transition_invalid");
         const binding = { path: `${prefix}/evidence/${String(sequence).padStart(3, "0")}-${event.state}.json`, sha256: event.evidenceSha256 };
         const evidence = readBoundJson(projectRoot, binding, receipts);
         assert.equal(evidence.schemaVersion, "ai-painter-capability-stage-evidence-v1", "lifecycle_evidence_schema_invalid");
         assert.equal(evidence.capabilityVersion, capabilityVersion, "lifecycle_evidence_capability_mismatch");
         assert.equal(evidence.targetState, event.state, "lifecycle_evidence_target_mismatch");
+        if (requalification) {
+          assert.equal(evidence.evidenceKind, "same_state_requalification",
+            "lifecycle_requalification_evidence_kind_invalid");
+        }
         verifyBindings(projectRoot, evidence.bindings, receipts);
-        if (success) {
+        if (success || requalification) {
           assert.equal(evidence.status, "passed", "lifecycle_success_evidence_not_passed");
           // A valid-looking stage wrapper must not launder a failed execution.
           for (const source of evidence.bindings) {

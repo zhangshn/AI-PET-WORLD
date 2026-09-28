@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import sharp from "sharp";
 
 import {
   CURRENT_EXECUTION_REGISTRY_ROOT,
@@ -174,18 +175,95 @@ export async function executeStage4V2FrozenConditionAlignmentAudit(
       monsoonSeason: validated.conditionPackValue.reviewSubject?.monsoonSeason ?? null,
     },
   };
-  const alignment = await conditionAudit({
-    record,
-    imagePath: resolveInside(root, preview.path),
-    referenceImagePath: resolveInside(root, validated.referenceRgb.path),
+  const candidate = await materializeConditionAuditCandidate({
+    root, validated, preview,
   });
+  let alignment;
+  try {
+    alignment = await conditionAudit({
+      record,
+      imagePath: candidate.path,
+      referenceImagePath: resolveInside(root, validated.referenceRgb.path),
+    });
+  } finally {
+    candidate.cleanup();
+  }
   verifyBinding(root, preview, `preview_epoch_${preview.epoch}_condition_audit_after`);
   verifyImmutableReviewInputs(validated, root,
     `epoch_${preview.epoch}_condition_audit_after`);
-  return stripTrainingHints(normalizeConditionAudit(
+  return stripTrainingHints({
+    ...normalizeConditionAudit(
     alignment,
     validated.thresholdContractValue,
+    ),
+    candidateCanvasAdaptation: candidate.evidence,
+  });
+}
+
+async function materializeConditionAuditCandidate({ root, validated, preview }) {
+  const source = resolveInside(root, preview.path);
+  const metadata = await sharp(source, { failOn: "error" }).metadata();
+  const sourceWidth = metadata.width;
+  const sourceHeight = metadata.height;
+  const targetWidth = validated.conditionPackValue.canvas?.width;
+  const targetHeight = validated.conditionPackValue.canvas?.height;
+  assert.ok(Number.isSafeInteger(sourceWidth) && Number.isSafeInteger(sourceHeight),
+    "review candidate canvas is invalid");
+  assert.ok(Number.isSafeInteger(targetWidth) && Number.isSafeInteger(targetHeight),
+    "condition-pack canvas is invalid");
+  if (sourceWidth === targetWidth && sourceHeight === targetHeight) {
+    return {
+      path: source,
+      cleanup: () => {},
+      evidence: Object.freeze({
+        mode: "identity_same_canvas_v1",
+        sourceWidth, sourceHeight, targetWidth, targetHeight,
+        integerScale: 1,
+        interpolation: "none",
+        sourcePreviewSha256: preview.sha256,
+      }),
+    };
+  }
+  assert.equal(targetWidth % sourceWidth, 0,
+    "condition-review canvas width is not an integer multiple of candidate width");
+  assert.equal(targetHeight % sourceHeight, 0,
+    "condition-review canvas height is not an integer multiple of candidate height");
+  const scale = targetWidth / sourceWidth;
+  assert.equal(targetHeight / sourceHeight, scale,
+    "condition-review candidate and condition-pack aspect ratio differ");
+  assert.ok(scale > 1, "condition-review candidate downscaling is forbidden");
+  const scratchParent = path.join(root, ".runtime", "ai-painter");
+  fs.mkdirSync(scratchParent, { recursive: true });
+  const scratch = fs.mkdtempSync(path.join(
+    scratchParent, "stage4-v2-machine-review-scratch-",
   ));
+  const derived = path.join(scratch, `epoch-${String(preview.epoch).padStart(3, "0")}.png`);
+  try {
+    await sharp(source, { failOn: "error" })
+      .resize(targetWidth, targetHeight, { kernel: "nearest" })
+      .png({ compressionLevel: 9, adaptiveFiltering: false })
+      .toFile(derived);
+    const derivedSha256 = sha256File(derived);
+    return {
+      path: derived,
+      cleanup: () => fs.rmSync(scratch, { recursive: true, force: true }),
+      evidence: Object.freeze({
+        mode: "integer_coordinate_projection_v1",
+        sourceWidth, sourceHeight, targetWidth, targetHeight,
+        integerScale: scale,
+        interpolation: "nearest",
+        sourcePreviewSha256: preview.sha256,
+        derivedAuditRgbSha256: derivedSha256,
+        derivedArtifactPersisted: false,
+        sourcePixelsModified: false,
+        conditionPackModified: false,
+        referenceRgbModified: false,
+      }),
+    };
+  } catch (error) {
+    fs.rmSync(scratch, { recursive: true, force: true });
+    throw error;
+  }
 }
 
 function normalizeConditionAudit(audit, thresholdContract) {
@@ -295,7 +373,6 @@ export function validateReviewExecutionBinding(binding, projectRoot = process.cw
   assert.equal(currentRegistrySnapshot.registryRevision, transaction.registryRevision);
   assert.equal(currentRegistrySnapshot.eventSequence, transaction.eventSequence);
   assert.equal(currentRegistrySnapshot.transactionId, transaction.transactionId);
-  assert.equal(currentRegistrySnapshot.capabilityVersion, V2_ARCHITECTURE_ID);
   assert.equal(currentRegistrySnapshot.packageId, binding.executionPackageIdentity);
   assert.equal(currentRegistrySnapshot.runId, binding.smokeRunId);
   assert.equal(currentRegistrySnapshot.taskKind, "controlled_smoke");
@@ -303,7 +380,12 @@ export function validateReviewExecutionBinding(binding, projectRoot = process.cw
   assert.equal(currentRegistrySnapshot.nextMachineAction, null);
 
   const smokePackage = verifyBinding(root, binding.smokePackage, "smokePackage");
-  assert.equal(smokePackage.architectureId ?? smokePackage.capabilityVersion, V2_ARCHITECTURE_ID);
+  assert.equal(smokePackage.architectureId, V2_ARCHITECTURE_ID);
+  assert.match(smokePackage.capabilityVersion ?? "", /^[a-z0-9][a-z0-9._-]+$/u,
+    "Smoke package capability version is invalid");
+  assert.equal(currentRegistrySnapshot.capabilityVersion,
+    smokePackage.capabilityVersion,
+    "reviewing registry capability differs from the immutable Smoke package");
   assert.equal(smokePackage.packageId, binding.executionPackageIdentity);
   assert.equal(smokePackage.runId, binding.smokeRunId);
   assert.equal(smokePackage.reviewExecutionBindingId, binding.reviewBindingId);
@@ -320,7 +402,8 @@ export function validateReviewExecutionBinding(binding, projectRoot = process.cw
   assert.equal(qualification.schemaVersion, "ai-painter-stage4-v2-readonly-gpu-terminal-v1");
   assert.equal(qualification.status, "stage4_v2_readonly_gpu_qualification_passed");
   assert.equal(qualification.executionState, "completed");
-  assert.equal(qualification.capabilityVersion, V2_ARCHITECTURE_ID);
+  assert.equal(qualification.capabilityVersion, smokePackage.capabilityVersion,
+    "qualification capability differs from the immutable Smoke package");
   assert.deepEqual(smokePackage.readonlyGpuQualificationTerminal, binding.readonlyGpuQualificationTerminal);
 
   const conditionPackValue = verifyBinding(root, binding.conditionPack, "conditionPack");

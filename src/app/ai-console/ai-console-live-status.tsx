@@ -5,6 +5,9 @@ import Link from "next/link"
 import { useState } from "react"
 import { refreshAiConsoleLiveObservability, useAiConsoleLiveObservability } from "./ai-console-live-observability"
 import styles from "./ai-console-live-status.module.css"
+import { useAiConsoleCurrentExecution } from "./ai-console-current-execution-store"
+import { mapTrainingSummary } from "./ai-console-training-summary-model"
+import { AiConsoleTrainingSummary } from "./ai-console-training-summary"
 
 function percent(value: number | null): string {
   return value === null ? "—" : `${value.toFixed(1)}%`
@@ -43,17 +46,15 @@ function Metric({ label, value, utilization }: { label: string; value: string; u
 }
 
 export function AiConsoleLiveStatus() {
-  const { connection, snapshot, errorCode, roundTripDurationMs } = useAiConsoleLiveObservability()
+  const live = useAiConsoleLiveObservability()
+  const { connection, snapshot, errorCode, roundTripDurationMs } = live
+  const current = useAiConsoleCurrentExecution()
   const [expanded, setExpanded] = useState(false)
   const snapshotAgeMs = ageMilliseconds(snapshot?.sampleCompletedAtUtc)
   const gpuAgeMs = ageMilliseconds(snapshot?.channelTimings.gpu.sampledAtUtc)
   const telemetry = snapshot?.trainingTelemetry.latest
   const observedProcessCount = snapshot?.trainingProcesses.records.length ?? 0
-  const trainingSummary = telemetry
-    ? `${telemetry.trainingStage ?? "TRAINING"} · E${telemetry.epoch ?? "—"} · LOSS ${telemetry.loss?.toFixed(4) ?? "—"}`
-    : observedProcessCount > 0
-      ? `发现 ${observedProcessCount} 个训练进程 · 指标未上报`
-      : "新平台训练指标未上报"
+  const trainingSummary = mapTrainingSummary(current, live).status
 
   return (
     <section className={styles.liveBar} aria-label="全局实时运行状态">
@@ -102,7 +103,8 @@ export function AiConsoleLiveStatus() {
               <Link href="/ai-console/system/resources">打开完整资源仪表盘 <i>→</i></Link>
             </section>
             <section>
-              <span>TRAINING OBSERVABILITY</span><strong>训练运行</strong>
+              <AiConsoleTrainingSummary />
+              <details><summary>最近原始遥测（非当前执行判定，可能已过期）</summary>
               {telemetry ? (
                 <dl>
                   <div><dt>Run</dt><dd>{telemetry.runId}</dd></div>
@@ -115,7 +117,7 @@ export function AiConsoleLiveStatus() {
               ) : (
                 <div className={styles.telemetryEmpty}><strong>{observedProcessCount > 0 ? `已直接观测到 ${observedProcessCount} 个疑似训练进程` : "当前没有新平台训练语义上报"}</strong><p>硬件仍持续采样；进程观测不会被冒充为正式Run、Epoch或Loss。</p><code>{snapshot?.trainingTelemetry.reasonCode ?? errorCode ?? "awaiting_live_snapshot"}</code></div>
               )}
-              <Link href="/ai-console/training/overview">打开完整训练仪表盘 <i>→</i></Link>
+              </details><Link href="/ai-console/training/overview">打开完整训练仪表盘 <i>→</i></Link>
             </section>
           </div>
         </div>

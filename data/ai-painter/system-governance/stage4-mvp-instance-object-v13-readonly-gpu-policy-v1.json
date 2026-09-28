@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "stage4-mvp-instance-object-v13-readonly-gpu-policy-v1",
+  "status": "active_single_readonly_qualification",
+  "capabilityVersion": "stage4_mvp_native_rgb_instance_object_renderer_v13",
+  "candidateContract": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-native-rgb-instance-object-v13-contract.json",
+    "sha256": "3e6dc3c0664aa2b732a58311c024675ba9b172342bbe62e6ba7b850c579b18c2"
+  },
+  "cpuQualification": {
+    "path": ".runtime/ai-painter/stage4-mvp-instance-object-v13-cpu-checks/cpu-v13-3b6b1d5a58ff22bb9e810315f5b4ce638eb4dbcfbf46e873/report.json",
+    "sha256": "2d4b62e81fdaf298155e90f65146e005ff96a78c9ced0a1232d1b26f80fa8f06"
+  },
+  "datasetManifest": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"
+  },
+  "program": {
+    "path": "ml/ai-painter/scripts/run_stage4_mvp_instance_object_v13_readonly_gpu_qualification.py",
+    "sha256": "8a9c7c899a3f187c9122380209061dae9f820a99f546886173a84742373815df"
+  },
+  "execution": {
+    "maxGpuMemoryFraction": 0.7,
+    "maxWallSeconds": 120,
+    "optimizerAllowed": false,
+    "trainingAllowed": false,
+    "checkpointAllowed": false,
+    "validationRead": false,
+    "challengeRead": false,
+    "regressionRead": false
+  }
+}

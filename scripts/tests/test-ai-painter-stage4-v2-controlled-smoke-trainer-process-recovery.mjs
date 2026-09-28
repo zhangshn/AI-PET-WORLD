@@ -136,8 +136,10 @@ try {
     schemaVersion: "ai-painter-stage4-v2-controlled-smoke-progress-v1",
     status: "completed", phase: "training_completed",
     packageId: payload.packageId, runId: payload.runId,
-    sampleId: "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
-    sampleSplit: "validation", epoch: 30, epochTarget: 30,
+    trainingSampleId: "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    trainingSampleSplit: "train",
+    validationSampleId: "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    validationSampleSplit: "validation", epoch: 30, epochTarget: 30,
     optimizerStep: 30, optimizerStepTarget: 30, percent: 100,
   }, null, 2)}\n`);
   const parentEvidence = path.join(root, "parent-evidence.json");

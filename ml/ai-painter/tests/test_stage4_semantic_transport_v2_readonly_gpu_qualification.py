@@ -372,6 +372,9 @@ class Stage4SemanticTransportV2ReadonlyGpuQualificationTests(unittest.TestCase):
             self.assertEqual(item["blockedReason"], "gpu_measurement_not_run")
             self.assertTrue(item["requiredBeforeFormalStage0"])
 
+    def test_process_memory_telemetry_is_available_on_current_host(self):
+        self.assertGreater(runner.process_memory_bytes(), 0)
+
     def test_resolution_matrix_rejects_incomplete_real_measurement(self):
         with self.assertRaisesRegex(ValueError, "measurement_missing_cpuMemoryPeakBytes"):
             runner.build_resolution_profile_matrix(

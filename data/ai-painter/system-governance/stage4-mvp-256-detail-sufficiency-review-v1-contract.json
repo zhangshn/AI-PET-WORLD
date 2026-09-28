@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "stage4-mvp-256-detail-sufficiency-review-contract-v1",
+  "contractId": "stage4-mvp-256-detail-sufficiency-review-v1",
+  "status": "active_readonly_false_positive_safety_gate",
+  "authority": "local_ai_pet_world_program",
+  "scope": "mvp_256x192_candidate_relative_detail_sufficiency",
+  "purpose": "Reject severely blurred candidates that can pass the historical upper-bound-only professional aesthetic audit.",
+  "measurement": {
+    "width": 256,
+    "height": 192,
+    "resizeKernel": "nearest",
+    "luminanceCoefficients": [0.2126, 0.7152, 0.0722],
+    "edgeGradientThreshold": 0.04,
+    "candidateAndReferenceMeasuredAtSameResolution": true
+  },
+  "minimumCandidateToReferenceRatios": {
+    "gradientMean": 0.1,
+    "laplacianMean": 0.05,
+    "edgeDensity004": 0.05
+  },
+  "acceptanceLogic": "all_three_minimum_ratios_required",
+  "failureCode": "professional_reference_relative_detail_insufficient",
+  "boundary": {
+    "readOnly": true,
+    "trainingAllowed": false,
+    "gpuAllowed": false,
+    "weightsModified": false,
+    "originalImagesModified": false,
+    "datasetSplitsModified": false,
+    "historicalReviewEvidenceModified": false,
+    "historicalThresholdContractModified": false,
+    "mayGrantFormalStage4Qualification": false,
+    "mayRevokeUnsafeMvpVisualAcceptance": true
+  },
+  "rationale": "The ratios are deliberately lenient MVP floors, not fidelity targets. A candidate retaining less than ten percent of reference gradient energy and less than five percent of reference Laplacian or edge density is an over-smoothed layout proxy, not a readable low-resolution game frame."
+}

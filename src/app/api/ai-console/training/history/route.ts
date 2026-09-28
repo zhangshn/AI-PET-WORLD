@@ -7,6 +7,8 @@ export async function GET(request: Request) {
   try {
     const params = new URL(request.url).searchParams
     const result = await listTrainingHistory({ cursor: params.get('cursor'), limit: params.has('limit') ? Number(params.get('limit')) : 20 })
-    return Response.json(result, { status: result.dataStatus === 'unknown_or_stale' ? 409 : 200, headers: historyHeaders })
+    // A broken older registry prefix is a partial, queryable result, not a
+    // failed request for the independently verified newer records.
+    return Response.json(result, { headers: historyHeaders })
   } catch (error) { return historyFailure(error) }
 }

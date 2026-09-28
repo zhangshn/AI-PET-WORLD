@@ -8,6 +8,7 @@ from typing import Any
 
 MODE_ID = "stage4_semantic_transport_v2_controlled_smoke"
 MODE_STATUS = "local_ai_stage4_semantic_transport_v2_controlled_smoke_active"
+CAPABILITY_VERSION = "stage4_v2_machine_review_capability_identity_fixed_program_v6"
 PROGRAM_GRAPH_SCHEMA = "ai-painter-program-graph-manifest-v1"
 PROGRAM_GRAPH_ID = "stage4-v2-controlled-smoke-program-graph-v1"
 PYTHON_ADAPTER_PATH = Path(
@@ -16,7 +17,8 @@ PYTHON_ADAPTER_PATH = Path(
 PYTHON_TRAINING_ADAPTER_PATH = Path(
     "ml/ai-painter/scripts/stage4_semantic_transport_v2_controlled_smoke_training.py"
 )
-SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
+TRAIN_SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3"
+VALIDATION_SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
 SEED = 20263722
 PREVIEW_EPOCHS = [1, 5, 10, 20, 30]
 RESOLUTION = {"width": 256, "height": 192}
@@ -226,13 +228,15 @@ def derived_config_contract(
     """
     return {
         "schemaVersion": "ai-painter-stage4-v2-controlled-smoke-derived-config-contract-v1",
-        "capabilityVersion": ARCHITECTURE_ID,
+        "capabilityVersion": CAPABILITY_VERSION,
         "modeId": MODE_ID,
         "packageId": package_id,
         "runId": run_id,
         "datasetPackageId": dataset_package_id,
-        "sampleId": SAMPLE_ID,
-        "sampleSplit": "validation",
+        "trainingSampleId": TRAIN_SAMPLE_ID,
+        "trainingSampleSplit": "train",
+        "validationSampleId": VALIDATION_SAMPLE_ID,
+        "validationSampleSplit": "validation",
         "seed": SEED,
         "resolution": RESOLUTION,
         "epochCount": 30,
@@ -289,7 +293,7 @@ def build_active_config(
     training = {**base.get("training", {}), **support["training"]}
     training.update({
         "trainingAuthorizationStatus": MODE_STATUS,
-        "authorizedOverfitSampleId": SAMPLE_ID,
+        "authorizedOverfitSampleId": TRAIN_SAMPLE_ID,
         "authorizedInitialization": "fixed_random_stage4_v2_denoiser_without_checkpoint",
         "seed": SEED,
         "denoiserEpochs": 30,
@@ -321,8 +325,10 @@ def build_active_config(
             "schemaVersion": "ai-painter-stage4-v2-controlled-smoke-execution-binding-v1",
             "packageId": package_id,
             "runId": run_id,
-            "sampleId": SAMPLE_ID,
-            "sampleSplit": "validation",
+            "trainingSampleId": TRAIN_SAMPLE_ID,
+            "trainingSampleSplit": "train",
+            "validationSampleId": VALIDATION_SAMPLE_ID,
+            "validationSampleSplit": "validation",
             "seed": SEED,
             "resolutionStage": 0,
             "resolution": RESOLUTION,
@@ -369,8 +375,6 @@ def build_active_config(
         "modeId": MODE_ID,
         "capabilityAuthority": "local_ai_pet_world_program",
         "ownerAuthorizationRequired": False,
-        "parentAtomicConsumptionRequired": True,
-        "independentAuthorizationAuthority": False,
         "executionActions": actions,
         "binding": binding,
     }
@@ -422,8 +426,6 @@ def materialize(args: Any, _test_hooks: dict[str, Any] | None = None) -> dict[st
         "oneTimeConsumption": True,
         "state": "consumed",
         "binding": built["binding"],
-        "parentAtomicConsumption": built["config"]["training"]["stage4V2ControlledSmokeExecution"]["signedParentTicketConsumption"],
-        "independentAuthorizationAuthority": False,
     }
     consumption_path = args.active_config.parent / "trainer-capability-ticket-consumption.json"
     consumption_sha = sha256_json(consumption)
@@ -513,7 +515,11 @@ def validate_active_config(config_path: Path, root: Path) -> dict[str, Any]:
     execution = training.get("stage4V2ControlledSmokeExecution", {})
     if training.get("trainingAuthorizationStatus") != MODE_STATUS:
         raise ValueError("V2 Smoke mode status mismatch")
-    if execution.get("sampleId") != SAMPLE_ID or execution.get("sampleSplit") != "validation":
+    if (execution.get("trainingSampleId") != TRAIN_SAMPLE_ID
+            or execution.get("trainingSampleSplit") != "train"):
+        raise ValueError("V2 Smoke fixed training sample mismatch")
+    if (execution.get("validationSampleId") != VALIDATION_SAMPLE_ID
+            or execution.get("validationSampleSplit") != "validation"):
         raise ValueError("V2 Smoke fixed validation sample mismatch")
     if execution.get("seed") != SEED or execution.get("resolution") != RESOLUTION:
         raise ValueError("V2 Smoke fixed seed or resolution mismatch")
@@ -587,7 +593,7 @@ def validate_training_data_use(config: dict[str, Any], root: Path) -> dict[str, 
     if release.get("datasetReleaseIdentity") != execution.get("derivedConfigContract", {}).get("datasetPackageId"):
         raise ValueError("training dataset release identity mismatch")
     source = bound(release["sourcePackage"]["sourceIndex"])
-    sample_id = execution.get("sampleId")
+    sample_id = execution.get("trainingSampleId")
     if not isinstance(sample_id, str) or not sample_id:
         raise ValueError("training sampleId is missing")
     splits = []
@@ -597,9 +603,9 @@ def validate_training_data_use(config: dict[str, Any], root: Path) -> dict[str, 
         if len(rows) != 1:
             raise ValueError("training sample must occur exactly once in release and source collections")
         splits.append(rows[0].get("split"))
-    if execution.get("sampleSplit") != "train" or any(split != "train" for split in splits):
+    if execution.get("trainingSampleSplit") != "train" or any(split != "train" for split in splits):
         raise ValueError("stage4_smoke_non_train_optimizer_source: " + sample_id
-                         + "; declared=" + str(execution.get("sampleSplit"))
+                         + "; declared=" + str(execution.get("trainingSampleSplit"))
                          + "; release/source/contribution=" + "/".join(map(str, splits))
                          + "; separately qualified successor required; relabelling forbidden")
     return {"policy": "optimizer_train_sources_only_v1", "sampleIds": [sample_id],

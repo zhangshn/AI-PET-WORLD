@@ -208,8 +208,14 @@ function validateInput(root, plan, stage, input, runIds, executionRelative) {
   validateProcessBudget(pkg.resourceBudget)
   assert.equal(pkg.ticketConsumptionRequired, true, "formal local ticket consumption is required")
   assert.deepEqual(pkg.runner, input.runner, "formal runner binding mismatch")
-  readBoundJson(root, pkg.taskTicket)
-  readBoundJson(root, pkg.programGraphManifest)
+  // The single-stage entry requires these exact files before materialization.
+  // Reject a missing or changed binding at batch preflight too, before a child
+  // makes GPU activity unknown. Semantic qualification remains the responsibility
+  // of the registered production preflight; file presence is never a grant.
+  for (const key of ["taskTicket", "dataQualification", "foundationQualification",
+    "cpuQualification", "gpuQualification", "programGraphManifest"]) {
+    readBoundJson(root, pkg[key])
+  }
   assert.equal(pkg.outputTerminalPath, input.outputTerminalPath, "formal terminal path mismatch")
   const expected = executionRelative + "/stages/" + input.runId + "/phase-terminal.json"
   assert.equal(input.outputTerminalPath, expected, "formal terminal outside stage namespace")

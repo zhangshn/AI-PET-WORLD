@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
+import { readBoundTrainingPresentation } from "./bound-training-presentation.mjs"
 import {
   CURRENT_EXECUTION_REGISTRY_PATH,
   readCurrentExecutionRegistry,
@@ -83,6 +84,7 @@ export type AiPainterCurrentExecutionSnapshot = {
   } | null
   selectedHistoricalRun: JsonRecord | null
   machineReview: AiPainterMachineReviewSummary
+  trainingPresentation: Awaited<ReturnType<typeof readBoundTrainingPresentation>> | null
   recordedAtUtc: string | null
   recordedAtAsiaShanghai: string | null
   observedAtUtc: string
@@ -107,7 +109,13 @@ export async function readAiPainterCurrentExecutionSnapshot(
     const executionState = requiredString(registry.executionState, "current_project_execution_state_missing")
     const terminalBinding = requiredBinding(registry.terminalEvidence, "current_project_terminal")
     const latestBinding = optionalLatestTrainingTerminal(registry.latestTrainingTerminal)
-    const machineReview = await readBoundMachineReview(projectRoot, latestBinding)
+    const trainingPresentation = await readBoundTrainingPresentation(projectRoot, registry, read.taskCapsule, read.currentTaskTerminal)
+    const machineReview = await readBoundMachineReview(
+      projectRoot,
+      latestBinding,
+      isRecord(read.currentTaskTerminal) ? read.currentTaskTerminal : null,
+      runId,
+    )
     const evidenceReferences = [
       CURRENT_EXECUTION_REGISTRY_PATH,
       terminalBinding.path,
@@ -153,6 +161,7 @@ export async function readAiPainterCurrentExecutionSnapshot(
       } : null,
       selectedHistoricalRun: isRecord(registry.selectedHistoricalRun) ? registry.selectedHistoricalRun : null,
       machineReview,
+      trainingPresentation,
       recordedAtUtc: stringOrNull(registry.recordedAtUtc),
       recordedAtAsiaShanghai: stringOrNull(registry.recordedAtAsiaShanghai),
       observedAtUtc,
@@ -356,7 +365,23 @@ function staleProjection(snapshot: AiPainterCurrentExecutionSnapshot): AiConsole
 async function readBoundMachineReview(
   projectRoot: string,
   latestBinding: ReturnType<typeof optionalLatestTrainingTerminal>,
+  currentTaskTerminal: JsonRecord | null,
+  currentRunId: string,
 ): Promise<AiPainterMachineReviewSummary> {
+  if (isRecord(currentTaskTerminal?.detailReview)) {
+    return readBoundMvpDetailReview(
+      projectRoot,
+      currentTaskTerminal.detailReview,
+      currentRunId,
+    )
+  }
+  if (isRecord(currentTaskTerminal?.machineReview)) {
+    return readBoundStage0MachineReview(
+      projectRoot,
+      currentTaskTerminal.machineReview,
+      currentRunId,
+    )
+  }
   if (!latestBinding) return unavailableReview("latest_training_terminal_not_registered")
   const evidence = latestBinding.source.evidence
   if (!isRecord(evidence)) return unavailableReview("latest_training_evidence_not_registered")
@@ -400,6 +425,135 @@ async function readBoundMachineReview(
     updatedAtUtc: stringOrNull(value.updatedAtUtc),
     completedAtUtc: stringOrNull(value.completedAtUtc),
     reviews,
+  }
+}
+
+async function readBoundMvpDetailReview(
+  projectRoot: string,
+  binding: JsonRecord,
+  currentRunId: string,
+): Promise<AiPainterMachineReviewSummary> {
+  const sourcePath = requiredString(binding.path, "mvp_detail_review_path_missing")
+  const sourceSha256 = requiredSha256(binding.sha256, "mvp_detail_review_sha256_invalid")
+  const bytes = await readExactProjectFile(projectRoot, sourcePath)
+  if (sha256(bytes) !== sourceSha256) throw new Error("mvp_detail_review_sha256_mismatch")
+  const value = JSON.parse(bytes.toString("utf8")) as unknown
+  if (!isRecord(value)) throw new Error("mvp_detail_review_json_invalid")
+  if (value.schemaVersion !== "stage4-mvp-256-detail-sufficiency-review-v1") {
+    throw new Error("mvp_detail_review_schema_invalid")
+  }
+  if (stringOrNull(value.runId) !== currentRunId) {
+    throw new Error("mvp_detail_review_run_id_mismatch")
+  }
+  const candidateCount = requiredNonNegativeInteger(value.candidateCount,
+    "mvp_detail_review_candidate_count_invalid")
+  const passCount = requiredNonNegativeInteger(value.candidatePassCount,
+    "mvp_detail_review_pass_count_invalid")
+  const failCount = requiredNonNegativeInteger(value.candidateFailCount,
+    "mvp_detail_review_fail_count_invalid")
+  if (passCount + failCount !== candidateCount) {
+    throw new Error("mvp_detail_review_count_identity_invalid")
+  }
+  if (!Array.isArray(value.reviews) || value.reviews.length !== candidateCount) {
+    throw new Error("mvp_detail_review_nodes_invalid")
+  }
+  const reviews = value.reviews.map((item, index) => normalizeStage0ReviewNode(item, index))
+  return {
+    availability: "available",
+    reasonCode: null,
+    sourcePath: normalizeProjectRelativePath(sourcePath),
+    sourceSha256,
+    integrityStatus: "verified",
+    schemaVersion: stringOrNull(value.schemaVersion),
+    status: stringOrNull(value.status),
+    runId: stringOrNull(value.runId),
+    sampleId: null,
+    sampleSplit: "validation",
+    completedReviewCount: candidateCount,
+    targetReviewCount: candidateCount,
+    previewPassCount: passCount,
+    previewFailCount: failCount,
+    updatedAtUtc: stringOrNull(value.recordedAtUtc),
+    completedAtUtc: stringOrNull(value.recordedAtUtc),
+    reviews,
+  }
+}
+
+async function readBoundStage0MachineReview(
+  projectRoot: string,
+  binding: JsonRecord,
+  currentRunId: string,
+): Promise<AiPainterMachineReviewSummary> {
+  const sourcePath = requiredString(binding.path, "stage0_machine_review_path_missing")
+  const sourceSha256 = requiredSha256(binding.sha256, "stage0_machine_review_sha256_invalid")
+  const bytes = await readExactProjectFile(projectRoot, sourcePath)
+  if (sha256(bytes) !== sourceSha256) throw new Error("stage0_machine_review_sha256_mismatch")
+  const value = JSON.parse(bytes.toString("utf8")) as unknown
+  if (!isRecord(value)) throw new Error("stage0_machine_review_json_invalid")
+  if (value.schemaVersion !== "ai-painter-stage4-mvp-stage0-machine-review-v1") {
+    throw new Error("stage0_machine_review_schema_invalid")
+  }
+  if (stringOrNull(value.runId) !== currentRunId) {
+    throw new Error("stage0_machine_review_run_id_mismatch")
+  }
+  const candidateCount = requiredNonNegativeInteger(value.candidateCount,
+    "stage0_machine_review_candidate_count_invalid")
+  const passCount = requiredNonNegativeInteger(value.candidatePassCount,
+    "stage0_machine_review_pass_count_invalid")
+  const failCount = requiredNonNegativeInteger(value.candidateFailCount,
+    "stage0_machine_review_fail_count_invalid")
+  if (passCount + failCount !== candidateCount) {
+    throw new Error("stage0_machine_review_count_identity_invalid")
+  }
+  if (!Array.isArray(value.reviews) || value.reviews.length !== candidateCount) {
+    throw new Error("stage0_machine_review_nodes_invalid")
+  }
+  const reviews = value.reviews.map((item, index) => normalizeStage0ReviewNode(item, index))
+  return {
+    availability: "available",
+    reasonCode: null,
+    sourcePath: normalizeProjectRelativePath(sourcePath),
+    sourceSha256,
+    integrityStatus: "verified",
+    schemaVersion: stringOrNull(value.schemaVersion),
+    status: stringOrNull(value.status),
+    runId: stringOrNull(value.runId),
+    sampleId: null,
+    sampleSplit: "validation",
+    completedReviewCount: candidateCount,
+    targetReviewCount: candidateCount,
+    previewPassCount: passCount,
+    previewFailCount: failCount,
+    updatedAtUtc: stringOrNull(value.recordedAtUtc),
+    completedAtUtc: stringOrNull(value.recordedAtUtc),
+    reviews,
+  }
+}
+
+function normalizeStage0ReviewNode(value: unknown, index: number): AiPainterMachineReviewNode {
+  if (!isRecord(value)) throw new Error(`stage0_machine_review_node_${index}_invalid`)
+  const candidate = requiredBinding(value.candidateRgb,
+    `stage0_machine_review_node_${index}_candidate`)
+  const normalized = isRecord(value.normalizedCandidateRgb)
+    ? requiredBinding(value.normalizedCandidateRgb,
+      `stage0_machine_review_node_${index}_normalized_candidate`)
+    : null
+  const issueCodes = Array.isArray(value.issueCodes)
+    ? value.issueCodes.map((code) => requiredString(code,
+      `stage0_machine_review_node_${index}_issue_code_invalid`))
+    : []
+  return {
+    epoch: requiredNonNegativeInteger(value.sampleIndex,
+      `stage0_machine_review_node_${index}_sample_index_invalid`) + 1,
+    passed: requiredBoolean(value.passed,
+      `stage0_machine_review_node_${index}_passed_invalid`),
+    issueCodes,
+    previewPath: candidate.path,
+    previewSha256: candidate.sha256,
+    reproductionPath: null,
+    reproductionSha256: null,
+    normalizedPath: normalized?.path ?? null,
+    normalizedSha256: normalized?.sha256 ?? null,
   }
 }
 
@@ -475,6 +629,7 @@ function unavailableSnapshot(reasonCode: string, observedAtUtc: string): AiPaint
     latestTrainingTerminal: null,
     selectedHistoricalRun: null,
     machineReview: unavailableReview("current_execution_registry_unavailable"),
+    trainingPresentation: null,
     recordedAtUtc: null,
     recordedAtAsiaShanghai: null,
     observedAtUtc,

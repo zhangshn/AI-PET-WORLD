@@ -1,6 +1,7 @@
 import { sampleAiConsoleLiveObservability } from "../ai-console-observability/local-observability"
 import { createProjection, type AiConsoleProjectionResult } from "./projection-contract"
 import { readAiPainterCurrentExecutionSnapshot } from "./ai-painter-current-execution-projection"
+import { matchesCurrentTrainingTelemetry } from "./active-run-telemetry-match"
 
 export async function queryAiConsoleTrainingObservabilityProjection(): Promise<AiConsoleProjectionResult> {
   const [snapshot, current] = await Promise.all([
@@ -9,7 +10,14 @@ export async function queryAiConsoleTrainingObservabilityProjection(): Promise<A
   ])
   const activeRunId = readString(current.activeExecution?.runId)
   const reportedTelemetry = snapshot.trainingTelemetry.latest
-  const telemetry = activeRunId && reportedTelemetry?.runId === activeRunId ? reportedTelemetry : null
+  const telemetry = matchesCurrentTrainingTelemetry({
+    registryVerified: current.ok,
+    activeRunId,
+    activeProcessId: current.activeExecution?.processId,
+    telemetryStatus: snapshot.trainingTelemetry.status,
+    reportedRunId: reportedTelemetry?.runId,
+    reportedProcessId: reportedTelemetry?.processId,
+  }) ? reportedTelemetry : null
   const currentRunId = activeRunId
     ?? current.latestTrainingTerminal?.runId
     ?? current.currentProjectTask?.runId

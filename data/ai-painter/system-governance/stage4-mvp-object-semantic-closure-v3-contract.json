@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "stage4-mvp-object-semantic-closure-v3-contract-v1",
+  "contractId": "stage4-mvp-object-semantic-closure-v3-contract-v1",
+  "status": "active_bounded_mvp_candidate",
+  "capabilityVersion": "stage4_mvp_object_semantic_closure_v3",
+  "parentArchitecture": "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2",
+  "objectiveVersion": "velocity_decoded_rgb_sparse_region_rollout_object_semantic_closure_v3",
+  "checkpointMetric": "fixed_grid_plus_deterministic_rollout_object_semantic_closure_v3",
+  "scope": {
+    "stage": 0,
+    "width": 256,
+    "height": 192,
+    "epochCount": 40,
+    "datasetCapacity": 64,
+    "splitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "automaticRetryAllowed": false,
+    "failedCheckpointReuseAllowed": false
+  },
+  "parentContracts": {
+    "formalObjective": {
+      "path": "data/ai-painter/system-governance/stage4-formal-diffusion-objective-and-checkpoint-contract-v1.json",
+      "sha256": "779027a5fe2a58d80be4519d7df17a5dc39ffd58307a627eef09620adaf42059"
+    },
+    "semanticTransportV2Support": {
+      "path": "data/ai-painter/system-governance/stage4-semantic-transport-v2-trainer-loss-support-contract-v1.json",
+      "sha256": "9e0cd29396944c1dcaa2dbc8a61012fe1ca6910732c2dc723ce815c16b7c449d"
+    }
+  },
+  "objectChannels": [
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation"
+  ],
+  "objectWeights": {
+    "object_footprints": 0.23529411764705882,
+    "object_tree": 0.23529411764705882,
+    "object_rock": 0.29411764705882354,
+    "object_vegetation": 0.23529411764705882
+  },
+  "weightDerivation": {
+    "formula": "formal.denoiserLossWeights.objectSemanticRgb * formal.training.objectSemanticChannelWeights[channel] / sum(formal.training.objectSemanticChannelWeights)",
+    "freeNumericalWeightSelectionAllowed": false
+  },
+  "trainingTerms": {
+    "perClassFinalVisibleRgb": {
+      "function": "masked_condition_rgb_loss",
+      "aggregation": "sum_derived_weighted_object_losses"
+    },
+    "perClassMultiscaleLuminanceStructure": {
+      "scales": [
+        1,
+        0.5,
+        0.25
+      ],
+      "functions": [
+        "masked_zero_mean_normalized_luminance_correlation",
+        "masked_laplacian_pyramid_structure_consistency"
+      ],
+      "aggregation": "sum_derived_weighted_object_losses"
+    }
+  },
+  "legalSupervision": {
+    "reference": "bound_original_rgb_from_qualified_train_split",
+    "conditionPack": "bound_23_channel_condition_pack_from_same_train_record",
+    "validationUsedForWeightUpdates": false,
+    "challengeOrRegressionRead": false,
+    "failedPreviewPixelsUsedAsTargets": false,
+    "failedCheckpointWeightsReadOrLoaded": false,
+    "machineReviewThresholdsUsedAsTargets": false,
+    "machineReviewResultsUsedAsTargets": false
+  },
+  "preservedBoundaries": {
+    "autoencoderFrozen": true,
+    "freshDenoiserInitialization": true,
+    "formalV6BaseObjectivePreserved": true,
+    "waterAndPathLossesPreserved": true,
+    "conditionOrderPreserved": true,
+    "datasetAndSplitPreserved": true,
+    "reviewThresholdsPreserved": true,
+    "stage1OrStage2AutomaticAdvance": false
+  }
+}

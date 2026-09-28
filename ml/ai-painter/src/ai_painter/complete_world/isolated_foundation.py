@@ -6,6 +6,7 @@ graph, GPU budget and new model identity before invoking this component.
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import dataclass
 import math
 
 import torch
@@ -50,12 +51,25 @@ def _check_batch(batch, split, expected_id, release_identity):
     return image
 
 
-def run_isolated_foundation_epoch(*, autoencoder, optimizer, train_dataset,
-                                  validation_dataset, device, loss_weights):
-    """Train on 48 train images, then evaluate 8 validation images without updates.
+@dataclass(frozen=True)
+class PreparedFoundationData:
+    """Authenticated train/validation RGB tensors for repeated bounded epochs."""
 
-    Never instantiate or read challenge/regression. No checkpoint, registry,
-    qualification or retry is issued here. Exceptions propagate to the caller.
+    dataset_binding: dict
+    release_identity: str
+    train_selection_sha256: str
+    validation_selection_sha256: str
+    train_sample_ids: tuple[str, ...]
+    validation_sample_ids: tuple[str, ...]
+    train_images: tuple[torch.Tensor, ...]
+    validation_images: tuple[torch.Tensor, ...]
+
+
+def prepare_isolated_foundation_data(*, train_dataset, validation_dataset):
+    """Authenticate and decode the two permitted splits exactly once.
+
+    Challenge and regression are deliberately not accepted as arguments and are
+    never instantiated by this component.
     """
     _require(isinstance(train_dataset, SplitReleaseDataset)
              and isinstance(validation_dataset, SplitReleaseDataset), "bound Datasets required")
@@ -67,9 +81,12 @@ def run_isolated_foundation_epoch(*, autoencoder, optimizer, train_dataset,
              "foundation dataset release mismatch")
     _require(not train_dataset.manifest.get("reviewOnly"),
              "review-only candidate cannot train the foundation")
-    _require(train_dataset.manifest.get("qualification", {}).get("trainingAllowed") is True
-             and validation_dataset.manifest.get("qualification", {}).get("trainingAllowed") is True,
-             "foundation dataset is not training qualified")
+    qualification = train_dataset.manifest.get("qualification", {})
+    _require(qualification.get("foundationTrainingAllowed") is True
+             and qualification.get("foundationTrainingRole") == "fresh_foundation_autoencoder_only"
+             and qualification.get("denoiserTrainingAllowed") is False
+             and qualification.get("trainingAllowed") is False,
+             "foundation dataset does not permit the isolated fresh-foundation role")
     release_identity = train_dataset.manifest.get("datasetReleaseIdentity")
     _require(isinstance(release_identity, str) and bool(release_identity),
              "foundation dataset release identity missing")
@@ -87,6 +104,39 @@ def run_isolated_foundation_epoch(*, autoencoder, optimizer, train_dataset,
                  "foundation selected rows changed: " + split)
     _require(not set(ids["train"]) & set(ids["validation"]),
              "foundation train/validation overlap")
+
+    verified = {}
+    for split, dataset in (("train", train_dataset), ("validation", validation_dataset)):
+        images = []
+        for index, batch in enumerate(DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)):
+            images.append(_check_batch(batch, split, ids[split][index], release_identity).cpu())
+        _require(len(images) == len(ids[split]), "foundation preflight incomplete: " + split)
+        verified[split] = tuple(images)
+    return PreparedFoundationData(
+        dataset_binding=deepcopy(train_dataset.binding), release_identity=release_identity,
+        train_selection_sha256=train_dataset.selection_sha256,
+        validation_selection_sha256=validation_dataset.selection_sha256,
+        train_sample_ids=tuple(ids["train"]), validation_sample_ids=tuple(ids["validation"]),
+        train_images=verified["train"], validation_images=verified["validation"],
+    )
+
+
+def run_isolated_foundation_epoch(*, autoencoder, optimizer, train_dataset,
+                                  validation_dataset, device, loss_weights,
+                                  prepared_data=None):
+    """Train on 48 train images, then evaluate 8 validation images without updates.
+
+    Never instantiate or read challenge/regression. No checkpoint, registry,
+    qualification or retry is issued here. Exceptions propagate to the caller.
+    """
+    prepared = prepared_data or prepare_isolated_foundation_data(
+        train_dataset=train_dataset, validation_dataset=validation_dataset)
+    _require(isinstance(prepared, PreparedFoundationData), "prepared foundation data invalid")
+    _require(prepared.dataset_binding == train_dataset.binding
+             and prepared.release_identity == train_dataset.manifest.get("datasetReleaseIdentity")
+             and prepared.train_selection_sha256 == train_dataset.selection_sha256
+             and prepared.validation_selection_sha256 == validation_dataset.selection_sha256,
+             "prepared foundation data no longer matches the bound release")
     _require(isinstance(autoencoder, torch.nn.Module)
              and callable(getattr(autoencoder, "encode", None))
              and callable(getattr(autoencoder, "decode", None)),
@@ -103,20 +153,10 @@ def run_isolated_foundation_epoch(*, autoencoder, optimizer, train_dataset,
              "foundation loss weights invalid")
     weights = deepcopy(loss_weights)
     device = torch.device(device)
-    # Validate every selected file and batch identity before the first update.
-    # Keep only the verified RGB tensors (~33 MiB at this resolution); the
-    # condition tensors are checked by SplitReleaseDataset and then released.
-    verified = {}
-    for split, dataset in (("train", train_dataset), ("validation", validation_dataset)):
-        images = []
-        for index, batch in enumerate(DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)):
-            images.append(_check_batch(batch, split, ids[split][index], release_identity))
-        _require(len(images) == len(ids[split]), "foundation preflight incomplete: " + split)
-        verified[split] = images
     autoencoder.train()
     before_training_model = state_hash(autoencoder.state_dict())
     train_losses = []
-    for image in verified["train"]:
+    for image in prepared.train_images:
         image = image.to(device)
         optimizer.zero_grad(set_to_none=True)
         reconstruction = autoencoder.decode(autoencoder.encode(image))
@@ -133,7 +173,7 @@ def run_isolated_foundation_epoch(*, autoencoder, optimizer, train_dataset,
     before_validation_optimizer = state_hash(optimizer.state_dict())
     validation_losses = []
     with torch.no_grad():
-        for image in verified["validation"]:
+        for image in prepared.validation_images:
             image = image.to(device)
             reconstruction = autoencoder.decode(autoencoder.encode(image))
             loss = _loss(reconstruction, image, weights)
@@ -145,7 +185,8 @@ def run_isolated_foundation_epoch(*, autoencoder, optimizer, train_dataset,
              "foundation validation changed model or optimizer")
     return {"status": "component_epoch_complete_not_training_qualified",
             "datasetManifest": deepcopy(train_dataset.binding),
-            "trainSampleIds": ids["train"], "validationSampleIds": ids["validation"],
+            "trainSampleIds": list(prepared.train_sample_ids),
+            "validationSampleIds": list(prepared.validation_sample_ids),
             "optimizerSteps": len(train_losses), "nonTrainOptimizerSteps": 0,
             "trainLoss": sum(train_losses) / len(train_losses),
             "validationLoss": sum(validation_losses) / len(validation_losses),

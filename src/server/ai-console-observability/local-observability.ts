@@ -248,6 +248,8 @@ async function probeGpu(): Promise<TimedSample<GpuProbeResult>> {
 function trainingProcessPatternMatches(processName: string, commandLine: string): boolean {
   const name = processName.toLowerCase()
   if (!/(?:python|pythonw|torchrun|accelerate|node)/u.test(name)) return false
+  const script = commandLine.match(/(?:^|\s|")([^"\s]+\.(?:py|mjs|js|ps1))(?:(?:")|\s|$)/iu)?.[1]?.split(/[\\/]/u).pop()?.toLowerCase()
+  if (script === "run-ai-console-training-history-indexer.mjs") return false
   return /(?:^|[\\/\s_.-])(?:train|training|trainer)(?:[\\/\s_.-]|$)|torchrun|accelerate\s+launch/iu.test(commandLine)
 }
 

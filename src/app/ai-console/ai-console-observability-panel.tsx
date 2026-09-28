@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react"
 import { refreshAiConsoleLiveObservability, type AiConsoleLiveHistoryPoint, useAiConsoleLiveObservability } from "./ai-console-live-observability"
 import styles from "./ai-console-live-status.module.css"
+import { AiConsoleTrainingSummary } from "./ai-console-training-summary"
 
 type ObservabilityPanelMode = "resources" | "training" | "telemetry"
 
@@ -79,9 +80,10 @@ export function AiConsoleObservabilityPanel({ mode }: { mode: ObservabilityPanel
       {connection === "failed" ? <div className={styles.observabilityFailure}><strong>实时探针暂时不可用</strong><code>{errorCode}</code></div> : null}
 
       {mode === "training" ? (
+        <><AiConsoleTrainingSummary /><details><summary>原始遥测与会话 Loss 趋势（非当前执行判定，可能已过期）</summary>
         <div className={styles.trainingCommandDeck}>
           <section className={styles.trainingIdentityPanel}>
-            <header><span>FORMAL TRAINING REPORT</span><strong>{telemetry ? "新平台训练上报已连接" : "训练语义等待上报"}</strong></header>
+            <header><span>RAW TRAINING REPORT</span><strong>{telemetry ? "原始最近上报 · 非当前指标，可能已过期" : "训练语义等待上报"}</strong></header>
             {telemetry ? (
               <dl>
                 <div><dt>Run</dt><dd>{telemetry.runId}</dd></div><div><dt>Execution</dt><dd>{telemetry.executionId}</dd></div>
@@ -95,8 +97,8 @@ export function AiConsoleObservabilityPanel({ mode }: { mode: ObservabilityPanel
               <div className={styles.trainingNotReported}><strong>硬件观测已工作，Run / Epoch / Loss 尚无新平台上报</strong><p>不会读取旧页面、旧API或训练目录补值；未来新平台训练执行器写入统一遥测登记后，本面板自动出现指标。</p><code>{snapshot?.trainingTelemetry.reasonCode ?? "awaiting_first_snapshot"}</code></div>
             )}
           </section>
-          <section className={styles.trainingTrendPanel}><header><span>LOSS TREND</span><strong>训练指标趋势</strong><small>{history.filter((point) => point.loss !== null).length} SAMPLES</small></header><Sparkline field="loss" history={history} maximum={Math.max(1, ...history.map((point) => point.loss ?? 0))} /></section>
-        </div>
+          <section className={styles.trainingTrendPanel}><header><span>LOSS TREND</span><strong>会话采样趋势（不证明当前Run）</strong><small>{history.filter((point) => point.loss !== null).length} SAMPLES</small></header><Sparkline field="loss" history={history} maximum={Math.max(1, ...history.map((point) => point.loss ?? 0))} /></section>
+        </div></details></>
       ) : null}
 
       <div className={styles.resourceGaugeGrid}>

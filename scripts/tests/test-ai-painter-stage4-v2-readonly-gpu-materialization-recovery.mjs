@@ -13,6 +13,7 @@ import {
 } from "../plan-ai-painter-stage4-v2-readonly-gpu-qualification.mjs";
 import {
   DEFAULT_STAGE4_V2_QUALIFICATION_LEDGER_PATH,
+  STAGE4_V2_ARCHITECTURE,
   STAGE4_V2_CAPABILITY,
   validateStage4V2PreReleaseQualificationTicket,
 } from "../lib/ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs";
@@ -90,6 +91,12 @@ for (const hookName of PREFIX_HOOKS) {
     assert.equal(smokeProgramPaths.trainer,
       realQualificationPayload.programLineage.trainer.path,
     `${hookName} real qualification payload did not hand off canonical trainer role`);
+    assert.equal(realQualificationPayload.bindings.trainerSupport.path,
+      "data/loss-contract.json",
+      `${hookName} qualification payload did not bind the trainer-support governance contract`);
+    assert.equal(realQualificationPayload.programLineage.trainerSupport.path,
+      "ml/ai-painter/trainer-support.py",
+      `${hookName} qualification payload did not separately bind the trainer-support program`);
     assert.equal(Object.hasOwn(smokeProgramPaths, "pythonTrainer"), false,
       `${hookName} revived obsolete pythonTrainer alias`);
     assert.equal(Object.hasOwn(smokeProgramPaths, "frozenTrainer"), false,
@@ -402,7 +409,7 @@ function createFixture() {
   const contract = writeObject("data/v2-parent-contract.json", {
     schemaVersion: "stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2",
     contractId: "stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2",
-    architectureId: STAGE4_V2_CAPABILITY,
+    architectureId: STAGE4_V2_ARCHITECTURE,
     status: "cpu_supported_inactive",
     activationGates: { gpuNow: false, trainingNow: false },
     conditionContract: condition,

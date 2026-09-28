@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "stage4-mvp-native-complete-rgb-object-context-renderer-v11-gpu-qualification-policy-v1",
+  "policyId": "stage4-mvp-native-complete-rgb-object-context-renderer-v11-gpu-qualification-policy-v1",
+  "status": "active_single_readonly_qualification",
+  "authority": "local_ai_pet_world_program",
+  "capabilityVersion": "stage4_mvp_native_complete_rgb_object_context_renderer_v11",
+  "candidateContract": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-native-complete-rgb-object-context-renderer-v11-contract.json",
+    "sha256": "fdc5c2c64b5fe2c8a6e56f6171ae095f32b625558908a298b80661514e63b331"
+  },
+  "cpuQualification": {
+    "path": ".runtime/ai-painter/stage4-mvp-native-rgb-object-context-renderer-v11-qualifications/cpu-report.json",
+    "sha256": "bb3edc8f7fa3388f56c7794b2e3ab97266d28383ce5eb9c2a85b82a654c83494"
+  },
+  "gpuQualifierProgram": {
+    "path": "ml/ai-painter/scripts/run_stage4_mvp_native_rgb_object_context_renderer_v11_readonly_gpu_qualification.py",
+    "sha256": "872352b18e09caa354587fae3ee17afe439a0f9e7ad95ef913475f9b280ed132"
+  },
+  "execution": {
+    "resolution": [256, 192],
+    "split": "train",
+    "oneNonemptySamplePerResponsibility": true,
+    "maxGpuMemoryFraction": 0.7,
+    "optimizerAllowed": false,
+    "backwardCallAllowed": false,
+    "autogradProbeAllowed": true,
+    "weightModificationAllowed": false,
+    "checkpointWriteAllowed": false,
+    "trainingAllowed": false
+  },
+  "automaticRetry": false
+}

@@ -58,8 +58,10 @@ try {
   const manifestPath = path.join(output, "manifest.json");
   write(manifestPath, { resourceTelemetry: { path: "output/telemetry.json", sha256: "a".repeat(64) } });
   const manifest = {
-    sampleId: "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
-    sampleSplit: "validation", epochCount: 30,
+    trainingSampleId: "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    trainingSampleSplit: "train",
+    validationSampleId: "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+    validationSampleSplit: "validation", epochCount: 30,
     previews: [1, 5, 10, 20, 30].map((epoch) => ({
       epoch, reproduction: { byteExact: true },
     })),
@@ -69,7 +71,11 @@ try {
     schemaVersion: "ai-painter-stage4-v2-controlled-smoke-training-validation-v1",
     status: "passed", packageId: payload.packageId, runId: payload.runId,
     trainingManifest: bindAbsolute(root, manifestPath),
-    sampleId: manifest.sampleId, sampleSplit: "validation", epochCount: 30,
+    trainingSampleId: manifest.trainingSampleId,
+    trainingSampleSplit: manifest.trainingSampleSplit,
+    validationSampleId: manifest.validationSampleId,
+    validationSampleSplit: manifest.validationSampleSplit,
+    epochCount: 30,
     previewEpochs: [1, 5, 10, 20, 30],
     previewByteReproductionPassed: true, historicalDenoiserRead: false,
     recordedAtUtc: timestamp,
@@ -79,7 +85,7 @@ try {
     projectRoot: root, payload, target: validationPath, manifestPath, manifest,
   }).status, "passed");
   const badValidationPath = path.join(output, "bad-training-validation.json");
-  write(badValidationPath, { ...validation, sampleSplit: "train" });
+  write(badValidationPath, { ...validation, validationSampleSplit: "train" });
   assert.throws(() => recoverValidationOutput({
     projectRoot: root, payload, target: badValidationPath, manifestPath, manifest,
   }), /differs from immutable training evidence/u);
@@ -238,7 +244,7 @@ try {
     schemaVersion: "ai-painter-stage4-v2-controlled-smoke-finalization-v1",
     executionState: "completed", status: "stage4_v2_controlled_smoke_passed",
     packageId: payload.packageId, runId: payload.runId,
-    capabilityVersion: "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2",
+    capabilityVersion: "stage4_v2_machine_review_capability_identity_fixed_program_v6",
     trainingManifest: bindAbsolute(root, manifestPath),
     machineReview: reviewBinding, reviewExecutionBinding,
     reviewPhaseEvidence: reviewPhaseBinding,

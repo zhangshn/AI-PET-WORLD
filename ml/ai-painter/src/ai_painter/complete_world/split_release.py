@@ -286,6 +286,24 @@ def materialize_package(root: Path, *, parent_binding: dict | None = None) -> di
 
 def load_package(root: Path, binding: dict) -> tuple[dict, list[dict]]:
     manifest = bound_json(root, binding)
+    if manifest.get("schemaVersion") == "ai-painter-stage4-v2-mvp64-denoiser-dataset-release-v1":
+        from .mvp_denoiser_release import reproduce_release
+        expected, rows = reproduce_release(root, manifest)
+        _require(manifest == expected, "Denoiser dataset release does not reproduce its evidence")
+        relative = f"{PACKAGE_ROOT}/{manifest['packageId']}"
+        _require(binding["path"] == relative + "/manifest.json",
+                 "Denoiser dataset release namespace mismatch")
+        return manifest, rows
+    if manifest.get("schemaVersion") == "ai-painter-stage4-v2-mvp64-fresh-lineage-dataset-release-v1":
+        from .mvp_dataset_release import reproduce_release
+        expected, artifacts = reproduce_release(root, manifest)
+        _require(manifest == expected, "MVP64 dataset release does not reproduce its evidence")
+        relative = f"{PACKAGE_ROOT}/{manifest['packageId']}"
+        _require(binding["path"] == relative + "/manifest.json", "MVP64 dataset release namespace mismatch")
+        for name, data in artifacts.items():
+            _require(project_file(root, relative + "/" + name).read_bytes() == data,
+                     "MVP64 dataset release bytes mismatch: " + name)
+        return manifest, json.loads(artifacts["source-index.json"])["samples"]
     if manifest.get("schemaVersion") == "ai-painter-stage4-regrouped64-review-candidate-v1":
         # Read a review candidate through the same CPU Dataset without turning
         # it into a qualified release. The immutable proposal and every member

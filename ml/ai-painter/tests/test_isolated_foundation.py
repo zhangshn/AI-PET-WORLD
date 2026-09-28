@@ -14,7 +14,10 @@ class Dataset(SplitReleaseDataset):
         self.binding = {"path": "synthetic/qualified-manifest.json", "sha256": "a" * 64}
         self.manifest = {"datasetReleaseIdentity": "synthetic-not-a-real-qualification",
                          "reviewOnly": False,
-                         "qualification": {"trainingAllowed": True}}
+                         "qualification": {"foundationTrainingAllowed": True,
+                                           "foundationTrainingRole": "fresh_foundation_autoencoder_only",
+                                           "denoiserTrainingAllowed": False,
+                                           "trainingAllowed": False}}
         self.split = split
         self.image_size = (256, 192)
         self._rows = [{"sampleId": f"{split}-{index}", "split": split}
@@ -93,10 +96,10 @@ class IsolatedFoundationTests(unittest.TestCase):
         self.assertEqual(before, state_hash(self.model.state_dict()))
 
     def test_unqualified_candidate_rejected_before_update(self):
-        self.train.manifest["qualification"]["trainingAllowed"] = False
-        self.validation.manifest["qualification"]["trainingAllowed"] = False
+        self.train.manifest["qualification"]["foundationTrainingAllowed"] = False
+        self.validation.manifest["qualification"]["foundationTrainingAllowed"] = False
         before = state_hash(self.model.state_dict())
-        with self.assertRaisesRegex(ValueError, "not training qualified"):
+        with self.assertRaisesRegex(ValueError, "does not permit"):
             self.run_epoch()
         self.assertEqual(before, state_hash(self.model.state_dict()))
 

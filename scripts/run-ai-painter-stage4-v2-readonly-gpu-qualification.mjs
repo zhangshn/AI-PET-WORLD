@@ -22,6 +22,7 @@ import {
 import {
   appendAiPainterProgramEvent,
   formatShanghai,
+  verifyAiPainterProgramEventCommitted,
 } from "./lib/ai-painter-program-event-store.mjs";
 import {
   MATERIALIZED_RUN_ACTION,
@@ -41,6 +42,7 @@ import {
   verifyStage4V2ReadonlyGpuQualifiedLifecycle,
 } from "./lib/ai-painter-stage4-v2-qualification-lifecycle-v1.mjs";
 import {
+  STAGE4_V2_ARCHITECTURE,
   STAGE4_V2_CAPABILITY,
   bindProjectFile,
   closeStage4V2UnconsumedQualificationTicket,
@@ -199,17 +201,41 @@ export async function runStage4V2ReadonlyGpuQualification({
     const ticket = readBoundProjectJson(root, manifest.preReleaseQualificationTicket);
     context.packagePayload = packagePayload;
     context.ticket = ticket;
+    const preflightRoot = resolveProjectPath(root, packagePayload.preflightDirectory);
+    if (fs.existsSync(preflightRoot)) {
+      assert.equal(fs.lstatSync(preflightRoot).isDirectory(), true,
+        "qualification preflight recovery path is not a directory");
+      assert.equal(fs.lstatSync(preflightRoot).isSymbolicLink(), false,
+        "qualification preflight recovery path cannot be a symbolic link");
+      context.preflightCreated = true;
+      context.paths = buildExecutionPaths({ root, packagePayload, preflightRoot });
+      assert.equal(fs.existsSync(context.paths.outerJournal), true,
+        "existing qualification preflight has no outer journal");
+      context.outerJournal = readJsonObject(context.paths.outerJournal);
+      assert.ok(["artifacts_staged", "lifecycle_committed", "event_committed"].includes(
+        context.outerJournal.state,
+      ), "existing qualification preflight is not recoverable");
+      const stagedTerminalBinding = context.outerJournal.evidence?.terminal;
+      assertProjectBinding(root, stagedTerminalBinding, "existing qualification terminal");
+      const stagedTerminal = readBoundProjectJson(root, stagedTerminalBinding);
+      if (context.outerJournal.state === "artifacts_staged"
+        && stagedTerminal.status === "stage4_v2_readonly_gpu_qualification_passed") {
+        reconcileQualificationLifecycleJournalFromCanonical(context, now);
+      }
+      return await recoverCommittedQualificationPublication({
+        context,
+        commitCurrentRegistry,
+        appendProgramEvent,
+        now,
+        _testHooks,
+      });
+    }
     validatePackagePayload(packagePayload, manifest);
     assert.deepEqual(
       packagePayload.programGraphManifest,
       manifest.programGraphManifest,
       "qualification payload/manifest program graph binding mismatch",
     );
-    validateStage4V2QualificationProgramGraph({
-      projectRoot: root,
-      manifestBinding: packagePayload.programGraphManifest,
-      programLineage: packagePayload.programLineage,
-    });
     const ticketValidation = validateStage4V2PreReleaseQualificationTicket({
       projectRoot: root,
       ticket,
@@ -241,13 +267,14 @@ export async function runStage4V2ReadonlyGpuQualification({
         packagePayload,
       });
     }
+    validateStage4V2QualificationProgramGraph({
+      projectRoot: root,
+      manifestBinding: packagePayload.programGraphManifest,
+      programLineage: packagePayload.programLineage,
+    });
     verifyProgramLineageRoles(packagePayload.programLineage);
     assert.equal(fs.existsSync(resolveProjectPath(root, packagePayload.outputDirectory)), false,
       "qualification output directory reuse is forbidden");
-    assert.equal(fs.existsSync(resolveProjectPath(root, packagePayload.preflightDirectory)), false,
-      "qualification preflight directory reuse is forbidden");
-
-    const preflightRoot = resolveProjectPath(root, packagePayload.preflightDirectory);
     fs.mkdirSync(path.dirname(preflightRoot), { recursive: true });
     fs.mkdirSync(preflightRoot, { recursive: false });
     context.preflightCreated = true;
@@ -581,7 +608,7 @@ async function recoverCommittedQualificationPublication({
   expiredActiveRecovery = null,
   _testHooks = null,
 }) {
-  assert.ok(["lifecycle_committed", "event_committed"].includes(context.outerJournal?.state),
+  assert.ok(["artifacts_staged", "lifecycle_committed", "event_committed"].includes(context.outerJournal?.state),
     "qualification publication recovery journal state is invalid");
   assert.equal(appendProgramEvent, true,
     "event-committed qualification recovery requires the program event store");
@@ -620,7 +647,8 @@ async function recoverCommittedQualificationPublication({
     terminalBinding,
     timestamp: terminal.recordedAtUtc,
   });
-  if (context.outerJournal.state === "lifecycle_committed") {
+  if (context.outerJournal.state === "lifecycle_committed"
+    || (context.outerJournal.state === "artifacts_staged" && failed)) {
     transitionQualificationOuterJournal(context, "event_committed", now, {
       programEventId: eventCommit.event.id,
     });
@@ -1387,6 +1415,7 @@ export function startActiveExecutionHeartbeat({
   intervalMs = ACTIVE_EXECUTION_HEARTBEAT_INTERVAL_MS,
 }) {
   const timer = setInterval(() => {
+    if (context.heartbeatFrozen === true) return;
     try {
       writeJsonAtomic(
         context.paths.activeExecutionHeartbeat,
@@ -1410,6 +1439,7 @@ export function stopActiveExecutionHeartbeat(context) {
 
 function freezeActiveExecutionEvidence(context, recordedAtUtc, { throwOnHeartbeatError = true } = {}) {
   if (!context.activeExecutionRegistered) return null;
+  context.heartbeatFrozen = true;
   stopActiveExecutionHeartbeat(context);
   if (context.heartbeatError && throwOnHeartbeatError) throw context.heartbeatError;
   try {
@@ -1818,7 +1848,8 @@ export function classifyGpuProcesses({ computeRows, pmonRows, wmiRows }) {
     const hasGraphics = processType.includes("G");
     if (row.parseStatus !== "parsed") reasons.push("gpu_process_row_unparseable");
     if (unresolved && !resolvedName) reasons.push("gpu_process_identity_unresolved");
-    if (hasCompute || riskIdentity) reasons.push("conflicting_gpu_compute_process_detected");
+    const dedicatedCompute = hasCompute && !hasGraphics;
+    if (dedicatedCompute || riskIdentity) reasons.push("conflicting_gpu_compute_process_detected");
     if (!knownGraphics && !hasGraphics && (row.usedGpuMemoryMiB ?? 0) > 0) reasons.push("unclassified_gpu_process_detected");
     if ((pmon.smUtilizationPercent ?? 0) > MAXIMUM_IDLE_PROCESS_SM_UTILIZATION_PERCENT) reasons.push("gpu_process_sm_utilization_above_idle_limit");
     blockers.push(...reasons);
@@ -2021,7 +2052,7 @@ export function validatePythonQualificationEvidence({ root, packagePayload, acti
   }
   assert.equal(result.packageId, packagePayload.packageId, "qualification result package mismatch");
   assert.equal(result.runId, packagePayload.runId, "qualification result run mismatch");
-  assert.equal(result.architectureId, STAGE4_V2_CAPABILITY, "qualification result architecture mismatch");
+  assert.equal(result.architectureId, STAGE4_V2_ARCHITECTURE, "qualification result architecture mismatch");
   assert.equal(result.status, "stage4_v2_readonly_gpu_qualification_passed", "qualification result did not pass");
   assert.equal(result.executionState, "completed", "qualification result is not terminal");
   assertBindingIdentity(result.activeConfig, activeConfigBinding, "qualification active config");
@@ -2060,7 +2091,7 @@ export function validatePythonQualificationEvidence({ root, packagePayload, acti
   assert.equal(diagnostic.status, "passed", "GPU diagnostic did not pass");
   assert.equal(diagnostic.packageId, packagePayload.packageId, "diagnostic package mismatch");
   assert.equal(diagnostic.runId, packagePayload.runId, "diagnostic run mismatch");
-  assert.equal(diagnostic.architectureId, STAGE4_V2_CAPABILITY, "diagnostic architecture mismatch");
+  assert.equal(diagnostic.architectureId, STAGE4_V2_ARCHITECTURE, "diagnostic architecture mismatch");
   const datasetRelease = readBoundProjectJson(root, packagePayload.bindings.datasetRelease);
   assert.equal(diagnostic.datasetReleaseIdentity, datasetRelease.datasetReleaseIdentity,
     "diagnostic dataset release mismatch");
@@ -2792,7 +2823,7 @@ function buildTerminalCapsule({ packagePayload, status, terminal, terminalBindin
 }
 
 function appendTerminalEvent({ runId, status, title, detail, terminalBinding, timestamp = new Date().toISOString() }) {
-  return appendAiPainterProgramEvent({
+  const event = appendAiPainterProgramEvent({
     id: `stage4-v2-readonly-gpu-terminal-${runId}`,
     timestamp,
     action: "stage4_v2_readonly_gpu_qualification",
@@ -2806,10 +2837,11 @@ function appendTerminalEvent({ runId, status, title, detail, terminalBinding, ti
     evidenceSha256: terminalBinding.sha256,
     fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 },
   });
+  return verifyAiPainterProgramEventCommitted(event);
 }
 
 function appendHostRecoveryEvent({ runId, terminalBinding, timestamp }) {
-  return appendAiPainterProgramEvent({
+  const event = appendAiPainterProgramEvent({
     id: `stage4-v2-readonly-gpu-host-recovery-${runId}`,
     timestamp,
     action: "stage4_v2_readonly_gpu_qualification_host_interruption_recovery",
@@ -2823,6 +2855,7 @@ function appendHostRecoveryEvent({ runId, terminalBinding, timestamp }) {
     evidenceSha256: terminalBinding.sha256,
     fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 },
   });
+  return verifyAiPainterProgramEventCommitted(event);
 }
 
 function readBoundProjectJson(root, binding) {

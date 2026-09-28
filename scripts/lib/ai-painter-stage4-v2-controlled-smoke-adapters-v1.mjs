@@ -23,7 +23,8 @@ import {
   FIXED_EPOCH_COUNT,
   FIXED_PREVIEW_EPOCHS,
   FIXED_RESOLUTION,
-  FIXED_SAMPLE_ID,
+  FIXED_TRAIN_SAMPLE_ID,
+  FIXED_VALIDATION_SAMPLE_ID,
   FIXED_SEED,
   projectLogicalPath,
   readBoundJson,
@@ -33,6 +34,7 @@ import {
   sha256File,
   SMOKE_RUN_ACTION,
   SMOKE_RUN_TASK,
+  STAGE4_V2_ARCHITECTURE,
   STAGE4_V2_CAPABILITY,
   validateStage4V2SmokePackagePayload,
   validateSmokeTrainingDataUse,
@@ -255,8 +257,10 @@ export function recoverCompletedSmokeTrainingExecution({
   assert.equal(progress.phase, "training_completed");
   assert.equal(progress.packageId, payload.packageId);
   assert.equal(progress.runId, payload.runId);
-  assert.equal(progress.sampleId, FIXED_SAMPLE_ID);
-  assert.equal(progress.sampleSplit, "validation");
+  assert.equal(progress.trainingSampleId, FIXED_TRAIN_SAMPLE_ID);
+  assert.equal(progress.trainingSampleSplit, "train");
+  assert.equal(progress.validationSampleId, FIXED_VALIDATION_SAMPLE_ID);
+  assert.equal(progress.validationSampleSplit, "validation");
   assert.equal(progress.epoch, FIXED_EPOCH_COUNT);
   assert.equal(progress.epochTarget, FIXED_EPOCH_COUNT);
   assert.equal(progress.optimizerStep, FIXED_EPOCH_COUNT);
@@ -330,8 +334,10 @@ export async function stage4V2SmokeValidate(context) {
       packageId: loaded.payload.packageId,
       runId: loaded.payload.runId,
       trainingManifest: bindAbsolute(context.projectRoot, manifestPath),
-      sampleId: manifest.sampleId,
-      sampleSplit: manifest.sampleSplit,
+      trainingSampleId: manifest.trainingSampleId,
+      trainingSampleSplit: manifest.trainingSampleSplit,
+      validationSampleId: manifest.validationSampleId,
+      validationSampleSplit: manifest.validationSampleSplit,
       epochCount: manifest.epochCount,
       previewEpochs: manifest.previews.map((item) => item.epoch),
       previewByteReproductionPassed: manifest.previews.every((item) => item.reproduction?.byteExact === true),
@@ -360,7 +366,7 @@ export async function stage4V2SmokeReview(context) {
       schemaVersion: "ai-painter-stage4-v2-machine-review-execution-binding-v1",
       status: "active_readonly_machine_review",
       reviewBindingId: loaded.payload.reviewExecutionBindingId,
-      architectureId: STAGE4_V2_CAPABILITY,
+      architectureId: STAGE4_V2_ARCHITECTURE,
       stage: "controlled_smoke",
       executionPackageIdentity: loaded.payload.packageId,
       smokeRunId: loaded.payload.runId,
@@ -630,8 +636,10 @@ export function recoverValidationOutput({
     packageId: payload.packageId,
     runId: payload.runId,
     trainingManifest: bindAbsolute(projectRoot, manifestPath),
-    sampleId: manifest.sampleId,
-    sampleSplit: manifest.sampleSplit,
+    trainingSampleId: manifest.trainingSampleId,
+    trainingSampleSplit: manifest.trainingSampleSplit,
+    validationSampleId: manifest.validationSampleId,
+    validationSampleSplit: manifest.validationSampleSplit,
     epochCount: manifest.epochCount,
     previewEpochs: manifest.previews.map((item) => item.epoch),
     previewByteReproductionPassed: manifest.previews.every(
@@ -836,7 +844,7 @@ export function validateMachineReviewDecisionInputs(value, payload, thresholdCon
   assert.ok([
     "stage4_v2_machine_review_passed", "stage4_v2_machine_review_failed",
   ].includes(value.status), "machine-review result status is invalid");
-  assert.equal(value.architectureId, STAGE4_V2_CAPABILITY);
+  assert.equal(value.architectureId, STAGE4_V2_ARCHITECTURE);
   assert.equal(value.executionPackageIdentity, payload.packageId,
     "machine-review package identity differs");
   assert.equal(value.smokeRunId, payload.runId,
@@ -972,9 +980,11 @@ export function validateTrainingManifest({ projectRoot, payload, manifestPath })
   assert.equal(manifest.status, "training_completed");
   assert.equal(manifest.packageId, payload.packageId);
   assert.equal(manifest.runId, payload.runId);
-  assert.equal(manifest.architectureId, STAGE4_V2_CAPABILITY);
-  assert.equal(manifest.sampleId, FIXED_SAMPLE_ID);
-  assert.equal(manifest.sampleSplit, "validation");
+  assert.equal(manifest.architectureId, STAGE4_V2_ARCHITECTURE);
+  assert.equal(manifest.trainingSampleId, FIXED_TRAIN_SAMPLE_ID);
+  assert.equal(manifest.trainingSampleSplit, "train");
+  assert.equal(manifest.validationSampleId, FIXED_VALIDATION_SAMPLE_ID);
+  assert.equal(manifest.validationSampleSplit, "validation");
   assert.equal(manifest.seed, FIXED_SEED);
   assert.deepEqual(manifest.resolution, FIXED_RESOLUTION);
   assert.equal(manifest.epochCount, FIXED_EPOCH_COUNT);
@@ -1024,8 +1034,14 @@ export function validateTrainingManifest({ projectRoot, payload, manifestPath })
   assert.equal(metricsEvidence.runId, payload.runId);
   assert.equal(metricsEvidence.records.length, FIXED_EPOCH_COUNT);
   const datasetRelease = readBoundJson(projectRoot, payload.datasetRelease);
+  const trainSamples = (datasetRelease.samples ?? [])
+    .filter((item) => item.sampleId === FIXED_TRAIN_SAMPLE_ID);
+  assert.equal(trainSamples.length, 1,
+    "fixed sample146 is missing or duplicated in the bound dataset release");
+  assert.equal(trainSamples[0].split, "train",
+    "fixed sample146 split differs in the bound dataset release");
   const fixedSamples = (datasetRelease.samples ?? [])
-    .filter((item) => item.sampleId === FIXED_SAMPLE_ID);
+    .filter((item) => item.sampleId === FIXED_VALIDATION_SAMPLE_ID);
   assert.equal(fixedSamples.length, 1,
     "fixed sample194 is missing or duplicated in the bound dataset release");
   assert.equal(fixedSamples[0].split, "validation",
@@ -1034,7 +1050,7 @@ export function validateTrainingManifest({ projectRoot, payload, manifestPath })
   assert.deepEqual(fixedConditionIdentity, {
     schemaVersion:
       "ai-painter-stage4-v2-fixed-sample-condition-tensor-identity-v1",
-    sampleId: FIXED_SAMPLE_ID,
+    sampleId: FIXED_VALIDATION_SAMPLE_ID,
     sampleSplit: "validation",
     conditionPack: fixedSamples[0].conditionPack,
     conditionTensorSha256: fixedConditionIdentity?.conditionTensorSha256,
@@ -1216,7 +1232,7 @@ function validateFixedPreviewArtifact(value, epoch, role) {
   `preview Epoch ${epoch} ${role} artifact schema differs`);
   assert.equal(value.epoch, epoch,
     `preview Epoch ${epoch} ${role} artifact Epoch differs`);
-  assert.equal(value.sampleId, FIXED_SAMPLE_ID,
+  assert.equal(value.sampleId, FIXED_VALIDATION_SAMPLE_ID,
     `preview Epoch ${epoch} ${role} sample identity differs`);
   assert.equal(value.seed, FIXED_SEED + 3000,
     `preview Epoch ${epoch} ${role} seed differs`);
@@ -1429,9 +1445,11 @@ function validateCheckpointMetadata({
   assert.equal(metadata.status, "controlled_smoke_non_promotable");
   assert.equal(metadata.packageId, payload.packageId);
   assert.equal(metadata.runId, payload.runId);
-  assert.equal(metadata.architectureId, STAGE4_V2_CAPABILITY);
-  assert.equal(metadata.sampleId, FIXED_SAMPLE_ID);
-  assert.equal(metadata.sampleSplit, "validation");
+  assert.equal(metadata.architectureId, STAGE4_V2_ARCHITECTURE);
+  assert.equal(metadata.trainingSampleId, FIXED_TRAIN_SAMPLE_ID);
+  assert.equal(metadata.trainingSampleSplit, "train");
+  assert.equal(metadata.validationSampleId, FIXED_VALIDATION_SAMPLE_ID);
+  assert.equal(metadata.validationSampleSplit, "validation");
   assert.equal(metadata.seed, FIXED_SEED);
   assert.deepEqual(metadata.resolution, FIXED_RESOLUTION);
   assert.equal(metadata.bestEpoch, manifest.bestEpoch);

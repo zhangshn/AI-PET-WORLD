@@ -7,7 +7,8 @@ import { createHash } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import ts from 'typescript'
 import vm from 'node:vm'
-import { listTrainingHistory, readTrainingRun, readTrainingArtifact } from '../../src/server/ai-console/training-history-store.mjs'
+import { listTrainingHistory, readTrainingRun, readTrainingRunSection, readTrainingArtifact } from '../../src/server/ai-console/training-history-store.mjs'
+import { scanHistoryEvidence, readHistoryEvidenceIndex } from '../../src/server/ai-console/training-history-evidence-index.mjs'
 const REG = '.runtime/ai-painter/current-execution-registry'
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aJ1kAAAAASUVORK5CYII=', 'base64')
@@ -88,9 +89,69 @@ test('missing older snapshot retains verified prefix, never total zero or skips 
   const f = await fixture(t)
   await rm(path.join(f.root, REG, 'transactions/fixture-tx-1/current.staged.json'))
   const result = await listTrainingHistory({ root: f.root })
-  assert.equal(result.dataStatus, 'unknown_or_stale'); assert.equal(result.total, null)
+  assert.equal(result.dataStatus, 'partial'); assert.equal(result.reasonCode, 'history_snapshot_missing'); assert.equal(result.total, null)
   assert.equal(result.records.length, 1); assert.equal(result.coverage.gap.fromRevision, 1)
   assert.equal((await readTrainingRun('fixture-run-2', { root: f.root })).dataStatus, 'connected')
+})
+test('bounded detail sections are queryable and cursors bind Run, section and source', async t => {
+  const f = await fixture(t, 1)
+  const metrics = await readTrainingRunSection('fixture-run-1', { root: f.root, section: 'metrics', limit: 20 })
+  assert.equal(metrics.dataStatus, 'connected')
+  assert.equal(metrics.items.length, 1)
+  assert.equal(metrics.total, 1)
+  const first = await readTrainingRunSection('fixture-run-1', { root: f.root, section: 'artifacts', limit: 1 })
+  assert.equal(first.items.length, 1)
+  assert.ok(first.nextCursor)
+  const second = await readTrainingRunSection('fixture-run-1', { root: f.root, section: 'artifacts', limit: 1, cursor: first.nextCursor })
+  assert.equal(second.items.length, 1)
+  await assert.rejects(readTrainingRunSection('fixture-run-1', { root: f.root, section: 'events', cursor: first.nextCursor }), /cursor_invalid/)
+  const logs = await readTrainingRunSection('fixture-run-1', { root: f.root, section: 'logs' })
+  assert.equal(logs.dataStatus, 'partial')
+  assert.equal(logs.reasonCode, 'history_logs_not_indexed')
+  assert.equal(logs.total, null)
+})
+test('independent verified Run remains listable and readable outside the registry prefix', async t => {
+  const f = await fixture(t, 2)
+  const runId = 'independent-run-2', dir = `.runtime/ai-painter/new-capability/${runId}`
+  const workerTerminal = await put(f.root, `${dir}/worker.json`, { runId, stage: { width: 256, height: 192 }, optimizerStepsGenerator: 7 })
+  const checkpoint = await put(f.root, `${dir}/checkpoint.pt`, Buffer.from('synthetic-checkpoint'))
+  const trainingTerminal = await put(f.root, `${dir}/terminal.json`, { schemaVersion: 'new-training-lifecycle-v1', runId,
+    status: 'training_completed_review_pending', workerTerminal, checkpoint, recordedAtUtc: '2026-09-26T00:00:00.000Z' })
+  const referenceRgb = await put(f.root, `${dir}/reference.png`, png)
+  const candidateRgb = await put(f.root, `${dir}/candidate.png`, png)
+  const comparisonRgb = await put(f.root, `${dir}/comparison.png`, png)
+  const conditionPack = await put(f.root, `${dir}/condition.json`, { sampleId: 'sample-1' })
+  const materialization = await put(f.root, `${dir}/materialization.json`, { schemaVersion: 'new-materialization-v1',
+    runId, trainingTerminal, workerTerminal, checkpoint, candidate: { sampleId: 'sample-1', split: 'validation',
+      referenceRgb, candidateRgb, conditionPack }, artifacts: { 'preview.png': candidateRgb, 'comparison.png': comparisonRgb }, metrics: { loss: 0.5 },
+    diagnosticPadding: 'x'.repeat(66000) })
+  const review = await put(f.root, `${dir}/review.json`, { schemaVersion: 'new-independent-review-v1', runId, materialization,
+    candidateRgb, issueCodes: ['visual_failed'], status: 'failed_closed', formalStage0QualificationGranted: false })
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await scanHistoryEvidence({ root: f.root })
+    if (readHistoryEvidenceIndex(f.root, runId).sources.length === 2) break
+  }
+  await rm(path.join(f.root, REG, 'transactions/fixture-tx-1/current.staged.json'))
+  const list = await listTrainingHistory({ root: f.root })
+  assert.equal(list.dataStatus, 'partial')
+  assert.equal(list.reasonCode, 'history_snapshot_missing')
+  assert.equal(list.records[0].runId, runId)
+  assert.equal(list.records[0].identityStatus, 'verified_independent_source')
+  assert.equal(list.records[0].independentReviewStatus, 'failed_closed')
+  assert.deepEqual(list.records[0].independentReviewIssueCodes, ['visual_failed'])
+  assert.equal(list.records[0].reviewStatusSource, 'verified_independent_parent_binding')
+  assert.equal(list.records[1].runId, 'fixture-run-2')
+  const detail = await readTrainingRun(runId, { root: f.root })
+  assert.equal(detail.record.detailCoverage.registryAssociation, 'not_in_verified_prefix')
+  assert.equal(detail.record.qualification.independentReviewStatus, 'failed_closed')
+  assert.equal(detail.record.optimizerSteps, 7)
+  const output = detail.record.artifacts.find(item => item.role === 'output')
+  assert.deepEqual((await readTrainingArtifact(runId, output.artifactId, { root: f.root })).bytes, png)
+  const comparison = detail.record.artifacts.find(item => item.role === 'image' && item.sourceLabel === 'comparison.png')
+  assert.ok(comparison)
+  assert.deepEqual((await readTrainingArtifact(runId, comparison.artifactId, { root: f.root })).bytes, png)
+  await writeFile(path.join(f.root, review.path), Buffer.from(JSON.stringify({ runId, status: 'passed' })))
+  assert.equal((await listTrainingHistory({ root: f.root })).records[0].independentReviewStatus, undefined)
 })
 test('fake image signature rejected', async t => {
   const f = await fixture(t, 1, { fakeImage: true })

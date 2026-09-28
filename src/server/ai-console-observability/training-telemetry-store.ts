@@ -186,7 +186,26 @@ function rowToRecord(row: Record<string, unknown>): AiConsoleTrainingTelemetryRe
 }
 
 function recordPayload(record: Omit<AiConsoleTrainingTelemetryRecord, "sampleId" | "recordSha256">) {
-  return JSON.stringify(record)
+  return JSON.stringify({
+    sampleSequence: record.sampleSequence,
+    runId: record.runId,
+    executionId: record.executionId,
+    processId: record.processId,
+    trainingStage: record.trainingStage,
+    epoch: record.epoch,
+    batchIndex: record.batchIndex,
+    batchCount: record.batchCount,
+    optimizationStep: record.optimizationStep,
+    loss: record.loss,
+    learningRate: record.learningRate,
+    throughputSamplesPerSecond: record.throughputSamplesPerSecond,
+    estimatedCompletionAtUtc: record.estimatedCompletionAtUtc,
+    checkpointIdentity: record.checkpointIdentity,
+    heartbeatAtUtc: record.heartbeatAtUtc,
+    reportedAtUtc: record.reportedAtUtc,
+    reporterIdentity: record.reporterIdentity,
+    schemaVersion: record.schemaVersion,
+  })
 }
 
 function verifyRecord(record: AiConsoleTrainingTelemetryRecord) {

@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "stage4-mvp-object-trajectory-closure-v4-contract-v1",
+  "contractId": "stage4-mvp-object-trajectory-closure-v4-contract-v1",
+  "status": "active_bounded_mvp_candidate",
+  "capabilityVersion": "stage4_mvp_object_trajectory_closure_v4",
+  "parentCapabilityVersion": "stage4_mvp_object_semantic_closure_v3",
+  "objectiveVersion": "velocity_decoded_rgb_sparse_region_rollout_object_trajectory_closure_v4",
+  "checkpointMetric": "fixed_grid_worst_object_plus_existing_deterministic_rollout_v4",
+  "scope": {
+    "stage": 0,
+    "width": 256,
+    "height": 192,
+    "epochCount": 40,
+    "datasetCapacity": 64,
+    "splitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "automaticRetryAllowed": false,
+    "failedCheckpointReuseAllowed": false,
+    "maximumExecutions": 1
+  },
+  "parentContract": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-object-semantic-closure-v3-contract.json",
+    "sha256": "40f9d3816e39f93380d27ec8e9c1271403217785caa828abc3f6595326f1e421"
+  },
+  "failureEvidence": {
+    "machineReview": {
+      "path": ".runtime/ai-painter/stage4-mvp-object-closure-v3-reviews/mvp-stage0-28dd5790bf7d2e36c8e1dd8513c0bb6c7a539c29aa00e61f/machine-review/report.json",
+      "sha256": "7a460c256808e3b71672252d8a57cb10a9da8d8163bdca5d2ea865c73046e910"
+    },
+    "causalDiagnostic": {
+      "path": ".runtime/ai-painter/stage4-mvp-object-closure-v3-diagnostics/mvp-stage0-28dd5790bf7d2e36c8e1dd8513c0bb6c7a539c29aa00e61f/report.json",
+      "sha256": "1ae3e6b5c165fb499b150f4b72ec0607e1cb02213552b1f03d7c20068e5021cf"
+    },
+    "diagnosticProgram": {
+      "path": "ml/ai-painter/scripts/diagnose_stage4_mvp_object_semantic_closure_v3.py",
+      "sha256": "4b071cd5af1c7f061396c0dcfd02b7b230efd0d1397cd7c70110db99e5317d6e"
+    }
+  },
+  "diagnosticConclusion": {
+    "frozenAutoencoderRetainsObjectStructure": true,
+    "conditionedFinalRgbWorksOnReferenceLatent": true,
+    "denoiserGeneratedLatentIsPrimaryFailureBoundary": true,
+    "objectMaskOverlapRequiresPerClassWorstCaseProtection": true
+  },
+  "objectChannels": [
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation"
+  ],
+  "trainingIntervention": {
+    "preserveV3WeightedMeanTerms": true,
+    "additionalWorstClassFinalVisibleRgb": "maximum_unweighted_per_class_masked_rgb_loss",
+    "additionalWorstClassMultiscaleLuminanceStructure": "maximum_unweighted_per_class_multiscale_luminance_structure_loss",
+    "freeNumericalWeightSelectionAllowed": false
+  },
+  "checkpointIntervention": {
+    "validationPopulation": "all_8_validation_rows",
+    "trajectoryPopulation": "all_configured_deterministic_validation_trajectories",
+    "fixedGridAdditionalTerms": [
+      "maximum_unweighted_per_class_masked_rgb_loss",
+      "maximum_unweighted_per_class_multiscale_luminance_structure_loss"
+    ],
+    "existingFullTrajectoryAggregateScorePreserved": true,
+    "newFullTrajectoryTermAdded": false,
+    "freeNumericalWeightSelectionAllowed": false
+  },
+  "legalSupervision": {
+    "reference": "bound_original_rgb_from_qualified_train_split",
+    "conditionPack": "bound_23_channel_condition_pack_from_same_train_record",
+    "validationUsedForWeightUpdates": false,
+    "challengeOrRegressionRead": false,
+    "failedPreviewPixelsUsedAsTargets": false,
+    "failedCheckpointWeightsReadOrLoaded": false,
+    "machineReviewThresholdsUsedAsTargets": false,
+    "machineReviewResultsUsedAsTargets": false
+  },
+  "preservedBoundaries": {
+    "autoencoderFrozen": true,
+    "freshDenoiserInitialization": true,
+    "v3ObjectivePreserved": true,
+    "waterAndPathLossesPreserved": true,
+    "conditionOrderPreserved": true,
+    "datasetAndSplitPreserved": true,
+    "reviewThresholdsPreserved": true,
+    "stage1OrStage2AutomaticAdvance": false,
+    "originalRgbModified": false,
+    "conditionPacksModified": false
+  }
+}

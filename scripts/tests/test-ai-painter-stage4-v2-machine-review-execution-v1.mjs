@@ -25,6 +25,7 @@ import {
 } from "../lib/ai-painter-stage4-v2-controlled-smoke-adapters-v1.mjs";
 
 const REPO = process.cwd();
+const FIXTURE_CAPABILITY = "stage4_v2_machine_review_fixture_program_v1";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "stage4-v2-review-execution-"));
 try {
   const fixture = await materializeFixture(root);
@@ -482,7 +483,7 @@ async function materializeFixture(projectRoot) {
     schemaVersion: "ai-painter-stage4-v2-readonly-gpu-terminal-v1",
     status: "stage4_v2_readonly_gpu_qualification_passed",
     executionState: "completed",
-    capabilityVersion: V2_ARCHITECTURE_ID,
+    capabilityVersion: FIXTURE_CAPABILITY,
     runId: "fixture-qualification-run",
   });
   const qualification = bind(projectRoot, qualificationPath);
@@ -501,6 +502,7 @@ async function materializeFixture(projectRoot) {
     schemaVersion: "ai-painter-stage4-v2-controlled-smoke-package-v1",
     status: "reviewing",
     architectureId: V2_ARCHITECTURE_ID,
+    capabilityVersion: FIXTURE_CAPABILITY,
     packageId,
     runId,
     outputDirectory,
@@ -643,7 +645,7 @@ async function materializeRealReviewRegistryTransaction(projectRoot, { packageId
     Buffer.from("export const fixtureReviewRunner = true;\n"));
   const lockPath = writeJson(projectRoot, `${reviewRoot}/execution.lock.json`, {
     schemaVersion: "ai-painter-current-active-execution-lock-v1",
-    capabilityVersion: V2_ARCHITECTURE_ID,
+    capabilityVersion: FIXTURE_CAPABILITY,
     packageId,
     runId,
     processId: process.pid,
@@ -651,7 +653,7 @@ async function materializeRealReviewRegistryTransaction(projectRoot, { packageId
   });
   const heartbeatPath = writeJson(projectRoot, `${reviewRoot}/heartbeat.json`, {
     schemaVersion: "ai-painter-current-active-execution-heartbeat-v1",
-    capabilityVersion: V2_ARCHITECTURE_ID,
+    capabilityVersion: FIXTURE_CAPABILITY,
     packageId,
     runId,
     executionState: "reviewing",
@@ -662,7 +664,7 @@ async function materializeRealReviewRegistryTransaction(projectRoot, { packageId
   });
   const activeExecution = {
     schemaVersion: "ai-painter-current-active-execution-v1",
-    capabilityVersion: V2_ARCHITECTURE_ID,
+    capabilityVersion: FIXTURE_CAPABILITY,
     packageId,
     runId,
     executionState: "reviewing",
@@ -674,7 +676,7 @@ async function materializeRealReviewRegistryTransaction(projectRoot, { packageId
   };
   const published = await advanceCurrentExecutionRegistry({
     projectRoot,
-    capabilityVersion: V2_ARCHITECTURE_ID,
+    capabilityVersion: FIXTURE_CAPABILITY,
     packageId,
     taskId: `${runId}-machine-review`,
     taskKind: "controlled_smoke",
@@ -733,7 +735,7 @@ async function advanceFixtureRegistryPhase(projectRoot, previous, executionState
     `fixture current registry invalid before ${executionState}: ${observed.errorCode}`);
   return advanceCurrentExecutionRegistry({
     projectRoot,
-    capabilityVersion: V2_ARCHITECTURE_ID,
+    capabilityVersion: FIXTURE_CAPABILITY,
     packageId: previous.registry.packageId,
     taskId: previous.registry.taskId,
     taskKind: previous.registry.taskKind,

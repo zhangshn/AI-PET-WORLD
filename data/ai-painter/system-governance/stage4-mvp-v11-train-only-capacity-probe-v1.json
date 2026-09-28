@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "stage4-mvp-v11-train-only-capacity-probe-v1",
+  "status": "active_single_bounded_diagnostic_not_formal_training",
+  "purpose": "Test whether a freshly initialized V11 renderer can learn one existing train original at 256x192; no generalization or Stage4 claim.",
+  "scope": "train_only_learning_capacity_no_generalization_claim",
+  "capabilityArchitecture": "stage4_mvp_native_complete_rgb_object_context_renderer_v11",
+  "datasetManifest": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"
+  },
+  "sample": {
+    "split": "train",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "referenceRgbSha256": "eb5c085a05f775ea8df2a8912ff806794dca25b7a378dc54102b142aecf43125",
+    "conditionPackSha256": "05ff62ecdce5a4d545af0dc4652e64fe580d272f032049a8b464924bb751e3aa"
+  },
+  "resolution": [256, 192],
+  "initializationSeed": 20260929,
+  "freshModelInitializationStateSha256": "2b08867a8606361ecf6c7ae62fc63c4135496b24005460ebaf0a4a3336ad648a",
+  "objective": "unchanged_v11_full_frame_object_context_objective",
+  "learningRate": 0.0001,
+  "maxOptimizerSteps": 512,
+  "observationSteps": [0, 128, 256, 512],
+  "resources": {
+    "maxWallSeconds": 900,
+    "maxGpuMemoryFraction": 0.7,
+    "maxOutputMiB": 128,
+    "automaticRetries": 0
+  },
+  "execution": {
+    "cpuBehaviorTestsRequired": true,
+    "noUpdateGpuProbeRequired": true,
+    "currentExecutionRegistryRequired": true,
+    "oneExecutionIdentityOnly": true,
+    "validationReadAllowed": false,
+    "challengeReadAllowed": false,
+    "regressionReadAllowed": false,
+    "failedCheckpointReuseAllowed": false,
+    "checkpointSelectionAllowed": false,
+    "checkpointPromotionAllowed": false,
+    "formalStageAdvancementAllowed": false,
+    "runtimeFrameAllowed": false
+  }
+}

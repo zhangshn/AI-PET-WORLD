@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
+  STAGE4_V2_ARCHITECTURE,
+  STAGE4_V2_CAPABILITY,
   bindProjectFile,
   projectLogicalPath,
   readJsonObject,
@@ -15,13 +17,14 @@ import {
   validateStage4V2SmokeProgramGraph,
 } from "./ai-painter-program-graph-manifest-v1.mjs";
 
-export const STAGE4_V2_CAPABILITY =
-  "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
+export { STAGE4_V2_ARCHITECTURE, STAGE4_V2_CAPABILITY };
 export const SMOKE_PACKAGE_ROOT =
   ".runtime/ai-painter/autonomous-closed-loop-packages";
 export const SMOKE_OUTPUT_ROOT =
   ".runtime/ai-painter/stage4-v2-controlled-smoke-executions";
-export const FIXED_SAMPLE_ID =
+export const FIXED_TRAIN_SAMPLE_ID =
+  "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3";
+export const FIXED_VALIDATION_SAMPLE_ID =
   "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6";
 export const FIXED_SEED = 20263722;
 export const FIXED_RESOLUTION = Object.freeze({ width: 256, height: 192 });
@@ -43,8 +46,10 @@ export function buildDerivedConfigContract({ packageId, runId, datasetPackageId,
     packageId,
     runId,
     datasetPackageId,
-    sampleId: FIXED_SAMPLE_ID,
-    sampleSplit: "validation",
+    trainingSampleId: FIXED_TRAIN_SAMPLE_ID,
+    trainingSampleSplit: "train",
+    validationSampleId: FIXED_VALIDATION_SAMPLE_ID,
+    validationSampleSplit: "validation",
     seed: FIXED_SEED,
     resolution: FIXED_RESOLUTION,
     epochCount: FIXED_EPOCH_COUNT,
@@ -74,7 +79,7 @@ export function buildDerivedTrainerExecution(values) {
 export function validateStage4V2SmokePackagePayload(payload, { projectRoot, verifyEvidence = true } = {}) {
   assert.equal(payload?.schemaVersion, "ai-painter-stage4-v2-controlled-smoke-package-payload-v1");
   assert.equal(payload.status, "materialized_not_executed");
-  assert.equal(payload.architectureId, STAGE4_V2_CAPABILITY);
+  assert.equal(payload.architectureId, STAGE4_V2_ARCHITECTURE);
   assert.equal(payload.capabilityVersion, STAGE4_V2_CAPABILITY);
   requireId(payload.packageId, "packageId");
   requireId(payload.runId, "runId");
@@ -83,8 +88,10 @@ export function validateStage4V2SmokePackagePayload(payload, { projectRoot, veri
   assert.equal(payload.authorityClass, "local_ai_pre_release_capability_lifecycle");
   assert.equal(payload.ownerAuthorizationRequired, false);
   assert.equal(payload.fixedInputs?.seed, FIXED_SEED);
-  assert.equal(payload.fixedInputs?.sampleId, FIXED_SAMPLE_ID);
-  assert.equal(payload.fixedInputs?.sampleSplit, "validation");
+  assert.equal(payload.fixedInputs?.trainingSampleId, FIXED_TRAIN_SAMPLE_ID);
+  assert.equal(payload.fixedInputs?.trainingSampleSplit, "train");
+  assert.equal(payload.fixedInputs?.validationSampleId, FIXED_VALIDATION_SAMPLE_ID);
+  assert.equal(payload.fixedInputs?.validationSampleSplit, "validation");
   assert.deepEqual(payload.fixedInputs?.resolution, FIXED_RESOLUTION);
   assert.equal(payload.fixedInputs?.epochCount, FIXED_EPOCH_COUNT);
   assert.deepEqual(payload.fixedInputs?.previewEpochs, FIXED_PREVIEW_EPOCHS);
@@ -179,7 +186,7 @@ export function validateSmokeTrainingDataUse(projectRoot, payload) {
   assert.equal(release.schemaVersion, "ai-painter-stage4-v2-dataset-release-contract-v1");
   assert.equal(release.datasetReleaseIdentity, payload.datasetPackageId);
   const source = readBoundJson(projectRoot, release.sourcePackage.sourceIndex);
-  const sampleId = payload.fixedInputs?.sampleId;
+  const sampleId = payload.fixedInputs?.trainingSampleId;
   assert.ok(typeof sampleId === "string" && sampleId.length > 0, "training sampleId is missing");
   const released = release.samples.filter((row) => row.sampleId === sampleId);
   const selected = source.samples.filter((row) => row.sampleId === sampleId);
@@ -188,8 +195,8 @@ export function validateSmokeTrainingDataUse(projectRoot, payload) {
     assert.equal(rows.length, 1, "training sample must occur exactly once in release and source collections");
   }
   const splits = [released[0].split, selected[0].split, contributions[0].split];
-  if (splits.some((split) => split !== "train") || payload.fixedInputs.sampleSplit !== "train") {
-    const error = new Error(`Smoke optimizer may consume only train: ${sampleId}; declared=${payload.fixedInputs.sampleSplit}; release/source/contribution=${splits.join("/")}. A separately qualified successor is required; relabelling is forbidden.`);
+  if (splits.some((split) => split !== "train") || payload.fixedInputs.trainingSampleSplit !== "train") {
+    const error = new Error(`Smoke optimizer may consume only train: ${sampleId}; declared=${payload.fixedInputs.trainingSampleSplit}; release/source/contribution=${splits.join("/")}. A separately qualified successor is required; relabelling is forbidden.`);
     error.code = "stage4_smoke_non_train_optimizer_source";
     error.sampleId = sampleId;
     error.observedSplits = splits;

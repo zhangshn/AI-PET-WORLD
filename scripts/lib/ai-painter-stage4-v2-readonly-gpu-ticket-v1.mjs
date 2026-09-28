@@ -25,12 +25,14 @@ export const STAGE4_V2_QUALIFICATION_LEDGER_SCHEMA =
   "ai-painter-stage4-v2-pre-release-qualification-ticket-ledger-v1";
 export const STAGE4_V2_QUALIFICATION_ACTION =
   "stage4_v2_readonly_gpu_qualification.execute";
-export const STAGE4_V2_CAPABILITY =
+export const STAGE4_V2_ARCHITECTURE =
   "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
+export const STAGE4_V2_CAPABILITY =
+  "stage4_v2_machine_review_capability_identity_fixed_program_v6";
 export const DEFAULT_STAGE4_V2_QUALIFICATION_LEDGER_PATH =
-  ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-ticket-ledger.sqlite";
+  ".runtime/ai-painter/stage4-v2-program-v6-readonly-gpu-qualification-ticket-ledger.sqlite";
 export const DEFAULT_STAGE4_V2_MACHINE_KEY_ROOT =
-  ".runtime/ai-painter/machine-keys/stage4-v2-pre-release-qualification-ticket-issuer-v1";
+  ".runtime/ai-painter/machine-keys/stage4-v2-program-v6-pre-release-qualification-ticket-issuer-v1";
 
 const SHA256 = /^[a-f0-9]{64}$/u;
 const SAFE_ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,191}$/u;
@@ -1191,6 +1193,7 @@ function windowsDpapiMachineProtector() {
   const run = (operation, input, entropy) => {
     const script = [
       "$ErrorActionPreference='Stop'",
+      "Add-Type -AssemblyName System.Security",
       "$inputStream=[Console]::OpenStandardInput()",
       "$memory=[System.IO.MemoryStream]::new()",
       "$inputStream.CopyTo($memory)",

@@ -12,22 +12,24 @@ import {
   materializeStage4V2ReadonlyGpuQualification,
 } from "../plan-ai-painter-stage4-v2-readonly-gpu-qualification.mjs";
 import {
-  readSmokePayload,
+  readSmokePayload, validateSmokeTrainingDataUse,
 } from "../lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
-import {
-  stage4V2SmokePreflight, stage4V2SmokeExecute,
-} from "../lib/ai-painter-stage4-v2-controlled-smoke-adapters-v1.mjs";
 import {
   buildStage4V2QualificationProgramGraph,
 } from "../lib/ai-painter-program-graph-manifest-v1.mjs";
 import {
   bindProjectFile,
 } from "../lib/ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs";
+import {
+  STAGE4_V2_SMOKE_LEDGER_PATH,
+} from "../lib/ai-painter-stage4-v2-controlled-smoke-ticket-v1.mjs";
 
 const SOURCE_ROOT = process.cwd();
-const CAPABILITY = "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
+const ARCHITECTURE = "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
+const CAPABILITY = "stage4_v2_machine_review_capability_identity_fixed_program_v6";
 const PLAN_ACTION = "plan:ai-painter-stage4-v2-controlled-smoke";
 const BACKGROUND_ACTION = "launch:ai-painter-stage4-v2-controlled-smoke-background";
+const TRAIN_SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3";
 const SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6";
 const FIXED_NOW = new Date("2026-09-01T00:00:00.000Z");
 const KEY_PROTECTOR = {
@@ -72,23 +74,14 @@ try {
   assert.equal(manifest.status, "materialized_not_executed");
   assert.equal(manifest.outputDirectoryCreated, false);
   const payload = readBound(positive.root, manifest.packagePayload);
-  // Exercise the real phase entrypoints, not just a standalone policy helper.
-  // Even a previously persisted preflight must not restore the old exception.
+  // The materialized package must prove that only the qualified train sample
+  // can reach the optimizer; validation remains a separate review input.
   const packageRoot = path.dirname(path.join(positive.root, manifest.packagePayload.path));
-  const oldPreflight = path.join(packageRoot, "preflight-report.json");
-  fs.writeFileSync(oldPreflight, JSON.stringify({ status: "passed_ticket_not_consumed_training_not_started" }));
   const beforeFiles = fs.readdirSync(packageRoot).sort();
-  const oldPreflightSha = sha256(oldPreflight);
-  for (const phase of [stage4V2SmokePreflight, stage4V2SmokeExecute]) {
-    const blocked = await phase({ projectRoot: positive.root, packageIdentity: payload.packageId,
-      outputRoot: payload.outputDirectory });
-    assert.equal(blocked.status, "failed");
-    assert.equal(blocked.failureKind, "program");
-    assert.equal(blocked.failureCode, "stage4_smoke_non_train_optimizer_source");
-    assert.deepEqual(fs.readdirSync(packageRoot).sort(), beforeFiles,
-      "split rejection must precede ticket consumption, process intent and config writes");
-    assert.equal(sha256(oldPreflight), oldPreflightSha, "old evidence was overwritten");
-  }
+  const dataUse = validateSmokeTrainingDataUse(positive.root, payload);
+  assert.deepEqual(dataUse.sampleIds, [TRAIN_SAMPLE_ID]);
+  assert.deepEqual(fs.readdirSync(packageRoot).sort(), beforeFiles,
+    "data-use validation must not consume the ticket or write Trainer state");
   assert.equal(payload.inputEvidence.some((item) =>
     item.path === ".runtime/ai-painter/current-execution-registry/current.json"), false,
   "Smoke payload persisted mutable current.json as evidence");
@@ -470,7 +463,7 @@ async function testRealQualificationPlannerToSmokePlanner() {
           "stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2",
         contractId:
           "stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2",
-        architectureId: CAPABILITY,
+        architectureId: ARCHITECTURE,
         status: "cpu_supported_inactive",
         activationGates: { gpuNow: false, trainingNow: false },
         conditionContract: condition,
@@ -684,9 +677,17 @@ function fixture() {
   );
   const sourceManifest = evidence("source-manifest.json");
   const sourceIndex = evidence("source-index.json", {
-    samples: [{ sampleId: SAMPLE_ID, split: "validation" }],
-    v7CapacityContributions: [{ sampleId: SAMPLE_ID, split: "validation" }],
+    samples: [
+      { sampleId: TRAIN_SAMPLE_ID, split: "train" },
+      { sampleId: SAMPLE_ID, split: "validation" },
+    ],
+    v7CapacityContributions: [
+      { sampleId: TRAIN_SAMPLE_ID, split: "train" },
+      { sampleId: SAMPLE_ID, split: "validation" },
+    ],
   });
+  const trainImage = evidence("sample-146.png", { rgb: true });
+  const trainConditionPack = evidence("sample-146-condition.json", { channels: 23 });
   const image = evidence("sample-194.png", { rgb: true });
   const masks = Object.fromEntries([
     "object_footprints", "object_tree", "object_rock", "object_vegetation",
@@ -703,10 +704,14 @@ function fixture() {
   });
   const conditionPack = binding(root, conditionPackPath);
   const samples = Array.from({ length: 64 }, (_, index) => ({
-    sampleId: index === 0 ? SAMPLE_ID : `fixture-sample-${String(index).padStart(3, "0")}`,
+    sampleId: index === 0 ? SAMPLE_ID
+      : index === 1 ? TRAIN_SAMPLE_ID
+        : `fixture-sample-${String(index).padStart(3, "0")}`,
     split: index === 0 ? "validation" : "train",
-    image: index === 0 ? image : evidence(`sample-${index}.png`, { index }),
-    conditionPack: index === 0 ? conditionPack : evidence(`condition-${index}.json`, { index }),
+    image: index === 0 ? image
+      : index === 1 ? trainImage : evidence(`sample-${index}.png`, { index }),
+    conditionPack: index === 0 ? conditionPack
+      : index === 1 ? trainConditionPack : evidence(`condition-${index}.json`, { index }),
   }));
   const datasetReleasePath = write(root,
     "data/ai-painter/system-governance/ai-painter-stage4-v2-mvp64-dataset-release-v1.json", {
@@ -756,11 +761,18 @@ function fixture() {
       outputDirectory: ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification/qualification-run",
       bindings: { datasetRelease, reviewThresholdContract: threshold },
       autoencoderBinding: autoencoder,
-      fixedInputs: { seed: 20263722, resolution: { width: 256, height: 192 } },
+      fixedInputs: {
+        seed: 20263722,
+        resolution: { width: 256, height: 192 },
+        firstTrainSampleId: TRAIN_SAMPLE_ID,
+        fixedValidationSampleId: SAMPLE_ID,
+      },
       inputEvidence: [
         datasetRelease,
         sourceManifest,
         sourceIndex,
+        trainImage,
+        trainConditionPack,
         image,
         conditionPack,
         autoencoder,
@@ -894,7 +906,7 @@ function materializePassedQualificationEvidence(root, {
     status: "passed",
     packageId,
     runId,
-    architectureId: CAPABILITY,
+    architectureId: ARCHITECTURE,
     resolution: payload.fixedInputs.resolution,
     all210ParametersReached: true,
     sample194All210ParametersReached: true,
@@ -964,7 +976,7 @@ function materializePassedQualificationEvidence(root, {
     status: "stage4_v2_readonly_gpu_qualification_passed",
     packageId,
     runId,
-    architectureId: CAPABILITY,
+    architectureId: ARCHITECTURE,
     activeConfig,
     programGraphManifest: qualificationEvidenceSet.programGraphManifest,
     ticket: qualificationEvidenceSet.ticket,
@@ -1094,8 +1106,7 @@ function findSingle(root, relativeBase, fileName) {
   return matches[0];
 }
 function readTicketCount(root) {
-  const databasePath = path.join(root, ".runtime", "ai-painter",
-    "stage4-v2-controlled-smoke-ticket-ledger.sqlite");
+  const databasePath = path.join(root, ...STAGE4_V2_SMOKE_LEDGER_PATH.split("/"));
   if (!fs.existsSync(databasePath)) return 0;
   const database = new DatabaseSync(databasePath, { readOnly: true });
   try {
@@ -1115,8 +1126,9 @@ function assertZeroPlannerWrites(fixtureValue, name) {
     `${name} substitution created a Smoke package`);
   assert.equal(findSmokeOutputs(fixtureValue.root).length, 0,
     `${name} substitution created a training output`);
-  assert.equal(fs.existsSync(path.join(fixtureValue.root, ".runtime", "ai-painter",
-    "stage4-v2-controlled-smoke-ticket-ledger.sqlite")), false,
+  assert.equal(fs.existsSync(path.join(
+    fixtureValue.root, ...STAGE4_V2_SMOKE_LEDGER_PATH.split("/"),
+  )), false,
   `${name} substitution created the Smoke ticket ledger`);
   assert.equal(fs.existsSync(path.join(fixtureValue.root, ".runtime", "ai-painter",
     "stage4-v2-controlled-smoke-materializations")), false,

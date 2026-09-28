@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import math
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import subprocess
 import threading
 import time
@@ -49,7 +49,8 @@ from train_ai_assisted_conditional_denoiser import (
 )
 
 
-SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
+TRAIN_SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3"
+VALIDATION_SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
 SEED = 20263722
 EPOCH_COUNT = 30
 PREVIEW_EPOCHS = (1, 5, 10, 20, 30)
@@ -85,7 +86,12 @@ def execute_stage4_v2_controlled_smoke(
     release = _validate_dataset_release(dataset_package_path, root)
     source_manifest = _resolve_bound_file(root, release["sourcePackage"]["manifest"])
     _resolve_bound_file(root, release["sourcePackage"]["sourceIndex"])
-    sample = _validate_fixed_release_sample(release, root)
+    train_sample = _validate_fixed_release_sample(
+        release, root, TRAIN_SAMPLE_ID, "train",
+    )
+    validation_sample = _validate_fixed_release_sample(
+        release, root, VALIDATION_SAMPLE_ID, "validation",
+    )
     if execution["derivedConfigContract"]["datasetPackageId"] != release["datasetReleaseIdentity"]:
         raise ValueError("V2 Smoke dataset release identity mismatch")
     _validate_autoencoder_binding(autoencoder_checkpoint_path, config, root)
@@ -107,23 +113,40 @@ def execute_stage4_v2_controlled_smoke(
 
     datasets = _build_datasets(source_manifest, config)
     dataset_evidence = validate_loaded_v7_datasets(datasets)
+    train_indices = [
+        index for index, row in enumerate(datasets["train"].rows)
+        if row.get("sampleId") == TRAIN_SAMPLE_ID
+    ]
+    if len(train_indices) != 1:
+        raise ValueError("fixed training sample 146 is missing or duplicated")
+    training_source_row = datasets["train"].rows[train_indices[0]]
+    if training_source_row.get("split") != "train":
+        raise ValueError("fixed sample 146 is not in train")
+    if training_source_row.get("conditionPackPath") != train_sample["conditionPack"]["path"]:
+        raise ValueError("fixed training condition-pack path differs from dataset release")
+    if training_source_row.get("imagePath") != train_sample["image"]["path"]:
+        raise ValueError("fixed training image path differs from dataset release")
     validation_indices = [
         index for index, row in enumerate(datasets["validation"].rows)
-        if row.get("sampleId") == SAMPLE_ID
+        if row.get("sampleId") == VALIDATION_SAMPLE_ID
     ]
     if len(validation_indices) != 1:
         raise ValueError("fixed validation sample 194 is missing or duplicated")
     source_row = datasets["validation"].rows[validation_indices[0]]
     if source_row.get("split") != "validation":
         raise ValueError("fixed sample 194 is not in validation")
-    if source_row.get("conditionPackPath") != sample["conditionPack"]["path"]:
+    if source_row.get("conditionPackPath") != validation_sample["conditionPack"]["path"]:
         raise ValueError("fixed sample condition-pack path differs from dataset release")
-    if source_row.get("imagePath") != sample["image"]["path"]:
+    if source_row.get("imagePath") != validation_sample["image"]["path"]:
         raise ValueError("fixed sample image path differs from dataset release")
-    smoke_dataset = Subset(datasets["validation"], validation_indices)
-    loader = DataLoader(smoke_dataset, batch_size=1, shuffle=False, num_workers=0)
+    train_dataset = Subset(datasets["train"], train_indices)
+    validation_dataset = Subset(datasets["validation"], validation_indices)
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, num_workers=0)
+    validation_loader = DataLoader(
+        validation_dataset, batch_size=1, shuffle=False, num_workers=0,
+    )
     fixed_sample_condition_tensor_sha256 = tensor_sha256(
-        smoke_dataset[0]["conditions"].unsqueeze(0)
+        validation_dataset[0]["conditions"].unsqueeze(0)
     )
 
     device = torch.device("cuda")
@@ -164,12 +187,12 @@ def execute_stage4_v2_controlled_smoke(
         epoch = epoch_index + 1
         telemetry.update(phase="training", epoch=epoch, optimizer_step=epoch_index)
         train_metrics = train_epoch(
-            model, loader, optimizer, diffusion, latent_normalization, device,
+            model, train_loader, optimizer, diffusion, latent_normalization, device,
             config, epoch_index, max_batches=None,
             enable_path_replay=False, enable_epoch_worst_replay=False,
         )
         validation = evaluate_velocity_prediction(
-            model, loader, diffusion, latent_normalization, device,
+            model, validation_loader, diffusion, latent_normalization, device,
             SEED + 2000, config["training"]["fixedValidationTimesteps"], config,
         )
         preview_scope = (
@@ -178,7 +201,7 @@ def execute_stage4_v2_controlled_smoke(
         )
         with preview_scope:
             rollout = evaluate_deterministic_rollout_rgb_quality_v7(
-                model, smoke_dataset, diffusion, latent_normalization, device,
+                model, validation_dataset, diffusion, latent_normalization, device,
                 SEED + 3000, config, output_dir / "fixed-epoch-previews", epoch,
             )
         score = float(validation["compositeConditionQualityScore"]) + (
@@ -212,7 +235,7 @@ def execute_stage4_v2_controlled_smoke(
                 raise ValueError(f"scheduled V2 Smoke preview is missing at Epoch {epoch}")
             with fixed_preview_determinism_scope(True):
                 repeated = evaluate_deterministic_rollout_rgb_quality_v7(
-                    model, smoke_dataset, diffusion, latent_normalization, device,
+                    model, validation_dataset, diffusion, latent_normalization, device,
                     SEED + 3000, config,
                     output_dir / "fixed-epoch-preview-reproductions", epoch,
                 )
@@ -272,8 +295,10 @@ def execute_stage4_v2_controlled_smoke(
         "packageId": execution["packageId"],
         "runId": execution["runId"],
         "architectureId": ARCHITECTURE_ID,
-        "sampleId": SAMPLE_ID,
-        "sampleSplit": "validation",
+        "trainingSampleId": TRAIN_SAMPLE_ID,
+        "trainingSampleSplit": "train",
+        "validationSampleId": VALIDATION_SAMPLE_ID,
+        "validationSampleSplit": "validation",
         "seed": SEED,
         "resolution": {"width": RESOLUTION[0], "height": RESOLUTION[1]},
         "bestEpoch": best_epoch,
@@ -304,8 +329,10 @@ def execute_stage4_v2_controlled_smoke(
         "packageId": execution["packageId"],
         "runId": execution["runId"],
         "architectureId": ARCHITECTURE_ID,
-        "sampleId": SAMPLE_ID,
-        "sampleSplit": "validation",
+        "trainingSampleId": TRAIN_SAMPLE_ID,
+        "trainingSampleSplit": "train",
+        "validationSampleId": VALIDATION_SAMPLE_ID,
+        "validationSampleSplit": "validation",
         "seed": SEED,
         "resolution": {"width": RESOLUTION[0], "height": RESOLUTION[1]},
         "bestEpoch": best_epoch,
@@ -338,8 +365,10 @@ def execute_stage4_v2_controlled_smoke(
         "packageId": execution["packageId"],
         "runId": execution["runId"],
         "architectureId": ARCHITECTURE_ID,
-        "sampleId": SAMPLE_ID,
-        "sampleSplit": "validation",
+        "trainingSampleId": TRAIN_SAMPLE_ID,
+        "trainingSampleSplit": "train",
+        "validationSampleId": VALIDATION_SAMPLE_ID,
+        "validationSampleSplit": "validation",
         "seed": SEED,
         "resolution": {"width": RESOLUTION[0], "height": RESOLUTION[1]},
         "epochCount": EPOCH_COUNT,
@@ -349,9 +378,9 @@ def execute_stage4_v2_controlled_smoke(
             "schemaVersion": (
                 "ai-painter-stage4-v2-fixed-sample-condition-tensor-identity-v1"
             ),
-            "sampleId": SAMPLE_ID,
+            "sampleId": VALIDATION_SAMPLE_ID,
             "sampleSplit": "validation",
-            "conditionPack": sample["conditionPack"],
+            "conditionPack": validation_sample["conditionPack"],
             "conditionTensorSha256": fixed_sample_condition_tensor_sha256,
         },
         "checkpoint": {
@@ -404,7 +433,11 @@ def _validate_execution_config(
     if not isinstance(execution, dict):
         raise ValueError("V2 Smoke execution binding is missing")
     expected = {
-        "sampleId": SAMPLE_ID, "sampleSplit": "validation", "seed": SEED,
+        "trainingSampleId": TRAIN_SAMPLE_ID,
+        "trainingSampleSplit": "train",
+        "validationSampleId": VALIDATION_SAMPLE_ID,
+        "validationSampleSplit": "validation",
+        "seed": SEED,
         "resolution": {"width": RESOLUTION[0], "height": RESOLUTION[1]},
         "epochCount": EPOCH_COUNT, "previewEpochs": list(PREVIEW_EPOCHS),
         "historicalDenoiserCheckpointAllowed": False, "outputReuseAllowed": False,
@@ -415,7 +448,10 @@ def _validate_execution_config(
     for key, value in expected.items():
         if execution.get(key) != value:
             raise ValueError(f"V2 Smoke execution field changed: {key}")
-    if _logical(root, output_dir) != execution["derivedConfigContract"]["outputDirectory"]:
+    expected_output_dir = _project_file(
+        root, execution["derivedConfigContract"]["outputDirectory"],
+    )
+    if output_dir.resolve() != expected_output_dir:
         raise ValueError("V2 Smoke output does not match the parent-bound child output")
     ticket = config.get("training", {}).get("localAiCapabilityTicket", {})
     if ticket.get("executionState") != "consumed":
@@ -451,10 +487,12 @@ def _validate_dataset_release(path: Path, root: Path) -> dict[str, Any]:
     return release
 
 
-def _validate_fixed_release_sample(release: dict[str, Any], root: Path) -> dict[str, Any]:
-    rows = [row for row in release.get("samples", []) if row.get("sampleId") == SAMPLE_ID]
-    if len(rows) != 1 or rows[0].get("split") != "validation":
-        raise ValueError("fixed V2 Smoke sample 194 is missing, duplicated, or not validation")
+def _validate_fixed_release_sample(
+    release: dict[str, Any], root: Path, sample_id: str, split: str,
+) -> dict[str, Any]:
+    rows = [row for row in release.get("samples", []) if row.get("sampleId") == sample_id]
+    if len(rows) != 1 or rows[0].get("split") != split:
+        raise ValueError(f"fixed V2 Smoke sample {sample_id} is missing, duplicated, or not {split}")
     row = rows[0]
     _resolve_bound_file(root, row["image"])
     _resolve_bound_file(root, row["conditionPack"])
@@ -493,7 +531,10 @@ def _progress(
         "schemaVersion": "ai-painter-stage4-v2-controlled-smoke-progress-v1",
         "status": "completed" if phase == "training_completed" else "running",
         "phase": phase, "packageId": execution["packageId"], "runId": execution["runId"],
-        "stage": "controlled_smoke", "sampleId": SAMPLE_ID, "sampleSplit": "validation",
+        "stage": "controlled_smoke",
+        "trainingSampleId": TRAIN_SAMPLE_ID, "trainingSampleSplit": "train",
+        "validationSampleId": VALIDATION_SAMPLE_ID,
+        "validationSampleSplit": "validation",
         "epoch": epoch, "epochTarget": EPOCH_COUNT, "batch": 1 if epoch else 0,
         "batchTarget": 1, "optimizerStep": optimizer_step,
         "optimizerStepTarget": EPOCH_COUNT,
@@ -598,9 +639,30 @@ def _build_training_token_accounting(config: dict[str, Any]) -> dict[str, Any]:
 
 def _canonical_sha256(value: Any) -> str:
     payload = json.dumps(
-        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        _javascript_canonicalize(value),
+        ensure_ascii=False,
+        sort_keys=False,
+        separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def _javascript_canonicalize(value: Any) -> Any:
+    """Match the Node verifier's canonical object-key serialization exactly."""
+    if isinstance(value, list):
+        return [_javascript_canonicalize(item) for item in value]
+    if isinstance(value, dict):
+        keys = sorted(value, key=_javascript_property_order)
+        return {key: _javascript_canonicalize(value[key]) for key in keys}
+    return value
+
+
+def _javascript_property_order(key: str) -> tuple[int, int | str]:
+    if key.isascii() and key.isdigit() and str(int(key)) == key:
+        index = int(key)
+        if 0 <= index < 2**32 - 1:
+            return (0, index)
+    return (1, key)
 
 
 def _resolve_bound_file(root: Path, binding: dict[str, Any]) -> Path:
@@ -611,13 +673,45 @@ def _resolve_bound_file(root: Path, binding: dict[str, Any]) -> Path:
 
 
 def _project_file(root: Path, logical_path: str) -> Path:
-    candidate = (root / logical_path).resolve()
-    candidate.relative_to(root)
-    return candidate
+    if not isinstance(logical_path, str) or not logical_path:
+        raise ValueError("project logical path is required")
+    if "\\" in logical_path:
+        raise ValueError("project logical path must use forward slashes")
+    logical = PurePosixPath(logical_path)
+    if (
+        logical.is_absolute()
+        or ".." in logical.parts
+        or logical.as_posix() != logical_path
+        or (logical.parts and ":" in logical.parts[0])
+    ):
+        raise ValueError("project logical path is invalid")
+    candidate = root.joinpath(*logical.parts).resolve()
+    if _relative_to(candidate, root) is not None:
+        return candidate
+    if logical.parts and logical.parts[0] == ".runtime":
+        runtime_root = (root / ".runtime").resolve()
+        if _relative_to(candidate, runtime_root) is not None:
+            return candidate
+    raise ValueError("project logical path resolves outside trusted project/runtime roots")
 
 
 def _logical(root: Path, path: Path) -> str:
-    return path.resolve().relative_to(root).as_posix()
+    resolved = path.resolve()
+    project_relative = _relative_to(resolved, root)
+    if project_relative is not None:
+        return project_relative.as_posix()
+    runtime_root = (root / ".runtime").resolve()
+    runtime_relative = _relative_to(resolved, runtime_root)
+    if runtime_relative is not None:
+        return PurePosixPath(".runtime", *runtime_relative.parts).as_posix()
+    raise ValueError("path resolves outside trusted project/runtime roots")
+
+
+def _relative_to(path: Path, base: Path) -> Path | None:
+    try:
+        return path.relative_to(base)
+    except ValueError:
+        return None
 
 
 def _binding(root: Path, path: Path) -> dict[str, Any]:

@@ -9,27 +9,30 @@ import {downsampleFiniteAverage, inspectPairingRow,
   from '../lib/ai-painter-stage4-source-pairing.mjs';
 
 test('failed retry lineage binds feedback but cannot qualify generator transport', () => {
-  const rows = [{sampleId: 'current-a', split: 'train', promptAtUtc: '2026-08-02T00:00:00Z',
+  const rows = [{sampleId: 'current-a', split: 'train', capacitySlotId: 'slot-a', promptAtUtc: '2026-08-02T00:00:00Z',
     retryRequestPath: 'current-a/request.json',
     retryPromptBinding: {path: 'current-a/prompt.json', sha256: 'a'.repeat(64)},
     retryDeclaration: {sourceFailedRecordId: 'failed-a', sourceFailedImageSha256: 'c'.repeat(64),
       sourceFailedRgbUsedAsReference: false, failureIssueCodes: ['route_drift']}},
-  {sampleId: 'current-b', split: 'validation', promptAtUtc: '2026-08-02T00:00:00Z',
+  {sampleId: 'current-b', split: 'validation', capacitySlotId: 'slot-b', promptAtUtc: '2026-08-02T00:00:00Z',
     retryRequestPath: 'current-b/request.json',
     retryPromptBinding: {path: 'current-b/prompt.json', sha256: 'b'.repeat(64)},
     retryDeclaration: {reason: 'previous attempts without a bound failed record'}},
-  {sampleId: 'current-c', split: 'challenge', retryDeclaration: null}];
+  {sampleId: 'current-c', split: 'challenge', capacitySlotId: 'slot-c', retryDeclaration: null}];
   const files = {'data/world-samples/original-image-library/natural-home-v1/index.json':
     {records: [{recordId: 'failed-a', recordPath: 'failed/record.json'}]},
   'current-a/request.json': {outputRecordId: 'current-a',
+    sourceRecordId: 'slot-a',
     promptEvidencePath: 'current-a/prompt.json', promptEvidenceSha256: 'a'.repeat(64),
     retryRepairProfile: rows[0].retryDeclaration},
   'current-b/request.json': {outputRecordId: 'current-b',
+    sourceRecordId: 'slot-b',
     promptEvidencePath: 'current-b/prompt.json', promptEvidenceSha256: 'b'.repeat(64),
     retryRepairProfile: rows[1].retryDeclaration,
     sequenceGate: {priorRequestCount: 2}},
   'failed/record.json': {recordId: 'failed-a', status: 'rejected',
     createdAtUtc: '2026-08-01T00:00:00Z', relativeDirectory: 'failed',
+    conditionBinding: {capacitySlotId: 'slot-a'},
     originalImage: {path: 'original.png', sha256: 'c'.repeat(64)},
     reviews: {machineReviewPath: 'failed/review.json'}},
   'failed/review.json': {recordId: 'failed-a', status: 'machine_rejected',
@@ -39,16 +42,30 @@ test('failed retry lineage binds feedback but cannot qualify generator transport
   const result = inspectRetryLineage(reader, rows, ['current-a', 'current-b', 'current-c']);
   assert.deepEqual(result.bySplit, {train: 1, validation: 1, challenge: 0, regression: 0});
   assert.equal(result.boundFailedRecordCount, 1);
+  assert.equal(result.rows[0].failedFeedbackSameCapacitySlot, true);
   assert.equal(result.declaredUnboundPriorAttemptCount, 1);
   assert.equal(result.declaredRetryReferenceToSelectedSampleCount, 0);
   assert.equal(result.rows[1].declaredPriorRequestCount, 2);
   assert.equal(result.historicalFeedbackPresent, true);
+  assert.equal(result.projectControlledCrossSampleFeedbackExcluded, true);
   assert.equal(result.generatorTransportVerified, false);
   assert.equal(result.trainingAllowed, false);
   files['failed/review.json'].issues[0].code = 'other';
   assert.throws(() => inspectRetryLineage(reader, rows, ['current-a', 'current-b', 'current-c']),
     /repair codes differ/);
   files['failed/review.json'].issues[0].code = 'route_drift';
+  files['failed/record.json'].conditionBinding.capacitySlotId = 'other-slot';
+  assert.throws(() => inspectRetryLineage(reader, rows, ['current-a', 'current-b', 'current-c']),
+    /different capacity slot/);
+  files['failed/record.json'].conditionBinding.capacitySlotId = 'slot-a';
+  delete files['current-a/request.json'].sourceRecordId;
+  assert.throws(() => inspectRetryLineage(reader, rows, ['current-a', 'current-b', 'current-c']),
+    /retry source capacity slot missing/);
+  files['current-a/request.json'].sourceRecordId = 'slot-a';
+  files['current-b/request.json'].sourceRecordId = 'slot-a';
+  assert.throws(() => inspectRetryLineage(reader, rows, ['current-a', 'current-b', 'current-c']),
+    /different capacity slot/);
+  files['current-b/request.json'].sourceRecordId = 'slot-b';
   assert.throws(() => inspectRetryLineage(reader, rows, ['current-a', 'failed-a', 'current-c']),
     /another selected RGB record/);
 });
@@ -83,6 +100,7 @@ test('shared image-derived style prior is bound without granting data qualificat
   const result = inspectSharedStylePrior(f.reader, f.checkedRows, f.selectedIds);
   assert.equal(result.sourceRecordCount, 22);
   assert.equal(result.projectImageDerivedAggregate, true);
+  assert.equal(result.projectControlledDirectRgbInputsExcluded, true);
   assert.equal(result.generatorTransportVerified, false);
   assert.equal(result.dataQualificationGranted, false);
 });

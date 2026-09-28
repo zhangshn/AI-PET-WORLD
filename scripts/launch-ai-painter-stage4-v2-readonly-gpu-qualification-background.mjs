@@ -864,8 +864,10 @@ export async function superviseStage4V2ReadonlyGpuQualificationHandoff({
     "handoff child/package identity mismatch");
   assert.equal(packagePayload.runId, childProcess.runId,
     "handoff child/run identity mismatch");
-  assert.deepEqual(childProcess.launchIntent, launchIntentBinding,
-    "handoff child launch intent mismatch");
+  assert.equal(childProcess.launchIntent?.path, launchIntentBinding.path,
+    "handoff child launch intent path mismatch");
+  assert.equal(childProcess.launchIntent?.sha256, launchIntentBinding.sha256,
+    "handoff child launch intent SHA mismatch");
   assert.equal(launchIntent.packageManifest.path, packageManifestBinding.path,
     "handoff launch manifest path mismatch");
   assert.equal(launchIntent.packageManifest.sha256, packageManifestBinding.sha256,

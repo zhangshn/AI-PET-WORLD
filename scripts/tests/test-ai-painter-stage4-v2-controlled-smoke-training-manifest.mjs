@@ -11,6 +11,7 @@ import {
 import { bindAbsolute } from "../lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
 
 const ARCHITECTURE = "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
+const TRAIN_SAMPLE = "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3";
 const SAMPLE = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6";
 
 function canonicalSha(value) {
@@ -81,7 +82,7 @@ function fixture() {
   const datasetRelease = write(root, "dataset/release.json", {
     schemaVersion: "ai-painter-stage4-v2-mvp64-dataset-release-v1",
     datasetReleaseIdentity: "stage4-v2-mvp64-fixture-release",
-    samples: [{
+    samples: [{ sampleId: TRAIN_SAMPLE, split: "train" }, {
       sampleId: SAMPLE,
       split: "validation",
       conditionPack: { path: conditionPack.path, sha256: conditionPack.sha256 },
@@ -146,7 +147,9 @@ function fixture() {
   const metadata = {
     schemaVersion: "ai-painter-stage4-v2-controlled-smoke-checkpoint-metadata-v1",
     status: "controlled_smoke_non_promotable", packageId, runId,
-    architectureId: ARCHITECTURE, sampleId: SAMPLE, sampleSplit: "validation",
+    architectureId: ARCHITECTURE,
+    trainingSampleId: TRAIN_SAMPLE, trainingSampleSplit: "train",
+    validationSampleId: SAMPLE, validationSampleSplit: "validation",
     seed: 20263722, resolution: { width: 256, height: 192 },
     bestEpoch, bestValidationScore: bestScore, checkpoint,
     denoiserStateSha256: "2".repeat(64),
@@ -214,7 +217,9 @@ function fixture() {
   const manifest = {
     schemaVersion: "ai-painter-stage4-v2-controlled-smoke-training-manifest-v1",
     status: "training_completed", packageId, runId, architectureId: ARCHITECTURE,
-    sampleId: SAMPLE, sampleSplit: "validation", seed: 20263722,
+    trainingSampleId: TRAIN_SAMPLE, trainingSampleSplit: "train",
+    validationSampleId: SAMPLE, validationSampleSplit: "validation",
+    seed: 20263722,
     resolution: { width: 256, height: 192 }, epochCount: 30,
     previews,
     fixedSampleConditionTensorIdentity: {

@@ -27,7 +27,8 @@ import {
   FIXED_EPOCH_COUNT,
   FIXED_PREVIEW_EPOCHS,
   FIXED_RESOLUTION,
-  FIXED_SAMPLE_ID,
+  FIXED_TRAIN_SAMPLE_ID,
+  FIXED_VALIDATION_SAMPLE_ID,
   FIXED_SEED,
   projectLogicalPath,
   readBoundJson,
@@ -40,6 +41,7 @@ import {
   SMOKE_PLAN_ACTION,
   SMOKE_RUN_ACTION,
   SMOKE_RUN_TASK,
+  STAGE4_V2_ARCHITECTURE,
   STAGE4_V2_CAPABILITY,
   validateStage4V2SmokePackagePayload,
 } from "./lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
@@ -132,7 +134,8 @@ export async function materializeStage4V2ControlledSmoke({
   const {
     datasetReleaseBinding,
     datasetRelease,
-    sample,
+    trainSample,
+    validationSample,
     machineReviewInputs,
     objectMasks,
     programPaths,
@@ -157,8 +160,10 @@ export async function materializeStage4V2ControlledSmoke({
     datasetReleaseBinding,
     datasetRelease.sourcePackage.manifest,
     datasetRelease.sourcePackage.sourceIndex,
-    sample.image,
-    sample.conditionPack,
+    trainSample.image,
+    trainSample.conditionPack,
+    validationSample.image,
+    validationSample.conditionPack,
     qualification.payload.autoencoderBinding,
     machineReviewInputs.thresholdContract,
     machineReviewInputs.styleFingerprint,
@@ -229,7 +234,7 @@ export async function materializeStage4V2ControlledSmoke({
     status: "materialized_not_executed",
     packageId: identity.packageId,
     runId: identity.runId,
-    architectureId: STAGE4_V2_CAPABILITY,
+    architectureId: STAGE4_V2_ARCHITECTURE,
     capabilityVersion: STAGE4_V2_CAPABILITY,
     executionClass: "controlled_smoke",
     authorityClass: "local_ai_pre_release_capability_lifecycle",
@@ -244,8 +249,10 @@ export async function materializeStage4V2ControlledSmoke({
     machineReviewInputs,
     fixedInputs: {
       seed: FIXED_SEED,
-      sampleId: FIXED_SAMPLE_ID,
-      sampleSplit: "validation",
+      trainingSampleId: FIXED_TRAIN_SAMPLE_ID,
+      trainingSampleSplit: "train",
+      validationSampleId: FIXED_VALIDATION_SAMPLE_ID,
+      validationSampleSplit: "validation",
       resolutionStage: 0,
       resolution: FIXED_RESOLUTION,
       batchSize: 1,
@@ -693,15 +700,17 @@ export function validateQualificationExecutionChain(root, {
   assert.equal(result.status, terminal.status);
   assert.equal(result.packageId, payload.packageId);
   assert.equal(result.runId, payload.runId);
-  assert.equal(result.architectureId, STAGE4_V2_CAPABILITY);
-  assert.deepEqual(result.activeConfig, finalization.activeConfig);
-  assert.deepEqual(result.programGraphManifest?.binding,
-    payload.programGraphManifest);
+  assert.equal(result.architectureId, STAGE4_V2_ARCHITECTURE);
+  assert.deepEqual(bindingDigestIdentity(result.activeConfig),
+    bindingDigestIdentity(finalization.activeConfig));
+  assert.deepEqual(bindingDigestIdentity(result.programGraphManifest?.binding),
+    bindingDigestIdentity(payload.programGraphManifest));
   assert.equal(result.ticket?.status, "consumed_once");
   assert.equal(result.ownerAuthorizationRequired, false);
   assert.equal(result.automaticSmokeStarted, false);
   for (const role of ["gpuDiagnostic", "cudaTelemetry", "stateIntegrity"]) {
-    assert.deepEqual(result[role], finalization[role],
+    assert.deepEqual(bindingDigestIdentity(result[role]),
+      bindingDigestIdentity(finalization[role]),
       `qualification ${role} binding differs from finalization`);
   }
   const diagnostic = readBoundJson(root, finalization.gpuDiagnostic);
@@ -710,7 +719,7 @@ export function validateQualificationExecutionChain(root, {
   assert.equal(diagnostic.status, "passed");
   assert.equal(diagnostic.packageId, payload.packageId);
   assert.equal(diagnostic.runId, payload.runId);
-  assert.equal(diagnostic.architectureId, STAGE4_V2_CAPABILITY);
+  assert.equal(diagnostic.architectureId, STAGE4_V2_ARCHITECTURE);
   assert.deepEqual(diagnostic.resolution, payload.fixedInputs?.resolution,
     "qualification diagnostic resolution differs from fixed inputs");
   assert.equal(diagnostic.all210ParametersReached, true);
@@ -792,11 +801,33 @@ export function collectAndVerifySmokeImmutableInputs({
     "dataset source index",
   );
 
-  const sample = selectFixedSample(datasetRelease);
-  const sampleImageBinding = bindDeclaredExact(root, sample.image,
+  const registrationInputs = qualification.terminal.controlledSmokeRegistration?.fixedInputs;
+  assert.equal(registrationInputs?.firstTrainSampleId, FIXED_TRAIN_SAMPLE_ID,
+    "qualification registered another first train sample");
+  assert.equal(registrationInputs?.fixedValidationSampleId, FIXED_VALIDATION_SAMPLE_ID,
+    "qualification registered another fixed validation sample");
+  const trainSample = selectFixedSample(datasetRelease, FIXED_TRAIN_SAMPLE_ID,
+    "train", "fixed train sample146");
+  const validationSample = selectFixedSample(datasetRelease,
+    FIXED_VALIDATION_SAMPLE_ID, "validation", "fixed validation sample194");
+  const trainSampleImageBinding = bindDeclaredExact(root, trainSample.image,
+    "fixed sample146 training image");
+  const trainConditionPackBinding = bindDeclaredExact(root, trainSample.conditionPack,
+    "fixed sample146 condition pack");
+  const sampleImageBinding = bindDeclaredExact(root, validationSample.image,
     "fixed sample194 reference image");
-  const conditionPackBinding = bindDeclaredExact(root, sample.conditionPack,
+  const conditionPackBinding = bindDeclaredExact(root, validationSample.conditionPack,
     "fixed sample194 condition pack");
+  requireExactQualificationInputEvidence(
+    qualification.payload,
+    trainSampleImageBinding,
+    "fixed sample146 training image",
+  );
+  requireExactQualificationInputEvidence(
+    qualification.payload,
+    trainConditionPackBinding,
+    "fixed sample146 condition pack",
+  );
   requireExactQualificationInputEvidence(
     qualification.payload,
     sampleImageBinding,
@@ -858,12 +889,21 @@ export function collectAndVerifySmokeImmutableInputs({
     objectMasks,
     styleFingerprint: styleFingerprintBinding,
     reviewPrograms: {
-      conditionAlignment: conditionAlignmentBinding,
+      conditionAlignment: {
+        path: conditionAlignmentBinding.path,
+        sha256: conditionAlignmentBinding.sha256,
+        role: threshold.implementationProvenance.conditionAlignment.role,
+      },
       professionalAesthetic: {
-        ...professionalAestheticBinding,
+        path: professionalAestheticBinding.path,
+        sha256: professionalAestheticBinding.sha256,
         role: threshold.implementationProvenance.professionalAesthetic.role,
       },
-      styleFeatureExtractor: styleFeatureExtractorBinding,
+      styleFeatureExtractor: {
+        path: styleFeatureExtractorBinding.path,
+        sha256: styleFeatureExtractorBinding.sha256,
+        role: threshold.implementationProvenance.styleFeatureExtractor.role,
+      },
     },
   };
 
@@ -883,16 +923,28 @@ export function collectAndVerifySmokeImmutableInputs({
     current.registry.terminalEvidence,
     "current qualification terminal",
   );
-  assert.deepEqual(currentTerminalBinding, qualification.terminalBinding,
+  assert.deepEqual(
+    bindingDigestIdentity(currentTerminalBinding),
+    bindingDigestIdentity(qualification.terminalBinding),
     "current qualification terminal differs from qualification package terminal");
-  assert.deepEqual(currentEvidence.transactionValue.currentStaged,
-    currentEvidence.snapshot,
+  assert.deepEqual(
+    bindingDigestIdentity(currentEvidence.transactionValue.currentStaged),
+    bindingDigestIdentity(currentEvidence.snapshot),
     "current transaction staged snapshot binding changed");
 
   return Object.freeze({
     datasetReleaseBinding,
     datasetRelease,
-    sample,
+    trainSample: Object.freeze({
+      ...trainSample,
+      image: trainSampleImageBinding,
+      conditionPack: trainConditionPackBinding,
+    }),
+    validationSample: Object.freeze({
+      ...validationSample,
+      image: sampleImageBinding,
+      conditionPack: conditionPackBinding,
+    }),
     machineReviewInputs,
     objectMasks,
     programPaths,
@@ -985,6 +1037,13 @@ function bindingIdentity(binding) {
   };
 }
 
+export function bindingDigestIdentity(binding) {
+  return {
+    path: binding.path,
+    sha256: binding.sha256,
+  };
+}
+
 export function reconcileReadonlyLifecycle(root, qualificationTerminal, recordedAtUtc = new Date().toISOString()) {
   const statePath = resolveProjectPath(root, `${LIFECYCLE_ROOT}/state.json`, { mustExist: true, kind: "file" });
   const state = readJsonObject(statePath);
@@ -1011,12 +1070,12 @@ export function reconcileReadonlyLifecycle(root, qualificationTerminal, recorded
   return state;
 }
 
-function selectFixedSample(datasetRelease) {
+function selectFixedSample(datasetRelease, sampleId, split, label) {
   assert.equal(datasetRelease.schemaVersion, "ai-painter-stage4-v2-dataset-release-contract-v1");
   assert.equal(datasetRelease.samples.length, 64);
-  const rows = datasetRelease.samples.filter((item) => item.sampleId === FIXED_SAMPLE_ID);
-  assert.equal(rows.length, 1, "fixed validation sample identity is not unique");
-  assert.equal(rows[0].split, "validation");
+  const rows = datasetRelease.samples.filter((item) => item.sampleId === sampleId);
+  assert.equal(rows.length, 1, `${label} identity is not unique`);
+  assert.equal(rows[0].split, split, `${label} split differs`);
   return rows[0];
 }
 
@@ -1033,7 +1092,14 @@ function buildCapsule({ payload, terminal, terminalBinding, evidence }) {
     latestBlocker: null,
     nextAllowedAction: { code: SMOKE_BACKGROUND_LAUNCH_ACTION, labelZh: "由本地后台执行V2受控Smoke闭环。", ownerAuthorizationRequired: false, automaticExecutionAllowed: true },
     forbiddenActions: ["reuse_ticket_run_or_output", "read_historical_or_failed_denoiser_checkpoint", "lower_machine_review_threshold", "start_stage0_before_smoke_qualification"],
-    taskIdentity: { modelId: STAGE4_V2_CAPABILITY, sampleId: FIXED_SAMPLE_ID, sampleSplit: "validation", seed: FIXED_SEED },
+    taskIdentity: {
+      modelId: STAGE4_V2_CAPABILITY,
+      trainingSampleId: FIXED_TRAIN_SAMPLE_ID,
+      trainingSampleSplit: "train",
+      validationSampleId: FIXED_VALIDATION_SAMPLE_ID,
+      validationSampleSplit: "validation",
+      seed: FIXED_SEED,
+    },
     latestTerminal: terminalBinding,
     evidence: evidence.map((binding, index) => ({ kind: `smoke_materialization_evidence_${index + 1}`, ...binding, sha256Verified: true })),
     integrity: { status: "verified", requiredEvidencePresent: true, boundEvidenceVerified: true, identityMatches: true },

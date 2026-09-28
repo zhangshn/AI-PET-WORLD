@@ -118,6 +118,31 @@
       "role": "stage4_v2_formal_stage0_to_stage2_execution"
     },
     {
+      "packageScript": "run:ai-painter-stage4-mvp-denoiser-stage0",
+      "entryFile": "scripts/run-ai-painter-stage4-mvp-denoiser-stage0.mjs",
+      "role": "stage4_mvp_bounded_256x192_diagnostic_execution_no_formal_stage_progress"
+    },
+    {
+      "packageScript": "reconcile:ai-painter-stage4-mvp-diagnostic-to-v2-formal-reentry",
+      "entryFile": "scripts/reconcile-ai-painter-stage4-mvp-diagnostic-to-v2-formal-reentry.mjs",
+      "role": "isolate_mvp_diagnostic_branch_and_restore_v2_formal_cpu_requalification"
+    },
+    {
+      "packageScript": "close:ai-painter-stage4-mvp-single-natural-world-256",
+      "entryFile": "scripts/close-ai-painter-stage4-mvp-single-natural-world-256.mjs",
+      "role": "historical_closure_reproduction_only_superseded_by_visual_false_positive_adjudication"
+    },
+    {
+      "packageScript": "review:ai-painter-stage4-mvp-256-detail",
+      "entryFile": "scripts/run-ai-painter-stage4-mvp-256-detail-review.mjs",
+      "role": "readonly_reference_relative_detail_sufficiency_review"
+    },
+    {
+      "packageScript": "adjudicate:ai-painter-stage4-mvp-single-world-256-visual-false-positive",
+      "entryFile": "scripts/adjudicate-ai-painter-stage4-mvp-single-world-256-visual-false-positive.mjs",
+      "role": "revoke_unsafe_mvp_visual_acceptance_and_preserve_training_evidence"
+    },
+    {
       "packageScript": "check:ai-painter-stage4-core",
       "entryFile": "scripts/check-ai-painter-stage4-core.mjs",
       "role": "stage4_model_lifecycle_documentation_core_regression"

@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "stage4-mvp-structured-object-v17-review-pack-schema-v1",
+  "scope": "candidate_artifact_interface_only_not_review_threshold_or_execution_authorization",
+  "candidatePackSchemaVersion": "ai-painter-stage4-mvp-structured-object-v17-stage0-review-candidate-pack-v1",
+  "capabilityVersion": "stage4_mvp_native_rgb_structured_object_v17",
+  "modelArchitectureId": "stage4_native_rgb_structured_object_cpu_v17",
+  "stage": { "stage": 0, "width": 256, "height": 192, "epochCount": 24 },
+  "status": "candidate_pack_materialized_review_pending",
+  "inferenceMode": "bound_v17_bf16_generator_only_to_complete_rgb",
+  "candidateSplit": "validation",
+  "candidateCount": 8,
+  "requiredManifestFields": [
+    "schemaVersion", "status", "capabilityVersion", "modelArchitectureId",
+    "executionPackageIdentity", "runId", "stage", "executionPackage",
+    "trainingTerminal", "datasetManifest", "checkpoint", "inferenceReport",
+    "precisionExecutionPlan", "selectedEpoch", "selectedScore",
+    "modelStateSha256", "discriminatorStateSha256", "candidateCount",
+    "candidateSplit", "candidates", "executionBoundary", "recordedAtUtc"
+  ],
+  "requiredCandidateFields": [
+    "sampleIndex", "sampleId", "split", "candidateRgb", "referenceRgb",
+    "conditionPack", "objectMasks", "artifactIdentity", "responsibilityEvidence"
+  ],
+  "requiredArtifactIdentityFields": [
+    "inferenceMode", "precisionExecutionPlan", "modelStateSha256", "candidateRgb"
+  ],
+  "bindingShape": {
+    "requiredFields": ["path", "sha256"],
+    "additionalFieldsAllowed": false,
+    "scope": "pure_file_bindings_only_not_extended_candidate_rgb_or_role_mask_descriptors",
+    "pathRule": "explicit_project_relative_no_dot_dot_latest_backslash_or_drive",
+    "sha256Rule": "sha256_of_file_bytes_recomputed_by_consumer"
+  },
+  "candidateArtifacts": {
+    "candidateRgb": {
+      "role": "complete_rgb_candidate",
+      "format": "png_rgb_8bit",
+      "width": 256,
+      "height": 192,
+      "requiredFields": ["path", "sha256", "role", "width", "height"]
+    },
+    "referenceRgb": {
+      "format": "png_rgb_8bit",
+      "width": 1024,
+      "height": 768,
+      "requiredFields": ["path", "sha256"]
+    },
+    "conditionPack": {
+      "schemaVersion": "complete-world-visual-condition-pack-v1",
+      "channelCount": 23,
+      "requiredFields": ["path", "sha256"]
+    },
+    "objectMasks": {
+      "container": "array",
+      "roles": ["object_footprints", "object_tree", "object_rock", "object_vegetation"],
+      "orderRule": "exactly_the_roles_array_order_one_entry_per_role_no_extra_entries",
+      "itemFields": ["role", "path", "sha256"],
+      "mustEqualBoundConditionChannelBytes": true
+    }
+  },
+  "requiredTrustedContextFields": [
+    "runId", "packageId", "executionPackage", "trainingTerminal",
+    "datasetManifest", "checkpoint", "inferenceReport",
+    "modelStateSha256", "discriminatorStateSha256", "selectedEpoch",
+    "selectedScore", "precisionExecutionPlan", "orderedValidationRows"
+  ],
+  "orderedValidationRowFields": [
+    "sampleId", "referenceRgb", "conditionPack", "worldId", "regionId", "tick", "factHash",
+    "visualFactManifestSha256", "objectMasks", "candidateRgb"
+  ],
+  "identityEquations": [
+    "manifest.executionPackageIdentity==trusted.packageId",
+    "manifest.runId==trusted.runId",
+    "manifest.executionPackage==trusted.executionPackage",
+    "manifest.trainingTerminal==trusted.trainingTerminal",
+    "manifest.datasetManifest==trusted.datasetManifest",
+    "manifest.checkpoint==trusted.checkpoint",
+    "manifest.inferenceReport==trusted.inferenceReport",
+    "manifest.modelStateSha256==trusted.modelStateSha256",
+    "manifest.discriminatorStateSha256==trusted.discriminatorStateSha256",
+    "manifest.selectedEpoch==trusted.selectedEpoch",
+    "manifest.selectedScore==trusted.selectedScore",
+    "manifest.precisionExecutionPlan==trusted.precisionExecutionPlan",
+    "candidate.sampleIndex==zero_based_validation_ordinal",
+    "candidate.sampleId==trusted.orderedValidationRows[ordinal].sampleId",
+    "candidate.referenceRgb==trusted.orderedValidationRows[ordinal].referenceRgb",
+    "candidate.conditionPack==trusted.orderedValidationRows[ordinal].conditionPack",
+    "candidate.objectMasks==trusted.orderedValidationRows[ordinal].objectMasks",
+    "candidate.candidateRgb==trusted.orderedValidationRows[ordinal].candidateRgb",
+    "candidate.artifactIdentity.candidateRgb==candidate.candidateRgb",
+    "candidate.artifactIdentity.modelStateSha256==manifest.modelStateSha256",
+    "candidate.responsibilityEvidence.worldId==trusted.orderedValidationRows[ordinal].worldId",
+    "candidate.responsibilityEvidence.regionId==trusted.orderedValidationRows[ordinal].regionId",
+    "candidate.responsibilityEvidence.tick==trusted.orderedValidationRows[ordinal].tick",
+    "candidate.responsibilityEvidence.factHash==trusted.orderedValidationRows[ordinal].factHash",
+    "candidate.responsibilityEvidence.visualFactManifestSha256==trusted.orderedValidationRows[ordinal].visualFactManifestSha256",
+    "candidate.responsibilityEvidence.conditionPackSha256==candidate.conditionPack.sha256",
+    "candidate.responsibilityEvidence.modelStateSha256==manifest.modelStateSha256"
+  ],
+  "factHashSource": "sha256_of_bound_training_task_naturalizedWorldFactsPath_bytes_must_equal_task.sourceBindings.naturalizedWorldFactsSha256",
+  "regionIdSource": "bound_training_world_fact_blueprint.regionId_must_match_task_world_and_tick",
+  "trustedContextRule": "caller_recomputes_all_bound_source_bytes_and_relationships_before_this_manifest_codec;_self_report_is_not_authority",
+  "inferenceEvidenceRule": "bound_inference_report_must_match_run_checkpoint_and_candidate_bytes_and_prove_resource_and_zero_optimizer_boundary_before_review_qualification",
+  "sampleOrderRule": "exact_eight_unique_sample_ids_in_frozen_validation_membership_order_zero_based_0_to_7",
+  "requiredResponsibilityIds": [
+    "terrain_path_ground", "terrain_water", "terrain_shoreline",
+    "object_footprints", "object_tree", "object_rock", "object_vegetation"
+  ],
+  "responsibilityEvidence": {
+    "requiredFields": [
+      "worldId", "regionId", "tick", "factHash", "visualFactManifestSha256", "conditionPackSha256",
+      "modelStateSha256", "responsibilityImplementationMode", "tensorArchive",
+      "tensorFormat", "tensorShapePerRole", "roleOrder", "roleSha256"
+    ],
+    "responsibilityImplementationMode": "declared_shared_substrate",
+    "tensorFormat": "zlib_compressed_float32_le_chw_concat_v1",
+    "tensorShapePerRole": [8, 192, 256],
+    "roleSha256Rule": "sha256_of_each_uncompressed_float32_le_chw_role_slice",
+    "archiveRule": "decompress_then_verify_exact_size_order_and_each_role_sha256"
+  },
+  "requiredExecutionBoundary": {
+    "gpuInferenceExecuted": true,
+    "optimizerCreated": false,
+    "optimizerSteps": 0,
+    "backwardExecuted": false,
+    "weightsModified": false,
+    "challengeRead": false,
+    "regressionRead": false,
+    "machineReviewExecuted": false,
+    "qualificationGranted": false
+  },
+  "bindingRule": "producer_and_consumer_recompute_this_file_sha256_and_require_exact_candidatePackSchemaVersion",
+  "reviewThresholds": "not_defined_here"
+}

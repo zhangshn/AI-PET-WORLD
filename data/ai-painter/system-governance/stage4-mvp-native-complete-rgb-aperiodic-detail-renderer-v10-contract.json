@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "stage4-mvp-native-complete-rgb-aperiodic-detail-renderer-v10-contract-v1",
+  "contractId": "stage4-mvp-native-complete-rgb-aperiodic-detail-renderer-v10-contract-v1",
+  "status": "cpu_candidate_not_execution_qualified",
+  "authority": "local_ai_pet_world_program",
+  "capabilityVersion": "stage4_mvp_native_complete_rgb_aperiodic_detail_renderer_v10",
+  "architectureId": "stage4_native_complete_rgb_aperiodic_detail_renderer_v4",
+  "businessScope": "single_thailand_region_original_natural_world_mvp_256x192_only",
+  "parentFailureEvidence": {
+    "path": ".runtime/ai-painter/stage4-mvp-native-rgb-detail-recovery-renderer-v9-machine-reviews/mvp-stage0-0ce02ce7c40a91b06d188503fb640fbfc45466778448356e/terminal.json",
+    "sha256": "387620406a903df660ac7c8f99a116c5180bd68ce5b4ecae25d56978b866aafc"
+  },
+  "boundedDiagnosis": "V9 completed 24 epochs and 2304 updates. Its eight validation outputs retained insufficient relative detail and showed axial periodic stripes. V10 tests a coordinate-anchored nonperiodic multiscale model input and a smaller object crop. It is one independent fresh-initialization experiment, not a V9 retry or formal Stage4 release.",
+  "datasetBinding": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913",
+    "splitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4}
+  },
+  "conditionContract": {
+    "path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+    "conditionContractIdentity": "ai-painter-complete-map-23-channel-condition-v1",
+    "channelCount": 23
+  },
+  "reviewBindings": {
+    "semanticAndUpperAesthetic": {
+      "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+      "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"
+    },
+    "minimumDetail": {
+      "path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json",
+      "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"
+    },
+    "thresholdOverrideAllowed": false
+  },
+  "renderer": {
+    "inputConditionChannels": 23,
+    "outputChannels": 3,
+    "baseChannels": 48,
+    "decoderScales": [8, 4, 2, 1],
+    "coordinateChannels": ["coordinate_x", "coordinate_y"],
+    "aperiodicFeatureScales": [2, 4, 8, 16, 32],
+    "featuresPerScale": 4,
+    "aperiodicFeatureCount": 20,
+    "featureGenerator": "deterministic_bilinearly_interpolated_2d_coordinate_hash",
+    "basisSeed": 20260928,
+    "basisSeedScope": "fixed_mvp_single_world_coordinate_basis_not_arbitrary_world_seed",
+    "cropInvariantGlobalCoordinatesRequired": true,
+    "fullResolutionDetailResidual": true,
+    "responsibilityIdentities": [
+      "terrain_water", "terrain_path_ground", "terrain_shoreline",
+      "object_footprints", "object_tree", "object_rock", "object_vegetation"
+    ],
+    "outsideAuthoritativeMaskContributionMustBeZero": true,
+    "randomInputAllowed": false,
+    "referenceRgbAtInferenceAllowed": false,
+    "externalModelAllowed": false,
+    "autoencoderAllowed": false,
+    "diffusionAllowed": false,
+    "staticMapOrTileCompositionAllowed": false
+  },
+  "cpuCarrierQualification": {
+    "scope": "input_carrier_only_not_learned_rgb_or_visual_acceptance",
+    "measurementCanvas": [256, 192],
+    "everyChannelMustVaryOnBothAxes": true,
+    "meanAxialFftEnergyFractionMaximumExclusive": 0.2,
+    "perChannelAxialFftEnergyFractionMaximumExclusive": 0.5,
+    "perChannelSingleFrequencyEnergyFractionMaximumExclusive": 0.15,
+    "cropAndFullCoordinateFeatureMaximumAbsoluteDifference": 0.000001,
+    "axisOnlyFourierAndRowStripeControlsMustBeRejected": true,
+    "modelStateAndRngMustRemainUnchanged": true,
+    "referenceRgbReadByRendererAllowed": false,
+    "machineReviewStillRequired": true
+  },
+  "trainingObjective": {
+    "source": "train_rgb_authoritative_masks_and_deterministic_aperiodic_coordinate_basis_only",
+    "fullRgbMaeWeight": 0.75,
+    "fullRgbGradientWeight": 0.35,
+    "fullRgbLaplacianWeight": 0.15,
+    "responsibilityGradientWeight": 0.5,
+    "responsibilityLumaStructureWeight": 0.15,
+    "responsibilityRgbMaeWeights": {
+      "terrain_water": 1.0,
+      "terrain_path_ground": 2.0,
+      "terrain_shoreline": 1.0,
+      "object_footprints": 1.0,
+      "object_tree": 1.0,
+      "object_rock": 1.25,
+      "object_vegetation": 1.0
+    },
+    "detailStatistics": {
+      "highPassKernel": 5,
+      "localVarianceKernel": 9,
+      "textureEnergyWeight": 2.0,
+      "gradientEnergyWeight": 1.5,
+      "localVarianceWeight": 1.0
+    },
+    "validationPixelsUsedByOptimizer": false,
+    "validationMetricsUsedOnlyForCheckpointSelection": true,
+    "machineReviewScoresAsLossAllowed": false,
+    "failedPreviewPixelsAsTargetAllowed": false
+  },
+  "trainingCurriculum": {
+    "epochCount": 24,
+    "fullFrameUpdatesPerSamplePerEpoch": 1,
+    "objectCropUpdatesPerSamplePerEpoch": 1,
+    "objectCropSize": [64, 64],
+    "objectCropIdentities": [
+      "object_footprints", "object_tree", "object_rock", "object_vegetation"
+    ],
+    "exactOptimizerSteps": 2304,
+    "freshInitializationRequired": true,
+    "v8CheckpointReuseAllowed": false,
+    "v9CheckpointReuseAllowed": false,
+    "persistentDerivedTrainingImagesAllowed": false
+  },
+  "stagePlan": [{"stage": 0, "width": 256, "height": 192}],
+  "mvpBoundaries": {
+    "worldCountTarget": 1,
+    "buildingsRequired": false,
+    "prebuiltArtificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "animalsRequired": false,
+    "naturalTerrainWaterMajorObjectsAndApplicablePassabilityRequired": true,
+    "stage0MayClaimFullStage4Completion": false
+  },
+  "activationGates": {
+    "cpuContractNow": true,
+    "gpuQualificationNow": false,
+    "optimizerNow": false,
+    "trainingNow": false,
+    "checkpointPromotionNow": false
+  },
+  "automaticRetry": false
+}

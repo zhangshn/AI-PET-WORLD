@@ -32,8 +32,14 @@ assert.doesNotMatch(projectionSource, /nextMachineAction:\s*null/u)
 assert.doesNotMatch(projectionSource, /readdir|globSync|fast-glob|mtimeMs|birthtime/u)
 assert.match(apiSource, /readAiPainterCurrentExecutionSnapshot/u)
 assert.match(apiSource, /Cache-Control/u)
-assert.match(pageStatusSource, /\/api\/ai-console\/observability\/current-execution/u)
-assert.match(pageStatusSource, /refreshIntervalMs = 1_000/u)
+const currentStoreSource = await readText("src/app/ai-console/ai-console-current-execution-store.ts")
+assert.match(pageStatusSource, /useAiConsoleCurrentExecution/u)
+assert.match(currentStoreSource, /\/api\/ai-console\/observability\/current-execution/u)
+assert.match(currentStoreSource, /currentExecutionRefreshMs = 1_000/u)
+assert.match(currentStoreSource, /if \(inFlight\) return inFlight/u)
+assert.match(currentStoreSource, /AbortController/u)
+assert.match(currentStoreSource, /connection: "failed"/u)
+assert.doesNotMatch(pageStatusSource, /setInterval|fetch\(/u)
 
 if (process.argv.includes("--static-only")) {
   console.log(JSON.stringify({
@@ -69,6 +75,8 @@ assert.ok(Object.prototype.hasOwnProperty.call(registry, "selectedHistoricalRun"
 const latest = registry.latestTrainingTerminal
 assert.ok(latest && typeof latest === "object")
 const timelineBinding = latest.evidence?.machineReviewTimeline
+const terminalDetailReviewBinding = registryRead.currentTaskTerminal?.detailReview
+const terminalReviewBinding = registryRead.currentTaskTerminal?.machineReview
 const { readAiPainterCurrentExecutionSnapshot } = loadCurrentExecutionProjectionForCpu(projectRoot)
 const snapshot = await readAiPainterCurrentExecutionSnapshot(projectRoot)
 assert.equal(snapshot.ok, true, snapshot.reasonCode ?? "live projection must verify")
@@ -76,7 +84,34 @@ assert.equal(snapshot.registryRevision, registry.registryRevision, "registry cha
 assert.equal(snapshot.currentProjectTask?.taskId, registry.taskId)
 assert.equal(snapshot.latestTrainingTerminal?.runId, latest.runId)
 let machineReview
-if (timelineBinding !== undefined) {
+if (terminalDetailReviewBinding !== undefined) {
+assert.ok(terminalDetailReviewBinding && typeof terminalDetailReviewBinding === "object", "malformed terminal detail review binding")
+const reportBytes = await readProjectFile(terminalDetailReviewBinding.path)
+assert.equal(sha256(reportBytes), terminalDetailReviewBinding.sha256)
+const report = JSON.parse(reportBytes.toString("utf8"))
+assert.equal(report.schemaVersion, "stage4-mvp-256-detail-sufficiency-review-v1")
+assert.equal(report.runId, registry.runId)
+assert.equal(report.reviews.length, report.candidateCount)
+assert.equal(report.candidatePassCount + report.candidateFailCount, report.candidateCount)
+assert.equal(snapshot.machineReview.availability, "available")
+assert.equal(snapshot.machineReview.sourceSha256, terminalDetailReviewBinding.sha256)
+machineReview = { availability: "available", passed: report.candidatePassCount,
+  failed: report.candidateFailCount, target: report.candidateCount,
+  evidenceSha256: terminalDetailReviewBinding.sha256 }
+} else if (terminalReviewBinding !== undefined) {
+assert.ok(terminalReviewBinding && typeof terminalReviewBinding === "object", "malformed terminal review binding")
+const reportBytes = await readProjectFile(terminalReviewBinding.path)
+assert.equal(sha256(reportBytes), terminalReviewBinding.sha256)
+const report = JSON.parse(reportBytes.toString("utf8"))
+assert.equal(report.runId, registry.runId)
+assert.equal(report.reviews.length, report.candidateCount)
+assert.equal(report.candidatePassCount + report.candidateFailCount, report.candidateCount)
+assert.equal(snapshot.machineReview.availability, "available")
+assert.equal(snapshot.machineReview.sourceSha256, terminalReviewBinding.sha256)
+machineReview = { availability: "available", passed: report.candidatePassCount,
+  failed: report.candidateFailCount, target: report.candidateCount,
+  evidenceSha256: terminalReviewBinding.sha256 }
+} else if (timelineBinding !== undefined) {
 assert.ok(timelineBinding && typeof timelineBinding === "object", "malformed timeline binding")
 const timelineBytes = await readProjectFile(timelineBinding.path)
 assert.equal(sha256(timelineBytes), timelineBinding.sha256)

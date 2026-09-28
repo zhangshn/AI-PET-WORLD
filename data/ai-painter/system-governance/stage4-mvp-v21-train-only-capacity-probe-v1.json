@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "stage4-mvp-v21-train-only-capacity-probe-v1",
+  "status": "active_single_bounded_diagnostic_not_formal_training",
+  "purpose": "Determine whether a fresh V21 renderer can fit two existing train originals at 256x192; no generalization, visual qualification or Stage4 claim.",
+  "scope": "train_only_learning_capacity_no_generalization_claim",
+  "resolution": [256, 192],
+  "parentCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-native-rgb-object-residual-v21-contract-v1.json",
+    "sha256": "f018ec0f7b6e9279e7a25d8abc82af8bd975c5768ec2a5c99a80b82f5b3d4c75"
+  },
+  "datasetManifest": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"
+  },
+  "sourceIndex": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/source-index.json",
+    "sha256": "e92dbfdb28387c99773a1f56cf6031988fec69f1d4e9ea62f06bc38ae02c572c"
+  },
+  "trainSplit": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/train.json",
+    "sha256": "e1edd2c189800e4a0e0ce4ac4d208b36b58bfde0d50328a931a9e664da27b723"
+  },
+  "selectedTrainRows": [
+    {
+      "trainOrdinal": 0,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+      "imageSha256": "eb5c085a05f775ea8df2a8912ff806794dca25b7a378dc54102b142aecf43125",
+      "conditionPackSha256": "05ff62ecdce5a4d545af0dc4652e64fe580d272f032049a8b464924bb751e3aa"
+    },
+    {
+      "trainOrdinal": 43,
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7",
+      "imageSha256": "376fd221dae23962ab84c3cca78c0bd9f0e97464fc943ba314737e28f3fc4e2c",
+      "conditionPackSha256": "1079fac2754423c04a680ceafa0f8c8a7032d5700921ef52e3941dd2b428bc5f"
+    }
+  ],
+  "sourceQualificationRule": "Recalculate current release qualification and each selected original/condition/source binding; retain historical source-index useQualification without treating it as a substitute for release evidence. Fail closed on an unresolved rights or train-use conflict.",
+  "model": {
+    "architecture": "stage4_mvp_native_rgb_object_residual_v21_support_trial",
+    "sourcePath": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_residual_v21_cpu.py",
+    "sourceSha256": "3c78e6991f11e8ae95ebb90d6636bc54ee1c6962039a9454bafbcb0ad34bd3e5",
+    "initializationSeed": 20260929,
+    "freshInitializationOnly": true,
+    "autoencoderInGraph": false,
+    "priorOrFailedCheckpointLoaded": false
+  },
+  "objective": {
+    "identity": "v17_train_original_rgb_structured_object_v1",
+    "sourcePath": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_objective_cpu_v17.py",
+    "sourceSha256": "d36542ad2fa2e8ffd1d133d75f6ee4059265660650fb23a8a74cc1d83c0294b8",
+    "discriminatorSourcePath": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_conditional_texture_cpu.py",
+    "discriminatorSourceSha256": "2a54a37d2c42de2415bbda8e8af1327c0ca7a932ae560df74b79e54b7de5565c",
+    "architectureChangesAllowed": false,
+    "lossChangesAllowed": false
+  },
+  "training": {
+    "sampleOrder": "alternate_train_ordinal_0_then_43",
+    "maxGeneratorOptimizerSteps": 512,
+    "maxDiscriminatorOptimizerSteps": 512,
+    "observationSteps": [0, 128, 256, 512],
+    "generatorLearningRate": 0.0001,
+    "discriminatorLearningRate": 0.0001,
+    "checkpointRule": "final_step_only_no_selection",
+    "automaticRetries": 0,
+    "maxTrainingAttempts": 1
+  },
+  "resources": {
+    "maxWallSeconds": 900,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2
+  },
+  "execution": {
+    "cpuBehaviorTestsRequired": true,
+    "noUpdateGpuProbeRequired": true,
+    "currentExecutionRegistryRequired": true,
+    "ownedLockProcessAndHeartbeatRequired": true,
+    "oneExecutionIdentityOnly": true,
+    "validationReadAllowed": false,
+    "challengeReadAllowed": false,
+    "regressionReadAllowed": false,
+    "failedCheckpointReuseAllowed": false,
+    "checkpointSelectionAllowed": false,
+    "checkpointPromotionAllowed": false,
+    "formalStageAdvancementAllowed": false,
+    "runtimeFrameAllowed": false,
+    "worldEntryAllowed": false,
+    "shutdownAllowed": false
+  },
+  "outputRoot": ".runtime/ai-painter/learning-capacity-experiments"
+}

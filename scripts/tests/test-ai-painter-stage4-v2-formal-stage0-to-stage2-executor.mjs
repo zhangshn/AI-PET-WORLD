@@ -55,6 +55,10 @@ function fixture(t) {
       // Explicit fixture limits are not production defaults or training grants.
       resourceBudget: { timeoutMs: 3000, terminationGraceMs: 500, heartbeatIntervalMs: 100, maxOutputBytes: 65536 },
       taskTicket: write("inputs/ticket-" + stage.stage + ".json", { fixtureOnly: true }),
+      dataQualification: write("inputs/data-" + stage.stage + ".json", { fixtureOnly: true }),
+      foundationQualification: write("inputs/foundation-" + stage.stage + ".json", { fixtureOnly: true }),
+      cpuQualification: write("inputs/cpu-" + stage.stage + ".json", { fixtureOnly: true }),
+      gpuQualification: write("inputs/gpu-" + stage.stage + ".json", { fixtureOnly: true }),
       programGraphManifest: write("inputs/graph-" + stage.stage + ".json", { fixtureOnly: true }),
       outputTerminalPath,
     }
@@ -133,6 +137,26 @@ test("missing inputs fail closed without starting a child", async (t) => {
   assert.equal(r.blocker, "stage_0_execution_package_missing")
   assert.equal(r.executionState, "failed_closed")
   assert.equal(calls, 0)
+  assert.equal(r.trainingStarted, false)
+})
+test("every formal qualification binding is checked before any stage child", async (t) => {
+  for (const key of ["dataQualification", "foundationQualification", "cpuQualification", "gpuQualification"]) {
+    const f = fixture(t)
+    updatePackage(f, f.inputs[2], (pkg) => { delete pkg[key] })
+    const r = await f.execute()
+    assert.equal(r.status, "blocked", key)
+    assert.equal(f.emitted.length, 0, key)
+    assert.equal(r.trainingStarted, false, key)
+  }
+})
+test("changed qualification bytes block dispatch rather than creating unknown GPU activity", async (t) => {
+  const f = fixture(t)
+  const pkg = JSON.parse(fs.readFileSync(path.join(f.root, f.inputs[1].executionPackage.path), "utf8"))
+  f.write(pkg.dataQualification.path, { fixtureOnly: true, changed: true })
+  const r = await f.execute()
+  assert.equal(r.status, "blocked")
+  assert.match(r.blocker, /SHA-256 mismatch/)
+  assert.equal(f.emitted.length, 0)
   assert.equal(r.trainingStarted, false)
 })
 test("stages consume the actual predecessor files, not pre-created caller parents", async (t) => {

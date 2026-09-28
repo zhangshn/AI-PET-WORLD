@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "stage4-mvp-native-complete-rgb-detail-renderer-v7-contract-v1",
+  "contractId": "stage4-mvp-native-complete-rgb-detail-renderer-v7-contract-v1",
+  "status": "cpu_candidate_not_execution_qualified",
+  "authority": "local_ai_pet_world_program",
+  "capabilityVersion": "stage4_mvp_native_complete_rgb_detail_renderer_v7",
+  "architectureId": "stage4_native_complete_rgb_multiscale_detail_renderer_v2",
+  "businessScope": "single_thailand_region_original_natural_world_mvp",
+  "parentFailureEvidence": {
+    "path": ".runtime/ai-painter/stage4-mvp-native-rgb-renderer-v6-machine-reviews/mvp-stage0-b6fda0737968a566d2a88842f494143b4116ed04f009842f/machine-review.json",
+    "sha256": "44f117a4dc77479bad7dc1f3cbd367540fa8dd7e558cdd2b5b02bed9294e8821"
+  },
+  "boundedDiagnosis": "V6 passed terrain, water and path review and produced measurable local object responses, but seven of eight validation frames failed held-out object structure correlation. Training loss continued falling after validation worsened. The successor changes the missing multiscale decoder and train-only local structure objective; it does not extend V6 training or alter review thresholds.",
+  "conditionContract": {
+    "path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+    "conditionContractIdentity": "ai-painter-complete-map-23-channel-condition-v1",
+    "channelCount": 23
+  },
+  "datasetBinding": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913",
+    "splitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4}
+  },
+  "reviewBinding": {
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+    "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df",
+    "thresholdOverrideAllowed": false
+  },
+  "renderer": {
+    "inputChannels": 23,
+    "outputChannels": 3,
+    "baseChannels": 32,
+    "decoderScales": [8, 4, 2, 1],
+    "fullResolutionDetailRefinement": true,
+    "objectMaskLocalShapeEncoder": true,
+    "nativeOutputContract": "one_complete_rgb_tensor",
+    "responsibilityIdentities": [
+      "terrain_water", "terrain_path_ground", "terrain_shoreline",
+      "object_footprints", "object_tree", "object_rock", "object_vegetation"
+    ],
+    "baseExcludesResponsibilityChannels": true,
+    "baseExcludesDerivedResponsibilityChannels": [
+      "object_instance", "signed_distance_path", "signed_distance_water",
+      "signed_distance_shoreline", "signed_distance_object_ground"
+    ],
+    "oneParameterNamespacePerResponsibility": true,
+    "outsideAuthoritativeMaskContributionMustBeZero": true,
+    "randomInputAllowed": false,
+    "diffusionAllowed": false,
+    "autoencoderAllowed": false,
+    "patchSpriteTileCompositionAllowed": false
+  },
+  "trainingObjective": {
+    "source": "train_rgb_and_authoritative_masks_only",
+    "fullRgbMaeWeight": 0.75,
+    "fullRgbGradientWeight": 0.35,
+    "fullRgbLaplacianWeight": 0.15,
+    "responsibilityGradientWeight": 0.5,
+    "responsibilityLumaStructureWeight": 0.15,
+    "responsibilityRgbMaeWeights": {
+      "terrain_water": 1.0,
+      "terrain_path_ground": 2.0,
+      "terrain_shoreline": 1.0,
+      "object_footprints": 1.0,
+      "object_tree": 1.0,
+      "object_rock": 1.25,
+      "object_vegetation": 1.0
+    },
+    "validationPixelsUsedByOptimizer": false,
+    "machineReviewScoresAsLossAllowed": false,
+    "failedPreviewPixelsAsTargetAllowed": false
+  },
+  "stagePlan": [
+    {"stage": 0, "width": 256, "height": 192},
+    {"stage": 1, "width": 512, "height": 384},
+    {"stage": 2, "width": 1024, "height": 768}
+  ],
+  "mvpBoundaries": {
+    "buildingsRequired": false,
+    "prebuiltArtificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "animalsRequired": false,
+    "naturalTerrainWaterMajorObjectsAndApplicablePassabilityRequired": true,
+    "stage0MayClaimFormalStage4Completion": false
+  },
+  "activationGates": {
+    "cpuContractNow": true,
+    "gpuQualificationNow": false,
+    "optimizerNow": false,
+    "trainingNow": false,
+    "checkpointPromotionNow": false
+  },
+  "automaticRetry": false
+}

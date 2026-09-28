@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "stage4-mvp-native-rgb-conditional-texture-v15-contract-v1",
+  "capabilityVersion": "stage4_mvp_native_rgb_conditional_texture_v15",
+  "prototypeId": "stage4_mvp_native_rgb_conditional_texture_cpu_prototype_v1",
+  "status": "cpu_candidate_not_execution_qualified",
+  "businessScope": "one_Thailand_region_original_natural_world_MVP_256x192_only",
+  "parentFailedCandidate": {"path": ".runtime/ai-painter/stage4-mvp-native-rgb-instance-object-v13-formal-executions/mvp-stage0-batch-23a1c966e9cac234fb5ea4466e0f67525b0ff608/stages/mvp-stage0-23a1c966e9cac234fb5ea4466e0f67525b0ff608f7bee643/review/terminal.json", "sha256": "ad6a221a0a673569fe86b2c209d39a1b7def78b5fccd86f3100b845a640a233d"},
+  "datasetBinding": {
+    "datasetReleaseIdentity": "stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71",
+    "manifest": {"path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json", "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"},
+    "sourceIndex": {"path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/source-index.json", "sha256": "e92dbfdb28387c99773a1f56cf6031988fec69f1d4e9ea62f06bc38ae02c572c"},
+    "splits": {
+      "train": {"path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/train.json", "sha256": "e1edd2c189800e4a0e0ce4ac4d208b36b58bfde0d50328a931a9e664da27b723"},
+      "validation": {"path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/validation.json", "sha256": "1daa22941edae95ad408caf5e4eb57ab1354141ff20cd788e637569d52587761"},
+      "challenge": {"path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/challenge.json", "sha256": "2e543ad6d2fe5a617c5d11313544ef39edb646959afd15e7066b5600da5ee8bd"},
+      "regression": {"path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/regression.json", "sha256": "12607d19c9f878e7bcfa3137a3923e8d9edc4b92c881873b01f3382435876ca0"}
+    },
+    "trainSelectionSha256": "be5407abd343e3041048ffa1974e97337f099e95bbab696f136f41b12e902bb7",
+    "validationSelectionSha256": "c80cc5d80d708de08efc17602d4c925fc634c732c72c2c254cfca9f245242c72"
+  },
+  "conditionContract": {"path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json", "sha256": "c8941c7730edb73c0b0a733bc877cf550184e2f3ab2adb08102fb0214d38cac2"},
+  "foundationAssetBinding": {
+    "candidateRole": "fresh_native_rgb_neural_renderer_and_critic",
+    "qualifiedFoundationRecordedByDataset": {"path": ".runtime/ai-painter/fresh-foundation-training/stage4-mvp-fresh-foundation-5c16625f4dd0a433afb39b2bd30ca3bfb197fb56b72eed67b3cc809d8439b06e/training/fresh-foundation-autoencoder.pt", "sha256": "c505183a0bce56ea3ebc0e024752d9545af681ceae862076022130b490705fd2"},
+    "qualifiedFoundationStateSha256": "02535aab66a5cfc9b105f39051e7e0bfa55d4c3b2de37fb5d62518ae50bb3cf9",
+    "foundationQualification": {"path": ".runtime/ai-painter/fresh-foundation-training/stage4-mvp-fresh-foundation-5c16625f4dd0a433afb39b2bd30ca3bfb197fb56b72eed67b3cc809d8439b06e/foundation-qualification.json", "sha256": "2b79f4bb1a5e4ef8b750190bc91db4a4e225b1b936a884ea7a6e80ea0d5bca2e"},
+    "autoencoderLoadedByThisRenderer": false,
+    "failedCheckpointLoaded": false,
+    "initializationSeed": 20260927
+  },
+  "programBindings": {
+    "objectiveAndDiscriminator": {"path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_conditional_texture_cpu.py", "sha256": "2a54a37d2c42de2415bbda8e8af1327c0ca7a932ae560df74b79e54b7de5565c"},
+    "renderer": {"path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_instance_object_prototype.py", "sha256": "3f3850acfc9d5c9251690ad4170c831170883434431c2168c7e2039dcb59dc62"},
+    "freshCore": {"path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_aperiodic_detail_renderer.py", "sha256": "d7c5b31f4fedd076f3c3d9336f997551188edb724a3c2c1ad4bc505206c8d702"},
+    "objectView": {"path": "ml/ai-painter/src/ai_painter/complete_world/object_instance_supervision_cpu.py", "sha256": "2300cfdf7c99d50c64ea4d81d6fa753acec73f18baf55ab98a27f76505a54334"},
+    "textureStatistics": {"path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_local_texture_objective_v12.py", "sha256": "f0565a0cba1f1748fd14c67d5ea4a617ffa8231979df4839766fbe5b4c32fa73"},
+    "patchDiscriminator": {"path": "ml/ai-painter/src/ai_painter/training/discriminator.py", "sha256": "04820604e54f40fb74fc96c0f6a1185393da7e4e44766686d57de58313743d9d"},
+    "objectiveTests": {"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"},
+    "rendererTests": {"path": "ml/ai-painter/tests/test_native_rgb_instance_object_prototype.py", "sha256": "2fd8eb8ac371243853b4590e14259dcebfde820d7805ab9842236010b9b32c79"},
+    "cpuProbe": {"path": "ml/ai-painter/scripts/check_stage4_mvp_conditional_texture_cpu.py", "sha256": "f189794ad7abe19832302ce410406eda339bbbb6bc73b393c838032c56941c4b"},
+    "cpuAcceptance": {"path": "ml/ai-painter/scripts/check_stage4_mvp_conditional_texture_v15_cpu_acceptance.py", "sha256": "4b3e5325aaf7abb5ed2da6bfbdbb141785473239eb322ec98a100326bce40ccd"},
+    "trainingWorker": {"path": "ml/ai-painter/scripts/train_stage4_mvp_conditional_texture_v15_stage0.py", "sha256": "c8a8d711f716a069e9250301b8aa65bfa7056d784455abf1137b83ae3f72156a"},
+    "reviewCandidateMaterializer": {"path": "ml/ai-painter/scripts/materialize_stage4_mvp_conditional_texture_v15_review_candidates.py", "sha256": "61c5d1b3bf0aa3f8eca97aa67923a0c52d12a15d017f9ec802fd18382498d655"},
+    "readonlyGpuQualification": {"path": "ml/ai-painter/scripts/run_stage4_mvp_conditional_texture_v15_readonly_gpu_qualification.py", "sha256": "4428b2db2cf46b21bf15b0fd607b72ba07fb33741752345c56fc715e69ac3b62"},
+    "formalReviewRunner": {"path": "scripts/run-ai-painter-stage4-mvp-v15-stage0-machine-review.mjs", "sha256": "d4f2456247f23a6fc6c388201b59475faee32ef14abe0301a032239eb2d42d18"},
+    "formalReviewLineage": {"path": "scripts/lib/ai-painter-stage4-mvp-v15-review-lineage.mjs", "sha256": "bfae1fb2558d06e99b73c4ba38c0d12522368b337ccb587e1bffe98b9ecd399a"},
+    "frozenGenericAudit": {"path": "scripts/lib/ai-painter-stage4-mvp-v13-review-lineage.mjs", "sha256": "b30b3c8224e86cb04451f16e7b149c51860c9e0a56c25e0242c99e6c160b48e0"},
+    "closedLoopController": {"path": "scripts/run-ai-painter-stage4-mvp-v15-stage0-closed-loop.mjs", "sha256": "04c98ff70ed40cdad8977caa9083e7e34116895385625c1abf010759d096ab32"},
+    "workerGateTests": {"path": "ml/ai-painter/tests/test_stage4_mvp_conditional_texture_v15_worker_gate.py", "sha256": "7fa1d75a362002a67d30313a17f0a68f7257f3780ddb30b6635c21d5b6999568"},
+    "gpuGateTests": {"path": "ml/ai-painter/tests/test_stage4_mvp_conditional_texture_v15_gpu_gate.py", "sha256": "5d5d21a3514e8cad40ef7881601192438e3f67a5cc2a3948cdbf4cc10320ac26"},
+    "formalReviewTests": {"path": "scripts/tests/test-ai-painter-stage4-mvp-v15-review-lineage.mjs", "sha256": "7127ffa0180e77e7d9feb94139f83fca3e07e9080848a9bf088130aeb17c989a"}
+  },
+  "lossContract": {
+    "identity": "stage4-mvp-v15-train-original-conditional-texture-objective-v1",
+    "implementation": "programBindings.objectiveAndDiscriminator",
+    "test": "programBindings.objectiveTests",
+    "inputShapes": {"conditions": [23, 192, 256], "trainOriginalRgb": [3, 192, 256], "prediction": [1, 3, 192, 256], "criticInput": [1, 26, 192, 256]},
+    "formula": {
+      "generator": "mean_abs(avgpool4(predicted)-avgpool4(original)) + mean_over_instances(sum(abs(predicted_crop-original_crop)*dilated_subject_support)/(3*max(sum(dilated_subject_support),1))) + 0.25*mean_over_nonempty_fact_roles(sum(abs(avgpool3(predicted)-avgpool3(original))*maxpool3(condition_role>0.5))/(3*max(sum(maxpool3(condition_role>0.5)),1))) + 0.1*mean_over_9_local_moment_maps(mean_abs(predicted_moment-original_moment)/max(mean_abs(original_moment),1e-5)) + 0.08*BCEWithLogits(critic(concat(conditions,predicted-avgpool5(predicted))),1)",
+      "critic": "0.5*(BCEWithLogits(critic(concat(conditions,original-avgpool5(original))),0.9)+BCEWithLogits(critic(concat(conditions,detach(predicted-avgpool5(predicted)))),0))",
+      "validation": "mean_abs(avgpool4(predicted)-avgpool4(original)) + mean_over_instances(supported_original_crop_rgb_mae) + 0.25*mean_over_nonempty_fact_roles(supported_avgpool3_rgb_mae) + 0.1*mean_over_9_local_moment_maps(normalized_local_moment_mae)"
+    },
+    "formulaSha256": "fa4b85c62790fbb9eb52abca5002b2f48bdd2685ceddd74bdbaa63907402d351",
+    "reduction": "scalar_mean_per_tensor_then_equal_mean_over_nonempty_instances_or_fact_roles; BCEWithLogits_default_mean_over_patches",
+    "pooling": "avgpool4_stride4; avgpool3_stride1_pad1_count_include_pad_false; avgpool5_stride1_pad2_count_include_pad_false; maxpool3_stride1_pad1",
+    "emptyInstanceReduction": "zero_connected_to_prediction",
+    "emptyFactRoleReduction": "zero_connected_to_prediction",
+    "textureMomentDefinition": "scales_1_2_4_each_highpass_energy_horizontal_correlation_vertical_correlation_then_avgpool9_and_reference_mean_abs_floor_1e-5",
+    "objectSupportDefinition": "bound_object_instance_role_mask_dilated_by_kind_radius_clipped_to_canvas",
+    "objectSupportRadius256": {"object_tree": 8, "object_rock": 4, "object_vegetation": 6},
+    "numericalBoundary": "finite_0_to_1_RGB_and_conditions_float32_for_local_moments_and_highpass",
+    "trainOnly": true,
+    "coarseScale": 4,
+    "highpassWindow": 5,
+    "factRegionChannels": ["terrain_water", "terrain_path_ground", "terrain_shoreline", "object_footprints"],
+    "factRegionWeight": 0.25,
+    "textureMomentsWeight": 0.1,
+    "adversarialWeight": 0.08,
+    "generatorTerms": ["coarseRgbMae", "instanceSupportRgbMae", "factRegionCoarseRgbMae", "localTextureMoments", "adversarial"],
+    "criticInput": "23_conditions_plus_3_highpass_rgb",
+    "validationUsesCritic": false,
+    "challengeOrRegressionUsedForWeights": false,
+    "failedPreviewOrReviewScoreAsTrainingTarget": false
+  },
+  "reviewBinding": {
+    "thresholds": {"path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json", "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"},
+    "minimumDetail": {"path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json", "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"},
+    "formalReviewDispatchable": false,
+    "formalContract": {"path": "data/ai-painter/system-governance/stage4-mvp-v15-stage0-review-contract-v1.json", "sha256": "aaf55d8685c56f38787fe10b31f9ec670656ed3fa55b7bc53a5e87aaed4e89c8"},
+    "thresholdLoweringAllowed": false,
+    "alignmentQualified": true
+  },
+  "trainingReviewAlignment": [
+    {"responsibilityId": "road", "conditionChannelIds": ["terrain_path_ground"], "formulaSha256": "fa4b85c62790fbb9eb52abca5002b2f48bdd2685ceddd74bdbaa63907402d351", "objectiveTermIds": ["coarseRgbMae", "factRegionCoarseRgbMae", "localTextureMoments", "adversarial"], "responsibilityOutputIdentity": "generated_rgb_path_ground_region_256x192", "formalReviewContractIdentity": "stage4-mvp-v15-stage0-review-contract-v1", "formalReviewContractSha256": "aaf55d8685c56f38787fe10b31f9ec670656ed3fa55b7bc53a5e87aaed4e89c8", "reviewMetricIds": ["terrain_path_ground_spatial_distribution"], "failureCodes": ["condition_terrain_path_ground_spatial_distribution_mismatch"], "positiveAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}], "negativeAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}]},
+    {"responsibilityId": "hydrology", "conditionChannelIds": ["terrain_water"], "formulaSha256": "fa4b85c62790fbb9eb52abca5002b2f48bdd2685ceddd74bdbaa63907402d351", "objectiveTermIds": ["coarseRgbMae", "factRegionCoarseRgbMae", "localTextureMoments", "adversarial"], "responsibilityOutputIdentity": "generated_rgb_water_region_256x192", "formalReviewContractIdentity": "stage4-mvp-v15-stage0-review-contract-v1", "formalReviewContractSha256": "aaf55d8685c56f38787fe10b31f9ec670656ed3fa55b7bc53a5e87aaed4e89c8", "reviewMetricIds": ["terrain_water_spatial_distribution", "flowing_water_connectivity"], "failureCodes": ["condition_terrain_water_spatial_distribution_mismatch", "condition_terrain_water_connectivity_blueprint_missing"], "positiveAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}], "negativeAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}]},
+    {"responsibilityId": "shoreline", "conditionChannelIds": ["terrain_shoreline"], "formulaSha256": "fa4b85c62790fbb9eb52abca5002b2f48bdd2685ceddd74bdbaa63907402d351", "objectiveTermIds": ["coarseRgbMae", "factRegionCoarseRgbMae", "localTextureMoments", "adversarial"], "responsibilityOutputIdentity": "generated_rgb_shoreline_region_256x192", "formalReviewContractIdentity": "stage4-mvp-v15-stage0-review-contract-v1", "formalReviewContractSha256": "aaf55d8685c56f38787fe10b31f9ec670656ed3fa55b7bc53a5e87aaed4e89c8", "reviewMetricIds": ["shoreline_masked_rgb_mae_1024_nearest_v1"], "failureCodes": ["condition_terrain_shoreline_reference_rgb_mismatch"], "positiveAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}], "negativeAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}]},
+    {"responsibilityId": "footprints", "conditionChannelIds": ["object_footprints"], "formulaSha256": "fa4b85c62790fbb9eb52abca5002b2f48bdd2685ceddd74bdbaa63907402d351", "objectiveTermIds": ["coarseRgbMae", "factRegionCoarseRgbMae", "localTextureMoments", "adversarial"], "responsibilityOutputIdentity": "generated_rgb_object_footprints_region_256x192", "formalReviewContractIdentity": "stage4-mvp-v15-stage0-review-contract-v1", "formalReviewContractSha256": "aaf55d8685c56f38787fe10b31f9ec670656ed3fa55b7bc53a5e87aaed4e89c8", "reviewMetricIds": ["object_footprints_reference_semantics"], "failureCodes": ["condition_object_footprints_reference_semantic_mismatch"], "positiveAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}], "negativeAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}]},
+    {"responsibilityId": "tree", "conditionChannelIds": ["object_tree"], "formulaSha256": "fa4b85c62790fbb9eb52abca5002b2f48bdd2685ceddd74bdbaa63907402d351", "objectiveTermIds": ["coarseRgbMae", "instanceSupportRgbMae", "localTextureMoments", "adversarial"], "responsibilityOutputIdentity": "generated_rgb_tree_instances_256x192", "formalReviewContractIdentity": "stage4-mvp-v15-stage0-review-contract-v1", "formalReviewContractSha256": "aaf55d8685c56f38787fe10b31f9ec670656ed3fa55b7bc53a5e87aaed4e89c8", "reviewMetricIds": ["object_tree_reference_semantics"], "failureCodes": ["condition_object_tree_reference_semantic_mismatch"], "positiveAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}], "negativeAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}]},
+    {"responsibilityId": "rock", "conditionChannelIds": ["object_rock"], "formulaSha256": "fa4b85c62790fbb9eb52abca5002b2f48bdd2685ceddd74bdbaa63907402d351", "objectiveTermIds": ["coarseRgbMae", "instanceSupportRgbMae", "localTextureMoments", "adversarial"], "responsibilityOutputIdentity": "generated_rgb_rock_instances_256x192", "formalReviewContractIdentity": "stage4-mvp-v15-stage0-review-contract-v1", "formalReviewContractSha256": "aaf55d8685c56f38787fe10b31f9ec670656ed3fa55b7bc53a5e87aaed4e89c8", "reviewMetricIds": ["object_rock_reference_semantics"], "failureCodes": ["condition_object_rock_reference_semantic_mismatch"], "positiveAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}], "negativeAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}]},
+    {"responsibilityId": "vegetation", "conditionChannelIds": ["object_vegetation"], "formulaSha256": "fa4b85c62790fbb9eb52abca5002b2f48bdd2685ceddd74bdbaa63907402d351", "objectiveTermIds": ["coarseRgbMae", "instanceSupportRgbMae", "localTextureMoments", "adversarial"], "responsibilityOutputIdentity": "generated_rgb_vegetation_instances_256x192", "formalReviewContractIdentity": "stage4-mvp-v15-stage0-review-contract-v1", "formalReviewContractSha256": "aaf55d8685c56f38787fe10b31f9ec670656ed3fa55b7bc53a5e87aaed4e89c8", "reviewMetricIds": ["object_vegetation_reference_semantics"], "failureCodes": ["condition_object_vegetation_reference_semantic_mismatch"], "positiveAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}], "negativeAlignmentTests": [{"path": "ml/ai-painter/tests/test_native_rgb_conditional_texture_cpu.py", "sha256": "e4c68ed7e5c71105052e15f4f99474ca2d5f756a06a0a6a241fd465efb867d05"}]}
+  ],
+  "trainingBoundNotActivated": {
+    "resolution": [256, 192], "trainSamples": 48,
+    "validationSamplesForCheckpointOnly": 8,
+    "maxGeneratorSteps": 1152, "maxDiscriminatorSteps": 1152,
+    "maxGpuMemoryFraction": 0.7, "automaticRetries": 0
+  },
+  "activationGates": {
+    "cpuReadOnlyNow": true, "gpuReadOnlyNow": true, "gpuNow": false, "optimizerNow": false,
+    "trainingNow": false, "formalReviewNow": false, "runtimeFrameNow": false
+  }
+}

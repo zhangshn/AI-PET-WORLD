@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "stage4-mvp-native-rgb-local-texture-v12-contract-v1",
+  "contractId": "stage4-mvp-native-rgb-local-texture-v12-contract-v1",
+  "status": "cpu_candidate_not_execution_qualified",
+  "capabilityVersion": "stage4_mvp_native_complete_rgb_local_texture_renderer_v12",
+  "businessScope": "single_thailand_region_original_natural_world_mvp_256x192_only",
+  "purpose": "Test one target-conditioned local texture objective without changing V11 geometry, WorldFacts or the 64-sample split.",
+  "parentFailedCandidate": {
+    "path": ".runtime/ai-painter/stage4-mvp-native-rgb-object-context-renderer-v11-machine-reviews/mvp-stage0-52aaf58c8d94c5610796251e8783a7333cd3d2e08672e632/terminal.json",
+    "sha256": "d6c083981559e0c566322c904046fd4bfabb5d713a0447bfc62f48e6f94013df"
+  },
+  "datasetManifest": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913",
+    "splitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4}
+  },
+  "baseCandidateContract": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-native-complete-rgb-object-context-renderer-v11-contract.json",
+    "sha256": "fdc5c2c64b5fe2c8a6e56f6171ae095f32b625558908a298b80661514e63b331"
+  },
+  "programBindings": [
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_context_renderer.py",
+      "sha256": "a5dfe23343aa8eee504a1effcd3e5f4f30f3085bb90637ccbfd63eb2467dc105"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_local_texture_objective_v12.py",
+      "sha256": "f0565a0cba1f1748fd14c67d5ea4a617ffa8231979df4839766fbe5b4c32fa73"
+    },
+    {
+      "path": "ml/ai-painter/tests/test_stage4_mvp_local_texture_objective_v12.py",
+      "sha256": "8a49b99e9f539d31858fa790be4a93f7cb98d45bf583ffb0ab730fe9b856bad5"
+    },
+    {
+      "path": "ml/ai-painter/scripts/check_stage4_mvp_local_texture_v12_cpu.py",
+      "sha256": "037d13daa4d6c93ff7416ceeedc2b8e642e060c0844860648c375fda373ce053"
+    }
+  ],
+  "renderer": {
+    "architecture": "unchanged_v11_object_context_renderer_fresh_initialization",
+    "inputConditionChannels": 23,
+    "outputChannels": 3,
+    "resolution": [256, 192],
+    "failedCheckpointReuseAllowed": false,
+    "referenceRgbAtInferenceAllowed": false,
+    "externalModelAllowed": false,
+    "staticMapOrTileCompositionAllowed": false,
+    "newWorldSeedOrGlobalCoordinateSemanticsAllowedNow": false
+  },
+  "trainingObjective": {
+    "base": "unchanged_v11_full_frame_object_context_objective",
+    "baseRgbMaeWeight": 1.0,
+    "baseRgbGradientMaeWeight": 0.25,
+    "baseTypedObjectSupportRgbMaeWeightEach": 1.0,
+    "auxiliary": "target_conditioned_local_multiscale_highpass_moments_v1",
+    "auxiliaryWeight": 0.1,
+    "scaleFactors": [1, 2, 4],
+    "highpass": "image_minus_3x3_average_pool_stride1_padding1_exclude_padding",
+    "localMomentWindow": 9,
+    "momentMapsPerScale": ["highpass_square", "horizontal_lag1_product", "vertical_lag1_product"],
+    "momentNormalization": "per_map_target_absolute_mean_floor_1e-5_detached",
+    "auxiliaryReduction": "mean_of_nine_normalized_local_map_mae_terms",
+    "mixedPrecisionStatisticDtype": "float32",
+    "unlocalizedEnergyRewardAllowed": false,
+    "validationOrReviewPixelsAsOptimizerTargetsAllowed": false,
+    "trainingOriginalRgbModified": false
+  },
+  "cpuQualificationRequired": {
+    "exactTargetZeroAuxiliary": true,
+    "finiteNonzeroGradient": true,
+    "gradientMatchedNoiseRejected": true,
+    "historicalV10TrainSpeckleRejected": true,
+    "misalignedRgbRejectedByCombinedObjective": true,
+    "negativeExamplesUseTrainOnly": true,
+    "eightTrainExamplesRequired": true,
+    "trainProbeOrdinals": [0, 6, 12, 18, 24, 30, 36, 42],
+    "maxWallSeconds": 120,
+    "maxReportBytes": 1048576
+  },
+  "proposedTrainingBoundNotYetActivated": {
+    "fullFrameOnly": true,
+    "trainSamples": 48,
+    "validationSamplesForCheckpointSelectionOnly": 8,
+    "maxEpochs": 24,
+    "maxOptimizerSteps": 1152,
+    "maxGpuMemoryFraction": 0.7,
+    "automaticRetries": 0,
+    "noHyperparameterSweep": true
+  },
+  "reviewBoundary": {
+    "existingSemanticAndMinimumDetailThresholdsUnchanged": true,
+    "visualCandidatePassInferredFromCpuLoss": false,
+    "formalStage4ProgressAdvanced": false,
+    "checkpointPromotable": false,
+    "runtimeFrameAllowed": false
+  },
+  "activationGates": {
+    "cpuPrototypeNow": true,
+    "gpuQualificationNow": false,
+    "optimizerNow": false,
+    "trainingNow": false,
+    "checkpointPromotionNow": false
+  }
+}

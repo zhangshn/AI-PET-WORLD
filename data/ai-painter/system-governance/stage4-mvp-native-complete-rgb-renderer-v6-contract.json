@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "stage4-mvp-native-complete-rgb-renderer-v6-contract-v1",
+  "contractId": "stage4-mvp-native-complete-rgb-renderer-v6-contract-v1",
+  "status": "cpu_candidate_not_execution_qualified",
+  "authority": "local_ai_pet_world_program",
+  "capabilityVersion": "stage4_mvp_native_complete_rgb_renderer_v6",
+  "architectureId": "stage4_native_complete_rgb_responsibility_renderer_v1",
+  "businessScope": "single_thailand_region_original_natural_world_mvp",
+  "problemBoundary": "V4 and V5 diffusion candidates, direct clean-latent candidates, and post-decode responsibility candidates completed real bounded training but failed to render the four natural-object responsibilities as visible held-out RGB semantics.",
+  "structuralDifference": "The authoritative 23-channel tensor is mapped directly to one complete RGB frame. There is no random diffusion input, timestep, rollout, latent target, frozen Autoencoder decode, patch, sprite, tile, or external image edit. Terrain context uses a shared full-frame substrate; water, path, shoreline, footprints, tree, rock and vegetation use isolated full-resolution parameter namespaces and exact authoritative mask gates before a single complete-frame RGB output.",
+  "implementationMode": "declared_shared_substrate",
+  "conditionContract": {
+    "path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+    "conditionContractIdentity": "ai-painter-complete-map-23-channel-condition-v1",
+    "channelCount": 23
+  },
+  "datasetBinding": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913",
+    "splitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4}
+  },
+  "reviewBinding": {
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+    "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df",
+    "thresholdOverrideAllowed": false
+  },
+  "failureEvidence": {
+    "v5MachineReview": {
+      "path": ".runtime/ai-painter/stage4-mvp-short-trajectory-closure-v5-machine-reviews/mvp-stage0-8bfc3c9f5b3efb73655517f8b785e3d6e932ebe195fb8777/machine-review.json",
+      "sha256": "335ca18ed8e5c85c40bc806800e6d41110ce3afa6059c5b5ac31a5c507164f58"
+    },
+    "directCleanLatentFailure": {
+      "path": ".runtime/ai-painter/stage4-direct-clean-latent-formal-stage0/stage4-direct-clean-latent-stage0-20260827053643-01/failure-analysis.json",
+      "sha256": "50acd3999bc6b36a0411c39596f3988af63123f7df5f5287243c267baa58e7b1"
+    },
+    "directResponsibilityResidualFailure": {
+      "path": ".runtime/ai-painter/stage4-direct-responsibility-residual-formal-stage0/stage4-direct-responsibility-residual-stage0-20260827091911-01/failure-analysis.json",
+      "sha256": "ef6f637693cdcbc2f42ce633597246cc6d76e0864d36a4a33429ac7a9a12bc51"
+    },
+    "postDecodeObjectRgbFailure": {
+      "path": ".runtime/ai-painter/stage4-post-decode-object-rgb-formal-stage0/20260825-151100-post-decode-stage0/failure-analysis.json",
+      "sha256": "eb0ec5750c381d4df2183f8a51986db8f49a428321136c23ce9d586347d45be3"
+    }
+  },
+  "renderer": {
+    "inputChannels": 23,
+    "outputChannels": 3,
+    "baseChannels": 32,
+    "nativeOutputContract": "one_complete_rgb_tensor",
+    "responsibilityIdentities": [
+      "terrain_water",
+      "terrain_path_ground",
+      "terrain_shoreline",
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "baseExcludesResponsibilityChannels": true,
+    "baseExcludesDerivedResponsibilityChannels": [
+      "object_instance",
+      "signed_distance_path",
+      "signed_distance_water",
+      "signed_distance_shoreline",
+      "signed_distance_object_ground"
+    ],
+    "oneParameterNamespacePerResponsibility": true,
+    "outsideAuthoritativeMaskContributionMustBeZero": true,
+    "randomInputAllowed": false,
+    "diffusionAllowed": false,
+    "autoencoderAllowed": false,
+    "patchSpriteTileCompositionAllowed": false
+  },
+  "trainingObjective": {
+    "source": "existing Stage4 formal objective values remapped to direct native RGB",
+    "fullRgbMaeWeight": 0.75,
+    "fullRgbGradientWeight": 0.35,
+    "fullRgbLaplacianWeight": 0.15,
+    "responsibilityRgbMaeWeights": {
+      "terrain_water": 1.0,
+      "terrain_path_ground": 2.0,
+      "terrain_shoreline": 1.0,
+      "object_footprints": 1.0,
+      "object_tree": 1.0,
+      "object_rock": 1.25,
+      "object_vegetation": 1.0
+    },
+    "machineReviewScoresAsLossAllowed": false,
+    "failedPreviewPixelsAsTargetAllowed": false
+  },
+  "stagePlan": [
+    {"stage": 0, "width": 256, "height": 192},
+    {"stage": 1, "width": 512, "height": 384},
+    {"stage": 2, "width": 1024, "height": 768}
+  ],
+  "mvpBoundaries": {
+    "buildingsRequired": false,
+    "prebuiltArtificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "animalsRequired": false,
+    "naturalTerrainWaterMajorObjectsAndApplicablePassabilityRequired": true,
+    "stage0MayClaimFormalStage4Completion": false
+  },
+  "activationGates": {
+    "cpuContractNow": true,
+    "gpuQualificationNow": false,
+    "optimizerNow": false,
+    "trainingNow": false,
+    "checkpointPromotionNow": false,
+    "runtimeFrameNow": false,
+    "worldEntryNow": false
+  },
+  "automaticRetry": false
+}

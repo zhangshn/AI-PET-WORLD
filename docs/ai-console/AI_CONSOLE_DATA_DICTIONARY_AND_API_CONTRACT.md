@@ -1,10 +1,10 @@
 # AI控制台数据字典与API合同
 
-更新时间：2026-09-13 03:26:51 +08:00
+更新时间：2026-09-28 23:22:24 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-DATA-API-1.7`
+文档版本：`AI-CONSOLE-DATA-API-1.9`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
@@ -115,9 +115,18 @@ activeExecution
 latestTrainingTerminal
 selectedHistoricalRun
 machineReview
+trainingPresentation
 ```
 
 `currentProjectTask`、`activeExecution`、`latestTrainingTerminal`和`selectedHistoricalRun`不得互相替代。`machineReview`只允许来自当前登记显式绑定的不可变时间线，必须重新计算文件SHA-256并验证Run、目标节点数、通过数、失败数和逐节点身份。任何路径越界、摘要、修订、计数或身份冲突使`ok=false`、`dataStatus=unknown_or_stale`；禁止扫描其他AI Painter目录寻找替代记录。
+
+#### 3.2.2.1 当前训练易读摘要扩展
+
+`trainingPresentation`是同一当前执行GET的可空、只读兼容扩展，不改变当前执行Schema或建立新后台。只读取已核验当前任务胶囊中唯一显式绑定的`package.json`，重新计算SHA并检查包Schema、证据扩展版本及Run身份；复用既有安全证据读器，真实路径限项目内对应namespace，唯一项目外例外是既有登记的`F:/ai-pet-world/.runtime`→`D:/AI-PET-WORLD-DATA/hot/runtime`迁移，不能扩大到整个D盘或允许其他符号链接越界。包最多2MiB，读取使用有界文件句柄，不扫描目录、不读取可变进度或大结果文件、不回退历史包。未绑定／不支持／越界／篡改时摘要`availability=unavailable`并给出`reasonCode`，不伪造字段；当前主登记的错误仍按原合同整体失败关闭。
+
+摘要字段为`availability`、`reasonCode`、`runId`、`scope`、`resolution={width,height}|null`、`targetEpochs`、`targetOptimizerSteps`、`completedEpochs`、`actualOptimizerSteps={generator,critic}|null`、`errorCode`、`packagePath`和`packageSha256`。总轮数／总优化步／分辨率只来自包内冻结计划，未知保持null；不能用数组长度或页面固定常数猜测。结束后的实际优化数只来自同Run受验证终态，完成轮数与失败码仅在终态实际记录时显示，超过计划上限属于冲突。活动时终态实际数不投影为当前数。
+
+当前epoch、batch、优化步、Loss及ETA继续来自既有新鲜训练遥测，必须当前登记受验证、active Run与受管PID同时匹配、遥测connected且采样不超过15秒；历史选择、资源占用、最近结束和旧遥测不能取代活动身份。摘要与历史详情选择相互独立，前端复用单一当前执行轮询，获取失败立即标注过期，即使保留最后快照也不继续显示正常运行。本轮进度不是Stage4进度；终态实验完成不授予正式资格。API只读，不启动训练、不生成预览或写入证据。
 
 ### 3.2.3 V22训练历史与精确制品查询
 
@@ -150,8 +159,8 @@ GET /api/ai-console/training/history/{runId}/artifacts/{artifactId}
 4. 原有API族继续使用。列表新增`indexRevision`与`coverage.sources`，每来源返回范围、水位、最后发现/核验时间、是否完整和缺口；`total`表示本查询已核验范围的总数，覆盖未完成时仍为null，另可返回明确标注的已发现数量。分页游标绑定来源快照组合，不以当前registry修订替代独立索引修订。同一可信Run仅在身份与绑定一致时合并；冲突保留各来源及原因，不能任取最新。
 5. 记录新增稳定`recordId`及`identityStatus`。有明确Run身份时保持原runId查询兼容；无身份或身份冲突时用保留前缀`source-`加服务端计算的64位来源身份查询，不将该值写成runId。详情路由中的身份只从已索引记录精确解析。发现但未核验、未知Schema的证据仍可列出来源和缺口，不能冒充可信训练记录或静默消失。
 6. 详情按显式绑定提供原图、条件、输出图、逐轮/逐样本指标、训练日志、审核报告、配置和Checkpoint元数据。原登记事件、历史程序日志和训练步骤分开标注来源与完整性。每项分别使用`available`、`not_recorded`、`missing`、`unsupported_schema`、`over_limit`、`hash_conflict`或`unreadable`，一项不可用不抹去其他项。元数据、内容摘要已重算及正式资格是三个独立状态。
-7. 保留8MiB单JSON读取、16MiB图片及64KiB文本单页限制；完整查看通过后台有界解析与分页派生索引实现，不静默截断后冒充完整。详情可选`section=artifacts|metrics|events|logs`、`cursor`、`limit`(默认20、上限50)；每页绑定recordId、来源摘要和索引修订。大文件解析超过预算返回明确积压/超限状态并可续接，不能在GET反复全文解析。原始证据仅允许受支持的训练证据格式、受控JSON字段或纯文本日志预览，屏蔽凭据/环境秘密；未知格式显示安全元数据和识别缺口，不提供任意文件代理。Checkpoint保持仅元数据、无下载和反序列化。
-8. 复用回环访问、身份校验、no-store、nosniff、路径与摘要检查。图片按需加载与分页，索引摘要不替代发送前真实字节核验。列表/详情2秒刷新保持单请求在途、取消、超时、断线状态和选中记录稳定；索引停止时显示陈旧水位，当前执行1秒和资源250毫秒链路不依赖历史索引器。
+7. 保留8MiB普通JSON完整读取、16MiB图片及64KiB文本单页限制；完整查看通过服务端有界解析与分页派生投影实现，不静默截断后冒充完整。详情可选`section=artifacts|metrics|events|logs`、`cursor`、`limit`(默认20、上限50)；每页绑定recordId、来源摘要和索引修订。对已核验登记胶囊绑定的`ai-painter-learning-capacity-experiment-package-v1`且`evidenceContractVersion=1`，其同Run／同experimentType、同版本规范结果超过8MiB时，可使用专用只读内存派生：来源最多16MiB，按64KiB块流式重新核验真实路径、文件长度、读取稳定性和完整SHA；首次解析及派生限5秒，受控字段投影最多8MiB，不投影重复旧`rows`指标平面或无关顶层字段。后续精确来源绑定可复用已解析投影，但每次仍复核来源完整字节SHA；并发同绑定仅一个解析在途，缓存最多32条／16MiB序列化投影，不写文件、SQLite、来源证据或资格。`detailCoverage.largeResultProjection`明确返回源／派生摘要、长度、预算、缓存命中、受控字段范围及原始大JSON不可预览；图像／指标继续按原身份和观察计划校验，不从名称推断。大源原文仍不经普通制品接口下载，页面不得创建空链接。源／投影超限或解析预算耗尽返回明确partial限额状态，身份、SHA或路径冲突失败关闭，不回退旧缓存、不将局部可查等同历史全量完整。普通JSON、旧格式、未知版本及未登记来源不能借此扩大读取权限。原始证据仅允许受支持的训练证据格式、受控JSON字段或纯文本日志预览，屏蔽凭据/环境秘密；未知格式显示安全元数据和识别缺口，不提供任意文件代理。Checkpoint保持仅元数据、无下载和反序列化。
+8. 复用回环访问、身份校验、no-store、nosniff、路径与摘要检查。图片按需加载与分页，索引摘要不替代发送前真实字节核验。制品页按输出、其他图像、原图、Checkpoint、其他证据稳定分组，同组保持原顺序；游标绑定实际排序后的制品身份，排序变化时拒绝旧游标，不静默混页。大结果内存派生同时最多2个不同绑定在途，同绑定合并；繁忙返回503／`history_large_projection_busy`，不得无限累积来源缓冲。列表/详情2秒刷新保持单请求在途、取消、超时、断线状态和选中记录稳定；索引停止时显示陈旧水位，当前执行1秒和资源250毫秒链路不依赖历史索引器。
 9. 验收必须覆盖：登记断链下独立历史仍可查；旧训练清单的指标/原图/输出/审核/CP关联；未知Schema及逐项缺失；新增证据无需重启自动出现；大内容分页无丢失/混页；重复Run冲突；缓存源变化、摘要篡改、路径逃逸、敏感内容拒绝；断线恢复及当前态/资源功能不退化。覆盖未核验完不得宣告“磁盘全部历史已接入”。
 
 ### 3.3 本地控制会话

@@ -14,8 +14,11 @@ import {
 import {
   commitStage4V2ExternalRegistryDependencies,
 } from "./lib/ai-painter-stage4-v2-external-registry-dependency-v1.mjs";
+import {
+  STAGE4_V2_CAPABILITY,
+} from "./lib/ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs";
 
-export const CAPABILITY_VERSION = "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
+export const CAPABILITY_VERSION = STAGE4_V2_CAPABILITY;
 export const ADJUDICATION_TASK = "adjudicate_stage4_v2_readonly_gpu_qualification_failure";
 export const ADJUDICATION_ACTION = "adjudicate:ai-painter-stage4-v2-readonly-gpu-qualification-failure";
 

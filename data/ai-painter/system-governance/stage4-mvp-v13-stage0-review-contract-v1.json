@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "stage4-mvp-v13-stage0-review-contract-v1",
+  "contractId": "stage4-mvp-v13-stage0-review-contract-v1",
+  "status": "active_for_v13_stage0_machine_review",
+  "capabilityVersion": "stage4_mvp_native_rgb_instance_object_renderer_v13",
+  "scope": "single_bound_stage0_256x192_eight_validation_candidates_only",
+  "activation": {
+    "formalReviewExecutionAllowed": true,
+    "trainingAllowed": false,
+    "gpuAllowed": false,
+    "runtimeFrameAllowed": false
+  },
+  "numericThresholdAdoption": {
+    "binding": {
+      "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+      "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"
+    },
+    "sections": [
+      "commonMeasurementContract",
+      "conditionAlignmentThresholds",
+      "professionalAestheticThresholds",
+      "failureCodes",
+      "reviewTrainingSeparation"
+    ],
+    "inheritV2Activation": false,
+    "thresholdOverridesAllowed": false
+  },
+  "minimumDetailGate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json",
+    "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"
+  },
+  "decisionRule": "all_8_validation_semantic_aesthetic_and_minimum_detail",
+  "programs": {
+    "runner": {
+      "path": "scripts/run-ai-painter-stage4-mvp-v13-stage0-machine-review.mjs",
+      "sha256": "61c75fec889e060e6b5a2d633b89584c4330363f6be3cc3efe96b8323b651a66"
+    },
+    "lineageAndAuditors": {
+      "path": "scripts/lib/ai-painter-stage4-mvp-v13-review-lineage.mjs",
+      "sha256": "b30b3c8224e86cb04451f16e7b149c51860c9e0a56c25e0242c99e6c160b48e0"
+    }
+  },
+  "authorityBoundary": {
+    "registrySource": "verified_committed_current_execution_registry",
+    "executionPackageMustBindThisContract": true,
+    "candidateManifestMustBindOneCurrentRun": true,
+    "validationOnly": true,
+    "challengeOrRegressionReadAllowed": false,
+    "reviewScoresAsTrainingTargetAllowed": false,
+    "historicalV12CanSatisfyV13": false,
+    "oldV2ActivationInherited": false,
+    "allEightRequired": true,
+    "minimumDetailIsAdditionalMandatoryGate": true,
+    "reportIsNotRuntimePublication": true
+  }
+}

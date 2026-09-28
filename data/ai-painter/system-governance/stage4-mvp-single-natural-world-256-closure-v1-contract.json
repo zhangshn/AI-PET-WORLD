@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "stage4-mvp-single-natural-world-256-closure-contract-v1",
+  "contractId": "stage4-mvp-single-natural-world-256-closure-v1",
+  "status": "active_mvp_single_world_model_slice_closure",
+  "authority": "local_ai_pet_world_program",
+  "capabilityVersion": "stage4_mvp_single_thailand_natural_world_256_v1",
+  "sourceCapabilityVersion": "stage4_mvp_native_complete_rgb_object_crop_renderer_v8",
+  "businessScope": "one_thailand_natural_world_256x192_model_generated_mvp_slice",
+  "scope": {
+    "worldCount": 1,
+    "width": 256,
+    "height": 192,
+    "naturalTerrainRequired": true,
+    "waterWhenPresentRequired": true,
+    "majorNaturalObjectsRequired": true,
+    "applicableNaturalPassabilityRequired": true,
+    "buildingsRequired": false,
+    "prebuiltArtificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "animalsRequired": false
+  },
+  "sourceEvidence": {
+    "trainingTerminal": {
+      "path": ".runtime/ai-painter/stage4-mvp-native-rgb-object-crop-renderer-v8-formal-executions/mvp-stage0-batch-99497fdd09536b4aacd3314b980f7caccd0de783/stages/mvp-stage0-99497fdd09536b4aacd3314b980f7caccd0de7838d29cb3e/finalize.json",
+      "sha256": "40dd1939a97b1e24fa69b42d51db47b3822e969631b6f79a8e609532cb8aa9b4"
+    },
+    "checkpoint": {
+      "path": ".runtime/ai-painter/stage4-mvp-native-rgb-object-crop-renderer-v8-formal-executions/mvp-stage0-batch-99497fdd09536b4aacd3314b980f7caccd0de783/stages/mvp-stage0-99497fdd09536b4aacd3314b980f7caccd0de7838d29cb3e/stage0-native-rgb-object-crop-v8.pt",
+      "sha256": "9ef6f75ac65bcc4026ef687147192a78e66dcdb582f8154c58c2034dcbc34564"
+    },
+    "datasetManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+      "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"
+    },
+    "candidateManifest": {
+      "path": ".runtime/ai-painter/stage4-mvp-native-rgb-object-crop-renderer-v8-review-candidates/mvp-stage0-99497fdd09536b4aacd3314b980f7caccd0de7838d29cb3e/manifest.json",
+      "sha256": "908842ab2878bf7d873db3f507bcfc48e4a138ac6ef589bd9ea5e27a36ab4de9"
+    },
+    "machineReview": {
+      "path": ".runtime/ai-painter/stage4-mvp-native-rgb-object-crop-renderer-v8-machine-reviews/mvp-stage0-99497fdd09536b4aacd3314b980f7caccd0de7838d29cb3e/machine-review.json",
+      "sha256": "63ac039af5c828816ed6485c84be7b112b63b1c018622506c4b6363dd41df429"
+    },
+    "machineReviewTerminal": {
+      "path": ".runtime/ai-painter/stage4-mvp-native-rgb-object-crop-renderer-v8-machine-reviews/mvp-stage0-99497fdd09536b4aacd3314b980f7caccd0de7838d29cb3e/terminal.json",
+      "sha256": "1fe674adb126f328ee542ac76bca918d1c4f5f876d3fcdeab6889a39a1a5f339"
+    }
+  },
+  "selectedWorld": {
+    "selectionRule": "unique_candidate_passing_the_frozen_existing_eight_validation_candidate_review",
+    "selectionUse": "bounded_mvp_product_world_selection_not_independent_model_generalization",
+    "sampleIndex": 6,
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-200-forested-low-mountain-v2",
+    "candidateRgb": {
+      "path": ".runtime/ai-painter/stage4-mvp-native-rgb-object-crop-renderer-v8-review-candidates/mvp-stage0-99497fdd09536b4aacd3314b980f7caccd0de7838d29cb3e/images/validation-06.png",
+      "sha256": "5931cf815f481dc56a4119973f0b4d6e246cd97acd179c48bd16120513a6fa8d"
+    },
+    "conditionPack": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-200-2026-07-31T15-21-11-763Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+      "sha256": "dd9ac03c356f8fc43817a4380f60823b6a75ddc3d5e9255171418cd497dde4d1"
+    }
+  },
+  "acceptance": {
+    "sourceTrainingMustBeCompleted": true,
+    "exactOptimizerSteps": 3840,
+    "candidateMustBeProducedByCheckpointReload": true,
+    "candidateMustPassProfessionalAesthetic": true,
+    "candidateMustPassConditionAlignment": true,
+    "candidateIssueCount": 0,
+    "thresholdChangeAllowed": false,
+    "failedCandidateDeletionAllowed": false
+  },
+  "claimBoundary": {
+    "mvpSingleWorld256ModelSliceMayComplete": true,
+    "fullStage4MayComplete": false,
+    "stage1OrStage2MayBeClaimed": false,
+    "generalizedWorldGenerationMayBeClaimed": false,
+    "independentChallengeQualificationMayBeClaimed": false,
+    "runtimeFrameMayBeClaimed": false,
+    "approvedFramePublicationMayBeClaimed": false
+  },
+  "preservation": {
+    "allSevenFailedValidationCandidatesRetained": true,
+    "fullResolutionRouteRetainedForLater": true,
+    "originalImagesModified": false,
+    "datasetSplitsModified": false,
+    "checkpointWeightsModified": false
+  }
+}

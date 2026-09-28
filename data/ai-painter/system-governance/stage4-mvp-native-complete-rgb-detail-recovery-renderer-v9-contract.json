@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "stage4-mvp-native-complete-rgb-detail-recovery-renderer-v9-contract-v1",
+  "contractId": "stage4-mvp-native-complete-rgb-detail-recovery-renderer-v9-contract-v1",
+  "status": "cpu_candidate_not_execution_qualified",
+  "authority": "local_ai_pet_world_program",
+  "capabilityVersion": "stage4_mvp_native_complete_rgb_detail_recovery_renderer_v9",
+  "architectureId": "stage4_native_complete_rgb_detail_recovery_renderer_v3",
+  "businessScope": "single_thailand_region_original_natural_world_mvp_256x192_only",
+  "parentFailureEvidence": {
+    "path": ".runtime/ai-painter/stage4-mvp-single-natural-world-256-false-positive-adjudications/mvp-stage0-99497fdd09536b4aacd3314b980f7caccd0de7838d29cb3e/terminal.json",
+    "sha256": "71ea1e914f04d074448e51f32a9d2c0371cf2f5cae415af0062bdc51b2bbd1c6"
+  },
+  "boundedDiagnosis": "V8 reduced RGB error but left validation gradient and Laplacian errors effectively flat from epoch 1 through epoch 40. All eight outputs retained only 1.3-5.7 percent of reference detail energy. The direct deterministic L1 route converged to regional mean color. V9 adds deterministic multiband coordinate detail features and differentiable detail-statistic losses; it does not change data, splits, original RGB, semantic conditions or acceptance thresholds.",
+  "datasetBinding": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913",
+    "splitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4}
+  },
+  "conditionContract": {
+    "path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+    "conditionContractIdentity": "ai-painter-complete-map-23-channel-condition-v1",
+    "channelCount": 23
+  },
+  "reviewBindings": {
+    "semanticAndUpperAesthetic": {
+      "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+      "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"
+    },
+    "minimumDetail": {
+      "path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json",
+      "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"
+    },
+    "thresholdOverrideAllowed": false
+  },
+  "renderer": {
+    "inputConditionChannels": 23,
+    "outputChannels": 3,
+    "baseChannels": 48,
+    "decoderScales": [8, 4, 2, 1],
+    "coordinateChannels": ["coordinate_x", "coordinate_y"],
+    "deterministicFourierFrequencyBands": [1, 2, 4, 8, 16],
+    "fourierFeatureCount": 20,
+    "fullResolutionDetailResidual": true,
+    "responsibilityIdentities": [
+      "terrain_water", "terrain_path_ground", "terrain_shoreline",
+      "object_footprints", "object_tree", "object_rock", "object_vegetation"
+    ],
+    "outsideAuthoritativeMaskContributionMustBeZero": true,
+    "randomInputAllowed": false,
+    "externalModelAllowed": false,
+    "autoencoderAllowed": false,
+    "diffusionAllowed": false,
+    "staticMapOrTileCompositionAllowed": false
+  },
+  "trainingObjective": {
+    "source": "train_rgb_authoritative_masks_and_deterministic_coordinate_basis_only",
+    "fullRgbMaeWeight": 0.75,
+    "fullRgbGradientWeight": 0.35,
+    "fullRgbLaplacianWeight": 0.15,
+    "responsibilityGradientWeight": 0.5,
+    "responsibilityLumaStructureWeight": 0.15,
+    "responsibilityRgbMaeWeights": {
+      "terrain_water": 1.0,
+      "terrain_path_ground": 2.0,
+      "terrain_shoreline": 1.0,
+      "object_footprints": 1.0,
+      "object_tree": 1.0,
+      "object_rock": 1.25,
+      "object_vegetation": 1.0
+    },
+    "detailStatistics": {
+      "highPassKernel": 5,
+      "localVarianceKernel": 9,
+      "textureEnergyWeight": 2.0,
+      "gradientEnergyWeight": 1.5,
+      "localVarianceWeight": 1.0
+    },
+    "validationPixelsUsedByOptimizer": false,
+    "validationMetricsUsedOnlyForCheckpointSelection": true,
+    "machineReviewScoresAsLossAllowed": false,
+    "failedPreviewPixelsAsTargetAllowed": false
+  },
+  "trainingCurriculum": {
+    "epochCount": 24,
+    "fullFrameUpdatesPerSamplePerEpoch": 1,
+    "objectCropUpdatesPerSamplePerEpoch": 1,
+    "objectCropSize": [128, 128],
+    "objectCropIdentities": [
+      "object_footprints", "object_tree", "object_rock", "object_vegetation"
+    ],
+    "exactOptimizerSteps": 2304,
+    "freshInitializationRequired": true,
+    "v8CheckpointReuseAllowed": false,
+    "persistentDerivedTrainingImagesAllowed": false
+  },
+  "stagePlan": [{"stage": 0, "width": 256, "height": 192}],
+  "mvpBoundaries": {
+    "worldCountTarget": 1,
+    "buildingsRequired": false,
+    "prebuiltArtificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "animalsRequired": false,
+    "naturalTerrainWaterMajorObjectsAndApplicablePassabilityRequired": true,
+    "stage0MayClaimFullStage4Completion": false
+  },
+  "activationGates": {
+    "cpuContractNow": true,
+    "gpuQualificationNow": false,
+    "optimizerNow": false,
+    "trainingNow": false,
+    "checkpointPromotionNow": false
+  },
+  "automaticRetry": false
+}

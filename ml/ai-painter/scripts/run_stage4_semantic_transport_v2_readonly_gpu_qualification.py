@@ -1593,9 +1593,19 @@ def process_memory_bytes() -> int:
 
             counters = PROCESS_MEMORY_COUNTERS()
             counters.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS)
-            process = ctypes.windll.kernel32.GetCurrentProcess()
-            get_counters = ctypes.windll.psapi.GetProcessMemoryInfo
-            get_counters(process, ctypes.byref(counters), counters.cb)
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            psapi = ctypes.WinDLL("psapi", use_last_error=True)
+            kernel32.GetCurrentProcess.restype = ctypes.c_void_p
+            get_counters = psapi.GetProcessMemoryInfo
+            get_counters.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(PROCESS_MEMORY_COUNTERS),
+                wintypes.DWORD,
+            ]
+            get_counters.restype = wintypes.BOOL
+            process = kernel32.GetCurrentProcess()
+            if not get_counters(process, ctypes.byref(counters), counters.cb):
+                return 0
             return int(counters.WorkingSetSize)
         except (AttributeError, OSError, TypeError):
             return 0

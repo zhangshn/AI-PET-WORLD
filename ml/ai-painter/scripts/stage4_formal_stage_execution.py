@@ -28,10 +28,40 @@ from ai_painter_stage4_semantic_transport_v2_trainer_support import (
     validate_stage4_semantic_transport_v2_trainer_contract,
     state_dict_sha256,
 )
+from ai_painter_stage4_mvp_object_semantic_closure_v3 import (
+    CAPABILITY_VERSION as MVP_OBJECT_CLOSURE_V3_CAPABILITY,
+    CHECKPOINT_METRIC as MVP_OBJECT_CLOSURE_V3_CHECKPOINT_METRIC,
+    LOSS_VERSION as MVP_OBJECT_CLOSURE_V3_LOSS_VERSION,
+    build_stage4_mvp_object_semantic_closure_v3_config,
+    validate_stage4_mvp_object_semantic_closure_v3_config,
+)
+from ai_painter_stage4_mvp_object_trajectory_closure_v4 import (
+    CAPABILITY_VERSION as MVP_OBJECT_TRAJECTORY_V4_CAPABILITY,
+    CHECKPOINT_METRIC as MVP_OBJECT_TRAJECTORY_V4_CHECKPOINT_METRIC,
+    LOSS_VERSION as MVP_OBJECT_TRAJECTORY_V4_LOSS_VERSION,
+    build_stage4_mvp_object_trajectory_closure_v4_config,
+    validate_stage4_mvp_object_trajectory_closure_v4_config,
+)
+from ai_painter_stage4_mvp_short_trajectory_closure_v5 import (
+    CAPABILITY_VERSION as MVP_SHORT_TRAJECTORY_V5_CAPABILITY,
+    CHECKPOINT_METRIC as MVP_SHORT_TRAJECTORY_V5_CHECKPOINT_METRIC,
+    LOSS_VERSION as MVP_SHORT_TRAJECTORY_V5_LOSS_VERSION,
+    build_stage4_mvp_short_trajectory_closure_v5_config,
+    validate_stage4_mvp_short_trajectory_closure_v5_config,
+)
 from train_ai_assisted_conditional_denoiser import (
     train_epoch, evaluate_velocity_prediction, evaluate_deterministic_rollout_rgb_quality_v7,
     stage4_fixed_preview_determinism_scope,
     serialize_latent_normalization, load_latent_normalization,
+)
+from ai_painter_stage4_mvp_object_semantic_closure_v3_runtime import (
+    activated_object_semantic_closure_v3,
+)
+from ai_painter_stage4_mvp_object_trajectory_closure_v4_runtime import (
+    activated_object_trajectory_closure_v4,
+)
+from ai_painter_stage4_mvp_short_trajectory_closure_v5_runtime import (
+    activated_short_trajectory_closure_v5,
 )
 
 
@@ -40,20 +70,51 @@ def require(value, message):
         raise ValueError(message)
 
 
-def build_formal_stage_component_config(root):
+def build_formal_stage_component_config(root, capability_version=None):
     """Reuse bound V6 rollout weights omitted from the CPU-only config builder.
 
     This adds no qualification and leaves the inactive support binding intact.
     """
-    config = build_stage4_semantic_transport_v2_cpu_inactive_config(Path(root))
+    if capability_version == MVP_SHORT_TRAJECTORY_V5_CAPABILITY:
+        config = build_stage4_mvp_short_trajectory_closure_v5_config(Path(root))
+    elif capability_version == MVP_OBJECT_TRAJECTORY_V4_CAPABILITY:
+        config = build_stage4_mvp_object_trajectory_closure_v4_config(Path(root))
+    elif capability_version == MVP_OBJECT_CLOSURE_V3_CAPABILITY:
+        config = build_stage4_mvp_object_semantic_closure_v3_config(Path(root))
+    else:
+        config = build_stage4_semantic_transport_v2_cpu_inactive_config(Path(root))
     formal = json.loads(project_file(Path(root), FORMAL_OBJECTIVE_CONTRACT_PATH).read_bytes())
     config["training"]["rolloutCheckpointMetricWeights"] = deepcopy(formal["rolloutCheckpointMetricWeights"])
-    validate_stage4_semantic_transport_v2_trainer_contract(config, root=Path(root))
+    validate_formal_stage_component_config(config, root=Path(root))
     return config
 
 
+def validate_formal_stage_component_config(config, *, root):
+    if config.get("training", {}).get("denoiserLossVersion") == MVP_SHORT_TRAJECTORY_V5_LOSS_VERSION:
+        return validate_stage4_mvp_short_trajectory_closure_v5_config(
+            config, root=Path(root)
+        )
+    if config.get("training", {}).get("denoiserLossVersion") == MVP_OBJECT_TRAJECTORY_V4_LOSS_VERSION:
+        return validate_stage4_mvp_object_trajectory_closure_v4_config(
+            config, root=Path(root)
+        )
+    if config.get("training", {}).get("denoiserLossVersion") == MVP_OBJECT_CLOSURE_V3_LOSS_VERSION:
+        return validate_stage4_mvp_object_semantic_closure_v3_config(config, root=Path(root))
+    return validate_stage4_semantic_transport_v2_trainer_contract(config, root=Path(root))
+
+
+def formal_stage_capability_version(config):
+    if config.get("training", {}).get("denoiserLossVersion") == MVP_SHORT_TRAJECTORY_V5_LOSS_VERSION:
+        return MVP_SHORT_TRAJECTORY_V5_CAPABILITY
+    if config.get("training", {}).get("denoiserLossVersion") == MVP_OBJECT_TRAJECTORY_V4_LOSS_VERSION:
+        return MVP_OBJECT_TRAJECTORY_V4_CAPABILITY
+    if config.get("training", {}).get("denoiserLossVersion") == MVP_OBJECT_CLOSURE_V3_LOSS_VERSION:
+        return MVP_OBJECT_CLOSURE_V3_CAPABILITY
+    return "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2"
+
+
 def initialize_formal_stage0_cpu(*, root, initialization, train_dataset, validation_dataset,
-                                foundation_state):
+                                 foundation_state, capability_version=None):
     """Full-split Stage0 initialization, never a reuse of a Smoke receipt.
 
     Internal composition only. The enclosing authenticated loader must establish
@@ -74,7 +135,7 @@ def initialize_formal_stage0_cpu(*, root, initialization, train_dataset, validat
             "formal initialization Dataset root mismatch")
     require(bound["datasetManifest"] == train_dataset.binding == validation_dataset.binding,
             "formal initialization dataset binding mismatch")
-    config = build_formal_stage_component_config(root)
+    config = build_formal_stage_component_config(root, capability_version=capability_version)
     require(digest(canonical_bytes(config)) == bound["configSha256"], "formal initialization config mismatch")
     # The objective-only config intentionally omits a run seed. Bind the seed
     # explicitly in this input, as the formal epoch executor does; never inherit
@@ -149,7 +210,7 @@ def validate_stage_inputs(stage, epoch_index, train_dataset, validation_dataset,
             "formal Datasets cross project or release identities")
     require(not set(selections["train"]["sampleIds"]) & set(selections["validation"]["sampleIds"]),
             "formal train and validation overlap")
-    validate_stage4_semantic_transport_v2_trainer_contract(config, root=train_dataset.root)
+    validate_formal_stage_component_config(config, root=train_dataset.root)
     validate_formal_rollout_config(config, train_dataset.root)
     return selections
 
@@ -233,9 +294,13 @@ def run_formal_stage_epoch(*, model, optimizer, train_dataset, validation_datase
     selections = validate_stage_inputs(stage, epoch_index, train_dataset, validation_dataset, config, seed)
     # This is necessary but not sufficient: the enclosing lifecycle still
     # authenticates the immutable release and its current qualification.
-    require(train_dataset.manifest.get("qualification", {}).get("trainingAllowed") is True
-            and validation_dataset.manifest.get("qualification", {}).get("trainingAllowed") is True,
-            "formal dataset is not training qualified")
+    for dataset in (train_dataset, validation_dataset):
+        qualification = dataset.manifest.get("qualification", {})
+        require(qualification.get("dataQualifiedForTraining") is True
+                and qualification.get("foundationQualified") is True
+                and qualification.get("denoiserTrainingAllowed") is True
+                and qualification.get("trainingAllowed") is False,
+                "formal Denoiser data/foundation qualification is missing or overclaims execution")
     frozen = validate_stage4_semantic_transport_v2_autoencoder_boundary(model, phase="before_training")
     allowed = {id(value) for value in model.denoiser.parameters() if value.requires_grad}
     optimized = [value for group in optimizer.param_groups for value in group["params"]]
@@ -313,20 +378,23 @@ def run_formal_stage_schedule(*, on_epoch_completed, **epoch_arguments):
                           arguments["validation_dataset"], arguments["config"], arguments["seed"])
     model, optimizer = arguments["model"], arguments["optimizer"]
     completed = []
-    for index in range(arguments["stage"]["epochCount"]):
-        evidence = run_formal_stage_epoch(**arguments, epoch_index=index)
-        require(evidence["epoch"] == index + 1 and evidence["stage"] == arguments["stage"],
-                "formal epoch returned a different schedule position")
-        require(evidence["stepEvidence"]["optimizerSteps"] == 48
-                and evidence["stepEvidence"]["nonTrainOptimizerSteps"] == 0,
-                "formal epoch returned incomplete optimizer evidence")
-        model_hash, optimizer_hash = state_hash(model.state_dict()), state_hash(optimizer.state_dict())
-        on_epoch_completed(deepcopy(evidence))
-        require(state_hash(model.state_dict()) == model_hash
-                and state_hash(optimizer.state_dict()) == optimizer_hash,
-                "formal evidence sink changed model or optimizer")
-        completed.append({"epoch": index + 1, "evidenceSha256": digest(canonical_bytes(evidence)),
-                          "optimizerSteps": 48, "nonTrainOptimizerSteps": 0})
+    with activated_object_semantic_closure_v3(arguments["config"]):
+        with activated_object_trajectory_closure_v4(arguments["config"]):
+            with activated_short_trajectory_closure_v5(arguments["config"]):
+                for index in range(arguments["stage"]["epochCount"]):
+                    evidence = run_formal_stage_epoch(**arguments, epoch_index=index)
+                    require(evidence["epoch"] == index + 1 and evidence["stage"] == arguments["stage"],
+                            "formal epoch returned a different schedule position")
+                    require(evidence["stepEvidence"]["optimizerSteps"] == 48
+                            and evidence["stepEvidence"]["nonTrainOptimizerSteps"] == 0,
+                            "formal epoch returned incomplete optimizer evidence")
+                    model_hash, optimizer_hash = state_hash(model.state_dict()), state_hash(optimizer.state_dict())
+                    on_epoch_completed(deepcopy(evidence))
+                    require(state_hash(model.state_dict()) == model_hash
+                            and state_hash(optimizer.state_dict()) == optimizer_hash,
+                            "formal evidence sink changed model or optimizer")
+                    completed.append({"epoch": index + 1, "evidenceSha256": digest(canonical_bytes(evidence)),
+                                      "optimizerSteps": 48, "nonTrainOptimizerSteps": 0})
     return {"schemaVersion": "ai-painter-stage4-formal-stage-schedule-result-v1",
             "status": "schedule_completed_pending_review", "stage": arguments["stage"],
             "completedEpochs": len(completed), "optimizerSteps": sum(row["optimizerSteps"] for row in completed),
@@ -352,11 +420,21 @@ def run_formal_stage_checkpoint(*, root, checkpoint_path, identity, on_epoch_com
     require(all(Path(arguments[key].root).resolve() == Path(root).resolve()
                 for key in ("train_dataset", "validation_dataset")), "formal V7 cross-project Dataset")
     require(arguments["stage"] == identity["stage"], "formal V7 stage identity mismatch")
-    require(config.get("denoiserArchitecture") == identity["capabilityVersion"]
+    require(config.get("denoiserArchitecture")
             == "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2"
-            and config.get("latentChannels") == 12, "formal V7 architecture mismatch")
-    require(config["training"].get("bestCheckpointMetric")
-            == "fixed_grid_plus_deterministic_rollout_rgb_score_v6", "formal V7 selection metric mismatch")
+            and identity["capabilityVersion"] == formal_stage_capability_version(config)
+            and config.get("latentChannels") == 12, "formal V7 architecture/capability mismatch")
+    expected_metric = (
+        MVP_SHORT_TRAJECTORY_V5_CHECKPOINT_METRIC
+        if identity["capabilityVersion"] == MVP_SHORT_TRAJECTORY_V5_CAPABILITY
+        else MVP_OBJECT_TRAJECTORY_V4_CHECKPOINT_METRIC
+        if identity["capabilityVersion"] == MVP_OBJECT_TRAJECTORY_V4_CAPABILITY
+        else MVP_OBJECT_CLOSURE_V3_CHECKPOINT_METRIC
+        if identity["capabilityVersion"] == MVP_OBJECT_CLOSURE_V3_CAPABILITY
+        else "fixed_grid_plus_deterministic_rollout_rgb_score_v6"
+    )
+    require(config["training"].get("bestCheckpointMetric") == expected_metric,
+            "formal V7 selection metric mismatch")
     model = arguments["model"]
     normalization = cpu_normalization(arguments["latent_normalization"])
     normalization_hash = state_hash(normalization)
@@ -496,8 +574,17 @@ def checkpoint_target(root, logical, identity):
     package_bytes = project_file(Path(root), binding["path"]).read_bytes()
     require(digest(package_bytes) == binding["sha256"], "formal checkpoint package hash mismatch")
     package = json.loads(package_bytes)
+    expected_package_schema = (
+        "ai-painter-stage4-mvp-short-trajectory-closure-v5-formal-stage-execution-package-v1"
+        if identity["capabilityVersion"] == MVP_SHORT_TRAJECTORY_V5_CAPABILITY
+        else "ai-painter-stage4-mvp-object-trajectory-closure-v4-formal-stage-execution-package-v1"
+        if identity["capabilityVersion"] == MVP_OBJECT_TRAJECTORY_V4_CAPABILITY
+        else "ai-painter-stage4-mvp-object-closure-v3-formal-stage-execution-package-v1"
+        if identity["capabilityVersion"] == MVP_OBJECT_CLOSURE_V3_CAPABILITY
+        else "ai-painter-stage4-v2-formal-stage-execution-package-v1"
+    )
     require(isinstance(package, dict)
-            and package.get("schemaVersion") == "ai-painter-stage4-v2-formal-stage-execution-package-v1"
+            and package.get("schemaVersion") == expected_package_schema
             and all(package.get(key) == identity[key] for key in ("runId", "packageId", "capabilityVersion", "stage")),
             "formal checkpoint identity differs from execution package")
     number = identity["stage"].get("stage") if isinstance(identity["stage"], dict) else None
@@ -505,7 +592,16 @@ def checkpoint_target(root, logical, identity):
             and identity["stage"] == {"stage": number, "width": 256 * 2**number,
                                      "height": 192 * 2**number, "epochCount": 40},
             "formal checkpoint stage schedule invalid")
-    prefix = (".runtime/ai-painter/stage4-v2-formal-executions/" + identity["batchRunId"]
+    execution_namespace = (
+        "stage4-mvp-short-trajectory-closure-v5-formal-executions"
+        if identity["capabilityVersion"] == MVP_SHORT_TRAJECTORY_V5_CAPABILITY
+        else "stage4-mvp-object-trajectory-closure-v4-formal-executions"
+        if identity["capabilityVersion"] == MVP_OBJECT_TRAJECTORY_V4_CAPABILITY
+        else "stage4-mvp-object-closure-v3-formal-executions"
+        if identity["capabilityVersion"] == MVP_OBJECT_CLOSURE_V3_CAPABILITY
+        else "stage4-v2-formal-executions"
+    )
+    prefix = (".runtime/ai-painter/" + execution_namespace + "/" + identity["batchRunId"]
               + "/stages/" + identity["runId"] + "/")
     require(package.get("outputTerminalPath") == prefix + "phase-terminal.json",
             "formal checkpoint batch differs from execution package")

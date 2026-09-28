@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "stage4-mvp-native-complete-rgb-object-context-renderer-v11-contract-v1",
+  "contractId": "stage4-mvp-native-complete-rgb-object-context-renderer-v11-contract-v1",
+  "status": "cpu_candidate_not_execution_qualified",
+  "authority": "local_ai_pet_world_program",
+  "capabilityVersion": "stage4_mvp_native_complete_rgb_object_context_renderer_v11",
+  "architectureId": "stage4_native_rgb_object_context_cpu_prototype_v1",
+  "businessScope": "single_thailand_region_original_natural_world_mvp_256x192_only",
+  "parentFailureEvidence": {
+    "path": ".runtime/ai-painter/stage4-mvp-native-rgb-aperiodic-detail-renderer-v10-machine-reviews/mvp-stage0-884796eb2fc9a3c90abefc213c3d377772b1c24f4dbe67eb/terminal.json",
+    "sha256": "b3fbb6d93330cce3d3e308e14cd3f55940cc89a56d6d06af6ab41b7fdf87890f"
+  },
+  "datasetBinding": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913",
+    "splitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4}
+  },
+  "conditionContract": {
+    "path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+    "sha256": "c8941c7730edb73c0b0a733bc877cf550184e2f3ab2adb08102fb0214d38cac2",
+    "channelCount": 23
+  },
+  "reviewBindings": {
+    "currentAuthority": "diagnostic_only_formal_review_dispatch_not_qualified",
+    "semanticAndUpperAesthetic": {
+      "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+      "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"
+    },
+    "minimumDetail": {
+      "path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json",
+      "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"
+    },
+    "thresholdOverrideAllowed": false
+  },
+  "renderer": {
+    "inputConditionChannels": 23,
+    "outputChannels": 3,
+    "baseChannels": 48,
+    "typedObjectSupportRadii256": {"object_tree": 8, "object_rock": 4, "object_vegetation": 6},
+    "supportDistanceEncoding": "iterated_chebyshev_dilation_proximity",
+    "overlapCombination": "mean_context_logits_over_active_supports",
+    "replacedV10TypedHeadsFrozen": true,
+    "randomInputAllowed": false,
+    "referenceRgbAtInferenceAllowed": false,
+    "externalModelAllowed": false,
+    "staticMapOrTileCompositionAllowed": false
+  },
+  "trainingObjective": {
+    "source": "train_rgb_and_authoritative_23_channel_conditions_only",
+    "fullRgbMaeWeight": 1.0,
+    "fullRgbGradientMaeWeight": 0.25,
+    "typedObjectSupportRgbMaeWeightEach": 1.0,
+    "unlocalizedDetailEnergyTermsAllowed": false,
+    "validationPixelsUsedByOptimizer": false,
+    "validationMetricsUsedOnlyForCheckpointSelection": true,
+    "machineReviewScoresAsLossAllowed": false,
+    "failedPreviewPixelsAsTargetAllowed": false
+  },
+  "trainingCurriculum": {
+    "resolution": [256, 192],
+    "fullFrameOnly": true,
+    "objectCropUpdatesAllowed": false,
+    "epochCount": 24,
+    "fullFrameUpdatesPerSamplePerEpoch": 1,
+    "exactOptimizerSteps": 1152,
+    "freshInitializationRequired": true,
+    "v10CheckpointReuseAllowed": false,
+    "persistentDerivedTrainingImagesAllowed": false,
+    "maxGpuMemoryFraction": 0.7,
+    "automaticRetry": false
+  },
+  "activationGates": {
+    "cpuContractNow": true,
+    "gpuQualificationNow": false,
+    "optimizerNow": false,
+    "trainingNow": false,
+    "checkpointPromotionNow": false
+  },
+  "formalStage4QualificationGranted": false
+}

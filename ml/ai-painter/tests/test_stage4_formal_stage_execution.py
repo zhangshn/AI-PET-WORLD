@@ -27,8 +27,11 @@ class Dataset(SplitReleaseDataset):
     def __init__(self, split):
         self.root, self.split, self.image_size = ROOT, split, (256, 192)
         self.binding = {"path": "synthetic/manifest.json", "sha256": "a" * 64}
-        self.manifest = {"datasetReleaseIdentity": "synthetic-full-split-not-qualified",
-                         "qualification": {"trainingAllowed": True}}
+        self.manifest = {"datasetReleaseIdentity": "synthetic-full-split-qualified-for-component-test",
+                         "qualification": {"dataQualifiedForTraining": True,
+                                           "foundationQualified": True,
+                                           "denoiserTrainingAllowed": True,
+                                           "trainingAllowed": False}}
         self._rows = [{"sampleId": f"{split}-{i}", "split": split}
                       for i in range(48 if split == "train" else 8)]
         self.selection_sha256 = digest(canonical_bytes(self._rows))
@@ -129,10 +132,10 @@ class FormalStageTests(unittest.TestCase):
         self.assertEqual(before, state_hash(self.model.denoiser.state_dict()))
 
     def test_unqualified_candidate_cannot_reach_optimizer(self):
-        self.train.manifest["qualification"]["trainingAllowed"] = False
-        self.validation.manifest["qualification"]["trainingAllowed"] = False
+        self.train.manifest["qualification"]["denoiserTrainingAllowed"] = False
+        self.validation.manifest["qualification"]["denoiserTrainingAllowed"] = False
         before = state_hash(self.model.denoiser.state_dict())
-        with self.assertRaisesRegex(ValueError, "not training qualified"):
+        with self.assertRaisesRegex(ValueError, "qualification is missing"):
             self.run_epoch()
         self.assertEqual(before, state_hash(self.model.denoiser.state_dict()))
 

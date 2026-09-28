@@ -13,6 +13,7 @@ import {
 import {
   appendAiPainterProgramEvent,
   formatShanghai,
+  verifyAiPainterProgramEventCommitted,
 } from "./lib/ai-painter-program-event-store.mjs";
 import { catalogPath } from "./lib/ai-pet-world-storage.mjs";
 import {
@@ -26,6 +27,7 @@ import {
 } from "./lib/ai-painter-program-graph-manifest-v1.mjs";
 import {
   DEFAULT_STAGE4_V2_QUALIFICATION_LEDGER_PATH,
+  STAGE4_V2_ARCHITECTURE,
   STAGE4_V2_CAPABILITY,
   bindProjectFile,
   buildStage4V2PreReleaseQualificationTicket,
@@ -195,7 +197,7 @@ export async function materializeStage4V2ReadonlyGpuQualification({
     bindings: {
       parentContract: parent.parentContract,
       datasetRelease: parent.datasetRelease,
-      trainerSupport: bindDeclared(root, parent.contract.programBindings.trainerSupport, "V2 trainer support"),
+      trainerSupport: parent.lossContract,
       foundationAutoencoder: parent.foundationContract,
       conditionContract: parent.conditionContract,
       lossContract: parent.lossContract,
@@ -433,7 +435,7 @@ export async function materializeStage4V2ReadonlyGpuQualification({
   // pointer.  The registry must never advertise a package whose ledger event
   // is still absent.
   if (appendProgramEvent) {
-    programEventCommit = programEventWriter({
+    const writtenProgramEvent = programEventWriter({
       id: `stage4-v2-readonly-gpu-package-materialized-${identity.runId}`,
       timestamp: issuedAtUtc,
       action: "stage4_v2_readonly_gpu_qualification_package_materialized",
@@ -447,6 +449,9 @@ export async function materializeStage4V2ReadonlyGpuQualification({
       evidenceSha256: terminalBinding.sha256,
       fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 },
     });
+    programEventCommit = writtenProgramEvent?.event
+      ? writtenProgramEvent
+      : verifyAiPainterProgramEventCommitted(writtenProgramEvent);
     outerJournal = {
       ...outerJournal,
       state: "event_committed",
@@ -1496,7 +1501,7 @@ export function collectAndVerifyParentEvidence(projectRoot, current) {
   const contract = readJsonObject(resolveProjectPath(projectRoot, parentContract.path, { mustExist: true, kind: "file" }));
   assert.equal(contract.schemaVersion, PARENT_CONTRACT_SCHEMA, "V2 parent contract schema mismatch");
   assert.equal(contract.contractId, PARENT_CONTRACT_SCHEMA, "V2 parent contract identity mismatch");
-  assert.equal(contract.architectureId, STAGE4_V2_CAPABILITY, "V2 parent architecture mismatch");
+  assert.equal(contract.architectureId, STAGE4_V2_ARCHITECTURE, "V2 parent architecture mismatch");
   assert.equal(contract.status, "cpu_supported_inactive", "V2 parent contract is not CPU inactive");
   assert.equal(contract.activationGates?.gpuNow, false, "V2 parent contract already permits GPU");
   assert.equal(contract.activationGates?.trainingNow, false, "V2 parent contract already permits training");

@@ -16,9 +16,11 @@ import {
 import {
   recoverInterruptedSmokeToMaterialized,
 } from "../run-ai-painter-stage4-v2-controlled-smoke.mjs";
+import {
+  STAGE4_V2_CAPABILITY,
+} from "../lib/ai-painter-stage4-v2-readonly-gpu-ticket-v1.mjs";
 
-const CAPABILITY =
-  "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
+const CAPABILITY = STAGE4_V2_CAPABILITY;
 const root = fs.mkdtempSync(path.join(os.tmpdir(),
   "stage4-v2-smoke-host-recovery-"));
 

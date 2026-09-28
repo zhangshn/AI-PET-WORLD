@@ -26,7 +26,19 @@ export function reconcileStage4V2ReadonlyGpuQualifiedLifecycle({
     kind: "file",
   });
   const before = readJsonObject(statePath);
-  if (before.state === "cpu_contract_verified") {
+  if (before.state === "readonly_gpu_qualified") {
+    try {
+      return verifyStage4V2ReadonlyGpuQualifiedLifecycle({
+        projectRoot,
+        qualificationTerminalBinding,
+      });
+    } catch (error) {
+      assert.match(error?.message ?? "",
+        /does not uniquely bind this qualification terminal/u,
+        "existing readonly-GPU lifecycle evidence is invalid");
+    }
+  }
+  if (["cpu_contract_verified", "readonly_gpu_qualified"].includes(before.state)) {
     lifecycleAdvancer({
       root: projectRoot,
       capabilityVersion: STAGE4_V2_CAPABILITY,
@@ -36,14 +48,16 @@ export function reconcileStage4V2ReadonlyGpuQualifiedLifecycle({
         capabilityVersion: STAGE4_V2_CAPABILITY,
         targetState: "readonly_gpu_qualified",
         status: "passed",
+        evidenceKind: before.state === "readonly_gpu_qualified"
+          ? "same_state_requalification"
+          : "initial_qualification",
         bindings: [qualificationTerminalBinding],
       },
       recordedAtUtc,
+      allowSameStateEvidenceRefresh: true,
     });
   } else {
-    assert.equal(
-      before.state,
-      "readonly_gpu_qualified",
+    throw new Error(
       `Stage4 V2 lifecycle conflict before qualification publication: ${before.state}`,
     );
   }

@@ -55,6 +55,7 @@ export function createCapabilityCandidate(spec, { root = process.cwd(), recorded
 export function advanceCapabilityLifecycle({
   root = process.cwd(), capabilityVersion, targetState, evidence, releaseBinding = null,
   recordedAtUtc = new Date().toISOString(),
+  allowSameStateEvidenceRefresh = false,
   _testHooks = null,
 }) {
   validateCapabilityLifecycleContract(root);
@@ -64,12 +65,22 @@ export function advanceCapabilityLifecycle({
   const current = JSON.parse(fs.readFileSync(statePath, "utf8"));
   validateLifecycleState(current, capabilityVersion);
 
-  const isExactTargetRetry = current.state === targetState;
-  if (!isExactTargetRetry) {
+  const isSameState = current.state === targetState;
+  const currentEvidenceMatches = isSameState
+    ? lifecycleEvidenceMatchesRequest(candidateRoot, current, evidence)
+    : false;
+  const isExactTargetRetry = isSameState && currentEvidenceMatches;
+  const isSameStateEvidenceRefresh = isSameState && !currentEvidenceMatches;
+  if (!isSameState) {
     assert(!TERMINALS.has(current.state), "terminal capability cannot transition");
     assert(TRANSITIONS[current.state]?.includes(targetState), `invalid capability transition ${current.state} -> ${targetState}`);
-  } else {
+  } else if (isExactTargetRetry) {
     assert(current.sequence > 0, "initial lifecycle state cannot be replayed as a transition");
+  } else {
+    assert(allowSameStateEvidenceRefresh,
+      `capability lifecycle evidence conflict at ${targetState}`);
+    assert(!TERMINALS.has(current.state), "terminal capability evidence cannot be refreshed");
+    assert(current.sequence > 0, "initial lifecycle state cannot be refreshed");
   }
   const sequence = isExactTargetRetry ? current.sequence : current.sequence + 1;
   const evidenceBinding = persistOrVerifyEvidence(
@@ -86,6 +97,7 @@ export function advanceCapabilityLifecycle({
     targetState,
     sequence,
     evidenceBinding,
+    isSameStateEvidenceRefresh,
   });
 
   let verifiedRelease = null;
@@ -102,6 +114,7 @@ export function advanceCapabilityLifecycle({
     targetState,
     sequence,
     evidenceBinding,
+    isSameStateEvidenceRefresh,
   });
   invokeTestHook(_testHooks, "afterLifecycleSqliteCommitted", {
     capabilityVersion,
@@ -188,6 +201,21 @@ function persistOrVerifyEvidence(root, candidateRoot, capabilityVersion, sequenc
   };
 }
 
+function lifecycleEvidenceMatchesRequest(candidateRoot, current, evidence) {
+  assert(current.latestEvidence?.path, "same-state lifecycle has no latest evidence");
+  const absolute = path.join(candidateRoot, ...current.latestEvidence.path.split("/"));
+  assert(fs.existsSync(absolute), "same-state lifecycle evidence is missing");
+  assert(sha256File(absolute) === current.latestEvidence.sha256,
+    "same-state lifecycle evidence SHA-256 mismatch");
+  const persisted = readJsonFile(absolute, "same-state lifecycle evidence");
+  return isDeepStrictEqual(persisted, {
+    ...evidence,
+    ownerAuthorizationRequired: false,
+    ownerResponseRequired: false,
+    recordedAtUtc: persisted.recordedAtUtc,
+  });
+}
+
 function reconcileLifecycleDatabase({
   sqlitePath,
   capabilityVersion,
@@ -195,6 +223,7 @@ function reconcileLifecycleDatabase({
   targetState,
   sequence,
   evidenceBinding,
+  isSameStateEvidenceRefresh,
 }) {
   const db = openDb(sqlitePath);
   let transactionOpen = false;
@@ -213,7 +242,41 @@ function reconcileLifecycleDatabase({
       "SELECT MAX(sequence) AS max_sequence FROM lifecycle_transitions WHERE capability_version = ?",
     ).get(capabilityVersion)?.max_sequence;
 
-    if (capability.state === current.state && current.state !== targetState) {
+    if (isSameStateEvidenceRefresh) {
+      assert(capability.state === targetState,
+        "capability persistent state conflict before same-state evidence refresh");
+      if (maximum === current.sequence) {
+        assert(!transitionAtSequence,
+          "same-state lifecycle transition exists before refresh commit");
+        const update = db.prepare(
+          "UPDATE capabilities SET updated_at_utc = ?, owner_response_required = 0 WHERE capability_version = ? AND state = ?",
+        ).run(evidenceBinding.recordedAtUtc, capabilityVersion, targetState);
+        assert(update.changes === 1,
+          "same-state lifecycle persistent update conflict");
+        db.prepare(
+          "INSERT INTO lifecycle_transitions(capability_version, sequence, from_state, to_state, recorded_at_utc, evidence_sha256) VALUES (?, ?, ?, ?, ?, ?)",
+        ).run(
+          capabilityVersion,
+          sequence,
+          targetState,
+          targetState,
+          evidenceBinding.recordedAtUtc,
+          evidenceBinding.sha256,
+        );
+      } else {
+        assert(maximum === sequence,
+          "same-state lifecycle transition sequence conflict after commit");
+        verifyTransitionRow({
+          transition: transitionAtSequence,
+          expectedFromState: targetState,
+          targetState,
+          evidenceBinding,
+          allowSameStateTransition: true,
+        });
+        assert(capability.updated_at_utc === evidenceBinding.recordedAtUtc,
+          "same-state lifecycle persistent timestamp conflict");
+      }
+    } else if (capability.state === current.state && current.state !== targetState) {
       assert(maximum === current.sequence, "capability transition sequence conflict before commit");
       assert(!transitionAtSequence, "capability transition row exists before state commit");
       const update = db.prepare(
@@ -237,6 +300,7 @@ function reconcileLifecycleDatabase({
         expectedFromState: current.state === targetState ? null : current.state,
         targetState,
         evidenceBinding,
+        allowSameStateTransition: current.state === targetState,
       });
       assert(capability.updated_at_utc === evidenceBinding.recordedAtUtc,
         "capability persistent timestamp conflict");
@@ -252,6 +316,7 @@ function reconcileLifecycleDatabase({
       expectedFromState: current.state === targetState ? null : current.state,
       targetState,
       evidenceBinding,
+      allowSameStateTransition: isSameStateEvidenceRefresh || current.state === targetState,
     });
     db.exec("COMMIT");
     transactionOpen = false;
@@ -264,10 +329,20 @@ function reconcileLifecycleDatabase({
   }
 }
 
-function verifyTransitionRow({ transition, expectedFromState, targetState, evidenceBinding }) {
+function verifyTransitionRow({
+  transition,
+  expectedFromState,
+  targetState,
+  evidenceBinding,
+  allowSameStateTransition = false,
+}) {
   assert(transition, "capability transition record is missing");
   assert(transition.to_state === targetState, "capability transition target conflict");
-  assert(TRANSITIONS[transition.from_state]?.includes(targetState), "capability transition source conflict");
+  assert(
+    TRANSITIONS[transition.from_state]?.includes(targetState)
+      || (allowSameStateTransition && transition.from_state === targetState),
+    "capability transition source conflict",
+  );
   if (expectedFromState !== null) {
     assert(transition.from_state === expectedFromState, "capability transition source conflict");
   }
