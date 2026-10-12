@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "detail-weight-capture-resource-policy-v3",
+  "resourceVersion": "detail_weight_capture_70_minute_v3",
+  "capabilityVersion": "stage4_mvp256_dry_appearance_regime_detail_weight_precision_v1",
+  "sourceCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+    "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+  },
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "b7a15e6bab4733fc7b9311d3625d047c5a222ae69e3c2024745ef23b41367600"
+  },
+  "baselineConfiguration": {
+    "schema": "detail-weight-managed-configuration-v1",
+    "capabilityVersion": "stage4_mvp256_dry_appearance_regime_detail_weight_precision_v1",
+    "sourceCandidate": {
+      "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+      "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+    },
+    "formalSpecification": {
+      "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+      "sha256": "b7a15e6bab4733fc7b9311d3625d047c5a222ae69e3c2024745ef23b41367600"
+    },
+    "executionCeiling": {
+      "trainingAttempts": 1,
+      "automaticRetries": 0,
+      "epochs": 48,
+      "generatorOptimizerSteps": 2304,
+      "discriminatorOptimizerSteps": 2304,
+      "maxWallSeconds": 2700,
+      "maxGpuMemoryFraction": 0.7,
+      "maximumTemperatureC": 85,
+      "minimumFreeVramMiB": 2048,
+      "minimumFreeDiskMiB": 2048,
+      "maxOutputMiB": 128,
+      "cpuThreads": 2
+    },
+    "checkpointSelection": {
+      "eligibleEpochs": [
+        24,
+        36,
+        48
+      ],
+      "validationRowsPerEligibleEpoch": 8,
+      "firstCriterion": "maximum_worst_applicable_object_class_masked_luminance_correlation",
+      "secondCriterion": "minimum_mean_validation_rgb_mae",
+      "thirdCriterion": "earliest_epoch",
+      "allFourNaturalObjectClassesMustHaveValidationCoverage": true,
+      "validationMayUpdateWeights": false,
+      "selectedCheckpointMustReloadExactly": true,
+      "historicalV24CheckpointMayInitializeTraining": false
+    },
+    "scope": {
+      "resolution": [
+        256,
+        192
+      ],
+      "worldCount": 1,
+      "subjectSampleId": "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+      "subjectSplit": "validation",
+      "waterFactPresent": false,
+      "buildingsRequired": false,
+      "artificialRoadNetworkRequired": false,
+      "personalityRequired": false,
+      "formalStage4Qualification": false,
+      "runtimePublication": false
+    },
+    "dataUse": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4,
+      "weightUpdatesFrom": [
+        "train"
+      ],
+      "checkpointSelectionFrom": [
+        "validation"
+      ],
+      "challengeAndRegressionContentRead": false,
+      "sourceImageOrSplitMutation": false
+    },
+    "seed": 20260929,
+    "gpuAdmissionSeconds": 600,
+    "freshInitializationOnly": true,
+    "historicalCheckpointMayInitialize": false,
+    "automaticResumeAllowed": false,
+    "optimizer": {
+      "name": "AdamW",
+      "generatorLearningRate": 0.0001,
+      "discriminatorLearningRate": 0.0001,
+      "weightDecay": 0.01,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "eps": 1e-8
+    }
+  },
+  "override": {
+    "maxWallSeconds": 4200
+  },
+  "baselineMaxWallSeconds": 2700,
+  "clockScope": "one_training_native_call_including_setup_checkpoint_reload_and_terminal_persistence",
+  "gpuQualificationMaxWallSeconds": 600,
+  "cpuAndReviewMaxWallSeconds": 120,
+  "freshRunAndPackageRequired": true,
+  "historicalExecutionMutationAllowed": false,
+  "automaticRetries": 0,
+  "modelDataStepsSelectionAndReviewUnchanged": true
+}

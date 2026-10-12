@@ -38,7 +38,22 @@ type CurrentTrainingSource = {
   absoluteRoot: string;
   relativeRoot: string;
   runId: string;
+  packageId: string | null;
   artifactDirectory: string | null;
+  role: "active" | "latest";
+};
+
+type BoundActiveTrainingProgressSource = {
+  runId: string;
+  packageId: string;
+  outputRoot: string;
+  progressPath: string;
+};
+
+type BoundActiveTrainingProgressResult = {
+  status: "idle" | "connected" | "disconnected" | "rejected";
+  reason: string;
+  source: BoundActiveTrainingProgressSource | null;
 };
 const configPath =
   "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json";
@@ -2047,17 +2062,220 @@ function projectRelativePath(value: string) {
     : value;
 }
 
+export function classifyBoundActiveTrainingProgress(
+  registry: Record<string, unknown> | null,
+  progress: Record<string, unknown> | null,
+): BoundActiveTrainingProgressResult {
+  const activeExecution = object(registry?.activeExecution);
+  if (!activeExecution) {
+    return {
+      status: "idle",
+      reason: "registry_has_no_active_execution",
+      source: null,
+    };
+  }
+  const runId = text(activeExecution.runId);
+  const packageId = text(activeExecution.packageId);
+  const lockPathValue = text(object(activeExecution.lock)?.path);
+  const normalizedLockPath = lockPathValue?.replaceAll("\\", "/") ?? "";
+  const pathSegments = normalizedLockPath.split("/");
+  const invalidLockPath =
+    !runId ||
+    !packageId ||
+    !normalizedLockPath ||
+    normalizedLockPath.startsWith("/") ||
+    /^[A-Za-z]:\//u.test(normalizedLockPath) ||
+    pathSegments.some((segment) => !segment || segment === "..") ||
+    pathSegments.at(-1) !== "execution-lock.json";
+  if (invalidLockPath) {
+    return {
+      status: "rejected",
+      reason: "active_execution_lock_path_invalid",
+      source: null,
+    };
+  }
+  const outputRoot = pathSegments.slice(0, -1).join("/");
+  if (!outputRoot || pathSegments.at(-2) !== runId) {
+    return {
+      status: "rejected",
+      reason: "active_execution_lock_run_identity_mismatch",
+      source: null,
+    };
+  }
+  const source = {
+    runId,
+    packageId,
+    outputRoot,
+    progressPath: `${outputRoot}/progress.json`,
+  };
+  if (!progress) {
+    return {
+      status: "disconnected",
+      reason: "active_progress_snapshot_missing",
+      source,
+    };
+  }
+  if (
+    progress.schemaVersion !==
+    "ai-painter-stage4-mvp256-dry-v24-progress-v1"
+  ) {
+    return {
+      status: "rejected",
+      reason: "active_progress_schema_invalid",
+      source,
+    };
+  }
+  if (progress.runId !== runId || progress.packageId !== packageId) {
+    return {
+      status: "rejected",
+      reason: "active_progress_identity_mismatch",
+      source,
+    };
+  }
+  const actualEpoch = progress.actualEpoch;
+  const completedEpochs = progress.completedEpochs;
+  const generatorSteps = progress.optimizerStepsGenerator;
+  const discriminatorSteps = progress.optimizerStepsDiscriminator;
+  if (
+    !Number.isSafeInteger(actualEpoch) ||
+    Number(actualEpoch) < 0 ||
+    !Number.isSafeInteger(completedEpochs) ||
+    Number(completedEpochs) < 0 ||
+    Number(completedEpochs) > Number(actualEpoch) ||
+    !Number.isSafeInteger(generatorSteps) ||
+    Number(generatorSteps) < 0 ||
+    !Number.isSafeInteger(discriminatorSteps) ||
+    Number(discriminatorSteps) < 0
+  ) {
+    return {
+      status: "rejected",
+      reason: "active_progress_counter_invalid",
+      source,
+    };
+  }
+  const updatedAtUtc = text(progress.updatedAtUtc);
+  if (
+    !updatedAtUtc ||
+    !updatedAtUtc.endsWith("Z") ||
+    !Number.isFinite(Date.parse(updatedAtUtc))
+  ) {
+    return {
+      status: "rejected",
+      reason: "active_progress_timestamp_invalid",
+      source,
+    };
+  }
+  if (
+    progress.executionState !== "executing" &&
+    progress.executionState !== "checkpoint_selected_review_pending"
+  ) {
+    return {
+      status: "rejected",
+      reason: "active_progress_execution_state_invalid",
+      source,
+    };
+  }
+  return {
+    status: "connected",
+    reason: "active_progress_identity_verified",
+    source,
+  };
+}
+
+export function adaptV24TrainingProgress(
+  progress: Record<string, unknown>,
+  executionPackage: Record<string, unknown> | null,
+): TrainingLiveProgress | null {
+  if (
+    progress.schemaVersion !==
+      "ai-painter-stage4-mvp256-dry-v24-progress-v1" ||
+    executionPackage?.schemaVersion !==
+      "ai-painter-stage4-mvp256-dry-v24-execution-package-v1" ||
+    progress.runId !== executionPackage.runId ||
+    progress.packageId !== executionPackage.packageId
+  )
+    return null;
+  const trainingPlan = object(executionPackage.trainingPlan);
+  const epochTarget = number(trainingPlan?.epochs);
+  const generatorTarget = number(trainingPlan?.generatorOptimizerSteps);
+  const discriminatorTarget = number(
+    trainingPlan?.discriminatorOptimizerSteps,
+  );
+  const trainRows = number(trainingPlan?.trainRows);
+  const generatorSteps = number(progress.optimizerStepsGenerator);
+  const discriminatorSteps = number(progress.optimizerStepsDiscriminator);
+  const optimizerStep =
+    generatorSteps !== null && discriminatorSteps !== null
+      ? Math.min(generatorSteps, discriminatorSteps)
+      : null;
+  const optimizerStepTarget =
+    generatorTarget !== null && discriminatorTarget !== null
+      ? Math.min(generatorTarget, discriminatorTarget)
+      : null;
+  const percentage =
+    optimizerStep !== null && optimizerStepTarget && optimizerStepTarget > 0
+      ? Math.min(100, (optimizerStep / optimizerStepTarget) * 100)
+      : null;
+  return {
+    schemaVersion: text(progress.schemaVersion) ?? "unknown",
+    recordedAtUtc: text(progress.updatedAtUtc),
+    recordedAtAsiaShanghai: null,
+    phase: text(progress.executionState),
+    epoch: number(progress.actualEpoch),
+    epochTarget,
+    batch: null,
+    batchTarget: trainRows,
+    optimizerStep,
+    optimizerStepTarget,
+    percentage,
+    elapsedSeconds: null,
+    etaSeconds: null,
+    optimizerStepsPerSecond: null,
+    batchLoss: null,
+    rollingEpochLoss: null,
+    lastBatchDurationSeconds: null,
+    samplesInBatch: null,
+    validationCompositeScore: null,
+    checkpointSelectionScore: null,
+    localDenoiserSampleForwardPasses: null,
+    localTrainingTokenCount: null,
+    localTrainingTokenUnit: null,
+  };
+}
+
 /**
  * The dashboard is a projection of the single current-execution registry. It
- * must never discover runs by scanning a hand-maintained list of historical
- * directories: that was the source of stale Smoke pointers. The registry's
- * latest-training evidence is the only source of a stage root; all paths are
- * resolved relative to the project and are rejected if they escape it.
+ * never scans historical directories to choose the current Run. Active work is
+ * bound from the verified registry lock; the latest terminal remains a
+ * separate read-only source for historical continuity.
  */
 async function discoverCurrentTrainingSources(
   registry: CurrentExecutionRegistrySnapshot,
 ): Promise<CurrentTrainingSource[]> {
   if (!registry.ok) return [];
+  const sources = new Map<string, CurrentTrainingSource>();
+  const activeProbe = classifyBoundActiveTrainingProgress(
+    registry.registry,
+    null,
+  );
+  if (activeProbe.source) {
+    const activeProgress = await readJson(activeProbe.source.progressPath);
+    const active = classifyBoundActiveTrainingProgress(
+      registry.registry,
+      activeProgress,
+    );
+    if (active.status === "connected" && active.source) {
+      const relativeRoot = path.posix.dirname(active.source.outputRoot);
+      sources.set(`active:${active.source.outputRoot}`, {
+        absoluteRoot: resolveInsideRoot(relativeRoot),
+        relativeRoot,
+        runId: active.source.runId,
+        packageId: active.source.packageId,
+        artifactDirectory: null,
+        role: "active",
+      });
+    }
+  }
   const latest = object(registry.registry.latestTrainingTerminal);
   const evidence = object(latest?.evidence);
   const evidencePaths = [
@@ -2067,10 +2285,10 @@ async function discoverCurrentTrainingSources(
       return item ? [text(item.path)] : [];
     }),
   ].filter((value): value is string => Boolean(value));
-  const sources = new Map<string, CurrentTrainingSource>();
   for (const evidencePath of evidencePaths) {
     const source = await resolveTrainingSourceFromEvidencePath(evidencePath);
-    if (source) sources.set(`${source.relativeRoot}/${source.runId}`, source);
+    if (source)
+      sources.set(`latest:${source.relativeRoot}/${source.runId}`, source);
   }
   return [...sources.values()];
 }
@@ -2110,7 +2328,9 @@ async function resolveTrainingSourceFromEvidencePath(
           absoluteRoot: parentRoot,
           relativeRoot,
           runId,
+          packageId: null,
           artifactDirectory: "training-output",
+          role: "latest",
         };
       }
       return null;
@@ -2128,9 +2348,7 @@ async function readTrainingStages(
   const stages: TrainingStageDetail[] = [];
   const sources = await discoverCurrentTrainingSources(registry);
   for (const source of sources) {
-    const entries = await readdir(source.absoluteRoot, {
-      withFileTypes: true,
-    }).catch(() => []);
+    const entries = [{ name: source.runId, isDirectory: () => true }];
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name !== source.runId)
         continue;
@@ -2142,8 +2360,30 @@ async function readTrainingStages(
       const relativeProgress = `${relativeArtifactRoot}/progress.json`;
       const manifest = await readJson(relativeManifest);
       const progress = manifest ? null : await readJson(relativeProgress);
+      if (source.role === "active") {
+        const activeBinding = classifyBoundActiveTrainingProgress(
+          registry.ok ? registry.registry : null,
+          progress,
+        );
+        if (
+          activeBinding.status !== "connected" ||
+          activeBinding.source?.runId !== source.runId ||
+          activeBinding.source.packageId !== source.packageId ||
+          activeBinding.source.progressPath !== relativeProgress
+        )
+          continue;
+      }
       const record = manifest ?? progress;
       if (!record) continue;
+      const executionPackagePath = `${source.relativeRoot}/${entry.name}/execution-package.json`;
+      const executionPackage =
+        source.role === "active"
+          ? await readJson(executionPackagePath)
+          : null;
+      const v24LiveProgress =
+        source.role === "active" && progress
+          ? adaptV24TrainingProgress(progress, executionPackage)
+          : null;
       const executionTerminalPath = `${source.relativeRoot}/${entry.name}/phase-terminal.json`;
       const executionTerminal = source.artifactDirectory
         ? await readJson(executionTerminalPath)
@@ -2179,7 +2419,15 @@ async function readTrainingStages(
       const splitMetrics = object(record.splitMetrics);
       const resolution = object(record.resolutionStage) ?? object(record.resolution);
       const executionClosed = executionTerminal?.executionState === "completed";
-      const stageStatus = executionClosed
+      const activeExecutionState = text(record.executionState);
+      const stageStatus =
+        source.role === "active"
+          ? activeExecutionState === "executing"
+            ? "running"
+            : activeExecutionState === "checkpoint_selected_review_pending"
+              ? "pending_validation"
+              : "unknown_or_stale"
+          : executionClosed
         ? (text(executionTerminal?.status) ??
           text(record.status) ??
           "completed")
@@ -2192,6 +2440,12 @@ async function readTrainingStages(
           executionClosed &&
           /failure|failed|rejected|closed/iu.test(stageStatus)
             ? "failed"
+            : source.role === "active"
+              ? stageStatus === "running"
+                ? "running"
+                : stageStatus === "pending_validation"
+                  ? "pending_validation"
+                  : "quarantined"
             : manifest
               ? trainingVerdict(manifest, entry.name, previewReview)
               : stageStatus === "running" || stageStatus === "starting"
@@ -2223,10 +2477,15 @@ async function readTrainingStages(
         ),
         durationSeconds: number(record.durationSeconds),
         device: text(record.device),
-        epochCount: metrics.length,
-        bestEpoch: number(record.bestEpoch),
+        epochCount:
+          source.role === "active"
+            ? (number(record.completedEpochs) ?? 0)
+            : metrics.length,
+        bestEpoch: number(record.bestEpoch ?? record.selectedEpoch),
         bestValidationMetric: number(record.bestValidationMetric),
-        checkpointPath: text(record.checkpointPath),
+        checkpointPath:
+          text(record.checkpointPath) ??
+          text(object(record.selectedCheckpoint)?.path),
         checkpointSha256: text(record.checkpointSha256),
         parentCheckpointPath: text(record.parentDenoiserCheckpointPath),
         parentCheckpointSha256: text(record.parentDenoiserCheckpointSha256),
@@ -2246,9 +2505,11 @@ async function readTrainingStages(
           object(record.trainingTokenAccounting) ??
             object(tokenLedger?.trainingTokenAccounting),
         ),
-        liveProgress: normalizeLiveProgress(
-          object(record.liveProgress) ?? directCleanLatentLiveProgress(record),
-        ),
+        liveProgress:
+          v24LiveProgress ??
+          normalizeLiveProgress(
+            object(record.liveProgress) ?? directCleanLatentLiveProgress(record),
+          ),
         splitMetrics: Object.fromEntries(
           Object.entries(splitMetrics ?? {}).map(([key, value]) => {
             const row = object(value);
@@ -2274,6 +2535,7 @@ async function readTrainingStages(
         error: null,
       });
     }
+    if (source.role !== "latest") continue;
     const failureRoot = path.join(source.absoluteRoot, "failures");
     const failures = await readdir(failureRoot, { withFileTypes: true }).catch(
       () => [],

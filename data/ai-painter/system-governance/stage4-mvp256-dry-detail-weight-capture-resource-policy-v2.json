@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "detail-weight-capture-resource-policy-v2",
+  "resourceVersion": "detail_weight_capture_70_minute_v2",
+  "capabilityVersion": "stage4_mvp256_dry_appearance_regime_detail_weight_precision_v1",
+  "sourceCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+    "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+  },
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "b7a15e6bab4733fc7b9311d3625d047c5a222ae69e3c2024745ef23b41367600"
+  },
+  "baselineConfigurationSha256": "8b6772531dbee3350e8d94b23d9fcfc9dc2b7a1c4e38ce12eb033babe4835591",
+  "override": {"maxWallSeconds": 4200},
+  "baselineMaxWallSeconds": 2700,
+  "clockScope": "one_training_native_call_including_setup_checkpoint_reload_and_terminal_persistence",
+  "gpuQualificationMaxWallSeconds": 600,
+  "cpuAndReviewMaxWallSeconds": 120,
+  "freshRunAndPackageRequired": true,
+  "historicalExecutionMutationAllowed": false,
+  "automaticRetries": 0,
+  "modelDataStepsSelectionAndReviewUnchanged": true
+}

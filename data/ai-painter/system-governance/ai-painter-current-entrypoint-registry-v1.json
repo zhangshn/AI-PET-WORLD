@@ -8,6 +8,11 @@
   "ownerInNormalStateMachine": false,
   "currentEntrypoints": [
     {
+      "packageScript": "control:ai-painter-ecology-decode1-quality",
+      "entryFile": "scripts/run-ai-painter-ecology-decode1-quality-v1.mjs",
+      "role": "ecology_decode1_weight_quality_six_phase_adapter_and_explicit_pretraining_entry"
+    },
+    {
       "packageScript": "prepare:ai-painter-learning-capacity-experiment",
       "entryFile": "scripts/run-ai-painter-learning-capacity-experiment.mjs",
       "role": "bounded_train_only_experiment_preparation_no_formal_qualification"
@@ -146,6 +151,56 @@
       "packageScript": "check:ai-painter-stage4-core",
       "entryFile": "scripts/check-ai-painter-stage4-core.mjs",
       "role": "stage4_model_lifecycle_documentation_core_regression"
+    }
+  ],
+  "localControlEntrypoints": [
+    {
+      "entryId": "ai-painter-local-control-v1-ecology-decode1-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",
+      "role": "fixed_local_start_status_stop_v1",
+      "protocol": "ai-painter-local-control-v1",
+      "capabilityVersion": "stage4_mvp256_dry_factorized_ecology_decode1_weight_precision_quality_v1",
+      "adapterFile": "scripts/run-ai-painter-ecology-decode1-quality-v1.mjs",
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v2-ecology-decode1-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "role": "fixed_local_prepare_start_status_stop_v2",
+      "protocol": "ai-painter-local-control-v2",
+      "capabilityVersion": "stage4_mvp256_dry_factorized_ecology_decode1_weight_precision_quality_v1",
+      "adapterFile": "scripts/lib/ai-painter-local-prepare-v1.mjs",
+      "runnerFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "candidateSelection": "ecology-decode1-quality-v1",
+      "candidateBinding": {
+        "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+        "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+      },
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",
+      "role": "fixed_local_start_status_stop_v1",
+      "protocol": "ai-painter-local-control-v1",
+      "capabilityVersion": "stage4_mvp256_dry_factorized_ecology_quality_v1",
+      "adapterFile": "scripts/run-ai-painter-ecology-quality-v1.mjs",
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v2",
+      "entryFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "role": "fixed_local_prepare_start_status_stop_v2",
+      "protocol": "ai-painter-local-control-v2",
+      "capabilityVersion": "stage4_mvp256_dry_factorized_ecology_quality_v1",
+      "adapterFile": "scripts/lib/ai-painter-local-prepare-v1.mjs",
+      "runnerFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "candidateSelection": "ecology-quality-v1",
+      "candidateBinding": {
+        "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+        "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+      },
+      "commands": ["start", "status", "stop"]
     }
   ],
   "routingPrecedence": {

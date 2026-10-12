@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "stage4-mvp256-dry-v24-heartbeat-recovery-v2",
+  "status": "isolated_execution_repair_not_model_qualification",
+  "modelCandidate": "stage4_mvp256_dry_v24_closed_loop_candidate_v1",
+  "predecessorFailure": {
+    "path": ".runtime/ai-painter/stage4-mvp256-dry-v24-executions/mvp256-dry-v24-dce720a3bfc37221eaacf35c55ed35e9896ba3025d05759b/failure.json",
+    "sha256": "4dd26fc2b2d63bd9e1800234f4a25def0fc12fc20726907afc43613b1116a927"
+  },
+  "allowedChange": "windows_heartbeat_atomic_replace_bounded_retry_only",
+  "heartbeatPublication": {
+    "retryableErrorCodes": ["EPERM", "EACCES", "EBUSY"],
+    "maxReplaceAttempts": 21,
+    "retryDelayMilliseconds": 100,
+    "maxWaitMilliseconds": 2000,
+    "sameStagedBytesOnly": true,
+    "preservePreviousHeartbeat": true
+  },
+  "additionalExecutionAttempts": 1,
+  "automaticTrainingRetries": 0,
+  "trainingPlanChangesAllowed": false,
+  "datasetChangesAllowed": false,
+  "modelChangesAllowed": false,
+  "lossChangesAllowed": false,
+  "reviewThresholdChangesAllowed": false,
+  "resourceCeilingChangesAllowed": false,
+  "formalStage4QualificationAllowed": false,
+  "runtimePublicationAllowed": false
+}

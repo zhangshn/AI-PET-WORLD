@@ -122,7 +122,7 @@ async function traverse(root, current) {
           startedAtUtc: terminal.startedAtUtc ?? null, finishedAtUtc: terminal.finishedAtUtc ?? terminal.completedAtUtc ?? null, recordedAtUtc: terminal.recordedAtUtc ?? null,
           unavailableFields: ['trainingPlanId', 'manifestEvidenceId', ...(!terminal.startedAtUtc ? ['startedAtUtc'] : []), ...(!(terminal.finishedAtUtc ?? terminal.completedAtUtc) ? ['finishedAtUtc'] : [])],
           trainingPlanId: null, manifestEvidenceId: null, finalizationEvidenceId: binding.sha256,
-          terminalBinding: binding, terminalSchema: terminal.schemaVersion,
+          terminalBinding: binding, terminalSchema: terminal.schemaVersion ?? terminal.schema,
           evidenceReferences: [binding.path, `${txRoot}/transaction.json`],
         })
       }

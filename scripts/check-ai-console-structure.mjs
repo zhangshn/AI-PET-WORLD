@@ -126,6 +126,28 @@ for (const sourceFile of isolatedConsoleSources) {
       && path.normalize(sourceFile) === path.normalize(path.join(consoleRoot, "ai-console-current-execution-store.ts"))) {
       inspectedSource = inspectedSource.replaceAll('".runtime/ai-painter/current-execution-registry/current.json"', '"fixed_current_registry_provenance"')
     }
+    // API contract 3.2.2.2: this reader follows only the verified current
+    // registry's bounded evidence chain. Exempt exact protocol/provenance
+    // literals, not arbitrary Painter paths, imports, APIs or directory scans.
+    if (path.normalize(sourceFile) === path.normalize(path.join(projectionRoot, "bound-training-presentation.mjs"))) {
+      if (couplingName === "legacy_runtime_source")
+        inspectedSource = inspectedSource.replaceAll("'.runtime/ai-painter/'", "'bound_current_output_namespace/'")
+      if (couplingName === "legacy_page_entry")
+        inspectedSource = inspectedSource.replaceAll("'ai-painter-current-training-package-v1'", "'bound_observation_package_v1'")
+          .replaceAll("'ai-painter-current-training-progress-v1'", "'bound_observation_progress_v1'")
+          .replaceAll('"ai-painter-current-training-package-v1"', '"bound_observation_package_v1"')
+          .replaceAll('"ai-painter-current-training-progress-v1"', '"bound_observation_progress_v1"')
+    }
+    // API contract 3.2.3: historical adapters perform no discovery or IO;
+    // only their injected verified reader may consume explicit evidence.
+    if (couplingName === "legacy_runtime_source"
+      && path.normalize(sourceFile) === path.normalize(path.join(projectionRoot, "training-history-detail-adapters.mjs"))) {
+      inspectedSource = inspectedSource.replaceAll("'.runtime/ai-painter/'", "'bound_historical_output_namespace/'")
+    }
+    if (couplingName === "legacy_page_entry"
+      && path.normalize(sourceFile) === path.normalize(path.join(projectionRoot, "training-history-detail-adapters.mjs"))) {
+      inspectedSource = inspectedSource.replaceAll("'ai-painter-current-training-package-v1'", "'bound_observation_package_v1'")
+    }
     if (pattern.test(inspectedSource)) {
       failures.push(`${couplingName}:${path.relative(projectRoot, sourceFile)}`)
     }

@@ -7,6 +7,10 @@ import {fileURLToPath} from 'node:url';
 
 const sourcePath=fileURLToPath(new URL('../windows/ai-painter-owned-worker-owner.cs',import.meta.url));
 const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
+// Only the current synchronous compiler call can produce this observation.
+// Parsed files, copied Error fields and caller flags cannot recreate it.
+const buildFailures=new WeakMap();
+export function nativeBuildFailureObservation(error){return buildFailures.get(error)??null;}
 export function nativeOwnerSourceIdentity(){return {path:sourcePath,sha256:digest(fs.readFileSync(sourcePath))};}
 function put(file,bytes){const fd=fs.openSync(file,'wx');try{fs.writeFileSync(fd,bytes);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}}
 
@@ -24,7 +28,16 @@ export function createNativeOwnerCommand(executable,args,cwd,deadline,cleanupMs,
   const compileArgs=['/nologo','/noconfig','/utf8output','/target:exe','/optimize+',...['System.dll','System.Core.dll','System.Web.Extensions.dll'].map(name=>`/reference:${path.join(framework,name)}`),`/out:${binary}`,snapshot];
   let output;
   try{output=execFileSync(compiler,compileArgs,{cwd,windowsHide:true,shell:false,timeout:remaining,maxBuffer:1024*1024,encoding:'utf8'});}
-  catch(error){put(path.join(directory,'build-failure.json'),JSON.stringify({code:error.code??null,status:error.status??null,message:error.message,stdout:String(error.stdout??'').slice(0,8192),stderr:String(error.stderr??'').slice(0,8192)}));throw error;}
+  catch(error){
+    const failurePath=path.join(directory,'build-failure.json'),failureBytes=JSON.stringify({code:error.code??null,status:error.status??null,message:error.message,stdout:String(error.stdout??'').slice(0,8192),stderr:String(error.stderr??'').slice(0,8192)});
+    put(failurePath,failureBytes);
+    if(Number.isInteger(error.status)&&error.status!==0&&!error.signal
+      &&digest(fs.readFileSync(sourcePath))===guardRecord.nativeOwnerSource.sha256&&digest(fs.readFileSync(compiler))===compilerSha256){
+      buildFailures.set(error,Object.freeze({schema:'live-native-compiler-failure-v1',runnerPid:process.pid,guardIdentity:guardRecord.identity,guardSha256:digest(Buffer.from(guardBytes)),
+        compiler,compilerSha256,exitStatus:error.status,source:guardRecord.nativeOwnerSource,failurePath,failureSha256:digest(Buffer.from(failureBytes)),recordedAtUtc:new Date().toISOString()}));
+    }
+    throw error;
+  }
   assert.equal(digest(fs.readFileSync(sourcePath)),guardRecord.nativeOwnerSource.sha256,'native owner source changed during build');
   assert.equal(digest(fs.readFileSync(compiler)),compilerSha256,'native compiler changed during build');
   assert(Date.now()<deadline,'native build deadline exhausted');

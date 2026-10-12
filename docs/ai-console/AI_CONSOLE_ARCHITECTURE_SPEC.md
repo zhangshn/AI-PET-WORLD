@@ -1,10 +1,10 @@
 # AI控制台系统架构规格
 
-更新时间：2026-09-13 03:26:51 +08:00
+更新时间：2026-10-03 15:25:45 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-ARCHITECTURE-1.7`
+文档版本：`AI-CONSOLE-ARCHITECTURE-1.8`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
@@ -82,7 +82,7 @@ ApplicationShell
 | AP-02投影适配器 | `src/server/ai-console/capability-projection.ts` | 从V12固定能力生命周期库投影候选、门禁、资格和发布基础记录，并联合V15固定运行发布库裁决当前激活、被取代与未激活状态；资格图与迁移门禁继续分层 |
 | AP-01投影适配器 | `src/server/ai-console/task-projection.ts` | 当前任务与活动执行读取V21当前执行桥接；排队任务和平台任务事件读取V11固定任务库；闭环拓扑继续投影版本化产品目录 |
 | AP-03训练设计投影适配器 | `src/server/ai-console/training-design-projection.ts` | 从V13固定训练设计库投影不可变模型结构与非活动训练计划；训练总览、Checkpoint和Run不由该适配器补齐 |
-| AP-03训练运行投影适配器 | `src/server/ai-console/training-observability-projection.ts` | 从V21当前执行桥接取得活动Run和最近终态；只有训练遥测Run与活动Run严格一致时合并Epoch、Loss和ETA |
+| AP-03训练运行投影适配器 | `src/server/ai-console/training-observability-projection.ts` | 从V21当前执行桥接取得活动Run和最近终态；共用首层摘要映射，按数据API合同3.2.2.2读取匹配遥测或受验证绑定进度；资源直接观察独立 |
 | AP-04审核裁决投影适配器 | `src/server/ai-console/review-adjudication-projection.ts` | 从V14固定审核裁决库投影冻结合同和自主裁决登记；当前验证、结果与证据改由V21桥接读取当前登记显式绑定的机器审核时间线 |
 | AP-06投影适配器 | `src/server/ai-console/runtime-projection.ts` | 候选与RuntimeFrame只读取V15固定运行发布库；世界运行只读取V16固定世界控制库。不得导入旧World Runtime Adapter或读取`data/world-runtime` |
 | AP-07投影适配器 | `src/server/ai-console/evidence-projection.ts` | 路由正式证据、事件、任务胶囊、控制事务、政策边界正式报告以及各类产品合同；实际记录与规则目录按视图分层 |
@@ -200,5 +200,5 @@ ApplicationShell
 12. V15运行发布通过固定写入器、三段式安全命令、跨登记摘要复核、能力域激活链和世界Frame链验证；空库显示已连接，正式Frame保持未消费且不产生世界写入。
 13. V16世界控制通过固定写入器、五种安全命令、全局/逐世界乐观修订、V15发布摘要与祖先链验证；空库显示已连接，所有状态只存在于新平台控制登记且不产生游戏世界或WorldFacts写入。
 14. V20实时GET、全局固定状态条、AP-03和AP-08使用同一V2快照合同；250毫秒目标轮询不得创建持久机器事实或调用旧平台，且必须显示实际采样耗时、快照年龄与慢通道年龄。
-15. 新平台训练遥测库不存在或心跳失效时显示`not_connected`或`unknown_or_stale`；GPU和进程直接观察继续工作但不得补造Run、Epoch或Loss。
+15. 新平台训练遥测库不存在或心跳失效时该通道显示`not_connected`或`unknown_or_stale`；不妨碍数据API合同3.2.2.2允许的当前登记绑定进度独立核验。GPU和进程直接观察继续工作但不得补造Run、Epoch或Loss。绑定读取有字节／链深／路径上限，不遍历目录、不改写SQLite或训练证据，GET不启动运行。
 16. V21当前执行GET和AP-01/AP-03/AP-04工作页返回同一登记修订、任务、Run及审核计数；输入冲突失败关闭，旧路径全部308跳转，新入口与动态API保持200。

@@ -1,0 +1,598 @@
+{
+  "schemaVersion": "stage4-mvp256-dry-v27-shared-hidden-cpu-candidate-v1",
+  "status": "cpu_only_inactive_not_execution_qualified",
+  "capabilityVersion": "stage4_mvp256_dry_object_head_shared_hidden_v27_cpu_candidate",
+  "immutable": true,
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "8b55b8f9ff578711cac29aad578f2ff056d7f1bc41e1d1ab72446afc9f16cfcf"
+  },
+  "executionGuide": {
+    "path": "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md",
+    "sha256": "7a14a5cbd3a133e729a1184312a29fa9089a70c8c5f19d87b02eb9244ff92990"
+  },
+  "historicalParentSpecification": {
+    "path": ".runtime/ai-painter/stage4-mvp256-dry-v27-cpu/frozen-parent-formal-spec-1.35.md",
+    "sha256": "8c61d84a8cdd727ee2d4879ab594630ebee7d3e91e678c81d75bb7b5ea9fbd28"
+  },
+  "modelPlan": {
+    "architectureId": "stage4_native_rgb_complete_support_shared_hidden_v27",
+    "seed": 20260929,
+    "parameterElements": 2236015,
+    "parameterTensors": 100,
+    "objectParameterElements": 1372,
+    "objectParameterTensors": 10,
+    "contextRule": "full_v23_terrain_context_private_global_xy_zero_v1",
+    "aggregationRule": "strict_deterministic_index_add_scoped_to_object_assembly_v1",
+    "sharingRule": "one_registered_hidden_four_independent_rgb_adapters_v1",
+    "featureRule": "unchanged_eight_learned_slots_typed_appearance_and_footprint_projection_v1",
+    "initialization": "fresh_v23_footprints_first_block_four_original_last_convs_no_extra_rng",
+    "historicalCheckpointLoaded": false
+  },
+  "gradientPlan": {
+    "groups": [
+      "shared_hidden",
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "formula": "fixed_v24_negative_other_projection_float64_then_fp32",
+    "totalGradientAtol": 0.000001,
+    "totalGradientRtol": 0.00001,
+    "roundoffMultiplier": 16,
+    "sharedCoreSource": "complete_aggregated_original_objectCoreRgbWeighted_scalar",
+    "independentTotalScope": "all_100_model_parameters",
+    "auxiliaryScope": "10_shared_and_adapter_parameters_three_calls",
+    "nonGroupGradient": "original_independent_actual_total",
+    "crossClassCouplingChanged": true,
+    "oldFourGroupUpdateEquivalenceClaim": false,
+    "lossAndWeightsChanged": false
+  },
+  "resourceBound": {
+    "maxWallSeconds": 180,
+    "cpuThreads": 2,
+    "maxOutputBytes": 16777216,
+    "attempts": 1,
+    "automaticRetries": 0,
+    "maxRealModelForwards": 2,
+    "maxRealAutogradGradCalls": 8
+  },
+  "activation": {
+    "cpuCheckAllowed": true,
+    "gpuAllowed": false,
+    "trainingAllowed": false,
+    "formalQualificationAllowed": false,
+    "runtimePublicationAllowed": false
+  },
+  "dataUse": {
+    "splitCounts": {
+      "train": 48,
+      "validation": 8,
+      "challenge": 4,
+      "regression": 4
+    },
+    "trainOrdinals": [
+      0,
+      43
+    ],
+    "validationContentRead": false,
+    "challengeContentRead": false,
+    "regressionContentRead": false
+  },
+  "dataBindings": {
+    "datasetManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+      "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"
+    },
+    "sourceIndex": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/source-index.json",
+      "sha256": "e92dbfdb28387c99773a1f56cf6031988fec69f1d4e9ea62f06bc38ae02c572c"
+    },
+    "splits": {
+      "challenge": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/challenge.json",
+        "sha256": "2e543ad6d2fe5a617c5d11313544ef39edb646959afd15e7066b5600da5ee8bd"
+      },
+      "regression": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/regression.json",
+        "sha256": "12607d19c9f878e7bcfa3137a3923e8d9edc4b92c881873b01f3382435876ca0"
+      },
+      "train": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/train.json",
+        "sha256": "e1edd2c189800e4a0e0ce4ac4d208b36b58bfde0d50328a931a9e664da27b723"
+      },
+      "validation": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/validation.json",
+        "sha256": "1daa22941edae95ad408caf5e4eb57ab1354141ff20cd788e637569d52587761"
+      }
+    },
+    "conditionContract": {
+      "path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+      "sha256": "c8941c7730edb73c0b0a733bc877cf550184e2f3ab2adb08102fb0214d38cac2"
+    },
+    "parentDataCandidate": {
+      "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+      "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+    },
+    "numericReview": {
+      "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+      "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"
+    },
+    "detailReview": {
+      "path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json",
+      "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"
+    }
+  },
+  "selectedTrainRows": [
+    {
+      "capacitySlotId": "v7-capacity-slot-146",
+      "conditionLabel": "v7-complete-map-146",
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "05ff62ecdce5a4d545af0dc4652e64fe580d272f032049a8b464924bb751e3aa"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-146-2026-08-02T01-32-06-285Z/contribution.json",
+        "sha256": "e25cbe34f15a1637e90dad3c6565f74a10e9db9930616afd4b79082af7a4919f"
+      },
+      "grouping": {
+        "conditionTensorContent": "e4813270c261b621e02c3333f2fdc887f3cb62bc579fed6aecebff1a2f09afe6",
+        "coordinateReference": "EPSG:4326",
+        "instance": "5e5f0c122e6d81d90e125f4792a7e965ca8406f48677c75017fe6a2053e3461d",
+        "sourceWindow": {
+          "east": 101.83413687463056,
+          "north": 14.522530604026777,
+          "south": 14.512710201342259,
+          "west": 101.82061173565957
+        },
+        "theme": "4497e15ee53c0e6d938e64e97b8dbd2e4c4b44e8e3ee1cd2cc21ab7125ab05c5",
+        "worldId": "training-world:earth-reference-v7-v7-capacity-slot-146-65332ba6bc50"
+      },
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3.png",
+        "sha256": "eb5c085a05f775ea8df2a8912ff806794dca25b7a378dc54102b142aecf43125"
+      },
+      "monsoonSeason": "wet_season",
+      "ordinal": 1,
+      "regionSource": {
+        "contentHashAlgorithm": "sorted_json_without_packageSha256_v1",
+        "contentSha256": "9e49e6186fde1e5090ebe5a1629b58f6a0e799a189205e52e597768b13319580",
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/real-earth-region-source-package.json",
+        "sha256": "882ae603cbf2478506b6a5e33ef9ee9502dbd06e04a7d84509a69b6598c06b4f"
+      },
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+      "sourceContributionIndex": 0,
+      "sourceRecord": {
+        "path": "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3/record.json",
+        "sha256": "e154405ec97ab9394a886301947a118cb8b26a9e2b9efffa622821431df2ffba"
+      },
+      "sourceSampleIndex": 51,
+      "sourceSplit": "train",
+      "split": "train",
+      "useQualification": "unverified_not_training_eligible"
+    },
+    {
+      "capacitySlotId": "v7-capacity-slot-190",
+      "conditionLabel": "v7-complete-map-190",
+      "conditionPack": {
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "sha256": "1079fac2754423c04a680ceafa0f8c8a7032d5700921ef52e3941dd2b428bc5f"
+      },
+      "contribution": {
+        "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-190-2026-08-02T01-00-04-104Z/contribution.json",
+        "sha256": "5e6c3a1bc99e9b795a8baf418e38aff6e65cf75f0cb89d355f9026bea6e8d3db"
+      },
+      "grouping": {
+        "conditionTensorContent": "ac70cf1d477f4bd0f3984eea729503fff358b48dc73ac8210e7ce7995705af19",
+        "coordinateReference": "EPSG:4326",
+        "instance": "8ac5e35b63dc214ab2a73d950d4cb527b86141686715306d5bffcab84233671e",
+        "sourceWindow": {
+          "east": 101.91528770845648,
+          "north": 14.55199181208033,
+          "south": 14.542171409395811,
+          "west": 101.90176256948548
+        },
+        "theme": "bd7d934c621818e13b24f1debdfee975c9ea5f5246429e35ba23d26966d2c27b",
+        "worldId": "training-world:earth-reference-v7-v7-capacity-slot-190-c873391d9acd"
+      },
+      "image": {
+        "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7.png",
+        "sha256": "376fd221dae23962ab84c3cca78c0bd9f0e97464fc943ba314737e28f3fc4e2c"
+      },
+      "monsoonSeason": "wet_season",
+      "ordinal": 45,
+      "regionSource": {
+        "contentHashAlgorithm": "sorted_json_without_packageSha256_v1",
+        "contentSha256": "3f7fa413000c8bd8c3e8524861d43f3e9d137626908ce193f93f4fcd0ac0ab03",
+        "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/real-earth-region-source-package.json",
+        "sha256": "8a71116e783262cf5b87538cd7327ea45c3b6a51332dedc65af44b6dab3a9a89"
+      },
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7",
+      "sourceContributionIndex": 44,
+      "sourceRecord": {
+        "path": "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7/record.json",
+        "sha256": "a3ca40fb203c024dc8b928ddeb3f523ff10b6e7730a5bcf6fe03c0bbd4ea6888"
+      },
+      "sourceSampleIndex": 95,
+      "sourceSplit": "train",
+      "split": "train",
+      "useQualification": "unverified_not_training_eligible"
+    }
+  ],
+  "selectedAssetBindings": [
+    {
+      "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-146-2026-08-02T01-32-06-285Z/contribution.json",
+      "sha256": "e25cbe34f15a1637e90dad3c6565f74a10e9db9930616afd4b79082af7a4919f"
+    },
+    {
+      "path": ".runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-190-2026-08-02T01-00-04-104Z/contribution.json",
+      "sha256": "5e6c3a1bc99e9b795a8baf418e38aff6e65cf75f0cb89d355f9026bea6e8d3db"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/collision.png",
+      "sha256": "16e0d9a50a432ed86746577c250eb3314fce4aaf9b2acbaaf853790f2e44816c"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/coordinate_x.png",
+      "sha256": "1443d0bce48f6baae828d4eb4c1bb0d0bfa18a70d10e44c75b1881c3a84a8eb1"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/coordinate_y.png",
+      "sha256": "173538520d47261f97d0f327799f6ea7ec769d34aed74705e1237a1b9e4cf2b9"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/focal_area.png",
+      "sha256": "b1d12dd284429a6103db027981763b8e546768e5b0ca6afcfa04a8e95597ad85"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/moisture_proximity.png",
+      "sha256": "b1d12dd284429a6103db027981763b8e546768e5b0ca6afcfa04a8e95597ad85"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/object_footprints.png",
+      "sha256": "92f82adeb4d8a9900a256479eda99205966c568f75ef1e82111bcc2892a7c6ce"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/object_instance.png",
+      "sha256": "a0703eb90fbe1bd27e520bba98566350ec5e7ce245ccd127a8f347fefbc31c42"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/object_rock.png",
+      "sha256": "577efa8a75a0933d5904224ec586c92d73203a8c8ff0091a66ec2e6843c3619f"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/object_tree.png",
+      "sha256": "68eaa77ce284a45cf91d2911f8b532ea948bf22b0ae6249e5d514f8c51046dd7"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/object_vegetation.png",
+      "sha256": "ed6d40c31832263f686dd886a3394d14fb1d380768286b47e437aaf6f4f78b48"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/signed_distance_boundary.png",
+      "sha256": "37939e5722a93a7b62538ff0ee759ba54a6fd9e9cbd49db479072f3d3a52629d"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/signed_distance_object_ground.png",
+      "sha256": "1f00a321ad7ed356908b73c7609688748af61aa4375cb2add49394224743ba94"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/signed_distance_path.png",
+      "sha256": "22431635ba1f4112b113e471dbd5dfd3365bf3a34b93a5b5a59883094ac55696"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/signed_distance_shoreline.png",
+      "sha256": "4f6824975b066da0a77421bc4b715f0f050ff61e3e685db4796bd6a5b611e4e4"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/signed_distance_water.png",
+      "sha256": "4f6824975b066da0a77421bc4b715f0f050ff61e3e685db4796bd6a5b611e4e4"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/terrain_grass.png",
+      "sha256": "ffa74113562489981e30ab6ba075ba0f02ec5e14b8ec76648b1935492b41a97e"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/terrain_mud_patch.png",
+      "sha256": "e581dee2248b29b17193aadf85f1a5d6bad04b740e9c4ae130cd19589622b5a0"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/terrain_natural_boundary.png",
+      "sha256": "7a33099dd3b8b4ec73a00a759bf23bf849583bef1da470cc0c94023c912acf6f"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/terrain_path_ground.png",
+      "sha256": "f35678011b8571d7bbb8ea549896e590079ac8d872ea108bfd5cf02b3ee0dbe8"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/terrain_shoreline.png",
+      "sha256": "b1d12dd284429a6103db027981763b8e546768e5b0ca6afcfa04a8e95597ad85"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/terrain_tall_grass.png",
+      "sha256": "fc70a0e255d8b20eff32e50b0abaf8baf756edab575086049d4bc66c1b768cd4"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/terrain_water.png",
+      "sha256": "b1d12dd284429a6103db027981763b8e546768e5b0ca6afcfa04a8e95597ad85"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/channels/walkable.png",
+      "sha256": "f35678011b8571d7bbb8ea549896e590079ac8d872ea108bfd5cf02b3ee0dbe8"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+      "sha256": "05ff62ecdce5a4d545af0dc4652e64fe580d272f032049a8b464924bb751e3aa"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/real-earth-region-source-package.json",
+      "sha256": "882ae603cbf2478506b6a5e33ef9ee9502dbd06e04a7d84509a69b6598c06b4f"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/slot-world-facts.json",
+      "sha256": "d6ddab54403403f1324b0b2026dacb442a147c21651e0daf928f5c5b55057a1f"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/task-package.json",
+      "sha256": "cca153fb53f32de61dda41e89608713446d84e4203d2e5be5fb972d195b15d69"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/visual-fact-manifest.json",
+      "sha256": "b2af9253269faf27d16c746e6e84b178cd722ef629d7fb824bcf86523cf6a133"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/collision.png",
+      "sha256": "c1eba486837b9467e51408b60d7677cb29dbbf2dac0177a3bbe9986d63f4c8a0"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/coordinate_x.png",
+      "sha256": "1443d0bce48f6baae828d4eb4c1bb0d0bfa18a70d10e44c75b1881c3a84a8eb1"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/coordinate_y.png",
+      "sha256": "173538520d47261f97d0f327799f6ea7ec769d34aed74705e1237a1b9e4cf2b9"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/focal_area.png",
+      "sha256": "b1d12dd284429a6103db027981763b8e546768e5b0ca6afcfa04a8e95597ad85"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/moisture_proximity.png",
+      "sha256": "d0872c6685379a8294d56f00fe529b3cea9bb7a5d16ac2c1dcdcb681a1893d1d"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/object_footprints.png",
+      "sha256": "6fc414d055346739eaf8cf5c35740621cd71fa5c0a390ed9957fcdbfe65a6bdd"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/object_instance.png",
+      "sha256": "2ee0680f71d2d5066590f062e8ea43441e829b02380a6b974695859ad5a18953"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/object_rock.png",
+      "sha256": "c58b4914a48fdcfc39cefa28a4fa654729feb550323e9fb1060a5a76511f35d4"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/object_tree.png",
+      "sha256": "ae1822de225b67a4849e1fcc3d292176c6f96e79656fc5a5a93c8f9841f8d718"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/object_vegetation.png",
+      "sha256": "858784fe294e01bb8c6765c3c93897982dc1ab8afc7373ffde8c091887727ad0"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/signed_distance_boundary.png",
+      "sha256": "fb30373b08ee68634862aea5f8f972029a1a5345710bba3631da99bad3cae62c"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/signed_distance_object_ground.png",
+      "sha256": "59bfe0ffadba8448c90e46f191ed2ba60157a21849c63781ed2f62bbcfad8e84"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/signed_distance_path.png",
+      "sha256": "d3e7e00c2cf713bffbdec487b419861e152f5187e2aeb250cecd15db33683c94"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/signed_distance_shoreline.png",
+      "sha256": "30cf795dc479afc73de17913bc1046a6a028a3b4f4a61d66b07287fcbd9eedf1"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/signed_distance_water.png",
+      "sha256": "c36a7a4c82a2ef759751adbeaedcd0b1892a3e14371449940fb07de1f5329132"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/terrain_grass.png",
+      "sha256": "ffa74113562489981e30ab6ba075ba0f02ec5e14b8ec76648b1935492b41a97e"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/terrain_mud_patch.png",
+      "sha256": "4250b759f495c61c512c0ff5628fd8e8264029507c06c473eec9825642170e42"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/terrain_natural_boundary.png",
+      "sha256": "029d4a36052e5368b34dbb89dcb23970828f28e6b307a743cb41cdf33532a357"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/terrain_path_ground.png",
+      "sha256": "08a62382590598ae0d606982f168652f7de754f5a7fb3c86f6fa7165d34297ec"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/terrain_shoreline.png",
+      "sha256": "a9b56026dfec53ba6aa863576f236541b136c8be66391d7fe695878487497350"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/terrain_tall_grass.png",
+      "sha256": "2cbf2a7f41b134bbe81e27639500b5cda119764b411e3e87b61d0e879140ffef"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/terrain_water.png",
+      "sha256": "595f6471de727d8eef7c29e6b1e1e5173bc4a4675c6aeaf765c8f26bde934bd8"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/channels/walkable.png",
+      "sha256": "08a62382590598ae0d606982f168652f7de754f5a7fb3c86f6fa7165d34297ec"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+      "sha256": "1079fac2754423c04a680ceafa0f8c8a7032d5700921ef52e3941dd2b428bc5f"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/real-earth-region-source-package.json",
+      "sha256": "8a71116e783262cf5b87538cd7327ea45c3b6a51332dedc65af44b6dab3a9a89"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/slot-world-facts.json",
+      "sha256": "42a91ab1713dac0b63f33faba81b46a9e507d53781ad8ed89fcb6f4bdd72805d"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/task-package.json",
+      "sha256": "aa7faf6d37ce37a91a1f9ef4e789a3782bd1779157af9f29d87f7ecb49d3b7be"
+    },
+    {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-08-02T00-18-27-178Z/complete-map-condition-task/visual-fact-manifest.json",
+      "sha256": "6b9d1f50ff97b8a3dd049dce293668220fd7fd859a07c28bf1daa564a0b012a3"
+    },
+    {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3.png",
+      "sha256": "eb5c085a05f775ea8df2a8912ff806794dca25b7a378dc54102b142aecf43125"
+    },
+    {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7.png",
+      "sha256": "376fd221dae23962ab84c3cca78c0bd9f0e97464fc943ba314737e28f3fc4e2c"
+    },
+    {
+      "path": "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3/record.json",
+      "sha256": "e154405ec97ab9394a886301947a118cb8b26a9e2b9efffa622821431df2ffba"
+    },
+    {
+      "path": "data/world-samples/original-image-library/natural-home-v1/complete-maps/ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7/record.json",
+      "sha256": "a3ca40fb203c024dc8b928ddeb3f523ff10b6e7730a5bcf6fe03c0bbd4ea6888"
+    }
+  ],
+  "programBindings": [
+    {
+      "path": "ml/ai-painter/scripts/check_stage4_mvp256_dry_v27_cpu.py",
+      "sha256": "2095d0ff9ac523e9214e373c3c7ba66af2adf05e451a83a3653fa4a734238bd4"
+    },
+    {
+      "path": "ml/ai-painter/scripts/check_stage4_mvp_structured_object_v18_cpu_acceptance.py",
+      "sha256": "91d7902e48cf2e1d79fb209013de8ceea21dffd2309c959a4b32f4660ba58da6"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/__init__.py",
+      "sha256": "cd5c6b57e901a33f088923792eb02198c016a22be6345ac99f1c2bdd82b39338"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/__init__.py",
+      "sha256": "f6aa5e22608ae309a6362da1e432f98f2794fd63e2fed32bf12d8944c38d3d53"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_aperiodic_detail_renderer.py",
+      "sha256": "d7c5b31f4fedd076f3c3d9336f997551188edb724a3c2c1ad4bc505206c8d702"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_complete_support_partition_v23_cpu.py",
+      "sha256": "c455e642631352eaaa14cce7070d23260a7fe9abd189591d99e2f8863acca50f"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_conditional_texture_cpu.py",
+      "sha256": "2a54a37d2c42de2415bbda8e8af1327c0ca7a932ae560df74b79e54b7de5565c"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_instance_object_prototype.py",
+      "sha256": "3f3850acfc9d5c9251690ad4170c831170883434431c2168c7e2039dcb59dc62"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_local_texture_objective_v12.py",
+      "sha256": "f0565a0cba1f1748fd14c67d5ea4a617ffa8231979df4839766fbe5b4c32fa73"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_context_renderer.py",
+      "sha256": "a5dfe23343aa8eee504a1effcd3e5f4f30f3085bb90637ccbfd63eb2467dc105"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_core_fidelity_candidate_cpu.py",
+      "sha256": "4bf0a03616bcad1f3549a0a607358a6f02fc56a7690993f3a9701cfa5d40ecb0"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_cpu_v17.py",
+      "sha256": "e8b18b5e5d7b29befab908bb0a521b0f21b66d927ca2b8e2db99a11287063e78"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_objective_cpu_v17.py",
+      "sha256": "d36542ad2fa2e8ffd1d133d75f6ee4059265660650fb23a8a74cc1d83c0294b8"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_v18_cpu.py",
+      "sha256": "d190c5e5ed48368f43ba1c05a21942770be6235e48e9169b8248584582ad0370"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_whole_frame_fidelity_candidate_cpu.py",
+      "sha256": "35f7ee4eec43540d9396cdba59f25824ee886857a2541471f43e119ffa3685bc"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_feature_aggregation_v26_v2_cpu.py",
+      "sha256": "2addb1c60136ae42ebb68afb6b1a9c2908b761498dbe74957f93a7b18e5bef8f"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_core_priority_update_v24_cpu.py",
+      "sha256": "b0bc959700244ee508e2a9f3dd257f882abf4717f4e99b7d21f40d4a5b47f1ad"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_shared_hidden_priority_v27_cpu.py",
+      "sha256": "fa4aeede83c63546141d40e06b08110822cc5655084438d33f8dde7ccb4f31c5"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_shared_hidden_v27_cpu.py",
+      "sha256": "0ab84057e50f689015e75b18891f1ff660310ec61a6aa13045eb393b5580e2b0"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_instance_supervision_cpu.py",
+      "sha256": "2300cfdf7c99d50c64ea4d81d6fa753acec73f18baf55ab98a27f76505a54334"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_local_context_isolation_v26_cpu.py",
+      "sha256": "a6961e818f3136f9e60dc8b6c18b3ffc9e0b0b740930891df7de860c35f9ae70"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/split_release.py",
+      "sha256": "02932d6a41d9114bb552e8287f9174a925f904e9862916c9174826905ee7a75c"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/split_training.py",
+      "sha256": "71b91e93e5cb1cb6b973d0761491cb885293225596a6467ca7b11543cba0c526"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/training/__init__.py",
+      "sha256": "0e47a041d26119b302e3438c7f59448380ba3042b07bc3639400c75c6f0612c0"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/training/discriminator.py",
+      "sha256": "04820604e54f40fb74fc96c0f6a1185393da7e4e44766686d57de58313743d9d"
+    },
+    {
+      "path": "ml/ai-painter/tests/test_object_head_shared_hidden_priority_v27_cpu.py",
+      "sha256": "729d4077b5412ab3dd3a7ec0d77288ad8eb7c38b614636c71cac2ec32cbb01e9"
+    },
+    {
+      "path": "ml/ai-painter/tests/test_object_head_shared_hidden_v27_cpu.py",
+      "sha256": "4851b9c07aff14f43a120ef86edadf7432b1c1a9300d7f82494e7a77f62ab707"
+    },
+    {
+      "path": "ml/ai-painter/tests/test_object_head_shared_hidden_v27_integration_cpu.py",
+      "sha256": "ba0f9add113e68f8c28ba66c743ae3947ba67f1e385e47a67ed5fda51a86c254"
+    }
+  ],
+  "syntheticTests": [
+    "ml/ai-painter/tests/test_object_head_shared_hidden_v27_cpu.py",
+    "ml/ai-painter/tests/test_object_head_shared_hidden_v27_integration_cpu.py",
+    "ml/ai-painter/tests/test_object_head_shared_hidden_priority_v27_cpu.py"
+  ],
+  "cpuReportPath": ".runtime/ai-painter/stage4-mvp256-dry-v27-cpu/report.json",
+  "cpuFailurePath": ".runtime/ai-painter/stage4-mvp256-dry-v27-cpu/failure.json",
+  "cpuClaimPath": ".runtime/ai-painter/stage4-mvp256-dry-v27-cpu/claim.json",
+  "createdAtUtc": "2026-10-03T09:11:43Z",
+  "createdBy": "external_codex_controller",
+  "recordRole": "inactive_cpu_candidate_contract_not_execution_or_model_qualification"
+}

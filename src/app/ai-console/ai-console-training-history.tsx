@@ -4,9 +4,9 @@ import { startHistoryPolling } from './ai-console-history-poll'
 import { AiConsoleTrainingSummary } from './ai-console-training-summary'
 import styles from './ai-console-training-history.module.css'
 
-type Artifact = { artifactId: string; role: string; url: string | null; sampleId?: string; split?: string; arm?: string; seed?: number; inferenceMode?: string; sourceLabel?: string; epoch?: number | null; passed?: boolean; issueCodes?: string[]; logicalPath: string; sha256: string; byteLength?: number; optimizerSteps?: number; verificationStatus: string; previewStatus?: string }
+type Artifact = { artifactId: string; role: string; url: string | null; sampleId?: string; split?: string; arm?: string; seed?: number; inferenceMode?: string; sourceLabel?: string; epoch?: number | null; passed?: boolean; issueCodes?: string[]; logicalPath: string; sha256: string; byteLength?: number; optimizerSteps?: unknown; verificationStatus: string; previewStatus?: string }
 type RegistryEvent = { eventSequence: number; registryRevision: number; transactionId: string; taskId: string; runId: string; action: string | null; recordedAtUtc: string | null; currentSha256: string; evidenceReferences: string[] }
-type Run = { runId: string; recordId?: string; runKind: string; terminalStatus: string; sourceRevision: number; finishedAtUtc: string | null; recordedAtUtc?: string | null; registeredAtUtc?: string | null; independentReviewStatus?: string; independentReviewIssueCodes?: string[]; reviewStatusSource?: string; optimizerSteps?: number | null; resolution?: unknown; qualification?: unknown; artifacts?: Artifact[]; metrics?: unknown[]; checkpoints?: Artifact[]; events?: RegistryEvent[]; eventCoverage?: { scope: string; complete: boolean; gap: unknown } }
+type Run = { runId: string; recordId?: string; runKind: string; terminalStatus: string; sourceRevision: number; finishedAtUtc: string | null; recordedAtUtc?: string | null; registeredAtUtc?: string | null; independentReviewStatus?: string; independentReviewIssueCodes?: string[]; reviewStatusSource?: string; optimizerSteps?: unknown; resolution?: unknown; qualification?: unknown; failureSummary?: unknown; artifacts?: Artifact[]; metrics?: unknown[]; checkpoints?: Artifact[]; events?: RegistryEvent[]; eventCoverage?: { scope: string; complete: boolean; gap: unknown } }
 type Listing = { schemaVersion: string; dataStatus: string; reasonCode: string | null; sourceRevision: number; indexRevision?: number | null; observedAtUtc: string; records: Run[]; nextCursor: string | null; total: number | null; coverage: unknown }
 type Detail = { schemaVersion: string; dataStatus: string; reasonCode: string | null; unavailableFields?: string[]; record: Run & { detailCoverage?: unknown } }
 type Section = 'artifacts' | 'metrics' | 'events' | 'logs'
@@ -47,6 +47,49 @@ function reasonLabel(reason: string | null) {
   return reason ? labels[reason] ?? '部分证据暂不可用；请查看诊断代码与原始证据。' : '已核验详情；不代表训练资格或能力发布。'
 }
 function timeLabel(value: string | null | undefined) { return value ? `${new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}（北京时间）` : '未记录' }
+function TrainingFailureSummary({ run }: { run: Run }) {
+  const failed = /fail|interrupt|error|blocked/i.test(run.terminalStatus)
+  if (!failed && run.failureSummary == null) return null
+  const value = run.failureSummary
+  const failure = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+  const type = typeof failure?.type === 'string' && /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(failure.type) ? failure.type : null
+  // Do not dump arbitrary error objects, paths, secrets or unbounded messages into JSX.
+  const message = failure?.message === 'snapshot outside verified source/known control'
+    ? 'snapshot outside verified source/known control'
+    : typeof failure?.message === 'string' && failure.message.trim()
+      ? '错误详情见已绑定终态证据（原始文本未直接展示）'
+      : '错误信息未记录或无法核验'
+  return <section aria-label="所选Run失败信息"><h4>已登记失败信息（不是当前执行）</h4>
+    <p>{type ? `${type}: ` : ''}{message}</p>
+    <p>这里只显示该 Run 已登记的错误，不推断故障根因、缺失项数量或训练次数。</p>
+  </section>
+}
+function TrainingArtifactStatus({ run }: { run: Run }) {
+  const artifacts = Array.isArray(run.artifacts) ? run.artifacts : []
+  const checkpoint = artifacts.some(item => item?.role === 'checkpoint')
+    || Array.isArray(run.checkpoints) && run.checkpoints.length > 0
+  const output = artifacts.some(item => item?.role === 'output')
+  return <p>Checkpoint：{checkpoint ? '已登记，内容与资格以核验证据为准' : '未记录或无法核验'}；
+    验证／输出图：{output ? '已登记，图片按需核验读取' : '未记录或无法核验'}。
+    没有绑定或仅标记未记录，不能据此断言未生成。</p>
+}
+function formatOptimizerSteps(value: unknown): string {
+  const countLabel = (count: unknown): string => {
+    if (count === null || count === undefined) return '未记录'
+    return typeof count === 'number' && Number.isSafeInteger(count) && count >= 0
+      ? `${count}`
+      : '数据格式异常'
+  }
+  if (value === null || value === undefined || typeof value === 'number') return countLabel(value)
+  if (typeof value !== 'object' || Array.isArray(value)) return '数据格式异常'
+  const prototype = Object.getPrototypeOf(value)
+  if (prototype !== Object.prototype && prototype !== null) return '数据格式异常'
+  const steps = value as Record<string, unknown>
+  const hasGenerator = Object.prototype.hasOwnProperty.call(steps, 'generator')
+  const hasDiscriminator = Object.prototype.hasOwnProperty.call(steps, 'discriminator')
+  if (!hasGenerator && !hasDiscriminator) return Object.keys(steps).length === 0 ? '未记录' : '数据格式异常'
+  return `G（生成器）：${countLabel(hasGenerator ? steps.generator : undefined)} · D（判别器）：${countLabel(hasDiscriminator ? steps.discriminator : undefined)}`
+}
 function readableJson(value: unknown) { const text = JSON.stringify(value, null, 2) ?? '未记录'; const bytes = new TextEncoder().encode(text); return bytes.length > 64000 ? `${new TextDecoder().decode(bytes.subarray(0,64000))}\n[本项显示已截断，请查询绑定证据]` : text }
 function MetricSummary({ metrics }: { metrics: unknown[] }) {
   return <><p>已返回 {metrics.length} 项指标，逐项独立展开；整表预览截断不影响下方每项读取。</p><table><thead><tr><th>样本／轮次</th><th>实验臂</th><th>种子</th><th>度量</th></tr></thead><tbody>{metrics.map((value, index) => {
@@ -74,7 +117,24 @@ export function AiConsoleTrainingHistory() {
   const [sectionCursor, setSectionCursor] = useState<string | null>(null)
   const [sectionPage, setSectionPage] = useState<SectionPage | null>(null)
   const [sectionError, setSectionError] = useState<string | null>(null)
+  const [runQuery, setRunQuery] = useState('')
   const detailRef = useRef<HTMLElement>(null)
+  function selectRun(identity: string) {
+    if (selected !== identity) { setSelected(identity); setDetail(null); setDetailError(null) }
+    setSection('artifacts'); setSectionCursor(null); setSectionPage(null); setSectionError(null)
+    if (selected === identity) detailRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const identity = new URL(window.location.href).searchParams.get('run')
+    if (identity && /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,191}$/.test(identity)) { setRunQuery(identity); selectRun(identity) }
+  }, [])
+  useEffect(() => {
+    if (!selected || typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    url.searchParams.set('run', selected)
+    window.history.replaceState(window.history.state, '', url.toString())
+  }, [selected])
   useEffect(() => { if (selected) { detailRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }); detailRef.current?.focus({ preventScroll: true }) } }, [selected])
   useEffect(() => startHistoryPolling(async signal => {
     const response = await fetch(`/api/ai-console/training/history?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { cache: 'no-store', signal })
@@ -109,31 +169,41 @@ export function AiConsoleTrainingHistory() {
   return <section className={styles.history} aria-label="真实训练历史">
     <AiConsoleTrainingSummary />
     <header><h2>真实训练历史与制品</h2><p>目标2秒自动查询 · 当前执行与历史选择相互独立 · 不执行训练或修改证据</p></header>
+    <form className={styles.lookup} onSubmit={event => { event.preventDefault(); const identity = runQuery.trim(); if (/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,191}$/.test(identity)) selectRun(identity) }}>
+      <label>查询完整Run标识<input value={runQuery} maxLength={192} onChange={event => setRunQuery(event.target.value)} placeholder="粘贴Run标识，直接查询历史图像与证据" /></label>
+      <button type="submit" disabled={!/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,191}$/.test(runQuery.trim())}>查看该Run图像与证据</button>
+    </form>
+    {!selected && <p>先选择下方任一历史记录，或粘贴完整Run标识查询。已登记的原图、结果图及失败证据在详情中查看；不会用历史图替代当前训练预览。</p>}
     <p role="status">{error ?? (listing ? '查询已连接' : '正在连接')} · 最近成功查询：{lastSuccess ?? '尚未取得'} · 登记修订：{listing?.sourceRevision ?? '未知'} · 索引修订：{listing?.indexRevision ?? '未连接'}</p>
     {listing && <details><summary>登记覆盖与限制（不等于磁盘全部历史）</summary><pre>{JSON.stringify(listing.coverage, null, 2)}</pre></details>}
     <nav aria-label="历史分页"><button disabled={!cursor} onClick={() => setCursor(null)}>最新首页</button><button disabled={!listing?.nextCursor} onClick={() => setCursor(listing?.nextCursor ?? null)}>下一页</button><span>总数：{listing?.total ?? '覆盖未完整核验'}</span></nav>
-    <div className={styles.runs}>{listing?.records.map(run => <button key={run.recordId ?? run.runId} aria-pressed={selected === (run.recordId ?? run.runId)} onClick={() => { const identity = run.recordId ?? run.runId; if (selected !== identity) { setSelected(identity); setDetail(null); setDetailError(null); setSectionCursor(null); setSectionPage(null); setSectionError(null) } else detailRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }}><strong>{runStatusLabel(run)}</strong><span>{run.runId ?? run.recordId}</span><small>{kindLabel(run)} · 训练终态：{run.terminalStatus} · {run.finishedAtUtc ? `完成时间：${timeLabel(run.finishedAtUtc)}` : `最近登记时间：${timeLabel(run.registeredAtUtc ?? run.recordedAtUtc)}`}</small><b>查看详情与登记事件 ↓</b></button>)}</div>
+    <div className={styles.runs}>{listing?.records.map(run => <button key={run.recordId ?? run.runId} aria-pressed={selected === (run.recordId ?? run.runId)} onClick={() => selectRun(run.recordId ?? run.runId)}><strong>{runStatusLabel(run)}</strong><span>{run.runId ?? run.recordId}</span><small>{kindLabel(run)} · 训练终态：{run.terminalStatus} · {run.finishedAtUtc ? `完成时间：${timeLabel(run.finishedAtUtc)}` : `最近登记时间：${timeLabel(run.registeredAtUtc ?? run.recordedAtUtc)}`}</small><b>查看图像、详情与登记事件 ↓</b></button>)}</div>
     {selected && <article ref={detailRef} tabIndex={-1} aria-label="选中Run详情" className={styles.detail}><h3>所选实验详情</h3><code>{selected}</code>{detailError && <p role="alert">{detailError}{detail ? ' 下方为上次成功快照，已过期；恢复连接前不代表最新状态。' : ''}</p>}{!detail ? <p role="status">{detailError ? '未取得可显示详情；将在下一轮自动重试。' : '正在查询选中Run的精确绑定与登记事件…'}</p> : <>
       <p>{runStatusLabel(detail.record)} · {kindLabel(detail.record)}</p><p>{reasonLabel(detail.reasonCode)}</p>
+      <nav aria-label="详情内容分区">{(Object.keys(sectionLabels) as Section[]).map(kind => <button key={kind} aria-pressed={section === kind} onClick={() => { if (section !== kind) { setSection(kind); setSectionCursor(null); setSectionPage(null); setSectionError(null) } }}>{sectionLabels[kind]}</button>)}</nav>
+      <nav aria-label="详情内容分页"><button disabled={!sectionCursor} onClick={() => { setSectionCursor(null); setSectionPage(null) }}>本节首页</button><button disabled={!sectionPage?.nextCursor} onClick={() => { setSectionCursor(sectionPage?.nextCursor ?? null); setSectionPage(null) }}>本节下一页</button><span>本页 {sectionPage?.items.length ?? '未取得'} 项 · 已知 {sectionPage?.knownItemCount ?? '未知'} 项 · 完整总数：{sectionPage?.total ?? '覆盖未完整核验'}</span></nav>
+      {sectionError && <p role="alert">{sectionError}</p>}
+      {!sectionPage && <p role="status">正在查询{sectionLabels[section]}内容页…</p>}
+      {section === 'artifacts' && <>
+        <h3 className={styles.imageHeading}>原图与已登记图像</h3>
+        <div className={styles.images}>{artifacts.filter(item => ['original', 'output', 'image'].includes(item.role)).map(item => <EvidenceImage key={item.artifactId} item={item} />)}</div>
+        {!artifacts.some(item => ['original', 'output', 'image'].includes(item.role)) && sectionPage && <p>本页没有图像，其他内容请继续分页；实际缺失范围见覆盖说明。</p>}
+      </>}
+      <TrainingFailureSummary run={detail.record} />
+      <TrainingArtifactStatus run={detail.record} />
       <details><summary>原始状态与诊断代码</summary><code>{detail.record.terminalStatus} · {detail.dataStatus} · {detail.reasonCode ?? '无错误'}</code></details>
       <details><summary>内容覆盖与缺失项</summary><pre>{readableJson({ unavailableFields: detail.unavailableFields ?? [], coverage: detail.record.detailCoverage ?? '未提供逐项覆盖说明' })}</pre></details>
       <p>完成时间：{timeLabel(detail.record.finishedAtUtc)} · 最近登记时间：{timeLabel(detail.record.registeredAtUtc ?? detail.record.recordedAtUtc)}</p>
       <p>实验执行完成不等于视觉合格、正式Stage通过或发布。历史数据不代表当前正在训练。</p>
       {detail.record.qualification && typeof detail.record.qualification === 'object' && 'independentReviewStatus' in detail.record.qualification && <p role="status">独立审核：{String((detail.record.qualification as Record<string, unknown>).independentReviewStatus)} · 失败码：{Array.isArray((detail.record.qualification as Record<string, unknown>).issueCodes) ? ((detail.record.qualification as Record<string, unknown>).issueCodes as string[]).join('、') || '无' : '未记录'}。候选图不代表合格或发布。</p>}
-      <p>真实优化步：{detail.record.optimizerSteps ?? '未记录'} · 分辨率：{JSON.stringify(detail.record.resolution ?? '未记录')}</p>
+      <p>真实优化步：{formatOptimizerSteps(detail.record.optimizerSteps)} · 分辨率：{JSON.stringify(detail.record.resolution ?? '未记录')}</p>
       <details><summary>真实资格字段</summary><pre>{readableJson(detail.record.qualification)}</pre></details>
-      <nav aria-label="详情内容分区">{(Object.keys(sectionLabels) as Section[]).map(kind => <button key={kind} aria-pressed={section === kind} onClick={() => { if (section !== kind) { setSection(kind); setSectionCursor(null); setSectionPage(null); setSectionError(null) } }}>{sectionLabels[kind]}</button>)}</nav>
-      <nav aria-label="详情内容分页"><button disabled={!sectionCursor} onClick={() => { setSectionCursor(null); setSectionPage(null) }}>本节首页</button><button disabled={!sectionPage?.nextCursor} onClick={() => { setSectionCursor(sectionPage?.nextCursor ?? null); setSectionPage(null) }}>本节下一页</button><span>本页 {sectionPage?.items.length ?? '未取得'} 项 · 已知 {sectionPage?.knownItemCount ?? '未知'} 项 · 完整总数：{sectionPage?.total ?? '覆盖未完整核验'}</span></nav>
-      {sectionError && <p role="alert">{sectionError}</p>}
-      {!sectionPage && <p role="status">正在查询{sectionLabels[section]}内容页…</p>}
       {sectionPage && <details><summary>本节实际覆盖与限制 · {sectionPage.dataStatus}</summary><p>{reasonLabel(sectionPage.reasonCode)}</p><pre>{readableJson(sectionPage.coverage)}</pre></details>}
       {section === 'events' && <><h3>本Run登记时间线</h3><p>仅包含事务、数据库与快照均核验通过的本Run事件，不是逐步训练日志。{detail.record.eventCoverage?.complete ? '登记链覆盖完整。' : '较早登记链存在缺口，事件覆盖不完整。'}</p>
       {events.length ? <ol>{events.map(event => <li key={event.transactionId}><strong>{timeLabel(event.recordedAtUtc)}</strong> · 修订{event.registryRevision} / 事件{event.eventSequence}<br /><span>{event.action === 'advance_current_capability_lifecycle' ? '本地程序推进并登记状态' : '本地程序登记事件'}</span><details><summary>UTC时间、事件身份及证据路径</summary><pre>{readableJson(event)}</pre></details></li>)}</ol> : sectionPage && <p>本页没有该Run自身的登记事件；不能借用其他任务事件补齐。</p>}</>}
       {section === 'artifacts' && <>
-      <h3>原图与已登记图像</h3><div className={styles.images}>{artifacts.filter(item => ['original', 'output', 'image'].includes(item.role)).map(item => <EvidenceImage key={item.artifactId} item={item} />)}</div>
-      {!artifacts.some(item => ['original', 'output', 'image'].includes(item.role)) && sectionPage && <p>本页没有图像，其他内容请继续分页；实际缺失范围见覆盖说明。</p>}
       <h3>Checkpoint（绑定已核验，权重字节未重算）</h3>
-      {artifacts.filter(item => item.role === 'checkpoint').map(cp => <p key={cp.artifactId}><a href={cp.url ?? undefined} target="_blank" rel="noreferrer">{cp.arm} · {cp.byteLength}字节 · {cp.optimizerSteps ?? '未知'}优化步</a><br />{cp.logicalPath}<br />SHA：{cp.sha256}</p>)}
+      {artifacts.filter(item => item.role === 'checkpoint').map(cp => <p key={cp.artifactId}><a href={cp.url ?? undefined} target="_blank" rel="noreferrer">{cp.arm} · {cp.byteLength}字节 · {formatOptimizerSteps(cp.optimizerSteps)}优化步</a><br />{cp.logicalPath}<br />SHA：{cp.sha256}</p>)}
       {!artifacts.some(item => item.role === 'checkpoint') && sectionPage && <p>本页未提供Checkpoint绑定；其他页与实际缺口见分页及覆盖说明。</p>}
       <h3>请求、条件与终态证据</h3><ul>{artifacts.filter(item => !['original', 'output', 'image', 'checkpoint'].includes(item.role)).map(item => <li key={item.artifactId}><>{!item.url ? <span>{item.previewStatus === 'bounded_projection_only_raw_source_over_limit' ? '实验结果原文超过8MiB；已核验图像和指标通过受控派生分页查看' : '证据原文不可预览'} · {item.logicalPath}</span> : <a href={item.url} target="_blank" rel="noreferrer">{({ terminal: '终态证据', result: '实验结果', request: '实验请求与样本', condition: '样本条件', task_capsule: '本任务证据胶囊', registry_transaction: '登记事务', evidence: '已绑定证据', steps: '优化步证据' } as Record<string, string>)[item.role] ?? item.role} {item.sampleId} {item.arm}</a>}</> · {item.sha256}</li>)}</ul>
       </>}

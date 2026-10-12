@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "stage4-mvp256-dry-v26-context-isolation-execution-policy-v1",
+  "status": "cpu_accepted_not_gpu_qualified",
+  "capabilityVersion": "stage4_mvp256_dry_object_local_context_isolation_v26_v1",
+  "executionVersion": "context_isolation_v1",
+  "cpuProposal": {
+    "path": ".runtime/ai-painter/stage4-mvp256-dry-v25-executions/mvp256-dry-v25-7369b2cbb9bf36a2bead6a828c0391795fa60ddfca5a7af2/dry-review/object-expression-conclusion.json",
+    "sha256": "e5384859b9f3ddd730b4e6deb8e14487150e65118075c64d8975e433c51ca6d4"
+  },
+  "predecessorCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+    "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+  },
+  "modelCpuEvidence": {
+    "path": ".runtime/ai-painter/stage4-mvp256-dry-v26-cpu/report.json",
+    "sha256": "ea6c29feb0ab876942e7fcea4f742393aa7186673487eb62febb4db0ebdce458"
+  },
+  "cpuAcceptance": {
+    "path": ".runtime/ai-painter/stage4-mvp256-dry-v26-lifecycle-cpu/2448bcc85c7d4d993e6ba327dba7e1792c711fcc2c2c34d187ae829e215ca6e1/report.json",
+    "sha256": "1f23a92e7bb6657f3c5c74201059d7a3fefb69e9548c2e87c78dfa1ea2209c75"
+  },
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "1131b337bae2638ac7b8ec4c507c0b5514954b941222069ff65f2478eb619e45"
+  },
+  "predecessorReviewTerminal": {
+    "path": ".runtime/ai-painter/stage4-mvp256-dry-v25-executions/mvp256-dry-v25-7369b2cbb9bf36a2bead6a828c0391795fa60ddfca5a7af2/dry-review/review-terminal.json",
+    "sha256": "e9291f55175d6166d837d9e1f00cde407ef7d76b5411f4cedf6460ac53c3f21c"
+  },
+  "historicalQualificationMayBeReused": false,
+  "historicalCheckpointMayInitialize": false,
+  "baseline": {
+    "trainingTerminal": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v24-recovery-v2-executions/mvp256-dry-v24-9056e7f9a7eb9ba8bf8fbf569d05c0be30c12c723ffca0e2/training-finalize.json",
+      "sha256": "2f2b7a3ff091f54e511e7bad9ab2a53fabbe2fc626f5bd91e49db7c1ade33a26"
+    },
+    "failedVisualAudit": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v24-recovery-v2-executions/mvp256-dry-v24-9056e7f9a7eb9ba8bf8fbf569d05c0be30c12c723ffca0e2/dry-review/independent-audit.json",
+      "sha256": "c3c4db62221412523349ea57d8e925e13d49039903e6adffd2d4e10ce2556ae8"
+    }
+  },
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "worldCount": 1,
+    "subjectSampleId": "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+    "subjectSplit": "validation",
+    "waterFactPresent": false,
+    "buildingsRequired": false,
+    "artificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "formalStage4Qualification": false,
+    "runtimePublication": false
+  },
+  "dataUse": {
+    "train": 48,
+    "validation": 8,
+    "challenge": 4,
+    "regression": 4,
+    "weightUpdatesFrom": [
+      "train"
+    ],
+    "checkpointSelectionFrom": [
+      "validation"
+    ],
+    "challengeAndRegressionContentRead": false,
+    "sourceImageOrSplitMutation": false
+  },
+  "checkpointSelection": {
+    "eligibleEpochs": [
+      24,
+      36,
+      48
+    ],
+    "validationRowsPerEligibleEpoch": 8,
+    "firstCriterion": "maximum_worst_applicable_object_class_masked_luminance_correlation",
+    "secondCriterion": "minimum_mean_validation_rgb_mae",
+    "thirdCriterion": "earliest_epoch",
+    "allFourNaturalObjectClassesMustHaveValidationCoverage": true,
+    "validationMayUpdateWeights": false,
+    "selectedCheckpointMustReloadExactly": true,
+    "historicalV24CheckpointMayInitializeTraining": false
+  },
+  "executionCeiling": {
+    "trainingAttempts": 1,
+    "automaticRetries": 0,
+    "epochs": 48,
+    "generatorOptimizerSteps": 2304,
+    "discriminatorOptimizerSteps": 2304,
+    "maxWallSeconds": 2700,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2
+  },
+  "singleChange": {
+    "operation": "zero_private_learned_terrain_patches_keep_local_facts_v1",
+    "trainingAndInference": true,
+    "dropoutEnabled": false,
+    "terrainUnchangedAtSameInitialWeights": true,
+    "stateDictionaryKeysAndParameterCountUnchanged": true
+  },
+  "activation": {
+    "cpuAcceptanceCompleted": true,
+    "gpuQualificationAllowed": true,
+    "trainingAllowed": false,
+    "formalStage4QualificationAllowed": false,
+    "runtimePublicationAllowed": false
+  }
+}

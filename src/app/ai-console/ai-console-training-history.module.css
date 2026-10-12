@@ -1,6 +1,10 @@
 .history { padding: 20px; border: 1px solid #c8d2e5; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
 .history header, .history article { margin-bottom: 16px; }
-.history nav { display: flex; gap: 12px; align-items: center; margin: 16px 0; }
+.history nav { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
+.lookup { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 16px 0; }
+.lookup label { display: grid; gap: 4px; flex: 1 1 280px; }
+.lookup input { min-width: 0; padding: 10px; border: 1px solid #bcc9df; font: inherit; }
+.imageHeading { scroll-margin-top: 20px; }
 .history button { cursor: pointer; padding: 10px; border: 1px solid #bcc9df; background: white; color: #172238; text-align: left; }
 .history button:disabled { cursor: default; opacity: .5; }
 .history button[aria-pressed=true] { border: 2px solid #7c3aed; background: #f3edff; }

@@ -651,7 +651,7 @@ def run(package_binding):
     def resource():
         nonlocal last_authority, last_thermal
         import torch
-        require(time.monotonic() - start < 1800, "exposure wall time exhausted")
+        require(time.monotonic() - start < RESOURCES["maxWallSeconds"], "exposure wall time exhausted")
         if probe_start is not None:
             require(time.monotonic() - probe_start < 120, "zero-update GPU probe wall time exhausted")
         if time.monotonic() - last_authority >= 10:
@@ -686,7 +686,7 @@ def run(package_binding):
         write_json("sample-identities.json", identities)
         reader.unchanged()
         require(torch.cuda.is_available() and torch.cuda.is_bf16_supported(), "CUDA BF16 unavailable")
-        require(time.monotonic() - start < 1800, "wall time exhausted before CUDA")
+        require(time.monotonic() - start < RESOURCES["maxWallSeconds"], "wall time exhausted before CUDA")
         torch.cuda.set_device(0); torch.cuda.manual_seed_all(TRAINING["initializationSeed"])
         free, total = torch.cuda.mem_get_info(0)
         allocation = int(total * .7) - (total - free) - 64 * 1024**2
@@ -832,7 +832,7 @@ def run(package_binding):
             "elapsedSeconds": time.monotonic() - start, "completedAtUtc": now()}
         validate_result_contract(result, package)
         write_json("result.json", result)
-        require(time.monotonic() - start < 1800, "wall time exhausted during final result commit")
+        require(time.monotonic() - start < RESOURCES["maxWallSeconds"], "wall time exhausted during final result commit")
         return result
     except BaseException as error:
         failure = {**state, "status": "experiment_failed_closed", "executionState": "failed_closed",

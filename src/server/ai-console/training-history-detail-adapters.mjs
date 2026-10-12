@@ -1,5 +1,19 @@
 // Legacy layouts are enabled by explicit package/result discriminants. File
 // extensions classify already-bound artifacts; names never invent relationships.
+const MANAGED_DETAIL_PROTOCOLS = [
+  {worker:'detail-weight-managed-worker-terminal-v1', review:'detail-weight-managed-review-terminal-v1',
+    plans:new Map([['detail-weight-plan.json','detail-weight-managed-plan-v1'],
+      ['detail-weight-capture-plan.json','detail-weight-capture-managed-plan-v1']]),
+    report:'detail-weight-native-review-input-v1', adapter:'detail_weight_managed_training_v1'},
+  {worker:'ecology-regime-quality-worker-terminal-v1', review:'ecology-regime-quality-review-terminal-v1',
+    plans:new Map([['quality-plan.json','ecology-regime-quality-plan-v1']]),
+    configuration:'ecology-regime-quality-configuration-v1', mode:'bounded-quality-training',
+    report:'ecology-regime-native-review-input-v1', adapter:'ecology_quality_training_v1'},
+  {worker:'ecology-decode1-weight-quality-worker-terminal-v1', review:'ecology-decode1-weight-quality-review-terminal-v1',
+    plans:new Map([['quality-plan.json','ecology-decode1-weight-quality-plan-v1']]),
+    configuration:'ecology-decode1-weight-quality-configuration-v1', mode:'bounded-quality-training',
+    report:'ecology-regime-native-review-input-v1', adapter:'ecology_decode1_weight_quality_training_v1'},
+];
 const PACKAGE_KINDS = {
   'ai-painter-decoder-binding-ab-result-v1': ['decoder_binding_ab_0', 'ai-painter-decoder-binding-ab-package-v1', 'decoder_binding_ab'],
   'ai-painter-timestep-ab-result-v1': ['timestep_ab_0', 'ai-painter-timestep-ab-package-v1', 'timestep_ab'],
@@ -15,8 +29,10 @@ const MVP_STAGE0_PHASE_SCHEMAS = new Map([
   ['ai-painter-stage4-mvp-denoiser-stage0-lifecycle-v1', 'ai-painter-stage4-mvp-denoiser-stage0-terminal-v1'],
   ['ai-painter-stage4-mvp-native-rgb-renderer-v6-stage0-lifecycle-v1', 'ai-painter-stage4-mvp-native-rgb-renderer-v6-stage0-terminal-v1'],
 ])
-export function legacyRunKind(schema) { return PACKAGE_KINDS[schema]?.[2] ?? (schema === 'ai-painter-learning-capacity-interrupted-experiment-terminal-v1' ? 'interrupted_experiment' : 'registered_experiment') }
+export function legacyRunKind(schema) { return schema === 'detail-weight-managed-worker-terminal-v1' ? 'bounded_managed_training' : PACKAGE_KINDS[schema]?.[2] ?? (schema === 'ai-painter-learning-capacity-interrupted-experiment-terminal-v1' ? 'interrupted_experiment' : 'registered_experiment') }
 const LEARNING_PACKAGES = new Set(['ai-painter-learning-capacity-experiment-package-v1', 'ai-painter-decoder-reconstruction-experiment-package-v1', 'ai-painter-v21-train-only-capacity-package-v1'])
+// Capability numbers select no behavior: only this unchanged v1 protocol does.
+const DRY_LIFECYCLE = /^ai-painter-mvp256-dry-(v\d+(?:-v\d+)?)-training-lifecycle-v1$/u
 // Legacy observation chunks inherit identity ONLY from this verified canonical
 // parent. Iterate its bindings, never directories or filename conventions.
 async function failedObservationFragments(request, result, readJson, readEvidenceJson, requireFact) {
@@ -177,8 +193,13 @@ function experimentEnvelopeV1(request, result, requireFact, failedClosed = false
   } }
 }
 export async function adaptLegacyTrainingDetail({ runId, terminal, record, base, capsuleBinding, taskTerminalBinding, readJson, readEvidenceJson, readLargeResultProjection, makeArtifact, checkpointMetadata, requireFact }) {
+  const dryProtocol = DRY_LIFECYCLE.exec(terminal.schemaVersion)
+  if (dryProtocol) return adaptDryLifecycle({ family: dryProtocol[1], runId, terminal, record, base, taskTerminalBinding, readJson, makeArtifact, checkpointMetadata, requireFact })
   if (terminal.schemaVersion === 'stage4-full-backbone-spatial-affine-controlled-smoke-terminal-v1') return adaptSpatialAffineSmoke({ runId, terminal, record, base, readJson, makeArtifact, checkpointMetadata, requireFact })
   if (MVP_STAGE0_LIFECYCLE_SCHEMAS.has(terminal.schemaVersion)) return adaptMvpStage0Lifecycle({ runId, terminal, record, base, taskTerminalBinding, readJson, makeArtifact, checkpointMetadata, requireFact })
+  const managed = await adaptManagedTrainingDetail({ runId, terminal, record, base, capsuleBinding, taskTerminalBinding,
+    readJson, readEvidenceJson, makeArtifact, checkpointMetadata, requireFact })
+  if (managed) return managed
   const finish = (reasonCode = null) => ({ ...base, dataStatus: reasonCode ? 'partial' : 'connected', reasonCode, schemaVersion: 'ai_console_training_run_detail_v1', record })
   const missing = (...fields) => { base.unavailableFields = [...new Set([...base.unavailableFields, ...fields])] }
   let layout = PACKAGE_KINDS[terminal.schemaVersion]
@@ -390,6 +411,631 @@ export async function adaptLegacyTrainingDetail({ runId, terminal, record, base,
   // visible and verifiable, but must never be paired by filename conventions.
   return finish(failedBeforeArtifacts ? 'history_failed_before_artifact_registration' : canonicalFailedClosed ? 'history_experiment_failed_closed_partial'
     : base.unavailableFields.includes('output.sample_arm_seed_association') ? 'history_output_association_not_recorded' : null)
+}
+
+// Stable managed protocol, not a Run/model-version switch. Only authenticated
+// parent bindings are followed; no deterministic filename is a discovery path.
+export async function adaptManagedTrainingDetail({ runId, terminal, record, base, capsuleBinding, taskTerminalBinding,
+  readJson, readEvidenceJson, makeArtifact, checkpointMetadata, requireFact }) {
+  const object = v => v !== null && typeof v === 'object' && !Array.isArray(v)
+  const count = v => Number.isSafeInteger(v) && v >= 0
+  const text = v => typeof v === 'string' && v.length > 0 && v.length <= 192
+  let protocol = MANAGED_DETAIL_PROTOCOLS.find(p => terminal.schema === p.worker
+    || (terminal.schema ?? terminal.schemaVersion) === p.review) ?? MANAGED_DETAIL_PROTOCOLS[0]
+  let schema = protocol.worker
+  const isReviewWrapper = value => (value?.schema ?? value?.schemaVersion) === protocol.review
+  const gaps = new Set(), availability = {}, seen = new Map()
+  const limits = { jsonReads: 16, jsonBytes: 2 * 1024 * 1024, artifacts: 256, checkpoints: 32, metrics: 1024, images: 128 }
+  let reads = 0, worker = terminal, workerBinding = record.terminalBinding, wrapper = null, boundAutonomous = null
+  const gap = (field, state = 'not_recorded') => {
+    gaps.add(field)
+    if (state !== 'not_recorded' || !availability[field] || availability[field] === 'available') availability[field] = state
+  }
+  const binding = b => {
+    requireFact(object(b) && typeof b.path === 'string' && /^[a-f0-9]{64}$/u.test(b.sha256)
+      && !/^(?:[A-Za-z]:|\/)/u.test(b.path) && !b.path.includes('\\')
+      && b.path.split('/').every(part => part && part !== '.' && part !== '..'), 'history_managed_binding_invalid')
+  }
+  const same = (a, b) => { binding(a); binding(b); requireFact(a.path === b.path && a.sha256 === b.sha256, 'history_managed_parent_conflict') }
+  const read = async (bound, field) => {
+    if (!bound) { gap(field); return null }
+    binding(bound); requireFact(++reads <= limits.jsonReads, 'history_managed_read_limit', 413)
+    try {
+      const value = readEvidenceJson ? (await readEvidenceJson(bound, limits.jsonBytes)).value : await readJson(bound)
+      requireFact(object(value), 'history_managed_document_invalid')
+      availability[field] = 'available'; return value
+    } catch (error) {
+      if (!['ENOENT', 'EACCES', 'EPERM'].includes(error.code) && error.status !== 413) throw error
+      gap(field, error.status === 413 ? 'over_limit' : error.code === 'ENOENT' ? 'missing' : 'unreadable'); return null
+    }
+  }
+  // Unknown protocols still take the existing partial fallback. A wrapper can
+  // select this adapter only when its explicit child really has the stable schema.
+  if (worker.schema !== schema) {
+    if (isReviewWrapper(worker)) { binding(worker.workerTerminal); binding(worker.executionPackage) }
+    if (!object(worker.workerTerminal) || !object(worker.executionPackage)) return null
+    wrapper = worker; workerBinding = worker.workerTerminal
+    if (isReviewWrapper(wrapper)) {
+      requireFact(wrapper.runId === runId && text(wrapper.packageId) && text(wrapper.capabilityVersion), 'history_managed_identity_conflict')
+      boundAutonomous = await read(wrapper.executionPackage, 'autonomousExecutionPackage')
+      if (!boundAutonomous) return null
+      if (boundAutonomous.schemaVersion !== 'ai-painter-autonomous-closed-loop-package-v1') return null
+      requireFact(boundAutonomous.packageIdentity === wrapper.packageId && boundAutonomous.capabilityVersion === wrapper.capabilityVersion,
+        'history_managed_identity_conflict')
+      binding({ path: boundAutonomous.outputRoot, sha256: wrapper.executionPackage.sha256 })
+      requireFact(boundAutonomous.outputRoot.startsWith('.runtime/ai-painter/')
+        && workerBinding.path.startsWith(`${boundAutonomous.outputRoot}/`)
+        && record.terminalBinding.path.startsWith(`${boundAutonomous.outputRoot}/`), 'history_managed_output_root_conflict')
+    }
+    worker = await read(workerBinding, 'workerTerminal')
+    if (!worker) return null
+    if (!MANAGED_DETAIL_PROTOCOLS.some(p => (wrapper?.schema ?? wrapper?.schemaVersion) === p.review)) {
+      protocol = MANAGED_DETAIL_PROTOCOLS.find(p => worker.schema === p.worker) ?? protocol
+      schema = protocol.worker
+    }
+    if (isReviewWrapper(wrapper)) requireFact(worker.schema === schema, 'history_managed_worker_schema_conflict')
+    if (worker.schema !== schema) return null
+  }
+  requireFact(worker.runId === runId && text(worker.packageId) && text(worker.capabilityVersion)
+    && ['completed', 'failed_closed'].includes(worker.executionState), 'history_managed_identity_conflict')
+  requireFact(worker.status === (worker.executionState === 'completed' ? 'training_completed_review_pending' : 'failed_closed'),
+    'history_managed_terminal_state_conflict')
+  const identity = value => requireFact(object(value) && value.runId === runId && value.packageId === worker.packageId
+    && value.capabilityVersion === worker.capabilityVersion, 'history_managed_identity_conflict')
+  const verifyReviewWrapper = value => {
+    identity(value); same(value.executionPackage, worker.executionPackage); same(value.workerTerminal, workerBinding)
+    requireFact(worker.executionState === 'completed'
+      && ['completed', 'failed_closed'].includes(value.executionState)
+      && ['dry_single_world_review_failed_closed', 'dry_single_world_numeric_passed_visual_approval_pending',
+        'dry_review_failed_closed', 'bounded_comparison_completed_no_visual_release', 'review_execution_failed_closed'].includes(value.status),
+    'history_managed_review_terminal_state_conflict')
+    requireFact(value.executionState === (['dry_single_world_numeric_passed_visual_approval_pending',
+      'bounded_comparison_completed_no_visual_release'].includes(value.status) ? 'completed' : 'failed_closed'),
+    'history_managed_review_terminal_state_conflict')
+  }
+  if (wrapper) { identity(wrapper); same(wrapper.executionPackage, worker.executionPackage) }
+  if (isReviewWrapper(wrapper)) verifyReviewWrapper(wrapper)
+  const append = (role, bound, metadata = {}) => {
+    binding(bound)
+    const key = `${role}:${bound.path}`, prior = seen.get(key)
+    if (prior) { requireFact(prior.sha256 === bound.sha256, 'history_artifact_binding_conflict'); return prior }
+    requireFact(record.artifacts.length < limits.artifacts, 'history_record_limit', 413)
+    const item = makeArtifact(role, bound, metadata); record.artifacts.push(item); seen.set(key, item); return item
+  }
+  for (const item of record.artifacts) seen.set(`${item.role}:${item.logicalPath}`, item)
+  if (wrapper) append('evidence', workerBinding, { evidenceKind: 'workerTerminal' })
+  record.runKind = 'bounded_managed_training'
+  record.qualification = { ...record.qualification, formalQualificationAllowed: false, worldEntryAllowed: false,
+    checkpointPromotionEligible: false, checkpointReloadVerified: worker.checkpointReloadVerified ?? null }
+  const finish = () => {
+    base.unavailableFields = [...new Set([...base.unavailableFields, ...gaps])]
+    record.detailCoverage = { adapter: protocol.adapter, supported: true,
+      sourcePolicy: 'verified_registry_explicit_sha256_parents_only', availability, limits, jsonReads: reads,
+      complete: gaps.size === 0, imageAssociation: protocol.configuration
+        ? 'explicit_validation_images_no_filename_inference' : 'explicit_subject_only_no_filename_inference',
+      resourceAndStepLogs: 'not_recorded_unless_bound', checkpointBytesRead: false }
+    return { ...base, schemaVersion: 'ai_console_training_run_detail_v1', record,
+      dataStatus: gaps.size ? 'partial' : 'connected', reasonCode: gaps.size ? 'history_managed_detail_partial' : null }
+  }
+  const removeUnavailable = (...fields) => { base.unavailableFields = base.unavailableFields.filter(f => !fields.includes(f)) }
+  const g = worker.optimizerStepsGenerator ?? worker.optimizerSteps?.generator ?? null
+  const d = worker.optimizerStepsDiscriminator ?? worker.optimizerSteps?.discriminator ?? null
+  requireFact(worker.optimizerSteps == null || object(worker.optimizerSteps)
+    && Object.keys(worker.optimizerSteps).every(k => ['generator', 'discriminator'].includes(k)), 'history_managed_count_invalid')
+  for (const [name, value] of [['generator', g], ['discriminator', d]]) {
+    requireFact(value === null || count(value), 'history_managed_count_invalid')
+    if (worker.optimizerSteps?.[name] !== undefined) requireFact(worker.optimizerSteps[name] === value, 'history_managed_count_conflict')
+  }
+  requireFact(worker.completedEpochs == null || count(worker.completedEpochs), 'history_managed_count_invalid')
+  record.optimizerSteps = { generator: g, discriminator: d }; record.discriminatorOptimizerSteps = d
+  record.completedEpochs = worker.completedEpochs ?? null
+  record.trainingStatus = worker.status
+  record.trainingExecutionState = worker.executionState
+  record.failureSummary = worker.error ?? worker.originalError ?? null
+  if (g === null || d === null) gap('optimizerSteps')
+  if (record.completedEpochs === null) gap('completedEpochs')
+  gap('logs') // An immutable summary is not per-step resource/log history.
+  const autonomous = boundAutonomous ?? await read(worker.executionPackage, 'autonomousExecutionPackage')
+  if (!autonomous) { gap('trainingPlan'); gap('checkpoints'); gap('samples'); return finish() }
+  if (autonomous.schemaVersion !== 'ai-painter-autonomous-closed-loop-package-v1') {
+    gap('autonomousExecutionPackage', 'unsupported_schema'); return finish()
+  }
+  requireFact(autonomous.packageIdentity === worker.packageId && autonomous.capabilityVersion === worker.capabilityVersion,
+    'history_managed_identity_conflict')
+  const outputRoot = autonomous.outputRoot
+  binding({ path: outputRoot, sha256: worker.executionPackage.sha256 })
+  requireFact(outputRoot.startsWith('.runtime/ai-painter/') && Array.isArray(autonomous.inputEvidence)
+    && autonomous.inputEvidence.length <= 128, 'history_managed_package_conflict')
+  const own = bound => { binding(bound); requireFact(bound.path.startsWith(`${outputRoot}/`), 'history_managed_output_root_conflict') }
+  own(workerBinding)
+  if (wrapper) own(record.terminalBinding)
+  append('evidence', worker.executionPackage, { evidenceKind: 'autonomousExecutionPackage' })
+  // Select only this registered protocol's signed plan binding, never a Run name.
+  const plans = autonomous.inputEvidence.filter(b => [...protocol.plans.keys()]
+    .some(name => b?.path === `${outputRoot}/${name}`))
+  requireFact(plans.length <= 1, 'history_managed_plan_conflict')
+  const plan = await read(plans[0], 'managedPlan')
+  if (!plan) { gap('trainingPlan'); gap('checkpoints'); gap('samples'); return finish() }
+  const expectedPlanSchema = protocol.plans.get(plans[0].path.slice(outputRoot.length + 1))
+  if (plan.schema !== expectedPlanSchema) {
+    gap('managedPlan', 'unsupported_schema'); return finish()
+  }
+  identity(plan); requireFact(plan.outputRoot === outputRoot && object(plan.configuration), 'history_managed_plan_conflict')
+  if (protocol.configuration) requireFact(plan.configuration.schema === protocol.configuration
+    && plan.executionMode === protocol.mode, 'history_managed_plan_conflict')
+  const config = plan.configuration, ceiling = config.executionCeiling, selection = config.checkpointSelection
+  requireFact(object(ceiling) && count(ceiling.epochs) && ceiling.epochs > 0
+    && count(ceiling.generatorOptimizerSteps) && count(ceiling.discriminatorOptimizerSteps)
+    && object(selection) && Array.isArray(selection.eligibleEpochs) && selection.eligibleEpochs.length <= limits.checkpoints
+    && count(selection.validationRowsPerEligibleEpoch) && selection.validationRowsPerEligibleEpoch > 0
+    && selection.validationRowsPerEligibleEpoch <= 128
+    && selection.eligibleEpochs.every(e => count(e) && e > 0 && e <= ceiling.epochs)
+    && new Set(selection.eligibleEpochs).size === selection.eligibleEpochs.length,
+    'history_managed_plan_conflict')
+  requireFact((g === null || g <= ceiling.generatorOptimizerSteps) && (d === null || d <= ceiling.discriminatorOptimizerSteps)
+    && (record.completedEpochs === null || record.completedEpochs <= ceiling.epochs), 'history_managed_plan_limit_conflict')
+  const resolution = config.scope?.resolution
+  requireFact(Array.isArray(resolution) && resolution.length === 2 && resolution.every(n => count(n) && n > 0), 'history_managed_plan_conflict')
+  record.resolution = { width: resolution[0], height: resolution[1] }
+  record.trainingPlan = { epochs: ceiling.epochs, generatorOptimizerSteps: ceiling.generatorOptimizerSteps,
+    discriminatorOptimizerSteps: ceiling.discriminatorOptimizerSteps, checkpointSelection: selection }
+  record.targetEpochs = ceiling.epochs; record.targetOptimizerSteps = ceiling.generatorOptimizerSteps
+  record.targetDiscriminatorOptimizerSteps = ceiling.discriminatorOptimizerSteps
+  removeUnavailable('resolution'); append('evidence', plans[0], { evidenceKind: 'managedPlan' })
+  record.metrics.push({ source: 'managed_configuration', measurements: { executionCeiling: ceiling, checkpointSelection: selection,
+    optimizer: config.optimizer ?? null, scope: config.scope, dataUse: config.dataUse ?? null, seed: config.seed ?? null },
+    sourcePath: plans[0].path, sourceSha256: plans[0].sha256 })
+  let capsule = null
+  if (capsuleBinding) {
+    capsule = await read(capsuleBinding, 'taskCapsule')
+    if (capsule) requireFact(capsule.schemaVersion === 'ai-painter-local-task-capsule-v1'
+      && capsule.integrity?.status === 'verified' && Array.isArray(capsule.evidence) && capsule.evidence.length <= 128,
+      'history_managed_capsule_conflict')
+  }
+  const observations = (capsule?.evidence ?? []).filter(b => b?.path === `${outputRoot}/package.json`)
+  requireFact(observations.length <= 1, 'history_managed_observation_conflict')
+  const observation = await read(observations[0], 'observationPackage')
+  if (observation) {
+    identity(observation)
+    requireFact(observation.schemaVersion === 'ai-painter-current-training-package-v1' && observation.outputRoot === outputRoot,
+      'history_managed_observation_conflict')
+    same(observation.autonomousExecutionPackage, worker.executionPackage)
+    requireFact(JSON.stringify(observation.resolution) === JSON.stringify(resolution)
+      && ['epochs', 'generatorOptimizerSteps', 'discriminatorOptimizerSteps'].every(k => observation.trainingPlan?.[k] === ceiling[k]
+        && observation.resourceBudget?.[k] === ceiling[k]),
+      'history_managed_observation_conflict')
+    append('evidence', observations[0], { evidenceKind: 'observationPackage' })
+  }
+  const rows = worker.checkpoints
+  if (rows === undefined) gap('checkpoints')
+  else requireFact(Array.isArray(rows) && rows.length <= limits.checkpoints, 'history_managed_checkpoint_limit', 413)
+  const epochs = new Set(), sampleIds = new Set()
+  for (const cp of rows ?? []) {
+    requireFact(object(cp) && selection.eligibleEpochs.includes(cp.epoch) && !epochs.has(cp.epoch)
+      && (record.completedEpochs === null || cp.epoch <= record.completedEpochs)
+      && object(cp.counts) && count(cp.counts.generator) && count(cp.counts.discriminator)
+      && cp.counts.generator <= (g ?? ceiling.generatorOptimizerSteps) && cp.counts.discriminator <= (d ?? ceiling.discriminatorOptimizerSteps),
+      'history_managed_checkpoint_conflict')
+    epochs.add(cp.epoch); own(cp.checkpoint)
+    const item = append('checkpoint', cp.checkpoint, { epoch: cp.epoch, optimizerSteps: cp.counts,
+      selection: cp.selection ?? null, metadataOnly: true, promotable: false })
+    try { Object.assign(item, await checkpointMetadata(item)); record.checkpoints.push(item) }
+    catch (error) {
+      if (!['ENOENT', 'EACCES', 'EPERM'].includes(error.code)) throw error
+      item.availability = error.code === 'ENOENT' ? 'missing' : 'unreadable'; gap('checkpoints', item.availability)
+    }
+    requireFact(Array.isArray(cp.validation) && cp.validation.length <= selection.validationRowsPerEligibleEpoch, 'history_managed_metric_limit', 413)
+    const ids = new Set()
+    for (const row of cp.validation) {
+      requireFact(text(row?.sampleId) && row.split === 'validation' && row.epoch === cp.epoch && !ids.has(row.sampleId),
+        'history_managed_metric_conflict')
+      ids.add(row.sampleId); sampleIds.add(row.sampleId)
+      requireFact(record.metrics.length < limits.metrics, 'history_managed_metric_limit', 413)
+      record.metrics.push({ sampleId: row.sampleId, split: 'validation', epoch: cp.epoch, measurements: row,
+        sourcePath: workerBinding.path, sourceSha256: workerBinding.sha256 })
+    }
+  }
+  if (!record.checkpoints.length) gap('checkpoints')
+  else { removeUnavailable('checkpoints'); if (!gaps.has('checkpoints')) availability.checkpoints = 'available' }
+  if (!sampleIds.size) gap('validationMetrics')
+  else removeUnavailable('metrics')
+  const selected = worker.selectedCheckpointRecord
+  if (selected) {
+    const cp = (rows ?? []).find(row => row.epoch === selected.epoch)
+    requireFact(cp, 'history_managed_checkpoint_conflict'); same(cp.checkpoint, selected.checkpoint)
+    record.selectedEpoch = selected.epoch
+    for (const item of record.checkpoints) item.selected = item.epoch === selected.epoch
+  } else gap('selectedCheckpoint')
+  // A finalization that lacks an audit/report binding is not permission to read
+  // outputRoot/dry-review by convention. Preserve this upstream protocol gap.
+  let taskTerminal = wrapper
+  if (taskTerminalBinding && taskTerminalBinding.path !== record.terminalBinding?.path) {
+    own(taskTerminalBinding); taskTerminal = await read(taskTerminalBinding, 'taskTerminal')
+    if (taskTerminal) { requireFact(taskTerminal.runId === runId, 'history_managed_identity_conflict'); same(taskTerminal.executionPackage, worker.executionPackage) }
+  }
+  const preciseReview = isReviewWrapper(taskTerminal)
+  if (preciseReview) {
+    verifyReviewWrapper(taskTerminal)
+    record.reviewExecutionState = taskTerminal.executionState
+    record.reviewStatus = null
+    append('evidence', taskTerminalBinding ?? record.terminalBinding, { evidenceKind: 'managedReviewTerminal' })
+    if (taskTerminal.reviewFailure) {
+      own(taskTerminal.reviewFailure)
+      const failure = await read(taskTerminal.reviewFailure, 'reviewFailure')
+      if (failure) {
+        requireFact(taskTerminal.status === 'review_execution_failed_closed', 'history_managed_review_failure_conflict')
+        // The original local executor terminal has a package identity but no
+        // Run field. Its exact wrapper/worker linkage supplies that identity.
+        const autonomousFailure = failure.schemaVersion === 'ai-painter-autonomous-closed-loop-terminal-v1'
+        for (const key of ['runId', 'packageId', 'capabilityVersion']) if (failure[key] !== undefined)
+          requireFact(failure[key] === worker[key], 'history_managed_identity_conflict')
+        if (autonomousFailure) requireFact(failure.packageIdentity === worker.packageId && failure.status === 'failed_closed'
+          && failure.latestEvidence?.phase === 'review', 'history_managed_review_failure_conflict')
+        else {
+          identity(failure); same(failure.executionPackage, worker.executionPackage); same(failure.workerTerminal, workerBinding)
+          requireFact(failure.status === 'review_execution_failed_closed' && failure.executionState === 'failed_closed',
+            'history_managed_review_failure_conflict')
+        }
+        const result = autonomousFailure ? failure.finalResult : failure
+        requireFact(object(result) && (!autonomousFailure || result.status === 'failed')
+          && ['program', 'infrastructure'].includes(result.failureKind)
+          && typeof result.failureCode === 'string' && result.failureCode.length > 0
+          && typeof (result.detail ?? result.error) === 'string' && (result.detail ?? result.error).length > 0,
+        'history_managed_review_failure_conflict')
+        if (autonomousFailure) requireFact(failure.failureCode === result.failureCode, 'history_managed_review_failure_conflict')
+        record.reviewStatus = 'review_execution_failed_closed'
+        record.failureSummary = { phase: 'review', status: record.reviewStatus, failureKind: result.failureKind,
+          failureCode: result.failureCode, detail: result.detail ?? result.error,
+          sourcePath: taskTerminal.reviewFailure.path, sourceSha256: taskTerminal.reviewFailure.sha256 }
+        requireFact(record.metrics.length < limits.metrics, 'history_managed_metric_limit', 413)
+        record.metrics.push({ source: 'managed_review_execution_failure', measurements: {
+          phase: 'review', status: record.reviewStatus, failureKind: result.failureKind,
+          failureCode: result.failureCode, detail: result.detail ?? result.error },
+          sourcePath: taskTerminal.reviewFailure.path, sourceSha256: taskTerminal.reviewFailure.sha256 })
+        append('evidence', taskTerminal.reviewFailure, { evidenceKind: 'reviewFailure' })
+      }
+    } else if (taskTerminal.status === 'review_execution_failed_closed') gap('reviewFailure')
+    if (taskTerminal.reviewRecoveryPlan) {
+      own(taskTerminal.reviewRecoveryPlan)
+      // A bound plan is inspectable evidence, never an applied recovery or a
+      // quality verdict. Do not interpret arbitrary plan fields as authority.
+      append('evidence', taskTerminal.reviewRecoveryPlan, { evidenceKind: 'reviewRecoveryPlan' })
+    }
+  }
+  const auditBinding = preciseReview ? taskTerminal.audit : taskTerminal?.audit ?? worker.audit
+  if (auditBinding) own(auditBinding)
+  const audit = await read(auditBinding, 'machineReview')
+  if (audit) {
+    requireFact(audit.runId === runId, 'history_managed_identity_conflict')
+    for (const key of ['packageId', 'capabilityVersion']) if (audit[key] !== undefined)
+      requireFact(audit[key] === worker[key], 'history_managed_identity_conflict')
+    same(audit.executionPackage, worker.executionPackage)
+    if (!['dry_single_world_review_failed_closed', 'dry_single_world_numeric_passed_visual_approval_pending'].includes(audit.status)) {
+      gap('machineReview', 'unsupported_schema')
+    } else {
+      requireFact(selected, 'history_managed_review_conflict'); same(audit.selectedCheckpoint, selected.checkpoint)
+      if (preciseReview && taskTerminal.status !== 'review_execution_failed_closed') {
+        const mapped = audit.status === 'dry_single_world_review_failed_closed' ? 'dry_review_failed_closed' : 'bounded_comparison_completed_no_visual_release'
+        requireFact(taskTerminal.status === audit.status || taskTerminal.status === mapped, 'history_managed_review_status_conflict')
+        record.reviewStatus = audit.status
+      }
+      record.qualification.independentReviewStatus = audit.status
+      record.independentReviewStatus = audit.status
+      record.reviewStatusSource = auditBinding.path
+      append('evidence', auditBinding, { evidenceKind: 'machineReview' })
+      requireFact(record.metrics.length < limits.metrics, 'history_managed_metric_limit', 413)
+      record.metrics.push({ source: 'managed_machine_review', measurements: { status: audit.status,
+        detail: audit.detail ?? null, aesthetic: audit.aesthetic ?? null, alignment: audit.alignment ?? null,
+        issueCodes: audit.issueCodes ?? [], validationImprovedWithoutMeanRgbRegression: audit.validationImprovedWithoutMeanRgbRegression ?? null },
+        sourcePath: auditBinding.path, sourceSha256: auditBinding.sha256 })
+    }
+  }
+  const reportBinding = preciseReview ? taskTerminal.reviewReport : taskTerminal?.reviewReport ?? worker.reviewReport ?? (availability.machineReview === 'available' ? audit?.input : null)
+  if (reportBinding) own(reportBinding)
+  if (reportBinding && audit?.input && availability.machineReview === 'available') same(reportBinding, audit.input)
+  const report = await read(reportBinding, 'reviewReport')
+  if (report) {
+    if (report.schema !== protocol.report) gap('reviewReport', 'unsupported_schema')
+    else {
+      requireFact(report.capabilityVersion === worker.capabilityVersion, 'history_managed_identity_conflict')
+      for (const key of ['runId', 'packageId']) if (report[key] !== undefined) requireFact(report[key] === worker[key], 'history_managed_identity_conflict')
+      same(report.executionPackage, worker.executionPackage); same(report.workerTerminal, workerBinding)
+      requireFact(selected, 'history_managed_review_conflict'); same(report.selectedCheckpoint, selected.checkpoint)
+      const subject = report.subject
+      requireFact(text(subject?.sampleId) && subject.split === 'validation' && subject.sampleId === config.scope.subjectSampleId
+        && sampleIds.has(subject.sampleId), 'history_managed_review_conflict')
+      own(report.candidateRgb); own(report.originalRgb)
+      const metadata = { sampleId: subject.sampleId, split: 'validation', epoch: selected.epoch, formalQualification: false }
+      const output = append('output', report.candidateRgb, metadata)
+      const original = append('original', report.originalRgb, { ...metadata, sourceRole: 'saved_scaled_training_reference' })
+      const reference = subject.referenceRgb ? append('original', subject.referenceRgb, { ...metadata, sourceRole: 'source_reference_rgb' }) : null
+      const condition = subject.conditionPack ? append('condition', subject.conditionPack, metadata) : null
+      record.samples.push({ sampleId: subject.sampleId, split: 'validation', original, sourceOriginal: reference, output, condition })
+      removeUnavailable('samples')
+      if (!reference) gap('samples.sourceOriginal')
+      if (!condition) gap('samples.condition')
+      requireFact(Array.isArray(report.artifacts) && report.artifacts.length <= limits.images, 'history_managed_image_limit', 413)
+      for (const bound of report.artifacts) { own(bound); append('image', bound, { associationStatus: 'report_declared_image_no_sample_inferred' }) }
+      if (protocol.configuration) {
+        requireFact(Array.isArray(report.validationImages)
+          && report.validationImages.length === selection.validationRowsPerEligibleEpoch,
+        'history_quality_image_coverage_conflict')
+        const selectedRows = (rows ?? []).find(row => row.epoch === selected.epoch)?.validation ?? []
+        requireFact(selectedRows.length === report.validationImages.length, 'history_quality_image_coverage_conflict')
+        const seenImages = new Set(), declaredArtifacts = new Map(report.artifacts.map(b => [b.path,b.sha256]))
+        for (let index=0; index<report.validationImages.length; index++) {
+          const image = report.validationImages[index], expected = selectedRows[index]
+          requireFact(object(image) && image.sampleId === expected.sampleId && image.split === 'validation'
+            && image.epoch === selected.epoch && image.optimizerStep === selected.counts.generator
+            && image.purpose === 'prediction' && !seenImages.has(image.sampleId), 'history_quality_image_identity_conflict')
+          seenImages.add(image.sampleId); own(image.binding)
+          requireFact(declaredArtifacts.get(image.binding.path) === image.binding.sha256, 'history_quality_image_binding_conflict')
+          if (image.checkpoint) same(image.checkpoint, selected.checkpoint)
+          const metadata = {sampleId:image.sampleId,split:'validation',epoch:image.epoch,
+            optimizerStep:image.optimizerStep,purpose:image.purpose,formalQualification:false}
+          const output = append('output',image.binding,metadata)
+          const existing = record.samples.find(sample => sample.sampleId === image.sampleId)
+          if (existing) same({path:existing.output.logicalPath,sha256:existing.output.sha256},image.binding)
+          else record.samples.push({sampleId:image.sampleId,split:'validation',output,
+            original:null,sourceOriginal:null,condition:null})
+        }
+        availability.validationImages='available'
+      }
+      append('evidence', reportBinding, { evidenceKind: 'nativeReviewReport' })
+    }
+  }
+  if (!record.samples.length) gap('samples')
+  // Native CPU images never fill a missing machine quality verdict.
+  return finish()
+}
+
+// No IO or discovery here. The store rechecks safe paths and actual JSON bytes;
+// image bytes are checked by the existing artifact endpoint, weights stay metadata.
+async function adaptDryLifecycle({ family, runId, terminal, record, base, taskTerminalBinding, readJson, makeArtifact, checkpointMetadata, requireFact }) {
+  const MAX_ARTIFACTS = 256, MAX_CHECKPOINTS = 32, MAX_METRICS = 1024, MAX_IMAGES = 128, MAX_READS = 16
+  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value)
+  const count = value => Number.isSafeInteger(value) && value >= 0
+  const text = value => typeof value === 'string' && value.length > 0 && value.length <= 192
+  const gaps = new Set(), availability = {}, seen = new Map(), metrics = new Map(), declaredSamples = new Set()
+  requireFact(Array.isArray(record.artifacts) && record.artifacts.length < MAX_ARTIFACTS, 'history_record_limit', 413)
+  let reads = 0
+  const gap = (field, status = 'not_recorded') => { gaps.add(field); availability[field] = status }
+  const binding = value => requireFact(object(value) && typeof value.path === 'string' && /^[a-f0-9]{64}$/u.test(value.sha256), 'history_dry_binding_invalid')
+  const same = (left, right) => {
+    binding(left); binding(right)
+    requireFact(left.path === right.path && left.sha256 === right.sha256, 'history_dry_parent_binding_conflict')
+  }
+  const identity = (value, capability = true) => requireFact(object(value) && value.runId === runId
+    && value.packageId === terminal.packageId && (!capability || value.capabilityVersion === terminal.capabilityVersion), 'history_dry_identity_conflict')
+  const append = (role, bound, metadata = {}) => {
+    binding(bound)
+    const key = `${role}:${bound.path}`, prior = seen.get(key)
+    if (prior) { requireFact(prior.sha256 === bound.sha256, 'history_artifact_binding_conflict'); return prior }
+    requireFact(record.artifacts.length < MAX_ARTIFACTS, 'history_record_limit', 413)
+    const item = makeArtifact(role, bound, metadata)
+    record.artifacts.push(item); seen.set(key, item); return item
+  }
+  const read = async (bound, field) => {
+    if (!bound) { gap(field); return null }
+    binding(bound)
+    requireFact(++reads <= MAX_READS, 'history_dry_read_limit', 413)
+    let value
+    try {
+      value = await readJson(bound)
+    } catch (error) {
+      if (!['ENOENT', 'EACCES', 'EPERM'].includes(error.code) && error.status !== 413) throw error
+      gap(field, error.status === 413 ? 'over_limit' : error.code === 'ENOENT' ? 'missing' : 'unreadable')
+      return null
+    }
+    requireFact(object(value), 'history_dry_schema_conflict')
+    append('evidence', bound, { evidenceKind: field }); availability[field] = 'available'
+    return value
+  }
+  const finish = () => {
+    const sampleCoverage = field => ({ scope: 'explicit_validation_sample_bindings_only',
+      availableSampleIds: [...declaredSamples].filter(id => record.samples.some(row => row.sampleId === id && row[field])),
+      notRecordedSampleIds: [...declaredSamples].filter(id => !record.samples.some(row => row.sampleId === id && row[field])),
+      complete: declaredSamples.size > 0 && [...declaredSamples].every(id => record.samples.some(row => row.sampleId === id && row[field])) })
+    const originals = sampleCoverage('original'), conditions = sampleCoverage('condition')
+    if (originals.notRecordedSampleIds.length) gap('samples.original')
+    if (conditions.notRecordedSampleIds.length) gap('samples.condition')
+    if (!record.samples.length) gap('samples')
+    base.unavailableFields = [...new Set([...base.unavailableFields, ...gaps])]
+    record.detailCoverage = { adapter: 'bounded_dry_training_lifecycle_v1', supported: true,
+      sourcePolicy: 'verified_registry_and_explicit_sha256_bound_parents_only', availability,
+      checkpointLimit: MAX_CHECKPOINTS, metricLimit: MAX_METRICS, imageLimit: MAX_IMAGES,
+      artifactLimit: MAX_ARTIFACTS, jsonReadLimit: MAX_READS, jsonReads: reads,
+      validationMetricCount: record.metrics.length, candidateCount: record.artifacts.filter(item => item.role === 'output').length,
+      originals, conditions,
+      complete: gaps.size === 0 }
+    return { ...base, dataStatus: gaps.size ? 'partial' : 'connected', reasonCode: gaps.size ? 'history_dry_detail_partial' : null,
+      schemaVersion: 'ai_console_training_run_detail_v1', record }
+  }
+  requireFact(terminal.runId === runId && text(terminal.packageId) && text(terminal.capabilityVersion), 'history_dry_identity_conflict')
+  requireFact(['completed', 'failed_closed'].includes(terminal.executionState), 'history_dry_terminal_state_conflict')
+  record.runKind = 'bounded_dry_training'
+  gap('logs') // This protocol has no bound program log; events remain separate.
+  const pkg = await read(terminal.executionPackage, 'executionPackage')
+  if (!pkg) { gap('metrics'); gap('checkpoints'); gap('samples'); return finish() }
+  identity(pkg)
+  requireFact(pkg.schemaVersion === `ai-painter-stage4-mvp256-dry-${family}-execution-package-v1`, 'history_dry_schema_conflict')
+  requireFact(typeof pkg.outputRoot === 'string' && pkg.outputRoot.startsWith('.runtime/ai-painter/')
+    && terminal.executionPackage.path === `${pkg.outputRoot}/execution-package.json`, 'history_dry_output_root_conflict')
+  const own = bound => { binding(bound); requireFact(bound.path.startsWith(`${pkg.outputRoot}/`), 'history_dry_output_root_conflict') }
+  const plan = pkg.trainingPlan
+  requireFact(object(plan) && count(plan.epochs) && plan.epochs > 0 && count(plan.generatorOptimizerSteps)
+    && count(plan.discriminatorOptimizerSteps) && count(plan.validationRows) && plan.validationRows > 0 && plan.validationRows <= 128,
+  'history_dry_plan_conflict')
+  requireFact(Array.isArray(plan.eligibleCheckpointEpochs) && plan.eligibleCheckpointEpochs.length > 0
+    && plan.eligibleCheckpointEpochs.length <= MAX_CHECKPOINTS
+    && new Set(plan.eligibleCheckpointEpochs).size === plan.eligibleCheckpointEpochs.length
+    && plan.eligibleCheckpointEpochs.every(epoch => count(epoch) && epoch > 0 && epoch <= plan.epochs)
+    && plan.eligibleCheckpointEpochs.length * plan.validationRows <= MAX_METRICS, 'history_dry_plan_limit', 413)
+  if (pkg.resourceBudget) for (const field of ['epochs', 'generatorOptimizerSteps', 'discriminatorOptimizerSteps'])
+    requireFact(pkg.resourceBudget[field] === plan[field], 'history_dry_plan_conflict')
+  const candidate = await read(pkg.sourceDataCandidate, 'sourceDataCandidate')
+  if (candidate) {
+    const size = candidate.scope?.resolution
+    requireFact(candidate.schemaVersion === 'stage4-mvp256-dry-v24-closed-loop-candidate-v1'
+      && Array.isArray(size) && size.length === 2 && size.every(value => count(value) && value > 0), 'history_dry_candidate_schema_conflict')
+    record.resolution = { width: size[0], height: size[1] }
+    base.unavailableFields = base.unavailableFields.filter(field => field !== 'resolution')
+  } else gap('resolution')
+  record.targetEpochs = plan.epochs; record.targetOptimizerSteps = plan.generatorOptimizerSteps
+  record.targetDiscriminatorOptimizerSteps = plan.discriminatorOptimizerSteps
+  if (terminal.workerTerminal) own(terminal.workerTerminal)
+  const worker = await read(terminal.workerTerminal, 'workerTerminal')
+  if (!worker) { gap('metrics'); gap('checkpoints'); gap('samples'); gap('candidateImages'); return finish() }
+  own(terminal.workerTerminal); identity(worker)
+  requireFact(worker.schemaVersion === `ai-painter-stage4-mvp256-dry-${family}-worker-terminal-v1`, 'history_dry_schema_conflict')
+  same(worker.executionPackage, terminal.executionPackage)
+  requireFact(worker.executionState === terminal.executionState && worker.status === terminal.status, 'history_dry_terminal_state_conflict')
+  const g = worker.optimizerStepsGenerator, d = worker.optimizerStepsDiscriminator
+  requireFact(count(worker.completedEpochs) && worker.completedEpochs <= plan.epochs
+    && count(g) && g <= plan.generatorOptimizerSteps && count(d) && d <= plan.discriminatorOptimizerSteps, 'history_dry_plan_conflict')
+  record.completedEpochs = worker.completedEpochs; record.optimizerSteps = g
+  record.discriminatorOptimizerSteps = d
+  if (worker.completedAtUtc || worker.finishedAtUtc) {
+    record.finishedAtUtc = worker.completedAtUtc ?? worker.finishedAtUtc
+    base.unavailableFields = base.unavailableFields.filter(field => field !== 'finishedAtUtc')
+  }
+  if (terminal.trainingProgress) own(terminal.trainingProgress)
+  const progress = await read(terminal.trainingProgress, 'trainingProgress')
+  if (progress) {
+    own(terminal.trainingProgress); identity(progress)
+    requireFact(progress.schemaVersion === `ai-painter-stage4-mvp256-dry-${family}-progress-v1`
+      && ['completed', 'failed_closed', 'checkpoint_selected_review_pending'].includes(progress.executionState)
+      && progress.completedEpochs === worker.completedEpochs && progress.optimizerStepsGenerator === g
+      && progress.optimizerStepsDiscriminator === d, 'history_dry_progress_conflict')
+  }
+  const membership = await read(pkg.validationSplit, 'validationSplit')
+  if (!membership) { gap('metrics'); gap('samples'); return finish() }
+  requireFact(membership.split === 'validation' && Array.isArray(membership.sampleIds)
+    && membership.sampleIds.length === plan.validationRows && membership.sampleIds.every(text)
+    && new Set(membership.sampleIds).size === membership.sampleIds.length, 'history_dry_sample_conflict')
+  const sampleIds = new Set(membership.sampleIds), epochs = new Set()
+  for (const id of sampleIds) declaredSamples.add(id)
+  requireFact(Array.isArray(worker.checkpoints) && worker.checkpoints.length <= MAX_CHECKPOINTS, 'history_dry_checkpoint_limit', 413)
+  for (const cp of worker.checkpoints) {
+    requireFact(object(cp) && plan.eligibleCheckpointEpochs.includes(cp.epoch) && cp.epoch <= worker.completedEpochs
+      && !epochs.has(cp.epoch) && cp.selection?.epoch === cp.epoch, 'history_dry_checkpoint_conflict')
+    epochs.add(cp.epoch); own(cp.checkpoint)
+    if (cp.checkpointSha256 !== undefined) requireFact(cp.checkpointSha256 === cp.checkpoint.sha256, 'history_dry_checkpoint_conflict')
+    const item = append('checkpoint', cp.checkpoint, { epoch: cp.epoch, selected: cp.epoch === terminal.selectedEpoch,
+      selection: cp.selection, promotable: false, verificationStatus: 'binding_verified_bytes_not_read', metadataOnly: true })
+    try { Object.assign(item, await checkpointMetadata(item)); record.checkpoints.push(item) }
+    catch (error) { if (error.code !== 'ENOENT') throw error; item.availability = 'missing'; gap('checkpoints', 'missing') }
+    requireFact(Array.isArray(cp.validation) && cp.validation.length <= plan.validationRows, 'history_dry_metric_limit', 413)
+    const seenSamples = new Set()
+    for (const row of cp.validation) {
+      requireFact(object(row) && sampleIds.has(row.sampleId) && row.split === 'validation'
+        && row.epoch === cp.epoch && !seenSamples.has(row.sampleId), 'history_dry_metric_identity_conflict')
+      requireFact(record.metrics.length < MAX_METRICS, 'history_dry_metric_limit', 413)
+      seenSamples.add(row.sampleId)
+      const metric = { sourceField: 'checkpoint.validation', sampleId: row.sampleId, split: row.split, epoch: cp.epoch,
+        measurements: row, sourcePath: terminal.workerTerminal.path, sourceSha256: terminal.workerTerminal.sha256 }
+      record.metrics.push(metric); metrics.set(`${cp.epoch}:${row.sampleId}`, metric)
+    }
+    if (seenSamples.size !== sampleIds.size) gap('metrics', 'not_recorded')
+  }
+  if (!record.metrics.length) gap('metrics')
+  if (!record.checkpoints.length) gap('checkpoints')
+  if (worker.executionState === 'completed' && epochs.size !== plan.eligibleCheckpointEpochs.length) gap('checkpointCoverage')
+  if (terminal.selectedCheckpoint) {
+    own(terminal.selectedCheckpoint)
+    same(terminal.selectedCheckpoint, worker.selectedCheckpointBinding ?? worker.selectedCheckpoint)
+    if (worker.selectedCheckpointBinding && worker.selectedCheckpoint) same(worker.selectedCheckpointBinding, worker.selectedCheckpoint)
+    requireFact(terminal.selectedEpoch === worker.selectedEpoch && epochs.has(terminal.selectedEpoch), 'history_dry_checkpoint_conflict')
+    const selected = worker.checkpoints.find(cp => cp.epoch === terminal.selectedEpoch)
+    same(selected.checkpoint, terminal.selectedCheckpoint)
+    if (progress?.selectedCheckpoint) same(progress.selectedCheckpoint, terminal.selectedCheckpoint)
+    if (progress?.selectedEpoch !== undefined) requireFact(progress.selectedEpoch === terminal.selectedEpoch, 'history_dry_checkpoint_conflict')
+  } else gap('selectedCheckpoint')
+  record.selectedEpoch = terminal.selectedEpoch ?? null
+  record.qualification = { ...record.qualification, checkpointReloadVerified: worker.checkpointReloadVerified ?? null,
+    checkpointPromotionEligible: false, formalQualificationAllowed: false, worldEntryAllowed: false }
+  const image = (bound, metadata) => {
+    own(bound)
+    requireFact(sampleIds.has(metadata.sampleId) && metadata.split === 'validation'
+      && metrics.has(`${metadata.epoch}:${metadata.sampleId}`), 'history_dry_image_identity_conflict')
+    const output = append('output', bound, metadata)
+    metrics.get(`${metadata.epoch}:${metadata.sampleId}`).image = output
+    if (!record.samples.some(row => row.sampleId === metadata.sampleId)) record.samples.push({ sampleId: metadata.sampleId, split: metadata.split, output, original: null, condition: null })
+    return output
+  }
+  if (worker.images !== undefined) {
+    requireFact(Array.isArray(worker.images) && worker.images.length <= MAX_IMAGES, 'history_dry_image_limit', 413)
+    for (const row of worker.images) {
+      requireFact(['prediction', 'validation_prediction'].includes(row.purpose), 'history_dry_image_purpose_conflict')
+      image(row, { sampleId: row.sampleId, split: row.split, epoch: row.epoch, purpose: row.purpose })
+    }
+  }
+  if (!candidate || !terminal.selectedCheckpoint) { gap('candidateImages'); gap('machineReview'); return finish() }
+  // A review must point back to this exact registered training terminal. It is
+  // never discovered by name, and its baseline comparison arm is never imported.
+  if (!taskTerminalBinding || taskTerminalBinding.path === record.terminalBinding?.path) {
+    gap('machineReview'); if (!record.samples.length) gap('candidateImages'); return finish()
+  }
+  own(taskTerminalBinding)
+  const review = await read(taskTerminalBinding, 'reviewTerminal')
+  if (!review) { gap('candidateImages'); return finish() }
+  if (review.schemaVersion !== `ai-painter-mvp256-dry-${family}-review-terminal-v1`) {
+    gap('machineReview', 'unsupported_schema'); gap('candidateImages'); return finish()
+  }
+  identity(review, false)
+  requireFact(review.status === taskTerminalBinding.status, 'history_dry_review_status_conflict')
+  same(review.trainingTerminal, record.terminalBinding)
+  same(review.selectedCheckpoint, terminal.selectedCheckpoint)
+  if (review.cpuComparison) own(review.cpuComparison)
+  const comparison = await read(review.cpuComparison, 'cpuComparison')
+  if (!comparison) { gap('candidateImages'); return finish() }
+  identity(comparison)
+  requireFact(comparison.schemaVersion === `ai-painter-mvp256-dry-${family}-cpu-review-v1`, 'history_dry_schema_conflict')
+  same(comparison.trainingTerminal, record.terminalBinding); same(comparison.executionPackage, terminal.executionPackage)
+  same(comparison.workerTerminal, terminal.workerTerminal); same(comparison.selectedCheckpoint, terminal.selectedCheckpoint)
+  requireFact(comparison.selectedEpoch === terminal.selectedEpoch && object(comparison.measurements)
+    && Object.keys(comparison.measurements).length <= 16, 'history_dry_comparison_conflict')
+  const arms = Object.values(comparison.measurements).filter(arm => object(arm)
+    && arm.checkpoint?.path === terminal.selectedCheckpoint.path && arm.checkpoint?.sha256 === terminal.selectedCheckpoint.sha256)
+  requireFact(arms.length === 1 && Array.isArray(arms[0].rows) && arms[0].rows.length <= Math.min(MAX_IMAGES, plan.validationRows), 'history_dry_comparison_conflict')
+  const imageSamples = new Set()
+  for (const row of arms[0].rows) {
+    const observation = row.observation
+    requireFact(observation?.sampleId === row.sampleId && observation.epoch === terminal.selectedEpoch
+      && !imageSamples.has(row.sampleId), 'history_dry_image_identity_conflict')
+    imageSamples.add(row.sampleId)
+    image(row.image, { sampleId: row.sampleId, split: observation.split, epoch: observation.epoch,
+      purpose: 'validation_prediction', sourceLabel: 'selected_checkpoint_cpu_comparison', sourcePath: review.cpuComparison.path })
+  }
+  if (imageSamples.size !== sampleIds.size) gap('candidateImages')
+  const subject = comparison.subject
+  requireFact(subject?.sampleId === candidate?.scope?.subjectSampleId && subject.split === candidate?.scope?.subjectSplit
+    && subject.split === 'validation' && imageSamples.has(subject.sampleId), 'history_dry_subject_conflict')
+  const subjectRow = arms[0].rows.find(row => row.sampleId === subject.sampleId)
+  same(comparison.candidateRgb, subjectRow.image)
+  const output = image(comparison.candidateRgb, { sampleId: subject.sampleId, split: subject.split, epoch: terminal.selectedEpoch, purpose: 'validation_prediction' })
+  output.reviewCandidate = true
+  const original = subject.referenceRgb ? append('original', subject.referenceRgb, { sampleId: subject.sampleId, split: subject.split, purpose: 'held_out_reference_rgb' }) : null
+  const condition = subject.conditionPack ? append('condition', subject.conditionPack, { sampleId: subject.sampleId, split: subject.split }) : null
+  if (comparison.originalRgb) { own(comparison.originalRgb); append('original', comparison.originalRgb, { sampleId: subject.sampleId, split: subject.split, purpose: 'resized_review_reference' }) }
+  Object.assign(record.samples.find(row => row.sampleId === subject.sampleId), { original, condition })
+  if (review.audit) own(review.audit)
+  const audit = await read(review.audit, 'machineReview')
+  if (audit) {
+    requireFact(audit.schemaVersion === `ai-painter-mvp256-dry-${family}-independent-audit-v1`
+      && audit.runId === runId && audit.sampleId === subject.sampleId && audit.selectedEpoch === terminal.selectedEpoch
+      && audit.status === review.status, 'history_dry_audit_identity_conflict')
+    same(audit.input, review.cpuComparison); same(audit.selectedCheckpoint, terminal.selectedCheckpoint); same(audit.candidateRgb, comparison.candidateRgb)
+    if (audit.projection) { own(audit.projection); append('image', audit.projection, { sampleId: subject.sampleId, split: subject.split,
+      epoch: terminal.selectedEpoch, purpose: 'alignment_auditor_projection_not_native_generation' }) }
+    record.machineReview = { status: audit.status, issueCodes: audit.issueCodes ?? [], visualApprovalGranted: audit.visualApprovalGranted ?? null,
+      sourcePath: review.audit.path, sourceSha256: review.audit.sha256 }
+    output.passed = audit.visualApprovalGranted === true; output.issueCodes = audit.issueCodes ?? []
+  }
+  record.reviewStatus = review.status
+  record.qualification = { ...record.qualification, machineReviewPending: false, visualApprovalGranted: review.visualApprovalGranted ?? null,
+    formalStage4QualificationGranted: review.formalStage4QualificationGranted ?? null, runtimePublicationGranted: review.runtimePublicationGranted ?? null }
+  return finish()
 }
 
 // Stage0 training and its later machine review are separate immutable

@@ -116,11 +116,17 @@ export async function readAiPainterCurrentExecutionSnapshot(
       isRecord(read.currentTaskTerminal) ? read.currentTaskTerminal : null,
       runId,
     )
+    // A lifecycle transition during the read must not mix two current identities.
+    const currentBytes = await readFile(path.resolve(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH))
+    if (sha256(currentBytes) !== read.registrySha256) throw new Error("current_execution_changed_during_projection")
     const evidenceReferences = [
       CURRENT_EXECUTION_REGISTRY_PATH,
       terminalBinding.path,
       ...(latestBinding ? [latestBinding.path] : []),
       ...(machineReview.sourcePath ? [machineReview.sourcePath] : []),
+      ...(trainingPresentation?.packagePath ? [trainingPresentation.packagePath] : []),
+      ...("currentMetrics" in trainingPresentation && trainingPresentation.currentMetrics?.sourcePath
+        ? [trainingPresentation.currentMetrics.sourcePath] : []),
     ]
 
     return {

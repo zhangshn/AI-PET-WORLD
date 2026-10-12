@@ -118,7 +118,8 @@ for (const absolutePath of allGovernedMarkdown) {
   const text = fs.readFileSync(absolutePath, "utf8")
   if (!TIMESTAMP_PATTERN.test(text)) findings.push(`${relativePath}: missing detailed Asia/Shanghai timestamp`)
   if (!STATUS_PATTERN.test(text)) findings.push(`${relativePath}: missing status field`)
-  if (!text.includes(REQUIRED_SENTENCE)) findings.push(`${relativePath}: missing external-agent and local-autonomy boundary sentence`)
+  const hasBoundaryReference = /^治理依据：.*\[[^\]]+\]\([^\n)]*AGENTS\.md(?:#[^\n)]*)?\).*\[[^\]]+\]\([^\n)]*DOCUMENT_AUTHORITY_INDEX\.md(?:#[^\n)]*)?\).*`GOV-OWNER-001`/m.test(text)
+  if (!text.includes(REQUIRED_SENTENCE) && !hasBoundaryReference) findings.push(`${relativePath}: missing governing authority references or preserved legacy boundary`)
   if (relativePath.startsWith("docs/") && !classificationFor(relativePath)) findings.push(`${relativePath}: document is not covered by a governance classification`)
 
   for (const match of text.matchAll(/npm run ([A-Za-z0-9:_-]+)/g)) {

@@ -1,0 +1,142 @@
+{
+  "schemaVersion": "stage4-mvp256-dry-v25-head-dropout-execution-policy-v2",
+  "status": "cpu_accepted_not_gpu_qualified",
+  "capabilityVersion": "stage4_mvp256_dry_object_head_train_dropout_v25_v1",
+  "cpuProposal": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v25-head-dropout-cpu-candidate-v1.json",
+    "sha256": "d94f6dd4edae449a9445a07bed487604ad9971c658f1c0fdc3ca933836a4ad34"
+  },
+  "predecessorCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+    "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+  },
+  "cpuAcceptance": {
+    "path": ".runtime/ai-painter/stage4-mvp256-dry-v25-cpu-acceptance/4bc9b15ca8c81a6f6414958634f0233d0059ee9df97b51beaa905f0afb00910f/report.json",
+    "sha256": "814d032fc17400dc9dc99a369d7dbeda92f627ca5a8c703f8d3b99acf1e05277"
+  },
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "95cb74c9bb1f9fdca69983df74a5b96c8b3c46a159717af1ea5bb8ce22af8b45"
+  },
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "worldCount": 1,
+    "subjectSampleId": "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+    "subjectSplit": "validation",
+    "waterFactPresent": false,
+    "buildingsRequired": false,
+    "artificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "formalStage4Qualification": false,
+    "runtimePublication": false
+  },
+  "dataUse": {
+    "train": 48,
+    "validation": 8,
+    "challenge": 4,
+    "regression": 4,
+    "weightUpdatesFrom": [
+      "train"
+    ],
+    "checkpointSelectionFrom": [
+      "validation"
+    ],
+    "challengeAndRegressionContentRead": false,
+    "sourceImageOrSplitMutation": false
+  },
+  "singleChange": {
+    "trainingOnly": true,
+    "affectedModules": [
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "operation": "dropout2d_on_hidden_16_channels_between_silu_and_final_conv",
+    "probability": 0.1,
+    "inferenceByteEquivalentToV23AtSameWeights": true,
+    "stateDictionaryKeysAndParameterCountUnchanged": true
+  },
+  "checkpointSelection": {
+    "eligibleEpochs": [
+      24,
+      36,
+      48
+    ],
+    "validationRowsPerEligibleEpoch": 8,
+    "firstCriterion": "maximum_worst_applicable_object_class_masked_luminance_correlation",
+    "secondCriterion": "minimum_mean_validation_rgb_mae",
+    "thirdCriterion": "earliest_epoch",
+    "allFourNaturalObjectClassesMustHaveValidationCoverage": true,
+    "validationMayUpdateWeights": false,
+    "selectedCheckpointMustReloadExactly": true,
+    "historicalV24CheckpointMayInitializeTraining": false
+  },
+  "executionCeiling": {
+    "trainingAttempts": 1,
+    "automaticRetries": 0,
+    "epochs": 48,
+    "generatorOptimizerSteps": 2304,
+    "discriminatorOptimizerSteps": 2304,
+    "maxWallSeconds": 2700,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2
+  },
+  "activation": {
+    "cpuAcceptanceCompleted": true,
+    "gpuQualificationAllowed": true,
+    "trainingAllowed": false,
+    "formalStage4QualificationAllowed": false,
+    "runtimePublicationAllowed": false
+  },
+  "executionVersion": "heartbeat_recovery_v2",
+  "recovery": {
+    "additionalExecutionAttempts": 1,
+    "automaticTrainingRetries": 0,
+    "historicalCheckpointMayInitialize": false,
+    "oldRunMustRemainClosed": true,
+    "heartbeatPublication": {
+      "retryableErrorCodes": [
+        "EPERM",
+        "EACCES",
+        "EBUSY"
+      ],
+      "maxReplaceAttempts": 21,
+      "retryDelayMilliseconds": 100,
+      "maxWaitMilliseconds": 2000,
+      "sameStagedBytesOnly": true,
+      "preservePreviousHeartbeat": true
+    },
+    "predecessorPolicy": {
+      "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v25-head-dropout-execution-policy-v1.json",
+      "sha256": "880e089fb05b96f9c33263178096d579e1209b453981d7b21dbd63df15bf137c"
+    },
+    "predecessorFailure": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v25-executions/mvp256-dry-v25-4c1335bd1cedfeeff95f8b1bf3614d4adf41d59960db077a/failure.json",
+      "sha256": "53fe7acc25fca9c9ed13271e8926fc98022dccf72518c1cd95baa0b582fe96f9"
+    },
+    "predecessorClaim": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v25-executions/single-training-attempt-claim.json",
+      "sha256": "396795de0a368e6d337f129ee777045bee5811027d3148fb389bc920fb18f2e7"
+    },
+    "predecessorTicketConsumption": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v25-executions/mvp256-dry-v25-4c1335bd1cedfeeff95f8b1bf3614d4adf41d59960db077a/training-ticket-consumed.json",
+      "sha256": "f68e062291332bd3448e6ee37cf45d528f837839947a5a6599fed81768d929c6"
+    },
+    "historicalSpecification": {
+      "path": ".runtime/ai-painter/stage4-mvp-v25-successor-binding/frozen-v25-1.32/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+      "sha256": "191782cb4b378c3a19cfdc2ca2530c8fd6d81694b5ee7285913e82df12efa72f"
+    },
+    "historicalWorker": {
+      "path": ".runtime/ai-painter/stage4-mvp-v25-successor-binding/frozen-v25-1.32/painter_stage4_v25_dry_single_world_checkpoint_worker.py",
+      "sha256": "eb35846ac7fff76e8cf70f49e527c33388285e97cb0ea3769ddff684ab7ccd8e"
+    }
+  }
+}

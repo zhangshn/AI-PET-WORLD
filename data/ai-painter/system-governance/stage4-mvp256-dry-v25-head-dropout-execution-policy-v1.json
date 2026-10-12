@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "stage4-mvp256-dry-v25-head-dropout-execution-policy-v1",
+  "status": "cpu_accepted_not_gpu_qualified",
+  "capabilityVersion": "stage4_mvp256_dry_object_head_train_dropout_v25_v1",
+  "cpuProposal": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v25-head-dropout-cpu-candidate-v1.json",
+    "sha256": "d94f6dd4edae449a9445a07bed487604ad9971c658f1c0fdc3ca933836a4ad34"
+  },
+  "predecessorCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+    "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+  },
+  "cpuAcceptance": {
+    "path": ".runtime/ai-painter/stage4-mvp256-dry-v25-cpu-acceptance/ecb96a0fa7c1a208d94615f8034d7b71954ef44598c1eb66d59dab8034e67b08/report.json",
+    "sha256": "74b0209fb4d1fec01ee7ea9b4638d3bf0085c0a47a59b0c2c647fc04cf6def5f"
+  },
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "191782cb4b378c3a19cfdc2ca2530c8fd6d81694b5ee7285913e82df12efa72f"
+  },
+  "scope": {
+    "resolution": [256, 192],
+    "worldCount": 1,
+    "subjectSampleId": "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+    "subjectSplit": "validation",
+    "waterFactPresent": false,
+    "buildingsRequired": false,
+    "artificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "formalStage4Qualification": false,
+    "runtimePublication": false
+  },
+  "dataUse": {
+    "train": 48,
+    "validation": 8,
+    "challenge": 4,
+    "regression": 4,
+    "weightUpdatesFrom": ["train"],
+    "checkpointSelectionFrom": ["validation"],
+    "challengeAndRegressionContentRead": false,
+    "sourceImageOrSplitMutation": false
+  },
+  "singleChange": {
+    "trainingOnly": true,
+    "affectedModules": ["object_footprints", "object_tree", "object_rock", "object_vegetation"],
+    "operation": "dropout2d_on_hidden_16_channels_between_silu_and_final_conv",
+    "probability": 0.1,
+    "inferenceByteEquivalentToV23AtSameWeights": true,
+    "stateDictionaryKeysAndParameterCountUnchanged": true
+  },
+  "checkpointSelection": {
+    "eligibleEpochs": [24, 36, 48],
+    "validationRowsPerEligibleEpoch": 8,
+    "firstCriterion": "maximum_worst_applicable_object_class_masked_luminance_correlation",
+    "secondCriterion": "minimum_mean_validation_rgb_mae",
+    "thirdCriterion": "earliest_epoch",
+    "allFourNaturalObjectClassesMustHaveValidationCoverage": true,
+    "validationMayUpdateWeights": false,
+    "selectedCheckpointMustReloadExactly": true,
+    "historicalV24CheckpointMayInitializeTraining": false
+  },
+  "executionCeiling": {
+    "trainingAttempts": 1,
+    "automaticRetries": 0,
+    "epochs": 48,
+    "generatorOptimizerSteps": 2304,
+    "discriminatorOptimizerSteps": 2304,
+    "maxWallSeconds": 2700,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2
+  },
+  "activation": {
+    "cpuAcceptanceCompleted": true,
+    "gpuQualificationAllowed": true,
+    "trainingAllowed": false,
+    "formalStage4QualificationAllowed": false,
+    "runtimePublicationAllowed": false
+  }
+}

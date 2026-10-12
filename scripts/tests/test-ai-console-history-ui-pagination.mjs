@@ -6,7 +6,7 @@ import vm from 'node:vm'
 
 // Exercise the real component's state, effects and click handlers without a
 // desktop browser. This does not claim DOM, image decoding or browser coverage.
-function harness() {
+function harness(initialUrl = null) {
   const source = readFileSync(new URL('../../src/app/ai-console/ai-console-training-history.tsx', import.meta.url), 'utf8')
   const slots = [], effects = [], requests = []
   let position = 0, poll, tree
@@ -35,8 +35,9 @@ function harness() {
   const exports = {}
   const jsx = (type, props) => ({ type, props })
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText
+  const browser = initialUrl ? { location: { href: initialUrl }, history: { state: null, replaceState(_state, _title, url) { browser.location.href = url } } } : undefined
   vm.runInNewContext(compiled, {
-    exports, Date, TextEncoder, TextDecoder, AbortController,
+    exports, Date, TextEncoder, TextDecoder, AbortController, URL, window: browser,
     require(name) {
       if (name === 'react') return hooks
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'fragment' }
@@ -58,7 +59,7 @@ function harness() {
   function nodes() { return descendants(tree) }
   function button(label) { return nodes().find(node => node.type === 'button' && (node.props.children === label || node.props.children?.[1]?.props?.children === label)) }
   render()
-  return { render, nodes, button, requests, detail, listing, row,
+  return { render, nodes, button, requests, detail, listing, row, browser,
     setPage(value) { page = value }, getPage() { return page },
     async tick(signal = new AbortController().signal) { await poll.run(signal); render() },
     disconnect() { poll.failed(new Error('test_disconnect')); render() } }
@@ -101,4 +102,48 @@ test('actual section switch resets its cursor and requests metrics rather than r
   const component = ui.nodes().find(node => typeof node.type === 'function' && node.type.name === 'MetricSummary')
   assert.equal(component.props.metrics[0].pagedOnly, true)
   assert.equal(component.props.metrics[0].fullOnly, undefined)
+})
+
+test('exact Run lookup uses the existing detail API even outside the listing page', async () => {
+  const ui = harness()
+  await ui.tick()
+  ui.listing.records = []; ui.render()
+  const input = ui.nodes().find(node => node.type === 'input')
+  input.props.onChange({ target: { value: ' ui-run ' } }); ui.render()
+  let prevented = false
+  ui.nodes().find(node => node.type === 'form').props.onSubmit({ preventDefault() { prevented = true } })
+  ui.render(); await ui.tick()
+  assert.equal(prevented, true)
+  assert.ok(ui.requests.includes('/api/ai-console/training/history/ui-run'))
+  assert.ok(ui.requests.includes('/api/ai-console/training/history/ui-run?section=artifacts&limit=20'))
+  assert.ok(ui.nodes().some(node => node.type === 'code' && node.props.children === 'ui-run'))
+  const nodes = ui.nodes()
+  assert.ok(nodes.findIndex(node => node.type?.name === 'EvidenceImage') < nodes.findIndex(node => node.type?.name === 'TrainingArtifactStatus'))
+  assert.equal(nodes.filter(node => node.type?.name === 'EvidenceImage').length, 1)
+})
+
+test('invalid Run lookup cannot become a path query or reset a selected Run', async () => {
+  const ui = harness()
+  await ui.tick(); ui.button('ui-run').props.onClick(); ui.render(); await ui.tick()
+  for (const value of ['../outside', 'bad/path', 'bad?query=1', 'x'.repeat(193), '']) {
+    ui.nodes().find(node => node.type === 'input').props.onChange({ target: { value } }); ui.render()
+    assert.equal(ui.button('查看该Run图像与证据').props.disabled, true)
+    ui.nodes().find(node => node.type === 'form').props.onSubmit({ preventDefault() {} }); ui.render()
+    assert.ok(ui.nodes().some(node => node.type === 'code' && node.props.children === 'ui-run'))
+  }
+  assert.ok(ui.requests.every(url => !url.includes('outside') && !url.includes('bad')))
+})
+
+test('browser refresh restores only exact historical selection via a read-only page URL', async () => {
+  const ui = harness('http://localhost:3000/ai-console/training/runs?view=history&run=ui-run')
+  ui.render(); await ui.tick()
+  assert.ok(ui.requests.includes('/api/ai-console/training/history/ui-run'))
+  assert.ok(ui.nodes().some(node => node.type === 'code' && node.props.children === 'ui-run'))
+  assert.equal(new URL(ui.browser.location.href).searchParams.get('view'), 'history')
+  assert.equal(new URL(ui.browser.location.href).searchParams.get('run'), 'ui-run')
+  assert.ok(ui.requests.every(url => url.startsWith('/api/ai-console/training/history')))
+  const invalid = harness('http://localhost:3000/ai-console/training/runs?run=..%2Foutside')
+  invalid.render(); await invalid.tick()
+  assert.equal(invalid.nodes().some(node => node.props?.['aria-label'] === '选中Run详情'), false)
+  assert.ok(invalid.requests.every(url => !url.includes('outside')))
 })

@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "stage4-mvp256-dry-v25-head-dropout-cpu-candidate-v1",
+  "status": "cpu_only_inactive_not_execution_qualified",
+  "capabilityVersion": "stage4_mvp256_dry_object_head_train_dropout_v25_cpu_candidate",
+  "purpose": "one_bounded_train_only_regularization_comparison_after_v24_dry_review_failure",
+  "hypothesisStatus": "unproven_train_fit_vs_validation_gap_not_causal_proof",
+  "scope": {
+    "resolution": [256, 192],
+    "worldCount": 1,
+    "subjectSampleId": "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+    "waterFactPresent": false,
+    "buildingsRequired": false,
+    "artificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "formalStage4Qualification": false,
+    "runtimePublication": false
+  },
+  "predecessor": {
+    "candidateContract": {
+      "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+      "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+    },
+    "trainingTerminal": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v24-recovery-v2-executions/mvp256-dry-v24-9056e7f9a7eb9ba8bf8fbf569d05c0be30c12c723ffca0e2/training-finalize.json",
+      "sha256": "2f2b7a3ff091f54e511e7bad9ab2a53fabbe2fc626f5bd91e49db7c1ade33a26"
+    },
+    "failedVisualAudit": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v24-recovery-v2-executions/mvp256-dry-v24-9056e7f9a7eb9ba8bf8fbf569d05c0be30c12c723ffca0e2/dry-review/independent-audit.json",
+      "sha256": "c3c4db62221412523349ea57d8e925e13d49039903e6adffd2d4e10ce2556ae8"
+    },
+    "trainFitDiagnostic": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v24-recovery-v2-executions/mvp256-dry-v24-9056e7f9a7eb9ba8bf8fbf569d05c0be30c12c723ffca0e2/dry-review/selected-checkpoint-48-train-fit.json",
+      "sha256": "844f80403cca22d040710691bfc180346bc09a7c2a8aac743cde0fcbfc890ed0"
+    },
+    "checkpointMayInitializeV25": false,
+    "historicalGpuQualificationMayBeReused": false
+  },
+  "candidateProgram": {
+    "model": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_train_dropout_v25_cpu.py",
+      "sha256": "64b6dd5d0a39010346d858f67528c2e19ffdc93b2803339d685bd62f1ad6218c"
+    },
+    "tests": {
+      "path": "ml/ai-painter/tests/test_object_head_train_dropout_v25_cpu.py",
+      "sha256": "fdf305457626d10509e07c3c079d765779a03de7a8059d2f0c149d7e6de8a255"
+    }
+  },
+  "singleChange": {
+    "trainingOnly": true,
+    "affectedModules": ["object_footprints", "object_tree", "object_rock", "object_vegetation"],
+    "operation": "dropout2d_on_hidden_16_channels_between_silu_and_final_conv",
+    "probability": 0.1,
+    "inferenceByteEquivalentToV23AtSameWeights": true,
+    "stateDictionaryKeysAndParameterCountUnchanged": true
+  },
+  "inheritWithoutChange": {
+    "datasetReleaseAndSplit": "predecessor_candidate_frozen_bindings_64_train48_validation8_challenge4_regression4",
+    "conditionChannels": 23,
+    "worldFactsAuthority": true,
+    "lossAndCoefficients": "v24_unchanged",
+    "gradientProjection": "v24_unchanged",
+    "critic": "v24_unchanged",
+    "checkpointSelection": "v24_unchanged",
+    "numericAndSemanticReviewThresholds": "v24_unchanged",
+    "sourceRgbOrConditionsModified": false
+  },
+  "proposedExecutionCeiling": {
+    "trainingAttempts": 1,
+    "automaticRetries": 0,
+    "epochs": 48,
+    "generatorOptimizerSteps": 2304,
+    "discriminatorOptimizerSteps": 2304,
+    "maxWallSeconds": 2700,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2
+  },
+  "decisionRule": "compare_frozen_v24_and_one_v25_run_on_same_validation_and_preselected_dry_world;_if_semantics_or_fixed_validation_not_improved_close_regularization_route_without_retry",
+  "historicallyViewedValidationIsIndependentChallenge": false,
+  "formalSpecificationStatus": "successor_section_not_yet_registered",
+  "activation": {
+    "cpuInspectionAllowed": true,
+    "gpuQualificationAllowed": false,
+    "trainingAllowed": false,
+    "reviewExecutionAllowed": false,
+    "checkpointPromotionAllowed": false,
+    "stage4AdvancementAllowed": false,
+    "runtimePublicationAllowed": false
+  }
+}

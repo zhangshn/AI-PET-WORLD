@@ -1,0 +1,656 @@
+{
+  "schemaVersion": "stage4-mvp256-dry-v27-shared-hidden-execution-policy-v1",
+  "status": "cpu_accepted_not_gpu_qualified",
+  "capabilityVersion": "stage4_mvp256_dry_object_head_shared_hidden_v27",
+  "executionVersion": "shared_hidden_five_group_v27",
+  "predecessorCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+    "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+  },
+  "modelCpuEvidence": {
+    "path": ".runtime/ai-painter/stage4-mvp256-dry-v27-v3-cpu/report.json",
+    "sha256": "0c45507597b1cb6fa1b497274b12fbbf34c6726d07f252909a49c10cbd804955"
+  },
+  "cpuAcceptance": {
+    "path": ".runtime/ai-painter/stage4-mvp256-dry-v27-lifecycle-cpu/65167b03b3551cccbcad120cb54d28b0/report.json",
+    "sha256": "77c9bf1693d3515ebf69f02248d74ef12b13024a6e76f47534d25cf584f52220"
+  },
+  "programBindings": {
+    "supervisor": {
+      "path": "scripts/run-ai-painter-mvp256-dry-v27-training.mjs",
+      "sha256": "f3a1b1f3b028ba23958a942dd78fe1f597d4b12aad9ecd8704c2b1cd25076844"
+    },
+    "supervisorTests": {
+      "path": "scripts/tests/test-ai-painter-mvp256-dry-v27-training.mjs",
+      "sha256": "1ae13f034bb064ac73b883fa4c26c6db139e843ba3b09bfef2c45478cab518c1"
+    },
+    "worker": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v27_dry_single_world_checkpoint_worker.py",
+      "sha256": "dc0f21626e750e12115f56cb3aaa854f1cee459167b85ea6945cbfa0a94db19d"
+    },
+    "workerTests": {
+      "path": "ml/ai-painter/tests/test_stage4_v27_dry_single_world_checkpoint_worker.py",
+      "sha256": "0437a5b1cb8a4688aff95b8c56fc72c1b9a0eb0ea577c0437396c2ce29fc972a"
+    },
+    "gpuQualifier": {
+      "path": "ml/ai-painter/scripts/qualify_stage4_mvp256_dry_v27_gpu.py",
+      "sha256": "c1ea99da83ff70b1aad496227b0daa6251f27e290ba08983a0036bd68ed014c8"
+    },
+    "gpuQualifierTests": {
+      "path": "ml/ai-painter/tests/test_qualify_stage4_mvp256_dry_v27_gpu.py",
+      "sha256": "0887511245b8d447707596aaeca21f6877bb489868b23be61d202ad55c71c689"
+    },
+    "packageChain": {
+      "path": "scripts/lib/ai-painter-mvp256-dry-v27-package-chain-v1.mjs",
+      "sha256": "938855e36137fadb00267487548fc86ba747e6077245bc858400498115a8de7a"
+    },
+    "packageChainTests": {
+      "path": "scripts/tests/test-ai-painter-mvp256-dry-v27-package-chain-v1.mjs",
+      "sha256": "50d77b209155d6241cbb48a72218fb731979e4c29d6a1e3741b87e6a9ce7916b"
+    },
+    "model": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_shared_hidden_v27_cpu.py",
+      "sha256": "0ab84057e50f689015e75b18891f1ff660310ec61a6aa13045eb393b5580e2b0"
+    },
+    "modelTests": {
+      "path": "ml/ai-painter/tests/test_object_head_shared_hidden_v27_cpu.py",
+      "sha256": "4851b9c07aff14f43a120ef86edadf7432b1c1a9300d7f82494e7a77f62ab707"
+    },
+    "probe": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_shared_hidden_priority_v27.py",
+      "sha256": "8841301f3c70a5ced1f4563b5b638a062cafc0ef5c8f95c46fd59bd102031755"
+    },
+    "probeTests": {
+      "path": "ml/ai-painter/tests/test_object_head_shared_hidden_priority_v27.py",
+      "sha256": "d7fac01295ac53b08de7aa5ec0eff21719843d7767d12696571dc8a32c92c6ab"
+    },
+    "cpuAcceptance": {
+      "path": "scripts/run-ai-painter-mvp256-dry-v27-cpu-acceptance.mjs",
+      "sha256": "14ddc727b9fba5a3c4f38a7904518fb89ed72e93e5486468ebbe123247ac5ccc"
+    },
+    "cpuAcceptanceTests": {
+      "path": "scripts/tests/test-ai-painter-mvp256-dry-v27-cpu-acceptance.mjs",
+      "sha256": "03233171a4e470793615a89a43092385f9100c9d48c04205edd4629a2b8d4e6d"
+    },
+    "cpuReview": {
+      "path": "ml/ai-painter/scripts/review_stage4_mvp256_dry_v27_cpu.py",
+      "sha256": "e58402cd3995ef5a58d66f9928904a0d5cd38cae3d1c56525c0742496c21b970"
+    },
+    "cpuReviewTests": {
+      "path": "ml/ai-painter/tests/test_review_stage4_mvp256_dry_v27_cpu.py",
+      "sha256": "e3af1b0c870a3f2cbe1761baba321be6248d1b4fc0f73dc7efedb75652d2b719"
+    },
+    "independentAudit": {
+      "path": "scripts/run-ai-painter-mvp256-dry-v27-independent-audit.mjs",
+      "sha256": "62ae307a2eb3fb0ad5a582f6a5f6fc08b3df33b71426ea2af199b17d800a78f7"
+    },
+    "reviewTests": {
+      "path": "scripts/tests/test-ai-painter-mvp256-dry-v27-independent-audit.mjs",
+      "sha256": "ad3d61da53c29618406943f4ce3c9e983e8499f08bbc743bf74d0a7acdb21e99"
+    },
+    "reconciliation": {
+      "path": "scripts/reconcile-ai-painter-mvp256-dry-v27-review.mjs",
+      "sha256": "8c58ede9234a10b5b310f166248698736dc62e8832f23c03ac03ed75db10a7e7"
+    },
+    "reconciliationTests": {
+      "path": "scripts/tests/test-ai-painter-mvp256-dry-v27-review-closure.mjs",
+      "sha256": "4539c46408e3e2a6ed6f5a437bbfb41cb551dd881461d1fc864124ccc56dd582"
+    },
+    "v24Worker": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v24_dry_single_world_checkpoint_worker.py",
+      "sha256": "e471fd5d7d1d77609a73853bcf2e59deaeae1ad2ca3a1a0028e7d28e5eac4602"
+    },
+    "v24Profile": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v24_object_head_core_priority_probe.py",
+      "sha256": "7d39e99b695f4191a867acadd8446d436f36bcdadf4768c06445307ef7eb5f3d"
+    },
+    "v3Checker": {
+      "path": "ml/ai-painter/scripts/check_stage4_mvp256_dry_v27_v3_cpu.py",
+      "sha256": "c8c514a064d3ea316efa3cf41bced56d7dc667f25e40769e7b828e0f5ef3ba6b"
+    },
+    "dependency:ml/ai-painter/scripts/ai_painter_authorization_policy.py": {
+      "path": "ml/ai-painter/scripts/ai_painter_authorization_policy.py",
+      "sha256": "ce7240ce3330fe236683f965cebd78ad5d54086b3bf519d9693960d0e97f74a8"
+    },
+    "dependency:ml/ai-painter/scripts/ai_painter_execution_grant.py": {
+      "path": "ml/ai-painter/scripts/ai_painter_execution_grant.py",
+      "sha256": "72006eb2b4203ca8f9e28b09aaf6aa2ca4a84c50f3ae6b3df76587d92e823722"
+    },
+    "dependency:ml/ai-painter/scripts/ai_painter_stage_mode_registry.py": {
+      "path": "ml/ai-painter/scripts/ai_painter_stage_mode_registry.py",
+      "sha256": "151e060076f33af42dc2b3ceed1bb179bb7d2519d1ab610370ef17d035b3f447"
+    },
+    "dependency:ml/ai-painter/scripts/check_stage4_mvp256_dry_v27_v3_cpu.py": {
+      "path": "ml/ai-painter/scripts/check_stage4_mvp256_dry_v27_v3_cpu.py",
+      "sha256": "c8c514a064d3ea316efa3cf41bced56d7dc667f25e40769e7b828e0f5ef3ba6b"
+    },
+    "dependency:ml/ai-painter/scripts/check_stage4_mvp_structured_object_v18_cpu_acceptance.py": {
+      "path": "ml/ai-painter/scripts/check_stage4_mvp_structured_object_v18_cpu_acceptance.py",
+      "sha256": "91d7902e48cf2e1d79fb209013de8ceea21dffd2309c959a4b32f4660ba58da6"
+    },
+    "dependency:ml/ai-painter/scripts/diagnose_stage4_mvp_v21_all_train_fit_readonly.py": {
+      "path": "ml/ai-painter/scripts/diagnose_stage4_mvp_v21_all_train_fit_readonly.py",
+      "sha256": "b9f782e3e6054f1e40ac5c5d98989d03c265bc8545b7e1d9f1db6b187da38927"
+    },
+    "dependency:ml/ai-painter/scripts/diagnose_stage4_mvp_v21_selected_fit_readonly.py": {
+      "path": "ml/ai-painter/scripts/diagnose_stage4_mvp_v21_selected_fit_readonly.py",
+      "sha256": "f1777377c011de6fd3a421110ecae2bcb72b443a77edc78ffef17b79a38f8cc8"
+    },
+    "dependency:ml/ai-painter/scripts/diagnose_stage4_v24_validation_shadow.py": {
+      "path": "ml/ai-painter/scripts/diagnose_stage4_v24_validation_shadow.py",
+      "sha256": "9441e383297937d448de9ce495bff112b6ba947ff33d55be3d75c6061a9c11ad"
+    },
+    "dependency:ml/ai-painter/scripts/materialize_stage4_mvp256_dry_v24_candidate.py": {
+      "path": "ml/ai-painter/scripts/materialize_stage4_mvp256_dry_v24_candidate.py",
+      "sha256": "95703b03aab28f5ef516d2997fdb3efbd0bd114fed0ade1ace0548a93417e476"
+    },
+    "dependency:ml/ai-painter/scripts/materialize_stage4_mvp_object_residual_v21_dry_review.py": {
+      "path": "ml/ai-painter/scripts/materialize_stage4_mvp_object_residual_v21_dry_review.py",
+      "sha256": "bedb4b2865a009a9c113095595b178498313b3bb55d781abcc37aafc2d6e2506"
+    },
+    "dependency:ml/ai-painter/scripts/painter_stage4_v21_full_train_exposure_probe.py": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v21_full_train_exposure_probe.py",
+      "sha256": "1ff3dedf2d32d90a545a001e6cdb7b53fda24aa61b805c880c5ae9a27ac10372"
+    },
+    "dependency:ml/ai-painter/scripts/painter_stage4_v21_object_core_fidelity_probe.py": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v21_object_core_fidelity_probe.py",
+      "sha256": "96f67bfb58f27614fcce8a47356b3636cf3a6788373f3a17b0867469d5d3469b"
+    },
+    "dependency:ml/ai-painter/scripts/painter_stage4_v21_train_only_capacity_probe.py": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v21_train_only_capacity_probe.py",
+      "sha256": "4df03c70f057b39ef18e0da1a4d7551a802b6520af03142e08e61f0d3095e9d8"
+    },
+    "dependency:ml/ai-painter/scripts/painter_stage4_v21_whole_frame_fidelity_probe.py": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v21_whole_frame_fidelity_probe.py",
+      "sha256": "dee53c718b15cd5fbd14a5bfc2cb5b82a9378436b09118d695f80c281ec7cdc3"
+    },
+    "dependency:ml/ai-painter/scripts/painter_stage4_v23_complete_support_partition_probe.py": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v23_complete_support_partition_probe.py",
+      "sha256": "cdef7834b6697cd0e745a469dd0b94e0c7a340d036b5e17a7c6b85ecd0337156"
+    },
+    "dependency:ml/ai-painter/scripts/painter_stage4_v24_dry_single_world_checkpoint_worker.py": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v24_dry_single_world_checkpoint_worker.py",
+      "sha256": "e471fd5d7d1d77609a73853bcf2e59deaeae1ad2ca3a1a0028e7d28e5eac4602"
+    },
+    "dependency:ml/ai-painter/scripts/painter_stage4_v24_object_head_core_priority_probe.py": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v24_object_head_core_priority_probe.py",
+      "sha256": "7d39e99b695f4191a867acadd8446d436f36bcdadf4768c06445307ef7eb5f3d"
+    },
+    "dependency:ml/ai-painter/scripts/painter_stage4_v27_dry_single_world_checkpoint_worker.py": {
+      "path": "ml/ai-painter/scripts/painter_stage4_v27_dry_single_world_checkpoint_worker.py",
+      "sha256": "dc0f21626e750e12115f56cb3aaa854f1cee459167b85ea6945cbfa0a94db19d"
+    },
+    "dependency:ml/ai-painter/scripts/qualify_stage4_mvp256_dry_v27_gpu.py": {
+      "path": "ml/ai-painter/scripts/qualify_stage4_mvp256_dry_v27_gpu.py",
+      "sha256": "c1ea99da83ff70b1aad496227b0daa6251f27e290ba08983a0036bd68ed014c8"
+    },
+    "dependency:ml/ai-painter/scripts/review_stage4_mvp256_dry_v27_cpu.py": {
+      "path": "ml/ai-painter/scripts/review_stage4_mvp256_dry_v27_cpu.py",
+      "sha256": "e58402cd3995ef5a58d66f9928904a0d5cd38cae3d1c56525c0742496c21b970"
+    },
+    "dependency:ml/ai-painter/scripts/run_stage4_mvp_object_residual_v21_readonly_gpu_qualification.py": {
+      "path": "ml/ai-painter/scripts/run_stage4_mvp_object_residual_v21_readonly_gpu_qualification.py",
+      "sha256": "330d9d9304480b7ba24a66f2da4245b2425b6999289f70aca7a956c27f751207"
+    },
+    "dependency:ml/ai-painter/scripts/run_stage4_mvp_structured_object_v18_readonly_gpu_qualification.py": {
+      "path": "ml/ai-painter/scripts/run_stage4_mvp_structured_object_v18_readonly_gpu_qualification.py",
+      "sha256": "6f2489dfa295aa6f1bc36106897a50aac001c1d97f021ec543fa824af9b3251a"
+    },
+    "dependency:ml/ai-painter/scripts/train_stage4_mvp_object_residual_v21_dry_stage0.py": {
+      "path": "ml/ai-painter/scripts/train_stage4_mvp_object_residual_v21_dry_stage0.py",
+      "sha256": "fdfe01452afb512e6b829112744931be9a800ef8db077f5efbdafbe542648520"
+    },
+    "dependency:ml/ai-painter/scripts/train_stage4_mvp_structured_object_v18_dry_stage0.py": {
+      "path": "ml/ai-painter/scripts/train_stage4_mvp_structured_object_v18_dry_stage0.py",
+      "sha256": "07ff9450ec2c38f61ee1229fc598c2c4bbd272982339f2d0027add53c9c29340"
+    },
+    "dependency:ml/ai-painter/scripts/v21_object_residual_admission.py": {
+      "path": "ml/ai-painter/scripts/v21_object_residual_admission.py",
+      "sha256": "562baba003194262ed81d83b5a9bb31588365b34952808ba7a009ddd1f298734"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/__init__.py": {
+      "path": "ml/ai-painter/src/ai_painter/__init__.py",
+      "sha256": "cd5c6b57e901a33f088923792eb02198c016a22be6345ac99f1c2bdd82b39338"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/blueprint/__init__.py": {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/__init__.py",
+      "sha256": "1d01b434e6393d2d7eaf9e04faf2ed0cbfd23381c9a7b8933abb21665cc16e07"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/blueprint/channels.py": {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/channels.py",
+      "sha256": "371684c39416cea870230c35fc78b04a847a592b8c6e22b319d7809a77201846"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/blueprint/schema.py": {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/schema.py",
+      "sha256": "ad9e2bf69c19240e378cb470a39e624411af4f52a20b3435239a289e58440ac1"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/blueprint/v1_masks.py": {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/v1_masks.py",
+      "sha256": "894407b2e314f645048c5a074beb7d4b185436d4b533083d5e9e3f6f3e229d9f"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/blueprint/v1_schema.py": {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/v1_schema.py",
+      "sha256": "d33da70c332c3e2a0a3c19e69064f9c1873b218f7d8928797c02d029e173bca4"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/blueprint/v1_types.py": {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/v1_types.py",
+      "sha256": "26d17ec200c682b405e0fb62224b7550af5bec8c3e1e42be5ca182ae0b511ca2"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/blueprint/v1_validator.py": {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/v1_validator.py",
+      "sha256": "4627edfe2bca7e4417a9229bd4acc7006a493d1ab8e4c0f61202ef87646e10c6"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/__init__.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/__init__.py",
+      "sha256": "f6aa5e22608ae309a6362da1e432f98f2794fd63e2fed32bf12d8944c38d3d53"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/diffusion.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/diffusion.py",
+      "sha256": "2b1b5fa94178b4f47c5f395dbce86870490b37d31dd25f7448f5a7ac5487e3a4"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/model.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "22d4d980be37b2c706c6ba7dbe5deb7d0f2f7a060e11af19024f96ffd2aa6bd0"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/mvp_dataset_release.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/mvp_dataset_release.py",
+      "sha256": "0727a97084b05c3a5d12182bf4f0a0ac5aec176855705083f3961486eb89c559"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/mvp_denoiser_release.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/mvp_denoiser_release.py",
+      "sha256": "170472a9bde5243d30d1dc41b4bbbe2629fb78019d01eda4044a177000058580"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_aperiodic_detail_renderer.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_aperiodic_detail_renderer.py",
+      "sha256": "d7c5b31f4fedd076f3c3d9336f997551188edb724a3c2c1ad4bc505206c8d702"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_complete_support_partition_v23_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_complete_support_partition_v23_cpu.py",
+      "sha256": "c455e642631352eaaa14cce7070d23260a7fe9abd189591d99e2f8863acca50f"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_conditional_texture_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_conditional_texture_cpu.py",
+      "sha256": "2a54a37d2c42de2415bbda8e8af1327c0ca7a932ae560df74b79e54b7de5565c"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_instance_object_prototype.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_instance_object_prototype.py",
+      "sha256": "3f3850acfc9d5c9251690ad4170c831170883434431c2168c7e2039dcb59dc62"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_local_texture_objective_v12.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_local_texture_objective_v12.py",
+      "sha256": "f0565a0cba1f1748fd14c67d5ea4a617ffa8231979df4839766fbe5b4c32fa73"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_context_renderer.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_context_renderer.py",
+      "sha256": "a5dfe23343aa8eee504a1effcd3e5f4f30f3085bb90637ccbfd63eb2467dc105"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_core_fidelity_candidate_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_core_fidelity_candidate_cpu.py",
+      "sha256": "4bf0a03616bcad1f3549a0a607358a6f02fc56a7690993f3a9701cfa5d40ecb0"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_residual_v21_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_residual_v21_cpu.py",
+      "sha256": "3c78e6991f11e8ae95ebb90d6636bc54ee1c6962039a9454bafbcb0ad34bd3e5"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_cpu_v17.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_cpu_v17.py",
+      "sha256": "e8b18b5e5d7b29befab908bb0a521b0f21b66d927ca2b8e2db99a11287063e78"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_objective_cpu_v17.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_objective_cpu_v17.py",
+      "sha256": "d36542ad2fa2e8ffd1d133d75f6ee4059265660650fb23a8a74cc1d83c0294b8"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_v18_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_v18_cpu.py",
+      "sha256": "d190c5e5ed48368f43ba1c05a21942770be6235e48e9169b8248584582ad0370"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/native_rgb_whole_frame_fidelity_candidate_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_whole_frame_fidelity_candidate_cpu.py",
+      "sha256": "35f7ee4eec43540d9396cdba59f25824ee886857a2541471f43e119ffa3685bc"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/object_feature_aggregation_v26_v2_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_feature_aggregation_v26_v2_cpu.py",
+      "sha256": "2addb1c60136ae42ebb68afb6b1a9c2908b761498dbe74957f93a7b18e5bef8f"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/object_head_core_priority_update_v24.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_core_priority_update_v24.py",
+      "sha256": "b8c0e84732d4911a667c41c27bf927b65bff4ae1a78f7a5644e599c193dacab0"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/object_head_core_priority_update_v24_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_core_priority_update_v24_cpu.py",
+      "sha256": "b0bc959700244ee508e2a9f3dd257f882abf4717f4e99b7d21f40d4a5b47f1ad"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/object_head_shared_hidden_priority_v27.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_shared_hidden_priority_v27.py",
+      "sha256": "8841301f3c70a5ced1f4563b5b638a062cafc0ef5c8f95c46fd59bd102031755"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/object_head_shared_hidden_priority_v27_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_shared_hidden_priority_v27_cpu.py",
+      "sha256": "fa4aeede83c63546141d40e06b08110822cc5655084438d33f8dde7ccb4f31c5"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/object_head_shared_hidden_v27_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_shared_hidden_v27_cpu.py",
+      "sha256": "0ab84057e50f689015e75b18891f1ff660310ec61a6aa13045eb393b5580e2b0"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/object_instance_supervision_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_instance_supervision_cpu.py",
+      "sha256": "2300cfdf7c99d50c64ea4d81d6fa753acec73f18baf55ab98a27f76505a54334"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/object_local_context_isolation_v26_cpu.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_local_context_isolation_v26_cpu.py",
+      "sha256": "a6961e818f3136f9e60dc8b6c18b3ffc9e0b0b740930891df7de860c35f9ae70"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/regrouped_candidate.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/regrouped_candidate.py",
+      "sha256": "8619332f4837b846feec7a978be2ba576c87583b23a00e1bced0c6b0fc08cf87"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/split_release.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/split_release.py",
+      "sha256": "02932d6a41d9114bb552e8287f9174a925f904e9862916c9174826905ee7a75c"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/split_training.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/split_training.py",
+      "sha256": "71b91e93e5cb1cb6b973d0761491cb885293225596a6467ca7b11543cba0c526"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/stage4_semantic_transport_v2.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/stage4_semantic_transport_v2.py",
+      "sha256": "8cf06a8d3e32ae830151d35aa237710eab8d6aa651c2647058b5821ffe198e97"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/complete_world/stage4_v17_responsibility_artifact.py": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/stage4_v17_responsibility_artifact.py",
+      "sha256": "d675cdc4f9e761ba1d131c40906528d8d6c8eccbb15dea4b8e8f07a55a73fb56"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/__init__.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/__init__.py",
+      "sha256": "c0be4ae4d52232de6db48269b38ca5fdb45f3c0cd709fd4694c5688ee9e5bc69"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/audit.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/audit.py",
+      "sha256": "151226fa72ea92fe7574a5f5a9db4f0f4decf04cf3ad92603155db301cb469b5"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/hashing.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/hashing.py",
+      "sha256": "41e25458e58738f214ee4cf31a8e06af78829c085f6bf1dddedc2b02c0ae78f8"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/importer.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/importer.py",
+      "sha256": "607b4c7332e8841b0af430f5d286c98e06d08b6be8e356151159086effba849a"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/indexer.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/indexer.py",
+      "sha256": "8c1beb9b305557468b8af12109187390d378e655360b5553306e99115186d149"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/layout.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/layout.py",
+      "sha256": "0b6d4c62a20e731fa22834baf4d7cad1227709cd0f0ccadcdf02e922658ee3a6"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/metadata.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/metadata.py",
+      "sha256": "bbb94c2ac0fcf2626a293a331399a21c8afc346224002eecef193d2e14232d39"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/source_registry.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/source_registry.py",
+      "sha256": "fd73fe40eda746d7ec0bc26d3bb34641a2112b41a083836104134d6bcaa0a875"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/taxonomy.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/taxonomy.py",
+      "sha256": "9d3d46a19552499950cc582005e03584e5cf583e84994753ee29284739fad5a0"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/v1_review.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/v1_review.py",
+      "sha256": "f449075d71f0dc23906ea1b4d3e376b87799cb1639252d4a173e14ef1435418d"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/dataset/validator.py": {
+      "path": "ml/ai-painter/src/ai_painter/dataset/validator.py",
+      "sha256": "2cf482137d2912059ccc3ffbe1ada5cc1eaffa54ecee38562f40508d32b7199c"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/training/__init__.py": {
+      "path": "ml/ai-painter/src/ai_painter/training/__init__.py",
+      "sha256": "0e47a041d26119b302e3438c7f59448380ba3042b07bc3639400c75c6f0612c0"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/training/checkpoint.py": {
+      "path": "ml/ai-painter/src/ai_painter/training/checkpoint.py",
+      "sha256": "56803c0b64ece65224fbd6a396a63a8bf010ea561c83fed817ebf9ff6767d3b8"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/training/dataset.py": {
+      "path": "ml/ai-painter/src/ai_painter/training/dataset.py",
+      "sha256": "c2585e5498bbe58f61bd65d23a0faf90110875808f2361ff6561a2a2a52e2da9"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/training/discriminator.py": {
+      "path": "ml/ai-painter/src/ai_painter/training/discriminator.py",
+      "sha256": "04820604e54f40fb74fc96c0f6a1185393da7e4e44766686d57de58313743d9d"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/training/losses.py": {
+      "path": "ml/ai-painter/src/ai_painter/training/losses.py",
+      "sha256": "18739e7614335bb59ae6c04e1754607220d6655ae0cfe8ec586cf4830b226e63"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/training/model.py": {
+      "path": "ml/ai-painter/src/ai_painter/training/model.py",
+      "sha256": "4f7105e9544b5ac4b683a09098edab00d3ce12b3d40a8e20f4360c4f263ac84a"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/training/torch_runtime.py": {
+      "path": "ml/ai-painter/src/ai_painter/training/torch_runtime.py",
+      "sha256": "17bf5c5315466b7656b04e3e32d10f4d5e5595f0bb4db4c4a0dddb66027dbcc3"
+    },
+    "dependency:ml/ai-painter/src/ai_painter/training/trainer.py": {
+      "path": "ml/ai-painter/src/ai_painter/training/trainer.py",
+      "sha256": "3e14317f0779067f4f1a2604b272dfedaed8b6c72a3e8b808fec4fffb7fe34ed"
+    },
+    "dependency:ml/ai-painter/tests/test_object_head_shared_hidden_priority_v27.py": {
+      "path": "ml/ai-painter/tests/test_object_head_shared_hidden_priority_v27.py",
+      "sha256": "d7fac01295ac53b08de7aa5ec0eff21719843d7767d12696571dc8a32c92c6ab"
+    },
+    "dependency:ml/ai-painter/tests/test_object_head_shared_hidden_v27_cpu.py": {
+      "path": "ml/ai-painter/tests/test_object_head_shared_hidden_v27_cpu.py",
+      "sha256": "4851b9c07aff14f43a120ef86edadf7432b1c1a9300d7f82494e7a77f62ab707"
+    },
+    "dependency:ml/ai-painter/tests/test_qualify_stage4_mvp256_dry_v27_gpu.py": {
+      "path": "ml/ai-painter/tests/test_qualify_stage4_mvp256_dry_v27_gpu.py",
+      "sha256": "0887511245b8d447707596aaeca21f6877bb489868b23be61d202ad55c71c689"
+    },
+    "dependency:ml/ai-painter/tests/test_review_stage4_mvp256_dry_v27_cpu.py": {
+      "path": "ml/ai-painter/tests/test_review_stage4_mvp256_dry_v27_cpu.py",
+      "sha256": "e3af1b0c870a3f2cbe1761baba321be6248d1b4fc0f73dc7efedb75652d2b719"
+    },
+    "dependency:ml/ai-painter/tests/test_stage4_v27_dry_single_world_checkpoint_worker.py": {
+      "path": "ml/ai-painter/tests/test_stage4_v27_dry_single_world_checkpoint_worker.py",
+      "sha256": "0437a5b1cb8a4688aff95b8c56fc72c1b9a0eb0ea577c0437396c2ce29fc972a"
+    },
+    "dependency:scripts/check-ai-painter-mvp256-dry-v24-candidate.mjs": {
+      "path": "scripts/check-ai-painter-mvp256-dry-v24-candidate.mjs",
+      "sha256": "89ae80144bfa96cb4dc24bbe1074fb68ea69e6908ab318997c8d0b65d8741f84"
+    },
+    "dependency:scripts/lib/ai-assisted-condition-alignment.mjs": {
+      "path": "scripts/lib/ai-assisted-condition-alignment.mjs",
+      "sha256": "c01ea4efba9835e488e42c7ed44d2aef434ee3db21b06e84e70379722bcc145e"
+    },
+    "dependency:scripts/lib/ai-assisted-style-fingerprint.mjs": {
+      "path": "scripts/lib/ai-assisted-style-fingerprint.mjs",
+      "sha256": "924f7db154c15c84df1b9e50b40dd57cc20c22d1b9b0ce72741bfd8835888d15"
+    },
+    "dependency:scripts/lib/ai-painter-active-training-telemetry-v1.mjs": {
+      "path": "scripts/lib/ai-painter-active-training-telemetry-v1.mjs",
+      "sha256": "3b813df12d7aa800ce93132f98fd35684a859e652bfb3faa4dc659abf04a2fe8"
+    },
+    "dependency:scripts/lib/ai-painter-mvp-detail-sufficiency-v1.mjs": {
+      "path": "scripts/lib/ai-painter-mvp-detail-sufficiency-v1.mjs",
+      "sha256": "453deeb345e308a03a174a73fbeaf1bf996f493754d5fd1acb5a4b93cde86aff"
+    },
+    "dependency:scripts/lib/ai-painter-mvp256-dry-review-decision-v1.mjs": {
+      "path": "scripts/lib/ai-painter-mvp256-dry-review-decision-v1.mjs",
+      "sha256": "3e984c39dfae696c20d79e96dfd986f096684d1154d1488f4a73a6f947753d13"
+    },
+    "dependency:scripts/lib/ai-painter-mvp256-dry-v24-package-chain-v1.mjs": {
+      "path": "scripts/lib/ai-painter-mvp256-dry-v24-package-chain-v1.mjs",
+      "sha256": "659ae6c326738dfada3b2ff7441282d36606358960db230b5735c7f48b2a53d7"
+    },
+    "dependency:scripts/lib/ai-painter-mvp256-dry-v27-package-chain-v1.mjs": {
+      "path": "scripts/lib/ai-painter-mvp256-dry-v27-package-chain-v1.mjs",
+      "sha256": "938855e36137fadb00267487548fc86ba747e6077245bc858400498115a8de7a"
+    },
+    "dependency:scripts/lib/ai-painter-stage4-mvp-v17-responsibility-artifact.mjs": {
+      "path": "scripts/lib/ai-painter-stage4-mvp-v17-responsibility-artifact.mjs",
+      "sha256": "22d5f63ec4b356f120e504dea8e4f22320dabb014e26fe6685b6e0bada4c5ae3"
+    },
+    "dependency:scripts/lib/ai-painter-stage4-v2-machine-review-execution-v1.mjs": {
+      "path": "scripts/lib/ai-painter-stage4-v2-machine-review-execution-v1.mjs",
+      "sha256": "7e0332c4320f714383e0c3f6031e36db9972d6e19dedb8cfc0dd52b0069e016a"
+    },
+    "dependency:scripts/reconcile-ai-painter-mvp256-dry-v27-review.mjs": {
+      "path": "scripts/reconcile-ai-painter-mvp256-dry-v27-review.mjs",
+      "sha256": "8c58ede9234a10b5b310f166248698736dc62e8832f23c03ac03ed75db10a7e7"
+    },
+    "dependency:scripts/run-ai-painter-learning-capacity-experiment.mjs": {
+      "path": "scripts/run-ai-painter-learning-capacity-experiment.mjs",
+      "sha256": "3060b99e7213ebf2090afc687871f29bca8345cc51d631f212fc29a4884c0f9d"
+    },
+    "dependency:scripts/run-ai-painter-mvp256-dry-v24-training.mjs": {
+      "path": "scripts/run-ai-painter-mvp256-dry-v24-training.mjs",
+      "sha256": "3b75990cd48b73ee52c24bcbca9b230fe0a26d40584e23f8e00a6771b704faf7"
+    },
+    "dependency:scripts/run-ai-painter-mvp256-dry-v27-cpu-acceptance.mjs": {
+      "path": "scripts/run-ai-painter-mvp256-dry-v27-cpu-acceptance.mjs",
+      "sha256": "14ddc727b9fba5a3c4f38a7904518fb89ed72e93e5486468ebbe123247ac5ccc"
+    },
+    "dependency:scripts/run-ai-painter-mvp256-dry-v27-independent-audit.mjs": {
+      "path": "scripts/run-ai-painter-mvp256-dry-v27-independent-audit.mjs",
+      "sha256": "62ae307a2eb3fb0ad5a582f6a5f6fc08b3df33b71426ea2af199b17d800a78f7"
+    },
+    "dependency:scripts/run-ai-painter-mvp256-dry-v27-training.mjs": {
+      "path": "scripts/run-ai-painter-mvp256-dry-v27-training.mjs",
+      "sha256": "f3a1b1f3b028ba23958a942dd78fe1f597d4b12aad9ecd8704c2b1cd25076844"
+    },
+    "dependency:scripts/tests/test-ai-painter-mvp256-dry-v27-cpu-acceptance.mjs": {
+      "path": "scripts/tests/test-ai-painter-mvp256-dry-v27-cpu-acceptance.mjs",
+      "sha256": "03233171a4e470793615a89a43092385f9100c9d48c04205edd4629a2b8d4e6d"
+    },
+    "dependency:scripts/tests/test-ai-painter-mvp256-dry-v27-independent-audit.mjs": {
+      "path": "scripts/tests/test-ai-painter-mvp256-dry-v27-independent-audit.mjs",
+      "sha256": "ad3d61da53c29618406943f4ce3c9e983e8499f08bbc743bf74d0a7acdb21e99"
+    },
+    "dependency:scripts/tests/test-ai-painter-mvp256-dry-v27-package-chain-v1.mjs": {
+      "path": "scripts/tests/test-ai-painter-mvp256-dry-v27-package-chain-v1.mjs",
+      "sha256": "50d77b209155d6241cbb48a72218fb731979e4c29d6a1e3741b87e6a9ce7916b"
+    },
+    "dependency:scripts/tests/test-ai-painter-mvp256-dry-v27-review-closure.mjs": {
+      "path": "scripts/tests/test-ai-painter-mvp256-dry-v27-review-closure.mjs",
+      "sha256": "4539c46408e3e2a6ed6f5a437bbfb41cb551dd881461d1fc864124ccc56dd582"
+    },
+    "dependency:scripts/tests/test-ai-painter-mvp256-dry-v27-training.mjs": {
+      "path": "scripts/tests/test-ai-painter-mvp256-dry-v27-training.mjs",
+      "sha256": "1ae13f034bb064ac73b883fa4c26c6db139e843ba3b09bfef2c45478cab518c1"
+    },
+    "dependency:src/server/ai-console-observability/training-telemetry-store.ts": {
+      "path": "src/server/ai-console-observability/training-telemetry-store.ts",
+      "sha256": "f94c4568abdd4d53dc105d06719db35891feec287abc409d933c48dd6c60bc17"
+    },
+    "dependency:src/server/ai-painter-current-execution-registry.mjs": {
+      "path": "src/server/ai-painter-current-execution-registry.mjs",
+      "sha256": "159d8d7b4e0d425271b0181aba4732e6b2c20efc4211e69583701e124adf488d"
+    }
+  },
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "560e3f3c33aa7ebf48618727e7d2c837e0e95e46f046e4837712b6d1474bb347"
+  },
+  "executionGuide": {
+    "path": "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md",
+    "sha256": "ae00140afd74bbe559e97055063abeae2421623653e991ebd4d09eac20164a06"
+  },
+  "aggregationRule": "strict_deterministic_index_add_scoped_to_object_assembly_v1",
+  "historicalQualificationMayBeReused": false,
+  "historicalCheckpointMayInitialize": false,
+  "executionCeiling": {
+    "trainingAttempts": 1,
+    "automaticRetries": 0,
+    "epochs": 48,
+    "generatorOptimizerSteps": 2304,
+    "discriminatorOptimizerSteps": 2304,
+    "maxWallSeconds": 2700,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2
+  },
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "worldCount": 1,
+    "subjectSampleId": "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+    "subjectSplit": "validation",
+    "waterFactPresent": false,
+    "buildingsRequired": false,
+    "artificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "formalStage4Qualification": false,
+    "runtimePublication": false
+  },
+  "dataUse": {
+    "train": 48,
+    "validation": 8,
+    "challenge": 4,
+    "regression": 4,
+    "weightUpdatesFrom": [
+      "train"
+    ],
+    "checkpointSelectionFrom": [
+      "validation"
+    ],
+    "challengeAndRegressionContentRead": false,
+    "sourceImageOrSplitMutation": false
+  },
+  "checkpointSelection": {
+    "eligibleEpochs": [
+      24,
+      36,
+      48
+    ],
+    "validationRowsPerEligibleEpoch": 8,
+    "firstCriterion": "maximum_worst_applicable_object_class_masked_luminance_correlation",
+    "secondCriterion": "minimum_mean_validation_rgb_mae",
+    "thirdCriterion": "earliest_epoch",
+    "allFourNaturalObjectClassesMustHaveValidationCoverage": true,
+    "validationMayUpdateWeights": false,
+    "selectedCheckpointMustReloadExactly": true,
+    "historicalV24CheckpointMayInitializeTraining": false
+  },
+  "singleChange": {
+    "operation": "one_registered_hidden_four_independent_rgb_adapters_v1",
+    "trainingAndInference": true,
+    "dropoutEnabled": false,
+    "fullV23ContextPreserved": true,
+    "groupCount": 5,
+    "modelParameterTensorCount": 100,
+    "modelParameterElementCount": 2236015,
+    "objectParameterTensorCount": 10,
+    "objectParameterElementCount": 1372,
+    "crossClassCouplingChanged": true
+  },
+  "numericSuccessGate": {
+    "maximumValidationRgbMae": 0.06140733743086457,
+    "minimumExclusiveWorstApplicableObjectCorrelation": -0.08459185063838959,
+    "preselectedSampleId": "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+    "allOriginalReviewsRequired": true
+  },
+  "baseline": {
+    "trainingTerminal": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v24-recovery-v2-executions/mvp256-dry-v24-9056e7f9a7eb9ba8bf8fbf569d05c0be30c12c723ffca0e2/training-finalize.json",
+      "sha256": "2f2b7a3ff091f54e511e7bad9ab2a53fabbe2fc626f5bd91e49db7c1ade33a26"
+    },
+    "failedVisualAudit": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v24-recovery-v2-executions/mvp256-dry-v24-9056e7f9a7eb9ba8bf8fbf569d05c0be30c12c723ffca0e2/dry-review/independent-audit.json",
+      "sha256": "c3c4db62221412523349ea57d8e925e13d49039903e6adffd2d4e10ce2556ae8"
+    }
+  },
+  "activation": {
+    "cpuAcceptanceCompleted": true,
+    "gpuQualificationAllowed": true,
+    "trainingAllowed": false,
+    "formalStage4QualificationAllowed": false,
+    "runtimePublicationAllowed": false
+  }
+}

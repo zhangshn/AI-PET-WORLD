@@ -1,10 +1,10 @@
 # AI控制台文档入口
 
-更新时间：2026-09-13 03:26:51 +08:00
+更新时间：2026-10-03 15:25:45 +08:00
 
 状态：active-module-document-index
 
-文档版本：`AI-CONSOLE-DOC-INDEX-2.6`
+文档版本：`AI-CONSOLE-DOC-INDEX-2.7`
 
 生效日期：`2026-08-27`
 
@@ -33,7 +33,7 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 - `src/app/ai-console/`：AI控制台一级总入口、十个专业模块总览与52个二级业务投影工作台；页面具备业务视图切换、字段筛选、页内定位、上下游、证据关系和可信连接状态，验证控制页支持按完整命令身份精确复核新平台控制回执。
 - `src/app/api/ai-console/`：新平台自有目录、查询合同和独立控制API。当前身份只经`observability/current-execution`正式桥接；历史数据另按数据API合同第3.2.4节使用同一`training/history` API族只读查询独立观察索引。不得调用旧页面、旧页面API或旧世界Runtime。
 - `src/server/ai-console/`：新平台统一只读投影协议、工作页路由、固定主登记读取器和模块投影适配器。AP-01的当前任务/活动执行、AP-03训练总览和AP-04当前审核/结果使用同一AI Painter当前执行投影；队列、设计合同、审核合同及其他平台记录继续读取各自固定新平台登记。
-- `src/server/ai-console/ai-painter-current-execution-projection.ts`：唯一当前身份桥接器；只调用正式当前执行登记读取器，严格区分四类身份并重算绑定审核摘要。禁止扫描历史补值。独立历史观察不是当前身份来源。
+- `src/server/ai-console/ai-painter-current-execution-projection.ts`：唯一当前身份桥接器；调用正式登记读取器，严格区分四类身份并重算绑定审核摘要。`bound-training-presentation.mjs`按数据API合同3.2.2.2只沿显式绑定读取执行包、计划及当前进度；摘要与AP-03共用同一映射，不为每个模型新建接口。禁止扫描历史补值。独立历史观察不是当前身份来源。
 - `src/server/ai-console/training-history-*.mjs`及`training-history-*.ts`：历史索引只读查询、版本适配、安全证据读取及API投影，不得导入写入器；不得导入新平台任务、资格或当前训练遥测。
 - `scripts/lib/ai-console-training-history-index-writer.mjs`与`ai-console-training-history-discovery.mjs`：独立历史观察后台的索引写入和受限发现，资源与恢复规则见数据API合同第3.2.4节；与只读投影目录分离，不修改原始证据。
 - `scripts/index-ai-console-training-history.mjs`与`src/instrumentation.ts`：独立历史观察后台的有界批次与Node服务生命周期接入；GET不启动扫描，构建/Edge/预览不启动写入。索引停止只影响历史新鲜度，不影响当前执行或资源观察。
@@ -69,7 +69,7 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 - `src/server/ai-console/task-projection.ts`：AP-01只读投影；当前任务与活动执行来自受验证AI Painter当前执行登记，队列与任务事件来自V11固定任务库，闭环拓扑继续来自产品合同。
 - `src/server/ai-console/capability-projection.ts`：AP-02只读投影；候选、当前门禁、资格结果和发布基础身份从V12固定能力库读取，发布活动状态联合V15激活登记，资格图与迁移门禁继续作为产品合同分层展示。
 - `src/server/ai-console/training-design-projection.ts`：AP-03训练计划与模型结构只读投影；只读取V13固定训练设计库，受验证空库返回`connected · 0`。
-- `src/server/ai-console/training-observability-projection.ts`：AP-03训练总览只读投影；先读取当前执行登记，再仅在遥测Run与`activeExecution.runId`精确一致时合并实时训练指标，禁止以GPU占用、历史终态或不同Run遥测伪造活动训练。
+- `src/server/ai-console/training-observability-projection.ts`：AP-03训练总览只读投影；先读取当前执行登记，共用摘要的绑定进度／匹配遥测规则，禁止以GPU占用、历史终态或不同Run遥测伪造活动训练。资源API和遥测SQLite写入器保持独立。
 - `src/server/ai-console/review-adjudication-projection.ts`：AP-04审核合同与机器裁决登记投影；当前审核、结果和证据由当前执行投影读取其显式绑定且重新验SHA的机器审核时间线，不扫描审核目录。
 - `src/server/ai-console/runtime-projection.ts`：AP-06候选与RuntimeFrame只读V15固定运行发布库；世界运行只读V16世界控制库。该适配器不导入World Runtime Adapter、不读取`data/world-runtime`，空库返回`connected · 0`。
 - `data/ai-console/`：新平台主登记与Schema；固定路径、独立来源边界、单调修订、可信写入器和SHA-256校验通过后，才允许把真实空登记显示为`connected · 0`。

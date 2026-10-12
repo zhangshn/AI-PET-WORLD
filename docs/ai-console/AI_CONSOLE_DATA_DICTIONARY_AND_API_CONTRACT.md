@@ -1,10 +1,10 @@
 # AI控制台数据字典与API合同
 
-更新时间：2026-09-28 23:22:24 +08:00
+更新时间：2026-10-11 20:05:48 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-DATA-API-1.9`
+文档版本：`AI-CONSOLE-DATA-API-1.13`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
@@ -122,11 +122,35 @@ trainingPresentation
 
 #### 3.2.2.1 当前训练易读摘要扩展
 
-`trainingPresentation`是同一当前执行GET的可空、只读兼容扩展，不改变当前执行Schema或建立新后台。只读取已核验当前任务胶囊中唯一显式绑定的`package.json`，重新计算SHA并检查包Schema、证据扩展版本及Run身份；复用既有安全证据读器，真实路径限项目内对应namespace，唯一项目外例外是既有登记的`F:/ai-pet-world/.runtime`→`D:/AI-PET-WORLD-DATA/hot/runtime`迁移，不能扩大到整个D盘或允许其他符号链接越界。包最多2MiB，读取使用有界文件句柄，不扫描目录、不读取可变进度或大结果文件、不回退历史包。未绑定／不支持／越界／篡改时摘要`availability=unavailable`并给出`reasonCode`，不伪造字段；当前主登记的错误仍按原合同整体失败关闭。
+`trainingPresentation`是同一当前执行GET的可空、只读兼容扩展，不改变当前执行Schema或建立新后台。旧学习实验只读取已核验当前任务胶囊中唯一显式绑定的`package.json`，重新计算SHA并检查包Schema、证据扩展版本及Run身份；受管执行包按第3.2.2.2节读取，不以文件名相同推导兼容。复用既有安全证据读器，真实路径限项目内对应namespace，唯一项目外例外是既有登记的`F:/ai-pet-world/.runtime`→`D:/AI-PET-WORLD-DATA/hot/runtime`迁移，不能扩大到整个D盘或允许其他符号链接越界。包最多2MiB，读取使用有界文件句柄，不扫描目录、不读取大结果、不回退历史包。未绑定／不支持／越界／篡改时摘要`availability=unavailable`并给出`reasonCode`，不伪造字段；当前主登记的错误仍按原合同整体失败关闭。
 
 摘要字段为`availability`、`reasonCode`、`runId`、`scope`、`resolution={width,height}|null`、`targetEpochs`、`targetOptimizerSteps`、`completedEpochs`、`actualOptimizerSteps={generator,critic}|null`、`errorCode`、`packagePath`和`packageSha256`。总轮数／总优化步／分辨率只来自包内冻结计划，未知保持null；不能用数组长度或页面固定常数猜测。结束后的实际优化数只来自同Run受验证终态，完成轮数与失败码仅在终态实际记录时显示，超过计划上限属于冲突。活动时终态实际数不投影为当前数。
 
-当前epoch、batch、优化步、Loss及ETA继续来自既有新鲜训练遥测，必须当前登记受验证、active Run与受管PID同时匹配、遥测connected且采样不超过15秒；历史选择、资源占用、最近结束和旧遥测不能取代活动身份。摘要与历史详情选择相互独立，前端复用单一当前执行轮询，获取失败立即标注过期，即使保留最后快照也不继续显示正常运行。本轮进度不是Stage4进度；终态实验完成不授予正式资格。API只读，不启动训练、不生成预览或写入证据。
+旧学习实验的当前epoch、batch、优化步、Loss及ETA来自既有新鲜训练遥测，必须当前登记受验证、active Run与受管PID同时匹配、遥测connected且采样不超过15秒；受管执行包按第3.2.2.2节读取真实本轮进度。历史选择、资源占用、最近结束和旧遥测不能取代活动身份。摘要与历史详情选择相互独立，前端复用单一当前执行轮询，获取失败立即标注过期，即使保留最后快照也不继续显示正常运行。本轮进度不是Stage4进度；终态实验完成不授予正式资格。API只读，不启动训练、不生成预览或写入证据。
+
+#### 3.2.2.2 受管训练统一观察与版本接入
+
+受管训练观察仍只经当前执行桥接器，不建立第二个当前登记、后台或写入器，不将读取的进度补写为SQLite遥测。首页、全局摘要和AP-03训练总览消费同一`trainingPresentation.currentMetrics`，旧SQLite遥测作为明确标注的原始观察保留；两者不得混合成同一Run的伪造记录。
+
+1. 兼容包族为`ai-painter-stage4-mvp256-dry-vN[-vN]-execution-package-v1`：数字能力代号不是接口版本；该族只适配已经具有相同字段和语义的受管干世界协议。正式新观察接口使用稳定`ai-painter-current-training-package-v1`及`ai-painter-current-training-progress-v1`，包需显式提供`resolution`、`trainingPlan`、`outputRoot`和`observation.progressPath`。非此协议的新模型不得仅凭匹配名称宣称兼容。兼容测试必须包含不同能力代号与不同计划上限，页面不能写死能力名称、轮数或分辨率。
+2. 包只能从当前已验证胶囊唯一直接包绑定，或当前已验证终态的`executionPackage`／`trainingTerminal`显式SHA链取得，最多三层、每份2MiB；逐层复核Run及真实字节SHA，不遍历任意JSON关系。干世界包的分辨率只从其显式绑定的`sourceDataCandidate.scope.resolution`读取，冻结`trainingPlan`与`resourceBudget`上限必须一致。包、当前登记和活动执行的Run、packageId、capabilityVersion必须一致；outputRoot必须等于绑定执行包所在逻辑目录。
+   标准容器`ai-painter-autonomous-closed-loop-package-v1`按以下只读适配规则处理：先核验容器绑定SHA、packageIdentity及能力身份，再从其显式`inputEvidence`取得当前观察协议规定的唯一冻结计划并核验SHA、Run、包及能力身份。同一outputRoot可以合法包含模型身份、CPU资格、数据闭环等其他绑定元数据，不能把这些元数据的数量当成计划数量；不得扫描目录寻找计划。
+
+   | 计划Schema | 固定计划路径，相对于outputRoot | executionMode | configuration.schema |
+   |---|---|---|---|
+   | `ecology-regime-managed-plan-v1` | `ecology-plan.json` | `managed-training` | `ecology-regime-managed-configuration-v1` |
+   | `ecology-regime-failure-capture-plan-v1` | `failure-capture-plan.json` | `bounded-failure-capture` | `ecology-regime-failure-capture-configuration-v1` |
+   | `ecology-regime-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-regime-quality-configuration-v1` |
+
+   必须在容器的已签发输入绑定中取得上表规定的计划路径，逐项核对路径、真实字节SHA及对应Schema、executionMode和configuration.schema；无匹配、重复绑定、同时绑定多个观察计划或语义不符均不可用。文件名仅定位已登记协议的显式绑定，不证明兼容，也不按Run、能力名称或版本数字选取特例。分辨率、优化上限及Checkpoint选择统一来自`configuration.scope.resolution`、`configuration.executionCeiling`和`configuration.checkpointSelection`；未知协议必须先完成语义适配及接入验收，不能凭字段相似或名称后缀接入。故障捕获也是实际权重更新，其进度可观察，但完成不代表质量训练、Checkpoint选择、模型资格或Stage晋级。
+
+   只读取该outputRoot下固定`package.json`观察快照，要求稳定观察Schema、同Run／包／能力身份、精确容器路径及SHA回指，并逐项核对冻结分辨率、训练计划、资源上限、Checkpoint选择及固定进度路径；不扫描目录或回退旧版本。此快照每次按有界真实字节重新计算摘要，但不是上游签发的不可变证据；公开`packagePath`／`packageSha256`仍表示已核验标准容器，观察文件所在目录才是进度读取根。观察字段或资格布尔值不授予训练、发布或Stage资格；容器、计划、快照或进度冲突必须返回具体原因。
+3. 当前进度只读取该outputRoot下固定`progress.json`，最多64KiB。它是可替换的机器快照，不是不可变证据：每次读取计算真实字节SHA并返回`sourcePath`、`sourceSha256`、原始`reportedAtUtc`及`sourceIdentity=current_registry_bound_progress_v1`，不伪称历史签发摘要。当前登记正式验证器仍核对真实进程出生身份、程序血缘、执行锁、事务和心跳；观察器再核对同目录锁、心跳及进度的Run／包／能力，锁与心跳的受管PID／出生身份，以及冻结预算。源进度不需要伪造为每秒更新；进度最长120秒、心跳最长15秒有效，未来时间、未知阶段、身份冲突、负数或超过上限均不可用，不以资源或旧遥测填补。
+4. `currentMetrics`字段固定为availability、reasonCode、runId、processId、processStartIdentity、phase、epoch、optimizationStep、discriminatorOptimizerSteps、reportedAtUtc、heartbeatAtUtc、sourcePath、sourceSha256、progressTtlSeconds=120、sourceIdentity；可空度量loss、learningRate、batchIndex、batchCount、throughputSamplesPerSecond、estimatedCompletionAtUtc及checkpointIdentity只有原协议真实上报且已适配时才能填写，当前干世界协议未记录它们，保持null。G与D分别显示，不能把任一方计数改称两者总数。包新增targetDiscriminatorOptimizerSteps，完成轮数与最终G／D只读同Run的真实不可变worker终态或失败终态，不以已过时间推测完成。
+5. 执行阶段与显示阶段分层：最新真实进度为executing时可显示训练；validating、completed、failed_closed均不得显示仍训练；checkpoint_selected_review_pending只映射完成训练、待审核，不授予正式资格。未知／缺失／陈旧进度显示原因。摘要缺口与当前登记完整性分别返回；投影读取期间当前指针变更则整份当前查询失败关闭，下次自动轮询恢复，不拼接两个修订。
+6. 新能力接入验收必须证明受管实际运行→当前接口→首页／全局摘要／AP-03一致、结束后非活动、失败保留、未上报不猜测、断线恢复、旧协议兼容、越界／错绑／SHA冲突拒绝及GET无写入。每种已登记计划协议均须覆盖同目录多份合法元数据、重复／冲突计划、不同能力身份与不同上限；不得以接口200或主登记connected替代训练摘要及currentMetrics可用。真实活动计数递增与浏览器显示分别验证，未验证部分不能声明交付完成。不修改活动训练绑定的源码／合同；若观察文件被该执行冻结，改动等待终态或使用已有不在绑定集内的只读投影边界。训练不依赖控制台、浏览器或Codex在线。
+
+本例外只扩展当前执行GET及其共享只读投影；`observability/live`、资源采样和SQLite训练遥测写入边界不变。历史图片及日志仍从history API按真实制品身份和SHA读取，不生成逐步作画动画，不承诺未保存的图可见。
 
 ### 3.2.3 V22训练历史与精确制品查询
 
@@ -149,6 +173,8 @@ GET /api/ai-console/training/history/{runId}/artifacts/{artifactId}
 
 本节是受验证机器证据的只读桥接例外，不改变第5节各新平台写入器的`new_ai_console_only`边界，不允许导入旧页面状态、重写资格或将历史指标注入当前训练遥测。
 
+无水单世界有界执行的历史详情按协议字段适配`ai-painter-mvp256-dry-vN[-vN]-training-lifecycle-v1`及其显式绑定的执行包／worker终态，而非逐模型新增页面或接口。包、终态、检查点指标及图片必须同Run／package／能力身份并复核SHA；按worker明确记录的sample、split、epoch及图片用途关联，不能按文件名配图。审核只沿该Run的任务终态绑定且验证训练终态回指后读取；训练完成、审核失败和未取得展示资格分别呈现。每种指标与图像保留实际观察范围；缺少逐Batch日志、条件图片或独立挑战证据时逐项记为未记录，不由检查点汇总冒充完整训练日志。固定读取限额、图片字节核验、分页和Checkpoint仅元数据沿用3.2.4；GPU失败且没有worker终态时仍保留可核验终态／配置与缺口，不伪造产图。
+
 ### 3.2.4 V23独立历史观察与完整内容查询
 
 本节扩展历史发现和查询范围，不放宽当前执行选择、证据校验、资源观察或正式发布门。规范已生效不等于程序已全量接入。
@@ -163,7 +189,11 @@ GET /api/ai-console/training/history/{runId}/artifacts/{artifactId}
 8. 复用回环访问、身份校验、no-store、nosniff、路径与摘要检查。图片按需加载与分页，索引摘要不替代发送前真实字节核验。制品页按输出、其他图像、原图、Checkpoint、其他证据稳定分组，同组保持原顺序；游标绑定实际排序后的制品身份，排序变化时拒绝旧游标，不静默混页。大结果内存派生同时最多2个不同绑定在途，同绑定合并；繁忙返回503／`history_large_projection_busy`，不得无限累积来源缓冲。列表/详情2秒刷新保持单请求在途、取消、超时、断线状态和选中记录稳定；索引停止时显示陈旧水位，当前执行1秒和资源250毫秒链路不依赖历史索引器。
 9. 验收必须覆盖：登记断链下独立历史仍可查；旧训练清单的指标/原图/输出/审核/CP关联；未知Schema及逐项缺失；新增证据无需重启自动出现；大内容分页无丢失/混页；重复Run冲突；缓存源变化、摘要篡改、路径逃逸、敏感内容拒绝；断线恢复及当前态/资源功能不退化。覆盖未核验完不得宣告“磁盘全部历史已接入”。
 
+受管画质训练历史采用明确版本映射：`ecology-regime-quality-worker-terminal-v1`、`ecology-regime-quality-review-terminal-v1`与`quality-plan.json`中的`ecology-regime-quality-plan-v1`关联，审核输入为`ecology-regime-native-review-input-v1`。审核报告须显式绑定当前选定Checkpoint对应的全部验证输出；`validationImages`逐项记录`sampleId`、`split=validation`、`epoch`、`optimizerStep`、`purpose=prediction`及图片路径和SHA，顺序与冻结验证清单一致。详情读取器逐项核对Run、包、Checkpoint、计划上限及产物绑定，不根据文件名、目录新旧或单张主题图推断其余图片。原图或条件图没有显式绑定时保持未连接，不用预测图冒充。历史图片展示不增加模型前向调用，不授予训练或发布资格；原有受管协议继续兼容。
+
 ### 3.3 本地控制会话
+
+固定命令行控制入口与控制台复用现有操作者会话认证、CSRF和停止合同。其直接Node调用登记在现有`ai-painter-current-entrypoint-registry-v1.json`的`localControlEntrypoints`中，唯一入口身份为`ai-painter-local-control-v1`，仅开放`start/status/stop`和已登记的画质能力及阶段适配器。调用方不能指定任意执行文件、模块或Shell命令。此登记不改变`currentEntrypoints`中的本地自主执行入口，也不要求添加npm别名；生产认证缺失时人工变更请求拒绝，只读查询和本地程序依合同自主运行不受其审批。私有CPU验收可使用明确标记的进程内测试凭据，不能写入生产配置或据此声明生产认证已采用。
 
 ```http
 GET /api/ai-console/control/session
@@ -474,7 +504,7 @@ schemaVersion / recordSha256
 23. 世界控制读取必须通过SQLite完整性、固定表列、元数据摘要、创建BLOB、逐世界状态修订、V15发布摘要/血缘、事件链和回执链；动态测试必须证明首帧/后续消费、幂等、未暂停回退失败关闭、暂停后祖先回退、恢复与冻结。正式空库必须返回`connected · 0`，AP-06及API源码不得包含旧World Runtime读取依赖。
 24. V20实时快照必须在GPU可用机器返回真实GPU身份、利用率、显存、温度和功耗，并以250毫秒目标间隔、`no-store`、直接观察来源、单调序号、毫秒起止时间、采样耗时和逐通道采样时间返回。
 25. 全局状态条、AP-08和AP-03必须共享客户端单例快照；切换视图不得创建第二套业务状态或读取旧内容。
-26. 无训练遥测登记时必须显示训练语义未上报；有登记时必须复核SQLite、固定列集、Schema、sampleSequence、sampleId、recordSha256和心跳时效后才显示训练指标。
+26. 无训练遥测登记时该通道显示未上报；有登记时必须复核SQLite、固定列集、Schema、sampleSequence、sampleId、recordSha256和心跳时效。当前摘要及AP-03还可按3.2.2.2独立核验当前登记绑定进度，但不得回填遥测库或改写原通道状态；未产生字段仍未知。
 27. 当前执行接口必须重新验证正式当前登记及其事务、事件、SQLite和证据绑定；返回的登记修订、任务、Run和机器审核计数必须与AP-01当前/活动、AP-03训练总览及AP-04当前/结果/证据一致。
-28. 只有训练遥测Run等于当前`activeExecution.runId`且心跳有效时，AP-03才能显示Epoch、Batch、Loss、吞吐与ETA；GPU占用、进程探针、最近训练终态和历史Run均不能作为替代。
+28. AP-03当前指标必须满足3.2.2.1的活动Run遥测匹配或3.2.2.2的绑定进度核验；首层与总览共用映射，缺失字段保持未知。GPU占用、进程探针、最近训练终态和历史Run均不能作为替代。
 29. 旧控制台根路径、已知子路径和任意深层子路径必须308永久重定向到`/ai-console`；重定向不得读取查询参数、证据、训练状态或旧API。
