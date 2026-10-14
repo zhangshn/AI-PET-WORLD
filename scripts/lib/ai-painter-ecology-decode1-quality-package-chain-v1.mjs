@@ -10,6 +10,8 @@ export const ADAPTER='scripts/run-ai-painter-ecology-decode1-quality-v1.mjs';
 export const sha=io.sha,withOutputBudget=io.withOutputBudget,directoryBytes=io.directoryBytes;
 export const ROLES={adapter:ADAPTER,packageChain:'scripts/lib/ai-painter-ecology-decode1-quality-package-chain-v1.mjs',
  frozenProjectManifest:'.runtime/ai-painter/ecology-quality-v1-repair/t-qv12-r1/ns003-original-package.json',
+ currentLegacyNativeTests:'scripts/tests/ai-painter-ecology-owned-native.test.mjs',
+ currentExecutionRegistry:'src/server/ai-painter-current-execution-registry.mjs',
  worker:'ml/ai-painter/scripts/painter_stage4_ecology_decode1_weight_quality_worker_v1.py',
  gpuQualifier:'ml/ai-painter/scripts/qualify_stage4_ecology_decode1_weight_quality_gpu_v1.py',
  executionAuth:'ml/ai-painter/scripts/ecology_decode1_weight_quality_auth_v1.py',
@@ -121,10 +123,36 @@ export function bind(root,logical){const data=fs.readFileSync(inside(root,logica
 export function write(root,logical,value){
  inside(root,logical);const result=io.write(root,logical,value);read(root,result);return result;
 }
+export const ORIGINAL_NATIVE_TESTS={path:'.runtime/ai-painter/ecology-quality-v1-repair/t-qv12-r1/ns003-original-native-tests.mjs',sha256:'f5c0a559f5cd1fa915dc0ec4c456bbf58c8edd298596e1a5bd5e6cdf9f93b73b'};
+// Exact pre-repair bytes preserve historical source-19; the live writer is an
+// independent current role, never inferred from this historical snapshot.
+export const ORIGINAL_REGISTRY={path:'.runtime/ai-painter/controller-parallel-20261011/controller-27-next-20261013/interrupted-training-20261013/inputs/original-registry.mjs',sha256:'159d8d7b4e0d425271b0181aba4732e6b2c20efc4211e69583701e124adf488d'};
+export function historicalSourceBinding(role,sourceBinding){
+ if(role!=='source-19')return historicalNativeTestBinding(role,sourceBinding);
+ assert.deepEqual(sourceBinding,{path:ROLES.currentExecutionRegistry,sha256:ORIGINAL_REGISTRY.sha256},'exact historical registry source required');
+ return ORIGINAL_REGISTRY;
+}
+export function verifyHistoricalProgramBindings(frozen,programs,currentManifest){
+ assert.equal(Object.keys(frozen).length,179,'exact historical source count required');
+ for(const [role,b]of Object.entries(frozen))assert.deepEqual(programs['frozen-'+role],
+  role==='source-137'?currentManifest:historicalSourceBinding(role,b),'old role omitted/changed');
+ return true;
+}
+export function historicalNativeTestBinding(role,binding){
+ if(!['source-151','nativeTests'].includes(role))return binding;
+ assert.deepEqual(binding,{path:ROLES.currentLegacyNativeTests,sha256:ORIGINAL_NATIVE_TESTS.sha256},'exact historical native test role required');
+ return ORIGINAL_NATIVE_TESTS;
+}
+export function verifyNativeTestRename(original,current){
+ const baseline=Buffer.from(original).toString('utf8').replaceAll('\r\n','\n'),updated=Buffer.from(current).toString('utf8').replaceAll('\r\n','\n');
+ assert.equal((baseline.match(/\bmodule\b/gu)??[]).length,4,'exact four legacy test identifiers required');
+ assert.equal(updated,baseline.replace(/\bmodule\b/gu,'nativeModule'),'native test change beyond identifier rename');return true;
+}
 export function finalProgramBindings(root){
  const frozen=json(root,FROZEN_PLAN).programBindings;assert.equal(Object.keys(frozen).length,179);
  const manifest=currentProjectManifestBinding(root,frozen);
- const programs=Object.fromEntries(Object.entries(frozen).map(([role,b])=>{if(role==='source-137')return ['frozen-'+role,manifest];read(root,b);return ['frozen-'+role,b]}));
+ const programs=Object.fromEntries(Object.entries(frozen).map(([role,b])=>{if(role==='source-137')return ['frozen-'+role,manifest];const historical=historicalSourceBinding(role,b);read(root,historical);return ['frozen-'+role,historical]}));
+ verifyNativeTestRename(read(root,ORIGINAL_NATIVE_TESTS),read(root,bind(root,ROLES.currentLegacyNativeTests)));
  for(const [role,p]of Object.entries(ROLES))programs[role]=bind(root,p);
  // Additional direct neutral imports are explicitly bound, even if not in old closure.
  for(const p of ['scripts/lib/ai-pet-world-storage.mjs','scripts/lib/ai-painter-autonomous-package-materializer-v1.mjs',
@@ -163,11 +191,12 @@ export function validatePlan(root,plan){
  const model=validateModelIdentity(json(root,plan.modelBinding));
  const input={plan,planBinding:{path:plan.outputRoot+'/quality-plan.json',sha256:sha(JSON.stringify(plan))},
   packageBinding:{path:'.runtime/ai-painter/autonomous-closed-loop-packages/'+plan.packageId+'/package.json',sha256:sha('shape-only')},modelBinding:plan.modelBinding,modelIdentity:model};validate(input);
- assert.ok(read(root,SPECIFICATION).includes(Buffer.from('AI-PAINTER-SPEC-1.59')));
+ assert.ok(read(root,SPECIFICATION).includes(Buffer.from('AI-PAINTER-SPEC-1.60')));
  assert.ok(read(root,SPECIFICATION).includes(Buffer.from('9.6.42')));
  const frozen=json(root,FROZEN_PLAN).programBindings;assert.equal(Object.keys(frozen).length,179);
  const currentManifest=currentProjectManifestBinding(root,frozen);
- for(const [role,b]of Object.entries(frozen))assert.deepEqual(plan.programBindings['frozen-'+role],role==='source-137'?currentManifest:b,'old role omitted/changed');
+ verifyHistoricalProgramBindings(frozen,plan.programBindings,currentManifest);
+ verifyNativeTestRename(read(root,ORIGINAL_NATIVE_TESTS),read(root,plan.programBindings.currentLegacyNativeTests));
  assert.deepEqual(plan.programBindings.frozenProjectManifest,{path:ROLES.frozenProjectManifest,sha256:frozen['source-137'].sha256},'historical manifest must retain original bytes');
  for(const [role,p]of Object.entries(ROLES))assert.equal(plan.programBindings[role]?.path,p);
  verifyLocalDeploymentDependencyClosure(root,plan.programBindings);

@@ -42,6 +42,7 @@ const TERMINAL_EXECUTION_STATES = new Set([
   "failed_closed",
   "blocked_policy_boundary",
 ])
+const VERIFIED_KERNEL_INTERRUPTION_CONTEXTS = new WeakSet()
 
 export async function readCurrentExecutionRegistry(projectRoot = process.cwd()) {
   return readCurrentExecutionRegistryInternal(projectRoot)
@@ -591,6 +592,7 @@ export async function recoverExpiredActiveExecutionToFailedClosed({
   dependencyManifest = null,
   expectedPreviousRegistryRevision,
   expectedPreviousRegistrySha256,
+  kernelInterruptionProfile = null,
   _testHooks = null,
 }) {
   for (const value of [capabilityVersion, packageId, runId]) {
@@ -614,6 +616,26 @@ export async function recoverExpiredActiveExecutionToFailedClosed({
     capabilityVersion,
     packageId,
     runId,
+  }
+  if (kernelInterruptionProfile !== null) {
+    const recovery = await import('../../scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs')
+    const recheck = () => {
+      const bound = recovery.loadRecoveryProfile(projectRoot, kernelInterruptionProfile.path, kernelInterruptionProfile.sha256)
+      requireValue(bound.profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v3', 'registry_kernel_interruption_profile_invalid')
+      const historical = recovery.verifyTrainingKernelInputs(projectRoot, bound.profile)
+      recovery.verifyLiveInterruptionGuard(projectRoot, bound.profile)
+      const host = _testHooks?.queryKernelInterruptionHost?.() ?? recovery.queryNativeHost()
+      recovery.verifyKernelInterruptionHost(historical, host)
+      requireValue(historical.registry.runId === runId && historical.registry.packageId === packageId
+        && historical.registry.capabilityVersion === capabilityVersion
+        && bound.profile.registry.sha256 === expectedPreviousRegistrySha256
+        && bound.profile.registry.revision === expectedPreviousRegistryRevision, 'registry_kernel_interruption_identity_mismatch')
+      return { historical, host, bound }
+    }
+    const context = { recheck }
+    VERIFIED_KERNEL_INTERRUPTION_CONTEXTS.add(context)
+    recoveryContext.kernelInterruption = context
+    recheck()
   }
   const stale = await readCurrentExecutionRegistryInternal(projectRoot, {
     expiredActiveRecovery: {
@@ -648,6 +670,14 @@ export async function recoverExpiredActiveExecutionToFailedClosed({
     terminal.value?.runId === runId,
     "registry_expired_active_recovery_terminal_run_mismatch",
   )
+  if (kernelInterruptionProfile !== null) {
+    requireValue(terminal.value.schemaVersion === 'ai-painter-training-system-interruption-terminal-v1'
+      && terminal.value.status === 'training_system_interrupted'
+      && terminal.value.profileSha256 === kernelInterruptionProfile.sha256
+      && terminal.value.originalRegistry?.sha256 === expectedPreviousRegistrySha256
+      && terminal.value.historicalCleanupCertified === false && terminal.value.oldExecutionMayReplay === false
+      && terminal.value.trainingQualificationGranted === false, 'registry_kernel_interruption_terminal_invalid')
+  }
 
   const prepared = await prepareCurrentExecutionRegistryAdvance({
     projectRoot,
@@ -666,6 +696,9 @@ export async function recoverExpiredActiveExecutionToFailedClosed({
     activity: "host_interruption_recovery_failed_closed",
     taskCapsulePath,
     terminalEvidencePath,
+    latestTrainingTerminal: kernelInterruptionProfile === null ? null : {
+      runId, path: terminalEvidencePath, sha256: terminal.sha256, status: terminal.value.status, evidence: {},
+    },
     activeExecution: null,
     expectedPreviousRegistryRevision,
     expectedPreviousRegistrySha256,
@@ -1413,6 +1446,9 @@ async function normalizeAndVerifyActiveExecution({
   expiredActiveRecovery = null,
 }) {
   if (activeExecution === null) return null
+  const kernelContext = expiredActiveRecovery?.kernelInterruption ?? null
+  requireValue(kernelContext === null || VERIFIED_KERNEL_INTERRUPTION_CONTEXTS.has(kernelContext), 'registry_kernel_interruption_context_untrusted')
+  const kernelProof = kernelContext?.recheck() ?? null
   requirePlainObject(activeExecution, "registry_active_execution_invalid")
   requireExactKeys(activeExecution, [
     "schemaVersion",
@@ -1478,7 +1514,9 @@ async function normalizeAndVerifyActiveExecution({
     requireExactKeys(binding, ["path", "sha256"], `registry_active_execution_program_${role}_fields_invalid`)
     const normalizedPath = normalizeRelativePath(binding.path)
     rejectArchivedPath(normalizedPath, archivedNamespaces)
-    const verified = await readRawBinding(projectRoot, binding, `registry_active_execution_program_${role}`)
+    const verified = kernelProof === null
+      ? await readRawBinding(projectRoot, binding, `registry_active_execution_program_${role}`)
+      : kernelProof.historical.readProgramBinding(binding)
     normalizedProgramLineage[role] = { path: verified.path, sha256: verified.sha256 }
   }
 
@@ -1514,6 +1552,16 @@ async function normalizeAndVerifyActiveExecution({
       && activeExecution.heartbeat.ttlSeconds <= ACTIVE_EXECUTION_HEARTBEAT_MAX_TTL_SECONDS,
     "registry_active_execution_heartbeat_ttl_invalid",
   )
+  if (kernelProof !== null) {
+    requireValue(kernelProof.historical.inputs.heartbeat.path === heartbeatPath
+      && JSON.stringify(kernelProof.historical.registry.activeExecution) === JSON.stringify(activeExecution), 'registry_kernel_interruption_active_mismatch')
+    return {
+      schemaVersion: ACTIVE_EXECUTION_SCHEMA, capabilityVersion, packageId, runId, executionState,
+      processId: activeExecution.processId, processStartIdentity: activeExecution.processStartIdentity,
+      programLineage: normalizedProgramLineage, lock: { path: lockPath, sha256: lock.sha256 },
+      heartbeat: { path: heartbeatPath, ttlSeconds: activeExecution.heartbeat.ttlSeconds },
+    }
+  }
   const heartbeat = await readBoundJson(projectRoot, heartbeatPath)
   requireExactKeys(heartbeat.value, [
     "schemaVersion",

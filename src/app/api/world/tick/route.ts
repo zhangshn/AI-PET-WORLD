@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { runAndPersistOneRuntimeTick } from "@/world/runtime/world-runtime-gateway"
+import { runAndPersistOneRuntimeTick, WorldRuntimeSaveReadError } from "@/world/runtime/world-runtime-gateway"
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
 import { verifyLocalOperatorMutation } from "@/server/ai-console-control/operator-session"
 
@@ -32,7 +32,18 @@ export async function POST(request: Request) {
     )
   }
 
-  const result = await runAndPersistOneRuntimeTick({ now: Date.now(), worldId })
+  let result
+  try {
+    result = await runAndPersistOneRuntimeTick({ now: Date.now(), worldId })
+  } catch (error) {
+    if (!(error instanceof WorldRuntimeSaveReadError)) throw error
+    return NextResponse.json({
+      ok: false,
+      message: "Runtime save became unavailable; no default world was created and no tick was persisted.",
+      readStatus: error.readResult.status,
+      tags: ["world_runtime_tick_api", "runtime_save_required", ...error.readResult.tags],
+    }, { status: 409 })
+  }
 
   return NextResponse.json(
     {

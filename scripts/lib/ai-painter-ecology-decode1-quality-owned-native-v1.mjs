@@ -465,6 +465,24 @@ const SAFE_FAILURE_REASONS=new Set(["wall_timeout","cleanup_deadline","stream_li
  "native failure parent changed","native failure source changed","native failure runtime changed","native failure evidence budget",
  "native failure evidence already exhausted","native failure root differs"]);
 const SAFE_FAILURE_CODES=new Set(["ENOENT","EACCES","EPERM","EBUSY","EEXIST","ETIMEDOUT","ENOSPC","EIO","EINVAL","EPIPE","ERR_ASSERTION","OWNED_GUARD_BUSY"]);
+// Parsing is still per frame; expensive disk accounting is once per incoming
+// block and again at finalization. No disk total is cached between callbacks.
+export function consumeNativeOwnerChunk(pending,chunk,{onFrame,onError,onOverflow,account}){
+ let input=pending+chunk.toString("ascii"),index,frames=0;
+ while((index=input.indexOf("\n"))>=0){
+  const line=input.slice(0,index).trimEnd();input=input.slice(index+1);frames++;
+  try{onFrame(line)}catch(error){onError(error)}
+ }
+ if(input.length>65536){onOverflow();input="";}
+ if(frames)try{account()}catch(error){onError(error)}
+ return input;
+}
+export function primaryErrorForControlStream(primaryError,stopReason,error){
+ if(primaryError)return primaryError;
+ // A pipe failure after a requested stop is a secondary transport failure,
+ // not a replacement for the already observed timeout/resource stop.
+ return typeof stopReason==="string"&&SAFE_FAILURE_REASONS.has(stopReason)?new Error(stopReason):error;
+}
 export function boundedNativeFailureMetadata(error){
  const name=["Error","AssertionError","TypeError","SyntaxError","RangeError"].includes(error?.name)?error.name:"Error";
  const code=SAFE_FAILURE_CODES.has(error?.code)?error.code:null;
@@ -672,15 +690,16 @@ export async function runNative(options) {
     streamObservation:()=>({closureVersion:null,stdoutClosed:null,stderrClosed:null,transportCompleted:null,captureErrorPresent:null,transportErrorPresent:null,streamBytes:retainedStreamBytes})};
   const outputBytes=()=>{
     if(registryKeeper&&keeperActive)registryKeeper.service()
-    let bytes=diskBytes()
     if(cpuInputs){
       for(const link of cpuInputs.inspector.scan().links)if(link.observedIdentity&&!cpuInputs.acknowledged.has(link.name)){
         persist(outputRoot+"/cpu-entry/negative-observation-"+link.name+".json",{schema:"cpu-negative-input-live-observation-v1",callIdentity:id,request:cpuInputs.requestBinding,
           link,observedAtUtc:new Date().toISOString()},(budget.ordinaryOutputLimitBytes??budget.outputBytes)-retainedStreamBytes-Buffer.byteLength(guardBytes))
         cpuInputs.acknowledged.add(link.name)
       }
-      bytes=diskBytes()
     }
+    // Include any observation writes and concurrent worker output in the same
+    // fresh full scan. The former initial full scan counted the same files twice.
+    const bytes=diskBytes()
     const total=bytes+Buffer.byteLength(guardBytes)
     registryKeeper?.recordScan({diskBytes:bytes-CPU_LINK_RESERVE_BYTES-registryKeeper.closedSidecarDebitBytes(),
       streamBytes:retainedStreamBytes,guardBytes:Buffer.byteLength(guardBytes),linkReserveBytes:CPU_LINK_RESERVE_BYTES})
@@ -825,15 +844,17 @@ export async function runNative(options) {
       if(receipt.persistenceError || !receiptBinding || !receipt.cleanupConfirmed || !fixtureCleanup || protocolError || stopReason || proof?.exitCode!==0 || counts.stdout>STREAM || counts.stderr>STREAM){const error=primaryError??new Error(stopReason??protocolError??(proof?.exitCode ? `worker_exit_${proof.exitCode}` : receipt.persistenceError)??"native worker failed or cleanup unknown");Object.assign(error,value);if(receipt.persistenceError)error.secondaryEvidenceError=receipt.persistenceError;if(receipt.secondaryBindingError)error.secondaryBindingError=receipt.secondaryBindingError;reject(error)}else resolve(value)
     }
     child.stdout.on("data",chunk=>{
-      pending+=chunk.toString("ascii");let index
-      while((index=pending.indexOf("\n"))>=0){const line=pending.slice(0,index).trimEnd();pending=pending.slice(index+1)
-        try{if(line.startsWith("O:")||line.startsWith("E:")){const name=line[0]==="O"?"stdout":"stderr",raw=Buffer.from(line.slice(2),"base64");assert.equal(raw.toString("base64"),line.slice(2));counts[name]+=raw.length;retainedStreamBytes=counts.stdout+counts.stderr;if(counts.stdout+counts.stderr>STREAM)stop("stream_limit");else{buffers[name].push(raw);if(outputBytes()+counts.stdout+counts.stderr>budget.ordinaryOutputLimitBytes)stop("output_budget")}}
+      pending=consumeNativeOwnerChunk(pending,chunk,{
+        onFrame:line=>{if(line.startsWith("O:")||line.startsWith("E:")){const name=line[0]==="O"?"stdout":"stderr",raw=Buffer.from(line.slice(2),"base64");assert.equal(raw.toString("base64"),line.slice(2));counts[name]+=raw.length;retainedStreamBytes=counts.stdout+counts.stderr;if(counts.stdout+counts.stderr>STREAM)stop("stream_limit");else buffers[name].push(raw)}
           else if(line.startsWith("R:")){assert.equal(proof,null);const raw=Buffer.from(line.slice(2),"base64");assert.equal(raw.toString("base64"),line.slice(2));assert.ok(raw.length<=PROOF_BYTES,"native proof envelope exceeded");proof=JSON.parse(raw.toString("utf8"))}else throw new Error("unknown native frame")
-        }catch(error){primaryError??=error;protocolError=String(error).slice(0,2048);stop("native_protocol_error")}}
-      if(pending.length>65536){protocolError="native_frame_overflow";pending="";stop(protocolError)}
+        },
+        onError:error=>{primaryError??=error;protocolError=String(error).slice(0,2048);stop("native_protocol_error")},
+        onOverflow:()=>{protocolError="native_frame_overflow";stop(protocolError)},
+        account:()=>{if(outputBytes()+counts.stdout+counts.stderr>budget.ordinaryOutputLimitBytes)stop("output_budget")}
+      });
     })
     child.stderr.on("data",raw=>{ownerError=(ownerError+raw.toString()).slice(0,8192)})
-    child.stdin.on("error",error=>{primaryError??=error;protocolError??=String(error).slice(0,2048)})
+    child.stdin.on("error",error=>{primaryError=primaryErrorForControlStream(primaryError,stopReason,error);protocolError??=String(error).slice(0,2048)})
     child.on("error",error=>{primaryError??=error;protocolError=String(error).slice(0,2048);stop(error)})
     child.once("close",()=>{closed=true;clearInterval(stopFastTimer);clearInterval(stopSlowTimer);clearTimeout(stopPrepareDeadline);
       try{stopControl?.dispose()}catch(error){operatorStopControl={...operatorStopControl,disposeError:String(error.message??error).slice(0,256)}}

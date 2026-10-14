@@ -17,7 +17,7 @@ SCHEMA = "ecology-decode1-weight-quality-checkpoint-v1"
 CONFIGURATION_SCHEMA = "ecology-decode1-weight-quality-configuration-v1"
 CANDIDATE_PATH = "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json"
 SPEC_PATH = "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md"
-SPEC_SHA = "2864b9d5219369c46ea056a0fa589cc713248cffdd42144ba48ab849a2b801ab"
+SPEC_SHA = "a88d93514264f8b6c24bcc5f60e87189ba8df1f9f13848030fb0ee9e2ace35cc"
 MAX_BYTES = 64 * 1024 * 1024
 
 

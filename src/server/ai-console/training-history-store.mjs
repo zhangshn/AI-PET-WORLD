@@ -3,7 +3,7 @@ import { stat } from 'node:fs/promises'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { readCurrentExecutionRegistry, CURRENT_EXECUTION_REGISTRY_ROOT as REG } from '../ai-painter-current-execution-registry.mjs'
-import { adaptLegacyTrainingDetail, legacyRunKind } from './training-history-detail-adapters.mjs'
+import { adaptLegacyTrainingDetail, legacyRunKind, DRY_RECOVERY_CANDIDATE_SCHEMA, readDryRecoveryCandidate } from './training-history-detail-adapters.mjs'
 import { readBoundLargeExperimentProjection } from './training-history-large-result-projection.mjs'
 import { HistoryError, requireFact, safePath, bytes } from './training-history-safe-bytes.mjs'
 export { HistoryError, safePath, bytes } from './training-history-safe-bytes.mjs'
@@ -251,6 +251,9 @@ function artifact(runId, role, binding, metadata = {}) {
 async function augmentIndexedEvidence(root, runId, registration, terminal, detail) {
   const { readHistoryEvidenceIndex, HISTORY_INDEX_PATH } = await import('./training-history-evidence-index.mjs')
   const index = readHistoryEvidenceIndex(root, runId)
+  if (terminal.schemaVersion === 'ai-painter-mvp256-dry-v24-training-lifecycle-v1') {
+    return augmentDryRecoveryEvidence(root, runId, registration, terminal, detail, index)
+  }
   const matches = index.sources.filter(source => source.kind === 'materialization' && source.status === 'verified'
     && source.terminalBinding?.path === registration.terminalBinding.path && source.terminalBinding.sha256 === registration.terminalBinding.sha256)
   if (matches.length === 0) {
@@ -348,6 +351,87 @@ async function augmentIndexedEvidence(root, runId, registration, terminal, detai
     : !index.coverage.complete ? 'history_index_coverage_incomplete' : null
   return detail
 }
+async function augmentDryRecoveryEvidence(root, runId, registration, terminal, detail, index) {
+  const sources = index.sources.filter(source => source.kind === 'materialization'
+    && source.terminalBinding?.path === registration.terminalBinding.path
+    && source.terminalBinding.sha256 === registration.terminalBinding.sha256)
+  const record = detail.record, coverage = record.detailCoverage ?? {}, availability = { ...(coverage.availability ?? {}) }
+  const candidates = [], gaps = []
+  let reads = coverage.jsonReads ?? 0
+  const readBound = async bound => {
+    requireFact(++reads <= 16, 'history_dry_read_limit', 413)
+    return (await json(root, bound, { maximumBytes: 2 * 1024 * 1024 })).value
+  }
+  const note = (source, status, reasonCode) => gaps.push({ logicalPath: source.logicalPath, status, reasonCode })
+  // An old partial index row is only a discovery hint. Fresh source bytes and
+  // every parent are verified below; GET never upgrades or rewrites that row.
+  for (const source of sources.slice(0, 8)) {
+    try {
+      const bound = { path: source.logicalPath, sha256: source.sha256 }
+      const manifest = await readBound(bound)
+      if (manifest.schemaVersion !== DRY_RECOVERY_CANDIDATE_SCHEMA) { note(source, 'unsupported_schema', 'history_dry_candidate_schema_unsupported'); continue }
+      const candidate = await readDryRecoveryCandidate({ runId, manifest, manifestBinding: bound,
+        terminalBinding: registration.terminalBinding, terminal, requireFact,
+        readJson: readBound })
+      candidates.push({ source, candidate })
+    } catch (error) {
+      if (['ENOENT', 'EACCES', 'EPERM'].includes(error.code) || error.status === 413
+        || ['history_dry_candidate_binding_missing', 'history_dry_candidate_schema_unsupported'].includes(error.message)) {
+        note(source, error.status === 413 ? 'over_limit' : error.code === 'ENOENT' ? 'missing'
+          : ['EACCES', 'EPERM'].includes(error.code) ? 'unreadable' : 'unsupported_schema', error.message)
+      } else throw error
+    }
+  }
+  if (sources.length > 8) { availability.candidateManifest = 'over_limit'; candidates.length = 0 }
+  else availability.candidateManifest = candidates.length ? 'available' : gaps[0]?.status ?? 'not_recorded'
+  requireFact(candidates.length <= 1, 'history_independent_materialization_conflict')
+  if (candidates.length) {
+    const { source, candidate } = candidates[0]
+    const append = (role, binding, metadata = {}) => {
+      const prior = record.artifacts.find(item => item.role === role && item.logicalPath === binding.path)
+      if (prior) { requireFact(prior.sha256 === binding.sha256, 'history_artifact_binding_conflict'); return prior }
+      requireFact(record.artifacts.length < 256, 'history_record_limit', 413)
+      const item = artifact(runId, role, binding, metadata); record.artifacts.push(item); return item
+    }
+    const metadata = { sampleId: candidate.sampleId, split: candidate.split, epoch: candidate.epoch,
+      purpose: 'validation_prediction', formalQualification: false, sourcePath: source.logicalPath, sourceSha256: source.sha256 }
+    append('evidence', { path: source.logicalPath, sha256: source.sha256 }, { evidenceKind: 'dry_recovery_candidate_manifest' })
+    const output = append('output', candidate.output, metadata)
+    const original = candidate.original ? append('original', candidate.original, { ...metadata, purpose: 'held_out_reference_rgb' }) : null
+    const condition = candidate.condition ? append('condition', candidate.condition, { ...metadata, purpose: 'declared_subject_condition' }) : null
+    const sample = record.samples.find(row => row.sampleId === candidate.sampleId)
+    if (sample) Object.assign(sample, { original, condition, output })
+    else record.samples.push({ sampleId: candidate.sampleId, split: candidate.split, original, condition, output })
+    const metric = record.metrics.find(row => row.sampleId === candidate.sampleId && row.epoch === candidate.epoch)
+    if (metric) metric.image = output
+    record.resolution = candidate.resolution
+    availability.candidateImages = 'available'
+    availability.samples = 'available'; availability.resolution = 'available'
+    for (const field of ['original', 'condition']) {
+      availability[`samples.${field}`] = candidate[field] ? 'available' : 'not_recorded'
+      if (coverage[field === 'original' ? 'originals' : 'conditions']) {
+        const fieldCoverage = coverage[field === 'original' ? 'originals' : 'conditions']
+        fieldCoverage.availableSampleIds = [...new Set([...fieldCoverage.availableSampleIds, ...(candidate[field] ? [candidate.sampleId] : [])])]
+        fieldCoverage.notRecordedSampleIds = fieldCoverage.notRecordedSampleIds.filter(id => !fieldCoverage.availableSampleIds.includes(id))
+        fieldCoverage.complete = fieldCoverage.notRecordedSampleIds.length === 0
+      }
+    }
+    detail.unavailableFields = detail.unavailableFields.filter(field => !['samples', 'candidateImages', 'resolution'].includes(field)
+      && !(['samples.original', 'samples.condition'].includes(field)
+        && coverage[field === 'samples.original' ? 'originals' : 'conditions']?.complete))
+    detail.provenance.evidenceReferences = [...new Set([...detail.provenance.evidenceReferences, source.logicalPath])]
+  }
+  record.detailCoverage = { ...coverage, availability, independentIndex: index.dataStatus,
+    indexRevision: index.indexRevision, indexCoverage: index.coverage,
+    jsonReads: Math.min(reads, 16), candidateCount: record.artifacts.filter(item => item.role === 'output').length,
+    candidateMaterialization: { supported: candidates.length > 0, sourcePolicy: 'indexed_hint_fresh_sha256_explicit_parents_only',
+      scope: 'explicit_validation_subject_only', sourceGaps: gaps, sourceLimit: 8,
+      jsonReadLimit: 16, parentJsonBytesLimit: 2 * 1024 * 1024 }, complete: false }
+  detail.dataStatus = 'partial' // This adds one subject, not all validation images or a review.
+  detail.reasonCode ??= 'history_dry_detail_partial'
+  return detail
+}
+
 export async function readTrainingRun(runId, { root = historyRoot() } = {}) {
   requireFact(typeof runId === 'string' && ID.test(runId), 'history_run_id_invalid', 400)
   const history = await verifiedHistory(root)
@@ -404,6 +488,7 @@ export async function readTrainingRun(runId, { root = historyRoot() } = {}) {
       requireFact,
     })
     return detail.reasonCode === 'history_terminal_schema_unsupported'
+      || terminal.schemaVersion === 'ai-painter-mvp256-dry-v24-training-lifecycle-v1'
       ? augmentIndexedEvidence(root, runId, registration, terminal, detail) : detail
   }
   const resultBinding = terminal.workerResult ?? terminal.result
@@ -497,6 +582,36 @@ export async function readTrainingArtifact(runId, artifactId, options = {}) {
     const jpeg = read.value[0] === 255 && read.value[1] === 216 && read.value[2] === 255
     requireFact(png || jpeg, 'history_image_signature_invalid')
     return { bytes: read.value, contentType: png ? 'image/png' : 'image/jpeg' }
+  }
+  if (item.evidenceKind === 'dry_recovery_candidate_manifest') {
+    const manifest = JSON.parse(read.value.toString('utf8'))
+    const select = (value, fields) => Object.fromEntries(fields.map(key => [key, value?.[key]]))
+    const bound = value => value == null ? null : select(value, ['path', 'sha256'])
+    const preview = select(manifest, ['schemaVersion', 'status', 'runId', 'packageId', 'capabilityVersion', 'inputPath',
+      'selectedEpoch', 'recordedAtUtc'])
+    for (const field of ['trainingTerminal', 'workerTerminal', 'executionPackage', 'selectedCheckpoint']) preview[field] = bound(manifest[field])
+    preview.subject = { ...select(manifest.subject, ['sampleId', 'split']),
+      referenceRgb: bound(manifest.subject.referenceRgb), conditionPack: bound(manifest.subject.conditionPack) }
+    preview.candidate = { ...select(manifest.candidate, ['sampleId', 'split', 'resolution', 'sourceCheckpointSha256']), rgb: bound(manifest.candidate.rgb) }
+    const text = Buffer.from(JSON.stringify(preview, null, 2))
+    return { json: { ...item, verificationStatus: 'bytes_verified', byteLength: read.value.length,
+      previewStatus: 'controlled_candidate_fields_only', truncated: text.length > 65536, text: text.subarray(0, 65536).toString('utf8') } }
+  }
+  if (detail.record.detailCoverage?.adapter === 'training_system_interruption_v1'
+    && item.evidenceKind === 'systemInterruptionReport') {
+    // The report contains raw host process command lines. Preview only the
+    // supported evidence fields, after the normal fresh source SHA check.
+    const report = JSON.parse(read.value.toString('utf8'))
+    const fields = ['schemaVersion', 'recordedAtUtc', 'runId', 'packageId', 'capabilityVersion', 'profileSha256',
+      'modelRootCauseEstablished', 'historicalCleanupCertified', 'oldExecutionMayReplay', 'trainingQualificationGranted']
+    const preview = Object.fromEntries(fields.map(key => [key, report[key]]))
+    preview.originalRegistry = Object.fromEntries(['path', 'sha256', 'revision'].map(key => [key, report.originalRegistry[key]]))
+    preview.lastDurableProgress = Object.fromEntries(['schemaVersion', 'runId', 'packageId', 'capabilityVersion',
+      'executionState', 'status', 'actualEpoch', 'completedEpochs', 'optimizerStepsGenerator', 'optimizerStepsDiscriminator',
+      'updatedAtUtc', 'selectedCheckpoint'].map(key => [key, report.lastDurableProgress[key]]))
+    const text = Buffer.from(JSON.stringify(preview, null, 2))
+    return { json: { ...item, verificationStatus: 'bytes_verified', byteLength: read.value.length,
+      previewStatus: 'controlled_report_fields_only', truncated: text.length > 65536, text: text.subarray(0, 65536).toString('utf8') } }
   }
   return { json: { ...item, verificationStatus: 'bytes_verified', byteLength: read.value.length, truncated: read.value.length > 65536, text: read.value.subarray(0, 65536).toString('utf8') } }
 }

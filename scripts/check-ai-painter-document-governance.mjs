@@ -1,6 +1,7 @@
 import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
+import { validateAiPainterDocumentState } from "./lib/ai-painter-document-governance-state.mjs"
 
 const ROOT = process.cwd()
 const failures = []
@@ -48,10 +49,6 @@ function extractCodeBlockAfterHeading(text, heading) {
   return match?.[1]?.replaceAll("\r", "").trim() ?? null
 }
 
-function setDifference(left, right) {
-  return [...left].filter((value) => !right.has(value))
-}
-
 const versionedDocuments = [
   "README.md",
   "docs/DOCUMENT_AUTHORITY_INDEX.md",
@@ -87,9 +84,9 @@ const exactDocumentVersions = new Map([
   ["docs/ARCHITECTURE.md", "AI-PET-WORLD-ARCHITECTURE-1.10"],
   ["docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "LOCAL-AI-CAPABILITY-MIGRATION-1.7"],
   ["docs/DIRECTORY_STRUCTURE.md", "AI-PET-WORLD-DIRECTORY-1.11"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.59"],
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.60"],
   ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "AI-PAINTER-DATA-PROVENANCE-1.7"],
-  ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "AI-PAINTER-REVIEW-STORAGE-1.17"],
+  ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "AI-PAINTER-REVIEW-STORAGE-1.20"],
   ["docs/world-visual-data-dictionary/README.md", "WORLD-VISUAL-DICTIONARY-REFERENCE-1.0"],
 ])
 
@@ -149,7 +146,7 @@ for (const [relativePath, expected] of [
   ["docs/ARCHITECTURE.md", "blocked_policy_boundary"],
   ["docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "Owner可以主动改变业务目标、观察、暂停或紧急停止，但不进入本地AI正常运行状态机"],
   ["docs/DIRECTORY_STRUCTURE.md", "内部票据只承担幂等、防重、状态转换和证据追溯"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.58"],
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "替代版本：`AI-PAINTER-SPEC-1.59`"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "240秒仅适用于本节诊断的完整CPU组件验收及其最终新程序自身受管CPU预检"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.6.38 生态条件模型的训练生命周期组件"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.6.39 生态模型梯度故障的单次有界采集"],
@@ -179,14 +176,13 @@ for (const [relativePath, expected] of [
   ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "超范围自动恢复完整要求"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.4.1 独立CPU只读基础资产加载验证"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "### 12.2 自主能力生命周期与机器发布规范"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "createdBy = local_ai_capability_lifecycle_orchestrator"],
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "createdBy = local_ai_capability_release_orchestrator"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "单包自动闭环"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "唯一写入主体为`local_ai_capability_release_orchestrator`"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "`GOV-OWNER-001`"],
   ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "37条稳定需求逐项追踪"],
   ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "machine_qualified_positive"],
   ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "以上状态均不是等待Owner批准"],
-  ["docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md", "固定进度3/5（60%）"],
   ["docs/game-world-generation/DOCUMENT_INDEX.md", "自主能力生命周期"],
   ["docs/world-visual-data-dictionary/README.md", "旧Owner词汇不得授权、阻断、恢复、发布或回退当前任务"],
   ["docs/world-visual-data-dictionary/README.md", "当前Owner职责只采用`docs/DOCUMENT_AUTHORITY_INDEX.md`中的`GOV-OWNER-001`"],
@@ -329,29 +325,17 @@ if (!reviewSpec.includes("审核只使用`review_pending -> review_running -> re
 const formalSpec = readText("docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md")
 const capabilityFormalSpec = extractCodeBlockAfterHeading(formalSpec, "### 12.2 自主能力生命周期与机器发布规范")
 if (!capabilityArchitecture || capabilityArchitecture !== capabilityFormalSpec) failures.push("capability lifecycle differs between architecture and formal AI Painter specification")
-const traceHeading = "### 17.2 37条稳定需求逐项追踪"
-const traceIndex = formalSpec.indexOf(traceHeading)
-if (traceIndex < 0) {
-  failures.push("37-requirement traceability section is missing")
-} else {
-  const definitionText = formalSpec.slice(0, traceIndex)
-  const traceText = formalSpec.slice(traceIndex)
-  const definitionIds = new Set(definitionText.match(/AP-[A-Z]+-[0-9]{3}/g) ?? [])
-  const traceRows = [...traceText.matchAll(/^\| `(AP-[A-Z]+-[0-9]{3})` \|(.+)$/gm)]
-  const traceIds = new Set(traceRows.map((match) => match[1]))
-  if (definitionIds.size !== 37) failures.push(`formal requirement definitions must contain 37 unique IDs, found ${definitionIds.size}`)
-  if (traceRows.length !== 37 || traceIds.size !== 37) failures.push(`traceability table must contain 37 unique rows, found ${traceRows.length}/${traceIds.size}`)
-  for (const id of setDifference(definitionIds, traceIds)) failures.push(`traceability row missing: ${id}`)
-  for (const id of setDifference(traceIds, definitionIds)) failures.push(`traceability row has no formal definition: ${id}`)
-  for (const match of traceRows) {
-    const cells = match[2].split("|").map((value) => value.trim()).filter(Boolean)
-    const status = cells.at(-1)?.replaceAll("`", "")
-    if (!new Set(["document_defined_program_pending", "partial_legacy_implementation_not_certified", "machine_conformant", "superseded"]).has(status)) {
-      failures.push(`${match[1]}: invalid traceability status: ${status}`)
-    }
-    if (status === "machine_conformant") failures.push(`${match[1]}: documentation-only work cannot claim machine conformance`)
-  }
-}
+const { failures: documentStateFailures, ...documentState } = validateAiPainterDocumentState(
+  formalSpec,
+  readText("docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md"),
+)
+failures.push(...documentStateFailures)
+
+// These normative boundaries must remain explicit even when a future trace
+// row declares machine_conformant. Authenticity belongs to machine checks.
+requireText("docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "只有机器合同、程序实现、正反测试和本地运行证据四层同时存在且身份一致时")
+requireText("docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "文档检查通过本身不能提升程序符合状态")
+requireText("docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "Owner签名、聊天、调用方布尔字段、页面身份、外部智能体记忆和历史授权包都不是发布条件或发布证明")
 
 const packageJson = readJson("package.json")
 const documentCheckCommand = packageJson.scripts?.["check:ai-painter-document-contracts"] ?? ""
@@ -401,6 +385,6 @@ console.log(JSON.stringify({
   status: "ai_painter_document_semantics_passed",
   versionedDocuments: versionedDocuments.length,
   historicalContractsVerified,
-  currentMachineContractAdoption: "verified_by_separate_program_check_not_document_check",
-  fixedAiPainterProgress: "3/5 (60%)",
+  currentMachineContractAdoption: "not_evaluated_by_document_check",
+  ...documentState,
 }, null, 2))

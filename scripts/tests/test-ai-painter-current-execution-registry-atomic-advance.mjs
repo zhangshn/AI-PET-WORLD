@@ -6,6 +6,7 @@ import os from "node:os"
 import path from "node:path"
 import { DatabaseSync } from "node:sqlite"
 import test from "node:test"
+import { verifyTrainingKernelInputs, verifyKernelInterruptionHost, loadRecoveryProfile } from '../lib/ai-painter-owned-worker-reboot-recovery-v1.mjs'
 import {
   CURRENT_EXECUTION_REGISTRY_PATH,
   CURRENT_EXECUTION_REGISTRY_ROOT,
@@ -298,6 +299,141 @@ test("expired active recovery verifies dead process and publishes only failed-cl
     assert.equal(recovered.registry.runId, active.registry.runId)
   })
 })
+
+test('kernel interruption retains zero heartbeat and atomically publishes only the exact failed training identity', async () => {
+  await withFixture(async ({ root, advance }) => {
+    const f = await createKernelInterruptionFixture(root, advance)
+    const before = await readFile(absolute(root, f.profile.heartbeat.path))
+    assert.equal((await readCurrentExecutionRegistry(root)).ok, false)
+    verifyTrainingKernelInputs(root, f.profile)
+    const recovered = await recoverExpiredActiveExecutionToFailedClosed(f.options)
+    assert.equal(recovered.ok, true)
+    assert.equal(recovered.registry.activeExecution, null)
+    assert.equal(recovered.currentTaskTerminal.status, 'training_system_interrupted')
+    assert.equal(recovered.registry.latestTrainingTerminal.runId, f.profile.runId)
+    assert.ok((await readFile(absolute(root, f.profile.heartbeat.path))).equals(before))
+    assert.equal(recovered.registry.registryRevision, f.profile.registry.revision + 1)
+  })
+})
+
+test('kernel interruption refuses invalid historical inputs and host proof without publishing', async context => {
+  for (const [name, change] of [
+    ['different machine', f => { f.host.MachineIdentitySha256 = 'd'.repeat(64) }],
+    ['same kernel', f => { f.host.OsBootUtc = f.priorHost.OsBootUtc; f.host.BootEventUtc = f.host.OsBootUtc }],
+    ['boot before last progress', f => { f.host.OsBootUtc = f.oldStart; f.host.BootEventUtc = f.oldStart }],
+    ['live related worker', f => { f.host.Processes.push({ Pid: 909, Name: 'python.exe', ExecutablePath: 'C:/python.exe', CommandLine: 'python ai-painter-training.py', CreationUtc: f.host.OsBootUtc }) }],
+    ['wrong package', f => { f.profile.packageId = 'other'; f.options.packageId = 'other' }],
+    ['wrong heartbeat hash', f => { f.profile.heartbeat.sha256 = 'd'.repeat(64) }],
+    ['unknown damaged heartbeat', async f => { await writeText(rootOf(f), f.profile.heartbeat.path, 'not a heartbeat'); f.profile.heartbeat.sha256 = await sha256File(rootOf(f), f.profile.heartbeat.path) }],
+    ['source byte change', async f => { await writeText(rootOf(f), f.sourcePath, 'changed source') }],
+    ['existing terminal', async f => { await writeText(rootOf(f), f.output + '/worker-terminal.json', '{}') }],
+    ['existing observation', async f => { await writeText(rootOf(f), f.profile.missingObservationPath, '{}') }],
+    ['unknown profile case', f => { f.profile.failureCase = 'other' }],
+    ['wrong consumed package', async f => { await writeJson(rootOf(f), f.profile.trainingConsumed.path, { attempt: 1, automaticRetries: 0, executionPackage: { path: 'other', sha256: 'd'.repeat(64) } }); f.profile.trainingConsumed.sha256 = await sha256File(rootOf(f), f.profile.trainingConsumed.path) }],
+  ]) await context.test(name, async () => withFixture(async ({ root, advance }) => {
+    const f = await createKernelInterruptionFixture(root, advance)
+    const original = await readFile(absolute(root, CURRENT_EXECUTION_REGISTRY_PATH))
+    await change(f)
+    await writeJson(root, f.profilePath, f.profile)
+    f.options.kernelInterruptionProfile.sha256 = await sha256File(root, f.profilePath)
+    await assert.rejects(recoverExpiredActiveExecutionToFailedClosed(f.options))
+    assert.ok((await readFile(absolute(root, CURRENT_EXECUTION_REGISTRY_PATH))).equals(original))
+  }))
+})
+
+const rootOf = fixture => fixture.root
+
+test('kernel interruption accepts an identity-bound expired heartbeat without rewriting it', async () => withFixture(async ({ root, advance }) => {
+  const f = await createKernelInterruptionFixture(root, advance)
+  const original = JSON.parse(await readFile(absolute(root, f.profile.executionLock.path)))
+  await writeJson(root, f.profile.heartbeat.path, { ...original, schemaVersion: 'ai-painter-current-active-execution-heartbeat-v1', executionState: 'executing', ttlSeconds: 120, heartbeatAtUtc: f.oldStart })
+  f.profile.heartbeat.sha256 = await sha256File(root, f.profile.heartbeat.path)
+  await writeJson(root, f.profilePath, f.profile)
+  const bound = loadRecoveryProfile(root, f.profilePath, await sha256File(root, f.profilePath))
+  verifyKernelInterruptionHost(verifyTrainingKernelInputs(root, bound.profile), f.host)
+}))
+
+test('kernel interruption verifies historical source bytes from an immutable ledger, rejects tampering', async () => withFixture(async ({ root, advance }) => {
+  const f = await createKernelInterruptionFixture(root, advance)
+  const original = { path: f.sourcePath, sha256: await sha256File(root, f.sourcePath), utf8: (await readFile(absolute(root, f.sourcePath))).toString('utf8') }
+  const ledgerPath = f.output + '/source-bytes.json'
+  await writeJson(root, ledgerPath, [original])
+  f.profile.byteLedgers.push({ original: { path: original.path, sha256: original.sha256 }, ledger: { path: ledgerPath, sha256: await sha256File(root, ledgerPath) } })
+  await writeText(root, f.sourcePath, 'new repaired source')
+  verifyTrainingKernelInputs(root, f.profile)
+  await writeJson(root, ledgerPath, [{ ...original, utf8: 'changed historical bytes' }])
+  f.profile.byteLedgers.at(-1).ledger.sha256 = await sha256File(root, ledgerPath)
+  assert.throws(() => verifyTrainingKernelInputs(root, f.profile), /interruption_original_bytes_mismatch/)
+}))
+
+async function createKernelInterruptionFixture(root, advance) {
+  const runId = advance.runId, output = '.runtime/ai-painter/ecology-decode1-weight-quality-executions/' + runId
+  const active = await createActiveExecution(root, { ...advance, executionState: 'executing' })
+  const heartbeat = JSON.parse(await readFile(absolute(root, active.heartbeat.path)))
+  heartbeat.ttlSeconds = 120
+  const lock = JSON.parse(await readFile(absolute(root, active.lock.path)))
+  await writeJson(root, output + '/execution-lock.json', lock)
+  await writeJson(root, output + '/heartbeat.json', heartbeat)
+  active.lock = { path: output + '/execution-lock.json', sha256: await sha256File(root, output + '/execution-lock.json') }
+  active.heartbeat = { path: output + '/heartbeat.json', ttlSeconds: 120 }
+  const registered = await advanceCurrentExecutionRegistry({ ...advance, executionState: 'executing', activity: 'training', queueStatus: 'running', nextMachineAction: null, activeExecution: active, _testHooks: hooks() })
+  await writeFile(absolute(root, output + '/heartbeat.json'), Buffer.alloc(449))
+  const bind = async p => ({ path: p, sha256: await sha256File(root, p) })
+  const oldStart = new Date(Date.now() - 300000).toISOString()
+  const priorHost = { MachineIdentitySha256: 'c'.repeat(64), BootProvider: 'Microsoft-Windows-Kernel-General', BootEventId: 12, BootEventRecordId: 100,
+    OsBootUtc: new Date(Date.now() - 360000).toISOString(), ObservedUtc: new Date(Date.now() - 330000).toISOString() }
+  priorHost.BootEventUtc = priorHost.OsBootUtc
+  const boot = new Date(Date.now() - 120000).toISOString()
+  const host = { ...priorHost, BootEventRecordId: 101, OsBootUtc: boot, BootEventUtc: boot, ObservedUtc: new Date().toISOString(), ProcessQueryComplete: true, Processes: [] }
+  await writeJson(root, output + '/pre-boot.json', { host: priorHost })
+  const native = '.runtime/ai-painter/owned-worker-guards/fixture-native'
+  await writeText(root, native + '/owner.cs', 'private owner source')
+  await writeText(root, native + '/owner.exe', 'private non-executable binary')
+  await writeText(root, native + '/python.exe', 'private non-executable python')
+  const build = { source: { path: absolute(root, native + '/owner.cs'), sha256: await sha256File(root, native + '/owner.cs') }, snapshot: absolute(root, native + '/owner.cs'), binary: absolute(root, native + '/owner.exe'), binarySha256: await sha256File(root, native + '/owner.exe') }
+  const sourcePath = active.programLineage.runner.path
+  const guard = { identity: 'fixture-training-guard', runnerPid: process.pid, recordedAtUtc: oldStart,
+    executable: absolute(root, native + '/python.exe'), executableSha256: await sha256File(root, native + '/python.exe'), helperSha256: active.programLineage.runner.sha256,
+    nativeOwnerSource: build.source, startedEvidence: absolute(root, native + '/started.json') }
+  await writeJson(root, '.runtime/ai-painter/owned-worker-guards/active.json', guard)
+  const guardBinding = await bind('.runtime/ai-painter/owned-worker-guards/active.json')
+  await writeJson(root, native + '/build.json', build)
+  await writeJson(root, native + '/started.json', { ...guard, ownerPid: 909,
+    commandBinding: Buffer.from(JSON.stringify({ guard, guardSha256: guardBinding.sha256, scope: root, nativeBuild: build })).toString('base64') })
+  const plan = { schema: 'ecology-decode1-weight-quality-plan-v1', ...advance, runId, outputRoot: output, programBindings: active.programLineage }
+  await writeJson(root, output + '/quality-plan.json', plan)
+  const planBinding = await bind(output + '/quality-plan.json')
+  await writeJson(root, output + '/original-package.json', { schemaVersion: 'ai-painter-autonomous-closed-loop-package-v1', packageIdentity: advance.packageId, capabilityVersion: advance.capabilityVersion,
+    inputEvidence: [planBinding], programLineage: Object.fromEntries(Object.entries(active.programLineage).map(([role, b]) => [role, b.sha256])) })
+  const executionPackage = await bind(output + '/original-package.json')
+  for (const name of ['training-consumed.json', 'execution-consumed.json']) await writeJson(root, output + '/' + name, { attempt: 1, automaticRetries: 0, executionPackage })
+  await writeJson(root, output + '/progress.json', { runId, packageId: advance.packageId, capabilityVersion: advance.capabilityVersion, executionState: 'executing', selectedCheckpoint: null,
+    optimizerStepsGenerator: 286, optimizerStepsDiscriminator: 286, updatedAtUtc: new Date(Date.now() - 240000).toISOString() })
+  const programBindings = []
+  for (const p of ['docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md', 'scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs', 'scripts/run-ai-painter-owned-worker-reboot-recovery.mjs', 'src/server/ai-painter-current-execution-registry.mjs']) {
+    await writeText(root, p, 'private fixture source training_kernel_interruption_v1'); programBindings.push(await bind(p))
+  }
+  const profile = { schema: 'ai-painter-owned-worker-reboot-recovery-profile-v3', failureCase: 'training_kernel_interruption_v1', caseId: 'fixture-training', runId,
+    guard: guardBinding, guardIdentity: guard.identity, registry: { ...await bind(CURRENT_EXECUTION_REGISTRY_PATH), revision: registered.registry.registryRevision },
+    executionPackage, plan: planBinding, executionLock: active.lock, heartbeat: await bind(active.heartbeat.path), progress: await bind(output + '/progress.json'),
+    trainingConsumed: await bind(output + '/training-consumed.json'), executionConsumed: await bind(output + '/execution-consumed.json'),
+    started: await bind(native + '/started.json'), build: await bind(native + '/build.json'), helperSnapshot: active.programLineage.runner,
+    preBoot: await bind(output + '/pre-boot.json'), missingObservationPath: native + '/cleanup-observation.json', programBindings, byteLedgers: [] }
+  const registryBytes = await readFile(absolute(root, CURRENT_EXECUTION_REGISTRY_PATH))
+  await writeJson(root, output + '/original-bytes.json', [{ path: CURRENT_EXECUTION_REGISTRY_PATH, sha256: profile.registry.sha256, utf8: registryBytes.toString('utf8') }])
+  profile.byteLedgers.push({ original: { path: CURRENT_EXECUTION_REGISTRY_PATH, sha256: profile.registry.sha256 }, ledger: await bind(output + '/original-bytes.json') })
+  const profilePath = output + '/recovery-profile.json'
+  await writeJson(root, profilePath, profile)
+  const evidence = await createExpiredActiveRecoveryEvidence(root, registered.registry)
+  const terminal = JSON.parse(await readFile(absolute(root, evidence.terminalPath)))
+  Object.assign(terminal, { schemaVersion: 'ai-painter-training-system-interruption-terminal-v1', status: 'training_system_interrupted',
+    profileSha256: await sha256File(root, profilePath), originalRegistry: profile.registry, historicalCleanupCertified: false, oldExecutionMayReplay: false, trainingQualificationGranted: false })
+  await writeJson(root, evidence.terminalPath, terminal)
+  const options = { ...baseExpiredRecoveryOptions(root, registered, evidence, recoveryHooks('dead')),
+    kernelInterruptionProfile: await bind(profilePath) }
+  options._testHooks.queryKernelInterruptionHost = () => ({ ...host, ObservedUtc: new Date().toISOString() })
+  return { root, profile, profilePath, options, host, priorHost, oldStart, output, sourcePath }
+}
 
 test("expired active recovery rejects live, unexpired, cross-identity and untrusted evidence", async (context) => {
   const cases = [

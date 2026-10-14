@@ -1,5 +1,7 @@
 ﻿import { readFileSync } from "node:fs"
 
+import { isActiveUniqueModulePlan } from "./lib/unique-module-plan-contract.mjs"
+
 const checks = []
 
 function check(label, condition) {
@@ -932,8 +934,7 @@ check(
 )
 check(
   "Current execution guide is the single module plan",
-  currentExecutionGuide.includes("# AI-PET-WORLD 唯一模块计划表") &&
-    currentExecutionGuide.includes("本文档是项目唯一计划表")
+  isActiveUniqueModulePlan(currentExecutionGuide)
 )
 check(
   "Single module plan excludes run-level evidence",

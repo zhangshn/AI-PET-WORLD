@@ -6,17 +6,24 @@ import vm from 'node:vm'
 
 // Exercise the real component's state, effects and click handlers without a
 // desktop browser. This does not claim DOM, image decoding or browser coverage.
-function harness(initialUrl = null) {
+function harness(initialUrl = null, { hydrating = false } = {}) {
   const source = readFileSync(new URL('../../src/app/ai-console/ai-console-training-history.tsx', import.meta.url), 'utf8')
   const slots = [], effects = [], requests = []
-  let position = 0, poll, tree
+  let position = 0, poll, tree, inEffect = false, useServerSnapshot = hydrating
   const hooks = {
     useState(initial) {
       const index = position++
-      if (!slots[index]) slots[index] = { value: initial }
-      return [slots[index].value, value => { slots[index].value = value }]
+      if (!slots[index]) slots[index] = { value: typeof initial === 'function' ? initial() : initial }
+      return [slots[index].value, value => {
+        assert.equal(inEffect, false, 'URL restoration must not synchronously set state in an Effect')
+        slots[index].value = typeof value === 'function' ? value(slots[index].value) : value
+      }]
     },
     useRef() { const index = position++; return slots[index] ??= { current: null } },
+    useSyncExternalStore(_subscribe, getSnapshot, getServerSnapshot) {
+      position++
+      return useServerSnapshot || !browser ? getServerSnapshot() : getSnapshot()
+    },
     useEffect(callback, deps) {
       const index = position++, prior = slots[index]
       if (!prior || deps.some((value, i) => value !== prior.deps[i])) {
@@ -46,11 +53,18 @@ function harness(initialUrl = null) {
     },
     async fetch(url) {
       requests.push(url)
-      const data = url.includes('section=') ? page : url.includes('/ui-run') ? detail : listing
+      const data = url.includes('section=') ? page : url.split('?')[0] === `/api/ai-console/training/history/${encodeURIComponent(detail.record.recordId ?? detail.record.runId)}` ? detail : listing
       return { ok: data.reasonCode !== 'history_cursor_revision_conflict', status: data.reasonCode === 'history_cursor_revision_conflict' ? 409 : 200, json: async () => data }
     },
   })
-  function render() { position = 0; tree = exports.AiConsoleTrainingHistory(); effects.splice(0).forEach(run => run()); return tree }
+  function render() {
+    position = 0; tree = exports.AiConsoleTrainingHistory()
+    for (const run of effects.splice(0)) {
+      inEffect = true
+      try { run() } finally { inEffect = false }
+    }
+    return tree
+  }
   function descendants(node) {
     if (!node || typeof node !== 'object') return []
     if (Array.isArray(node)) return node.flatMap(descendants)
@@ -60,6 +74,7 @@ function harness(initialUrl = null) {
   function button(label) { return nodes().find(node => node.type === 'button' && (node.props.children === label || node.props.children?.[1]?.props?.children === label)) }
   render()
   return { render, nodes, button, requests, detail, listing, row, browser,
+    finishHydration() { useServerSnapshot = false; render() },
     setPage(value) { page = value }, getPage() { return page },
     async tick(signal = new AbortController().signal) { await poll.run(signal); render() },
     disconnect() { poll.failed(new Error('test_disconnect')); render() } }
@@ -146,4 +161,46 @@ test('browser refresh restores only exact historical selection via a read-only p
   invalid.render(); await invalid.tick()
   assert.equal(invalid.nodes().some(node => node.props?.['aria-label'] === '选中Run详情'), false)
   assert.ok(invalid.requests.every(url => !url.includes('outside')))
+})
+
+test('server and simulated hydration snapshots agree before restoring the browser deep link', async () => {
+  const url = 'http://localhost:3000/ai-console/training/runs?view=history&run=ui-run#evidence'
+  const server = harness()
+  const ui = harness(url, { hydrating: true })
+  assert.equal(ui.nodes().find(node => node.type === 'input').props.value, '')
+  assert.equal(ui.nodes().some(node => node.props?.['aria-label'] === '选中Run详情'), false)
+  assert.deepEqual(JSON.parse(JSON.stringify(ui.render())), JSON.parse(JSON.stringify(server.render())))
+  assert.equal(ui.browser.location.href, url, 'hydration must not erase the deep link')
+  ui.finishHydration(); await ui.tick()
+  assert.equal(ui.nodes().find(node => node.type === 'input').props.value, 'ui-run')
+  assert.ok(ui.requests.includes('/api/ai-console/training/history/ui-run'))
+  assert.equal(new URL(ui.browser.location.href).hash, '#evidence')
+  ui.disconnect()
+  assert.ok(ui.nodes().some(node => node.props?.['aria-label'] === '选中Run详情'))
+  await ui.tick()
+  assert.ok(ui.nodes().some(node => node.type === 'code' && node.props.children === 'ui-run'))
+})
+
+test('manual selection replaces the restored Run and reload keeps the new identity independently of the list', async () => {
+  const ui = harness('http://localhost:3000/ai-console/archive/training?view=images&run=ui-run#details')
+  await ui.tick()
+  const identity = 'fixture-run.v2'
+  ui.listing.records = [{ ...ui.row, runId: identity }]
+  ui.detail.record.runId = identity
+  ui.setPage({ ...ui.getPage(), record: { ...ui.row, runId: identity } })
+  ui.render(); ui.button(identity).props.onClick(); ui.render(); await ui.tick()
+  assert.ok(ui.nodes().some(node => node.type === 'code' && node.props.children === identity))
+  assert.ok(ui.requests.includes(`/api/ai-console/training/history/${identity}`))
+  const url = new URL(ui.browser.location.href)
+  assert.equal(url.searchParams.get('run'), identity)
+  assert.equal(url.searchParams.get('view'), 'images')
+  assert.equal(url.hash, '#details')
+  const reloaded = harness(url.toString())
+  reloaded.listing.records = []
+  reloaded.detail.record.runId = identity
+  reloaded.setPage({ ...reloaded.getPage(), record: { ...reloaded.row, runId: identity } })
+  await reloaded.tick()
+  assert.equal(reloaded.nodes().find(node => node.type === 'input').props.value, identity)
+  assert.ok(reloaded.nodes().some(node => node.type === 'code' && node.props.children === identity))
+  assert.ok(reloaded.requests.every(request => request.startsWith('/api/ai-console/training/history')))
 })

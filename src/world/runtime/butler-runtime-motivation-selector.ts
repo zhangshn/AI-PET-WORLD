@@ -5,6 +5,7 @@
 import type { TraceMemorySeed } from "@/world/trace"
 
 import type { WorldRuntimeSaveRecord } from "./world-runtime-schema"
+import { hasRepeatedRecentActionSignatures } from "./world-runtime-action-signature"
 import type {
   ButlerRuntimeDecision,
   ButlerRuntimeMotivationScore,
@@ -64,7 +65,7 @@ function buildMotivationScores(input: {
   const resources = input.saveRecord.homeMapState.resources
   const recentTransactions = resources.recentTransactions ?? []
   const recentActionSignatures = input.saveRecord.recentActionSignatures ?? []
-  const repeatedActionRisk = hasRepeatedRecentSignature(recentActionSignatures)
+  const repeatedActionRisk = hasRepeatedRecentActionSignatures(recentActionSignatures)
   const hasConstructionPlans = input.saveRecord.homeMapState.constructionPlans.some(
     (plan) => plan.status !== "completed"
   )
@@ -342,10 +343,4 @@ function sortScores(
   if (right.finalScore !== left.finalScore) return right.finalScore - left.finalScore
 
   return MOTIVATION_PRIORITY[right.type] - MOTIVATION_PRIORITY[left.type]
-}
-
-function hasRepeatedRecentSignature(signatures: string[]): boolean {
-  const recent = signatures.slice(-3)
-
-  return recent.length === 3 && recent.every((signature) => signature === recent[0])
 }

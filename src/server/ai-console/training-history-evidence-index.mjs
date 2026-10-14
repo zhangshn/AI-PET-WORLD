@@ -6,6 +6,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { readdir, realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { bytes } from './training-history-safe-bytes.mjs'
+import { DRY_RECOVERY_CANDIDATE_SCHEMA, readDryRecoveryCandidate } from './training-history-detail-adapters.mjs'
 
 export const HISTORY_INDEX_PATH = '.runtime/ai-console/training/history-index-v1.sqlite'
 const SHA = /^[a-f0-9]{64}$/u
@@ -47,6 +48,14 @@ async function validateSource(root, logical, sourceBytes, digest) {
     terminalPath: kind === 'materialization' ? parent.path : null,
     terminalSha: kind === 'materialization' ? parent.sha256 : null,
     parentPath: parent.path, parentSha: parent.sha256, status: 'verified', reasonCode: null }
+  if (value.schemaVersion === DRY_RECOVERY_CANDIDATE_SCHEMA) {
+    try {
+      await readDryRecoveryCandidate({ runId: value.runId, manifest: value, manifestBinding: { path: logical, sha256: digest },
+        terminalBinding: parent, readJson: async binding => JSON.parse((await bytes(root, binding.path, 2 * 1024 * 1024, binding.sha256)).value.toString('utf8')),
+        requireFact: (condition, code) => { if (!condition) throw new Error(code) } })
+    } catch (error) { result.status = 'partial'; result.reasonCode = error.code === 'ENOENT' ? 'history_source_parent_missing' : error.message }
+    return result
+  }
   if (kind === 'materialization' && (!value.schemaVersion || !validBinding(value.workerTerminal)
       || !validBinding(value.checkpoint) || !validBinding(value.candidate?.referenceRgb)
       || !validBinding(value.candidate?.candidateRgb) || typeof value.candidate?.sampleId !== 'string'

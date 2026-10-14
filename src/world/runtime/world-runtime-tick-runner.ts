@@ -141,12 +141,26 @@ export function runOneRuntimeTick(
     traceField: traceClosureResult.nextTraceField,
     currentTick: nextTick,
   })
+  const profileFields = [
+    "worldProfileId",
+    "worldProfileVersion",
+    "worldProfilePath",
+    "earthParameterSnapshotId",
+    "earthParameterSnapshotPath",
+  ] as const
+  const preservedProfile: Pick<WorldRuntimeSaveRecord, typeof profileFields[number]> = {}
+  for (const field of profileFields) {
+    if (Object.prototype.hasOwnProperty.call(input.saveRecord, field)) {
+      preservedProfile[field] = input.saveRecord[field]
+    }
+  }
   const nextSaveRecord: WorldRuntimeSaveRecord = {
     version: "v2.6-runtime-00",
     worldId: input.saveRecord.worldId,
     ownerId: input.saveRecord.ownerId,
     tick: nextTick,
     savedAt: nowIso,
+    ...preservedProfile,
     butlerProfile: input.saveRecord.butlerProfile,
     butlerRuntimeProfile: input.saveRecord.butlerRuntimeProfile,
     butlerBirthInput: input.saveRecord.butlerBirthInput,
@@ -277,7 +291,6 @@ function buildRuntimeActionSummaryFromTick(input: {
     .map((diff) => `${diff.operation}:${diff.placementId}`)
     .sort()
   const actionSignature = [
-    `tick:${input.tick}`,
     `project:${selectedPlan?.id ?? "none"}`,
     `stage:${selectedPlan?.currentStage ?? "none"}`,
     `intent:${input.intent.kind}`,
@@ -320,7 +333,6 @@ function buildRuntimeActionSummaryFromDecision(input: {
       `motivation:${input.decision.selectedMotivation}`,
       `intent:${input.intent.kind}`,
       `world_rule:${input.worldRuleValidation.ok ? "passed" : "blocked"}`,
-      `tick:${input.tick}`,
       "state:no_safe_construction",
     ].join("|"),
     acceptedDiffCount: 0,

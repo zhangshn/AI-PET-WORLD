@@ -10,7 +10,6 @@ import {CAPABILITY,EXECUTION_PROFILE,inside,read,write,json,bind,loadContext,val
 import {fileURLToPath} from 'node:url';import path from 'node:path';
 import {prepareCpuRequest,finalizeCpuAcceptance,preparePlan,makeInternalCandidate,ROLES,runtimeIdentity,finalProgramBindings} from './lib/ai-painter-ecology-decode1-quality-package-chain-v1.mjs';
 import {materializeAutonomousClosedLoopPackage} from './lib/ai-painter-autonomous-package-materializer-v1.mjs';
-import {loadLocalOperatorDeploymentConfiguration} from './run-ai-painter-local-control-v2.mjs';
 
 export function verifyGpuOutcome(ready,binding){
  const {root,plan,packageBinding}=ready,gate=json(root,binding);
@@ -152,10 +151,11 @@ function createPhaseAdapters(dependencies={}){
   const lock=deps.write(root,lockPath,{schemaVersion:'ai-painter-current-active-execution-lock-v1',...identity});
   deps.write(root,heartbeatPath,{schemaVersion:'ai-painter-current-active-execution-heartbeat-v1',...identity,executionState:'executing',heartbeatAtUtc:new Date().toISOString(),ttlSeconds:120});
   const active=deps.createActiveIdentity(ready.input,{...identity,executionPhase:qualificationOnly?'qualification':'training',executionState:'executing',programBindings:plan.programBindings,lock,heartbeat:{path:heartbeatPath,ttlSeconds:120}});
-  const dispatch=deps.write(root,plan.outputRoot+(qualificationOnly?'/qualification-dispatched.json':'/dispatched.json'),{status:'qualification_pending',executionState:'completed',
+  const dispatchStatus=existingAdmission?'training_pending':'qualification_pending';
+  const dispatch=deps.write(root,plan.outputRoot+(qualificationOnly?'/qualification-dispatched.json':'/dispatched.json'),{status:dispatchStatus,executionState:'completed',
    completedAction:'execution_dispatch_record_only_not_training',capabilityVersion:CAPABILITY,packageId:plan.packageId,runId:plan.runId,
    executionPackage:packageBinding,trainingStarted:false});
-  await advance(ready,{activeExecution:active,evidence:dispatch,state:'executing',activity:'diagnostic_gpu_qualification_pending',qualificationOnly});
+  await advance(ready,{activeExecution:active,evidence:dispatch,state:'executing',activity:existingAdmission?'training_pending':'diagnostic_gpu_qualification_pending',qualificationOnly});
   const executable=deps.inside(root,'ml/ai-painter/.venv/Scripts/python.exe'),base=['--package',packageBinding.path,'--sha256',packageBinding.sha256];
   let lastReceipt=null,phase='qualification';
   try{
@@ -179,7 +179,7 @@ function createPhaseAdapters(dependencies={}){
     args:['-B',deps.inside(root,plan.programBindings.worker.path),...base,'--gpu',admission.path,'--gpu-sha256',admission.sha256],onHeartbeat:()=>heartbeat(context,ready,identity)});
    lastReceipt=result.ownedReceipt;assert.ok(deps.hasLiveOwnedProof(lastReceipt));const terminal=JSON.parse(result.stdout),body=deps.json(root,terminal);deps.validateTerminal(body,packageBinding,plan);
    assert.equal(body.status,'training_completed_review_pending');
-   await deps.withNativeReceiptBudget(root,lastReceipt,()=>advance(ready,{activeExecution:null,evidence:terminal,state:'completed',activity:'diagnostic_completed_no_root_cause_conclusion',latestTrainingTerminal:{runId:plan.runId,...terminal,status:body.status}}));
+   await deps.withNativeReceiptBudget(root,lastReceipt,()=>advance(ready,{activeExecution:null,evidence:terminal,state:'completed',activity:body.status,latestTrainingTerminal:{runId:plan.runId,...terminal,status:body.status}}));
    return {status:'passed',workerTerminal:terminal,captureStatus:'capture_not_triggered',rootCauseConfirmed:false,ownedReceipt:result.receiptBinding};
   }catch(error){
    let terminal=null,body=null;
@@ -356,14 +356,21 @@ export async function preservePreparationCliFailure({request,ready,error,root=pr
   return {...refused,runId:scope.runId,evidence,evidenceStatus:'preserved_from_current_call'};
  }catch(secondary){return {...refused,evidenceStatus:'failed_to_preserve',secondaryEvidenceFailure:boundedNativeFailureMetadata(secondary)};}
 }
+// The v2 entry awaits this adapter through the closed loop. Loading that entry
+// here would create a top-level-await cycle; its configuration helper belongs
+// only to this adapter's direct CLI invocation, not the imported phase exports.
+async function adoptLocalDeploymentForDirectCli(){
+ const {loadLocalOperatorDeploymentConfiguration}=await import('./run-ai-painter-local-control-v2.mjs');
+ return loadLocalOperatorDeploymentConfiguration();
+}
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  let request=null,ready=null;
  try{
   request=parsePreparationArguments(process.argv.slice(2));
   if(request.help)process.stdout.write('ecology-decode1-weight-quality-entry-v1: prepare-only --run ID --package-id ID; qualify-only --package PATH --sha256 SHA. Both stop before training.\n');
-  else if(request.mode==='prepare-only'){loadLocalOperatorDeploymentConfiguration();process.stdout.write(JSON.stringify(await prepareOnly({root:process.cwd(),runId:request.values['--run'],packageId:request.values['--package-id']}))+'\n');}
+  else if(request.mode==='prepare-only'){await adoptLocalDeploymentForDirectCli();process.stdout.write(JSON.stringify(await prepareOnly({root:process.cwd(),runId:request.values['--run'],packageId:request.values['--package-id']}))+'\n');}
   else{const packageBinding={path:request.values['--package'],sha256:request.values['--sha256']},spec=json(process.cwd(),packageBinding);
-   loadLocalOperatorDeploymentConfiguration();
+   await adoptLocalDeploymentForDirectCli();
    const context={projectRoot:process.cwd(),packageIdentity:spec.packageIdentity,capabilityVersion:spec.capabilityVersion,outputRoot:spec.outputRoot,inputEvidence:spec.inputEvidence,heartbeat(){}};
    ready=loadContext(context);assert.deepEqual(ready.packageBinding,packageBinding);
    process.stdout.write(JSON.stringify(await qualifyOnly(context))+'\n');}

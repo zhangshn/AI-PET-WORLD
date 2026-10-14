@@ -22,6 +22,7 @@ import {
   assertRuntimePath,
   assertRuntimePathSegment,
 } from "./runtime-path-security"
+import { isWorldRuntimeSaveRecord } from "./world-runtime-record-validation"
 
 const LATEST_FILE = "latest-world.json"
 
@@ -62,7 +63,7 @@ async function readRecord(root: string, input?: { filePath?: string; ownerId?: s
       return failureRead(recordPath, "invalid", "runtime_transaction_incomplete")
     }
     const parsed = JSON.parse(await readFile(recordPath, "utf8")) as Partial<WorldRuntimeSaveRecord>
-    if (!isRuntimeRecord(parsed)) {
+    if (!isWorldRuntimeSaveRecord(parsed)) {
       return failureRead(recordPath, "invalid", "runtime_record_schema_invalid")
     }
     if ((input?.worldId && parsed.worldId !== input.worldId) || (input?.ownerId && parsed.ownerId !== input.ownerId)) {
@@ -113,8 +114,9 @@ async function writeRecord(root: string, input: {
   const lockPath = `${recordPath}.lock`
   let lock: Awaited<ReturnType<typeof open>> | null = null
   const lockToken = randomUUID()
+  let recordReplaced = false
   try {
-    validateRecord(input.record)
+    if (!isWorldRuntimeSaveRecord(input.record)) throw new Error("runtime record schema invalid")
     await mkdir(path.dirname(recordPath), { recursive: true })
     try {
       lock = await open(lockPath, "wx")
@@ -133,16 +135,18 @@ async function writeRecord(root: string, input: {
       }
       throw error
     }
+    const transactionPath = `${recordPath}.transaction.json`
+    const transaction = await readTransactionJournal(transactionPath)
+    if (transaction?.state === "prepared") throw new Error("runtime_transaction_incomplete")
+    const current = await readExisting(recordPath)
     if (input.expectedTick !== undefined) {
-      const current = await readExisting(recordPath)
-      if (current && current.tick !== input.expectedTick) {
+      if ((current?.tick ?? -1) !== input.expectedTick) {
         return { ok: false, code: "conflict", path: recordPath,
           message: "Runtime tick compare-and-set rejected a stale writer.",
-          warnings: [`expected_tick:${input.expectedTick}`, `actual_tick:${current.tick}`],
+          warnings: [`expected_tick:${input.expectedTick}`, `actual_tick:${current?.tick ?? -1}`],
           tags: ["world_runtime_store_write", "failed", "runtime_save_write_conflict", "runtime_tick_cas_rejected"] }
       }
     }
-    const transactionPath = `${recordPath}.transaction.json`
     await writeAtomic(transactionPath, {
       schemaVersion: "world-runtime-transaction-v1", state: "prepared",
       recordPath, latestPath: input.filePath ? null : path.join(root, LATEST_FILE),
@@ -150,6 +154,7 @@ async function writeRecord(root: string, input: {
       createdAtUtc: new Date().toISOString(),
     })
     await writeAtomic(recordPath, input.record)
+    recordReplaced = true
     if (!input.filePath) await writeAtomic(path.join(root, LATEST_FILE), {
       schemaVersion: "world-runtime-latest-index-v1", ownerId: input.record.ownerId,
       worldId: input.record.worldId, tick: input.record.tick,
@@ -165,7 +170,11 @@ async function writeRecord(root: string, input: {
     return { ok: true, path: recordPath, message: "Runtime save record written.", warnings: [], tags: ["world_runtime_store_write", "ok", "configured_production_store"] }
   } catch (error) {
     return { ok: false, code: "persistence_error", path: recordPath,
-      message: "Runtime save record was not written.", warnings: [message(error)], tags: ["world_runtime_store_write", "failed", "old_save_preserved"] }
+      message: recordReplaced
+        ? "Runtime save record was replaced; transaction finalization failed."
+        : "Runtime save record was not written.",
+      warnings: [message(error)],
+      tags: ["world_runtime_store_write", "failed", recordReplaced ? "runtime_save_record_replaced" : "old_save_preserved"] }
   } finally {
     if (lock) await lock.close().catch(() => {})
     if (lock) await releaseOwnedLock(lockPath, lockToken)
@@ -210,7 +219,8 @@ async function readLatestPath(root: string): Promise<string | null> {
 async function readExisting(filePath: string): Promise<WorldRuntimeSaveRecord | null> {
   try {
     const parsed = JSON.parse(await readFile(filePath, "utf8")) as Partial<WorldRuntimeSaveRecord>
-    return isRuntimeRecord(parsed) ? parsed : null
+    if (!isWorldRuntimeSaveRecord(parsed)) throw new Error("runtime record schema invalid")
+    return parsed
   } catch (error) {
     if (isNodeFileError(error) && error.code === "ENOENT") return null
     throw error
@@ -229,32 +239,6 @@ async function writeAtomic(filePath: string, value: unknown): Promise<void> {
 function recordPathFor(root: string, record: Pick<WorldRuntimeSaveRecord, "ownerId" | "worldId">): string {
   assertRuntimePathSegment(record.ownerId, "ownerId"); assertRuntimePathSegment(record.worldId, "worldId")
   return path.resolve(root, record.ownerId, `${record.worldId}.json`)
-}
-
-function validateRecord(record: WorldRuntimeSaveRecord): void {
-  if (!isRuntimeRecord(record)) throw new Error("runtime record schema invalid")
-  if (record.homeMapState.worldId !== record.worldId || record.homeMapState.ownerId !== record.ownerId) throw new Error("runtime identity mismatch")
-}
-
-function isRuntimeRecord(value: Partial<WorldRuntimeSaveRecord>): value is WorldRuntimeSaveRecord {
-  const tick = value.tick
-  if (typeof tick !== "number" || !Number.isInteger(tick) || tick < 0) return false
-  const homeMapState = value.homeMapState
-  if (!isHomeMapStateShape(homeMapState)) return false
-  const recentEvents = value.recentEvents
-  if (!isWorldRuntimeEventLogArray(recentEvents)) return false
-  return value.version === "v2.6-runtime-00" && isNonEmptyIdentity(value.worldId) && isNonEmptyIdentity(value.ownerId) && isIsoTimestamp(value.savedAt) && Array.isArray(value.tags) && value.tags.every((tag) => typeof tag === "string") && homeMapState.worldId === value.worldId && homeMapState.ownerId === value.ownerId && recentEvents.every((event) => event.tick >= 0 && event.tick <= tick)
-}
-
-function isNonEmptyIdentity(value: unknown): value is string { return typeof value === "string" && value.trim().length > 0 }
-function isIsoTimestamp(value: unknown): value is string { return typeof value === "string" && Number.isFinite(Date.parse(value)) }
-function isHomeMapStateShape(value: unknown): value is WorldRuntimeSaveRecord["homeMapState"] {
-  if (!value || typeof value !== "object") return false
-  const record = value as Partial<WorldRuntimeSaveRecord["homeMapState"]>
-  return isNonEmptyIdentity(record.worldId) && isNonEmptyIdentity(record.ownerId) && isNonEmptyIdentity(record.seed) && Boolean(record.mapSize) && Array.isArray(record.zones) && Array.isArray(record.placements) && Boolean(record.resources) && Array.isArray(record.constructionPlans) && Array.isArray(record.mapDiffs) && typeof record.createdAt === "number" && typeof record.updatedAt === "number" && Number.isFinite(record.createdAt) && Number.isFinite(record.updatedAt) && record.updatedAt >= record.createdAt && Array.isArray(record.tags) && record.tags.every((tag) => typeof tag === "string")
-}
-function isWorldRuntimeEventLogArray(value: unknown): value is WorldRuntimeSaveRecord["recentEvents"] {
-  return Array.isArray(value) && value.every((event) => Boolean(event) && typeof event === "object" && typeof (event as { id?: unknown }).id === "string" && Number.isInteger((event as { tick?: unknown }).tick) && (event as { tick: number }).tick >= 0 && typeof (event as { title?: unknown }).title === "string" && typeof (event as { body?: unknown }).body === "string" && ["runtime", "butler", "construction", "safe_apply", "audit"].includes(String((event as { source?: unknown }).source)) && isIsoTimestamp((event as { createdAt?: unknown }).createdAt) && Array.isArray((event as { tags?: unknown }).tags) && (event as { tags: unknown[] }).tags.every((tag) => typeof tag === "string"))
 }
 
 function sha256Json(value: unknown): string { return createHash("sha256").update(`${JSON.stringify(value, null, 2)}\n`, "utf8").digest("hex") }

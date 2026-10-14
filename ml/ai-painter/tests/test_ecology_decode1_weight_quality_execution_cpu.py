@@ -37,7 +37,7 @@ def _expected_current_source_counts(reader):
         "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs",
         "src/server/ai-painter-current-execution-registry.mjs")
     deployment = auth.LOCAL_DEPLOYMENT_DEPENDENCY_ROLES
-    paths = {binding["path"] for binding in frozen.values()} | set(auth.ROLES.values()) | set(neutral) | set(deployment.values())
+    paths = {auth.historical_source_binding(role, binding)["path"] for role, binding in frozen.items()} | set(auth.ROLES.values()) | set(neutral) | set(deployment.values())
     return 179 + len(auth.ROLES) + len(neutral) + len(deployment), len(paths)
 
 
@@ -355,7 +355,7 @@ class ExecutionProtocolCpuTests(unittest.TestCase):
     def setUpClass(cls):
         cls.reader = MemoryReader()
         frozen = json.loads((ROOT / auth.FROZEN_PLAN["path"]).read_bytes())
-        cls.programs = {"frozen-" + role: b for role, b in frozen["programBindings"].items()}
+        cls.programs = {"frozen-" + role: auth.historical_source_binding(role, b) for role, b in frozen["programBindings"].items()}
         # Only source137 is the verified new manifest, never old SHA/current bytes.
         cls.programs["frozen-source-137"] = cls.reader.put("package.json", (ROOT / "package.json").read_bytes())
         for role, p in auth.ROLES.items():
@@ -516,11 +516,14 @@ class ExecutionProtocolCpuTests(unittest.TestCase):
     def test_cpu_report_source_config_and_raw_calls_conflicts_rejected(self):
         request = {"schema": "ecology-decode1-weight-quality-cpu-request-v1", "runId": self.plan["runId"],
             "packageId": self.plan["packageId"], "outputRoot": self.output + "/cpu-entry",
-            **{key: self.plan[key] for key in ("programBindings", "configuration", "modelBinding", "runtimeIdentity")}}
+            "modelIdentityOutput": self.model_binding["path"],
+            "modelCapabilityVersion": "stage4_mvp256_dry_factorized_ecology_decode1_weight_precision_v1",
+            **{key: self.plan[key] for key in ("programBindings", "configuration", "runtimeIdentity")}}
         raw = {"schema": worker.CPU_SCHEMA, "status": "passed", "passed": 20, "failed": 0, "errors": 0, "skipped": 0,
             "synthetic": True, "gpuInitialized": False,
             "actualCalls": {k: 0 for k in ("moduleForwardCalls", "autogradCalls", "optimizerConstructionAttempts", "optimizerUpdates", "cudaInitializationAttempts")},
             "items": [{"status": "passed"} for _ in range(20)],
+            "initialModel": self.store.json(self.model_binding),
             **{key: self.plan[key] for key in ("programBindings", "configuration", "modelBinding", "runtimeIdentity")}}
         worker.verify_cpu_report(raw, request, self.plan)
         for mutate in (lambda r: r.update(passed=0), lambda r: r.update(gpuInitialized=True),
@@ -2396,9 +2399,9 @@ class HeartbeatHandleCpuTests(unittest.TestCase):
             with patch.dict(os.environ, {"T_Q4_HEARTBEAT_ALLOW": "1"}), patch.object(auth, "_open_heartbeat_handle") as opener:
                 with self.assertRaisesRegex(ValueError, "outside verified"):
                     reader.snapshot(logical)
-                with self.assertRaisesRegex(ValueError, "exact own heartbeat"):
+                with self.assertRaisesRegex(ValueError, "exact own phase heartbeat"):
                     auth._snapshot_heartbeat(reader, auth.REGISTRY, scope)
-                with self.assertRaisesRegex(ValueError, "exact own heartbeat"):
+                with self.assertRaisesRegex(ValueError, "exact own phase heartbeat"):
                     auth._snapshot_heartbeat(reader, logical.replace(scope["runId"], "other-run"), scope)
                 opener.assert_not_called()
             registry = reader.path(auth.REGISTRY)
@@ -2412,7 +2415,7 @@ class HeartbeatHandleCpuTests(unittest.TestCase):
             self.assertEqual(binder.call_count, 1)
 
     def test_error_metadata_is_bounded_and_keeps_native_code_without_gpu(self):
-        import qualify_stage4_ecology_quality_gpu_v1 as qualifier
+        import qualify_stage4_ecology_decode1_weight_quality_gpu_v1 as qualifier
         error = OSError(13, "synthetic original failure")
         error.winerror = 5
         original_error = (error.errno, error.winerror, str(error))
@@ -2594,10 +2597,10 @@ def _fresh_quality_checkpoint_io_fixture():
         with torch.random.fork_rng(devices=[]), torch.device("cpu"):
             configuration = fixture.configuration()
             torch.manual_seed(configuration["seed"])
-            model = fixture.training.build_fresh_object_ecology_regime_conditioned(condition_channel_order=fixture.ORDER)
+            model = fixture.training.build_fresh_object_ecology_decode1_weight_precision(condition_channel_order=fixture.ORDER)
             critic = fixture.build_conditional_texture_discriminator()
             reader = auth.Reader(ROOT)
-            programs = {"frozen-" + role: binding for role, binding in auth.read_json(reader, auth.FROZEN_PLAN)["programBindings"].items()}
+            programs = {"frozen-" + role: auth.historical_source_binding(role, binding) for role, binding in auth.read_json(reader, auth.FROZEN_PLAN)["programBindings"].items()}
             paths = {**auth.ROLES, "storageAdapter": "scripts/lib/ai-pet-world-storage.mjs",
                 "materializer": "scripts/lib/ai-painter-autonomous-package-materializer-v1.mjs",
                 "autonomousLoop": "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs",
@@ -3038,6 +3041,18 @@ class RuntimeIdentityCpuTests(unittest.TestCase):
                 stream.write(raw)
 
 
+def legacy_capture_fixture_binding(reader, actual_model):
+    """Historical shape-only tests do not adopt the current model identity."""
+    binding = auth.exact_binding(auth.read_json(reader, auth.FROZEN_PLAN)["modelBinding"])
+    auth.require(binding == {"path": ".runtime/ai-painter/ecology-execution-auth-t-q4-71/cpu/model-identity.json",
+        "sha256": "61a05d8d487fad5b96ec5df285ca6eeede772edb41649535f02adba41c827469"},
+        "exact legacy capture fixture identity required")
+    legacy = auth.read_json(reader, binding)
+    auth.require(auth.same_json(legacy["graph"], actual_model["graph"]),
+        "legacy capture fixture parameter graph differs")
+    return binding
+
+
 def cpu_harness(request_binding, *, root=ROOT):
     """Same command is later retained by the real native owner; no fake cleanup."""
     started = time.monotonic()
@@ -3112,7 +3127,11 @@ def cpu_harness(request_binding, *, root=ROOT):
 
     os.environ["T_Q4_75_TEST_ROOT"] = str(reader.path(request["outputRoot"] + "/tensor-fixtures"))
     reader.path(request["outputRoot"] + "/tensor-fixtures").mkdir()
-    os.environ["T_Q4_75_MODEL_IDENTITY"] = str(reader.path(request["modelBinding"]["path"]))
+    # The unchanged capture tests pin the historical shape-only metadata SHA.
+    # The new model's own binding remains in request/initialModel and is never
+    # replaced by this fixture, nor are historical weights loaded.
+    capture_fixture_binding = legacy_capture_fixture_binding(reader, actual)
+    os.environ["T_Q4_75_MODEL_IDENTITY"] = str(reader.path(capture_fixture_binding["path"]))
     os.environ["T_Q4_FAILURE_CAPTURE_CPU_OUTPUT_ROOT"] = request["outputRoot"]
     validation_regression_path = request["outputRoot"] + "/validation-loader-regression.json"
     os.environ["T_QV12_VALIDATION_LOADER_REPORT"] = str(reader.path(validation_regression_path))
@@ -3184,6 +3203,8 @@ def cpu_harness(request_binding, *, root=ROOT):
     report = {"schema": worker.CPU_SCHEMA, "status": "passed", "request": request_binding,
         "programBindings": request["programBindings"], "configuration": request["configuration"], "modelBinding": request["modelBinding"],
         "initialModel": actual, "dataClosure": closure_binding, "validationLoaderRegression": validation_regression_binding,
+        "legacyCaptureFixture": {"modelBinding": capture_fixture_binding, "purpose": "synthetic_parameter_shapes_only",
+            "currentModelQualificationInherited": False, "historicalWeightsLoaded": False},
         "passed": result.testsRun,
         "runtimeIdentity": request["runtimeIdentity"],
         "failed": len(result.failures), "errors": len(result.errors), "skipped": len(result.skipped),
@@ -3214,7 +3235,81 @@ class Decode1MemoryReader:
         return raw
 
 
+class NativeTestSourceTransitionCpuTests(unittest.TestCase):
+    def test_registry_snapshot_keeps_original_bytes_and_live_source_has_own_role(self):
+        reader = auth.Reader(ROOT)
+        original = reader.read(auth.ORIGINAL_REGISTRY, auth.PROGRAM_MAX)
+        current = reader.path(auth.ROLES["currentExecutionRegistry"]).read_bytes()
+        self.assertEqual(hashlib.sha256(original).hexdigest(), auth.ORIGINAL_REGISTRY["sha256"])
+        self.assertNotEqual(hashlib.sha256(current).hexdigest(), auth.ORIGINAL_REGISTRY["sha256"])
+        self.assertEqual(auth.ROLES["currentExecutionRegistry"], "src/server/ai-painter-current-execution-registry.mjs")
+        old = {"path": auth.ROLES["currentExecutionRegistry"], "sha256": auth.ORIGINAL_REGISTRY["sha256"]}
+        self.assertEqual(auth.historical_source_binding("source-19", old), auth.ORIGINAL_REGISTRY)
+        self.assertIs(auth.historical_source_binding("source-18", old), old)
+        reader.unchanged()
+
+    def test_registry_snapshot_refuses_retargeting_and_wrong_historical_digest(self):
+        old = {"path": auth.ROLES["currentExecutionRegistry"], "sha256": auth.ORIGINAL_REGISTRY["sha256"]}
+        for changed in ({**old, "sha256": "0" * 64}, {**old, "path": "scripts/foreign.mjs"}):
+            with self.assertRaisesRegex(ValueError, "exact historical registry source"):
+                auth.historical_source_binding("source-19", changed)
+
+    def test_current_registry_role_cannot_be_omitted_from_new_program(self):
+        programs = {role: {"path": logical, "sha256": "0" * 64}
+            for role, logical in {**auth.ROLES, **auth.LOCAL_DEPLOYMENT_DEPENDENCY_ROLES}.items()
+            if role != "currentExecutionRegistry"}
+        with self.assertRaisesRegex(ValueError, "full own source roles"):
+            auth.verify_programs(auth.Reader(ROOT), programs)
+
+    def test_preserved_actual_snapshot_and_identifier_only_current_source(self):
+        reader = auth.Reader(ROOT)
+        original = reader.read(auth.ORIGINAL_NATIVE_TESTS, auth.PROGRAM_MAX)
+        current = reader.path(auth.ROLES["currentLegacyNativeTests"]).read_bytes()
+        auth.verify_native_test_rename(original, current)
+
+    def test_unchanged_or_unrelated_current_source_refused(self):
+        reader = auth.Reader(ROOT)
+        original = reader.read(auth.ORIGINAL_NATIVE_TESTS, auth.PROGRAM_MAX)
+        current = reader.path(auth.ROLES["currentLegacyNativeTests"]).read_bytes()
+        for raw in (original, current + b"\n// unrelated change"):
+            with self.assertRaisesRegex(ValueError, "change beyond identifier rename"):
+                auth.verify_native_test_rename(original, raw)
+
+    def test_only_two_exact_historical_roles_redirect_to_original_snapshot(self):
+        old = {"path": auth.ROLES["currentLegacyNativeTests"], "sha256": auth.ORIGINAL_NATIVE_TESTS["sha256"]}
+        for role in ("source-151", "nativeTests"):
+            self.assertEqual(auth.historical_native_test_binding(role, old), auth.ORIGINAL_NATIVE_TESTS)
+            with self.assertRaisesRegex(ValueError, "exact historical native test role"):
+                auth.historical_native_test_binding(role, {**old, "sha256": "0" * 64})
+        self.assertIs(auth.historical_native_test_binding("source-150", old), old)
+
+
 class Decode1ExecutionCpuTests(unittest.TestCase):
+    def test_capture_fixture_is_pinned_separately_from_new_model_identity(self):
+        reader = auth.Reader(ROOT)
+        original = auth.read_json(reader, auth.FROZEN_PLAN)["modelBinding"]
+        legacy = auth.read_json(reader, original)
+        model_capability = "stage4_mvp256_dry_factorized_ecology_decode1_weight_precision_v1"
+        actual = {"graph": copy.deepcopy(legacy["graph"]), "modelCapabilityVersion": model_capability}
+        self.assertEqual(legacy_capture_fixture_binding(reader, actual), original)
+        self.assertEqual(actual["modelCapabilityVersion"], model_capability)
+        reader.unchanged()
+
+    def test_capture_fixture_rejects_new_identity_or_changed_historical_bytes(self):
+        expected = {"path": ".runtime/ai-painter/ecology-execution-auth-t-q4-71/cpu/model-identity.json",
+            "sha256": "61a05d8d487fad5b96ec5df285ca6eeede772edb41649535f02adba41c827469"}
+        for replacement in ({**expected, "path": "synthetic/new-model.json"}, {**expected, "sha256": "0" * 64}):
+            reader = Decode1MemoryReader()
+            reader.files[auth.FROZEN_PLAN["path"]] = b"unused"
+            with patch.object(auth, "read_json", return_value={"modelBinding": replacement}), \
+                self.assertRaisesRegex(ValueError, "exact legacy capture fixture identity"):
+                legacy_capture_fixture_binding(reader, {"graph": []})
+
+    def test_capture_fixture_rejects_parameter_graph_drift(self):
+        reader = auth.Reader(ROOT)
+        with self.assertRaisesRegex(ValueError, "parameter graph differs"):
+            legacy_capture_fixture_binding(reader, {"graph": []})
+
     def fixture(self):
         reader = Decode1MemoryReader()
         dataset = reader.put("synthetic/dataset.json", {"identityPayload": {"channelOrder": list(ORDER)}})
@@ -3231,10 +3326,10 @@ class Decode1ExecutionCpuTests(unittest.TestCase):
         self.assertEqual(checkpoint.CONFIGURATION_SCHEMA, "ecology-decode1-weight-quality-configuration-v1")
         self.assertIsNone(auth.MODEL_REFERENCE)
 
-    def test_current_formal_bytes_are_exact159(self):
+    def test_current_formal_bytes_are_exact160(self):
         raw = (ROOT / auth.SPECIFICATION["path"]).read_bytes()
         self.assertEqual(hashlib.sha256(raw).hexdigest(), auth.SPECIFICATION["sha256"])
-        self.assertIn(b"AI-PAINTER-SPEC-1.59", raw)
+        self.assertIn(b"AI-PAINTER-SPEC-1.60", raw)
         self.assertIn(b"9.6.42", raw)
         self.assertEqual(checkpoint.SPEC_SHA, auth.SPECIFICATION["sha256"])
 
@@ -3387,7 +3482,7 @@ class Decode1ExecutionCpuTests(unittest.TestCase):
         frozen = auth.read_json(reader, auth.FROZEN_PLAN)["programBindings"]
         neutral = {"scripts/lib/ai-pet-world-storage.mjs", "scripts/lib/ai-painter-autonomous-package-materializer-v1.mjs",
             "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs", "src/server/ai-painter-current-execution-registry.mjs"}
-        expected = {binding["path"] for binding in frozen.values()} | set(auth.ROLES.values()) | neutral | set(auth.LOCAL_DEPLOYMENT_DEPENDENCY_ROLES.values())
+        expected = {auth.historical_source_binding(role, binding)["path"] for role, binding in frozen.items()} | set(auth.ROLES.values()) | neutral | set(auth.LOCAL_DEPLOYMENT_DEPENDENCY_ROLES.values())
         self.assertEqual(unique, len(expected))
 
     def test_qualification_lock_pairs_exact_heartbeat_and_cannot_start_training(self):

@@ -10,9 +10,15 @@ using System.Runtime.InteropServices;
 public static class EndpointCpuOwnedJob {
  public static int Main(string[] a){
   try{string[] command=new string[a.Length-6];Array.Copy(a,6,command,0,command.Length);
-   Result r=Run(a[0],command,a[1],long.Parse(a[2]),int.Parse(a[3]),a[4],a[5]);
+   long deadline=long.Parse(a[2]);int cleanupMs=int.Parse(a[3]);
+   var cutoffs=new HandoffCutoffs(deadline,cleanupMs);
+   Result r=Run(a[0],command,a[1],deadline,cleanupMs,a[4],a[5]);
    string json=new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(r);
-   try{Console.Out.WriteLine("R:"+B64(json));Console.Out.Flush();}catch(IOException){}
+   // The terminal frame shares the caller's existing cleanup reserve. A
+   // blocked/lost consumer must not keep the owner alive beyond that budget.
+   Exception terminalError=null;
+   var terminal=Dedicated(()=>{try{lock(outputLock){Console.Out.WriteLine("R:"+B64(json));Console.Out.Flush();}}catch(Exception ex){terminalError=ex;}});
+   if(!terminal.Wait(Remaining(cutoffs.terminal))||terminalError!=null)return 1;
    return 0;
   }catch(Exception ex){try{Console.Error.WriteLine(ex);}catch{}return 1;}
  }
@@ -56,6 +62,18 @@ public static class EndpointCpuOwnedJob {
  static void Check(bool ok,string name) {if(!ok)throw new Exception(name+":"+Marshal.GetLastWin32Error());}
  static string Quote(string value) {var b=new StringBuilder("\"");int n=0;foreach(char c in value){if(c=='\\'){n++;continue;}if(c=='"'){b.Append('\\',n*2+1);b.Append(c);}else{b.Append('\\',n);b.Append(c);}n=0;}b.Append('\\',n*2);b.Append('"');return b.ToString();}
  static long Now(){return (long)(DateTime.UtcNow-new DateTime(1970,1,1,0,0,0,DateTimeKind.Utc)).TotalMilliseconds;}
+ static int Remaining(long deadline){return (int)Math.Min(Int32.MaxValue,Math.Max(0,deadline-Now()));}
+ // The caller force-stops the owner at phaseEnd-250ms. With the unchanged
+ // 1000ms reserve, stop-time cutoffs are +375/+500/+600/+675/+750ms:
+ // Job/EOF, forwarding, Publish, R, caller force. The final 75ms is exit room.
+ // These are absolute slices of the original budget, never added grace time.
+ class HandoffCutoffs {
+  public long capture,forward,publish,terminal,force;
+  public HandoffCutoffs(long deadline,int cleanupMs){
+   force=checked(deadline+cleanupMs)-Math.Min(250,Math.Max(0,cleanupMs));
+   terminal=force-75;publish=terminal-75;forward=publish-100;capture=forward-125;
+  }
+ }
  static Accounting Stats(IntPtr job){Accounting s;Check(QueryInformationJobObject(job,1,out s,(uint)Marshal.SizeOf(typeof(Accounting)),IntPtr.Zero),"query_job");return s;}
  static Task Dedicated(Action action){return Task.Factory.StartNew(action,CancellationToken.None,TaskCreationOptions.LongRunning,TaskScheduler.Default);}
  static string Limited(Exception error){string text=error.GetType().Name+":"+error.Message;return text.Length>2048?text.Substring(0,2048):text;}
@@ -95,6 +113,9 @@ public static class EndpointCpuOwnedJob {
   }catch(Exception ex){c.error=Limited(ex);}});return c;
  }
  public static Result Run(string executable,string[] args,string cwd,long deadline,int cleanupMs,string receiptPath,string binding) {
+  // deadline is the WORK cutoff, already excluding cleanupMs from the total
+  // phase budget. Derive absolute cutoffs once; never renew time after a stop.
+  var cutoffs=new HandoffCutoffs(deadline,cleanupMs);
   IntPtr job=CreateJobObject(IntPtr.Zero,null);Check(job!=IntPtr.Zero,"create_job");
   var pi=new ProcessInfo();bool assigned=false;var r=new Result();r.ownerPid=GetCurrentProcessId();r.bindingBase64=binding;
   var stdout=new AnonymousPipeServerStream(PipeDirection.In,HandleInheritability.Inheritable);
@@ -119,26 +140,32 @@ public static class EndpointCpuOwnedJob {
     if(Now()>=deadline){r.stopReason="wall_timeout";break;}
     if(transport.error!=null){r.stopReason="stream_transport_error";break;}
     if(Interlocked.Read(ref o.count)>8388608||Interlocked.Read(ref e.count)>8388608){r.stopReason="maxBuffer exceeded";break;}
-    if(WaitForSingleObject(pi.process,25)==0)break;
+    if(WaitForSingleObject(pi.process,(uint)Math.Min(25,Remaining(deadline)))==0)break;
    }
    var before=Stats(job);r.totalProcesses=before.total;
    if(before.active>0&&!TerminateJobObject(job,1))r.cleanupError="TerminateJobObject failed:"+Marshal.GetLastWin32Error();
-   long until=Now()+Math.Max(1,cleanupMs-250);
-   while(Stats(job).active>0&&Now()<until)Thread.Sleep(10);
+   long until=Math.Min(cutoffs.capture,Now()+Math.Max(0,cleanupMs-625));
+   while(Stats(job).active>0&&Now()<until)Thread.Sleep(Math.Min(10,Remaining(until)));
    r.activeProcessesAfterCleanup=Stats(job).active;
    uint code;Check(GetExitCodeProcess(pi.process,out code),"exit_code");r.exitCode=code;
-   try{Task.WaitAll(new[]{o.task,e.task},Math.Max(1,(int)(until-Now())));}catch(Exception ex){r.streamCaptureError=Limited(ex);}
-   r.stdoutClosed=o.task.IsCompleted&&o.eof&&o.error==null;
-   r.stderrClosed=e.task.IsCompleted&&e.eof&&e.error==null;
+   bool capturesCompleted=false;
+   try{capturesCompleted=Task.WaitAll(new[]{o.task,e.task},Remaining(until));}catch(Exception ex){r.streamCaptureError=Limited(ex);}
+   r.stdoutClosed=capturesCompleted&&o.task.IsCompleted&&o.eof&&o.error==null;
+   r.stderrClosed=capturesCompleted&&e.task.IsCompleted&&e.eof&&e.error==null;
    if(!r.stdoutClosed||!r.stderrClosed)r.streamCaptureError=r.streamCaptureError??"stream close unconfirmed";
    if(o.error!=null||e.error!=null)r.streamCaptureError=r.streamCaptureError??(o.error??e.error);
    transport.Complete();
-   // Forward queued frames using only remaining phase time; no deadline extension.
-   try{transport.task.Wait(Math.Max(1,(int)Math.Min(Int32.MaxValue,deadline-Now())));}catch(Exception ex){r.streamTransportError=Limited(ex);}
-   r.transportCompleted=transport.task.IsCompleted&&transport.error==null;
+   // Finish each handoff slice before the unchanged caller force deadline.
+   bool forwarded=false;
+   try{forwarded=transport.task.Wait(Remaining(cutoffs.forward));}catch(Exception ex){r.streamTransportError=Limited(ex);}
+   r.transportCompleted=forwarded&&transport.task.IsCompleted&&transport.error==null;
    if(!r.transportCompleted)r.streamTransportError=r.streamTransportError??transport.error??"stream forwarding deadline";
    r.stdoutBytes=Interlocked.Read(ref o.count);r.stderrBytes=Interlocked.Read(ref e.count);
-   try{Publish(receiptPath,binding,r,(controlError??"")+";"+(r.streamCaptureError??"")+";"+(r.streamTransportError??""));}catch(Exception ex){r.observationError=Limited(ex);}
+   Exception publishError=null;
+   var publication=Dedicated(()=>{try{Publish(receiptPath,binding,r,(controlError??"")+";"+(r.streamCaptureError??"")+";"+(r.streamTransportError??""));}catch(Exception ex){publishError=ex;}});
+   try{if(!publication.Wait(Remaining(cutoffs.publish)))r.observationError="observation publication deadline";
+    else if(publishError!=null)r.observationError=Limited(publishError);
+   }catch(Exception ex){r.observationError=Limited(ex);}
    if(!r.transportCompleted)throw new Exception(r.streamTransportError);
    if(r.stdoutBytes>8388608||r.stderrBytes>8388608)r.stopReason=r.stopReason??"maxBuffer exceeded";
    return r;

@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
-import { readCurrentExecutionRegistry } from '../../src/server/ai-painter-current-execution-registry.mjs'
+import { readCurrentExecutionRegistry, recoverExpiredActiveExecutionToFailedClosed, recoverPreparedCurrentExecutionRegistryAdvance } from '../../src/server/ai-painter-current-execution-registry.mjs'
 
 const GUARD = '.runtime/ai-painter/owned-worker-guards/active.json'
 const REGISTRY = '.runtime/ai-painter/current-execution-registry/current.json'
@@ -50,18 +50,102 @@ function scopedFile(root, logical) {
   return absolute
 }
 
+export function historicalProjectPath(root, absolute) {
+  requireValue(typeof absolute === 'string' && path.isAbsolute(absolute), 'historical_absolute_path_required')
+  const local = path.relative(root, absolute)
+  if (local && !local.startsWith('..') && !path.isAbsolute(local)) return local.replaceAll('\\', '/')
+  const runtime = fs.realpathSync(path.join(root, '.runtime'))
+  const relative = path.relative(runtime, absolute)
+  requireValue(relative && !relative.startsWith('..') && !path.isAbsolute(relative), 'historical_path_outside_runtime')
+  return '.runtime/' + relative.replaceAll('\\', '/')
+}
+
 export function loadRecoveryProfile(root, relative, expectedSha) {
   requireValue(digest(expectedSha), 'profile_sha256_required')
   const file = scopedFile(root, relative)
   const bytes = readFile(file, expectedSha)
   const profile = JSON.parse(bytes)
-  requireValue(profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v1', 'profile_schema_invalid')
+  requireValue(['ai-painter-owned-worker-reboot-recovery-profile-v1', 'ai-painter-owned-worker-reboot-recovery-profile-v2', 'ai-painter-owned-worker-reboot-recovery-profile-v3'].includes(profile.schema), 'profile_schema_invalid')
+  if (profile.schema.endsWith('-v2')) requireValue(profile.failureCase === 'cpu_timeout_missing_native_observation_v1' && profile.observation === null, 'missing_observation_case_invalid')
   requireValue(/^[a-z0-9-]{1,64}$/.test(profile.caseId), 'case_id_invalid')
   requireValue(profile.guard.path === GUARD && profile.registry.path === REGISTRY, 'profile_target_invalid')
   return { profile, profileSha256: expectedSha, profilePath: relative }
 }
 
+const referenceMatches = (actual, expected) => actual && expected
+  && actual.path === expected.path && actual.sha256 === expected.sha256 && digest(actual.sha256)
+
+export function verifyHistoricalFailure(failure, profile, guard, readBound) {
+  if (failure.status === 'failed_closed_post_spawn_receipt_budget_blocked') {
+    requireValue(failure.controllerObservationOnly === true && failure.liveCleanupCertified === false, 'failure_evidence_invalid')
+    requireValue(failure.currentGuardIdentity === guard.identity && failure.currentGuard?.sha256 === profile.guard.sha256
+      && failure.started?.sha256 === profile.started.sha256 && failure.nativeBuild?.sha256 === profile.build.sha256
+      && failure.nativeObservation?.sha256 === profile.observation.sha256, 'failure_chain_mismatch')
+    return
+  }
+  requireValue(failure.schema === 'controller-ns003-pretraining-failure-handoff-v1'
+    && failure.status === 'failed_closed_owned_cpu_receipt_unavailable_guard_retained', 'failure_evidence_invalid')
+  const recovery = failure.recovery, attempted = failure.attempt, failed = failure.failure
+  requireValue(recovery?.identity === guard.identity && referenceMatches(recovery.guard, profile.guard)
+    && recovery.retained === true && recovery.guardRemoved === false && recovery.liveCleanupConfirmed === false
+    && recovery.storedObservationUsedAsReleaseAuthority === false, 'failure_chain_mismatch')
+  requireValue(referenceMatches(failed?.observation, profile.observation)
+    && failed.observationHasReleaseAuthority === false && failed.nativeError === 'stream close unconfirmed', 'failure_chain_mismatch')
+  requireValue(referenceMatches(failure.registry?.binding, profile.registry)
+    && failure.registry.revision === profile.registry.revision && failure.registry.activeExecution === null, 'failure_registry_mismatch')
+  requireValue(failure.results?.trainingStarted === false && failure.results.gpuQualificationExecuted === false
+    && failure.results.realOptimizerUpdates === 0 && failure.independentComponents?.fullOwnedCpuAdmissionGranted === false
+    && attempted?.commandMode === 'prepare-only' && attempted.attempts === 1 && attempted.automaticRetries === 0
+    && attempted.cpuReportPresent === false && attempted.cpuAcceptancePresent === false, 'failure_scope_invalid')
+  const output = '.runtime/ai-painter/ecology-decode1-weight-quality-executions/' + attempted.runId
+  requireValue(typeof attempted.runId === 'string' && /^[a-z0-9][a-z0-9-]{7,127}$/.test(attempted.runId)
+    && attempted.request?.path === output + '/cpu-request.json' && attempted.consumed?.path === output + '/cpu-entry/consumed.json'
+    && failed.nativeErrorEvidence?.path === profile.observation.path + '.error', 'failure_artifact_path_mismatch')
+  const request = JSON.parse(readBound(attempted.request))
+  const consumed = JSON.parse(readBound(attempted.consumed))
+  requireValue(request.schema === 'ecology-decode1-weight-quality-cpu-request-v1'
+    && request.runId === attempted.runId && request.packageId === attempted.packageId && request.outputRoot === output + '/cpu-entry'
+    && consumed.attempt === 1 && consumed.retries === 0 && referenceMatches(consumed.request, attempted.request), 'failure_consumed_request_mismatch')
+  requireValue(readBound(failed.nativeErrorEvidence).toString('utf8').split(/\r?\n/u)[0] === 'System.Exception: ' + failed.nativeError, 'failure_native_error_mismatch')
+}
+
+export function normalizePreBootObservation(pre, profile, guard, readBound) {
+  if (pre.schema !== 'controller-current-guard-recovery-readonly-review-v1') return pre
+  requireValue(pre.caseGuardIdentity === guard.identity && referenceMatches(pre.inputs?.guard, profile.guard)
+    && referenceMatches(pre.inputs?.registry, profile.registry) && referenceMatches(pre.inputs?.started, profile.started)
+    && referenceMatches(pre.inputs?.build, profile.build) && referenceMatches(pre.inputs?.observation, profile.observation)
+    && referenceMatches(pre.inputs?.failure, profile.failure), 'pre_boot_chain_mismatch')
+  requireValue(pre.checks?.activeExecution === null && pre.checks.registryRevision === profile.registry.revision
+    && pre.effects?.guardChanged === false && pre.effects.registryChanged === false && pre.effects.recoveryApplied === false
+    && pre.effects.historicalCleanupCertified === false && pre.effects.oldExecutionMayReplay === false, 'pre_boot_readonly_scope_invalid')
+  const provider = profile.preBootProgramSnapshot
+  requireValue(provider && provider.sha256 === pre.inputs?.recoveryProgram?.sha256
+    && pre.inputs.recoveryProgram.path === 'scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs'
+    && profile.programBindings?.some(b => referenceMatches(b, provider)), 'pre_boot_provider_snapshot_missing')
+  readBound(provider)
+  requireValue(digest(pre.host?.MachineIdentitySha256) && pre.host.BootProvider === 'Microsoft-Windows-Kernel-General'
+    && pre.host.BootEventId === 12 && Number.isSafeInteger(pre.host.BootEventRecordId)
+    && Math.abs(time(pre.host.OsBootUtc) - time(pre.host.BootEventUtc)) <= 1000
+    && time(pre.host.ObservedUtc) <= time(pre.recordedAtUtc), 'pre_boot_host_observation_invalid')
+  // Preserve the actual prior observation time and kernel cycle; no backdating
+  // or replacement of the fresh current-host query used by evaluateRecovery.
+  return { guardIdentity: pre.caseGuardIdentity, guard: pre.inputs.guard, registry: pre.inputs.registry,
+    activeExecution: pre.checks.activeExecution, host: pre.host }
+}
+
 export function verifyHistoricalInputs(root, profile) {
+  if (profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v3') return verifyTrainingKernelInputs(root, profile)
+  if (profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v2') return verifyCpuTimeoutInputs(root, profile, true)
+  if (profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v1' && profile.failureCase === 'cpu_timeout_observation_only_v1') return verifyCpuTimeoutInputs(root, profile, false)
+  // Check declared roles before a stale source digest can obscure a missing
+  // required verifier. Historical file content is still rehashed below.
+  if (profile.programBindings !== undefined) {
+    requireValue(Array.isArray(profile.programBindings) && profile.programBindings.length <= 16, 'program_bindings_invalid')
+    for (const binding of profile.programBindings) requireValue(digest(binding.sha256), 'program_sha256_required')
+    for (const required of ['docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md', 'scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs', 'scripts/run-ai-painter-owned-worker-reboot-recovery.mjs', 'src/server/ai-painter-current-execution-registry.mjs']) {
+      requireValue(profile.programBindings.some(b => b.path === required), 'required_program_not_bound')
+    }
+  }
   const loaded = {}
   for (const key of ['guardSnapshot', 'started', 'build', 'observation', 'failure', 'preBoot']) {
     const binding = profile[key]
@@ -74,25 +158,29 @@ export function verifyHistoricalInputs(root, profile) {
   const build = loaded.build.value
   const observation = loaded.observation.value
   const failure = loaded.failure.value
-  const pre = loaded.preBoot.value
+  const readBound = binding => {
+    requireValue(binding && digest(binding.sha256), 'historical_binding_invalid')
+    return readFile(scopedFile(root, binding.path), binding.sha256)
+  }
+  const pre = normalizePreBootObservation(loaded.preBoot.value, profile, g, readBound)
   requireValue(sha256(loaded.guardSnapshot.bytes) === profile.guard.sha256 && g.identity === profile.guardIdentity, 'historical_guard_identity_mismatch')
   const { ownerPid, commandBinding, ...startedGuard } = started
   requireValue(same(startedGuard, g) && Number.isInteger(ownerPid) && ownerPid > 0, 'started_guard_mismatch')
   requireValue(commandBinding === observation.bindingBase64 && observation.ownerPid === ownerPid, 'native_binding_mismatch')
   const binding = JSON.parse(Buffer.from(commandBinding, 'base64').toString('utf8'))
   requireValue(same(binding.guard, g) && binding.guardSha256 === profile.guard.sha256 && same(binding.nativeBuild, build), 'native_chain_mismatch')
-  requireValue(path.resolve(binding.scope) === root && path.resolve(g.startedEvidence) === scopedFile(root, profile.started.path), 'native_scope_mismatch')
+  const startedFile = scopedFile(root, historicalProjectPath(root, g.startedEvidence))
+  requireValue(path.resolve(binding.scope) === root && fs.realpathSync(startedFile) === fs.realpathSync(scopedFile(root, profile.started.path)), 'native_scope_mismatch')
   requireValue(observation.authority === 'observation_only_no_release_authority' && observation.assignedBeforeResume === true, 'observation_authority_invalid')
-  requireValue(failure.status === 'failed_closed_post_spawn_receipt_budget_blocked' && failure.controllerObservationOnly === true && failure.liveCleanupCertified === false, 'failure_evidence_invalid')
-  requireValue(failure.currentGuardIdentity === g.identity && failure.currentGuard.sha256 === profile.guard.sha256 && failure.started.sha256 === profile.started.sha256 && failure.nativeBuild.sha256 === profile.build.sha256 && failure.nativeObservation.sha256 === profile.observation.sha256, 'failure_chain_mismatch')
+  verifyHistoricalFailure(failure, profile, g, readBound)
   requireValue(pre.guardIdentity === g.identity && pre.guard.sha256 === profile.guard.sha256 && pre.registry.sha256 === profile.registry.sha256 && pre.activeExecution === null, 'pre_boot_chain_mismatch')
-  requireValue(time(pre.host.OsBootUtc) < time(g.recordedAtUtc) && time(g.recordedAtUtc) < time(pre.host.ObservedUtc), 'pre_boot_time_order_invalid')
+  requireValue(time(pre.host.OsBootUtc) <= time(pre.host.ObservedUtc) && time(g.recordedAtUtc) < time(pre.host.ObservedUtc), 'pre_boot_time_order_invalid')
   requireValue(same(g.nativeOwnerSource, build.source), 'native_source_mismatch')
   for (const [file, expected] of [[build.snapshot, build.source.sha256], [build.binary, build.binarySha256]]) {
-    const relative = path.relative(root, file)
+    const relative = historicalProjectPath(root, file)
     readFile(scopedFile(root, relative), expected)
   }
-  readFile(scopedFile(root, path.relative(root, build.source.path)), build.source.sha256)
+  readFile(scopedFile(root, historicalProjectPath(root, build.source.path)), build.source.sha256)
   readFile(scopedFile(root, profile.helperSnapshot.path), g.helperSha256)
   requireValue(profile.helperSnapshot.sha256 === g.helperSha256, 'helper_binding_mismatch')
   verifyExecutable(g.executable, g.executableSha256)
@@ -105,6 +193,105 @@ export function verifyHistoricalInputs(root, profile) {
     requireValue(profile.programBindings.some(b => b.path === required), 'required_program_not_bound')
   }
   return { guard: g, guardBytes: loaded.guardSnapshot.bytes, started, observation, preBoot: pre, inputs: profile }
+}
+
+// V2 is a narrowly versioned historical failure reader, not cleanup proof.
+// All current host/registry checks and the quarantine transaction stay shared.
+function verifyCpuTimeoutInputs(root, profile, missing) {
+  requireValue(missing ? profile.failureCase === 'cpu_timeout_missing_native_observation_v1' && profile.observation === null
+    : profile.failureCase === 'cpu_timeout_observation_only_v1' && profile.observation && profile.missingObservationPath === null, 'missing_observation_case_invalid')
+  const readBound = binding => {
+    requireValue(binding && digest(binding.sha256), 'historical_binding_invalid')
+    return readFile(scopedFile(root, binding.path), binding.sha256)
+  }
+  requireValue(Array.isArray(profile.programBindings) && profile.programBindings.length <= 16, 'program_bindings_invalid')
+  for (const required of ['docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md', 'scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs', 'scripts/run-ai-painter-owned-worker-reboot-recovery.mjs', 'src/server/ai-painter-current-execution-registry.mjs']) {
+    requireValue(profile.programBindings.some(b => b.path === required), 'required_program_not_bound')
+  }
+  for (const binding of profile.programBindings) readBound(binding)
+  const norm = profile.programBindings.find(b => b.path === 'docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md')
+  if (missing) requireValue(readBound(norm).toString('utf8').includes('AI-PAINTER-REVIEW-STORAGE-1.19'), 'missing_observation_rule_not_bound')
+  const loaded = {}
+  for (const key of ['guardSnapshot', 'started', 'build', 'failure', 'receipt', 'request', 'consumed', 'preBoot']) {
+    requireValue(profile[key], `missing_${key}_binding`)
+    const bytes = readBound(profile[key]); loaded[key] = { bytes, value: JSON.parse(bytes) }
+  }
+  const guard = loaded.guardSnapshot.value, started = loaded.started.value, build = loaded.build.value
+  const failure = loaded.failure.value, receipt = loaded.receipt.value, request = loaded.request.value, consumed = loaded.consumed.value
+  requireValue(profile.guard.path === GUARD && profile.registry.path === REGISTRY && digest(profile.registry.sha256)
+    && sha256(loaded.guardSnapshot.bytes) === profile.guard.sha256 && guard.identity === profile.guardIdentity, 'historical_guard_identity_mismatch')
+  const { ownerPid, commandBinding, ...startedGuard } = started
+  requireValue(same(startedGuard, guard) && Number.isInteger(ownerPid) && ownerPid > 0, 'started_guard_mismatch')
+  requireValue(typeof commandBinding === 'string' && Buffer.from(commandBinding, 'base64').toString('base64') === commandBinding, 'native_binding_mismatch')
+  const command = JSON.parse(Buffer.from(commandBinding, 'base64').toString('utf8'))
+  requireValue(same(command.guard, guard) && command.guardSha256 === profile.guard.sha256
+    && same(command.nativeBuild, build) && path.resolve(command.scope) === root, 'native_chain_mismatch')
+  requireValue(historicalProjectPath(root, guard.startedEvidence) === profile.started.path, 'native_scope_mismatch')
+  requireValue(same(guard.nativeOwnerSource, build.source), 'native_source_mismatch')
+  for (const [file, expected] of [[build.snapshot, build.source.sha256], [build.binary, build.binarySha256]]) readFile(scopedFile(root, historicalProjectPath(root, file)), expected)
+  requireValue(path.dirname(build.snapshot) === path.dirname(build.binary), 'native_build_directory_mismatch')
+  requireValue(profile.helperSnapshot?.sha256 === guard.helperSha256, 'helper_binding_mismatch'); readBound(profile.helperSnapshot)
+  verifyExecutable(guard.executable, guard.executableSha256)
+
+  const output = '.runtime/ai-painter/ecology-decode1-weight-quality-executions/' + request.runId
+  requireValue(request.schema === 'ecology-decode1-weight-quality-cpu-request-v1'
+    && /^[a-z0-9][a-z0-9-]{7,127}$/.test(request.runId) && typeof request.packageId === 'string'
+    && profile.request.path === output + '/cpu-request.json' && request.outputRoot === output + '/cpu-entry'
+    && profile.consumed.path === output + '/cpu-entry/consumed.json'
+    && consumed.attempt === 1 && consumed.retries === 0 && referenceMatches(consumed.request, profile.request), 'failure_consumed_request_mismatch')
+  requireValue(request.programBindings?.nativeOwnerSource?.sha256 === build.source.sha256
+    && request.programBindings?.nativeRunner?.sha256 === guard.helperSha256, 'failure_request_source_mismatch')
+  requireValue(profile.receipt.path === output + '/owned-cpu-' + guard.identity + '/release-receipt.json'
+    && profile.failure.path.startsWith(output + '/native-failure-' + guard.identity + '-') && profile.failure.path.endsWith('.json'), 'failure_artifact_path_mismatch')
+  requireValue(failure.schema === 'ecology-decode1-quality-native-failure-v1' && failure.status === 'failed_closed'
+    && failure.executionState === 'failed_closed' && failure.phase === 'cpu' && failure.stage === 'preparation'
+    && failure.callIdentity === guard.identity && failure.runId === request.runId && failure.packageId === request.packageId
+    && typeof request.configuration?.capabilityVersion === 'string' && failure.capabilityVersion === request.configuration.capabilityVersion
+    && failure.automaticRetries === 0 && failure.privateCpuFixture === false, 'failure_scope_invalid')
+  for (const flag of ['cleanupQualificationGranted', 'guardReleaseGranted', 'normalWriteQualificationGranted']) requireValue(failure[flag] === false, 'failure_qualification_claimed')
+  requireValue(receipt.schema === 'detail-weight-live-native-owner-receipt-v1' && receipt.phase === 'cpu'
+    && receipt.stopReason === 'wall_timeout' && receipt.proof === null && receipt.ownerClosed === false
+    && receipt.processCleanupConfirmed === false && receipt.cleanupConfirmed === false
+    && receipt.ownerIdentity?.pid === ownerPid && receipt.ownerIdentity.identitySource === 'retained_child_handle'
+    && receipt.guard?.identity === guard.identity && receipt.guard.state === 'retained'
+    && historicalProjectPath(root, receipt.guard.path) === GUARD && same(receipt.nativeBuild, build), 'failure_receipt_mismatch')
+  requireValue(failure.primaryError?.reason === 'wall_timeout'
+    || failure.primaryError?.code === 'EPIPE' && failure.primaryError.reason === 'native_io_failure' && receipt.protocolError === 'Error: write EPIPE', 'failure_reason_not_supported')
+  requireValue(failure.streamObservation?.closureVersion === null && failure.streamObservation?.stdoutClosed === null
+    && failure.streamObservation?.stderrClosed === null && failure.streamObservation?.transportCompleted === null, 'failure_stream_proof_conflict')
+  const expected = historicalProjectPath(root, path.join(path.dirname(build.binary), 'cleanup-observation.json'))
+  let observation = null
+  if (missing) {
+    requireValue(profile.missingObservationPath === expected, 'missing_observation_path_mismatch')
+    const parent = scopedFile(root, historicalProjectPath(root, build.binary))
+    const directory = path.dirname(parent), beforeDirectory = fs.lstatSync(directory, { bigint: true })
+    requireValue(beforeDirectory.isDirectory() && !beforeDirectory.isSymbolicLink(), 'native_build_directory_mismatch')
+    try { fs.lstatSync(path.join(directory, 'cleanup-observation.json')); throw new Error('native_observation_exists') }
+    catch (error) { if (error.code !== 'ENOENT') throw error }
+    const afterDirectory = fs.lstatSync(directory, { bigint: true })
+    requireValue(afterDirectory.isDirectory() && !afterDirectory.isSymbolicLink()
+      && afterDirectory.dev === beforeDirectory.dev && afterDirectory.ino === beforeDirectory.ino, 'native_build_directory_changed')
+  } else {
+    requireValue(profile.observation.path === expected, 'native_observation_path_mismatch')
+    observation = JSON.parse(readBound(profile.observation))
+    requireValue(observation.authority === 'observation_only_no_release_authority' && observation.assignedBeforeResume === true
+      && observation.ownerPid === ownerPid && observation.bindingBase64 === commandBinding
+      && Number.isInteger(observation.rootPid) && observation.rootPid > 0, 'observation_authority_invalid')
+  }
+
+  const pre = loaded.preBoot.value
+  requireValue(pre.schema === (missing ? 'ai-painter-missing-native-observation-preboot-v1' : 'ai-painter-cpu-timeout-preboot-v1') && pre.guardIdentity === guard.identity
+    && pre.nativeObservationMissing === missing && pre.missingObservationPath === (missing ? expected : null)
+    && pre.cleanupAuthority === false && pre.recoveryExecuted === false, 'pre_boot_chain_mismatch')
+  for (const key of ['guard', 'registry', 'started', 'build', 'failure', 'receipt', 'request', 'consumed', 'helperSnapshot']) requireValue(referenceMatches(pre.inputs?.[key], profile[key]), 'pre_boot_chain_mismatch')
+  if (!missing) requireValue(referenceMatches(pre.inputs.observation, profile.observation), 'pre_boot_chain_mismatch')
+  requireValue(pre.inputs.registry.revision === profile.registry.revision, 'pre_boot_chain_mismatch')
+  requireValue(digest(pre.host?.MachineIdentitySha256) && pre.host.BootProvider === 'Microsoft-Windows-Kernel-General'
+    && pre.host.BootEventId === 12 && Number.isSafeInteger(pre.host.BootEventRecordId)
+    && Math.abs(time(pre.host.OsBootUtc) - time(pre.host.BootEventUtc)) <= 1000
+    && time(guard.recordedAtUtc) < time(failure.recordedAtUtc) && time(failure.recordedAtUtc) < time(pre.host.ObservedUtc)
+    && time(pre.host.ObservedUtc) <= time(pre.recordedAtUtc), 'pre_boot_host_observation_invalid')
+  return { guard, guardBytes: loaded.guardSnapshot.bytes, started, observation, preBoot: { host: pre.host }, inputs: profile, nativeObservationMissing: missing }
 }
 
 export function evaluateRecovery({ historical, registry, host, currentGuardSha256, now = Date.now(), auditPid = process.pid }) {
@@ -122,7 +309,7 @@ export function evaluateRecovery({ historical, registry, host, currentGuardSha25
     check(registry.ok === true && registry.registrySha256 === inputs.registry.sha256 && registry.registry?.registryRevision === inputs.registry.revision && registry.registry?.activeExecution === null, 'REC-BOOT-003:registry_conflict_or_unverified')
     check(currentGuardSha256 === inputs.guard.sha256, 'REC-BOOT-002:current_guard_mismatch')
     check(host.ProcessQueryComplete === true && Array.isArray(host.Processes) && host.Processes.length <= 8192, 'REC-BOOT-003:process_query_incomplete')
-    const oldPids = new Set([guard.runnerPid, started.ownerPid, observation.rootPid])
+    const oldPids = new Set([guard.runnerPid, started.ownerPid, observation?.rootPid].filter(pid => Number.isInteger(pid) && pid > 0))
     const seen = new Set()
     for (const p of host.Processes ?? []) {
       check(Number.isInteger(p.Pid) && p.Pid >= 0 && !seen.has(p.Pid), 'REC-BOOT-003:process_identity_invalid')
@@ -166,7 +353,212 @@ export async function auditBoundRecovery(root, bound) {
   const active = path.join(root, GUARD)
   const currentGuardSha256 = fs.existsSync(active) ? sha256(readFile(active)) : null
   const decision = evaluateRecovery({ historical, registry, host, currentGuardSha256 })
-  return { ...decision, schema: 'ai-painter-owned-worker-reboot-recovery-audit-v1', caseId: bound.profile.caseId, recordedAtUtc: new Date().toISOString(), profileSha256: bound.profileSha256, host, registry: { ok: registry.ok, errorCode: registry.errorCode ?? null, sha256: registry.registrySha256, revision: registry.registry?.registryRevision ?? null, activeExecution: registry.registry?.activeExecution ?? null }, guardSha256: currentGuardSha256 }
+  if (bound.profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v3') {
+    requireValue(registry.ok && registry.registry?.activeExecution === null, 'interruption_terminal_not_registered')
+    requireValue(registry.currentTaskTerminal?.schemaVersion === 'ai-painter-training-system-interruption-terminal-v1'
+      && registry.currentTaskTerminal.profileSha256 === bound.profileSha256
+      && referenceMatches(registry.currentTaskTerminal.originalRegistry, bound.profile.registry)
+      && registry.currentTaskTerminal.status === 'training_system_interrupted', 'interruption_terminal_mismatch')
+    const adjusted = { ...registry, registrySha256: bound.profile.registry.sha256,
+      registry: { ...registry.registry, registryRevision: bound.profile.registry.revision } }
+    Object.assign(decision, evaluateRecovery({ historical, registry: adjusted, host, currentGuardSha256 }))
+    requireValue(time(host.OsBootUtc) > time(historical.progress.updatedAtUtc), 'interruption_boot_before_progress')
+  }
+  return { ...decision, schema: 'ai-painter-owned-worker-reboot-recovery-audit-v1', caseId: bound.profile.caseId, recordedAtUtc: new Date().toISOString(), profileSha256: bound.profileSha256, nativeObservationMissing: historical.nativeObservationMissing === true, failure: bound.profile.failure, receipt: bound.profile.receipt ?? null, host, registry: { ok: registry.ok, errorCode: registry.errorCode ?? null, sha256: registry.registrySha256, revision: registry.registry?.registryRevision ?? null, activeExecution: registry.registry?.activeExecution ?? null }, guardSha256: currentGuardSha256 }
+}
+
+// Original source bytes may be embedded in a hash-bound immutable ledger after an
+// approved repair. This reader is used only for historical interruption evidence.
+export function readInterruptionBinding(root, profile, binding) {
+  requireValue(binding && digest(binding.sha256), 'interruption_binding_invalid')
+  const saved = (profile.byteLedgers ?? []).find(item => referenceMatches(item.original, binding))
+  if (!saved) return readFile(scopedFile(root, binding.path), binding.sha256)
+  const ledger = JSON.parse(readFile(scopedFile(root, saved.ledger.path), saved.ledger.sha256))
+  const entries = Array.isArray(ledger) ? ledger : ledger.sources
+  requireValue(Array.isArray(entries), 'interruption_byte_ledger_invalid')
+  const candidates = entries.filter(item => item.path === binding.path && item.sha256 === binding.sha256)
+  requireValue(candidates.length === 1 && typeof candidates[0].utf8 === 'string', 'interruption_original_bytes_missing')
+  const bytes = Buffer.from(candidates[0].utf8, 'utf8')
+  requireValue(sha256(bytes) === binding.sha256, 'interruption_original_bytes_mismatch')
+  return bytes
+}
+
+function requireAbsent(root, relative) {
+  const parent = fs.realpathSync(path.dirname(path.resolve(root, relative)))
+  requireValue(parent === fs.realpathSync(path.resolve(root, path.dirname(relative))), 'interruption_parent_changed')
+  try { fs.lstatSync(path.join(parent, path.basename(relative))); throw new Error('interruption_original_terminal_or_observation_present') }
+  catch (error) { if (error.code !== 'ENOENT') throw error }
+}
+
+export function verifyTrainingKernelInputs(root, profile) {
+  requireValue(profile.failureCase === 'training_kernel_interruption_v1', 'interruption_case_invalid')
+  requireValue(Array.isArray(profile.byteLedgers) && profile.byteLedgers.length <= 16, 'interruption_ledgers_invalid')
+  const seen = new Set()
+  for (const item of profile.byteLedgers) {
+    requireValue(item.original && digest(item.original.sha256) && !seen.has(item.original.path), 'interruption_ledger_duplicate')
+    seen.add(item.original.path)
+    readInterruptionBinding(root, profile, item.original)
+  }
+  requireValue(Array.isArray(profile.programBindings) && profile.programBindings.length <= 16, 'program_bindings_invalid')
+  for (const required of ['docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md', 'scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs', 'scripts/run-ai-painter-owned-worker-reboot-recovery.mjs', 'src/server/ai-painter-current-execution-registry.mjs']) {
+    requireValue(profile.programBindings.some(b => b.path === required), 'required_program_not_bound')
+  }
+  for (const binding of profile.programBindings) readFile(scopedFile(root, binding.path), binding.sha256)
+  const rule = profile.programBindings.find(b => b.path === 'docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md')
+  requireValue(readFile(scopedFile(root, rule.path), rule.sha256).toString('utf8').includes('training_kernel_interruption_v1'), 'interruption_rule_not_bound')
+  const cache = new Map()
+  let evidenceBytes = 0
+  const read = binding => {
+    const key = `${binding?.path}:${binding?.sha256}`
+    if (!cache.has(key)) {
+      const bytes = readInterruptionBinding(root, profile, binding)
+      evidenceBytes += bytes.length
+      requireValue(evidenceBytes <= 16 * 1024 * 1024, 'interruption_input_budget_exceeded')
+      cache.set(key, bytes)
+    }
+    return cache.get(key)
+  }
+  const value = binding => JSON.parse(read(binding))
+  const guardBytes = read(profile.guard), guard = JSON.parse(guardBytes)
+  const registry = value(profile.registry), started = value(profile.started), build = value(profile.build)
+  const plan = value(profile.plan), pkg = value(profile.executionPackage), progress = value(profile.progress)
+  requireValue(plan.schema === 'ecology-decode1-weight-quality-plan-v1'
+    && pkg.schemaVersion === 'ai-painter-autonomous-closed-loop-package-v1', 'interruption_original_schema_invalid')
+  requireValue(profile.guard.path === GUARD && profile.registry.path === REGISTRY
+    && profile.registry.revision === registry.registryRevision && guard.identity === profile.guardIdentity, 'interruption_original_identity_invalid')
+  const active = registry.activeExecution
+  requireValue(active && registry.executionState === 'executing' && active.executionState === 'executing'
+    && active.processId === guard.runnerPid && registry.runId === plan.runId && registry.packageId === plan.packageId
+    && registry.capabilityVersion === plan.capabilityVersion && pkg.packageIdentity === plan.packageId
+    && pkg.capabilityVersion === plan.capabilityVersion, 'interruption_run_package_mismatch')
+  requireValue(referenceMatches(active.lock, profile.executionLock), 'interruption_lock_binding_mismatch')
+  const lock = value(profile.executionLock)
+  for (const key of ['runId', 'packageId', 'capabilityVersion', 'processId', 'processStartIdentity']) {
+    requireValue(lock[key] === active[key], 'interruption_execution_lock_mismatch')
+  }
+  requireValue(profile.heartbeat.path === active.heartbeat.path && active.heartbeat.ttlSeconds === 120, 'interruption_heartbeat_path_mismatch')
+  const heartbeatBytes = read(profile.heartbeat)
+  requireValue(heartbeatBytes.length > 0 && heartbeatBytes.length <= 65536, 'interruption_heartbeat_size_invalid')
+  if (!heartbeatBytes.every(byte => byte === 0)) {
+    const heartbeat = JSON.parse(heartbeatBytes)
+    requireValue(heartbeat.schemaVersion === 'ai-painter-current-active-execution-heartbeat-v1'
+      && heartbeat.executionState === 'executing' && heartbeat.ttlSeconds === active.heartbeat.ttlSeconds, 'interruption_heartbeat_invalid')
+    for (const key of ['runId', 'packageId', 'capabilityVersion', 'processId', 'processStartIdentity']) requireValue(heartbeat[key] === active[key], 'interruption_heartbeat_identity_mismatch')
+    requireValue(Date.now() - time(heartbeat.heartbeatAtUtc) > active.heartbeat.ttlSeconds * 1000, 'interruption_heartbeat_not_expired')
+  }
+  requireValue(progress.runId === plan.runId && progress.packageId === plan.packageId && progress.capabilityVersion === plan.capabilityVersion
+    && progress.executionState === 'executing' && progress.selectedCheckpoint === null
+    && Number.isSafeInteger(progress.optimizerStepsGenerator) && progress.optimizerStepsGenerator > 0 && progress.optimizerStepsGenerator <= 576
+    && Number.isSafeInteger(progress.optimizerStepsDiscriminator) && progress.optimizerStepsDiscriminator > 0 && progress.optimizerStepsDiscriminator <= 576, 'interruption_progress_mismatch')
+  const output = '.runtime/ai-painter/ecology-decode1-weight-quality-executions/' + plan.runId
+  requireValue(plan.outputRoot === output && profile.plan.path === output + '/quality-plan.json'
+    && profile.progress.path === output + '/progress.json' && profile.executionLock.path === output + '/execution-lock.json', 'interruption_output_scope_invalid')
+  requireValue(pkg.inputEvidence.some(item => referenceMatches(item, profile.plan)), 'interruption_package_plan_mismatch')
+  for (const key of ['trainingConsumed', 'executionConsumed']) {
+    const consumed = value(profile[key])
+    requireValue(profile[key].path === output + (key === 'trainingConsumed' ? '/training-consumed.json' : '/execution-consumed.json')
+      && consumed.attempt === 1 && consumed.automaticRetries === 0 && referenceMatches(consumed.executionPackage, profile.executionPackage), 'interruption_consumption_mismatch')
+  }
+  requireValue(Object.keys(active.programLineage).length === Object.keys(pkg.programLineage).length
+    && Object.entries(active.programLineage).every(([role, binding]) => binding.sha256 === pkg.programLineage[role]
+      && referenceMatches(binding, plan.programBindings[role])), 'interruption_lineage_mismatch')
+  for (const bindings of [plan.programBindings, active.programLineage]) {
+    requireValue(bindings && Object.keys(bindings).length > 0 && Object.keys(bindings).length <= 256, 'interruption_lineage_limit_invalid')
+    for (const binding of Object.values(bindings)) read(binding)
+  }
+  const { ownerPid, commandBinding, ...startedGuard } = started
+  requireValue(same(startedGuard, guard) && Number.isInteger(ownerPid) && ownerPid > 0, 'started_guard_mismatch')
+  const command = JSON.parse(Buffer.from(commandBinding, 'base64').toString('utf8'))
+  requireValue(same(command.guard, guard) && command.guardSha256 === profile.guard.sha256
+    && same(command.nativeBuild, build) && path.resolve(command.scope) === path.resolve(root), 'native_chain_mismatch')
+  requireValue(historicalProjectPath(root, guard.startedEvidence) === profile.started.path
+    && same(guard.nativeOwnerSource, build.source), 'native_scope_mismatch')
+  for (const [file, expected] of [[build.snapshot, build.source.sha256], [build.binary, build.binarySha256]]) readFile(scopedFile(root, historicalProjectPath(root, file)), expected)
+  requireValue(profile.helperSnapshot.sha256 === guard.helperSha256, 'helper_binding_mismatch'); read(profile.helperSnapshot)
+  verifyExecutable(guard.executable, guard.executableSha256)
+  requireValue(profile.missingObservationPath === historicalProjectPath(root, path.join(path.dirname(build.binary), 'cleanup-observation.json')), 'missing_observation_path_mismatch')
+  requireAbsent(root, profile.missingObservationPath)
+  for (const name of ['worker-terminal.json', 'finalization.json']) requireAbsent(root, output + '/' + name)
+  const preBoot = value(profile.preBoot)
+  requireValue(preBoot.host && digest(preBoot.host.MachineIdentitySha256)
+    && preBoot.host.BootProvider === 'Microsoft-Windows-Kernel-General' && preBoot.host.BootEventId === 12
+    && Math.abs(time(preBoot.host.OsBootUtc) - time(preBoot.host.BootEventUtc)) <= 1000
+    && time(preBoot.host.ObservedUtc) >= time(preBoot.host.OsBootUtc)
+    && time(preBoot.host.ObservedUtc) < time(guard.recordedAtUtc)
+    && time(progress.updatedAtUtc) > time(guard.recordedAtUtc), 'interruption_prior_host_invalid')
+  return { guard, guardBytes, started, observation: null, preBoot, progress, registry, plan, inputs: profile, nativeObservationMissing: true,
+    readProgramBinding: binding => ({ path: binding.path, sha256: binding.sha256, bytes: read(binding) }) }
+}
+
+export function verifyKernelInterruptionHost(historical, host, auditPid = process.pid) {
+  const inputs = historical.inputs
+  const registry = { ok: true, registrySha256: inputs.registry.sha256, registry: { registryRevision: inputs.registry.revision, activeExecution: null } }
+  const result = evaluateRecovery({ historical, registry, host, currentGuardSha256: inputs.guard.sha256, auditPid })
+  requireValue(result.status === 'eligible_for_quarantine', result.errors.join(';') || 'interruption_host_blocked')
+  requireValue(time(host.OsBootUtc) > time(historical.progress.updatedAtUtc), 'interruption_boot_before_progress')
+  return result
+}
+
+export function verifyLiveInterruptionGuard(root, profile) {
+  readFile(scopedFile(root, GUARD), profile.guard.sha256)
+}
+
+export async function registerTrainingKernelInterruption(root, bound) {
+  const historical = verifyTrainingKernelInputs(root, bound.profile)
+  const host = queryNativeHost()
+  verifyKernelInterruptionHost(historical, host)
+  const base = path.join(root, '.runtime/ai-painter/owned-worker-guards', `reboot-recovery-${bound.profile.caseId}`)
+  // Registry records live outside the quarantine transaction's private archive.
+  const records = base + '-registration'
+  fs.mkdirSync(records, { recursive: true })
+  requireValue(!fs.lstatSync(records).isSymbolicLink(), 'interruption_record_directory_invalid')
+  const reportPath = historicalProjectPath(root, path.join(records, 'report.json'))
+  const terminalPath = historicalProjectPath(root, path.join(records, 'terminal.json'))
+  const capsulePath = historicalProjectPath(root, path.join(records, 'capsule.json'))
+  const identities = { capabilityVersion: historical.registry.capabilityVersion, packageId: historical.registry.packageId, runId: historical.registry.runId }
+  if (!fs.existsSync(path.join(records, 'report.json'))) {
+    writeExclusive(path.join(records, 'report.json'), { schemaVersion: 'ai-painter-training-system-interruption-report-v1',
+      recordedAtUtc: new Date().toISOString(), ...identities, profileSha256: bound.profileSha256,
+      originalRegistry: bound.profile.registry, heartbeat: bound.profile.heartbeat, host,
+      lastDurableProgress: historical.progress, modelRootCauseEstablished: false,
+      historicalCleanupCertified: false, oldExecutionMayReplay: false, trainingQualificationGranted: false })
+  }
+  const reportBytes = readFile(path.join(records, 'report.json'))
+  requireValue(JSON.parse(reportBytes).profileSha256 === bound.profileSha256, 'interruption_report_conflict')
+  if (!fs.existsSync(path.join(records, 'terminal.json'))) {
+    writeExclusive(path.join(records, 'terminal.json'), { schemaVersion: 'ai-painter-training-system-interruption-terminal-v1',
+      recordedAtUtc: new Date().toISOString(), ...identities, executionState: 'failed_closed', status: 'training_system_interrupted',
+      profileSha256: bound.profileSha256, originalRegistry: bound.profile.registry,
+      recoveryReport: { path: reportPath, sha256: sha256(reportBytes) }, lastDurableProgress: historical.progress,
+      selectedCheckpoint: null, historicalCleanupCertified: false, oldExecutionMayReplay: false, trainingQualificationGranted: false })
+  }
+  const terminalBytes = readFile(path.join(records, 'terminal.json'))
+  requireValue(JSON.parse(terminalBytes).profileSha256 === bound.profileSha256, 'interruption_terminal_conflict')
+  if (!fs.existsSync(path.join(records, 'capsule.json'))) {
+    writeExclusive(path.join(records, 'capsule.json'), { schemaVersion: 'ai-painter-local-task-capsule-v1', integrity: { status: 'verified' },
+      evidence: [{ path: reportPath, sha256: sha256(reportBytes), kind: 'system_interruption_report', sha256Verified: true },
+        { path: terminalPath, sha256: sha256(terminalBytes), kind: 'system_interruption_terminal', sha256Verified: true }] })
+  }
+  const current = await readCurrentExecutionRegistry(root)
+  if (current.ok && current.currentTaskTerminal?.profileSha256 === bound.profileSha256) return current
+  readFile(path.join(root, GUARD), bound.profile.guard.sha256)
+  const claimPath = path.join(root, '.runtime/ai-painter/current-execution-registry/writer.claim.json')
+  if (fs.existsSync(claimPath)) {
+    const claim = JSON.parse(readFile(claimPath))
+    requireValue(/^[a-zA-Z0-9_-]+$/.test(claim.transactionId), 'interruption_writer_transaction_invalid')
+    const txn = JSON.parse(readFile(path.join(root, '.runtime/ai-painter/current-execution-registry/transactions', claim.transactionId, 'transaction.pending.json')))
+    const staged = JSON.parse(readFile(scopedFile(root, txn.currentStaged.path), txn.currentStaged.sha256))
+    requireValue(txn.previousCurrentSha256 === bound.profile.registry.sha256 && staged.terminalEvidence.path === terminalPath
+      && staged.terminalEvidence.sha256 === sha256(terminalBytes) && staged.runId === identities.runId
+      && staged.activeExecution === null && staged.executionState === 'failed_closed'
+      && time(host.OsBootUtc) > time(claim.claimedAtUtc), 'interruption_pending_writer_conflict')
+    return recoverPreparedCurrentExecutionRegistryAdvance({ projectRoot: root, transactionId: claim.transactionId })
+  }
+  readFile(path.join(root, REGISTRY), bound.profile.registry.sha256)
+  return recoverExpiredActiveExecutionToFailedClosed({ projectRoot: root, ...identities,
+    taskCapsulePath: capsulePath, terminalEvidencePath: terminalPath,
+    expectedPreviousRegistryRevision: bound.profile.registry.revision, expectedPreviousRegistrySha256: bound.profile.registry.sha256,
+    kernelInterruptionProfile: { path: bound.profilePath, sha256: bound.profileSha256 } })
 }
 
 function writeExclusive(file, value) {
@@ -284,7 +676,7 @@ export async function quarantineRecovery(root, bound, verify, checkpoint = () =>
     }
     readFile(target, bound.profile.guard.sha256)
     requireValue(!fs.existsSync(source), 'new_guard_conflict')
-    const result = { schema: 'ai-painter-owned-worker-reboot-recovery-result-v1', caseId: intent.caseId, transactionId: intent.transactionId, recordedAtUtc: new Date().toISOString(), status: 'quarantined_not_cleanup_certified', profileSha256: bound.profileSha256, guardSha256: bound.profile.guard.sha256, archivePath: path.relative(root, target).replaceAll('\\', '/'), intentSha256: sha256(readFile(intentFile)), recoveredSameTransaction, historicalCleanupCertified: false, oldExecutionMayReplay: false, trainingQualificationGranted: false }
+    const result = { schema: 'ai-painter-owned-worker-reboot-recovery-result-v1', caseId: intent.caseId, transactionId: intent.transactionId, recordedAtUtc: new Date().toISOString(), status: 'quarantined_not_cleanup_certified', profileSha256: bound.profileSha256, guardSha256: bound.profile.guard.sha256, archivePath: historicalProjectPath(root, target), intentSha256: sha256(readFile(intentFile)), recoveredSameTransaction, nativeObservationMissing: ['ai-painter-owned-worker-reboot-recovery-profile-v2', 'ai-painter-owned-worker-reboot-recovery-profile-v3'].includes(bound.profile.schema), failure: bound.profile.failure ?? null, receipt: bound.profile.receipt ?? null, historicalCleanupCertified: false, oldExecutionMayReplay: false, trainingQualificationGranted: false }
     writeExclusive(resultFile, result)
     return result
   } finally {

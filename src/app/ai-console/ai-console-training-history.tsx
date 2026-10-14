@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { startHistoryPolling } from './ai-console-history-poll'
 import { AiConsoleTrainingSummary } from './ai-console-training-summary'
 import styles from './ai-console-training-history.module.css'
@@ -105,10 +105,19 @@ function EvidenceImage({ item }: { item: Artifact }) {
     {failed || !item.url ? <p role="alert">{!item.url ? '受信图片入口未提供。' : '图片读取失败或摘要冲突；不能解释为未保存。'}{item.url && <button onClick={() => setFailed(false)}>重试图片</button>}</p> : <a href={item.url} target="_blank" rel="noreferrer"><img src={item.url} alt={`${item.role} ${item.sampleId ?? ''}`} loading="lazy" onError={() => setFailed(true)} /></a>}
     <small>绑定SHA：{item.sha256}；图片响应前重新核验字节。</small></figure>
 }
+function subscribeToHistoryUrl(onChange: () => void) {
+  window.addEventListener('popstate', onChange)
+  return () => window.removeEventListener('popstate', onChange)
+}
+function historicalRunFromUrl() {
+  const identity = new URL(window.location.href).searchParams.get('run')
+  return identity && /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,191}$/.test(identity) ? identity : null
+}
+function serverHistoricalRun() { return null }
 export function AiConsoleTrainingHistory() {
   const [listing, setListing] = useState<Listing | null>(null)
   const [detail, setDetail] = useState<Detail | null>(null)
-  const [selected, setSelected] = useState<string | null>(null)
+  const [selectedRun, setSelected] = useState<string | null>(null)
   const [cursor, setCursor] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [lastSuccess, setLastSuccess] = useState<string | null>(null)
@@ -117,18 +126,18 @@ export function AiConsoleTrainingHistory() {
   const [sectionCursor, setSectionCursor] = useState<string | null>(null)
   const [sectionPage, setSectionPage] = useState<SectionPage | null>(null)
   const [sectionError, setSectionError] = useState<string | null>(null)
-  const [runQuery, setRunQuery] = useState('')
+  const [query, setRunQuery] = useState<string | null>(null)
   const detailRef = useRef<HTMLElement>(null)
+  // The server and hydration render share a null snapshot; the browser then
+  // restores the URL identity without copying external state in an Effect.
+  const restoredRun = useSyncExternalStore(subscribeToHistoryUrl, historicalRunFromUrl, serverHistoricalRun)
+  const selected = selectedRun ?? restoredRun
+  const runQuery = query ?? restoredRun ?? ''
   function selectRun(identity: string) {
     if (selected !== identity) { setSelected(identity); setDetail(null); setDetailError(null) }
     setSection('artifacts'); setSectionCursor(null); setSectionPage(null); setSectionError(null)
     if (selected === identity) detailRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const identity = new URL(window.location.href).searchParams.get('run')
-    if (identity && /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,191}$/.test(identity)) { setRunQuery(identity); selectRun(identity) }
-  }, [])
   useEffect(() => {
     if (!selected || typeof window === 'undefined') return
     const url = new URL(window.location.href)

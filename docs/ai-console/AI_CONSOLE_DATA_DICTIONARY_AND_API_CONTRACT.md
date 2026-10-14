@@ -1,10 +1,10 @@
 # AI控制台数据字典与API合同
 
-更新时间：2026-10-11 20:05:48 +08:00
+更新时间：2026-10-13 17:55:15 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-DATA-API-1.13`
+文档版本：`AI-CONSOLE-DATA-API-1.14`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
@@ -141,6 +141,7 @@ trainingPresentation
    | `ecology-regime-managed-plan-v1` | `ecology-plan.json` | `managed-training` | `ecology-regime-managed-configuration-v1` |
    | `ecology-regime-failure-capture-plan-v1` | `failure-capture-plan.json` | `bounded-failure-capture` | `ecology-regime-failure-capture-configuration-v1` |
    | `ecology-regime-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-regime-quality-configuration-v1` |
+   | `ecology-decode1-weight-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-decode1-weight-quality-configuration-v1` |
 
    必须在容器的已签发输入绑定中取得上表规定的计划路径，逐项核对路径、真实字节SHA及对应Schema、executionMode和configuration.schema；无匹配、重复绑定、同时绑定多个观察计划或语义不符均不可用。文件名仅定位已登记协议的显式绑定，不证明兼容，也不按Run、能力名称或版本数字选取特例。分辨率、优化上限及Checkpoint选择统一来自`configuration.scope.resolution`、`configuration.executionCeiling`和`configuration.checkpointSelection`；未知协议必须先完成语义适配及接入验收，不能凭字段相似或名称后缀接入。故障捕获也是实际权重更新，其进度可观察，但完成不代表质量训练、Checkpoint选择、模型资格或Stage晋级。
 
@@ -189,7 +190,14 @@ GET /api/ai-console/training/history/{runId}/artifacts/{artifactId}
 8. 复用回环访问、身份校验、no-store、nosniff、路径与摘要检查。图片按需加载与分页，索引摘要不替代发送前真实字节核验。制品页按输出、其他图像、原图、Checkpoint、其他证据稳定分组，同组保持原顺序；游标绑定实际排序后的制品身份，排序变化时拒绝旧游标，不静默混页。大结果内存派生同时最多2个不同绑定在途，同绑定合并；繁忙返回503／`history_large_projection_busy`，不得无限累积来源缓冲。列表/详情2秒刷新保持单请求在途、取消、超时、断线状态和选中记录稳定；索引停止时显示陈旧水位，当前执行1秒和资源250毫秒链路不依赖历史索引器。
 9. 验收必须覆盖：登记断链下独立历史仍可查；旧训练清单的指标/原图/输出/审核/CP关联；未知Schema及逐项缺失；新增证据无需重启自动出现；大内容分页无丢失/混页；重复Run冲突；缓存源变化、摘要篡改、路径逃逸、敏感内容拒绝；断线恢复及当前态/资源功能不退化。覆盖未核验完不得宣告“磁盘全部历史已接入”。
 
-受管画质训练历史采用明确版本映射：`ecology-regime-quality-worker-terminal-v1`、`ecology-regime-quality-review-terminal-v1`与`quality-plan.json`中的`ecology-regime-quality-plan-v1`关联，审核输入为`ecology-regime-native-review-input-v1`。审核报告须显式绑定当前选定Checkpoint对应的全部验证输出；`validationImages`逐项记录`sampleId`、`split=validation`、`epoch`、`optimizerStep`、`purpose=prediction`及图片路径和SHA，顺序与冻结验证清单一致。详情读取器逐项核对Run、包、Checkpoint、计划上限及产物绑定，不根据文件名、目录新旧或单张主题图推断其余图片。原图或条件图没有显式绑定时保持未连接，不用预测图冒充。历史图片展示不增加模型前向调用，不授予训练或发布资格；原有受管协议继续兼容。
+受管画质训练历史采用以下明确版本映射；固定计划路径均为`quality-plan.json`，`executionMode`均为`bounded-quality-training`：
+
+| worker终态Schema | review终态Schema | 计划Schema | configuration.schema |
+|---|---|---|---|
+| `ecology-regime-quality-worker-terminal-v1` | `ecology-regime-quality-review-terminal-v1` | `ecology-regime-quality-plan-v1` | `ecology-regime-quality-configuration-v1` |
+| `ecology-decode1-weight-quality-worker-terminal-v1` | `ecology-decode1-weight-quality-review-terminal-v1` | `ecology-decode1-weight-quality-plan-v1` | `ecology-decode1-weight-quality-configuration-v1` |
+
+两套协议的审核输入均为`ecology-regime-native-review-input-v1`；共享审核输入Schema不允许混用不同协议的计划、Checkpoint或终态证据。审核报告须显式绑定当前选定Checkpoint对应的全部验证输出；`validationImages`逐项记录`sampleId`、`split=validation`、`epoch`、`optimizerStep`、`purpose=prediction`及图片路径和SHA，顺序与冻结验证清单一致。详情读取器逐项核对Run、包、Checkpoint、计划上限及产物绑定，不根据文件名、目录新旧或单张主题图推断其余图片。原图或条件图没有显式绑定时保持未连接，不用预测图冒充。历史图片展示不增加模型前向调用，不授予训练或发布资格；原有受管协议继续兼容。
 
 ### 3.3 本地控制会话
 

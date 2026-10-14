@@ -33,6 +33,18 @@ const DEFAULT_RUNTIME_INPUT = {
   createdAt: 19910618081,
 }
 
+export class WorldRuntimeSaveReadError extends Error {
+  readonly readResult: WorldRuntimeStoreReadResult
+
+  constructor(readResult: WorldRuntimeStoreReadResult) {
+    super(`Runtime save unavailable (${readResult.status}); no world was initialized or tick persisted.`)
+    this.name = "WorldRuntimeSaveReadError"
+    this.readResult = readResult.status === "found" && !readResult.record
+      ? { ...readResult, status: "invalid", tags: [...readResult.tags, "runtime_found_without_record"] }
+      : readResult
+  }
+}
+
 export type WorldRuntimeCreateResult = {
   saveRecord: WorldRuntimeSaveRecord
   persisted: boolean
@@ -76,9 +88,12 @@ export async function loadOrCreateRuntimeWorldForSmokeOnly(input?: {
     return readResult.record
   }
 
+  if (readResult.status !== "empty") throw new WorldRuntimeSaveReadError(readResult)
+
   const now = input?.now ?? Date.now()
   const initialRecord = buildInitialRuntimeSaveRecord({ now })
-  await writeWorldRuntimeSaveRecord({ record: initialRecord })
+  const written = await writeWorldRuntimeSaveRecord({ record: initialRecord, expectedTick: -1 })
+  if (!written.ok) throw new Error("Smoke world initialization failed; no successful initialization is reported.")
 
   return initialRecord
 }
@@ -152,42 +167,9 @@ export async function runAndPersistOneRuntimeTick(input?: {
     ...(input?.ownerId ? { ownerId: input.ownerId } : {}),
   })
   if (readResult.status !== "found" || !readResult.record) {
-    const initialRecord = buildInitialRuntimeSaveRecord({
-      now: input?.now ?? Date.now(),
-    })
-    const writeResult = await writeWorldRuntimeSaveRecord({
-      record: initialRecord,
-      // -1 is the explicit empty-store CAS sentinel. Two concurrent first
-      // ticks cannot both publish tick 0.
-      expectedTick: -1,
-    })
-    const audit = auditWorldRuntimeTick({
-      nextHomeMapState: initialRecord.homeMapState,
-      events: initialRecord.recentEvents,
-      expectedTick: initialRecord.tick,
-      storeWriteSucceeded: writeResult.ok,
-    })
-
-    return {
-      previousSaveRecord: initialRecord,
-      nextSaveRecord: initialRecord,
-      runtimeTick: null,
-      events: initialRecord.recentEvents,
-      audit,
-      persisted: writeResult.ok,
-      messages: [
-        "Runtime save was empty; created tick 0 HomeMapState.",
-        writeResult.message,
-        ...writeResult.warnings,
-        ...audit.warnings,
-      ],
-      tags: [
-        "world_runtime_tick_result",
-        "runtime_initial_save_created",
-        ...writeResult.tags,
-        ...audit.tags,
-      ],
-    }
+    // Normal ticks require the requested, already-created world. Only the
+    // explicitly named Smoke helper above may initialize an empty store.
+    throw new WorldRuntimeSaveReadError(readResult)
   }
 
   const saveRecord = readResult.record

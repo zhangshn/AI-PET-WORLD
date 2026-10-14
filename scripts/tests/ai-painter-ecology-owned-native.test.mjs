@@ -68,13 +68,13 @@ async function harness(options={}) {
    events.push('write:'+path.basename(logical));return io.write(r,logical,value)
   }}]
  ])
- const module=new vm.SourceTextModule(source,{context,identifier:sourceUrl.href,initializeImportMeta:meta=>{meta.url=sourceUrl.href}})
- await module.link(specifier=>{
+ const nativeModule=new vm.SourceTextModule(source,{context,identifier:sourceUrl.href,initializeImportMeta:meta=>{meta.url=sourceUrl.href}})
+ await nativeModule.link(specifier=>{
   const values=modules.get(specifier);assert.ok(values,'unexpected native dependency: '+specifier)
   return new vm.SyntheticModule(Object.keys(values),function(){for(const [key,value] of Object.entries(values))this.setExport(key,value)},{context})
  })
- await module.evaluate()
- const api=module.namespace
+ await nativeModule.evaluate()
+ const api=nativeModule.namespace
  const call=(extra={})=>api.runNative({root,outputRoot:ownPlan().outputRoot,phase:'cpu',executable:process.execPath,args:['mock-worker'],...extra})
  const finish=({output='{}',stderr='',proofOverrides={},frames=null,close=true}={})=>{
   const out=Buffer.from(output),err=Buffer.from(stderr)

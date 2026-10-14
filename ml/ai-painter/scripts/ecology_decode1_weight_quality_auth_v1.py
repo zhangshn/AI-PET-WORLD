@@ -1,5 +1,5 @@
 # NS-003 independent identity adapter; inherited pure algorithms, no old qualification.
-"""Own 1.59 quality authentication; legacy admission is never called."""
+"""Own 1.60 quality authentication; legacy admission is never called."""
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
@@ -23,7 +23,7 @@ PLAN_SCHEMA = "ecology-decode1-weight-quality-plan-v1"
 ROOT_PREFIX = ".runtime/ai-painter/ecology-decode1-weight-quality-executions/"
 SELF = "ml/ai-painter/scripts/ecology_decode1_weight_quality_auth_v1.py"
 SPECIFICATION = {"path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
-    "sha256": "2864b9d5219369c46ea056a0fa589cc713248cffdd42144ba48ab849a2b801ab"}
+    "sha256": "a88d93514264f8b6c24bcc5f60e87189ba8df1f9f13848030fb0ee9e2ace35cc"}
 CANDIDATE = {"path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
     "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"}
 # New model metadata is recomputed by this program and materialized per Run.
@@ -33,6 +33,10 @@ FROZEN_PLAN = {"path": ".runtime/ai-painter/ecology-regime-managed-executions/ec
     "sha256": "03d5ec1e68701d03f5a9973c793731d1e3811226ed294e151e5a80bf225ca030"}
 ORIGINAL_MANIFEST = {"path": ".runtime/ai-painter/ecology-quality-v1-repair/t-qv12-r1/ns003-original-package.json",
     "sha256": "0551d463b50041b3ca269d1edd927b0e7e2fb9af7f3c3388997eb8eefd0a1cb1"}
+ORIGINAL_NATIVE_TESTS = {"path": ".runtime/ai-painter/ecology-quality-v1-repair/t-qv12-r1/ns003-original-native-tests.mjs",
+    "sha256": "f5c0a559f5cd1fa915dc0ec4c456bbf58c8edd298596e1a5bd5e6cdf9f93b73b"}
+ORIGINAL_REGISTRY = {"path": ".runtime/ai-painter/controller-parallel-20261011/controller-27-next-20261013/interrupted-training-20261013/inputs/original-registry.mjs",
+    "sha256": "159d8d7b4e0d425271b0181aba4732e6b2c20efc4211e69583701e124adf488d"}
 MANIFEST_ALIAS = "control:ai-painter-ecology-decode1-quality"
 MANIFEST_COMMAND = "node scripts/run-ai-painter-ecology-decode1-quality-v1.mjs"
 LOCAL_DEPLOYMENT_DEPENDENCY_ROLES = {
@@ -46,6 +50,8 @@ PROGRAM_MAX = 1024**2
 CANONICAL_REGION_PROGRAM = "scripts/lib/real-earth-region-governance.mjs"
 ROLES = {"executionAuth": SELF,
     "frozenProjectManifest": ORIGINAL_MANIFEST["path"],
+    "currentLegacyNativeTests": "scripts/tests/ai-painter-ecology-owned-native.test.mjs",
+    "currentExecutionRegistry": "src/server/ai-painter-current-execution-registry.mjs",
     "decode1Operator": "ml/ai-painter/src/ai_painter/complete_world/decode1_weight_reduction_precision_v1.py",
     "decode1Model": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_weight_precision_v1.py",
     "decode1Bridge": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_weight_priority_update_v1.py",
@@ -437,6 +443,29 @@ def _manifest_semantic_transition(original_raw, current_raw):
     require(same_json(reduced, original), "manifest differs beyond exact new alias")
 
 
+def historical_source_binding(role, binding):
+    if role != "source-19":
+        return historical_native_test_binding(role, binding)
+    require(same_json(binding, {"path": ROLES["currentExecutionRegistry"], "sha256": ORIGINAL_REGISTRY["sha256"]}),
+            "exact historical registry source required")
+    return ORIGINAL_REGISTRY
+
+
+def historical_native_test_binding(role, binding):
+    if role not in ("source-151", "nativeTests"):
+        return binding
+    require(same_json(binding, {"path": ROLES["currentLegacyNativeTests"], "sha256": ORIGINAL_NATIVE_TESTS["sha256"]}),
+            "exact historical native test role required")
+    return ORIGINAL_NATIVE_TESTS
+
+
+def verify_native_test_rename(original, current):
+    baseline = original.decode("utf-8").replace("\r\n", "\n")
+    updated = current.decode("utf-8").replace("\r\n", "\n")
+    require(len(re.findall(r"\bmodule\b", baseline)) == 4, "exact four legacy test identifiers required")
+    require(updated == re.sub(r"\bmodule\b", "nativeModule", baseline), "native test change beyond identifier rename")
+
+
 def verify_programs(reader, programs):
     require(type(programs) is dict and 1 <= len(programs) <= 256 and
         set(ROLES) | set(LOCAL_DEPLOYMENT_DEPENDENCY_ROLES) <= set(programs), "full own source roles required")
@@ -450,7 +479,10 @@ def verify_programs(reader, programs):
             require(current["path"] == "package.json", "source137 path cannot change")
             _manifest_semantic_transition(reader.read(ORIGINAL_MANIFEST, PROGRAM_MAX), reader.read(current, PROGRAM_MAX))
         else:
-            require(same_json(programs.get("frozen-" + role), binding), "old source role omitted/retargeted: " + role)
+            require(same_json(programs.get("frozen-" + role), historical_source_binding(role, binding)),
+                    "old source role omitted/retargeted: " + role)
+    verify_native_test_rename(reader.read(ORIGINAL_NATIVE_TESTS, PROGRAM_MAX),
+                             reader.read(exact_binding(programs.get("currentLegacyNativeTests")), PROGRAM_MAX))
     total, seen = 0, {}
     for role, binding in programs.items():
         require(type(role) is str and re.fullmatch(r"[A-Za-z0-9._-]{1,80}", role) and

@@ -181,7 +181,8 @@ for (const point of ['intent_saved', 'guard_moved']) await test(`hard process ki
   await assert.rejects(quarantineRecovery(f.root, f.bound, verifier), /recovery_claim_requires_new_kernel_boot/)
   assert.ok(fs.readFileSync(lease).equals(leaseBytes))
   assert.ok(fs.readFileSync(writer).equals(writerBytes))
-  const futureVerifier = async () => { const audit = await verifier(); audit.host.OsBootUtc = '2026-10-09T00:00:00.000Z'; return audit }
+  const nextFixtureBoot = new Date(Date.parse(JSON.parse(leaseBytes).claimedAtUtc) + 60000).toISOString()
+  const futureVerifier = async () => { const audit = await verifier(); audit.host.OsBootUtc = nextFixtureBoot; return audit }
   const result = await quarantineRecovery(f.root, f.bound, futureVerifier)
   assert.equal(result.recoveredSameTransaction, true)
   assert.ok(fs.readFileSync(path.join(path.dirname(f.target), 'intent.json')).equals(intent))

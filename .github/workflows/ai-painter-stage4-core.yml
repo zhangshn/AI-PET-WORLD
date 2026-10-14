@@ -12,6 +12,19 @@ on:
       - "ml/ai-painter/config/**"
       - "ml/ai-painter/src/**"
       - "ml/ai-painter/tests/**"
+      - "ml/ai-painter/scripts/**"
+      - "scripts/lib/ai-painter-*.mjs"
+      - "scripts/run-ai-painter-*.mjs"
+      - "scripts/tests/*ai-painter*.mjs"
+      - "scripts/tests/helpers/**"
+      - "scripts/tests/world-runtime-*.mjs"
+      - "scripts/tests/game-map-runtime-frame-store-consistency.test.mjs"
+      - "scripts/check-world-runtime-auth-contract.mjs"
+      - "scripts/tests/project-review-contract-regressions.test.mjs"
+      - "scripts/lib/unique-module-plan-contract.mjs"
+      - "scripts/check-game-map-frame-contract.mjs"
+      - "scripts/check-ai-painter-document-governance.mjs"
+      - "scripts/windows/ai-painter-*.cs"
       - "scripts/*ai-painter-stage4-*.mjs"
       - "scripts/lib/*stage4*.mjs"
       - "scripts/tests/*stage4*.mjs"
@@ -44,6 +57,19 @@ on:
       - "ml/ai-painter/config/**"
       - "ml/ai-painter/src/**"
       - "ml/ai-painter/tests/**"
+      - "ml/ai-painter/scripts/**"
+      - "scripts/lib/ai-painter-*.mjs"
+      - "scripts/run-ai-painter-*.mjs"
+      - "scripts/tests/*ai-painter*.mjs"
+      - "scripts/tests/helpers/**"
+      - "scripts/tests/world-runtime-*.mjs"
+      - "scripts/tests/game-map-runtime-frame-store-consistency.test.mjs"
+      - "scripts/check-world-runtime-auth-contract.mjs"
+      - "scripts/tests/project-review-contract-regressions.test.mjs"
+      - "scripts/lib/unique-module-plan-contract.mjs"
+      - "scripts/check-game-map-frame-contract.mjs"
+      - "scripts/check-ai-painter-document-governance.mjs"
+      - "scripts/windows/ai-painter-*.cs"
       - "scripts/*ai-painter-stage4-*.mjs"
       - "scripts/lib/*stage4*.mjs"
       - "scripts/tests/*stage4*.mjs"
@@ -69,6 +95,111 @@ permissions:
   contents: read
 
 jobs:
+  current-components:
+    name: Current decode1 and document components (no qualification)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      CUDA_VISIBLE_DEVICES: ""
+      OMP_NUM_THREADS: "2"
+      MKL_NUM_THREADS: "2"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.14.0"
+      - name: Document status and traceability positive/negative fixtures
+        run: node --test --test-concurrency=1 scripts/tests/ai-painter-document-governance-state.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: "ml/ai-painter/pyproject.toml"
+      - run: python -m pip install -e "ml/ai-painter[training]"
+      # Component tests consume synthetic tensors and in-memory Checkpoints.
+      # They neither populate .runtime nor amend the core qualification inventory.
+      - name: Current decode1 bounded CPU operator and exact model state
+        timeout-minutes: 2
+        run: |
+          python -B -c "
+          import sys, time, unittest
+          from contextlib import ExitStack
+          from unittest.mock import patch
+          import torch
+          torch.set_num_threads(2)
+          torch.set_num_interop_threads(2)
+          sys.path.insert(0, 'ml/ai-painter/tests')
+          import test_ecology_decode1_precision_core_cpu as component
+          started = time.monotonic()
+          counts = dict(forward=0, grad=0)
+          native = torch.ops.aten.convolution_backward.default
+          conv = component.F.conv2d
+          apply = component.operator.decode1_weight_reduction_precision
+          grad = torch.autograd.grad
+          def forbid(*args, **kwargs):
+              raise AssertionError('component forbids renderer forward, optimization and CUDA')
+          def forward_count():
+              counts['forward'] += 1
+              assert counts['forward'] <= 64
+          def bounded_conv(features, *args, **kwargs):
+              forward_count()
+              assert max(features.shape[2:]) <= 16
+              return conv(features, *args, **kwargs)
+          def bounded_apply(*args, **kwargs):
+              forward_count()
+              return apply(*args, **kwargs)
+          def bounded_grad(*args, **kwargs):
+              counts['grad'] += 1
+              assert counts['grad'] <= 96 and time.monotonic() - started < 120
+              return grad(*args, **kwargs)
+          def observed_native(*args, **kwargs):
+              component.MASKS.append(list(args[-1]))
+              return native(*args, **kwargs)
+          with ExitStack() as guard:
+              for owner, attribute, replacement in (
+                  (component.F, 'conv2d', bounded_conv),
+                  (component.operator, 'decode1_weight_reduction_precision', bounded_apply),
+                  (torch.autograd, 'grad', bounded_grad),
+                  (torch.ops.aten.convolution_backward, 'default', observed_native),
+                  (component.candidate.Decode1WeightPrecisionEcologyRenderer, 'forward', forbid),
+                  (component.old.EcologyRegimeConditionedRenderer, 'forward', forbid),
+                  (torch.optim.Optimizer, '__init__', forbid),
+                  (torch.optim.Optimizer, 'step', forbid),
+                  (torch.cuda, '_lazy_init', forbid)):
+                  guard.enter_context(patch.object(owner, attribute, replacement))
+              result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(component.CoreTests))
+          assert not torch.cuda.is_initialized() and time.monotonic() - started < 120
+          assert result.testsRun > 0 and not result.skipped
+          print('CPU component only; no source data, training, GPU or release qualification:', counts)
+          sys.exit(0 if result.wasSuccessful() else 1)
+          "
+      - name: Current decode1 memory Checkpoint and four-VJP profile regressions
+        timeout-minutes: 2
+        run: |
+          python -B -c "
+          import sys, unittest
+          from unittest.mock import patch
+          import torch
+          torch.set_num_threads(2)
+          torch.set_num_interop_threads(2)
+          loader = unittest.TestLoader()
+          suite = unittest.TestSuite()
+          for pattern in ('test_ecology_decode1_weight_checkpoint_cpu.py', 'test_ecology_decode1_weight_training_profile_cpu.py'):
+              suite.addTests(loader.discover('ml/ai-painter/tests', pattern=pattern))
+          def forbid(*args, **kwargs):
+              raise AssertionError('component forbids model forward, optimization and CUDA')
+          with patch.object(torch.nn.Module, '_call_impl', forbid), patch.object(torch.cuda, '_lazy_init', forbid), patch.object(torch.optim.Optimizer, '__init__', forbid), patch.object(torch.optim.Optimizer, 'step', forbid):
+              result = unittest.TextTestRunner(verbosity=2).run(suite)
+          assert result.testsRun > 0 and not result.skipped and not torch.cuda.is_initialized()
+          print('Memory Checkpoint and synthetic profile only; no training or release qualification')
+          sys.exit(0 if result.wasSuccessful() else 1)
+          "
+
   verify:
     strategy:
       fail-fast: false
@@ -90,6 +221,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint -- --quiet
+      - run: node --test --test-concurrency=1 scripts/tests/world-runtime-store-consistency.test.mjs scripts/tests/world-runtime-tick-continuity.test.mjs scripts/tests/world-runtime-gateway-read-failure.test.mjs scripts/tests/project-review-contract-regressions.test.mjs
       - run: npm run test:integration
       - run: npm run build
       - run: python -m pip install --upgrade pip

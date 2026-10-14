@@ -4,6 +4,7 @@
 
 import type { MapDiff } from "@/world/map-state/home-map-state-schema"
 import type { ResourceTransaction } from "@/world/resource-cycle/resource-schema"
+import { hasRepeatedRecentActionSignatures } from "./world-runtime-action-signature"
 
 import type {
   WorldRuntimeSaveRecord,
@@ -103,7 +104,7 @@ export function auditWorldRuntimeContinuity(input: {
 function auditRepeatedActionSignatures(signatures: string[]): string[] {
   const recent = signatures.slice(-3)
 
-  return recent.length === 3 && recent.every((signature) => signature === recent[0])
+  return hasRepeatedRecentActionSignatures(signatures)
     ? [`Runtime action signature repeated for the last 3 ticks: ${recent[0]}`]
     : []
 }

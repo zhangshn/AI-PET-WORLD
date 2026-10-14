@@ -20,18 +20,24 @@ function fixture(t,mode){
     terminalEvidence:{path:'terminal.json',sha256:'1'.repeat(64),status:'experiment_completed'},activeExecution:null,selectedHistoricalRun:null,
     latestTrainingTerminal:{runId:'run',path:'terminal.json',sha256:'1'.repeat(64),status:'experiment_completed',
       evidence:mode==='absent'?{}:{machineReviewTimeline:binding}}};
-  const module=loadCurrentExecutionProjectionForCpu(process.cwd(),{
+  const registryPath=path.join(root,'.runtime/ai-painter/current-execution-registry/current.json');
+  const registryBytes=Buffer.from(JSON.stringify(registry));
+  fs.mkdirSync(path.dirname(registryPath),{recursive:true});fs.writeFileSync(registryPath,registryBytes);
+  const projection=loadCurrentExecutionProjectionForCpu(process.cwd(),{
     CURRENT_EXECUTION_REGISTRY_PATH:'.runtime/ai-painter/current-execution-registry/current.json',
-    readCurrentExecutionRegistry:async()=>({ok:true,registry,registrySha256:'2'.repeat(64)})});
-  return ()=>module.readAiPainterCurrentExecutionSnapshot(root);
+    readCurrentExecutionRegistry:async()=>{
+      if(mode==='changed-registry')fs.writeFileSync(registryPath,JSON.stringify({...registry,registryRevision:127}));
+      return {ok:true,registry,registrySha256:digest(registryBytes)};
+    }});
+  return ()=>projection.readAiPainterCurrentExecutionSnapshot(root);
 }
 test('absent timeline projects unavailable with null counts, never success or zero failures',async t=>{
-  const result=await fixture(t,'absent')();assert.equal(result.ok,true);
+  const result=await fixture(t,'absent')();assert.equal(result.ok,true,JSON.stringify(result));
   assert.equal(result.machineReview.availability,'unavailable');assert.equal(result.machineReview.reasonCode,'machine_review_timeline_not_bound');
   assert.equal(result.machineReview.previewPassCount,null);assert.equal(result.machineReview.previewFailCount,null);
 });
 test('bound valid timeline projects actual counts',async t=>{
-  const result=await fixture(t,'valid')();assert.equal(result.ok,true);assert.equal(result.machineReview.availability,'available');
+  const result=await fixture(t,'valid')();assert.equal(result.ok,true,JSON.stringify(result));assert.equal(result.machineReview.availability,'available');
   assert.equal(result.machineReview.completedReviewCount,0);assert.equal(result.machineReview.targetReviewCount,3);
 });
 test('bound corrupt timeline remains unknown or stale, not merely unavailable',async t=>{
@@ -40,4 +46,10 @@ test('bound corrupt timeline remains unknown or stale, not merely unavailable',a
 });
 test('self-consistent hash cannot hide inconsistent review counts',async t=>{
   const result=await fixture(t,'bad-count')();assert.equal(result.ok,false);assert.equal(result.reasonCode,'machine_review_count_identity_invalid');
+});
+
+test('registry change during projection cannot mix two revisions into a connected snapshot',async t=>{
+  const result=await fixture(t,'changed-registry')();assert.equal(result.ok,false);
+  assert.equal(result.reasonCode,'current_execution_changed_during_projection');
+  assert.equal(result.dataStatus,'unknown_or_stale');
 });

@@ -1,14 +1,14 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-10-12 13:47:53 +08:00
+更新时间：2026-10-13 12:47:54 +08:00
 
 状态：active-long-term-module-specification
 
-文档版本：`AI-PAINTER-SPEC-1.59`
+文档版本：`AI-PAINTER-SPEC-1.60`
 
-生效日期：`2026-10-12`
+生效日期：`2026-10-13`
 
-替代版本：`AI-PAINTER-SPEC-1.58`
+替代版本：`AI-PAINTER-SPEC-1.59`
 
 文档状态：`active_normative_target`
 
@@ -1011,7 +1011,7 @@ programLineage
 resourceAndSafetyPolicyIdentity
 rollbackIdentity
 outputRoot
-createdBy = local_ai_capability_lifecycle_orchestrator
+createdBy = local_ai_capability_release_orchestrator
 ```
 
 机器发布验证顺序固定为：
