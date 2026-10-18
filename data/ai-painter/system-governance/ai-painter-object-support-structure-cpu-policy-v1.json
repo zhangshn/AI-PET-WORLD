@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "ai-painter-object-support-structure-cpu-policy-v1",
+  "candidateId": "stage4_mvp256_dry_object_support_structure_loss_cpu_v1",
+  "status": "inactive_cpu_definition_not_training_or_qualification",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "792bf647336eb59a3cdbe6b4efbe3e630724e810ba0afa125fb4d7cc350c2e19"
+  },
+  "purpose": "One additive train-only object support structural objective; synthetic CPU implementation validation only.",
+  "implementation": {
+    "objective": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_support_structure_candidate_cpu_v1.py",
+    "tests": "ml/ai-painter/tests/test_native_rgb_object_support_structure_candidate_cpu_v1.py"
+  },
+  "inheritedObjective": {
+    "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_core_fidelity_candidate_cpu.py",
+    "sha256": "4bf0a03616bcad1f3549a0a607358a6f02fc56a7690993f3a9701cfa5d40ecb0",
+    "preserveAllTerms": true
+  },
+  "formula": {
+    "total": "inherited_object_core_total.float() + 0.1 * mean(1 - rho_role)",
+    "roles": [
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "weight": 0.1,
+    "weightBasis": "same coefficient as existing core spatial term; not tuned against validation",
+    "luminance": [
+      0.2126,
+      0.7152,
+      0.0722
+    ],
+    "rho": "sum((predicted_luma-mean_p)*(reference_luma-mean_t)) / sqrt(sum((predicted_luma-mean_p)^2)*sum((reference_luma-mean_t)^2)+1e-8), clamped to [-1,1]",
+    "aggregation": "equal mean over applicable typed roles; no pixel-count weighting",
+    "minimumPixels": 2,
+    "minimumReferenceCenteredEnergy": 1e-8,
+    "noApplicableRoles": "differentiable zero new term with explicit not_applicable status; no sample removal or success claim",
+    "newTermTarget": "detached original train RGB; never review scores, failed previews or non-train RGB"
+  },
+  "support": {
+    "source": "existing authoritative23channel facts plus instance table",
+    "boundViews": "native_rgb_structured_object_cpu_v17.validate_bound_object_views",
+    "coverage": "union of existing clipped ObjectView.support_mask per typed role; no new dilation radius",
+    "ownership": "native_rgb_complete_support_partition_v23_cpu.complete_typed_support_partition",
+    "supportOwnershipRule": "complete_typed_support_partition_by_nearest_normalized_core_v1",
+    "masksDetached": true,
+    "acceptCallerMaskOverrides": false,
+    "modelPredictionMayDefineMask": false
+  },
+  "boundaries": {
+    "cpuThreads": 2,
+    "syntheticCpuTestsMaxWallSeconds": 120,
+    "onlySyntheticTensors": true,
+    "realImageOrModelLoading": false,
+    "optimizerConstruction": false,
+    "weightUpdates": false,
+    "cudaInitialization": false,
+    "trainingEntryIntegration": false,
+    "gradientBridgeModification": false,
+    "currentExecutionRegistryWrite": false,
+    "newCheckpoint": false,
+    "generatedImage": false,
+    "automaticRetry": false,
+    "modelArchitectureChange": false,
+    "sourceImageOrSplitMutation": false,
+    "resolutionChange": false,
+    "reviewImplementationOrThresholdChange": false,
+    "formalStage4QualificationGranted": false,
+    "runtimePublicationGranted": false
+  },
+  "acceptance": [
+    "Inherited objective source bytes unchanged and total/parts retained",
+    "Exact existing support ownership reproduced, including overlaps and canvas boundaries",
+    "Non-train inputs and malformed shape/channel/instance/finite data rejected",
+    "Only predictions receive new-term gradients; target, conditions, masks remain detached",
+    "Correct structure scores better than rearranged structure; constant/empty roles are not zero-successes",
+    "Gradient reaches simple synthetic object RGB branches; no real model, optimizer or CUDA",
+    "Candidate code is not imported or selected by production training entries",
+    "Independent CPU tests and documentation/encoding/diff checks pass"
+  ],
+  "evidenceBasis": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/terrain-object-response-acceptance-v1.json",
+    "interpretation": "Single sample supports a bounded hypothesis, not a proven root cause or promise of improved quality."
+  }
+}

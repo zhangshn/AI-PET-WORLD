@@ -1,14 +1,14 @@
 # 完整游戏世界生成正式文档索引
 
-更新时间：2026-09-06 03:34:57 +08:00
+更新时间：2026-10-14 23:16:43 +08:00
 
 状态：active-game-world-document-index
 
-文档版本：`AI-PAINTER-DOCUMENT-INDEX-1.2`
+文档版本：`AI-PAINTER-DOCUMENT-INDEX-1.4`
 
-替代版本：`AI-PAINTER-DOCUMENT-INDEX-1.1`
+替代版本：`AI-PAINTER-DOCUMENT-INDEX-1.3`
 
-生效日期：`2026-09-06`
+生效日期：`2026-10-14`
 
 文档状态：`active_internal_formal_index`
 
@@ -52,3 +52,5 @@ docs/game-world-generation/
 ## 字典边界
 
 `docs/world-visual-data-dictionary/` 的分层条目继续作为机器可导出的正式事实定义，不计入智能体默认阅读链。需要字段细节时只读取相关条目，不得全量读取后改变当前路线。
+
+主体规格1.60原第9.6.1至9.6.42节及子条款，只经`data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-clauses-v1.json`查询原字节快照。现行1.68不重复这些候选专属细节；旧条款按旧版本复核，不能按同号章节继承为新任务规则。主体规格第17.1节分别登记CPU准备、独立零更新GPU因果诊断及目标层精度候选GPU／训练政策，各自取得自身准入，不互相继承资格；第17.2及17.3节明确迁移实现范围，第17.4节定义符合声明转换；目标层候选执行政策v2只调整训练时限为4200秒，v1的2700秒政策及主体1.67原字节保留供历史复核，不继承旧资格；动态运行由既有机器入口提供。

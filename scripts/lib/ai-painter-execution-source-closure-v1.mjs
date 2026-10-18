@@ -1,0 +1,266 @@
+// Read-only dependency collection for the two registered local execution routes.
+// No imports/evaluation of collected project modules and no runner/process owner.
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {createRequire,builtinModules} from 'node:module';
+import {spawnSync} from 'node:child_process';
+import assert from 'node:assert/strict';
+import {parse} from '@babel/parser';
+const builtins = new Set([...builtinModules, ...builtinModules.map(v => 'node:' + v)]);
+const digest = raw => crypto.createHash('sha256').update(raw).digest('hex');
+// Only deferred bodies behind these frozen, reviewed legacy surfaces are
+// excluded. Every module-level import and all other function imports remain.
+const finalRgbDeferredSurfaces=Object.freeze({
+ 'ml/ai-painter/scripts/painter_stage4_detail_weight_managed_worker.py':{
+  sha256:'aeeaf8f536fd88c684c64c0f7fcf1293c56bac12558affc9810597ba9774d957',
+  excludeScopes:['runtime'],
+  reason:'progress writer top-level imports attach/secondary from failure helper, which imports this template; only frozen.binding is used, not its closed training_loop/runtime'},
+ 'ml/ai-painter/scripts/painter_stage4_detail_weight_capture_execution_worker.py':{
+  sha256:'2880bbf9f78efe8273134b89ceb5f95027e846f2aa177e5ae4c59bcdf0eade79',
+  excludeScopes:['runtime','load_package'],
+  reason:'new worker.progress_publisher imports only replace_progress_file; legacy runtime/load_package/run are not this execution entry'},
+ 'ml/ai-painter/src/ai_painter/complete_world/object_appearance_regime_detail_weight_precision.py':{
+  sha256:'1a5468eb982e786c819861740fdd2921ef4873cebe2145c9d6e27507f70dafa9',
+  excludeScopes:['authenticate_diagnostic_capture','_install_diagnostic_capture'],
+  reason:'fresh model factories use construction/identity; closed historical diagnostic state import is not called'},
+ 'ml/ai-painter/scripts/ecology_regime_execution_auth.py':{
+  sha256:'900b50d3228db16b1404626b7ae20c7eebd93c58b18a2d0a0d9d9e5b9aff2aae',
+  excludeScopes:['derive_model_metadata','load_execution_package'],
+  reason:'new auth imports these pure binding/process helpers; its own new package/model validators replace legacy entry functions'}
+});
+const reviewedFinalRgbCallers=Object.freeze({
+  "ml/ai-painter/scripts/painter_stage4_object_support_structure_quality_worker_v1.py": "7fa45562d6d5be1ae54ec6094bda0923987bdda59633d450659825d87315ae48",
+  "ml/ai-painter/scripts/object_support_structure_quality_auth_v1.py": "cab66f13e06973cc2fdcb3257c6c8ed98cabaa15d1dfffb76a0f1ef9be78e510",
+  "ml/ai-painter/scripts/painter_stage4_final_rgb_base_weight_training_profile_v1.py": "7fdadbe8c2fc97cc776e1c9650439aea41fad77b18679a9ccd6ca7818cf8369a",
+  "ml/ai-painter/scripts/painter_stage4_object_support_structure_lifecycle_v1.py": "33529dd2998aa03398a2a081bdf45efef57d70ad183daec554fe1582ee51bea3",
+  "ml/ai-painter/scripts/qualify_stage4_object_support_structure_quality_gpu_v1.py": "34f05c01deb5bab4f264f13f4170489cc41c53d127bf0a5c8945ce6ba6cc5fd0",
+  "ml/ai-painter/scripts/review_stage4_object_support_structure_quality_cpu_v1.py": "694cf79f54af3ca572a7b4030ccf0a523771d1ae48c483c91541840f71d78b4c",
+  "ml/ai-painter/tests/test_object_support_structure_execution_cpu_v1.py": "b40b99f2327bbdefc047d908347743cbd303672b518705c8b059499484d109ee",
+  "ml/ai-painter/tests/test_final_rgb_base_weight_quality_adapters_cpu_v1.py": "245d3fc021540efb0899998f23847fc4effb2cfcf6d201ab5a2d271e3949e359",
+  "ml/ai-painter/scripts/painter_stage4_detail_weight_failure_capture_managed_worker.py": "4e8c96eb22924f7fecb185a586b47dbff70f3794c4a33eb73b2088b1b0289c6b"
+});
+// This independently registered route retains the same reviewed legacy-only
+// exclusions. Caller bytes are frozen after its Python adapter delivery.
+const reviewedJointCallers=Object.freeze({...reviewedFinalRgbCallers,
+ 'ml/ai-painter/scripts/object_support_structure_quality_auth_v1.py':'9d09403d904e6f0bd40a5eb14e4d60c3aad876ca112365473980ee71524a1ab4',
+ 'ml/ai-painter/scripts/painter_stage4_object_support_structure_quality_worker_v1.py':'3245b45b46f35e27ed34b3fb37235c57483750c7a3283fa542c5139acbfc09af',
+ 'ml/ai-painter/scripts/qualify_stage4_object_support_structure_quality_gpu_v1.py':'2fa0cbd84ecb9a88ba293d899f2ca792aa389627fbe24ad7e122125861ab6570',
+ 'ml/ai-painter/scripts/review_stage4_object_support_structure_quality_cpu_v1.py':'694cf79f54af3ca572a7b4030ccf0a523771d1ae48c483c91541840f71d78b4c',
+ 'ml/ai-painter/scripts/painter_stage4_object_support_structure_lifecycle_v1.py':'33529dd2998aa03398a2a081bdf45efef57d70ad183daec554fe1582ee51bea3',
+ 'ml/ai-painter/tests/test_object_support_structure_execution_cpu_v1.py':'91aeecc50fb648703ca08b95bb1805747ea78c2a9d39f1974bd3fafddd77c5de',
+ 'ml/ai-painter/scripts/painter_stage4_joint_object_priority_training_profile_v1.py':'c80f98a207f0f6e7414331a9bf0885dad61c476c3c209c035ffa4c93476910cc',
+ 'ml/ai-painter/src/ai_painter/complete_world/object_joint_rgb_structure_priority_update_device_v1.py':'95bd389afab7e94bbdf78909f8df70292deacaf7a019a3991ee4a047e99a18e7',
+ 'ml/ai-painter/src/ai_painter/complete_world/joint_object_priority_quality_checkpoint_v1.py':'6f47fcd638a517df908f7284fc3bc3f35b5fc50ca2d5e929eddeb2ba5e3b46df',
+ 'ml/ai-painter/tests/test_joint_object_priority_quality_adapters_cpu_v1.py':'09955adef066c9c1507b33a32337f9f3f7d98e10c9633e915e1a0926a3489d44'});
+const jointDeferredSurfaces=Object.freeze({...finalRgbDeferredSurfaces,
+ 'ml/ai-painter/scripts/painter_stage4_object_support_structure_quality_worker_v1.py':{
+  sha256:reviewedJointCallers['ml/ai-painter/scripts/painter_stage4_object_support_structure_quality_worker_v1.py'],
+  excludeScopes:['_legacy_progress_publisher'],
+  reason:'Only exact joint v3 uses the verified bounded publisher and its local finite replacement. The legacy factory is a different-capability branch; current joint CPU compatibility checks mock that factory and do not execute its import.'},
+ 'ml/ai-painter/tests/test_object_support_structure_execution_cpu_v1.py':{
+  sha256:reviewedJointCallers['ml/ai-painter/tests/test_object_support_structure_execution_cpu_v1.py'],
+  excludeImports:[{scope:'cpu_request',module:'test_final_rgb_base_weight_quality_adapters_cpu_v1',names:['AdmissionTests','QualificationTimingTests']}],
+  reason:'The frozen cpu_request joint branch executes admission_suite; the mutually exclusive finalRGB suite import is not executed. Module imports and every other late import remain.'}
+});
+const pythonAst = `import ast,json,sys
+result=[]
+for item in json.load(sys.stdin):
+ tree=ast.parse(item['source'],filename=item['path'])
+ imports=[];excluded=[]
+ rule=item.get('deferredSurface') or {}
+ def walk(node,scope=(),disabled=False):
+  if isinstance(node,ast.ClassDef):scope=(*scope,node.name)
+  if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef)):
+   scope=(*scope,node.name)
+   if len(scope)==1:
+    disabled=(('includeScopes' in rule and node.name not in rule['includeScopes']) or node.name in rule.get('excludeScopes',[]))
+  if isinstance(node,ast.Import):
+   for v in node.names:
+    (excluded if disabled else imports).append({'module':v.name,'level':0,'names':[],'line':node.lineno,'scope':'.'.join(scope)})
+  elif isinstance(node,ast.ImportFrom):
+   entry={'module':node.module or '', 'level':node.level,'names':[v.name for v in node.names],'line':node.lineno,'scope':'.'.join(scope)}
+   excluded_import=any(all(entry.get(k)==v for k,v in row.items()) for row in rule.get('excludeImports',[]))
+   (excluded if disabled or excluded_import else imports).append(entry)
+  elif isinstance(node,ast.Call) and isinstance(node.func,ast.Attribute) and node.func.attr=='import_module':
+   if node.args and isinstance(node.args[0],ast.Constant) and isinstance(node.args[0].value,str):
+    (excluded if disabled else imports).append({'module':node.args[0].value,'level':0,'names':[],'line':node.lineno,'scope':'.'.join(scope),'dynamicLiteral':True})
+  for child in ast.iter_child_nodes(node):walk(child,scope,disabled)
+ walk(tree)
+ result.append({'path':item['path'],'imports':imports,'excludedLateImports':excluded})
+json.dump(result,sys.stdout)
+`;
+let lastSourceCollectionReport=null;
+export function sourceCollectionReport(){return lastSourceCollectionReport===null?null:structuredClone(lastSourceCollectionReport);}
+
+function collectActualExecutionSources({root, required, dynamicPaths=[], python, bind}) {
+  assert.ok(path.isAbsolute(root));
+  assert.ok(required && typeof required === 'object' && !Array.isArray(required));
+  assert.equal(typeof bind, 'function');
+  const pending=[], seen=new Map(), roles=new Map(), sourceEdges=[], pythonRoots=['ml/ai-painter/src','ml/ai-painter/scripts','ml/ai-painter/tests',''];
+  const deadline=Date.now()+15000;let collectedBytes=0;
+  const finalRgb=required.finalRgbTrainingProfile==='ml/ai-painter/scripts/painter_stage4_final_rgb_base_weight_training_profile_v1.py'
+    && required.executionPolicy==='data/ai-painter/system-governance/ai-painter-final-rgb-base-weight-quality-execution-policy-v3.json';
+  if(finalRgb)assert.equal(digest(fs.readFileSync(path.join(root,required.executionPolicy))),
+    '5479dde98dd24882309986051c86fdfba024a2b3756082a79c9c9734ad3e2de1','registered final RGB policy bytes differ');
+  const joint=Object.values(required).includes('ml/ai-painter/scripts/painter_stage4_joint_object_priority_training_profile_v1.py')
+    && required.executionPolicy==='data/ai-painter/system-governance/ai-painter-joint-object-priority-quality-execution-policy-v3.json';
+  if(joint)assert.equal(digest(fs.readFileSync(path.join(root,required.executionPolicy))),
+    '45fb11fe41c23fdd2d47e08c8dfcd184d288d8e967c72426aa1848a987f4751a','registered joint policy bytes differ');
+  const maximumEntries=joint?260:256;
+  const reviewedCallers=joint?reviewedJointCallers:finalRgb?reviewedFinalRgbCallers:null;
+  const deferredSurfaces=joint?jointDeferredSurfaces:finalRgbDeferredSurfaces;
+  const deferredImportEvidence=[],includedLateImports=[];lastSourceCollectionReport=null;
+  const logical = name => {
+    assert.equal(typeof name, 'string');
+    assert.ok(name && !/[\\:\x00-\x1f\x7f]/u.test(name) && !name.startsWith('/')
+      && name.split('/').every(v => v && v!=='.' && v!=='..'), 'unsafe execution source');
+    return name;
+  };
+  const add = (name, role=null,from=null) => {
+    name=logical(name);
+    if(from)sourceEdges.push({from,to:name});
+    if(role){assert.match(role,/^[A-Za-z0-9._-]{1,80}$/u);assert.ok(!['__proto__','constructor','prototype'].includes(role));
+      const previous=roles.get(name);assert.ok(!previous || previous===role, 'required role duplicates an actual path');roles.set(name,role);}
+    if(!seen.has(name)){seen.set(name,null);pending.push(name);if(seen.size>maximumEntries){const error=new Error('complete actual execution closure exceeds'+maximumEntries+' entries at '+name);error.sourcePaths=[...seen.keys()];error.sourceEdges=sourceEdges;error.collectedBytes=collectedBytes;error.boundSourceCount=[...seen.values()].filter(Boolean).length;throw error;}}
+  };
+  for(const [role,name] of Object.entries(required))add(name,role,'required:'+role);
+  for(const name of dynamicPaths)add(name,null,'registered-dynamic');
+  const exists = name => fs.existsSync(path.join(root,name));
+  const addPython = (module, from, level=0) => {
+    let prefixes=pythonRoots;
+    if(level){let directory=path.posix.dirname(from);for(let i=1;i<level;i++)directory=path.posix.dirname(directory);prefixes=[directory];}
+    const pieces=module.split('.').filter(Boolean);
+    for(const prefix of prefixes){
+      const stem=path.posix.join(prefix,...pieces),options=[stem+'.py',path.posix.join(stem,'__init__.py')];
+      const found=options.find(exists);if(!found)continue;
+      add(found,null,from);
+      let directory=path.posix.dirname(found);
+      while(directory && directory!=='.'){
+        const init=directory+'/__init__.py';if(exists(init))add(init,null,found);directory=path.posix.dirname(directory);
+      }
+      return;
+    }
+    // External Python providers are checked by the existing runtime/loaded-source
+    // verifier, never imported or substituted by this source parser.
+  };
+  const addNode = (specifier, from, optional=false) => {
+    if(builtins.has(specifier) || specifier.startsWith('node:'))return;
+    assert.ok(!specifier.includes('${'),'nonliteral module requires registered dynamic dependency');
+    let target;
+    try {target=createRequire(path.join(root,from)).resolve(specifier);} catch(error) {
+      if(optional && !specifier.startsWith('.') && error.code==='MODULE_NOT_FOUND')return;
+      throw new Error('unresolved static execution dependency '+specifier+' in '+from,{cause:error});
+    }
+    const relative=path.relative(root,target).split(path.sep).join('/');
+    assert.ok(relative && !relative.startsWith('../') && !path.isAbsolute(relative),'dependency outside registered project');
+    add(relative,null,from);
+    if(!specifier.startsWith('.')){
+      const parts=specifier.split('/'),pkg=specifier.startsWith('@')?parts.slice(0,2).join('/'):parts[0];
+      let directory=path.dirname(target),found=false;
+      while(directory.startsWith(root+path.sep)){
+        const meta=path.join(directory,'package.json');
+        if(fs.existsSync(meta)&&JSON.parse(fs.readFileSync(meta,'utf8')).name===pkg){
+          add(path.relative(root,meta).split(path.sep).join('/'),null,from);found=true;break;
+        }
+        directory=path.dirname(directory);
+      }
+      assert.ok(found,'actual provider package manifest missing: '+specifier);
+    }
+  };
+  while(pending.length){
+    assert.ok(Date.now()<deadline,'read-only source collection deadline');
+    const batch=pending.splice(0), pythonBatch=[];
+    for(const name of batch){
+      const binding=bind(name), raw=fs.readFileSync(path.join(root,name));
+      assert.equal(binding.path,name);assert.equal(binding.sha256,digest(raw),'source changed during collection');
+      assert.ok(raw.length<=1048576,'execution source file ceiling');seen.set(name,binding);
+      collectedBytes+=raw.length;assert.ok(collectedBytes<=16777216,'complete execution source byte ceiling');
+      if(name.endsWith('.py')){
+        if(reviewedCallers&&Object.hasOwn(reviewedCallers,name))assert.equal(digest(raw),reviewedCallers[name],
+          'reviewed late import caller changed: '+name);
+          const deferredSurface=reviewedCallers?deferredSurfaces[name]:null;
+        if(deferredSurface)assert.equal(digest(raw),deferredSurface.sha256,'reviewed late import source changed: '+name);
+        pythonBatch.push({path:name,source:raw.toString('utf8'),deferredSurface});continue;
+      }
+      if(!/\.(?:mjs|cjs|js|ts|tsx)$/u.test(name))continue;
+      for(const edge of nodeImports(raw.toString('utf8'),{sourcePath:name,edges:true}))addNode(edge.value,name,edge.optional);
+    }
+    if(pythonBatch.length){
+      assert.equal(typeof python,'string');assert.ok(path.isAbsolute(python),'bound Python required for AST parsing');
+      const parsed=spawnSync(python,['-I','-B','-X','utf8','-c',pythonAst],{input:JSON.stringify(pythonBatch),encoding:'utf8',
+        timeout:Math.max(1,deadline-Date.now()),maxBuffer:8*1024*1024,windowsHide:true,env:{...process.env,OMP_NUM_THREADS:'2',MKL_NUM_THREADS:'2'}});
+      assert.equal(parsed.status,0,'read-only Python AST parse failed: '+String(parsed.stderr).slice(0,2048));
+      for(const row of JSON.parse(parsed.stdout)){
+        if(row.excludedLateImports.length)deferredImportEvidence.push({path:row.path,
+          registration:deferredSurfaces[row.path],excludedLateImports:row.excludedLateImports});
+        for(const item of row.imports){
+          if(item.scope)includedLateImports.push({path:row.path,...item});
+          addPython(item.module,row.path,item.level);
+          for(const name of item.names)if(name!=='*')addPython([item.module,name].filter(Boolean).join('.'),row.path,item.level);
+        }
+      }
+    }
+    assert.ok(seen.size<=maximumEntries,'complete actual execution closure exceeds'+maximumEntries+' entries');
+  }
+  const result={};let bytes=0;
+  for(const [name,binding] of [...seen].sort(([a],[b])=>a.localeCompare(b))){
+    const raw=fs.readFileSync(path.join(root,name));assert.equal(digest(raw),binding.sha256,'source changed before closure commit');bytes+=raw.length;
+    assert.ok(bytes<=16777216,'complete execution source byte ceiling');
+    result[roles.get(name)??('source-'+digest(Buffer.from(name)).slice(0,24))]=binding;
+  }
+  assert.equal(Object.keys(result).length,seen.size,'source role collision');
+  if(finalRgb)for(const name of Object.keys(reviewedFinalRgbCallers))assert.ok(seen.has(name),'reviewed late import caller omitted: '+name);
+  lastSourceCollectionReport={schemaVersion:'registered-final-rgb-source-collection-report-v1',
+    finalRgbProfile:finalRgb,sourceCount:seen.size,totalBytes:bytes,sourceEdges,
+    deferredImportEvidence,includedLateImports,reviewedCallers,loadedSourceRejection:'painter_stage4_object_support_structure_quality_worker_v1.verify_loaded_sources remains unchanged'};
+  return result;
+}
+
+function nodeImports(source,{sourcePath=null,edges=false}={}){
+  // The installed parser handles regular expressions, nested templates and TS
+  // without evaluating any project source. Its own bytes join the closure.
+  const tree=parse(source,{sourceType:'unambiguous',
+    plugins:['typescript','jsx'],createImportExpressions:true});
+  const imports=[];
+  function visit(node,optional=false){
+    if(!node || typeof node!=='object')return;
+    // Sharp's installed loader has mutually exclusive native platform cases.
+    // Bind the current platform case; foreign OS binaries cannot execute here.
+    if(sourcePath==='node_modules/sharp/dist/sharp.cjs' && node.type==='SwitchStatement'
+      && node.discriminant.type==='Identifier' && node.discriminant.name==='runtimePlatform'){
+      assert.equal(process.platform,'win32','only the registered Windows runtime is supported');
+      const selected=node.cases.find(c=>c.test?.type==='StringLiteral'&&c.test.value===process.platform+'-'+process.arch);
+      assert.ok(selected,'installed native image provider has no exact platform case');
+      selected.consequent.forEach(child=>visit(child,optional));return;
+    }
+    if(node.type==='TryStatement' && node.handler){
+      visit(node.block,true);visit(node.handler,optional);visit(node.finalizer,optional);return;
+    }
+    if(['ImportDeclaration','ExportNamedDeclaration','ExportAllDeclaration','ImportExpression'].includes(node.type)
+      && node.source?.type==='StringLiteral')imports.push({start:node.start,value:node.source.value,optional:false});
+    if(node.type==='CallExpression' && node.callee?.type==='Identifier'
+      && ['require','requireSource'].includes(node.callee.name) && node.arguments.length===1
+      && node.arguments[0].type==='StringLiteral')imports.push({start:node.start,value:node.arguments[0].value,optional});
+    for(const [key,value]of Object.entries(node)){
+      if(['loc','start','end','extra','comments','tokens'].includes(key))continue;
+      if(Array.isArray(value))value.forEach(child=>visit(child,optional));else if(value&&typeof value==='object')visit(value,optional);
+    }
+  }
+  visit(tree.program);const sorted=imports.sort((a,b)=>a.start-b.start);return edges?sorted:sorted.map(v=>v.value);
+}
+
+const roleCache=new Map();
+function requiredProgramRoles({root,python,capabilityVersion,authPath}){
+  const source=fs.readFileSync(path.join(root,authPath)),before=digest(source),key=[root,python,capabilityVersion,before].join('|');
+  if(roleCache.has(key))return {...roleCache.get(key)};
+  const code="import json,sys;from pathlib import Path;root=Path(sys.argv[1]);sys.path[:0]=[str(root/'ml/ai-painter/scripts'),str(root/'ml/ai-painter/src')];import object_support_structure_quality_auth_v1 as auth;print(json.dumps(auth.required_program_roles(sys.argv[2]),sort_keys=True))";
+  const call=spawnSync(python,['-I','-B','-c',code,root,capabilityVersion],{encoding:'utf8',timeout:15000,maxBuffer:1048576,windowsHide:true,
+    env:{...process.env,OMP_NUM_THREADS:'2',MKL_NUM_THREADS:'2',OPENBLAS_NUM_THREADS:'2'}});
+  assert.equal(call.status,0,'registered read-only role query failed: '+String(call.stderr).slice(0,256));
+  assert.equal(digest(fs.readFileSync(path.join(root,authPath))),before,'auth changed across role query');
+  const roles=JSON.parse(call.stdout);assert.ok(roles&&typeof roles==='object'&&!Array.isArray(roles));
+  roleCache.set(key,Object.freeze({...roles}));return {...roles};
+}
+
+export {collectActualExecutionSources,requiredProgramRoles,nodeImports};

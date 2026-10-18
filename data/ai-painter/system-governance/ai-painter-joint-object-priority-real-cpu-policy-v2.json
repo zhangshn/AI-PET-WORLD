@@ -1,0 +1,180 @@
+{
+  "schemaVersion": "ai-painter-joint-object-priority-real-cpu-policy-v2",
+  "candidateId": "stage4_mvp256_dry_joint_object_priority_real_cpu_v2",
+  "status": "registered_once_real_model_cpu_verification_only",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.82",
+    "sha256": "60f303eabd0f2644e1eda4f1ebb3974695e7204e03ed636cdde940f51bc498de"
+  },
+  "updateRule": {
+    "candidateId": "stage4_mvp256_dry_joint_object_priority_cpu_v1",
+    "policy": {
+      "path": "data/ai-painter/system-governance/ai-painter-joint-object-priority-cpu-policy-v1.json",
+      "sha256": "ad23ad5a097fe9b4f6cc89a621a7ff763ac31340046a418b02861f2c94e59bf4"
+    },
+    "implementation": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_joint_rgb_structure_priority_update_cpu_v1.py",
+      "sha256": "99c437fe1cdf31229257c25716736e3c2f580a58f99fde8297c5e06611920324"
+    },
+    "syntheticAcceptance": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/joint-object-priority-cpu-20261018/independent-cpu-check.json",
+      "sha256": "b7c23dcfbf26f293bd653b1b2549add6b44f5405c54945fb4c1ed34413d6687c"
+    },
+    "historicalSpecification": {
+      "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.80-3dcb487c.txt",
+      "sha256": "3dcb487c54206c2512f79890f02fb305ef5cda85dc65e684a95b396e60937fa2"
+    },
+    "reuseScope": "unchanged_gradient_algorithm_and_observed_synthetic_behavior_only_not_old_execution_permission"
+  },
+  "model": {
+    "capability": "stage4_mvp256_dry_factorized_ecology_final_rgb_base_weight_precision_v1",
+    "parameterTensors": 108,
+    "parameterElements": 2242687,
+    "objectHeadParameterTensors": 16,
+    "objectHeadParameterElements": 4876,
+    "initializationSeed": 20260929,
+    "freshSourceInitializationOnly": true,
+    "checkpointLoading": false,
+    "forwardOrParameterGraphChanged": false
+  },
+  "data": {
+    "dataPlan": {
+      "path": ".runtime/ai-painter/final-rgb-base-weight-quality-executions/final-rgb-base-quality-v1-f13f9856-7aac-4d43-b7c9-51133cfed683/quality-plan.json",
+      "sha256": "4d96fb6239943620793b83bb63d1e17374b070650106323d17c11ab0690b482c"
+    },
+    "planPurpose": "data_locator_only_no_permission_or_weights_inherited",
+    "selectedSampleId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "split": "train",
+    "sampleCount": 1,
+    "resolution": [
+      256,
+      192
+    ],
+    "originalDataSplits": "48/8/4/4 unchanged",
+    "validationContentRead": false,
+    "challengeOrRegressionContentRead": false
+  },
+  "implementation": {
+    "entrypoint": "scripts/check-ai-painter-joint-object-priority-real-cpu-v2.mjs",
+    "worker": "ml/ai-painter/scripts/check_joint_object_priority_real_cpu_v2.py",
+    "profile": "ml/ai-painter/scripts/painter_stage4_joint_object_priority_training_profile_cpu_v1.py",
+    "pythonTests": "ml/ai-painter/tests/test_joint_object_priority_real_cpu_v2.py",
+    "nodeTests": "scripts/tests/ai-painter-joint-object-priority-real-cpu-v2.test.mjs"
+  },
+  "limits": {
+    "decodedTrainSamples": 1,
+    "generatorForwards": 1,
+    "generatorAutogradCalls": 5,
+    "discriminatorAutogradCalls": 0,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "cudaCalls": 0,
+    "checkpointLoads": 0,
+    "imageOrCheckpointWrites": 0
+  },
+  "protocol": {
+    "componentsInOrder": [
+      "actualTotal",
+      "structuredObjective",
+      "wholeFrameFidelity",
+      "objectCoreRgb",
+      "objectSupportStructure"
+    ],
+    "singleSharedForwardGraph": true,
+    "originalLossAndWeightsUnchanged": true,
+    "originalOrderedScalarAndGradientSumKept": true,
+    "atol": 0.000001,
+    "rtol": 0.00001,
+    "projectionRoundoffMultiplier": 16,
+    "frozenCriticEvaluationOriginalLossOnly": true,
+    "all108OriginalGradientGates": true,
+    "nonHeadActualGradientIdentityPreserved": true,
+    "modelCriticStateGradUnchanged": true,
+    "rngUnchanged": true,
+    "actualCallsAndCompletedLabelsRequiredOnFailure": true,
+    "failureRawGradientTensorSave": false
+  },
+  "resources": {
+    "maxWallSeconds": 240,
+    "maxManagedWorkerSeconds": 180,
+    "threads": 2,
+    "cpuAffinityMaximum": 2,
+    "maxOutputBytes": 8388608,
+    "maxStreamBytes": 8388608,
+    "maxJsonBytes": 1048576,
+    "failureReserveBytes": 65536,
+    "cleanupReserveMs": 1000,
+    "finalizationReserveMs": 8000,
+    "attempts": 1,
+    "automaticRetries": 0
+  },
+  "sourceClosure": {
+    "maxFiles": 256,
+    "maxFileBytes": 1048576,
+    "maxTotalBytes": 16777216,
+    "scope": "actual_loaded_and_validation_source_closure_not_all_historical_roles",
+    "loadedModulesMustBeVerified": true
+  },
+  "outputRoot": ".runtime/ai-painter/joint-object-priority-real-cpu-checks",
+  "attemptClaimPath": ".runtime/ai-painter/joint-object-priority-real-cpu-checks/attempt-v2.json",
+  "registry": {
+    "path": ".runtime/ai-painter/current-execution-registry/current.json",
+    "writeAllowed": false,
+    "preserveLatestTrainingTerminal": true
+  },
+  "qualification": {
+    "gpuExecutionAllowed": false,
+    "trainingAllowed": false,
+    "checkpointWritten": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "runtimeFrameAllowed": false
+  },
+  "stopRules": [
+    "One live managed attempt; preserve its claim and terminal; failure, timeout or incomplete evidence closes it with no automatic retry.",
+    "No optimizer, updates, Checkpoint initialization, CUDA, image output or raw gradient tensor output.",
+    "One fixed train sample only; other split content cannot be used for any forward, derivative or weight supervision.",
+    "Actual source and sample identities, scalar Loss, five independent gradients, original tolerances and roundoff guard are checked, never reconstructed or waived.",
+    "Fresh true parent model identity; never rewrite model buffers or use failed G/D archives or historic candidate qualifications.",
+    "Success requires full before/after state and RNG checks, exact call counts, original-source stability, real managed empty-Job/stream/guard cleanup and unchanged production registry.",
+    "Evidence and native/stream artifacts all share the stated output budget; first failure remains primary if evidence or cleanup also fails.",
+    "This CPU result is not GPU, training, quality, Stage or Runtime permission; no production entry/registry changes."
+  ],
+  "predecessor": {
+    "candidateId": "stage4_mvp256_dry_joint_object_priority_real_cpu_v1",
+    "runId": "joint-object-real-cpu-3a8b8de6-3830-4d2c-b1f1-2f96da8886c3",
+    "status": "real_cpu_failed_closed_before_model_computation",
+    "repairScope": "cpu_affinity_initialization_only_no_algorithm_or_budget_change",
+    "bindings": {
+      "policy": {
+        "path": "data/ai-painter/system-governance/ai-painter-joint-object-priority-real-cpu-policy-v1.json",
+        "sha256": "91fae3af9d0b954569d3dc6255d462966b199e0df371a172d1cec99ce4408fc6"
+      },
+      "claim": {
+        "path": ".runtime/ai-painter/joint-object-priority-real-cpu-checks/attempt-v1.json",
+        "sha256": "244477c63cae274f5a509efabe811c5b4c15c3d339de481919d1f65beb1fd6ab"
+      },
+      "failure": {
+        "path": ".runtime/ai-painter/joint-object-priority-real-cpu-checks/joint-object-real-cpu-3a8b8de6-3830-4d2c-b1f1-2f96da8886c3/failure.json",
+        "sha256": "267ce23b905c738da085d31e90fc39b02d92968485b359a44e5a6431480031e6"
+      },
+      "workerFailure": {
+        "path": ".runtime/ai-painter/joint-object-priority-real-cpu-checks/joint-object-real-cpu-3a8b8de6-3830-4d2c-b1f1-2f96da8886c3/worker-failure.json",
+        "sha256": "6a3a4baa406f8f3e10feb5c72e80a3860980e94a012d506325b8827cf1482173"
+      },
+      "acceptance": {
+        "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/joint-object-priority-real-cpu-20261018/acceptance.json",
+        "sha256": "5f9e958fc105e42e533a61f32d88d8674a04e77b64e34980b5ea7d51e726016d"
+      },
+      "historicalSpecification": {
+        "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.81-402f4739.txt",
+        "sha256": "402f473929627fbb6bd5c6d337c0697f4a35b7e8d0a821b838509f1315c73b7f"
+      },
+      "unchangedNumericalProfile": {
+        "path": "ml/ai-painter/scripts/painter_stage4_joint_object_priority_training_profile_cpu_v1.py",
+        "sha256": "ab09fb3f88057dbc17fc72885fe896d77e15dda7f91b975875e9ae1e33f1e9a0"
+      }
+    }
+  }
+}

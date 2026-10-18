@@ -14,7 +14,7 @@ const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(),
 process.env.AI_PET_WORLD_DATA_ROOT = path.join(fixtureRoot, ".data");
 const fixedAt = "2026-09-01T04:00:00.000Z";
 const capabilityVersion =
-  "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2";
+  "stage4_v2_machine_review_capability_identity_fixed_program_v6";
 const packageId = "stage4-v2-controlled-smoke-formal-fixture";
 const runId = "stage4-v2-controlled-smoke-formal-fixture-run";
 
@@ -190,6 +190,16 @@ try {
       return { registry: { registryRevision: 18 } };
     },
   };
+  await assert.rejects(materializeStage4V2FormalStage0ToStage2Plan({
+    ...common,
+    currentRegistryReader: async () => ({
+      ...current,
+      registry: { ...current.registry,
+        capabilityVersion: "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2" },
+    }),
+  }), /stage4_v2_machine_review_capability_identity_fixed_program_v6/u);
+  assert.equal(registryAdvanceCount, 0,
+    "wrong capability identity advanced the formal-plan registry");
   await assert.rejects(
     materializeStage4V2FormalStage0ToStage2Plan({
       ...common,

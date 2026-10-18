@@ -8,6 +8,16 @@
   "ownerInNormalStateMachine": false,
   "currentEntrypoints": [
     {
+      "packageScript": "control:ai-painter-object-support-structure-quality",
+      "entryFile": "scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
+      "role": "object_support_structure_quality_six_phase_adapter_and_explicit_pretraining_entry"
+    },
+    {
+      "packageScript": "control:ai-painter-ecology-terrain-detail-quality",
+      "entryFile": "scripts/run-ai-painter-ecology-terrain-detail-quality-v1.mjs",
+      "role": "ecology_terrain_detail_weight_quality_six_phase_adapter_and_explicit_pretraining_entry"
+    },
+    {
       "packageScript": "control:ai-painter-ecology-decode1-quality",
       "entryFile": "scripts/run-ai-painter-ecology-decode1-quality-v1.mjs",
       "role": "ecology_decode1_weight_quality_six_phase_adapter_and_explicit_pretraining_entry"
@@ -154,6 +164,106 @@
     }
   ],
   "localControlEntrypoints": [
+    {
+      "entryId": "ai-painter-local-control-v1-joint-object-priority-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",
+      "role": "fixed_local_start_status_stop_v1",
+      "protocol": "ai-painter-local-control-v1",
+      "capabilityVersion": "stage4_mvp256_dry_joint_object_priority_quality24_v1",
+      "adapterFile": "scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v2-joint-object-priority-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "role": "fixed_local_prepare_start_status_stop_v2",
+      "protocol": "ai-painter-local-control-v2",
+      "capabilityVersion": "stage4_mvp256_dry_joint_object_priority_quality24_v1",
+      "adapterFile": "scripts/lib/ai-painter-local-prepare-v1.mjs",
+      "runnerFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "candidateSelection": "joint-object-priority-quality-v1",
+      "candidateBinding": {
+        "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+        "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+      },
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
+    },
+    {
+      "entryId": "ai-painter-local-control-v1-final-rgb-base-weight-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",
+      "role": "fixed_local_start_status_stop_v1",
+      "protocol": "ai-painter-local-control-v1",
+      "capabilityVersion": "stage4_mvp256_dry_final_rgb_base_weight_quality24_v1",
+      "adapterFile": "scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v2-final-rgb-base-weight-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "role": "fixed_local_prepare_start_status_stop_v2",
+      "protocol": "ai-painter-local-control-v2",
+      "capabilityVersion": "stage4_mvp256_dry_final_rgb_base_weight_quality24_v1",
+      "adapterFile": "scripts/lib/ai-painter-local-prepare-v1.mjs",
+      "runnerFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "candidateSelection": "final-rgb-base-weight-quality-v1",
+      "candidateBinding": {
+        "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+        "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+      },
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v1-object-support-structure-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",
+      "role": "fixed_local_start_status_stop_v1",
+      "protocol": "ai-painter-local-control-v1",
+      "capabilityVersion": "stage4_mvp256_dry_object_support_structure_quality24_v1",
+      "adapterFile": "scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v2-object-support-structure-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "role": "fixed_local_prepare_start_status_stop_v2",
+      "protocol": "ai-painter-local-control-v2",
+      "capabilityVersion": "stage4_mvp256_dry_object_support_structure_quality24_v1",
+      "adapterFile": "scripts/lib/ai-painter-local-prepare-v1.mjs",
+      "runnerFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "candidateSelection": "object-support-structure-quality-v1",
+      "candidateBinding": {
+        "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+        "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+      },
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v1-ecology-terrain-detail-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",
+      "role": "fixed_local_start_status_stop_v1",
+      "protocol": "ai-painter-local-control-v1",
+      "capabilityVersion": "stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_quality24_v1",
+      "adapterFile": "scripts/run-ai-painter-ecology-terrain-detail-quality-v1.mjs",
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v2-ecology-terrain-detail-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "role": "fixed_local_prepare_start_status_stop_v2",
+      "protocol": "ai-painter-local-control-v2",
+      "capabilityVersion": "stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_quality24_v1",
+      "adapterFile": "scripts/lib/ai-painter-local-prepare-v1.mjs",
+      "runnerFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "candidateSelection": "ecology-terrain-detail-quality-v1",
+      "candidateBinding": {
+        "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+        "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+      },
+      "commands": ["start", "status", "stop"]
+    },
     {
       "entryId": "ai-painter-local-control-v1-ecology-decode1-quality-v1",
       "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",

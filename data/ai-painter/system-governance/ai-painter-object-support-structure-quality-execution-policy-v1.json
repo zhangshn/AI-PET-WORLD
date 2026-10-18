@@ -1,0 +1,210 @@
+{
+  "schemaVersion": "ai-painter-object-support-structure-quality-execution-policy-v1",
+  "status": "registered_bounded_candidate_route_not_qualified",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.70",
+    "sha256": "b74d1834027876dc75aa02fbc80c7a9d725c24f15fe3f62c8dfe91011bf87629"
+  },
+  "candidate": "stage4_mvp256_dry_object_support_structure_quality24_v1",
+  "modelCapability": "stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_v1",
+  "executionProfile": "bounded_object_support_structure_quality24_v1",
+  "entrypointPath": "scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
+  "outputRoot": ".runtime/ai-painter/object-support-structure-quality-executions",
+  "sourceCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+    "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+  },
+  "priorCpuEvidence": {
+    "acceptance": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/object-support-integration-cpu-acceptance-v1.json",
+      "sha256": "45e7d7014f158030b52b1da8620ed87d222c9cf8551e2f97cbc4aab6d8176229"
+    },
+    "integrationAcceptance": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/object-support-device-lifecycle-acceptance-v1.json",
+      "sha256": "9d693f0700ba9d2f445b01ea362894f030f2314852c039df9b80878a7d787ec4"
+    },
+    "normativeVersion": "AI-PAINTER-SPEC-1.69",
+    "originalNormativeBytes": {
+      "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.69-792bf647.txt",
+      "sha256": "792bf647336eb59a3cdbe6b4efbe3e630724e810ba0afa125fb4d7cc350c2e19"
+    },
+    "oldAttemptReplayAllowed": false,
+    "grantsGpuOrTrainingQualification": false
+  },
+  "modelBoundary": {
+    "parameterCount": 108,
+    "parameterElements": 2242687,
+    "changedTargetIndex": 60,
+    "changedTargetName": "core.core.terrain.full_resolution_detail.layers.3.weight",
+    "targetShape": [
+      48,
+      48,
+      3,
+      3
+    ],
+    "parentTarget52Kept": true,
+    "nativeForwardAndInputBiasGradientsKept": true,
+    "otherLayersMayChange": false,
+    "initializationSeed": 20260929,
+    "freshInitializationOnly": true,
+    "historicalCheckpointMayInitialize": false,
+    "failedStateMayInitialize": false,
+    "modelArchitectureChanged": false,
+    "numericOperatorsChanged": false
+  },
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "worldCount": 1,
+    "waterFactPresent": false,
+    "buildingsRequired": false,
+    "artificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "formalStage4Qualification": false,
+    "runtimePublication": false
+  },
+  "dataUse": {
+    "train": 48,
+    "validation": 8,
+    "challenge": 4,
+    "regression": 4,
+    "weightUpdatesFrom": [
+      "train"
+    ],
+    "checkpointSelectionFrom": [
+      "validation"
+    ],
+    "challengeAndRegressionContentRead": false,
+    "sourceImageOrSplitMutation": false
+  },
+  "executionCeiling": {
+    "epochs": 24,
+    "generatorOptimizerSteps": 1152,
+    "discriminatorOptimizerSteps": 1152,
+    "maxWallSeconds": 8400,
+    "cpuThreads": 2,
+    "trainingAttempts": 1,
+    "automaticRetries": 0,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128
+  },
+  "phaseResources": {
+    "cpuPreparationSeconds": 240,
+    "gpuAdmissionSeconds": 600,
+    "reviewSeconds": 120,
+    "maxStreamBytes": 8388608,
+    "cpuOutputBytes": 8388608,
+    "qualificationAndReviewOutputBytes": 16777216,
+    "captureMiB": 64,
+    "captureMetadataReserveBytes": 1048576,
+    "terminalReserveBytes": 65536,
+    "programFileCountMaximum": 256,
+    "programFileBytesMaximum": 1048576,
+    "totalProgramBytesMaximum": 16777216
+  },
+  "gpuAdmission": {
+    "sampleSplit": "train",
+    "sampleCount": 48,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "samePackageRequired": true,
+    "stateBytesMustRemainUnchanged": true,
+    "originalGradientGateKept": true,
+    "oldCandidateQualificationReusable": false,
+    "generatorForwardsPerSample": 1,
+    "generatorAutogradPerSample": 5,
+    "discriminatorAutogradPerSample": 1,
+    "totalGeneratorAutograd": 240,
+    "totalDiscriminatorAutograd": 48
+  },
+  "optimizer": {
+    "name": "AdamW",
+    "generatorLearningRate": 0.0001,
+    "discriminatorLearningRate": 0.0001,
+    "weightDecay": 0.01,
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "eps": 1e-8
+  },
+  "checkpointSelection": {
+    "eligibleEpochs": [
+      24
+    ],
+    "strictNewCandidateReloadRequired": true,
+    "automaticResumeAllowed": false,
+    "observationOnlyEpochs": [
+      12
+    ]
+  },
+  "stopRules": [
+    "CPU behavior and native cleanup must pass for the actual execution-source closure before package admission.",
+    "GPU admission and training each consume their own same-package phase once; no automatic retry or restart.",
+    "Only the already verified support-structure term and its five-gradient bridge change the learning objective. Keep every inherited Loss, core-priority rule, model, data, thresholds, optimizer, resource ceiling and world scope unchanged.",
+    "Never initialize from failed state or inherit another candidate's GPU qualification.",
+    "Preserve the first failure, captured evidence, and real managed Job cleanup receipts.",
+    "Use the existing background, registry, SQLite, shared resource guard and observation contracts only.",
+    "Training completion, visual review and capability release remain separate decisions.",
+    "The 1.69 snapshot is an explicit immutable CPU configuration baseline, never a fallback for current execution admission; verify current 1.70 and this own policy separately.",
+    "Current external binding work may complete one managed CPU preparation and immutable package binding, then stops before real GPU admission and training. CPU success grants no GPU, training or model qualification."
+  ],
+  "qualification": {
+    "gpuQualified": false,
+    "trainingQualified": false,
+    "visualQualified": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "runtimeFrameAllowed": false
+  },
+  "sourceAssetsUse": "data_review_and_base_schedule_only_not_execution_qualification",
+  "lossDefinition": {
+    "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-cpu-policy-v1.json",
+    "sha256": "f5842c5005a60a2c51dd84f9baca1d4ecc751a5fed09e8647f7d96acd4efaefe"
+  },
+  "gradientDefinition": {
+    "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-integration-cpu-policy-v1.json",
+    "sha256": "2aa89a112ebc125e9b4bfdea8f7adade22f1d57afb094d1d4b4f1cff36293d82"
+  },
+  "integrationPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-lifecycle-integration-policy-v1.json",
+    "sha256": "7782b99aa6f04c56a14a2f35694c4e67c99911835bc62e1096f25ac3424d17d3"
+  },
+  "checkpointIdentity": {
+    "schema": "object-support-structure-quality-checkpoint-v1",
+    "configurationSchema": "object-support-structure-quality-configuration-v1",
+    "implementation": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_checkpoint_v1.py",
+    "historicalMetadataRenamingAllowed": false
+  },
+  "failureCapture": {
+    "gradientLabels": [
+      "actualTotal",
+      "structuredObjective",
+      "wholeFrameFidelity",
+      "objectCoreRgb",
+      "objectSupportStructure"
+    ],
+    "maxEpoch": 24,
+    "maxGeneratorOptimizerSteps": 1152,
+    "maxDiscriminatorOptimizerSteps": 1152,
+    "maxCaptureBytes": 67108864,
+    "retainPrimaryError": true
+  },
+  "currentExternalWorkBoundary": {
+    "registerAndBindExistingCandidate": true,
+    "syntheticCpuChecksOnly": false,
+    "realGpuAdmission": false,
+    "realTraining": false,
+    "realDataDecodeOrModelForward": false,
+    "productionRegistryWrite": false,
+    "oldEvidenceMutation": false,
+    "managedCpuPreparation": true
+  }
+}
+

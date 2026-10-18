@@ -9,6 +9,8 @@
   },
   "scripts": {
     "control:ai-painter-ecology-decode1-quality": "node scripts/run-ai-painter-ecology-decode1-quality-v1.mjs",
+    "control:ai-painter-ecology-terrain-detail-quality": "node scripts/run-ai-painter-ecology-terrain-detail-quality-v1.mjs",
+    "control:ai-painter-object-support-structure-quality": "node scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
     "prepare:ai-painter-learning-capacity-experiment": "node scripts/run-ai-painter-learning-capacity-experiment.mjs prepare",
     "run:ai-painter-learning-capacity-experiment": "node scripts/run-ai-painter-learning-capacity-experiment.mjs run",
     "dev": "next dev --webpack",

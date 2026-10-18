@@ -1,5 +1,9 @@
 // Legacy layouts are enabled by explicit package/result discriminants. File
 // extensions classify already-bound artifacts; names never invent relationships.
+import { readTrainingPreviewHistory, readTrustedTrainingPreviewProgress } from './training-preview-history-v1.mjs'
+import { bytes as readPreviewBytes } from './training-history-safe-bytes.mjs'
+import { readCurrentExecutionRegistry, CURRENT_EXECUTION_REGISTRY_PATH } from '../ai-painter-current-execution-registry.mjs'
+import { readBoundTrainingPresentation } from './bound-training-presentation.mjs'
 const MANAGED_DETAIL_PROTOCOLS = [
   {worker:'detail-weight-managed-worker-terminal-v1', review:'detail-weight-managed-review-terminal-v1',
     plans:new Map([['detail-weight-plan.json','detail-weight-managed-plan-v1'],
@@ -13,6 +17,19 @@ const MANAGED_DETAIL_PROTOCOLS = [
     plans:new Map([['quality-plan.json','ecology-decode1-weight-quality-plan-v1']]),
     configuration:'ecology-decode1-weight-quality-configuration-v1', mode:'bounded-quality-training',
     report:'ecology-regime-native-review-input-v1', adapter:'ecology_decode1_weight_quality_training_v1'},
+  {worker:'ecology-terrain-detail-weight-quality-worker-terminal-v1', review:'ecology-terrain-detail-weight-quality-review-terminal-v1',
+    plans:new Map([['quality-plan.json','ecology-terrain-detail-weight-quality-plan-v1']]),
+    configuration:['ecology-terrain-detail-weight-quality-configuration-v1',
+      'ecology-terrain-detail-weight-quality-configuration-v2'], mode:'bounded-quality-training',
+    report:'ecology-terrain-detail-weight-quality-native-review-input-v1', adapter:'ecology_terrain_detail_weight_quality_training_v1'},
+  {worker:'object-support-structure-quality-worker-terminal-v1', review:'object-support-structure-quality-review-terminal-v1',
+    plans:new Map([['quality-plan.json','object-support-structure-quality-plan-v1']]),
+    configuration:'object-support-structure-quality-configuration-v1', mode:'bounded-quality-training',
+    report:'object-support-structure-quality-native-review-input-v1', adapter:'object_support_structure_quality_training_v1',
+    audit:'object-support-structure-machine-audit-v1', core:'object-support-structure-machine-audit-core-v1',
+    reviewFailure:'object-support-structure-review-failure-v1',
+    capture:'object-support-structure-gradient-failure-capture-v1', captureExecution:'object-support-structure-failure-capture-execution-v1',
+    gradientLabels:['actualTotal','structuredObjective','wholeFrameFidelity','objectCoreRgb','objectSupportStructure']},
 ];
 const PACKAGE_KINDS = {
   'ai-painter-decoder-binding-ab-result-v1': ['decoder_binding_ab_0', 'ai-painter-decoder-binding-ab-package-v1', 'decoder_binding_ab'],
@@ -192,7 +209,65 @@ function experimentEnvelopeV1(request, result, requireFact, failedClosed = false
       missing: [...imagePlan].filter(([key]) => !seenImages.has(key)).map(([, item]) => item) },
   } }
 }
-export async function adaptLegacyTrainingDetail({ runId, terminal, record, base, capsuleBinding, taskTerminalBinding, readJson, readEvidenceJson, readLargeResultProjection, makeArtifact, checkpointMetadata, requireFact }) {
+export async function adaptLegacyTrainingDetail(options) {
+  const detail = await adaptLegacyTrainingDetailCore(options)
+  const { runId, terminal, readJson, makeArtifact } = options
+  const root = process.env.AI_CONSOLE_HISTORY_ROOT || process.cwd()
+  let parent = terminal, protocol, progress = null, progressVerified = false
+  try {
+    if (terminal.workerTerminal && terminal.executionPackage) parent = await readJson(terminal.workerTerminal)
+    protocol = MANAGED_DETAIL_PROTOCOLS.find(item => parent?.schema === item.worker)
+    if (parent?.trainingPreviewManifest && terminal.trainingPreviewManifest)
+      options.requireFact(parent.trainingPreviewManifest.path === terminal.trainingPreviewManifest.path
+        && parent.trainingPreviewManifest.sha256 === terminal.trainingPreviewManifest.sha256, 'training_preview_manifest_binding_conflict')
+    const manifestBinding = parent?.trainingPreviewManifest ?? terminal.trainingPreviewManifest
+    if (!manifestBinding) {
+      if (protocol || ['training_pending', 'qualification_pending'].includes(parent?.status))
+        detail.record.detailCoverage = { ...detail.record.detailCoverage,
+          trainingPreview: { status: 'not_recorded', reasonCode: 'unregistered_source', verifiedCount: 0, gaps: [] } }
+      if (!['training_pending', 'qualification_pending'].includes(parent?.status)) return detail
+    }
+    if (!manifestBinding) {
+      // A history request cannot certify activity. Reuse the original registry
+      // verifier and bound-progress validator; never scan a progress directory.
+      progress = await readTrustedTrainingPreviewProgress({ runId, readJson, currentPath: CURRENT_EXECUTION_REGISTRY_PATH,
+        readRegistry: () => readCurrentExecutionRegistry(root), readPresentation: current =>
+          readBoundTrainingPresentation(root, current.registry, current.taskCapsule, current.currentTaskTerminal) })
+      if (!progress?.latestTrainingPreview) return detail
+      progressVerified = true
+      // The plan protocol, not a model name/Run suffix, selects its semantics.
+      const envelope = await readJson(parent.executionPackage)
+      const plans = envelope.inputEvidence?.filter(item => item?.path === `${envelope.outputRoot}/quality-plan.json`) ?? []
+      if (plans.length !== 1) throw new Error('training_preview_plan_unavailable')
+      const plan = await readJson(plans[0])
+      protocol = MANAGED_DETAIL_PROTOCOLS.find(item => item.plans.get('quality-plan.json') === plan.schema
+        && [item.configuration].flat().includes(plan.configuration?.schema))
+    }
+    const report = await readTrainingPreviewHistory({ parent, manifestBinding,
+      progress, progressVerified, planSchemas: [...(protocol?.plans.values() ?? [])],
+      configurationSchemas: [protocol?.configuration].flat().filter(Boolean),
+      ...options.previewReadOptions,
+      readBytes: async (bound, maximum) => (await readPreviewBytes(root, bound.path, maximum, bound.sha256)).value })
+    for (const image of report.images) {
+      const prior = detail.record.artifacts.find(item => item.role === 'image' && item.logicalPath === image.binding.path && item.sha256 === image.binding.sha256)
+      if (prior) { Object.assign(prior, image.metadata); delete prior.passed }
+      else detail.record.artifacts.push(makeArtifact('image', image.binding, image.metadata))
+    }
+    const coverage = { ...report }; delete coverage.images
+    detail.record.detailCoverage = { ...detail.record.detailCoverage, trainingPreview: coverage }
+    if (report.images.length && ['training_pending', 'qualification_pending'].includes(parent.status))
+      detail.reasonCode = 'history_training_preview_observation_only'
+    if (report.gaps.length) { detail.dataStatus = 'partial'; detail.unavailableFields = [...new Set([...(detail.unavailableFields ?? []), 'trainingPreview'])] }
+  } catch {
+    // One failed/missing preview must not hide independently verified history,
+    // failure evidence, checkpoints or prior successful images.
+    detail.record.detailCoverage = { ...detail.record.detailCoverage,
+      trainingPreview: { status: 'unavailable', verifiedCount: 0, gaps: [{ reasonCode: 'training_preview_source_unavailable' }] } }
+    detail.dataStatus = 'partial'
+  }
+  return detail
+}
+async function adaptLegacyTrainingDetailCore({ runId, terminal, record, base, capsuleBinding, taskTerminalBinding, readJson, readEvidenceJson, readLargeResultProjection, makeArtifact, checkpointMetadata, requireFact }) {
   if (terminal.schemaVersion === 'ai-painter-training-system-interruption-terminal-v1')
     return adaptSystemInterruption({ runId, terminal, record, base, readJson, readEvidenceJson, makeArtifact, requireFact })
   const dryProtocol = DRY_LIFECYCLE.exec(terminal.schemaVersion)
@@ -544,7 +619,7 @@ async function adaptSystemInterruption({ runId, terminal, record, base, readJson
   identity(plan)
   const protocol = MANAGED_DETAIL_PROTOCOLS.find(candidate => candidate.plans.get('quality-plan.json') === plan.schema)
   requireFact(protocol?.configuration && plan.executionMode === protocol.mode
-    && plan.configuration?.schema === protocol.configuration && plan.outputRoot === pkg.outputRoot
+    && [protocol.configuration].flat().includes(plan.configuration?.schema) && plan.outputRoot === pkg.outputRoot
     && plan.configuration.capabilityVersion === terminal.capabilityVersion, 'history_interruption_plan_conflict')
   const ceiling = plan.configuration.executionCeiling, resolution = plan.configuration.scope?.resolution
   requireFact(object(ceiling) && ['epochs', 'generatorOptimizerSteps', 'discriminatorOptimizerSteps']
@@ -568,10 +643,12 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
   const object = v => v !== null && typeof v === 'object' && !Array.isArray(v)
   const count = v => Number.isSafeInteger(v) && v >= 0
   const text = v => typeof v === 'string' && v.length > 0 && v.length <= 192
-  let protocol = MANAGED_DETAIL_PROTOCOLS.find(p => terminal.schema === p.worker
-    || (terminal.schema ?? terminal.schemaVersion) === p.review) ?? MANAGED_DETAIL_PROTOCOLS[0]
+  const reviewProtocol = value => MANAGED_DETAIL_PROTOCOLS.find(p => [p.review, p.reviewFailure]
+    .some(schema => schema && (value?.schema ?? value?.schemaVersion) === schema))
+  let protocol = MANAGED_DETAIL_PROTOCOLS.find(p => terminal.schema === p.worker)
+    ?? reviewProtocol(terminal) ?? MANAGED_DETAIL_PROTOCOLS[0]
   let schema = protocol.worker
-  const isReviewWrapper = value => (value?.schema ?? value?.schemaVersion) === protocol.review
+  const isReviewWrapper = value => reviewProtocol(value) === protocol
   const gaps = new Set(), availability = {}, seen = new Map()
   const limits = { jsonReads: 16, jsonBytes: 2 * 1024 * 1024, artifacts: 256, checkpoints: 32, metrics: 1024, images: 128 }
   let reads = 0, worker = terminal, workerBinding = record.terminalBinding, wrapper = null, boundAutonomous = null
@@ -617,7 +694,7 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
     }
     worker = await read(workerBinding, 'workerTerminal')
     if (!worker) return null
-    if (!MANAGED_DETAIL_PROTOCOLS.some(p => (wrapper?.schema ?? wrapper?.schemaVersion) === p.review)) {
+    if (!reviewProtocol(wrapper)) {
       protocol = MANAGED_DETAIL_PROTOCOLS.find(p => worker.schema === p.worker) ?? protocol
       schema = protocol.worker
     }
@@ -709,7 +786,7 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
     gap('managedPlan', 'unsupported_schema'); return finish()
   }
   identity(plan); requireFact(plan.outputRoot === outputRoot && object(plan.configuration), 'history_managed_plan_conflict')
-  if (protocol.configuration) requireFact(plan.configuration.schema === protocol.configuration
+  if (protocol.configuration) requireFact([protocol.configuration].flat().includes(plan.configuration.schema)
     && plan.executionMode === protocol.mode, 'history_managed_plan_conflict')
   const config = plan.configuration, ceiling = config.executionCeiling, selection = config.checkpointSelection
   requireFact(object(ceiling) && count(ceiling.epochs) && ceiling.epochs > 0
@@ -807,9 +884,11 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
     record.reviewExecutionState = taskTerminal.executionState
     record.reviewStatus = null
     append('evidence', taskTerminalBinding ?? record.terminalBinding, { evidenceKind: 'managedReviewTerminal' })
-    if (taskTerminal.reviewFailure) {
-      own(taskTerminal.reviewFailure)
-      const failure = await read(taskTerminal.reviewFailure, 'reviewFailure')
+    const directFailure = protocol.reviewFailure && (taskTerminal.schema ?? taskTerminal.schemaVersion) === protocol.reviewFailure
+    const failureBinding = directFailure ? taskTerminalBinding ?? record.terminalBinding : taskTerminal.reviewFailure
+    if (failureBinding) {
+      own(failureBinding)
+      const failure = directFailure ? taskTerminal : await read(failureBinding, 'reviewFailure')
       if (failure) {
         requireFact(taskTerminal.status === 'review_execution_failed_closed', 'history_managed_review_failure_conflict')
         // The original local executor terminal has a package identity but no
@@ -825,22 +904,27 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
             'history_managed_review_failure_conflict')
         }
         const result = autonomousFailure ? failure.finalResult : failure
+        // This protocol persists the first raw error without classifying it.
+        // Missing classifications stay null in the existing API fields.
+        const rawFailure = protocol.reviewFailure && (failure.schema ?? failure.schemaVersion) === protocol.reviewFailure
+        if (protocol.reviewFailure && !autonomousFailure)
+          requireFact(rawFailure, 'history_managed_review_failure_schema_conflict')
         requireFact(object(result) && (!autonomousFailure || result.status === 'failed')
-          && ['program', 'infrastructure'].includes(result.failureKind)
-          && typeof result.failureCode === 'string' && result.failureCode.length > 0
+          && (rawFailure || ['program', 'infrastructure'].includes(result.failureKind)
+            && typeof result.failureCode === 'string' && result.failureCode.length > 0)
           && typeof (result.detail ?? result.error) === 'string' && (result.detail ?? result.error).length > 0,
         'history_managed_review_failure_conflict')
         if (autonomousFailure) requireFact(failure.failureCode === result.failureCode, 'history_managed_review_failure_conflict')
         record.reviewStatus = 'review_execution_failed_closed'
-        record.failureSummary = { phase: 'review', status: record.reviewStatus, failureKind: result.failureKind,
-          failureCode: result.failureCode, detail: result.detail ?? result.error,
-          sourcePath: taskTerminal.reviewFailure.path, sourceSha256: taskTerminal.reviewFailure.sha256 }
+        record.failureSummary = { phase: 'review', status: record.reviewStatus, failureKind: result.failureKind ?? null,
+          failureCode: result.failureCode ?? null, detail: result.detail ?? result.error,
+          sourcePath: failureBinding.path, sourceSha256: failureBinding.sha256 }
         requireFact(record.metrics.length < limits.metrics, 'history_managed_metric_limit', 413)
         record.metrics.push({ source: 'managed_review_execution_failure', measurements: {
-          phase: 'review', status: record.reviewStatus, failureKind: result.failureKind,
-          failureCode: result.failureCode, detail: result.detail ?? result.error },
-          sourcePath: taskTerminal.reviewFailure.path, sourceSha256: taskTerminal.reviewFailure.sha256 })
-        append('evidence', taskTerminal.reviewFailure, { evidenceKind: 'reviewFailure' })
+          phase: 'review', status: record.reviewStatus, failureKind: result.failureKind ?? null,
+          failureCode: result.failureCode ?? null, detail: result.detail ?? result.error },
+          sourcePath: failureBinding.path, sourceSha256: failureBinding.sha256 })
+        append('evidence', failureBinding, { evidenceKind: 'reviewFailure' })
       }
     } else if (taskTerminal.status === 'review_execution_failed_closed') gap('reviewFailure')
     if (taskTerminal.reviewRecoveryPlan) {
@@ -854,6 +938,21 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
   if (auditBinding) own(auditBinding)
   const audit = await read(auditBinding, 'machineReview')
   if (audit) {
+    let measurements = audit, measurementsBinding = auditBinding
+    if (protocol.audit) {
+      requireFact((audit.schema ?? audit.schemaVersion) === protocol.audit, 'history_managed_audit_schema_conflict')
+      own(audit.core)
+      const core = await read(audit.core, 'machineReview')
+      if (core) {
+        requireFact((core.schema ?? core.schemaVersion) === protocol.core, 'history_managed_audit_schema_conflict')
+        identity(core); identity(audit)
+        for (const key of ['executionPackage', 'input', 'selectedCheckpoint']) same(core[key], audit[key])
+        requireFact(core.status === audit.status, 'history_managed_review_status_conflict')
+        measurements = core
+        measurementsBinding = audit.core
+        append('evidence', audit.core, { evidenceKind: 'machineReview' })
+      }
+    }
     requireFact(audit.runId === runId, 'history_managed_identity_conflict')
     for (const key of ['packageId', 'capabilityVersion']) if (audit[key] !== undefined)
       requireFact(audit[key] === worker[key], 'history_managed_identity_conflict')
@@ -873,9 +972,9 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
       append('evidence', auditBinding, { evidenceKind: 'machineReview' })
       requireFact(record.metrics.length < limits.metrics, 'history_managed_metric_limit', 413)
       record.metrics.push({ source: 'managed_machine_review', measurements: { status: audit.status,
-        detail: audit.detail ?? null, aesthetic: audit.aesthetic ?? null, alignment: audit.alignment ?? null,
-        issueCodes: audit.issueCodes ?? [], validationImprovedWithoutMeanRgbRegression: audit.validationImprovedWithoutMeanRgbRegression ?? null },
-        sourcePath: auditBinding.path, sourceSha256: auditBinding.sha256 })
+        detail: measurements.detail ?? null, aesthetic: measurements.aesthetic ?? null, alignment: measurements.alignment ?? null,
+        issueCodes: measurements.issueCodes ?? [], validationImprovedWithoutMeanRgbRegression: measurements.validationImprovedWithoutMeanRgbRegression ?? null },
+        sourcePath: measurementsBinding.path, sourceSha256: measurementsBinding.sha256 })
     }
   }
   const reportBinding = preciseReview ? taskTerminal.reviewReport : taskTerminal?.reviewReport ?? worker.reviewReport ?? (availability.machineReview === 'available' ? audit?.input : null)
@@ -939,7 +1038,7 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
     // Validate the pair before appending either item; failures keep all prior
     // legitimate artifacts. Tensor bytes are never opened or made downloadable.
     try {
-      const captureSchema = 'ecology-regime-gradient-failure-capture-v1', receipt = worker.captureReceipt
+      const captureSchema = protocol.capture ?? 'ecology-regime-gradient-failure-capture-v1', receipt = worker.captureReceipt
       requireFact(worker.executionState === 'failed_closed' && object(receipt) && receipt.schema === captureSchema,
         'history_managed_capture_schema_unsupported')
       requireFact(worker.captureStatus === 'captured' && receipt.status === 'captured'
@@ -969,6 +1068,10 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
       const manifest = await captureRead(children.manifest, children.manifest.bytes)
       requireFact(manifest.schema === captureSchema && manifest.status === 'captured'
         && Array.isArray(manifest.missing) && manifest.missing.length === 0, 'history_managed_capture_schema_unsupported')
+      if (protocol.gradientLabels) requireFact(Array.isArray(manifest.labels)
+        && manifest.labels.length === protocol.gradientLabels.length
+        && manifest.labels.every((label, index) => label === protocol.gradientLabels[index]),
+      'history_managed_capture_schema_unsupported')
       const primary = await captureRead(children.primary, children.primary.bytes)
       // primary.json has no separate Schema in capture-v1: its version and
       // identity come from this exact manifest/receipt, not a filename match.
@@ -1030,7 +1133,7 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
       own(manifest.executionBinding)
       requireFact(manifest.executionBinding.path === `${outputRoot}/capture-execution.json`, 'history_managed_capture_path_conflict')
       const execution = await captureRead(manifest.executionBinding)
-      requireFact(execution.schema === 'ecology-regime-failure-capture-execution-v1'
+      requireFact(execution.schema === (protocol.captureExecution ?? 'ecology-regime-failure-capture-execution-v1')
         && execution.runId === runId && execution.outputRoot === outputRoot, 'history_managed_capture_identity_conflict')
       same(execution.executionPackage, worker.executionPackage); same(execution.modelBinding, models[0])
       requireFact(record.artifacts.length + 2 <= limits.artifacts, 'history_record_limit', 413)

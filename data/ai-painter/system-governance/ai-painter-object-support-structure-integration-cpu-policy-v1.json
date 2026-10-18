@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "ai-painter-object-support-structure-integration-cpu-policy-v1",
+  "candidateId": "stage4_mvp256_dry_object_support_structure_integration_cpu_v1",
+  "status": "registered_inactive_cpu_integration_not_training_qualified",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "792bf647336eb59a3cdbe6b4efbe3e630724e810ba0afa125fb4d7cc350c2e19"
+  },
+  "lossDefinition": {
+    "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-cpu-policy-v1.json",
+    "sha256": "f5842c5005a60a2c51dd84f9baca1d4ecc751a5fed09e8647f7d96acd4efaefe"
+  },
+  "implementation": {
+    "gradientBridge": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_priority_update_cpu_v1.py",
+    "profile": "ml/ai-painter/scripts/painter_stage4_object_support_structure_training_profile_cpu_v1.py",
+    "tests": "ml/ai-painter/tests/test_object_support_structure_integration_cpu_v1.py",
+    "realCpuCheck": "ml/ai-painter/scripts/check_object_support_structure_integration_cpu_v1.py"
+  },
+  "model": {
+    "capability": "stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_v1",
+    "parameterTensors": 108,
+    "parameterElements": 2242687,
+    "seed": 20260929,
+    "freshSourceInitializationOnly": true,
+    "checkpointLoading": false,
+    "architectureOrNumericalOperatorChanges": false
+  },
+  "gradientProtocol": {
+    "componentsInOrder": ["actualTotal", "structuredObjective", "wholeFrameFidelity", "objectCoreRgb", "objectSupportStructure"],
+    "generatorAutogradCalls": 5,
+    "singleSharedForwardGraph": true,
+    "scalarFormula": "(((structured.float() + whole).float() + core).float() + support)",
+    "expectedGradientFormula": "(((g_structured.float() + g_whole.float()).float() + g_core.float()).float() + g_support.float())",
+    "atol": 1e-6,
+    "rtol": 1e-5,
+    "priorityObjective": "unchanged objectCoreRgbWeighted",
+    "otherGradientFormula": "(g_whole.float() + g_structured.float()).float() + g_support.float()",
+    "projection": "existing core-priority conflict rule: if dot(core,other)<0 and core is nonzero, subtract dot(core,other)/dot(core,core) times core from actualTotal; FP64 reductions then FP32 output",
+    "projectionRoundoffMultiplier": 16,
+    "nonHeadActualGradientIdentityPreserved": true,
+    "nonConflictHeadActualBytesPreserved": true,
+    "allFiveComponentsRetainedWhenSupportNotApplicable": true,
+    "actualTotalMustNotBeReconstructedFromComponentGradients": true
+  },
+  "realCpuScope": {
+    "sampleSelection": "first train ID in the unchanged bound 48-row train split",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "resolution": [256, 192],
+    "maxDecodedTrainSamples": 1,
+    "maxGeneratorForwards": 1,
+    "generatorAutogradCalls": 5,
+    "discriminatorAutogradCalls": 0,
+    "originalDataPlan": {
+      "path": ".runtime/ai-painter/ecology-terrain-detail-weight-quality-executions/terrain-detail-quality-v2-78017caf-1495-4a85-a2ed-e03e3a8e532c/quality-plan.json",
+      "sha256": "05cee390a943ec3845aeb2e185c7a6b2cf1e09e0c05c45a671614e3691e61802"
+    },
+    "priorPlanUse": "exact source/data/ecology identity only; no prior execution permission, weights, budget or qualification inherited",
+    "validationRgbRead": false,
+    "challengeOrRegressionContentRead": false,
+    "reviewCodeOrThresholdChange": false
+  },
+  "resources": {
+    "cpuThreads": 2,
+    "syntheticTestsMaxWallSeconds": 120,
+    "realCpuMaxWallSeconds": 240,
+    "managedTransportMaxWallSeconds": 180,
+    "managedCleanupReserveMs": 1000,
+    "attempts": 1,
+    "automaticRetries": 0,
+    "maxOutputMiB": 8,
+    "maxJsonBytes": 1048576,
+    "programFileCountMaximum": 256,
+    "programFileBytesMaximum": 1048576,
+    "totalProgramBytesMaximum": 16777216
+  },
+  "boundaries": {
+    "cpuOnly": true,
+    "optimizerConstruction": false,
+    "weightUpdates": false,
+    "cudaInitialization": false,
+    "checkpointOrImageOutput": false,
+    "oldSourceBytesMutation": false,
+    "productionEntryRouting": false,
+    "currentExecutionRegistryWrite": false,
+    "gpuQualificationGranted": false,
+    "trainingGranted": false,
+    "visualOrStage4QualificationGranted": false,
+    "runtimePublicationGranted": false
+  },
+  "acceptance": [
+    "Original loss definition, old 233-role source closure and historical evidence remain byte-identical",
+    "Independent actual-total differentiation and four complete component differentiations use one graph and the unchanged per-element tolerances",
+    "The support gradient is checked independently and included in the non-priority conflict contribution; it is never silently dropped",
+    "Finite, shape, train-only, exact model, scalar-formula and frozen-critic boundaries fail closed before differentiation where applicable",
+    "Synthetic positive, negative, zero/unused, conflict and no-conflict cases pass independently",
+    "One fresh real CPU model and the fixed original train sample complete the same five-gradient path with unchanged model, critic, gradients and RNG",
+    "Real execution has a unique consumed request, live managed cleanup receipt, exact source/data receipts and no production registry mutation",
+    "CPU success is not GPU, training, model-quality, stage or release qualification"
+  ]
+}

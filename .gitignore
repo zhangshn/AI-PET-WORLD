@@ -135,3 +135,9 @@ next-env.d.ts
 !data/world-samples/ai-assisted-cold-start-dataset-packages/
 !data/world-samples/ai-assisted-cold-start-dataset-packages/**/
 !data/world-samples/ai-assisted-cold-start-dataset-packages/**/*.json
+
+# Only the fixed document evidence needed by repository-only checks.
+!data/ai-painter/system-governance/document-baselines/
+data/ai-painter/system-governance/document-baselines/*
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-clauses-v1.json

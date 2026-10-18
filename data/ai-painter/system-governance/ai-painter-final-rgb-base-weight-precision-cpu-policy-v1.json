@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "ai-painter-final-rgb-base-weight-precision-cpu-policy-v1",
+  "status": "registered_cpu_candidate_verification_only",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.75",
+    "sha256": "05510fc2ee47c136095651abda18d06f3616e339c013d679565659e2656e24a0"
+  },
+  "candidate": "stage4_mvp256_dry_factorized_ecology_final_rgb_base_weight_precision_v1",
+  "target": {
+    "parameterIndex": 88,
+    "parameterName": "core.core.final_rgb_decoder.base.layers.2.weight",
+    "weightShape": [
+      48,
+      48,
+      3,
+      3
+    ]
+  },
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-169-forested-low-mountain-v2",
+    "split": "train",
+    "sampleCount": 1,
+    "originalDataSplits": "48/8/4/4 unchanged",
+    "initializationSeed": 20260929,
+    "parameterCount": 108,
+    "parameterElements": 2242687,
+    "failureStateInitializationAllowed": false
+  },
+  "dataLocator": {
+    "path": ".runtime/ai-painter/object-support-structure-quality-executions/object-support-quality-v1-e03cae36-386e-4919-b83c-a8441ab7115c/gradient-failure/manifest.json",
+    "sha256": "6fa557bad90e86ed90c83b9686bbcf77842215eb4839a9bbd53ca2b851e93605"
+  },
+  "sourceAlgorithmBindings": [
+    {
+      "role": "parentRenderer",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_terrain_detail_weight_precision_v1.py",
+        "sha256": "ae696008318c4e04084bf74d8164bac76f671500564a1f1c153cf670f338e627"
+      }
+    },
+    {
+      "role": "nativeWeightReduction",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/decode1_weight_reduction_precision_v1.py",
+        "sha256": "500b1485a87beb208856c76638e1ee4c733931456cd9769ca25805114d1a38ec"
+      }
+    },
+    {
+      "role": "supportGradientGate",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_priority_update_cpu_v1.py",
+        "sha256": "d2d3238be5e3baab321dce0d697d70723cc69c622c361cc8fe215560f8e1e67c"
+      }
+    },
+    {
+      "role": "supportLoss",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_support_structure_device_v1.py",
+        "sha256": "4138d2b08eb3d52b6518226bf406aec8b8a75d322a05fb8ac08492197e965ec6"
+      }
+    }
+  ],
+  "operatorFixture": {
+    "originalGateFailure": {
+      "path": ".runtime/ai-painter/parameter88-causal-gpu-diagnostics/parameter88-gpu-3e129698-8867-4b5d-aaed-7ea65a65b45e/original-gate-failure.json",
+      "sha256": "b84df56ee6b034515ecc6dffcf6d5fb35523c95b9e37adee59a9ccf14f72d7f3",
+      "bytes": 414
+    },
+    "tensors": {
+      "path": ".runtime/ai-painter/parameter88-causal-gpu-diagnostics/parameter88-gpu-3e129698-8867-4b5d-aaed-7ea65a65b45e/target-capture.pt",
+      "sha256": "923e84b1fc6404526c5d31e967ac1e59c10013c729e1e142e097d4dbb4bed950",
+      "bytes": 57041730
+    },
+    "metadata": {
+      "path": ".runtime/ai-painter/parameter88-causal-gpu-diagnostics/parameter88-gpu-3e129698-8867-4b5d-aaed-7ea65a65b45e/target-capture.json",
+      "sha256": "a420bf8809f215ed01819ce203efce0efe61518c4d1064aff156cf984b7fafd6",
+      "bytes": 3303
+    },
+    "contrastTensors": {
+      "path": ".runtime/ai-painter/parameter88-causal-gpu-diagnostics/parameter88-gpu-3e129698-8867-4b5d-aaed-7ea65a65b45e/local-contrast.pt",
+      "sha256": "715007b747e0934a582fca69f57c9db9042bc1bc134fda6563d00b09243ee276",
+      "bytes": 1828546
+    }
+  },
+  "resources": {
+    "maxWallSeconds": 120,
+    "threads": 2,
+    "maxOutputBytes": 8388608,
+    "maxStreamBytes": 8388608,
+    "failureReserveBytes": 65536,
+    "cleanupReserveMs": 1000,
+    "finalizationReserveMs": 8000,
+    "attempts": 1,
+    "automaticRetries": 0
+  },
+  "limits": {
+    "fullBaselineForwards": 1,
+    "fullCandidateForwards": 1,
+    "fullGeneratorAutogradCalls": 5,
+    "operatorFixtureForwards": 1,
+    "operatorFixtureAutogradCalls": 5,
+    "discriminatorAutogradCalls": 0,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "cudaCalls": 0
+  },
+  "comparison": {
+    "atol": 0.000001,
+    "rtol": 0.00001,
+    "originalGateKept": true,
+    "nativeForwardBytesIdentical": true,
+    "onlyTargetWeightGradientChanged": true
+  },
+  "entrypointPath": "scripts/check-ai-painter-final-rgb-base-weight-precision-cpu-v1.mjs",
+  "workerPath": "ml/ai-painter/scripts/check_final_rgb_base_weight_precision_cpu_v1.py",
+  "testPath": "ml/ai-painter/tests/test_final_rgb_base_weight_precision_cpu_v1.py",
+  "outputRoot": ".runtime/ai-painter/final-rgb-base-weight-precision-cpu-checks",
+  "qualification": {
+    "gpuExecutionAllowed": false,
+    "trainingAllowed": false,
+    "checkpointWritten": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "runtimeFrameAllowed": false
+  },
+  "stopRules": [
+    "Fresh source/seed models only. Never initialize from failed G/D archives, old Checkpoints or optimizer state.",
+    "No CUDA, D autograd, optimizer construction, weight updates, PNG or Checkpoint output.",
+    "Original Loss, five independent G gradients, full-parameter gate and all tolerance values remain unchanged.",
+    "Only target88 weight reduction may change, preserving native forward/input/bias and existing target52/60 numeric treatment.",
+    "One actual CPU attempt within the same120-second total envelope, two threads, original native stream/cleanup and output ceiling. No automatic retry.",
+    "Failure, another layer violation or incomplete evidence closes this verification; no automatic per-layer expansion.",
+    "Old policies, attempts and evidence remain immutable. Shared approved preview changes need their own fresh source proof, not historical CPU acceptance inheritance.",
+    "CPU operator, fixture and full-model checks are distinct; none grants GPU, training, visual, Stage4, release or Runtime eligibility."
+  ],
+  "sourceClosure": {
+    "maxFiles": 256,
+    "maxFileBytes": 1048576,
+    "maxTotalBytes": 16777216,
+    "scope": "Actual loaded candidate and validation source closure only; include immutable parent dependencies and own code/tests. Historical source receipts are provenance, not current execution permission.",
+    "loadedModulesMustBeVerified": true,
+    "unrelatedHistoricalRoleRehashRequired": false
+  },
+  "independentDiagnostic": {
+    "terminal": {
+      "path": ".runtime/ai-painter/parameter88-causal-gpu-diagnostics/parameter88-gpu-3e129698-8867-4b5d-aaed-7ea65a65b45e/terminal.json",
+      "sha256": "a069559bb593ce25db7e851ea5833cc26bb05d924d08283d67ad08dcde2dc7d1"
+    },
+    "cpuReview": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter88-review-20261016/gpu-saved-decomposition-cpu-review-v1.json",
+      "sha256": "58c315f7138b96b544cb8a6647a955525a37b6f722580b826ca7b1f5028bbb4f"
+    }
+  },
+  "candidateImplementation": {
+    "operator": "ml/ai-painter/src/ai_painter/complete_world/final_rgb_base_weight_reduction_precision_v1.py",
+    "model": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_final_rgb_base_weight_precision_v1.py",
+    "bridge": "ml/ai-painter/src/ai_painter/complete_world/object_support_final_rgb_weight_priority_update_v1.py"
+  }
+}

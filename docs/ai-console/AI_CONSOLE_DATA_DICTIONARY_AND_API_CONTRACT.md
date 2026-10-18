@@ -1,10 +1,10 @@
 # AI控制台数据字典与API合同
 
-更新时间：2026-10-13 17:55:15 +08:00
+更新时间：2026-10-18 03:00:00 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-DATA-API-1.14`
+文档版本：`AI-CONSOLE-DATA-API-1.21`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
@@ -142,6 +142,8 @@ trainingPresentation
    | `ecology-regime-failure-capture-plan-v1` | `failure-capture-plan.json` | `bounded-failure-capture` | `ecology-regime-failure-capture-configuration-v1` |
    | `ecology-regime-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-regime-quality-configuration-v1` |
    | `ecology-decode1-weight-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-decode1-weight-quality-configuration-v1` |
+   | `ecology-terrain-detail-weight-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-terrain-detail-weight-quality-configuration-v1` |
+   | `ecology-terrain-detail-weight-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-terrain-detail-weight-quality-configuration-v2` |
 
    必须在容器的已签发输入绑定中取得上表规定的计划路径，逐项核对路径、真实字节SHA及对应Schema、executionMode和configuration.schema；无匹配、重复绑定、同时绑定多个观察计划或语义不符均不可用。文件名仅定位已登记协议的显式绑定，不证明兼容，也不按Run、能力名称或版本数字选取特例。分辨率、优化上限及Checkpoint选择统一来自`configuration.scope.resolution`、`configuration.executionCeiling`和`configuration.checkpointSelection`；未知协议必须先完成语义适配及接入验收，不能凭字段相似或名称后缀接入。故障捕获也是实际权重更新，其进度可观察，但完成不代表质量训练、Checkpoint选择、模型资格或Stage晋级。
 
@@ -178,6 +180,20 @@ GET /api/ai-console/training/history/{runId}/artifacts/{artifactId}
 
 ### 3.2.4 V23独立历史观察与完整内容查询
 
+#### 受管训练诊断预览
+
+预览继续沿本节既有历史详情、分页和制品接口返回，不新增训练Run专用API。采用主体规格第15.2及17.1节登记的预览v2、v3、v4或v5政策：终态`trainingPreviewManifest`绑定`training-preview-diagnostic-manifest-v1`，`entries`至多24项，每项包含`record`和`image`路径／SHA绑定；活动进度可通过同Run受信`latestTrainingPreview`绑定单项。两种来源独立核验，不扫描目录发现预览，不把历史或资源占用当作当前训练身份。
+
+版本兼容仅接受`ai-painter-training-preview-observation-policy-v2.json`、`ai-painter-training-preview-observation-policy-v3.json`、`ai-painter-training-preview-observation-policy-v4.json`或`ai-painter-training-preview-observation-policy-v5.json`与各自对应Schema。四者均位于`data/ai-painter/system-governance/`；v3及v4仅增加各自政策限定的新能力身份和输出根，v4对应联合优先候选；v5仅对应本候选260项源码核验兼容及其真实存储源码版本，不放宽预览数量、字节、安全或用途限制，不将旧资格带入新候选。读取器从同一计划与配置的精确政策绑定定位包输入，要求唯一匹配并重算字节，不扫描所有政策或放开任意路径。保留旧v2／v3／v4查询，未知版本、跨版本替换及路径／Schema／语义冲突拒绝；不改变轮询、分页、图像用途或其他接口字段。1.20原字节见[历史规范快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.20-c6c0a410.txt)，此前版本原字节亦保留。
+
+记录采用`training-preview-diagnostic-record-v1`，绑定Run／package／能力／模型、政策／计划／执行包／数据清单、配置／程序摘要、train样本、原图／条件／世界事实、worldId／tick、Epoch／实际G与D步数／前向序号，以及`after_discriminator_update_before_generator_update`捕获时点。模型绑定只表示已核验身份元数据，不是当步权重快照。读取端须与既有包、计划、样本用途及真实文件字节交叉验证；未知格式、错误用途、路径／SHA冲突或跨Run记录不得成为可查看图片。
+
+核验通过的图片使用现有`role=image`、`evidenceKind=training_diagnostic_preview`和明确的未审核用途标签。`purpose=not_reviewed_diagnostic_only`，`formalOutput`、`checkpointSelectionEligible`、`qualificationEvidence`、`runtimePublicationEligible`均为false；即使外部数据带有`passed=true`也不得显示审核通过。预览不进入Checkpoint选优、正式审核结果、发布或Runtime链。
+
+仅在PNG和对应身份记录均已原子提交、重新读取核验后发布绑定。尚未捕获、捕获失败、已有文件但未提交、哈希冲突及来源未登记分别返回真实缺口；不得统一称为未训练或未保存。一个预览条目失败不能抹去原训练首错、终态、计数或其他合格图像。预览可见不改变整体历史覆盖声明；2秒轮询、分页、历史选择及既有安全限额保持。旧1.17原字节见[历史规范快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.17-1ccaca00.txt)，不作现行执行回退。
+
+#### 通用历史查询规则
+
 本节扩展历史发现和查询范围，不放宽当前执行选择、证据校验、资源观察或正式发布门。规范已生效不等于程序已全量接入。
 
 1. 历史来源分为`registry`、`storage_catalog`、`archive_manifest`、`runtime_manifest`、`generated_result`。第3.2.3节的连续登记链仍严格校验；其断链只影响该来源的覆盖及事件证明，不得隐藏其他来源独立可核验的记录。不得伪造跨缺口连续事件，也不得将独立历史记录作为当前身份降级值。
@@ -196,8 +212,17 @@ GET /api/ai-console/training/history/{runId}/artifacts/{artifactId}
 |---|---|---|---|
 | `ecology-regime-quality-worker-terminal-v1` | `ecology-regime-quality-review-terminal-v1` | `ecology-regime-quality-plan-v1` | `ecology-regime-quality-configuration-v1` |
 | `ecology-decode1-weight-quality-worker-terminal-v1` | `ecology-decode1-weight-quality-review-terminal-v1` | `ecology-decode1-weight-quality-plan-v1` | `ecology-decode1-weight-quality-configuration-v1` |
+| `ecology-terrain-detail-weight-quality-worker-terminal-v1` | `ecology-terrain-detail-weight-quality-review-terminal-v1` | `ecology-terrain-detail-weight-quality-plan-v1` | `ecology-terrain-detail-weight-quality-configuration-v1` |
+| `ecology-terrain-detail-weight-quality-worker-terminal-v1` | `ecology-terrain-detail-weight-quality-review-terminal-v1` | `ecology-terrain-detail-weight-quality-plan-v1` | `ecology-terrain-detail-weight-quality-configuration-v2` |
+| `object-support-structure-quality-worker-terminal-v1` | `object-support-structure-quality-review-terminal-v1` | `object-support-structure-quality-plan-v1` | `object-support-structure-quality-configuration-v1` |
 
-两套协议的审核输入均为`ecology-regime-native-review-input-v1`；共享审核输入Schema不允许混用不同协议的计划、Checkpoint或终态证据。审核报告须显式绑定当前选定Checkpoint对应的全部验证输出；`validationImages`逐项记录`sampleId`、`split=validation`、`epoch`、`optimizerStep`、`purpose=prediction`及图片路径和SHA，顺序与冻结验证清单一致。详情读取器逐项核对Run、包、Checkpoint、计划上限及产物绑定，不根据文件名、目录新旧或单张主题图推断其余图片。原图或条件图没有显式绑定时保持未连接，不用预测图冒充。历史图片展示不增加模型前向调用，不授予训练或发布资格；原有受管协议继续兼容。
+前两套协议的审核输入为`ecology-regime-native-review-input-v1`；terrain-detail协议的审核输入为`ecology-terrain-detail-weight-quality-native-review-input-v1`；object-support协议的审核输入为`object-support-structure-quality-native-review-input-v1`。共享计划或终态Schema不允许混用不同配置版本、Checkpoint或执行证据。审核报告须显式绑定当前选定Checkpoint对应的全部验证输出；`validationImages`逐项记录`sampleId`、`split=validation`、`epoch`、`optimizerStep`、`purpose=prediction`及图片路径和SHA，顺序与冻结验证清单一致。详情读取器逐项核对Run、包、Checkpoint、计划上限及产物绑定，不根据文件名、目录新旧或单张主题图推断其余图片。原图或条件图没有显式绑定时保持未连接，不用预测图冒充。历史图片展示不增加模型前向调用，不授予训练或发布资格；原有受管协议继续兼容。24轮配置的第12轮观察不是最终Checkpoint、活动训练图像或额外发布资格，不能替代第24轮真实制品。
+
+失败呈现沿用既有详情字段与制品接口，不新增查询来源或接口：`completedEpochs`与`targetEpochs`表示已完整完成轮数和计划轮数；G／D实际更新分别读取终态的计数，不能假定相等，也不能从轮数反推。仅对已绑定终态中完整匹配的受支持错误格式生成有界中文摘要及参数索引；索引本身不证明模块名称，名称须另有已核验模型图绑定。未知错误、任意对象、路径或疑似敏感文本保持安全降级，不直接渲染原文。故障摘要不是根因判定。
+
+故障附件继续采用`artifacts`及其`evidenceKind`：`gradientFailureManifest`显示为故障清单，`gradientFailurePrimary`显示为首错记录，按原绑定的SHA和既有JSON制品接口读取。没有对实际内容及完整性进行核验前，只能称已绑定，不能称完整现场已认证；二进制张量档案不作为PNG或可下载Checkpoint展示。无图像绑定表示没有已登记可查看的图像，不得从空列表推断磁盘文件不存在、未执行训练或训练已通过。失败记录时间与登记时间使用各自字段，均不得静默填入缺失的完成时间。以上呈现修正不改变2秒刷新、分页、历史选中身份、安全限额或正式资格。
+
+1.16原始字节保留于[`历史API规范快照`](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.16-d14a5a1c.txt)，只供对应历史复核，不作为当前接口回退来源。
 
 ### 3.3 本地控制会话
 

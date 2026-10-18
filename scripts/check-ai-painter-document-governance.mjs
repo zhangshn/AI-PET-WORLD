@@ -1,7 +1,9 @@
 import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
-import { validateAiPainterDocumentState } from "./lib/ai-painter-document-governance-state.mjs"
+import { validateAiPainterDocumentState, validateProgramAdoptionDeclaration } from "./lib/ai-painter-document-governance-state.mjs"
+
+import { readFrozenAiPainterSpecification, FROZEN_AI_PAINTER_SPECIFICATION } from "./lib/ai-painter-frozen-document-v1.mjs"
 
 const ROOT = process.cwd()
 const failures = []
@@ -78,13 +80,13 @@ const implementationBearingDocuments = [
 ]
 
 const exactDocumentVersions = new Map([
-  ["docs/DOCUMENT_AUTHORITY_INDEX.md", "DOCUMENT-AUTHORITY-1.8"],
-  ["docs/DOCUMENTATION_POLICY.md", "DOCUMENTATION-POLICY-1.4"],
+  ["docs/DOCUMENT_AUTHORITY_INDEX.md", "DOCUMENT-AUTHORITY-1.9"],
+  ["docs/DOCUMENTATION_POLICY.md", "DOCUMENTATION-POLICY-1.6"],
   ["docs/BUSINESS_SPEC.md", "AI-PET-WORLD-BUSINESS-1.6"],
   ["docs/ARCHITECTURE.md", "AI-PET-WORLD-ARCHITECTURE-1.10"],
   ["docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "LOCAL-AI-CAPABILITY-MIGRATION-1.7"],
-  ["docs/DIRECTORY_STRUCTURE.md", "AI-PET-WORLD-DIRECTORY-1.11"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.60"],
+  ["docs/DIRECTORY_STRUCTURE.md", "AI-PET-WORLD-DIRECTORY-1.12"],
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.86"],
   ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "AI-PAINTER-DATA-PROVENANCE-1.7"],
   ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "AI-PAINTER-REVIEW-STORAGE-1.20"],
   ["docs/world-visual-data-dictionary/README.md", "WORLD-VISUAL-DICTIONARY-REFERENCE-1.0"],
@@ -120,7 +122,7 @@ for (const relativePath of versionedDocuments) {
 for (const relativePath of implementationBearingDocuments) {
   const text = readText(relativePath)
   if (!/^文档状态：`active_normative_target`$/m.test(text)) failures.push(`${relativePath}: normative target status mismatch`)
-  if (!/^程序符合状态：`program_adoption_pending`$/m.test(text)) failures.push(`${relativePath}: program adoption must remain explicitly pending`)
+  failures.push(...validateProgramAdoptionDeclaration(text).failures.map(failure => `${relativePath}: ${failure}`))
 }
 
 for (const [relativePath, version] of exactDocumentVersions) {
@@ -134,6 +136,9 @@ for (const [relativePath, expected] of [
   ["docs/DOCUMENT_AUTHORITY_INDEX.md", "### GOV-OWNER-001：Owner不进入本地AI正常运行状态机"],
   ["docs/DOCUMENT_AUTHORITY_INDEX.md", "程序不得生成等待Owner授权、签名、批准或响应的正常状态"],
   ["docs/DOCUMENTATION_POLICY.md", "内部票据只承担幂等与证据职责"],
+  ["docs/DOCUMENTATION_POLICY.md", "### 7.2 仓库CPU回归与完整本地验收"],
+  ["docs/DOCUMENTATION_POLICY.md", "`qualificationGranted=false`、`realAssetAudit=not_run`"],
+  ["docs/DOCUMENTATION_POLICY.md", "完整本地资格验证器必须拒绝便携摘要"],
   ["docs/BUSINESS_SPEC.md", "`GOV-OWNER-001`"],
   ["docs/BUSINESS_SPEC.md", "### 3.2 分段交付与前期最小范围"],
   ["docs/BUSINESS_SPEC.md", "延期的是精修工作，不是容许已声明的事实错位、漏画或伪造"],
@@ -146,30 +151,30 @@ for (const [relativePath, expected] of [
   ["docs/ARCHITECTURE.md", "blocked_policy_boundary"],
   ["docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "Owner可以主动改变业务目标、观察、暂停或紧急停止，但不进入本地AI正常运行状态机"],
   ["docs/DIRECTORY_STRUCTURE.md", "内部票据只承担幂等、防重、状态转换和证据追溯"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "替代版本：`AI-PAINTER-SPEC-1.59`"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "240秒仅适用于本节诊断的完整CPU组件验收及其最终新程序自身受管CPU预检"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.6.38 生态条件模型的训练生命周期组件"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.6.39 生态模型梯度故障的单次有界采集"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "##### 9.6.39.1 CPU负向输入夹具与生产输出隔离"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "CPU-NI-006 完成与失败"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "##### 9.6.39.2 本轮心跳的单句柄一致读取"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "CTRL-HB-006 证据与准入"],
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "替代版本：`AI-PAINTER-SPEC-1.85`"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "240秒仅适用于本节诊断的完整CPU组件验收及其最终新程序自身受管CPU预检"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "#### 9.6.38 生态条件模型的训练生命周期组件"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "#### 9.6.39 生态模型梯度故障的单次有界采集"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "##### 9.6.39.1 CPU负向输入夹具与生产输出隔离"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "CPU-NI-006 完成与失败"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "##### 9.6.39.2 本轮心跳的单句柄一致读取"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "CTRL-HB-006 证据与准入"],
   ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "### 11.14 CPU负向输入的限定链接与资源计量"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.6.40 生态模型的单次短程画质验证"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.6.41 保存故障状态的单样本梯度因果诊断"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "GC-005 证据与后继"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "NS-006 结果和停止"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "#### 9.6.40 生态模型的单次短程画质验证"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "#### 9.6.41 保存故障状态的单样本梯度因果诊断"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "GC-005 证据与后继"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "NS-006 结果和停止"],
   ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "### 11.15 本地操作者入口与同调用安全停止"],
   ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "DEP-AUTH-005 验收分层"],
   ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "本节诊断CPU调用含启动及终态最多240秒"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.6.37 现有生态类别条件的隔离CPU原型"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "CPU通过不证明画质改善"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.6.20 四类对象共享隐藏层的有界CPU候选"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "当前阶段只建立并验证CPU候选"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "共享层只注册一次"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.6.21 共享隐藏层CPU检查器的状态身份修复后继"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "#### 9.6.22 同一V27模型的完整程序依赖检查修复"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "state_hash(module.state_dict())"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "#### 9.6.37 现有生态类别条件的隔离CPU原型"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "CPU通过不证明画质改善"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "#### 9.6.20 四类对象共享隐藏层的有界CPU候选"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "当前阶段只建立并验证CPU候选"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "共享层只注册一次"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "#### 9.6.21 共享隐藏层CPU检查器的状态身份修复后继"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "#### 9.6.22 同一V27模型的完整程序依赖检查修复"],
+  ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "state_hash(module.state_dict())"],
   ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "### 9.1 单世界先行MVP的阶段隔离"],
   ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "deferred_out_of_current_mvp_scope"],
   ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "不能通过删除整个历史审核结果放行"],
@@ -330,6 +335,7 @@ const { failures: documentStateFailures, ...documentState } = validateAiPainterD
   readText("docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md"),
 )
 failures.push(...documentStateFailures)
+failures.push(...validateProgramAdoptionDeclaration(formalSpec, documentState.documentedStatusCounts).failures)
 
 // These normative boundaries must remain explicit even when a future trace
 // row declares machine_conformant. Authenticity belongs to machine checks.
@@ -374,6 +380,38 @@ if (fs.existsSync(path.join(ROOT, supersessionPath))) {
   }
 }
 
+
+const frozenSpecification = readFrozenAiPainterSpecification(ROOT, { purpose: "historical_review" })
+const frozenClauseIndexPath = "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-clauses-v1.json"
+const frozenClauseIndex = readJson(frozenClauseIndexPath)
+if (frozenClauseIndex.allowedPurpose !== "historical_review" || frozenClauseIndex.executionAllowed !== false ||
+    frozenClauseIndex.qualificationGranted !== false || frozenClauseIndex.logicalPath !== FROZEN_AI_PAINTER_SPECIFICATION.path ||
+    frozenClauseIndex.documentVersion !== FROZEN_AI_PAINTER_SPECIFICATION.version ||
+    frozenClauseIndex.snapshot?.path !== FROZEN_AI_PAINTER_SPECIFICATION.archivePath ||
+    frozenClauseIndex.snapshot?.sha256 !== FROZEN_AI_PAINTER_SPECIFICATION.sha256 ||
+    frozenClauseIndex.snapshot?.bytes !== FROZEN_AI_PAINTER_SPECIFICATION.byteSize) {
+  failures.push("frozen clause index identity or non-executable scope differs")
+}
+const frozenLines = frozenSpecification.bytes.toString("utf8").replaceAll("\r\n", "\n").split("\n")
+requireText(".gitattributes", "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt -text")
+const frozenHeadings = [...frozenSpecification.bytes.toString("utf8").replaceAll("\r\n", "\n")
+  .matchAll(/^#### (9\.6\.\d+) (.+)$/gm)]
+if (frozenClauseIndex.sections?.length !== 42 || frozenHeadings.length !== 42) failures.push("expected 42 frozen research clauses")
+for (const [index, clause] of (frozenClauseIndex.sections ?? []).entries()) {
+  const nextHeading = frozenHeadings[index + 1]
+  const terminalHeading = frozenLines.findIndex(line => line === "## 10. 自动验证与机器审核")
+  const expectedEnd = nextHeading
+    ? frozenSpecification.bytes.toString("utf8").replaceAll("\r\n", "\n").slice(0, nextHeading.index).split("\n").length - 1
+    : terminalHeading
+  if (clause.sectionId !== `9.6.${index + 1}` || clause.dispatchable !== false || clause.scope !== "original_frozen_version_only" ||
+      !Number.isInteger(clause.startLine) || !Number.isInteger(clause.endLine) || clause.endLine < clause.startLine ||
+      clause.endLine !== expectedEnd ||
+      frozenLines[clause.startLine - 1] !== `#### ${clause.sectionId} ${clause.title}` ||
+      clause.endLine >= frozenLines.length) failures.push(`invalid frozen clause locator: ${clause.sectionId}`)
+}
+requireText("docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "### 17.4 程序符合声明的转换规则")
+requireText("docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "E-TRACE-01")
+
 if (failures.length > 0) {
   console.error("AI Painter document governance check failed:")
   for (const failure of [...new Set(failures)]) console.error(`- ${failure}`)
@@ -385,6 +423,8 @@ console.log(JSON.stringify({
   status: "ai_painter_document_semantics_passed",
   versionedDocuments: versionedDocuments.length,
   historicalContractsVerified,
+  historicalDocumentSnapshotsVerified: 1,
+  frozenResearchClausesVerified: 42,
   currentMachineContractAdoption: "not_evaluated_by_document_check",
   ...documentState,
 }, null, 2))

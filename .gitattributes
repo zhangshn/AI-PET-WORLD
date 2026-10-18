@@ -24,3 +24,19 @@
 *.db binary
 *.pt binary
 *.pth binary
+
+# Frozen specification evidence retains its original CRLF bytes and SHA-256.
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt -text
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.69-792bf647.txt -text
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.70-b74d1834.txt -text
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.71-d050fbc0.txt -text
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.72-376b1158.txt -text
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.73-911eefef.txt -text
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.74-9762045c.txt -text
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.75-05510fc2.txt -text
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.76-59b3ba51.txt -text
+data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.18-40c24065.txt -text
+data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.17-1ccaca00.txt -text
+data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.16-d14a5a1c.txt -text
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.84-7b1867f4.txt -text
+data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.85-d577ef34.txt -text

@@ -9,6 +9,38 @@ const STATUSES = Object.freeze([
 ])
 const COLUMNS = ['需求ID', '机器合同绑定', '程序实现绑定', '测试绑定', '运行证据绑定', '当前符合状态']
 
+// Declaration structure only; neither a SHA-shaped reference nor this result
+// authenticates machine evidence or grants program/model/release qualification.
+export function validateProgramAdoptionDeclaration(text, documentedStatusCounts = null) {
+  const failures = []
+  const declarations = [...text.matchAll(/^程序符合状态：`([^`]+)`$/gm)]
+  const stateLines = [...text.matchAll(/^[ \t]*程序符合状态：.*$/gm)]
+  const status = declarations[0]?.[1] ?? null
+  if (stateLines.length !== 1 || declarations.length !== 1 || !['program_adoption_pending', 'program_conformant'].includes(status)) {
+    failures.push('program adoption declaration must use one supported status')
+  }
+  const references = [...text.matchAll(/^程序符合证据：`([^`]+)`；SHA-256：`([a-f0-9]{64})`$/gm)]
+  const evidenceLines = [...text.matchAll(/^[ \t]*程序符合证据：.*$/gm)]
+  if (evidenceLines.length > 1 || evidenceLines.length !== references.length) {
+    failures.push('duplicate or malformed program adoption evidence declaration')
+  }
+  if (status === 'program_conformant') {
+    const reference = references[0]
+    if (references.length !== 1 || !/^(?:data|\.runtime)\/[A-Za-z0-9_./-]+\.json$/u.test(reference?.[1] ?? '') ||
+        reference[1].split('/').some(part => ['.', '..', ''].includes(part))) {
+      failures.push('conformant declaration requires one relative machine-summary path and SHA-256 reference')
+    }
+    if (documentedStatusCounts && (documentedStatusCounts.document_defined_program_pending > 0 ||
+        documentedStatusCounts.partial_legacy_implementation_not_certified > 0 ||
+        documentedStatusCounts.machine_conformant === 0)) {
+      failures.push('whole-document conformant declaration conflicts with incomplete requirement statuses')
+    }
+  }
+  return { failures, declaredProgramAdoption: status, machineEvidenceVerified: false,
+    programConformanceCertified: false, modelQualificationGranted: false,
+    capabilityReleaseGranted: false, moduleProgressCertified: false }
+}
+
 function cellsOf(line) {
   // Keep empty cells so absent bindings cannot shift into another role.
   return line.trim().split(/(?<!\\)\|/u).slice(1, -1).map(cell => cell.trim())

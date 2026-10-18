@@ -1,0 +1,149 @@
+{
+  "schemaVersion": "ai-painter-terrain-detail-weight-precision-cpu-policy-v1",
+  "status": "registered_cpu_candidate_verification_only",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.66",
+    "sha256": "0a82110bb6c9583758f43dfd571a85c0a5a246e176de7d830da815cea3c7c281"
+  },
+  "candidate": "stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_v1",
+  "target": {
+    "parameterIndex": 60,
+    "parameterName": "core.core.terrain.full_resolution_detail.layers.3.weight",
+    "weightShape": [
+      48,
+      48,
+      3,
+      3
+    ]
+  },
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-157-grassland-forest-transition-v2",
+    "split": "train",
+    "sampleCount": 1,
+    "originalDataSplits": "48/8/4/4 unchanged",
+    "initializationSeed": 20260929,
+    "parameterCount": 108,
+    "parameterElements": 2242687,
+    "failureStateInitializationAllowed": false
+  },
+  "dataLocator": {
+    "path": ".runtime/ai-painter/ecology-decode1-weight-quality-executions/decode1-quality-v2-25e96b64-787b-4d4d-b9f3-114850f7e337/gradient-failure/manifest.json",
+    "sha256": "52f78d8a3d68424ad381b9a36786194b37880a23aa8fe5069da4805727abfbb7"
+  },
+  "sourceAlgorithmBindings": [
+    {
+      "role": "decode1Bridge",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_weight_priority_update_v1.py",
+        "sha256": "33af09294b27dbdda6a50e3bc27908cf4cbe036139eb117e9db6531fc1ba9894"
+      },
+      "currentBytesMatch": true
+    },
+    {
+      "role": "decode1Model",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_weight_precision_v1.py",
+        "sha256": "4ffa5fafdb06c83c296beeb3cbf34fbee4a4caa5452115dc4d83ea693333aa76"
+      },
+      "currentBytesMatch": true
+    },
+    {
+      "role": "decode1Operator",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/decode1_weight_reduction_precision_v1.py",
+        "sha256": "500b1485a87beb208856c76638e1ee4c733931456cd9769ca25805114d1a38ec"
+      },
+      "currentBytesMatch": true
+    },
+    {
+      "role": "trainingProfile",
+      "binding": {
+        "path": "ml/ai-painter/scripts/painter_stage4_ecology_decode1_weight_training_profile_v1.py",
+        "sha256": "13ae825668d6e01068a3e96610d22e2b22403c8e2e22fde4fafec17845df43f4"
+      },
+      "currentBytesMatch": true
+    },
+    {
+      "role": "capture",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/ecology_regime_gradient_failure_capture.py",
+        "sha256": "0786d2f24f074fac7f9583abf377b7ee7213778c020340d1963bab0703cd4aba"
+      },
+      "currentBytesMatch": true
+    }
+  ],
+  "operatorFixture": {
+    "originalGateFailure": {
+      "path": ".runtime/ai-painter/parameter60-causal-gpu-diagnostics/parameter60-gpu-48406ca4-042d-498f-ac5e-eef9919dcd6f/original-gate-failure.json",
+      "sha256": "4cc5dad22c4324e16a191ab50b535c2299e66234fcdb5c1565d13e3da3d18742",
+      "bytes": 404
+    },
+    "tensors": {
+      "path": ".runtime/ai-painter/parameter60-causal-gpu-diagnostics/parameter60-gpu-48406ca4-042d-498f-ac5e-eef9919dcd6f/target-capture.pt",
+      "sha256": "8b1f5569607549d56544f29cd63a8abcd02e834df5f5a55a36c5aac3aeafc49c",
+      "bytes": 47521097
+    },
+    "metadata": {
+      "path": ".runtime/ai-painter/parameter60-causal-gpu-diagnostics/parameter60-gpu-48406ca4-042d-498f-ac5e-eef9919dcd6f/target-capture.json",
+      "sha256": "9ea5b1da9d2a19c051210e1546700c894247d3b3263847fa7ff27d9a418b7c7c",
+      "bytes": 2775
+    },
+    "contrastTensors": {
+      "path": ".runtime/ai-painter/parameter60-causal-gpu-diagnostics/parameter60-gpu-48406ca4-042d-498f-ac5e-eef9919dcd6f/local-contrast.pt",
+      "sha256": "102fd35c23e416876573124bd1385360e13a63b4cec31ec2612c2e21b36b637c",
+      "bytes": 20537026
+    }
+  },
+  "resources": {
+    "maxWallSeconds": 120,
+    "threads": 2,
+    "maxOutputBytes": 8388608,
+    "maxStreamBytes": 8388608,
+    "failureReserveBytes": 65536,
+    "cleanupReserveMs": 1000,
+    "finalizationReserveMs": 8000,
+    "attempts": 1,
+    "automaticRetries": 0
+  },
+  "limits": {
+    "fullBaselineForwards": 1,
+    "fullCandidateForwards": 1,
+    "fullGeneratorAutogradCalls": 4,
+    "operatorFixtureForwards": 1,
+    "operatorFixtureAutogradCalls": 4,
+    "discriminatorAutogradCalls": 0,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "cudaCalls": 0
+  },
+  "comparison": {
+    "atol": 0.000001,
+    "rtol": 0.00001,
+    "originalGateKept": true,
+    "nativeForwardBytesIdentical": true,
+    "onlyTargetWeightGradientChanged": true
+  },
+  "entrypointPath": "scripts/check-ai-painter-terrain-detail-weight-precision-cpu.mjs",
+  "workerPath": "ml/ai-painter/scripts/check_terrain_detail_weight_precision_cpu.py",
+  "testPath": "ml/ai-painter/tests/test_ecology_terrain_detail_precision_cpu.py",
+  "outputRoot": ".runtime/ai-painter/terrain-detail-weight-precision-cpu-checks",
+  "qualification": {
+    "gpuExecutionAllowed": false,
+    "trainingAllowed": false,
+    "checkpointWritten": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "runtimeFrameAllowed": false
+  },
+  "stopRules": [
+    "No failed G/D state or Checkpoint initialization; fresh source-created models for CPU verification only.",
+    "No GPU, training, extra sample, extra layer, data/Loss/threshold/resource change or automatic retry.",
+    "CPU component and fixture results do not prove GPU stability, image quality or training qualification.",
+    "Keep all historical policies, attempts, failures and original programs byte-identical."
+  ]
+}

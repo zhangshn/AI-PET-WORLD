@@ -22,6 +22,7 @@ import painter_stage4_detail_weight_capture_execution_worker as worker
 
 class PublicationTests(unittest.TestCase):
     serial = 0
+    observed_sharing_denials = []
 
     def setUp(self):
         task_root = Path(os.environ["AI_PAINTER_PROGRESS_TEST_ROOT"])
@@ -38,7 +39,7 @@ class PublicationTests(unittest.TestCase):
         worker.replace_progress_file(self.pending, self.target,
             deadline=time.monotonic() + 2 if deadline is None else deadline)
 
-    def native_reader(self):
+    def native_reader(self, *, share_delete=False):
         self.assertEqual(sys.platform, "win32")
         api = ctypes.WinDLL("kernel32", use_last_error=True)
         api.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
@@ -46,8 +47,9 @@ class PublicationTests(unittest.TestCase):
         api.CreateFileW.restype = wintypes.HANDLE
         api.CloseHandle.argtypes = [wintypes.HANDLE]
         api.CloseHandle.restype = wintypes.BOOL
-        # A real reader permits read/write but not FILE_SHARE_DELETE.
-        handle = api.CreateFileW(str(self.target), 0x80000000, 1 | 2, None, 3, 0x80, None)
+        # Sharing replacement is a reader property, not a Python writer flag.
+        share_mode = 1 | 2 | (4 if share_delete else 0)
+        handle = api.CreateFileW(str(self.target), 0x80000000, share_mode, None, 3, 0x80, None)
         self.assertNotEqual(handle, ctypes.c_void_p(-1).value)
         closed = [False]
         def close():
@@ -56,6 +58,49 @@ class PublicationTests(unittest.TestCase):
                 closed[0] = True
         self.addCleanup(close)
         return close
+
+    @unittest.skipUnless(sys.platform == "win32", "actual Windows sharing semantics required")
+    def test_shared_delete_reader_preserves_snapshots_when_replacement_is_denied(self):
+        self.native_reader(share_delete=True)
+        try:
+            self.publish()
+        except OSError as error:
+            self.assertIn(getattr(error, "winerror", None), (5, 32, 33))
+            self.assertEqual(self.target.read_bytes(), b'{"updates":1}')
+            self.assertEqual(self.pending.read_bytes(), b'{"updates":2}')
+            PublicationTests.observed_sharing_denials.append({
+                "readerSharesDelete": True, "replaceWinerror": error.winerror,
+                "scope": "private_fixture_sharing_delete_is_not_a_success_guarantee"})
+        else:
+            self.assertEqual(self.target.read_bytes(), b'{"updates":2}')
+            self.assertFalse(self.pending.exists())
+
+    @unittest.skipUnless(sys.platform == "win32", "actual Windows sharing semantics required")
+    def test_real_share_conflict_and_replace_error_are_distinct_observations(self):
+        self.native_reader()
+        # Check the native DELETE-open error independently of MoveFileEx/os.replace.
+        # This fixture proves sharing denial only for its own deliberately held handle.
+        api = ctypes.WinDLL("kernel32", use_last_error=True)
+        api.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+            wintypes.LPVOID, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+        api.CreateFileW.restype = wintypes.HANDLE
+        probe = api.CreateFileW(str(self.target), 0x00010000, 1 | 2 | 4, None, 3, 0x80, None)
+        probe_error = ctypes.get_last_error()
+        if probe != ctypes.c_void_p(-1).value:
+            api.CloseHandle.argtypes = [wintypes.HANDLE]
+            api.CloseHandle.restype = wintypes.BOOL
+            self.assertTrue(api.CloseHandle(probe))
+            self.fail("DELETE-open unexpectedly succeeded while non-sharing reader held")
+        self.assertEqual(probe_error, 32)
+        with self.assertRaises(OSError) as failure:
+            os.replace(self.pending, self.target)
+        replace_error = getattr(failure.exception, "winerror", None)
+        self.assertIn(replace_error, (5, 32, 33))
+        PublicationTests.observed_sharing_denials.append({
+            "replaceWinerror": replace_error, "deleteOpenWinerror": probe_error,
+            "scope": "private_deliberately_locked_fixture_not_historical_incident"})
+        self.assertEqual(self.target.read_bytes(), b'{"updates":1}')
+        self.assertEqual(self.pending.read_bytes(), b'{"updates":2}')
 
     @unittest.skipUnless(sys.platform == "win32", "actual Windows sharing semantics required")
     def test_actual_windows_reader_reproduces_error_then_release_publishes(self):
@@ -192,7 +237,8 @@ if __name__ == "__main__":
         "failures":len(result.failures),"errors":len(result.errors),"skipped":len(result.skipped),
         "elapsedSeconds":time.monotonic()-started,"platform":sys.platform,
         "realDatasetReads":0,"optimizerSteps":0,"gpuCalls":0,"trainingRetries":0,
-        "actualNativeWindowsReaderTests":2 if sys.platform == 'win32' else 0,
+        "actualNativeWindowsReaderTests":4 if sys.platform == 'win32' else 0,
+        "actualNativeSharingDenialObservations":PublicationTests.observed_sharing_denials,
         "doesNotIdentifyHistoricalLockHolder":True,"doesNotGrantLifecycleOrGpuQualification":True,
         "sources":[{"path":p.relative_to(ROOT).as_posix(),"sha256":hashlib.sha256(p.read_bytes()).hexdigest()}
             for p in (Path(worker.__file__),Path(__file__))]}

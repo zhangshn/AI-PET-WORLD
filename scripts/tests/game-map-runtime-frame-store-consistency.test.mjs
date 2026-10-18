@@ -295,6 +295,78 @@ test("root diagnostic rename failure is a warning after a complete world commit"
   assert.equal(fs.existsSync(f.lock()), false)
 })
 
+test("reopened store continues after committed publication and diagnostic failure, retaining original evidence", async (t) => {
+  const f = fixture(t)
+  f.hook(async (event) => {
+    if (event.operation === "rename" && event.target === f.rootLatest) {
+      throw Object.assign(new Error("private diagnostic interruption"), { code: "EACCES" })
+    }
+  })
+  const committed = await f.write()
+  assert.equal(committed.status, "written")
+  assert.ok(committed.warnings.some((warning) => warning.includes("diagnostic_write_failed:EACCES")))
+  assert.equal(fs.existsSync(f.lock()), false)
+  f.seed(path.join(f.root, "diagnostic-failure-result.json"), committed)
+  const originalRecord = f.raw(committed.recordPath)
+  const originalJournal = f.raw(f.journal())
+  const journal = JSON.parse(originalJournal)
+  const transactionDir = path.join(path.dirname(f.latest()), "transactions")
+  const preparedPath = path.join(transactionDir, `${journal.transactionId}.prepared.json`)
+  const committedPath = path.join(transactionDir, `${journal.transactionId}.committed.json`)
+  const preparedEvidence = f.raw(preparedPath)
+  const committedEvidence = f.raw(committedPath)
+  assert.equal(committedEvidence, originalJournal)
+  assert.equal(f.raw(f.latest()), originalRecord)
+  assert.equal(journal.worldId, "world-a")
+  assert.equal(journal.tick, 7)
+
+  f.hook(async () => undefined)
+  const reopened = f.loadStore()
+  assert.equal((await f.read("world-a", { currentTick: 7 }, reopened)).status, "found")
+  assert.equal((await f.read("world-a", { currentTick: 8 }, reopened)).status, "invalid")
+  rejected(await f.write(frame("world-a", 6), reopened), "stale_tick")
+  assert.equal(f.raw(f.journal()), originalJournal)
+  const next = await f.write(frame("world-a", 8), reopened)
+  assert.equal(next.status, "written")
+  assert.equal(fs.existsSync(f.lock()), false)
+  assert.equal(f.raw(f.latest()), f.raw(next.recordPath))
+  assert.equal(JSON.parse(f.raw(f.journal())).recordId, next.record.recordId)
+  assert.equal((await f.read("world-a", { currentTick: 8 }, reopened)).record.recordId, next.record.recordId)
+  assert.equal((await f.read("world-b", { filePath: f.latest() }, reopened)).status, "invalid")
+  assert.equal(f.raw(committed.recordPath), originalRecord)
+  assert.equal(f.raw(preparedPath), preparedEvidence)
+  assert.equal(f.raw(committedPath), committedEvidence)
+})
+
+test("reopened store reads committed frame after lease-release failure but cannot reclaim the retained lock", async (t) => {
+  const f = fixture(t)
+  f.hook(async (event) => {
+    if (event.operation === "rm" && event.path === f.lock()) {
+      throw Object.assign(new Error("private lease-release interruption"), { code: "EACCES" })
+    }
+  })
+  const failed = await f.write()
+  rejected(failed, "EACCES")
+  f.seed(path.join(f.root, "lease-release-failure-result.json"), failed)
+  const journalBytes = f.raw(f.journal())
+  assert.equal(JSON.parse(journalBytes).state, "committed")
+  const lockBytes = f.raw(f.lock())
+  const originalRecord = f.raw(failed.recordPath)
+  f.hook(async () => undefined)
+  const reopened = f.loadStore()
+  assert.equal((await f.read("world-a", { currentTick: 7 }, reopened)).status, "found")
+  assert.equal((await f.read("world-a", { currentTick: 8 }, reopened)).status, "invalid")
+  rejected(await f.write(frame("world-a", 8), reopened), "EEXIST")
+  assert.equal(f.raw(f.lock()), lockBytes)
+  assert.equal(f.raw(f.journal()), journalBytes)
+  assert.equal(f.raw(failed.recordPath), originalRecord)
+  assert.equal(f.raw(f.latest()), originalRecord)
+  // A valid committed journal is not authority to release a lease from a
+  // different invocation. No production recovery operation is defined here.
+  assert.equal((await f.write(frame("world-b", 2), reopened)).status, "written")
+  assert.equal((await f.read("world-b", { currentTick: 2 }, reopened)).status, "found")
+})
+
 test("legacy root prepared affects its world only, even beside a committed scoped journal", async (t) => {
   const f = fixture(t)
   assert.equal((await f.write()).status, "written")

@@ -88,6 +88,16 @@ for (const hookName of PREFIX_HOOKS) {
     const smokeProgramPaths = deriveSmokeProgramPathsFromQualification(
       realQualificationPayload,
     );
+    const graph = JSON.parse(fs.readFileSync(path.join(path.resolve(packageRoot),
+      "program-graph-manifest.json"), "utf8"));
+    for (const logicalPath of [
+      "scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs",
+      "src/server/ai-painter-current-execution-registry.mjs",
+    ]) {
+      assert.equal(graph.files.find((file) => file.path === logicalPath)?.sha256,
+        bind(fixture.root, logicalPath).sha256,
+        `${hookName} omitted or changed the real reboot-recovery closure`);
+    }
     assert.equal(smokeProgramPaths.trainer,
       realQualificationPayload.programLineage.trainer.path,
     `${hookName} real qualification payload did not hand off canonical trainer role`);
@@ -338,6 +348,15 @@ function createFixture() {
     "ml/ai-painter/trainer.py",
     "ml/ai-painter/trainer-support.py",
   ]) writeBytes(logicalPath, `fixture:${logicalPath}\n`);
+
+  // This dynamic successor uses the real registry module, which imports the
+  // recovery module back. Copy both immutable sources into the private fixture;
+  // graph construction must resolve and bind the actual cyclic dependency.
+  for (const logicalPath of [
+    "scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs",
+    "src/server/ai-painter-current-execution-registry.mjs",
+  ]) writeBytes(logicalPath,
+    fs.readFileSync(path.join(process.cwd(), ...logicalPath.split("/"))));
 
   writeBytes(
     "scripts/lib/ai-painter-stage4-v2-qualification-continuation-v1.mjs",

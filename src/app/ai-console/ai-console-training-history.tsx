@@ -4,9 +4,9 @@ import { startHistoryPolling } from './ai-console-history-poll'
 import { AiConsoleTrainingSummary } from './ai-console-training-summary'
 import styles from './ai-console-training-history.module.css'
 
-type Artifact = { artifactId: string; role: string; url: string | null; sampleId?: string; split?: string; arm?: string; seed?: number; inferenceMode?: string; sourceLabel?: string; epoch?: number | null; passed?: boolean; issueCodes?: string[]; logicalPath: string; sha256: string; byteLength?: number; optimizerSteps?: unknown; verificationStatus: string; previewStatus?: string }
+type Artifact = { artifactId: string; role: string; url: string | null; evidenceKind?: string; sampleId?: string; split?: string; arm?: string; seed?: number; inferenceMode?: string; sourceLabel?: string; epoch?: number | null; passed?: boolean; issueCodes?: string[]; logicalPath: string; sha256: string; byteLength?: number; optimizerSteps?: unknown; verificationStatus: string; previewStatus?: string }
 type RegistryEvent = { eventSequence: number; registryRevision: number; transactionId: string; taskId: string; runId: string; action: string | null; recordedAtUtc: string | null; currentSha256: string; evidenceReferences: string[] }
-type Run = { runId: string; recordId?: string; runKind: string; terminalStatus: string; sourceRevision: number; finishedAtUtc: string | null; recordedAtUtc?: string | null; registeredAtUtc?: string | null; independentReviewStatus?: string; independentReviewIssueCodes?: string[]; reviewStatusSource?: string; optimizerSteps?: unknown; resolution?: unknown; qualification?: unknown; failureSummary?: unknown; artifacts?: Artifact[]; metrics?: unknown[]; checkpoints?: Artifact[]; events?: RegistryEvent[]; eventCoverage?: { scope: string; complete: boolean; gap: unknown } }
+type Run = { runId: string; recordId?: string; runKind: string; terminalStatus: string; sourceRevision: number; finishedAtUtc: string | null; recordedAtUtc?: string | null; registeredAtUtc?: string | null; independentReviewStatus?: string; independentReviewIssueCodes?: string[]; reviewStatusSource?: string; optimizerSteps?: unknown; completedEpochs?: unknown; targetEpochs?: unknown; resolution?: unknown; qualification?: unknown; failureSummary?: unknown; artifacts?: Artifact[]; metrics?: unknown[]; checkpoints?: Artifact[]; events?: RegistryEvent[]; eventCoverage?: { scope: string; complete: boolean; gap: unknown } }
 type Listing = { schemaVersion: string; dataStatus: string; reasonCode: string | null; sourceRevision: number; indexRevision?: number | null; observedAtUtc: string; records: Run[]; nextCursor: string | null; total: number | null; coverage: unknown }
 type Detail = { schemaVersion: string; dataStatus: string; reasonCode: string | null; unavailableFields?: string[]; record: Run & { detailCoverage?: unknown } }
 type Section = 'artifacts' | 'metrics' | 'events' | 'logs'
@@ -44,24 +44,36 @@ function reasonLabel(reason: string | null) {
   if (reason === 'history_independent_run_conflict') return '独立来源的同一Run绑定冲突；冲突项未并入可信记录。'
   if (reason === 'history_package_schema_unsupported' || reason === 'history_mvp_stage0_review_schema_unsupported') return '绑定证据可查，部分历史格式尚未适配；不把未支持内容解释为未保存。'
   if (reason === 'history_logs_not_indexed') return '历史程序日志尚未索引，不能用登记事件代替日志。'
+  if (reason === 'history_training_preview_observation_only') return '可查看同Run受信进度显式绑定的未审核训练预览；不从历史记录推断训练活动，其他内容覆盖另列。'
   return reason ? labels[reason] ?? '部分证据暂不可用；请查看诊断代码与原始证据。' : '已核验详情；不代表训练资格或能力发布。'
 }
 function timeLabel(value: string | null | undefined) { return value ? `${new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}（北京时间）` : '未记录' }
+function recordedEpoch(value: unknown) {
+  if (value === null || value === undefined) return '未记录'
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? String(value) : '数据格式异常'
+}
 function TrainingFailureSummary({ run }: { run: Run }) {
   const failed = /fail|interrupt|error|blocked/i.test(run.terminalStatus)
   if (!failed && run.failureSummary == null) return null
   const value = run.failureSummary
   const failure = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
-  const type = typeof failure?.type === 'string' && /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(failure.type) ? failure.type : null
+  const type = typeof failure?.type === 'string' && ['Error', 'AssertionError', 'ValueError', 'RuntimeError', 'TypeError', 'RangeError', 'TimeoutError'].includes(failure.type) ? failure.type : null
   // Do not dump arbitrary error objects, paths, secrets or unbounded messages into JSX.
-  const message = failure?.message === 'snapshot outside verified source/known control'
+  // Match the entire known format, including rejecting a trailing newline. The
+  // index is an observation, not a lookup into a guessed model/module identity.
+  const gradient = typeof failure?.message === 'string' && failure.message.length <= 96
+    ? /^actual four-term total gradient identity differs at parameter (0|[1-9][0-9]{0,7})$/u.exec(failure.message) : null
+  const message = gradient && gradient[0] === failure?.message
+    ? `四项总梯度一致性检查未通过（参数索引 ${gradient[1]}）`
+    : failure?.message === 'snapshot outside verified source/known control'
     ? 'snapshot outside verified source/known control'
     : typeof failure?.message === 'string' && failure.message.trim()
       ? '错误详情见已绑定终态证据（原始文本未直接展示）'
       : '错误信息未记录或无法核验'
   return <section aria-label="所选Run失败信息"><h4>已登记失败信息（不是当前执行）</h4>
     <p>{type ? `${type}: ` : ''}{message}</p>
-    <p>这里只显示该 Run 已登记的错误，不推断故障根因、缺失项数量或训练次数。</p>
+    <p>已完成轮数：{recordedEpoch(run.completedEpochs)} / 计划轮数：{recordedEpoch(run.targetEpochs)}；真实优化步：{formatOptimizerSteps(run.optimizerSteps)}。</p>
+    <p>轮数与 G／D 步数各按该 Run 已登记值展示，不互相换算；参数索引不等于模块名称，也不证明故障根因。故障证据与结果图分开查看。</p>
   </section>
 }
 function TrainingArtifactStatus({ run }: { run: Run }) {
@@ -69,9 +81,11 @@ function TrainingArtifactStatus({ run }: { run: Run }) {
   const checkpoint = artifacts.some(item => item?.role === 'checkpoint')
     || Array.isArray(run.checkpoints) && run.checkpoints.length > 0
   const output = artifacts.some(item => item?.role === 'output')
-  return <p>Checkpoint：{checkpoint ? '已登记，内容与资格以核验证据为准' : '未记录或无法核验'}；
+  return <><p>Checkpoint：{checkpoint ? '已登记，内容与资格以核验证据为准' : '未记录或无法核验'}；
     验证／输出图：{output ? '已登记，图片按需核验读取' : '未记录或无法核验'}。
     没有绑定或仅标记未记录，不能据此断言未生成。</p>
+    {!output && <p>本轮无已登记结果图（以本次详情返回的结果图绑定为限）。故障清单、首错记录不是图片；未记录或无法核验不等于文件不存在。原图与其他图像仍按各自用途展示。</p>}
+  </>
 }
 function formatOptimizerSteps(value: unknown): string {
   const countLabel = (count: unknown): string => {
@@ -91,6 +105,16 @@ function formatOptimizerSteps(value: unknown): string {
   return `G（生成器）：${countLabel(hasGenerator ? steps.generator : undefined)} · D（判别器）：${countLabel(hasDiscriminator ? steps.discriminator : undefined)}`
 }
 function readableJson(value: unknown) { const text = JSON.stringify(value, null, 2) ?? '未记录'; const bytes = new TextEncoder().encode(text); return bytes.length > 64000 ? `${new TextDecoder().decode(bytes.subarray(0,64000))}\n[本项显示已截断，请查询绑定证据]` : text }
+function failureEvidenceLabel(item: Artifact): string | null {
+  if (item.role !== 'evidence') return null
+  if (item.evidenceKind === 'gradientFailureManifest') return '故障清单'
+  if (item.evidenceKind === 'gradientFailurePrimary') return '首错记录'
+  return null
+}
+function EvidenceEntry({ item }: { item: Artifact }) {
+  const label = failureEvidenceLabel(item) ?? ({ terminal: '终态证据', result: '实验结果', request: '实验请求与样本', condition: '样本条件', task_capsule: '本任务证据胶囊', registry_transaction: '登记事务', steps: '优化步证据' } as Record<string, string>)[item.role] ?? '已绑定证据'
+  return <li>{!item.url ? <span>{label} · {item.previewStatus === 'bounded_projection_only_raw_source_over_limit' ? '实验结果原文超过8MiB；已核验图像和指标通过受控派生分页查看' : '证据原文不可预览'} · {item.logicalPath}</span> : <a href={item.url} target="_blank" rel="noreferrer">{label} {item.sampleId} {item.arm}</a>} · SHA：{item.sha256}</li>
+}
 function MetricSummary({ metrics }: { metrics: unknown[] }) {
   return <><p>已返回 {metrics.length} 项指标，逐项独立展开；整表预览截断不影响下方每项读取。</p><table><thead><tr><th>样本／轮次</th><th>实验臂</th><th>种子</th><th>度量</th></tr></thead><tbody>{metrics.map((value, index) => {
     const row = typeof value === 'object' && value !== null ? value as Record<string, unknown> : null
@@ -100,10 +124,21 @@ function MetricSummary({ metrics }: { metrics: unknown[] }) {
 }
 function EvidenceImage({ item }: { item: Artifact }) {
   const [failed, setFailed] = useState(false)
-  const verdict = item.role === 'output' && item.passed !== undefined ? (item.passed ? '机器审核通过' : '机器审核未通过') : null
-  return <figure><figcaption>{item.role === 'original' ? item.split === 'train' ? '训练原图' : '验证参考原图' : item.role === 'image' ? `材料化报告登记图像${item.sourceLabel ? ` · ${item.sourceLabel}` : '（逐图用途未记录）'}` : item.sourceLabel ? `本地模型实验图 · ${item.sourceLabel}` : '本地AI候选输出'} · {item.sampleId} {item.arm} {item.epoch != null ? `第 ${item.epoch} 轮` : ''} {item.seed !== undefined ? `种子 ${item.seed}` : item.inferenceMode === 'deterministic_condition_to_complete_rgb' ? '确定性推理' : ''}{verdict ? <><br /><strong>{verdict}</strong>{item.issueCodes?.length ? ` · ${item.issueCodes.join('、')}` : ''}</> : null}<br />{item.logicalPath.split('/').pop()}</figcaption>
+  const diagnostic = item.evidenceKind === 'training_diagnostic_preview'
+  const verdict = !diagnostic && item.role === 'output' && typeof item.passed === 'boolean' ? (item.passed ? '机器审核通过' : '机器审核未通过') : null
+  return <figure><figcaption>{diagnostic ? '未审核训练预览，非Checkpoint／正式输出' : item.role === 'original' ? item.split === 'train' ? '训练原图' : '验证参考原图' : item.role === 'image' ? `材料化报告登记图像${item.sourceLabel ? ` · ${item.sourceLabel}` : '（逐图用途未记录）'}` : item.sourceLabel ? `本地模型实验图 · ${item.sourceLabel}` : '本地AI候选输出'} · {item.sampleId} {item.arm} {item.epoch != null ? `第 ${item.epoch} 轮` : ''} {item.seed !== undefined ? `种子 ${item.seed}` : item.inferenceMode === 'deterministic_condition_to_complete_rgb' ? '确定性推理' : ''}{diagnostic && <><br />训练前向的已保存诊断图，不是故障发生时画面，不证明画质合格或当步权重可恢复。</>}{verdict ? <><br /><strong>{verdict}</strong>{item.issueCodes?.length ? ` · ${item.issueCodes.join('、')}` : ''}</> : null}<br />{item.logicalPath.split('/').pop()}</figcaption>
     {failed || !item.url ? <p role="alert">{!item.url ? '受信图片入口未提供。' : '图片读取失败或摘要冲突；不能解释为未保存。'}{item.url && <button onClick={() => setFailed(false)}>重试图片</button>}</p> : <a href={item.url} target="_blank" rel="noreferrer"><img src={item.url} alt={`${item.role} ${item.sampleId ?? ''}`} loading="lazy" onError={() => setFailed(true)} /></a>}
+    {diagnostic && <p>D更新后、G更新前捕获 · {formatOptimizerSteps(item.optimizerSteps)}；这些是捕获时计数，不是当前实时进度。</p>}
     <small>绑定SHA：{item.sha256}；图片响应前重新核验字节。</small></figure>
+}
+function TrainingPreviewCoverage({ coverage, stale }: { coverage: unknown; stale?: boolean }) {
+  if (stale) return <p role="status">训练诊断预览：详情未取得或已过期，登记状态待重新核验；不能据此判定未登记或未保存。不参与Checkpoint选择、机器资格或世界发布。</p>
+  const record = coverage && typeof coverage === 'object' && !Array.isArray(coverage) ? coverage as Record<string, unknown> : null
+  const preview = record?.trainingPreview && typeof record.trainingPreview === 'object' && !Array.isArray(record.trainingPreview) ? record.trainingPreview as Record<string, unknown> : null
+  if (!preview) return null
+  const labels: Record<string, string> = { available: '已核验绑定的训练诊断预览可查看（未审核）', partial: '部分训练预览不可用，已核验的其他图像仍保留', not_recorded: '未登记训练预览，不能补造旧图', missing: '已绑定预览文件缺失', unreadable: '已绑定预览文件无法读取', hash_conflict: '预览字节与绑定摘要冲突', unsupported_schema: '预览协议或政策版本尚未支持', unavailable: '当前预览来源未通过核验', over_limit: '超出本次有界读取限额，不能据此判断未保存', capture_failed: '生产端记录预览捕获失败；没有可用图像时不补图', budget_exhausted: '生产端记录预览预算耗尽，不扩大预算或补图', publication_incomplete: '生产端记录图片／记录发布不完整，暂存文件不作为已登记预览', binding_mismatch: '生产端记录预览身份绑定冲突，不采用该条目' }
+  const status = typeof preview.status === 'string' && Object.hasOwn(labels, preview.status) ? preview.status : 'unavailable'
+  return <p role="status">训练诊断预览：{labels[status]}。不参与Checkpoint选择、机器资格或世界发布。</p>
 }
 function subscribeToHistoryUrl(onChange: () => void) {
   window.addEventListener('popstate', onChange)
@@ -116,7 +151,7 @@ function historicalRunFromUrl() {
 function serverHistoricalRun() { return null }
 export function AiConsoleTrainingHistory() {
   const [listing, setListing] = useState<Listing | null>(null)
-  const [detail, setDetail] = useState<Detail | null>(null)
+  const [detailSnapshot, setDetail] = useState<Detail | null>(null)
   const [selectedRun, setSelected] = useState<string | null>(null)
   const [cursor, setCursor] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -124,7 +159,7 @@ export function AiConsoleTrainingHistory() {
   const [detailError, setDetailError] = useState<string | null>(null)
   const [section, setSection] = useState<Section>('artifacts')
   const [sectionCursor, setSectionCursor] = useState<string | null>(null)
-  const [sectionPage, setSectionPage] = useState<SectionPage | null>(null)
+  const [sectionSnapshot, setSectionPage] = useState<SectionPage | null>(null)
   const [sectionError, setSectionError] = useState<string | null>(null)
   const [query, setRunQuery] = useState<string | null>(null)
   const detailRef = useRef<HTMLElement>(null)
@@ -132,6 +167,8 @@ export function AiConsoleTrainingHistory() {
   // restores the URL identity without copying external state in an Effect.
   const restoredRun = useSyncExternalStore(subscribeToHistoryUrl, historicalRunFromUrl, serverHistoricalRun)
   const selected = selectedRun ?? restoredRun
+  const detail = (detailSnapshot?.record.recordId ?? detailSnapshot?.record.runId) === selected ? detailSnapshot : null
+  const sectionPage = (sectionSnapshot?.record.recordId ?? sectionSnapshot?.record.runId) === selected && sectionSnapshot?.section === section ? sectionSnapshot : null
   const runQuery = query ?? restoredRun ?? ''
   function selectRun(identity: string) {
     if (selected !== identity) { setSelected(identity); setDetail(null); setDetailError(null) }
@@ -145,34 +182,45 @@ export function AiConsoleTrainingHistory() {
     window.history.replaceState(window.history.state, '', url.toString())
   }, [selected])
   useEffect(() => { if (selected) { detailRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }); detailRef.current?.focus({ preventScroll: true }) } }, [selected])
-  useEffect(() => startHistoryPolling(async signal => {
-    const response = await fetch(`/api/ai-console/training/history?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { cache: 'no-store', signal })
-    const data = await response.json() as Listing
-    if (signal.aborted) return
-    if (data.reasonCode === 'history_cursor_revision_conflict') { setCursor(null); throw new Error('登记已更新，正在刷新首页；保留选中Run') }
-    if (!response.ok || data.schemaVersion !== 'ai_console_training_history_v1' || !Array.isArray(data.records)) throw new Error(data.reasonCode ?? `历史请求失败 HTTP ${response.status}`)
-    if (signal.aborted) return
-    setListing(data)
-    setLastSuccess(new Date().toISOString())
-    setError(data.dataStatus !== 'connected' ? `覆盖未完整：${reasonLabel(data.reasonCode)}` : null)
-    if (selected) {
-      const detailResponse = await fetch(`/api/ai-console/training/history/${encodeURIComponent(selected)}`, { cache: 'no-store', signal })
-      const value = await detailResponse.json() as Detail
-      if (signal.aborted) return
-      if (!detailResponse.ok || value.schemaVersion !== 'ai_console_training_run_detail_v1' || (value.record?.recordId ?? value.record?.runId) !== selected) { setDetailError(`详情暂不可用：${reasonLabel(value.reasonCode)}（${value.reasonCode ?? detailResponse.status}）`); return }
-      if (!signal.aborted) { setDetail(value); setDetailError(null) }
-      const sectionResponse = await fetch(`/api/ai-console/training/history/${encodeURIComponent(selected)}?section=${section}&limit=20${sectionCursor ? `&cursor=${encodeURIComponent(sectionCursor)}` : ''}`, { cache: 'no-store', signal })
-      const page = await sectionResponse.json() as SectionPage
-      if (signal.aborted) return
-      if (page.reasonCode === 'history_cursor_revision_conflict') {
-        setSectionCursor(null); setSectionPage(null); setSectionError('内容来源已更新，正在刷新本节首页；保留选中Run'); return
-      }
-      if (!sectionResponse.ok || page.schemaVersion !== 'ai_console_training_run_detail_v1' || (page.record?.recordId ?? page.record?.runId) !== selected || page.section !== section || !Array.isArray(page.items)) {
-        setSectionError(`内容页暂不可用：${page.reasonCode ?? sectionResponse.status}；保留页为陈旧快照，将自动重连。`); return
-      }
-      setSectionPage(page); setSectionError(null)
-    }
-  }, failure => { const message = `断线/陈旧：${failure instanceof Error ? failure.message : String(failure)}。保留值不是实时状态，将自动重连。`; setError(message); if (selected) { setDetailError(message); setSectionError(message) } }), [cursor, selected, section, sectionCursor])
+  useEffect(() => {
+    const disconnected = (failure: unknown) => `断线/陈旧：${failure instanceof Error ? failure.message : String(failure)}。保留值不是实时状态，将自动重连。`
+    // Selected content gets the first slot. All three requests are independent,
+    // serial and bounded; an unavailable list/detail must not starve images.
+    return startHistoryPolling([
+      ...(selected ? [{ run: async (signal: AbortSignal) => {
+        const sectionResponse = await fetch(`/api/ai-console/training/history/${encodeURIComponent(selected)}?section=${section}&limit=20${sectionCursor ? `&cursor=${encodeURIComponent(sectionCursor)}` : ''}`, { cache: 'no-store', signal })
+        const page = await sectionResponse.json() as SectionPage
+        if (signal.aborted) return
+        if (page.reasonCode === 'history_cursor_revision_conflict') {
+          setSectionCursor(null); setSectionPage(null); throw new Error('内容来源已更新，正在刷新本节首页；保留选中Run')
+        }
+        if (!sectionResponse.ok || page.schemaVersion !== 'ai_console_training_run_detail_v1' || (page.record?.recordId ?? page.record?.runId) !== selected || page.section !== section || !Array.isArray(page.items)) {
+          throw new Error(`内容页暂不可用：${page.reasonCode ?? sectionResponse.status}`)
+        }
+        setSectionPage(page); setSectionError(page.dataStatus === 'unknown_or_stale' ? '内容来源已过期，保留页不是最新状态，将自动重连。' : null)
+      }, failed: (failure: unknown) => setSectionError(disconnected(failure)) }, {
+        run: async (signal: AbortSignal) => {
+          const detailResponse = await fetch(`/api/ai-console/training/history/${encodeURIComponent(selected)}`, { cache: 'no-store', signal })
+          const value = await detailResponse.json() as Detail
+          if (signal.aborted) return
+          if (!detailResponse.ok || value.schemaVersion !== 'ai_console_training_run_detail_v1' || (value.record?.recordId ?? value.record?.runId) !== selected) {
+            throw new Error(`详情暂不可用：${reasonLabel(value.reasonCode)}（${value.reasonCode ?? detailResponse.status}）`)
+          }
+          setDetail(value); setDetailError(value.dataStatus === 'unknown_or_stale' ? '详情来源已过期，预览登记状态待重新核验，将自动重连。' : null)
+        }, failed: (failure: unknown) => setDetailError(disconnected(failure)),
+      }] : []),
+      { run: async signal => {
+        const response = await fetch(`/api/ai-console/training/history?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { cache: 'no-store', signal })
+        const data = await response.json() as Listing
+        if (signal.aborted) return
+        if (data.reasonCode === 'history_cursor_revision_conflict') { setCursor(null); throw new Error('登记已更新，正在刷新首页；保留选中Run') }
+        if (!response.ok || data.schemaVersion !== 'ai_console_training_history_v1' || !Array.isArray(data.records)) throw new Error(data.reasonCode ?? `历史请求失败 HTTP ${response.status}`)
+        setListing(data)
+        setLastSuccess(new Date().toISOString())
+        setError(data.dataStatus !== 'connected' ? `覆盖未完整：${reasonLabel(data.reasonCode)}` : null)
+      }, failed: failure => setError(disconnected(failure)) },
+    ])
+  }, [cursor, selected, section, sectionCursor])
   const artifacts = section === 'artifacts' ? (sectionPage?.items ?? []) as Artifact[] : []
   const events = section === 'events' ? (sectionPage?.items ?? []) as RegistryEvent[] : []
   return <section className={styles.history} aria-label="真实训练历史">
@@ -187,37 +235,41 @@ export function AiConsoleTrainingHistory() {
     {listing && <details><summary>登记覆盖与限制（不等于磁盘全部历史）</summary><pre>{JSON.stringify(listing.coverage, null, 2)}</pre></details>}
     <nav aria-label="历史分页"><button disabled={!cursor} onClick={() => setCursor(null)}>最新首页</button><button disabled={!listing?.nextCursor} onClick={() => setCursor(listing?.nextCursor ?? null)}>下一页</button><span>总数：{listing?.total ?? '覆盖未完整核验'}</span></nav>
     <div className={styles.runs}>{listing?.records.map(run => <button key={run.recordId ?? run.runId} aria-pressed={selected === (run.recordId ?? run.runId)} onClick={() => selectRun(run.recordId ?? run.runId)}><strong>{runStatusLabel(run)}</strong><span>{run.runId ?? run.recordId}</span><small>{kindLabel(run)} · 训练终态：{run.terminalStatus} · {run.finishedAtUtc ? `完成时间：${timeLabel(run.finishedAtUtc)}` : `最近登记时间：${timeLabel(run.registeredAtUtc ?? run.recordedAtUtc)}`}</small><b>查看图像、详情与登记事件 ↓</b></button>)}</div>
-    {selected && <article ref={detailRef} tabIndex={-1} aria-label="选中Run详情" className={styles.detail}><h3>所选实验详情</h3><code>{selected}</code>{detailError && <p role="alert">{detailError}{detail ? ' 下方为上次成功快照，已过期；恢复连接前不代表最新状态。' : ''}</p>}{!detail ? <p role="status">{detailError ? '未取得可显示详情；将在下一轮自动重试。' : '正在查询选中Run的精确绑定与登记事件…'}</p> : <>
-      <p>{runStatusLabel(detail.record)} · {kindLabel(detail.record)}</p><p>{reasonLabel(detail.reasonCode)}</p>
+    {selected && <article ref={detailRef} tabIndex={-1} aria-label="选中Run详情" className={styles.detail}><h3>所选实验详情</h3><code>{selected}</code>{detailError && <p role="alert">{detailError}{detail ? ' 详情元数据为上次成功快照，已过期；恢复连接前不代表最新状态。内容页连接状态独立列示。' : ''}</p>}{!detail ? <p role="status">{detailError ? '未取得可显示详情；将在下一轮自动重试，内容页独立查询。' : '正在查询选中Run的精确绑定与登记事件；内容页独立查询…'}</p> : <>
+      <p>{runStatusLabel(detail.record)} · {kindLabel(detail.record)}</p><p>{reasonLabel(detail.reasonCode)}</p></>}
       <nav aria-label="详情内容分区">{(Object.keys(sectionLabels) as Section[]).map(kind => <button key={kind} aria-pressed={section === kind} onClick={() => { if (section !== kind) { setSection(kind); setSectionCursor(null); setSectionPage(null); setSectionError(null) } }}>{sectionLabels[kind]}</button>)}</nav>
       <nav aria-label="详情内容分页"><button disabled={!sectionCursor} onClick={() => { setSectionCursor(null); setSectionPage(null) }}>本节首页</button><button disabled={!sectionPage?.nextCursor} onClick={() => { setSectionCursor(sectionPage?.nextCursor ?? null); setSectionPage(null) }}>本节下一页</button><span>本页 {sectionPage?.items.length ?? '未取得'} 项 · 已知 {sectionPage?.knownItemCount ?? '未知'} 项 · 完整总数：{sectionPage?.total ?? '覆盖未完整核验'}</span></nav>
       {sectionError && <p role="alert">{sectionError}</p>}
-      {!sectionPage && <p role="status">正在查询{sectionLabels[section]}内容页…</p>}
+      {sectionError && sectionPage && <p role="status">本节保留上次成功内容，已过期；不是当前最新快照。</p>}
+      {!sectionPage && <p role="status">{sectionError ? `${sectionLabels[section]}内容页未取得；将在下一轮自动重试。` : `正在查询${sectionLabels[section]}内容页…`}</p>}
       {section === 'artifacts' && <>
+        <TrainingPreviewCoverage coverage={detail?.record.detailCoverage} stale={!detail || Boolean(detailError)} />
+        {artifacts.some(item => item.evidenceKind === 'training_diagnostic_preview') && <section aria-label="未审核训练预览"><h3>训练诊断预览（未审核）</h3><div className={styles.images}>{artifacts.filter(item => item.evidenceKind === 'training_diagnostic_preview' && item.role === 'image').map(item => <EvidenceImage key={item.artifactId} item={item} />)}</div></section>}
         <h3 className={styles.imageHeading}>原图与已登记图像</h3>
-        <div className={styles.images}>{artifacts.filter(item => ['original', 'output', 'image'].includes(item.role)).map(item => <EvidenceImage key={item.artifactId} item={item} />)}</div>
-        {!artifacts.some(item => ['original', 'output', 'image'].includes(item.role)) && sectionPage && <p>本页没有图像，其他内容请继续分页；实际缺失范围见覆盖说明。</p>}
+        <div className={styles.images}>{artifacts.filter(item => item.evidenceKind !== 'training_diagnostic_preview' && ['original', 'output', 'image'].includes(item.role)).map(item => <EvidenceImage key={item.artifactId} item={item} />)}</div>
+        {!artifacts.some(item => item.evidenceKind !== 'training_diagnostic_preview' && ['original', 'output', 'image'].includes(item.role)) && sectionPage && <p>本页没有原图／结果图，训练诊断预览另列；其他内容请继续分页，实际缺失范围见覆盖说明。</p>}
       </>}
-      <TrainingFailureSummary run={detail.record} />
+      {detail && <><TrainingFailureSummary run={detail.record} />
       <TrainingArtifactStatus run={detail.record} />
       <details><summary>原始状态与诊断代码</summary><code>{detail.record.terminalStatus} · {detail.dataStatus} · {detail.reasonCode ?? '无错误'}</code></details>
       <details><summary>内容覆盖与缺失项</summary><pre>{readableJson({ unavailableFields: detail.unavailableFields ?? [], coverage: detail.record.detailCoverage ?? '未提供逐项覆盖说明' })}</pre></details>
       <p>完成时间：{timeLabel(detail.record.finishedAtUtc)} · 最近登记时间：{timeLabel(detail.record.registeredAtUtc ?? detail.record.recordedAtUtc)}</p>
-      <p>实验执行完成不等于视觉合格、正式Stage通过或发布。历史数据不代表当前正在训练。</p>
       {detail.record.qualification && typeof detail.record.qualification === 'object' && 'independentReviewStatus' in detail.record.qualification && <p role="status">独立审核：{String((detail.record.qualification as Record<string, unknown>).independentReviewStatus)} · 失败码：{Array.isArray((detail.record.qualification as Record<string, unknown>).issueCodes) ? ((detail.record.qualification as Record<string, unknown>).issueCodes as string[]).join('、') || '无' : '未记录'}。候选图不代表合格或发布。</p>}
       <p>真实优化步：{formatOptimizerSteps(detail.record.optimizerSteps)} · 分辨率：{JSON.stringify(detail.record.resolution ?? '未记录')}</p>
-      <details><summary>真实资格字段</summary><pre>{readableJson(detail.record.qualification)}</pre></details>
+      <details><summary>真实资格字段</summary><pre>{readableJson(detail.record.qualification)}</pre></details></>}
+      <p>实验执行完成不等于视觉合格、正式Stage通过或发布。历史数据不代表当前正在训练。</p>
       {sectionPage && <details><summary>本节实际覆盖与限制 · {sectionPage.dataStatus}</summary><p>{reasonLabel(sectionPage.reasonCode)}</p><pre>{readableJson(sectionPage.coverage)}</pre></details>}
-      {section === 'events' && <><h3>本Run登记时间线</h3><p>仅包含事务、数据库与快照均核验通过的本Run事件，不是逐步训练日志。{detail.record.eventCoverage?.complete ? '登记链覆盖完整。' : '较早登记链存在缺口，事件覆盖不完整。'}</p>
+      {section === 'events' && <><h3>本Run登记时间线</h3><p>仅包含事务、数据库与快照均核验通过的本Run事件，不是逐步训练日志。{detail && !detailError ? detail.record.eventCoverage?.complete ? '登记链覆盖完整。' : '较早登记链存在缺口，事件覆盖不完整。' : '详情覆盖状态待重新核验。'}</p>
       {events.length ? <ol>{events.map(event => <li key={event.transactionId}><strong>{timeLabel(event.recordedAtUtc)}</strong> · 修订{event.registryRevision} / 事件{event.eventSequence}<br /><span>{event.action === 'advance_current_capability_lifecycle' ? '本地程序推进并登记状态' : '本地程序登记事件'}</span><details><summary>UTC时间、事件身份及证据路径</summary><pre>{readableJson(event)}</pre></details></li>)}</ol> : sectionPage && <p>本页没有该Run自身的登记事件；不能借用其他任务事件补齐。</p>}</>}
       {section === 'artifacts' && <>
+      {artifacts.some(item => failureEvidenceLabel(item)) && <section aria-label="本页故障证据"><h3>故障证据（非图片）</h3><p>沿原受信制品入口查看安全JSON；响应前核验SHA，内容过长时保留截断说明。</p><ul>{artifacts.filter(item => failureEvidenceLabel(item)).map(item => <EvidenceEntry key={item.artifactId} item={item} />)}</ul></section>}
       <h3>Checkpoint（绑定已核验，权重字节未重算）</h3>
       {artifacts.filter(item => item.role === 'checkpoint').map(cp => <p key={cp.artifactId}><a href={cp.url ?? undefined} target="_blank" rel="noreferrer">{cp.arm} · {cp.byteLength}字节 · {formatOptimizerSteps(cp.optimizerSteps)}优化步</a><br />{cp.logicalPath}<br />SHA：{cp.sha256}</p>)}
       {!artifacts.some(item => item.role === 'checkpoint') && sectionPage && <p>本页未提供Checkpoint绑定；其他页与实际缺口见分页及覆盖说明。</p>}
-      <h3>请求、条件与终态证据</h3><ul>{artifacts.filter(item => !['original', 'output', 'image', 'checkpoint'].includes(item.role)).map(item => <li key={item.artifactId}><>{!item.url ? <span>{item.previewStatus === 'bounded_projection_only_raw_source_over_limit' ? '实验结果原文超过8MiB；已核验图像和指标通过受控派生分页查看' : '证据原文不可预览'} · {item.logicalPath}</span> : <a href={item.url} target="_blank" rel="noreferrer">{({ terminal: '终态证据', result: '实验结果', request: '实验请求与样本', condition: '样本条件', task_capsule: '本任务证据胶囊', registry_transaction: '登记事务', evidence: '已绑定证据', steps: '优化步证据' } as Record<string, string>)[item.role] ?? item.role} {item.sampleId} {item.arm}</a>}</> · {item.sha256}</li>)}</ul>
+      <h3>请求、条件与终态证据</h3><ul>{artifacts.filter(item => !['original', 'output', 'image', 'checkpoint'].includes(item.role) && !failureEvidenceLabel(item)).map(item => <EvidenceEntry key={item.artifactId} item={item} />)}</ul>
       </>}
       {section === 'metrics' && <><h3>指标与观测</h3>{sectionPage?.items.length ? <MetricSummary metrics={sectionPage.items} /> : sectionPage && <p>本页没有可展开指标，已记录范围见本节覆盖说明。</p>}</>}
       {section === 'logs' && <><h3>历史程序日志</h3>{sectionPage?.items.length ? sectionPage.items.map((item, index) => <pre key={index}>{readableJson(item)}</pre>) : sectionPage && <p>{reasonLabel(sectionPage.reasonCode)} · {sectionPage.reasonCode}</p>}</>}
-    </>}</article>}
+    </article>}
   </section>
 }

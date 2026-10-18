@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {LOCAL_CONTROL_REGISTRATION, LOCAL_CONTROL_PROTOCOL, parseLocalPrepareArguments,
   verifyPreparationSources, projectLocalPreparationStopTarget, readLocalPreparationStatus, stopLocalPreparation, runLocalPreparationRequest,preparationTerminalBudget,preservePreparationFailure,
-  LOCAL_DECODE1_PREPARE_REGISTRATION,localPreparationRoute,localPreparationSelectionFromRequestPath,startLocalPreparation} from '../lib/ai-painter-local-prepare-v1.mjs';
+  LOCAL_DECODE1_PREPARE_REGISTRATION,LOCAL_TERRAIN_DETAIL_PREPARE_REGISTRATION,localPreparationRoute,localPreparationSelectionFromRequestPath,startLocalPreparation} from '../lib/ai-painter-local-prepare-v1.mjs';
 import {withOutputBudget,write as writeBudgeted,directoryBytes} from '../lib/ai-painter-mvp256-dry-detail-weight-capture-package-chain-v1.mjs';
 import {runLocalControlV2,LOCAL_CONTROL_HELP,LOCAL_OPERATOR_DEPLOYMENT_DEPENDENCIES,
  verifyLocalOperatorDeploymentDependencyBindings} from '../run-ai-painter-local-control-v2.mjs';
@@ -309,3 +309,42 @@ test('deployment dependency closure requires both installed official files and t
  const drift=structuredClone(bindings);drift.dependency1.sha256='0'.repeat(64);assert.throws(()=>verifyLocalOperatorDeploymentDependencyBindings(drift),/dependency_not_frozen/);
 });
 test.after(()=>{if(secretBefore===undefined)delete process.env.AI_PET_WORLD_OPERATOR_SESSION_SECRET;else process.env.AI_PET_WORLD_OPERATOR_SESSION_SECRET=secretBefore;});
+
+test('TD fixed preparation: new fixed selection and prefixes remain explicit; unknown selection and cross-route paths reject',()=>{
+ assert.deepEqual(parseLocalPrepareArguments(['--protocol',LOCAL_CONTROL_PROTOCOL,'start','--candidate','ecology-terrain-detail-quality-v1']),{command:'start',candidateSelection:'ecology-terrain-detail-quality-v1'});
+ const id='terrain-detail-quality-v2-'+crypto.randomUUID(),route=localPreparationRoute('ecology-terrain-detail-quality-v1');
+ assert.equal(route.registration,LOCAL_TERRAIN_DETAIL_PREPARE_REGISTRATION);assert.equal(route.outputRoot,'.runtime/ai-painter/ecology-terrain-detail-weight-quality-executions');
+ for(const command of ['status','stop'])assert.equal(parseLocalPrepareArguments(['--protocol',LOCAL_CONTROL_PROTOCOL,command,'--request-id',id]).requestId,id);
+ assert.equal(localPreparationSelectionFromRequestPath(route.outputRoot+'/'+id+'/local-prepare/request.json'),'ecology-terrain-detail-quality-v1');
+ for(const value of ['unknown','../candidate','ecology-terrain-detail-weight-quality-v1','__proto__'])assert.throws(()=>localPreparationRoute(value));
+ assert.throws(()=>localPreparationSelectionFromRequestPath('.runtime/ai-painter/ecology-regime-quality-executions/'+id+'/local-prepare/request.json'));
+ assert.throws(()=>localPreparationSelectionFromRequestPath(route.outputRoot+'/quality-v2-'+crypto.randomUUID()+'/local-prepare/request.json'));
+ assert.equal(LOCAL_CONTROL_REGISTRATION.candidateSelection,'ecology-quality-v1');
+});
+test('TD fixed preparation: new route source closure requires exact new chain/adapter; legacy defaults stay unchanged',()=>{
+ const root=fixture(),selection='ecology-terrain-detail-quality-v1',files=['scripts/run-ai-painter-local-control-v2.mjs','scripts/lib/ai-painter-local-prepare-v1.mjs','scripts/lib/ai-painter-autonomous-background-launcher-v1.mjs',
+ 'scripts/lib/ai-painter-autonomous-package-materializer-v1.mjs','scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs','scripts/lib/ai-painter-ecology-terrain-detail-quality-package-chain-v1.mjs','scripts/run-ai-painter-ecology-terrain-detail-quality-v1.mjs','src/server/ai-console-control/operator-session.ts'];
+ const bindings={};for(const [i,p]of files.entries()){const bytes=fs.readFileSync(p);put(root,p,bytes);bindings['role'+i]={path:p,sha256:sha(bytes)}}
+ assert.equal(verifyPreparationSources(root,bindings,selection).uniqueFiles,8);assert.throws(()=>verifyPreparationSources(root,bindings),/source_not_registered/);
+ const bad={...bindings};delete bad.role5;assert.throws(()=>verifyPreparationSources(root,bad,selection),/source_not_registered/);
+ put(root,files[6],'// deliberate private new source drift');assert.throws(()=>verifyPreparationSources(root,bindings,selection),/source_drift/);
+});
+test('TD fixed preparation: new request prefix/cap/selection/output root is bound before nonce consumption',async()=>{
+ const root=fixture(),id='terrain-detail-quality-v2-'+crypto.randomUUID(),route=localPreparationRoute('ecology-terrain-detail-quality-v1'),outputRoot=route.outputRoot+'/'+id;
+ const request={schema:'ai-painter-local-prepare-request-v1',protocol:LOCAL_CONTROL_PROTOCOL,capabilityVersion:route.capability,requestId:id,runId:id,
+ packageId:route.packagePrefix+crypto.randomUUID(),outputRoot,candidateSelection:route.registration.candidateSelection,candidateBinding:route.registration.candidateBinding,executionPackage:null,automaticRetries:0};
+ const relative=outputRoot+'/local-prepare/request.json';put(root,relative,request);put(root,'scripts/run-ai-painter-local-control-v2.mjs','// inert private runner');
+ for(const change of [v=>v.capabilityVersion=LOCAL_CONTROL_REGISTRATION.capabilityVersion,v=>v.candidateSelection='ecology-quality-v1',v=>v.outputRoot='.runtime/ai-painter/ecology-regime-quality-executions/'+id]){
+  const bad=structuredClone(request);change(bad);put(root,relative,bad);await assert.rejects(runLocalPreparationRequest({root,relativePath:relative,sha256:sha(fs.readFileSync(path.join(root,relative)))}),/identity_mismatch|capability_mismatch/);
+ }
+ assert.equal(fs.existsSync(path.join(root,outputRoot,'local-prepare','consumed.json')),false);
+});
+test('TD fixed preparation: new v2 registration missing/duplicate/extra/tampered/legacy rows refuses before preparation or background',{skip:!authenticationTestsAllowed},async()=>{
+ for(const rows of [[],[LOCAL_CONTROL_REGISTRATION],[LOCAL_TERRAIN_DETAIL_PREPARE_REGISTRATION,LOCAL_TERRAIN_DETAIL_PREPARE_REGISTRATION],
+  [{...LOCAL_TERRAIN_DETAIL_PREPARE_REGISTRATION,extra:true}],[{...LOCAL_TERRAIN_DETAIL_PREPARE_REGISTRATION,capabilityVersion:LOCAL_CONTROL_REGISTRATION.capabilityVersion}],
+  [{...LOCAL_TERRAIN_DETAIL_PREPARE_REGISTRATION,candidateSelection:'ecology-quality-v1'}]]){
+  const root=fixture();put(root,'data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json',{schemaVersion:'ai-painter-current-entrypoint-registry-v1',status:'active',currentEntrypoints:[],localControlEntrypoints:rows});
+  await assert.rejects(startLocalPreparation({root,credentials:credentials(),candidateSelection:'ecology-terrain-detail-quality-v1'}),/capability_not_registered/);
+  assert.equal(fs.existsSync(path.join(root,'.runtime')),false);
+ }
+});

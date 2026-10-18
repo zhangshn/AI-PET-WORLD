@@ -27,8 +27,13 @@ export function readFrozenHydrologyFixture(root, kind) {
 }
 
 function readPinned(root, binding) {
-  const bytes = execFileSync('git', ['show', `${binding.commit}:${binding.path}`],
-    { cwd: root, windowsHide: true, timeout: 10000, maxBuffer: 1024 * 1024 });
+  let bytes;
+  try {
+    bytes = execFileSync('git', ['show', `${binding.commit}:${binding.path}`],
+      { cwd: root, windowsHide: true, timeout: 10000, maxBuffer: 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (cause) {
+    throw new Error(`Pinned historical fixture unavailable: ${binding.commit}:${binding.path}; fetch the frozen Git history (CI checkout fetch-depth: 0). Current source cannot substitute historical bytes.`, { cause });
+  }
   assert.equal(createHash('sha256').update(bytes).digest('hex'), binding.sha256,
     'pinned historical fixture hash mismatch');
   return bytes;

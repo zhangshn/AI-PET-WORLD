@@ -8,7 +8,7 @@ import vm from 'node:vm'
 // desktop browser. This does not claim DOM, image decoding or browser coverage.
 function harness(initialUrl = null, { hydrating = false } = {}) {
   const source = readFileSync(new URL('../../src/app/ai-console/ai-console-training-history.tsx', import.meta.url), 'utf8')
-  const slots = [], effects = [], requests = []
+  const slots = [], effects = [], requests = [], failures = new Map(), deferred = new Map()
   let position = 0, poll, tree, inEffect = false, useServerSnapshot = hydrating
   const hooks = {
     useState(initial) {
@@ -48,11 +48,18 @@ function harness(initialUrl = null, { hydrating = false } = {}) {
     require(name) {
       if (name === 'react') return hooks
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'fragment' }
-      if (name.includes('history-poll')) return { startHistoryPolling(run, failed) { poll = { run, failed }; return () => {} } }
+      if (name.includes('history-poll')) return { startHistoryPolling(run, failed) {
+        const queries = typeof run === 'function' ? [{ run, failed }] : run
+        poll = { async run(signal) { for (const query of queries) { if (signal.aborted) break; try { await query.run(signal) } catch (error) { if (!signal.aborted) query.failed(error) } } }, failed(error) { queries.forEach(query => query.failed(error)) } }
+        return () => {}
+      } }
       return { default: {} }
     },
     async fetch(url) {
       requests.push(url)
+      const kind = url.includes('section=') ? 'section' : url.split('?')[0] === '/api/ai-console/training/history' ? 'list' : 'detail'
+      if (deferred.has(kind)) await deferred.get(kind)
+      if (failures.has(kind)) throw failures.get(kind)
       const data = url.includes('section=') ? page : url.split('?')[0] === `/api/ai-console/training/history/${encodeURIComponent(detail.record.recordId ?? detail.record.runId)}` ? detail : listing
       return { ok: data.reasonCode !== 'history_cursor_revision_conflict', status: data.reasonCode === 'history_cursor_revision_conflict' ? 409 : 200, json: async () => data }
     },
@@ -76,6 +83,8 @@ function harness(initialUrl = null, { hydrating = false } = {}) {
   return { render, nodes, button, requests, detail, listing, row, browser,
     finishHydration() { useServerSnapshot = false; render() },
     setPage(value) { page = value }, getPage() { return page },
+    fail(kind, error = new Error(`test_${kind}_disconnect`)) { failures.set(kind, error) }, recover(kind) { failures.delete(kind) },
+    defer(kind) { let release; deferred.set(kind, new Promise(resolve => { release = resolve })); return () => { deferred.delete(kind); release() } },
     async tick(signal = new AbortController().signal) { await poll.run(signal); render() },
     disconnect() { poll.failed(new Error('test_disconnect')); render() } }
 }
@@ -101,10 +110,10 @@ test('actual section pagination sends the opaque cursor and recovers revision co
   ui.button('本节下一页').props.onClick(); ui.render()
   ui.setPage({ ...ui.getPage(), reasonCode: 'history_cursor_revision_conflict' })
   await ui.tick()
-  assert.ok(ui.requests.at(-1).includes('cursor=opaque-next'))
+  assert.ok(ui.requests.filter(url => url.includes('section=')).at(-1).includes('cursor=opaque-next'))
   assert.ok(ui.nodes().some(node => node.type === 'code' && node.props.children === 'ui-run'))
   ui.setPage({ ...ui.getPage(), reasonCode: 'history_snapshot_missing' }); await ui.tick()
-  assert.ok(!ui.requests.at(-1).includes('cursor='))
+  assert.ok(!ui.requests.filter(url => url.includes('section=')).at(-1).includes('cursor='))
 })
 
 test('actual section switch resets its cursor and requests metrics rather than rendering full-detail metrics', async () => {
@@ -113,7 +122,7 @@ test('actual section switch resets its cursor and requests metrics rather than r
   ui.button('指标与观测').props.onClick(); ui.render()
   ui.setPage({ ...ui.getPage(), section: 'metrics', items: [{ pagedOnly: true }], nextCursor: null })
   await ui.tick()
-  assert.ok(ui.requests.at(-1).includes('section=metrics&limit=20'))
+  assert.ok(ui.requests.filter(url => url.includes('section=')).at(-1).includes('section=metrics&limit=20'))
   const component = ui.nodes().find(node => typeof node.type === 'function' && node.type.name === 'MetricSummary')
   assert.equal(component.props.metrics[0].pagedOnly, true)
   assert.equal(component.props.metrics[0].fullOnly, undefined)
@@ -203,4 +212,120 @@ test('manual selection replaces the restored Run and reload keeps the new identi
   assert.equal(reloaded.nodes().find(node => node.type === 'input').props.value, identity)
   assert.ok(reloaded.nodes().some(node => node.type === 'code' && node.props.children === identity))
   assert.ok(reloaded.requests.every(request => request.startsWith('/api/ai-console/training/history')))
+})
+
+function previewMessage(ui) {
+  const node = ui.nodes().find(node => node.type?.name === 'TrainingPreviewCoverage')
+  return JSON.stringify(node.type(node.props))
+}
+
+test('list failure does not gate a deep-linked Run detail or its content; content gets the first request slot', async () => {
+  const ui = harness('http://localhost:3000/ai-console/training/runs?run=ui-run')
+  ui.fail('list')
+  await ui.tick()
+  assert.ok(ui.requests[0].includes('section=artifacts'))
+  assert.ok(ui.requests.includes('/api/ai-console/training/history/ui-run'))
+  assert.equal(ui.nodes().filter(node => node.type?.name === 'EvidenceImage').length, 1)
+  assert.ok(ui.nodes().some(node => node.type?.name === 'TrainingArtifactStatus'))
+  assert.match(JSON.stringify(ui.nodes()), /test_list_disconnect/)
+  assert.doesNotMatch(JSON.stringify(ui.nodes()), /详情元数据为上次成功快照/)
+  ui.recover('list'); await ui.tick()
+  assert.doesNotMatch(JSON.stringify(ui.nodes()), /test_list_disconnect/)
+  assert.equal(new URL(ui.browser.location.href).searchParams.get('run'), 'ui-run')
+})
+
+test('missing detail leaves content queryable and never calls preview absence a current fact', async () => {
+  const ui = harness('http://localhost:3000/ai-console/training/runs?run=ui-run')
+  ui.detail.record.detailCoverage = { trainingPreview: { status: 'not_recorded' } }
+  ui.fail('detail')
+  assert.match(previewMessage(ui), /详情未取得或已过期/)
+  await ui.tick()
+  assert.equal(ui.nodes().filter(node => node.type?.name === 'EvidenceImage').length, 1)
+  assert.ok(ui.nodes().some(node => node.props?.['aria-label'] === '详情内容分区'))
+  assert.equal(ui.nodes().some(node => node.type?.name === 'TrainingArtifactStatus'), false)
+  assert.match(previewMessage(ui), /登记状态待重新核验/)
+  assert.doesNotMatch(previewMessage(ui), /未登记训练预览/)
+  ui.recover('detail'); await ui.tick()
+  assert.match(previewMessage(ui), /未登记训练预览/)
+})
+
+test('a stale detail snapshot cannot overwrite new content or assert preview not-recorded until detail recovers', async () => {
+  const ui = harness('http://localhost:3000/ai-console/training/runs?run=ui-run')
+  ui.detail.record.detailCoverage = { trainingPreview: { status: 'not_recorded' } }
+  await ui.tick()
+  ui.fail('detail')
+  ui.setPage({ ...ui.getPage(), items: [{ ...ui.getPage().items[0], artifactId: 'new-preview', role: 'image', evidenceKind: 'training_diagnostic_preview' }] })
+  await ui.tick()
+  assert.match(previewMessage(ui), /登记状态待重新核验/)
+  assert.doesNotMatch(previewMessage(ui), /未登记训练预览/)
+  assert.equal(ui.nodes().find(node => node.type?.name === 'EvidenceImage').props.item.artifactId, 'new-preview')
+  assert.match(JSON.stringify(ui.nodes()), /详情元数据为上次成功快照，已过期/)
+  assert.doesNotMatch(JSON.stringify(ui.nodes()), /本节保留上次成功内容/)
+  ui.detail.record.detailCoverage.trainingPreview.status = 'available'
+  ui.recover('detail'); await ui.tick()
+  assert.match(previewMessage(ui), /已核验绑定的训练诊断预览/)
+  assert.doesNotMatch(JSON.stringify(ui.nodes()), /test_detail_disconnect/)
+})
+
+test('content failure reports an unavailable or stale page without invalidating successful detail or list', async () => {
+  const ui = harness('http://localhost:3000/ai-console/training/runs?run=ui-run')
+  ui.fail('section'); await ui.tick()
+  assert.match(JSON.stringify(ui.nodes()), /内容页未取得；将在下一轮自动重试/)
+  assert.equal(ui.nodes().filter(node => node.type?.name === 'EvidenceImage').length, 0)
+  assert.ok(ui.nodes().some(node => node.type?.name === 'TrainingArtifactStatus'))
+  ui.recover('section'); await ui.tick()
+  assert.equal(ui.nodes().filter(node => node.type?.name === 'EvidenceImage').length, 1)
+  ui.fail('section'); await ui.tick()
+  assert.match(JSON.stringify(ui.nodes()), /本节保留上次成功内容，已过期/)
+  assert.equal(ui.nodes().filter(node => node.type?.name === 'EvidenceImage').length, 1)
+  ui.recover('section'); await ui.tick()
+  assert.doesNotMatch(JSON.stringify(ui.nodes()), /test_section_disconnect/)
+})
+
+test('list revision conflicts cannot prevent the selected Run from refreshing content', async () => {
+  const ui = harness('http://localhost:3000/ai-console/training/runs?run=ui-run')
+  ui.listing.reasonCode = 'history_cursor_revision_conflict'
+  await ui.tick()
+  assert.equal(ui.nodes().filter(node => node.type?.name === 'EvidenceImage').length, 1)
+  assert.ok(ui.nodes().some(node => node.type === 'code' && node.props.children === 'ui-run'))
+  ui.listing.reasonCode = 'history_snapshot_missing'; await ui.tick()
+  assert.doesNotMatch(JSON.stringify(ui.nodes()), /登记已更新，正在刷新首页/)
+})
+
+test('unknown-or-stale detail cannot display a fresh not-recorded preview even on HTTP 200', async () => {
+  const ui = harness('http://localhost:3000/ai-console/training/runs?run=ui-run')
+  ui.detail.dataStatus = 'unknown_or_stale'
+  ui.detail.record.detailCoverage = { trainingPreview: { status: 'not_recorded' } }
+  await ui.tick()
+  assert.match(previewMessage(ui), /登记状态待重新核验/)
+  assert.doesNotMatch(previewMessage(ui), /未登记训练预览/)
+})
+
+test('a URL identity change hides the old detail and content immediately, before another request completes', async () => {
+  const ui = harness('http://localhost:3000/ai-console/training/runs?run=ui-run')
+  await ui.tick()
+  ui.browser.location.href = 'http://localhost:3000/ai-console/training/runs?run=other-run'
+  ui.render()
+  assert.ok(ui.nodes().some(node => node.type === 'code' && node.props.children === 'other-run'))
+  assert.equal(ui.nodes().filter(node => node.type?.name === 'EvidenceImage').length, 0)
+  assert.equal(ui.nodes().some(node => node.type?.name === 'TrainingArtifactStatus'), false)
+  assert.match(previewMessage(ui), /详情未取得或已过期/)
+})
+
+test('content publishes before a slow detail completes, and cancelled old responses cannot replace a new Run', async () => {
+  const ui = harness('http://localhost:3000/ai-console/training/runs?run=ui-run')
+  const release = ui.defer('detail'), controller = new AbortController()
+  const pending = ui.tick(controller.signal)
+  for (let i = 0; i < 10; i++) await Promise.resolve()
+  ui.render()
+  assert.equal(ui.nodes().filter(node => node.type?.name === 'EvidenceImage').length, 1)
+  assert.equal(ui.nodes().some(node => node.type?.name === 'TrainingArtifactStatus'), false)
+  assert.match(previewMessage(ui), /登记状态待重新核验/)
+  controller.abort()
+  ui.browser.location.href = 'http://localhost:3000/ai-console/training/runs?run=other-run'
+  ui.render(); release(); await pending
+  assert.ok(ui.nodes().some(node => node.type === 'code' && node.props.children === 'other-run'))
+  assert.equal(ui.nodes().filter(node => node.type?.name === 'EvidenceImage').length, 0)
+  assert.equal(ui.nodes().some(node => node.type?.name === 'TrainingArtifactStatus'), false)
+  assert.equal(ui.requests.some(url => url === '/api/ai-console/training/history?limit=20'), false, 'cancelled cycle must skip the remaining list request')
 })

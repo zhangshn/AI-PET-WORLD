@@ -4,6 +4,7 @@ import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import { AsyncLocalStorage } from "node:async_hooks"
+import { physicalRuntimeRoot } from "./ai-pet-world-storage.mjs"
 const outputBudgetContext=new AsyncLocalStorage()
 export const CAPABILITY = "stage4_mvp256_dry_appearance_regime_detail_weight_precision_v1"
 export const PLAN_SCHEMA = "detail-weight-capture-managed-plan-v1"
@@ -59,18 +60,27 @@ class AtomicOutputReplacement extends Error {}
 export function directoryBytes(file) {
   const rootStat=fs.lstatSync(file)
   assert.ok(rootStat.isDirectory()&&!rootStat.isSymbolicLink(),"output root must be a regular directory")
+  const resolvedRoot=path.resolve(file),namespace=path.basename(path.dirname(resolvedRoot))
+  const timingPattern=namespace==="final-rgb-base-weight-quality-executions"?/^final-rgb-base-quality-v1-[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u:
+    namespace==="joint-object-priority-quality-executions"?/^joint-object-quality-v1-[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u:null
+  const timingRoot=Boolean(timingPattern?.test(path.basename(resolvedRoot)))
+    &&path.dirname(fs.realpathSync(resolvedRoot))===path.join(fs.realpathSync(physicalRuntimeRoot),"ai-painter",namespace)
   const walk=directory=>fs.readdirSync(directory,{withFileTypes:true}).reduce((sum,entry)=>{
     const child=path.join(directory,entry.name)
+    const timing=timingRoot&&directory===file&&(entry.name==="gpu-qualification-timing.json"||entry.name==="gpu-qualification-timing.json.staged")
     let stat
     try{stat=fs.lstatSync(child)}catch(error){
       const target=entry.name.match(/^(progress\.json)\.staged-[a-f0-9]{16}$/u)
         ??entry.name.match(/^(heartbeat\.json)\.staged-[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u)
+        ??(timing&&entry.name==="gpu-qualification-timing.json.staged"&&entry.isFile()&&!entry.isSymbolicLink()?[entry.name,"gpu-qualification-timing.json"]:null)
       if(error.code!=="ENOENT"||!target)throw error
       const replacement=fs.lstatSync(path.join(directory,target[1]))
       assert.ok(replacement.isFile()&&!replacement.isSymbolicLink(),"atomic output replacement must be regular")
+      if(timing)assert.ok(replacement.size<=32768,"timing32768 byte ceiling")
       throw new AtomicOutputReplacement("atomic output changed during accounting")
     }
     assert.equal(stat.isSymbolicLink(),false,"output junction prohibited")
+    if(timing)assert.ok(stat.isFile()&&stat.size<=32768,"timing output must be regular within32768 bytes")
     return sum+(stat.isDirectory()?walk(child):stat.isFile()?stat.size:0)
   },0)
   for(let attempt=0;attempt<3;attempt++){

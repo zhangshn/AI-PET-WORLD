@@ -115,7 +115,7 @@ export function verifyLocalOperatorDeploymentDependencyBindings(bindings) {
 }
 async function requireFrozenDeploymentDependencies(candidateSelection='ecology-quality-v1') {
   const route=localPreparationRoute(candidateSelection),chain=await import('./lib/'+route.chain.slice(2));
-  verifyLocalOperatorDeploymentDependencyBindings(chain.finalProgramBindings(entryProjectRoot));
+   verifyLocalOperatorDeploymentDependencyBindings(chain.finalProgramBindings(entryProjectRoot,{capabilityVersion:route.capability}));
 }
 function prepareInvocation(argv,loadConfiguration) {
   if(argv[0]==='--internal-prepare-v2'){

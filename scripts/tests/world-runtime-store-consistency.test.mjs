@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { createHash } from "node:crypto"
 import fs from "node:fs"
 import * as fsp from "node:fs/promises"
 import os from "node:os"
@@ -33,6 +34,7 @@ function fixture(t, kind) {
   const cache = new Map()
   let fault = null
   let fired = false
+  let retained = false
   const io = []
 
   function assertPrivate(target) {
@@ -79,14 +81,28 @@ function fixture(t, kind) {
   const store = kind === "development"
     ? load("world-runtime-store").localFileRuntimeStore
     : load("world-runtime-production-store").createProductionWorldRuntimeStore(root)
+  const reload = () => {
+    cache.clear()
+    return kind === "development" ? load("world-runtime-store").localFileRuntimeStore
+      : load("world-runtime-production-store").createProductionWorldRuntimeStore(root)
+  }
   t.after(() => {
     assertPrivate(privateRoot)
     assert.ok(path.basename(privateRoot).startsWith("world-runtime-store-consistency-"))
+    if (retained) {
+      t.diagnostic(`retained private recovery evidence: ${privateRoot}`)
+      return
+    }
     // Only this test's generated fixture bytes are removed.
     fs.rmSync(privateRoot, { recursive: true, force: true })
   })
   return {
-    store, recordPath, latestPath, transactionPath, io,
+    store, reload, recordPath, latestPath, transactionPath, io,
+    retainFailure: (result, journal) => {
+      retained = true
+      fs.writeFileSync(path.join(privateRoot, "failure-result.json"), json(result), { flag: "wx" })
+      fs.writeFileSync(path.join(privateRoot, "failed-transaction.snapshot.json"), journal, { flag: "wx" })
+    },
     validator: load("world-runtime-record-validation").isWorldRuntimeSaveRecord,
     inject: (stage) => { fault = stage },
     faultFired: () => fired,
@@ -269,14 +285,16 @@ for (const kind of ["development", "production"]) {
       assert.deepEqual(JSON.parse(fs.readFileSync(f.recordPath, "utf8")), replaced ? next : old)
       assert.equal(fs.existsSync(f.transactionPath), true)
       const journalBefore = fs.readFileSync(f.transactionPath, "utf8")
+      f.retainFailure(result, journalBefore)
       assert.equal(JSON.parse(journalBefore).state, stage === "cleanup" ? "committed" : "prepared")
       if (["record", "latest"].includes(stage)) assert.equal(fs.readFileSync(f.latestPath, "utf8"), latestBefore)
       else assert.equal(JSON.parse(fs.readFileSync(f.latestPath, "utf8")).tick, 1)
       if (stage !== "cleanup") {
         assert.equal((await f.store.read({ ownerId: old.ownerId, worldId: old.worldId })).status, "invalid")
         f.inject(null)
+        const reopened = f.reload()
         for (const expectedTick of [-1, replaced ? 1 : 0, undefined]) {
-          const retry = await f.store.write({ record: record(2), expectedTick })
+          const retry = await reopened.write({ record: record(2), expectedTick })
           assert.equal(retry.ok, false)
           assert.ok(retry.warnings.includes("runtime_transaction_incomplete"))
           assert.equal(fs.readFileSync(f.transactionPath, "utf8"), journalBefore)
@@ -284,6 +302,24 @@ for (const kind of ["development", "production"]) {
         }
       } else {
         assert.equal((await f.store.read()).record.tick, 1)
+        f.inject(null)
+        const reopened = f.reload()
+        const stale = await reopened.write({ record: record(2), expectedTick: 0 })
+        assert.equal(stale.ok, false)
+        assert.equal(stale.code, "conflict")
+        assert.equal(fs.readFileSync(f.transactionPath, "utf8"), journalBefore)
+        assert.equal((await reopened.write({ record: record(2), expectedTick: 1 })).ok, true)
+        assert.equal(fs.existsSync(f.transactionPath), false)
+        assert.equal(fs.existsSync(`${f.recordPath}.lock`), false)
+        const savedBytes = fs.readFileSync(f.recordPath, "utf8")
+        const index = JSON.parse(fs.readFileSync(f.latestPath, "utf8"))
+        assert.equal(index.path, f.recordPath)
+        assert.equal(index.worldId, next.worldId)
+        assert.equal(index.ownerId, next.ownerId)
+        assert.equal(index.tick, 2)
+        assert.equal(index.recordSha256, createHash("sha256").update(savedBytes).digest("hex"))
+        assert.deepEqual((await reopened.read()).record, record(2))
+        assert.equal((await reopened.read({ filePath: f.recordPath, worldId: "other-world" })).status, "invalid")
       }
     })
   }

@@ -10,11 +10,11 @@ import {readCurrentExecutionRegistry} from '../../src/server/ai-painter-current-
 const now = Date.parse('2026-10-09T09:00:00Z');
 const stamp = age => new Date(now - age).toISOString();
 const hash = b => createHash('sha256').update(b).digest('hex');
-async function fixture(t, failureCapture = false) {
+async function fixture(t, failureCapture = false, capabilityVersion = 'independent-family') {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aic-autonomous-summary-'));
   t.after(() => fs.rm(root, {recursive:true, force:true}));
   const outputRoot = '.runtime/ai-painter/unrelated-model-run';
-  const id = {runId:'run-generic', packageId:'package-generic', capabilityVersion:'independent-family'};
+  const id = {runId:'run-generic', packageId:'package-generic', capabilityVersion};
   const ceiling = {epochs:9, generatorOptimizerSteps:300, discriminatorOptimizerSteps:400, cpuThreads:2};
   const plan = {...id, schema:failureCapture ? 'ecology-regime-failure-capture-plan-v1' : 'ecology-regime-managed-plan-v1',
     executionMode:failureCapture ? 'bounded-failure-capture' : 'managed-training', outputRoot,
@@ -62,21 +62,108 @@ async function fixture(t, failureCapture = false) {
   await f.sync(); return f;
 }
 
-async function qualityFixture(t, decode1 = false) {
-  const f=await fixture(t);
+async function qualityFixture(t, decode1 = false, configurationSchema = null) {
+  const quality24=configurationSchema==='ecology-terrain-detail-weight-quality-configuration-v2';
+  const f=await fixture(t,false,quality24
+    ? 'stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_quality24_v1' : 'independent-family');
   f.planFilename='quality-plan.json';
-  f.plan.schema=decode1 ? 'ecology-decode1-weight-quality-plan-v1' : 'ecology-regime-quality-plan-v1';
+  f.plan.schema=decode1==='terrain' ? 'ecology-terrain-detail-weight-quality-plan-v1' : decode1 ? 'ecology-decode1-weight-quality-plan-v1' : 'ecology-regime-quality-plan-v1';
   f.plan.executionMode='bounded-quality-training';
-  f.plan.configuration.schema=decode1 ? 'ecology-decode1-weight-quality-configuration-v1' : 'ecology-regime-quality-configuration-v1';
+  f.plan.configuration.schema=configurationSchema ?? (decode1==='terrain' ? 'ecology-terrain-detail-weight-quality-configuration-v1' : decode1 ? 'ecology-decode1-weight-quality-configuration-v1' : 'ecology-regime-quality-configuration-v1');
   f.plan.configuration.scope.resolution=[256,192];
-  Object.assign(f.plan.configuration.executionCeiling,{epochs:12,generatorOptimizerSteps:576,discriminatorOptimizerSteps:576});
-  f.plan.configuration.checkpointSelection={eligibleEpochs:[12]};
+  const epochs=quality24 ? 24 : 12, steps=epochs*48;
+  Object.assign(f.plan.configuration.executionCeiling,{epochs,generatorOptimizerSteps:steps,discriminatorOptimizerSteps:steps});
+  f.plan.configuration.checkpointSelection={eligibleEpochs:[epochs]};
   f.observation.resolution=[256,192];
-  f.observation.trainingPlan={epochs:12,generatorOptimizerSteps:576,discriminatorOptimizerSteps:576,
-    checkpointSelection:{eligibleEpochs:[12]}};
+  f.observation.trainingPlan={epochs,generatorOptimizerSteps:steps,discriminatorOptimizerSteps:steps,
+    checkpointSelection:{eligibleEpochs:[epochs]}};
   f.observation.resourceBudget={...f.plan.configuration.executionCeiling};
   await f.sync();return f;
 }
+
+test('joint v3 publication policy retains the existing live ABI and cannot refresh stale progress',async t=>{
+  const reg=await import('../lib/ai-painter-object-support-structure-quality-registration-v1.mjs');
+  const f=await qualityFixture(t);
+  for(const value of [f.id,f.plan,f.envelope,f.observation,f.lock,f.heartbeat,f.progress,f.registry,f.registry.activeExecution,f.terminal])
+    value.capabilityVersion=reg.JOINT_CAPABILITY;
+  const candidate=JSON.parse(await fs.readFile(path.join(process.cwd(),reg.CANDIDATE.path),'utf8'));
+  const previewBytes=await fs.readFile(path.join(process.cwd(),reg.JOINT_PROFILE.previewPath));
+  f.plan.schema='object-support-structure-quality-plan-v1';
+  f.plan.configuration=reg.deriveConfiguration(candidate,{capabilityVersion:reg.JOINT_CAPABILITY,
+    trainingPreviewPolicy:{path:reg.JOINT_PROFILE.previewPath,sha256:hash(previewBytes)}});
+  f.observation.trainingPlan={epochs:24,generatorOptimizerSteps:1152,discriminatorOptimizerSteps:1152,
+    checkpointSelection:{...f.plan.configuration.checkpointSelection}};
+  f.observation.resourceBudget={...f.plan.configuration.executionCeiling};
+  await f.sync();
+  const first=await f.read();
+  assert.equal(first.availability,'available',JSON.stringify(first));assert.equal(first.targetEpochs,24);
+  assert.equal(first.currentMetrics.optimizationStep,100);
+  f.progress.updatedAtUtc=stamp(119000);await f.put(`${f.outputRoot}/progress.json`,f.progress);
+  assert.equal((await f.read()).currentMetrics.optimizationStep,100);
+  f.progress.updatedAtUtc=stamp(121000);await f.put(`${f.outputRoot}/progress.json`,f.progress);
+  const stale=await f.read();
+  assert.equal(stale.currentMetrics.availability,'unavailable');
+  assert.equal(stale.currentMetrics.reasonCode,'training_progress_stale_or_future');
+  assert.equal(stale.currentMetrics.optimizationStep,null);
+  assert.equal(Object.hasOwn(stale,'stage4Qualified'),false);
+});
+
+test('terrain-detail configuration-v2 projects 24/1152 bounds and actual counters through the same SHA chain',async t=>{
+  const f=await qualityFixture(t,'terrain','ecology-terrain-detail-weight-quality-configuration-v2');
+  for(const name of ['model-identity.json','cpu-acceptance.json','data-closure.json'])
+    f.additionalBindings.push(await f.put(`${f.outputRoot}/${name}`,{kind:name,
+      modelCapabilityVersion:'stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_v1'}));
+  Object.assign(f.progress,{actualEpoch:13,completedEpochs:12,optimizerStepsGenerator:601,optimizerStepsDiscriminator:602});
+  await f.sync();
+  const snapshot=()=>Promise.all([...f.paths].map(async p=>[p,hash(await fs.readFile(path.join(f.root,p)))]));
+  const before=await snapshot(),first=await f.read();
+  assert.equal(first.availability,'available');assert.equal(first.targetEpochs,24);
+  assert.equal(first.targetOptimizerSteps,1152);assert.equal(first.targetDiscriminatorOptimizerSteps,1152);
+  assert.equal(first.currentMetrics.optimizationStep,601);assert.equal(first.currentMetrics.discriminatorOptimizerSteps,602);
+  assert.equal(first.completedEpochs,null);assert.equal(first.actualOptimizerSteps,null);
+  assert.equal(first.packagePath,f.envelopeBinding.path);assert.equal(first.packageSha256,f.envelopeBinding.sha256);
+  assert.deepEqual(await snapshot(),before);
+  Object.assign(f.progress,{actualEpoch:24,completedEpochs:23,optimizerStepsGenerator:1151,optimizerStepsDiscriminator:1152});
+  await f.sync();const next=await f.read();
+  assert.equal(next.currentMetrics.optimizationStep,1151);assert.equal(next.currentMetrics.discriminatorOptimizerSteps,1152);
+  assert.notEqual(next.currentMetrics.sourceSha256,first.currentMetrics.sourceSha256);
+  f.registry.activeExecution=null;
+  f.terminal.workerTerminal=await f.put(`${f.outputRoot}/worker-terminal.json`,{...f.id,
+    schema:'ecology-terrain-detail-weight-quality-worker-terminal-v1',completedEpochs:24,
+    optimizerStepsGenerator:1152,optimizerStepsDiscriminator:1152});
+  await f.sync();const ended=await f.read();
+  assert.equal(ended.availability,'available');assert.equal(ended.completedEpochs,24);
+  assert.deepEqual(ended.actualOptimizerSteps,{generator:1152,critic:1152});
+  assert.equal(ended.currentMetrics.reasonCode,'active_execution_not_registered');
+  assert.equal(ended.currentMetrics.optimizationStep,null);assert.equal(Object.hasOwn(ended,'stage4Qualified'),false);
+  const old=await qualityFixture(t,'terrain');assert.equal((await old.read()).targetEpochs,12);
+});
+
+for(const [name,change,reason,metricOnly=false] of [
+  ['unknown configuration',f=>f.plan.configuration.schema='ecology-terrain-detail-weight-quality-configuration-v3','training_autonomous_configuration_schema_unsupported'],
+  ['absent configuration schema',f=>delete f.plan.configuration.schema,'training_autonomous_configuration_schema_unsupported'],
+  ['predecessor plan',f=>f.plan.schema='ecology-decode1-weight-quality-plan-v1','training_autonomous_configuration_schema_unsupported'],
+  ['unknown plan',f=>f.plan.schema='ecology-terrain-detail-weight-quality-plan-v2','training_autonomous_plan_schema_unsupported'],
+  ['wrong mode',f=>f.plan.executionMode='managed-training','training_autonomous_plan_schema_unsupported'],
+  ['foreign Run',f=>f.plan.runId='foreign','training_autonomous_plan_identity_conflict'],
+  ['foreign package',f=>f.plan.packageId='foreign','training_autonomous_plan_identity_conflict'],
+  ['foreign capability',f=>f.plan.configuration.capabilityVersion='foreign','training_autonomous_plan_identity_conflict'],
+  ['old observation ceiling',f=>f.observation.trainingPlan.generatorOptimizerSteps=576,'training_observation_plan_conflict'],
+  ['old checkpoint schedule',f=>f.observation.trainingPlan.checkpointSelection={eligibleEpochs:[12]},'training_observation_plan_conflict'],
+  ['epoch overrun',f=>f.progress.actualEpoch=25,'training_progress_plan_limit_conflict',true],
+  ['generator overrun',f=>f.progress.optimizerStepsGenerator=1153,'training_progress_plan_limit_conflict',true],
+  ['discriminator overrun',f=>f.progress.optimizerStepsDiscriminator=1153,'training_progress_plan_limit_conflict',true],
+])test(`terrain-detail configuration-v2 rejects ${name}`,async t=>{
+  const f=await qualityFixture(t,'terrain','ecology-terrain-detail-weight-quality-configuration-v2');
+  change(f);await f.sync();const result=await f.read(),rejected=metricOnly ? result.currentMetrics : result;
+  assert.equal(rejected.availability,'unavailable');assert.equal(rejected.reasonCode,reason);
+});
+
+test('terrain-detail configuration-v2 rejects changed signed plan bytes',async t=>{
+  const f=await qualityFixture(t,'terrain','ecology-terrain-detail-weight-quality-configuration-v2');
+  f.plan.configuration.executionCeiling.epochs=25;await f.put(f.planBinding.path,f.plan);
+  assert.equal((await f.read()).reasonCode,'training_package_sha256_mismatch');
+});
 
 test('decode1 protocol projects bounded counters and refreshes without changing old protocol',async t=>{
   const current=await qualityFixture(t,true), old=await qualityFixture(t);
@@ -105,6 +192,34 @@ test('unknown decode1 protocol does not fall back to the predecessor',async t=>{
   await f.sync();const result=await f.read();
   assert.equal(result.availability,'unavailable');
   assert.equal(result.reasonCode,'training_autonomous_plan_schema_unsupported');
+});
+
+test('terrain-detail protocol uses the same live ABI, refreshes and does not promote qualification',async t=>{
+  const f=await qualityFixture(t,'terrain');
+  for(const name of ['model-identity.json','cpu-acceptance.json','data-closure.json'])
+    f.additionalBindings.push(await f.put(`${f.outputRoot}/${name}`,{kind:name}));
+  await f.sync();const first=await f.read();
+  assert.equal(first.availability,'available');assert.equal(first.targetEpochs,12);
+  assert.equal(first.targetOptimizerSteps,576);assert.equal(first.targetDiscriminatorOptimizerSteps,576);
+  assert.deepEqual(first.resolution,{width:256,height:192});
+  f.progress.optimizerStepsGenerator=145;f.progress.optimizerStepsDiscriminator=146;
+  await f.sync();const next=await f.read();assert.equal(next.currentMetrics.optimizationStep,145);
+  assert.equal(next.currentMetrics.discriminatorOptimizerSteps,146);
+  assert.notEqual(next.currentMetrics.sourceSha256,first.currentMetrics.sourceSha256);
+  assert.equal(Object.hasOwn(next,'gpuQualified'),false);assert.equal(Object.hasOwn(next,'stage4Qualified'),false);
+  f.registry.activeExecution=null;f.terminal.optimizerStepsGenerator=145;f.terminal.optimizerStepsDiscriminator=146;
+  await f.sync();const ended=await f.read();assert.equal(ended.currentMetrics.availability,'unavailable');
+  assert.equal(ended.currentMetrics.reasonCode,'active_execution_not_registered');assert.equal(ended.currentMetrics.optimizationStep,null);
+});
+for(const [name,change,reason] of [
+  ['parent configuration',f=>f.plan.configuration.schema='ecology-decode1-weight-quality-configuration-v1','training_autonomous_configuration_schema_unsupported'],
+  ['unknown plan',f=>f.plan.schema='ecology-terrain-detail-weight-quality-plan-v2','training_autonomous_plan_schema_unsupported'],
+  ['foreign capability',f=>f.plan.capabilityVersion='foreign','training_autonomous_plan_identity_conflict'],
+  ['foreign Run',f=>f.plan.runId='foreign','training_autonomous_plan_identity_conflict'],
+  ['mismatched limits',f=>f.observation.trainingPlan.epochs=48,'training_observation_plan_conflict']
+])test(`terrain-detail protocol rejects ${name}`,async t=>{
+  const f=await qualityFixture(t,'terrain');change(f);await f.sync();
+  assert.equal((await f.read()).reasonCode,reason);
 });
 
 test('quality protocol uses signed 12/576 bounds with coexisting metadata and real mutable counters',async t=>{

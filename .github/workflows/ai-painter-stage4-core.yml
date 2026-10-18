@@ -201,6 +201,7 @@ jobs:
           "
 
   verify:
+    name: Repository portable CPU regressions (no qualification)
     strategy:
       fail-fast: false
       matrix:
@@ -209,10 +210,48 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Frozen hydrology fixtures are read from 542c1c05, never current code.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: "24.14.0"
           cache: npm
+      - name: Verify immutable historical fixture objects and bytes
+        run: >-
+          node --input-type=module -e "import { readFrozenCompilerFixture, readFrozenHydrologyFixture } from './scripts/tests/helpers/stage4-frozen-condition-compiler.mjs'; readFrozenCompilerFixture(process.cwd()); for (const kind of ['corridor', 'novelty']) readFrozenHydrologyFixture(process.cwd(), kind); console.log('All three frozen historical SHA-256 bindings verified');"
+      - name: Provide pinned ripgrep for historical inventory (official release)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($IsWindows) {
+            $asset = 'ripgrep-15.1.0-x86_64-pc-windows-msvc.zip'
+            $sha = '124510b94b6baa3380d051fdf4650eaa80a302c876d611e9dba0b2e18d87493a'
+          } else {
+            $asset = 'ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz'
+            $sha = '1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599'
+          }
+          $toolRoot = Join-Path $env:RUNNER_TEMP 'stage4-ripgrep-15.1.0'
+          New-Item -ItemType Directory -Path $toolRoot -ErrorAction Stop | Out-Null
+          $archive = Join-Path $toolRoot $asset
+          Invoke-WebRequest "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/$asset" -OutFile $archive
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $sha) {
+            throw 'Official ripgrep archive SHA-256 mismatch'
+          }
+          if ($IsWindows) {
+            Expand-Archive -LiteralPath $archive -DestinationPath $toolRoot
+            $binary = Join-Path $toolRoot 'ripgrep-15.1.0-x86_64-pc-windows-msvc/rg.exe'
+          } else {
+            tar -xzf $archive -C $toolRoot
+            if ($LASTEXITCODE -ne 0) { throw 'ripgrep extraction failed' }
+            $binary = Join-Path $toolRoot 'ripgrep-15.1.0-x86_64-unknown-linux-musl/rg'
+          }
+          $version = & $binary --version
+          if ($LASTEXITCODE -ne 0 -or $version[0] -ne 'ripgrep 15.1.0') { throw 'ripgrep version preflight failed' }
+          Write-Output $version
+          Split-Path -Parent $binary | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Check ripgrep availability in the test environment
+        run: rg --version
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -224,6 +263,7 @@ jobs:
       - run: node --test --test-concurrency=1 scripts/tests/world-runtime-store-consistency.test.mjs scripts/tests/world-runtime-tick-continuity.test.mjs scripts/tests/world-runtime-gateway-read-failure.test.mjs scripts/tests/project-review-contract-regressions.test.mjs
       - run: npm run test:integration
       - run: npm run build
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e "ml/ai-painter[training]"
-      - run: npm run check:ai-painter-stage4-core
+      - name: Portable CPU summary scope and qualification rejection
+        run: node --max-old-space-size=512 --test --test-concurrency=1 scripts/tests/test-ai-painter-stage4-portable-cpu-scope.mjs
+      - name: Repository portable CPU behavior only (real assets and complete local core not verified)
+        run: node --max-old-space-size=512 scripts/check-ai-painter-stage4-portable-cpu.mjs --scope repository_portable_cpu

@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "ai-painter-training-preview-observation-policy-v1",
+  "status": "registered_component_only_not_production_adopted",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.73",
+    "sha256": "911eefef314b121e77bd839e17127c10db7df5d7c9edd3211260970ffa7c55eb"
+  },
+  "purpose": "Retain truthful bounded images from existing train forwards, including before a later failure, without changing learning or producing historical replacement images",
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "epochs": 24,
+    "trainSamples": 48,
+    "splitsUnchanged": "48/8/4/4",
+    "currentProductionIntegration": false,
+    "oldExecutionPoliciesUnchanged": true
+  },
+  "programBindings": {
+    "component": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/training_preview_observer_v1.py",
+      "sha256": "c2bf84932a6ece8fd78b8d79d1cc743af83fad97a2b35b83bc6ac38f920a739c"
+    },
+    "tests": {
+      "path": "ml/ai-painter/tests/test_training_preview_observer_cpu_v1.py",
+      "sha256": "244a17a70462021aca0488832b189f26fb3e69dccd5c58a718fe29779c6915c7"
+    }
+  },
+  "capture": {
+    "split": "train",
+    "ordinal": 0,
+    "maxFramesPerEpoch": 1,
+    "maxFrames": 24,
+    "maxFailureReferences": 1,
+    "phase": "after_discriminator_update_before_generator_update",
+    "source": "detached contiguous CPU FP32 copy of the existing generator prediction; no extra forward",
+    "failureReference": "only a previously captured frame with its original identity; no image when no prior capture",
+    "modelBindingMeaning": "model identity metadata, not a checkpoint or a snapshot of weights at this step"
+  },
+  "resources": {
+    "maxPreviewBytes": 4194304,
+    "maxPngBytes": 155648,
+    "maxMetadataBytes": 8192,
+    "maxRecords": 25,
+    "existingExecutionMaxBytes": 134217728,
+    "reservedFailureTensorBytes": 67108864,
+    "reservedFailureMetadataBytes": 1048576,
+    "reservedTerminalBytes": 65536,
+    "extraModelForwards": 0,
+    "extraAutogradCalls": 0,
+    "extraOptimizerUpdates": 0,
+    "additionalGpuAllocationForInference": false
+  },
+  "requiredIdentity": [
+    "run_id",
+    "package_id",
+    "capability_version",
+    "model_capability_version",
+    "execution_package",
+    "plan",
+    "model",
+    "dataset_manifest",
+    "source_rgb",
+    "condition_pack",
+    "world_facts",
+    "configuration_sha256",
+    "program_bindings_sha256",
+    "sample_id",
+    "split",
+    "epoch",
+    "train_ordinal",
+    "train_index",
+    "generator_updates",
+    "discriminator_updates",
+    "forward_sequence",
+    "phase"
+  ],
+  "storage": {
+    "usesExistingRunOutputRoot": true,
+    "usesExistingOutputMeter": true,
+    "atomicPngAndMetadataWritesRequired": true,
+    "usesExistingHistoryAndArtifactInterfaces": true,
+    "parallelBackgroundOrNewApi": false,
+    "unregisteredPartialWrite": "not a valid viewable artifact; retain accurate error and original training first failure",
+    "insufficientBudget": "record preview unavailable without consuming failure reserves or retrying training"
+  },
+  "qualification": {
+    "reviewStatus": "not_reviewed_diagnostic_only",
+    "checkpointSelectionEligible": false,
+    "qualificationEvidence": false,
+    "runtimePublicationEligible": false,
+    "formalOutput": false,
+    "trainingExecutionGranted": false,
+    "productionAdoptionProven": false
+  },
+  "adoptionRequirements": [
+    "New candidate binds actual producer, writer and query adapter source; preserve old consumed package and policy bytes",
+    "Verify trusted identities from existing plan/readers, do not trust syntactically valid SHA strings",
+    "Verify no tensor, RNG, model state, optimizer or gradient change by component observation",
+    "Verify normal, failure, budget and stale/mismatched artifact cases through existing interfaces",
+    "Inactive component metadata remains explicitly component-only until separately versioned production adoption; component-only tests cannot certify it"
+  ]
+}

@@ -35,13 +35,19 @@ export function mergeExposureInventory(diskPaths, catalogRows) {
 }
 
 export function discoverExposureInventory(root, catalogPath) {
+  try {
+    execFileSync("rg", ["--version"], { cwd: root, windowsHide: true,
+      timeout: 10_000, maxBuffer: 64 * 1024, stdio: ["ignore", "pipe", "pipe"] });
+  } catch (cause) {
+    throw new Error("historical exposure inventory requires available ripgrep (rg); dependency preflight failed, inventory was not audited", { cause });
+  }
   let output;
   try {
     output = execFileSync("rg", ["--files", "--hidden", "--no-ignore", ".runtime/ai-painter",
       ...FILENAMES.flatMap((name) => ["-g", name])],
     { cwd: root, encoding: "utf8", windowsHide: true, timeout: 60_000, maxBuffer: 8 * 1024 * 1024 });
   } catch (error) {
-    if (error.status !== 1) throw error;
+    if (error.status !== 1) throw new Error("historical exposure inventory discovery failed; inventory was not audited", { cause: error });
     output = ""; // rg returns 1 for an empty inventory, not a successful audit.
   }
   const disk = output.trim() ? output.trim().split(/\r?\n/).map((name) => name.replaceAll("\\", "/")) : [];

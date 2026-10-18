@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { DatabaseSync } from "node:sqlite";
+import { spawnSync } from "node:child_process";
 import { createReader, sha256 } from "../lib/ai-painter-stage4-dataset-audit.mjs";
 import { mergeExposureInventory, recordedOptimizerSteps, recordedReplaySteps, auditHistoricalExposure, discoverExposureInventory }
   from "../lib/ai-painter-stage4-historical-exposure.mjs";
@@ -71,6 +72,23 @@ test("inventory rejects traversal and duplicate identities", () => {
   assert.throws(() => mergeExposureInventory([evidencePath, evidencePath], []));
   const row = { logical_path: stepPath, sha256: null, byte_size: 1 };
   assert.throws(() => mergeExposureInventory([], [row, row]));
+});
+test("missing ripgrep fails explicitly before inventory or catalog audit", t => {
+  const input = fixture(t);
+  const moduleUrl = new URL("../lib/ai-painter-stage4-historical-exposure.mjs", import.meta.url).href;
+  const child = spawnSync(process.execPath, ["--max-old-space-size=512", "--input-type=module", "-e",
+    `import childProcess from 'node:child_process';
+     import { syncBuiltinESMExports } from 'node:module';
+     childProcess.execFileSync = () => { throw Object.assign(new Error('spawnSync rg ENOENT'), { code: 'ENOENT' }); };
+     syncBuiltinESMExports();
+     const { discoverExposureInventory } = await import(${JSON.stringify(moduleUrl)});
+     discoverExposureInventory(process.cwd(), 'nonexistent-catalog.sqlite');`], {
+    cwd: input.root, encoding: "utf8", windowsHide: true, timeout: 10_000,
+  });
+  assert.equal(child.error, undefined);
+  assert.notEqual(child.status, 0);
+  assert.match(child.stderr, /requires available ripgrep.*inventory was not audited/);
+  assert.equal(fs.existsSync(path.join(input.root, "nonexistent-catalog.sqlite")), false);
 });
 test("optimizer count requires paired completion events, not a success boolean", () => {
   assert.equal(recordedOptimizerSteps(events()).completedSteps, 1);

@@ -1,14 +1,14 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-09-13 03:26:51 +08:00
+更新时间：2026-10-14 14:26:17 +08:00
 
 状态：active-directory-reference
 
-文档版本：`AI-PET-WORLD-DIRECTORY-1.11`
+文档版本：`AI-PET-WORLD-DIRECTORY-1.12`
 
-生效日期：`2026-09-13`
+生效日期：`2026-10-14`
 
-替代版本：`AI-PET-WORLD-DIRECTORY-1.10`
+替代版本：`AI-PET-WORLD-DIRECTORY-1.11`
 
 文档状态：`active_normative_target`
 
@@ -305,3 +305,5 @@ original-image-library/<五类并行来源>
 RuntimeFrame生命周期固定为`working -> candidates -> accepted frame / rejected frames`。`.runtime`在项目中的逻辑权威入口是`F:\ai-pet-world\.runtime`；Windows部署允许它解析到项目已注册的物理热层，但文档、配置和内部任务票据只能使用项目逻辑相对路径，不能把物理映射路径当作新的项目根或外部数据源。
 
 `/world` 只能展示由机器发布能力版本生成并通过机器审核与Runtime发布门的完整 RuntimeFrame；第一版与后续能力使用同一机器发布规则。训练图、局部图、候选图、失败图和程序占位图不得进入正式世界。
+
+`data/ai-painter/system-governance/document-baselines/`只保存正式规格的不可变历史机器输入及章节定位索引：原始文本字节、逻辑路径、版本、SHA-256与字节数须一致。`.txt`快照不是现行Markdown，不参与当前状态、模块安排或权限选择；读取器只提供历史复核，不能调度训练或绕过现行入口。该目录不建立平行文档树、后台或第二张计划表。

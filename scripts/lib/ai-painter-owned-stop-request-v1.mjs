@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { projectRoot as configuredProjectRoot, physicalRuntimeRoot as configuredPhysicalRuntimeRoot } from './ai-pet-world-storage.mjs';
 const storageEnvironmentAtImport = process.env.AI_PET_WORLD_DATA_ROOT;
 import { verifyLocalOperatorMutation } from '../../src/server/ai-console-control/operator-session.ts';
+import {JOINT_CAPABILITY,JOINT_PROFILE,PLAN_SCHEMA,sourceFileCountMaximum} from './ai-painter-object-support-structure-quality-registration-v1.mjs';
 
 // Isolated component, not wired to an API, runner, registry writer or native Job.
 // The existing session validator is real. The synchronous registry/retained-call
@@ -23,6 +24,34 @@ const hex = x => typeof x === 'string' && /^[a-f0-9]{64}$/u.test(x);
 const safeId = x => typeof x === 'string' && /^[A-Za-z0-9_-]{1,128}$/u.test(x);
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const stamp = s => [s.dev, s.ino, s.size, s.mtimeNs, s.ctimeNs].map(String).join(':');
+// The default stop contract remains256. Only the registered joint package can
+// select260, after its bound plan and immutable policy bytes are reread.
+function verifiedSourceFileMaximum(spec,readFile){
+  if(spec.capabilityVersion!==JOINT_CAPABILITY)return L.sourceFiles;
+  need(Array.isArray(spec.inputEvidence)&&spec.inputEvidence.length>0&&spec.inputEvidence.length<=64,'stop_joint_plan_inputs');
+  const plans=[];
+  for(const binding of spec.inputEvidence){
+    need(plain(binding)&&hex(binding.sha256),'stop_joint_input_binding');
+    const bytes=readFile(binding.path);need(hash(bytes)===binding.sha256,'stop_joint_input_sha');
+    if(binding.path.endsWith('.json')){const value=JSON.parse(bytes.toString('utf8'));if(value?.schema===PLAN_SCHEMA)plans.push(value);}
+  }
+  need(plans.length===1,'stop_joint_exact_plan');
+  const plan=plans[0];
+  need(plan.capabilityVersion===JOINT_CAPABILITY&&plan.configuration?.capabilityVersion===JOINT_CAPABILITY&&
+    plan.packageId===spec.packageIdentity&&plan.outputRoot===spec.outputRoot&&
+    plan.outputRoot===JOINT_PROFILE.OUTPUT_ROOT+'/'+plan.runId,'stop_joint_plan_identity');
+  for(const binding of [plan.executionPolicy,plan.configuration.executionPolicy])
+    need(plain(binding)&&binding.path===JOINT_PROFILE.EXECUTION_POLICY.path&&binding.sha256===JOINT_PROFILE.EXECUTION_POLICY.sha256,'stop_joint_policy_binding');
+  const bytes=readFile(JOINT_PROFILE.EXECUTION_POLICY.path);
+  need(hash(bytes)===JOINT_PROFILE.EXECUTION_POLICY.sha256,'stop_joint_policy_sha');
+  const policy=JSON.parse(bytes.toString('utf8'));
+  need(policy.candidate===JOINT_CAPABILITY&&policy.phaseResources?.programFileCountMaximum===260&&
+    policy.sourceClosure?.maximumEntries===260,'stop_joint_policy_limit');
+  return sourceFileCountMaximum(JOINT_CAPABILITY);
+}
+export function ownedStopSourceFileMaximum(root,spec){
+  return verifiedSourceFileMaximum(spec,name=>readOwnedStopProjectFile(root,name));
+}
 const fields = ['runId', 'packageId', 'executionPackagePath', 'executionPackageSha256',
   'expectedRegistryRevision', 'supervisorProcessId', 'supervisorProcessStartIdentity',
   'idempotencyKey', 'reasonText'];
@@ -222,7 +251,8 @@ export function createOwnedStopRequestComponent({ projectRoot, evidenceRoot,
     need(spec.packageIdentity === input.packageId && plain(active.programLineage) && plain(spec.programLineage),
       'stop_package_identity_mismatch');
     const bindings = Object.values(active.programLineage);
-    need(bindings.length > 0 && bindings.length <= L.sourceFiles, 'stop_source_closure_missing');
+    const sourceMaximum=verifiedSourceFileMaximum(spec,name=>boundedRead(project,name,L.sourceFileBytes));
+    need(bindings.length > 0 && bindings.length <= sourceMaximum, 'stop_source_closure_missing');
     let sourceBytes = 0;
     for (const [name, binding] of Object.entries(active.programLineage)) {
       need(plain(binding) && hex(binding.sha256) && spec.programLineage[name] === binding.sha256,

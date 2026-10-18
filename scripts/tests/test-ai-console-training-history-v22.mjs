@@ -37,15 +37,22 @@ async function fixture(t, count = 2, options = {}) {
       ae: ['ai-painter-decoder-reconstruction-experiment-package-v1', undefined, 'experiment_0'],
     }
     const variant = variants[options.variant]
-    const terminalStatus = ['learning', 'ae'].includes(options.variant) ? 'experiment_completed_not_formal_qualified' : 'completed_not_qualified'
+    const pendingStatus = revision === count ? options.pendingStatus : null
+    const terminalStatus = pendingStatus ?? (['learning', 'ae'].includes(options.variant) ? 'experiment_completed_not_formal_qualified' : 'completed_not_qualified')
     const request = await put(root, `.runtime/ai-painter/${runId}/request.json`, { schemaVersion: options.badPackageSchema ? 'unknown-package' : variant?.[0] ?? `ai-painter-endpoint-ab-request-${options.requestVersion ?? options.endpointVersion ?? 'v1'}`, identity: runId, experimentIdentity: options.crossRunPackage ? 'another-run' : runId, selectedRows: [{ sampleId: 'train-146', split: 'train', image }] })
     const resultData = { schemaVersion: variant ? variant[1] : `ai-painter-endpoint-ab-result-${options.resultVersion ?? options.endpointVersion ?? 'v1'}`, runId, experimentIdentity: runId, experimentKind: options.variant === 'rgb' ? 'five_rgb_heads_adaptation_frozen_ae_and_velocity_path' : undefined, status: 'completed_not_qualified', executionState: 'completed', request, artifacts: [image, checkpoint], optimizerSteps: 1, rows: [{ sampleId: 'train-146', split: 'train', arm: 'test', seed: 1, image, measurements: { loss: .5 } }], arms: [{ arm: 'test', checkpoint, optimizerSteps: 1 }] }
     const result = await put(root, `.runtime/ai-painter/${runId}/result.json`, resultData)
-    const terminalValue = variant && ['decoder', 'timestep', 'rgb'].includes(options.variant) ? resultData : { schemaVersion: options.unsupported ? 'unsupported-fixture' : variant ? 'ai-painter-learning-capacity-experiment-terminal-v1' : `ai-painter-endpoint-ab-terminal-${options.endpointVersion ?? 'v1'}`, runId, experimentIdentity: runId, status: terminalStatus, executionState: 'completed', workerResult: result, result, formalTrainingQualified: false, formalStageAdvanced: false, checkpointPromotable: false, worldEntryAllowed: false }
+    const executionPackage = pendingStatus ? await put(root, `.runtime/ai-painter/${runId}/package.json`, {
+      schemaVersion: 'ai-painter-autonomous-closed-loop-package-v1', packageIdentity: `package-${runId}`,
+      capabilityVersion: 'fixture-capability', outputRoot: `.runtime/ai-painter/${runId}`, inputEvidence: [] }) : null
+    const terminalValue = pendingStatus ? { runId, status: terminalStatus, executionState: 'completed',
+      completedAction: 'execution_dispatch_record_only_not_training', trainingStarted: false,
+      packageId: options.invalidDispatch ? null : `package-${runId}`, capabilityVersion: 'fixture-capability', executionPackage }
+      : variant && ['decoder', 'timestep', 'rgb'].includes(options.variant) ? resultData : { schemaVersion: options.unsupported ? 'unsupported-fixture' : variant ? 'ai-painter-learning-capacity-experiment-terminal-v1' : `ai-painter-endpoint-ab-terminal-${options.endpointVersion ?? 'v1'}`, runId, experimentIdentity: runId, status: terminalStatus, executionState: 'completed', workerResult: result, result, formalTrainingQualified: false, formalStageAdvanced: false, checkpointPromotable: false, worldEntryAllowed: false }
     const terminal = await put(root, `.runtime/ai-painter/${runId}/terminal.json`, terminalValue)
     const capsule = await put(root, `.runtime/ai-painter/${runId}/capsule.json`, { schemaVersion: 'ai-painter-local-task-capsule-v1', taskId: runId, integrity: { status: 'verified' }, evidence: [{ ...terminal, sha256Verified: true }, ...(variant ? [{ ...request, kind: variant[2], sha256Verified: true }] : [])] })
     const latest = { ...terminal, runId, status: terminalStatus }
-    const current = { schemaVersion: 'ai-painter-current-execution-registry-v1', registryRevision: revision, eventSequence: revision, writerIdentity: 'local_ai_capability_lifecycle_orchestrator', transactionId, taskId: runId, runId, taskCapsule: capsule, terminalEvidence: { ...terminal, status: terminalStatus }, activeExecution: null, latestTrainingTerminal: options.carryPrevious && previousTerminal ? previousTerminal : latest, supersedes: previous, archivedEvidenceNamespaces: [] }
+    const current = { schemaVersion: 'ai-painter-current-execution-registry-v1', registryRevision: revision, eventSequence: revision, writerIdentity: 'local_ai_capability_lifecycle_orchestrator', transactionId, taskId: runId, runId, taskCapsule: capsule, terminalEvidence: { ...terminal, status: terminalStatus }, activeExecution: null, latestTrainingTerminal: (options.carryPrevious || pendingStatus) && previousTerminal ? previousTerminal : latest, supersedes: previous, archivedEvidenceNamespaces: [] }
     previousTerminal = latest
     const binding = await put(root, `${REG}/transactions/${transactionId}/current.staged.json`, current)
     await put(root, `${REG}/current.json`, current)
@@ -68,6 +75,30 @@ test('real reader: pagination, source-bound cursor, new registered Run appears',
   await f.append(3)
   await assert.rejects(listTrainingHistory({ root: f.root, cursor: first.nextCursor }), /cursor_revision_conflict/)
   assert.equal((await listTrainingHistory({ root: f.root })).records[0].runId, 'fixture-run-3')
+})
+
+for (const pendingStatus of ['training_pending', 'qualification_pending']) test(`current ${pendingStatus} dispatch remains queryable beside the previous training terminal`, async t => {
+  const f = await fixture(t, 2, { pendingStatus })
+  const before = await readFile(path.join(f.root, REG, 'current.json'))
+  const listing = await listTrainingHistory({ root: f.root })
+  assert.deepEqual(listing.records.map(row => row.runId), ['fixture-run-2', 'fixture-run-1'])
+  assert.equal(listing.records[0].terminalStatus, pendingStatus)
+  const detail = await readTrainingRun('fixture-run-2', { root: f.root })
+  assert.equal(detail.record.terminalStatus, pendingStatus)
+  assert.equal(detail.record.optimizerSteps, null)
+  assert.notEqual(detail.record.qualification.formalQualificationAllowed, true)
+  assert.equal(detail.record.detailCoverage.trainingPreview.status, 'not_recorded')
+  assert.equal(detail.record.artifacts.filter(item => item.evidenceKind === 'training_diagnostic_preview').length, 0)
+  const page = await readTrainingRunSection('fixture-run-2', { root: f.root, section: 'artifacts' })
+  assert.ok(page.items.some(item => item.role === 'terminal'))
+  assert.deepEqual(await readFile(path.join(f.root, REG, 'current.json')), before)
+  const prior = await readTrainingRun('fixture-run-1', { root: f.root })
+  assert.equal(prior.record.metrics.length, 1)
+})
+
+test('current dispatch identity conflicts are rejected, not replaced with a previous Run', async t => {
+  const f = await fixture(t, 2, { pendingStatus: 'training_pending', invalidDispatch: true })
+  await assert.rejects(readTrainingRun('fixture-run-2', { root: f.root }), /history_dispatch_identity_conflict/)
 })
 test('precise detail, original/output, Checkpoint metadata and no GET writes', async t => {
   const f = await fixture(t, 1)

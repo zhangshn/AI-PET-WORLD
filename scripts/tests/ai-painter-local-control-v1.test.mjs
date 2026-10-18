@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { parseLocalControlArguments as parse, LOCAL_CONTROL_PROTOCOL as protocol, LOCAL_CONTROL_HELP,
   LOCAL_CONTROL_REGISTRATION as registration, LOCAL_CONTROL_CAPABILITY as capability, LOCAL_CONTROL_ADAPTER as adapter,
-  LOCAL_CONTROL_PLAN_SCHEMA, LOCAL_CONTROL_OUTPUT_ROOT,LOCAL_DECODE1_CONTROL_REGISTRATION,
+  LOCAL_CONTROL_PLAN_SCHEMA, LOCAL_CONTROL_OUTPUT_ROOT,LOCAL_DECODE1_CONTROL_REGISTRATION,LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION,
   validateLocalStartPackage, runLocalControlForIsolatedTests as run } from '../run-ai-painter-local-control-v1.mjs';
 import { PHASES, CLOSED_LOOP_CONTRACT_PATH, CURRENT_ENTRYPOINT_REGISTRY_PATH } from '../lib/ai-painter-autonomous-closed-loop-v1.mjs';
 import { initializeOwnedStopControlEvidence } from '../lib/ai-painter-owned-stop-native-control-v1.mjs';
@@ -21,7 +21,7 @@ const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const put = (file, value) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, typeof value === 'string' || Buffer.isBuffer(value) ? value : JSON.stringify(value, null, 2) + '\n'); };
 let serial = 0;
 function fixture(decode1=false) {
-  const selectedRegistration=decode1?LOCAL_DECODE1_CONTROL_REGISTRATION:registration;
+  const selectedRegistration=decode1==='terrain'?LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION:decode1?LOCAL_DECODE1_CONTROL_REGISTRATION:registration;
   const selectedCapability=selectedRegistration.capabilityVersion,selectedAdapter=selectedRegistration.adapterFile;
   const projectRoot = path.join(fs.realpathSync(root), `fixture-${++serial}`); fs.mkdirSync(projectRoot);
   put(path.join(projectRoot, CLOSED_LOOP_CONTRACT_PATH), actualContract);
@@ -31,8 +31,8 @@ function fixture(decode1=false) {
     'scripts/lib/ai-painter-owned-stop-execution-bridge-v1.mjs', 'src/server/ai-console-control/operator-session.ts'];
   const bindings = {};
   for (const [n, file] of required.entries()) { put(path.join(projectRoot, file), '// inert isolated CLI gate fixture; never imported or executed'); bindings[`role${n}`] = { path: file, sha256: hash(fs.readFileSync(path.join(projectRoot, file))) }; }
-  const outputRoot = (decode1?'.runtime/ai-painter/ecology-decode1-weight-quality-executions':'.runtime/ai-painter/ecology-regime-quality-executions')+'/private-quality-fixture-run';
-  const plan = { schema: decode1?'ecology-decode1-weight-quality-plan-v1':'ecology-regime-quality-plan-v1', runId: 'private-quality-fixture-run', packageId: 'private-quality-fixture-package', capabilityVersion: selectedCapability, outputRoot, programBindings: bindings };
+  const outputRoot = (decode1==='terrain'?'.runtime/ai-painter/ecology-terrain-detail-weight-quality-executions':decode1?'.runtime/ai-painter/ecology-decode1-weight-quality-executions':'.runtime/ai-painter/ecology-regime-quality-executions')+'/private-quality-fixture-run';
+  const plan = { schema: decode1==='terrain'?'ecology-terrain-detail-weight-quality-plan-v1':decode1?'ecology-decode1-weight-quality-plan-v1':'ecology-regime-quality-plan-v1', runId: 'private-quality-fixture-run', packageId: 'private-quality-fixture-package', capabilityVersion: selectedCapability, outputRoot, programBindings: bindings };
   put(path.join(projectRoot, outputRoot, 'quality-plan.json'), plan);
   put(path.join(projectRoot, 'docs/formal-fixture.md'), '# Bound non-JSON input; not a training qualification');
   const spec = { schemaVersion: 'ai-painter-autonomous-closed-loop-package-v1', packageIdentity: plan.packageId, capabilityVersion: selectedCapability,
@@ -62,6 +62,26 @@ test('explicit version and only fixed start/status/stop argument grammar', () =>
   assert.equal(parse(args).command, 'start');
   for (const invalid of [[], ['start'], ['--protocol', 'v0', 'status'], ['--protocol', protocol, 'exec'], [...args, '--runner', 'evil.exe'], ['--protocol', protocol, 'status', '--stop'], args.map((v, i) => i === 4 ? '../escape.json' : v), args.map((v, i) => i === 6 ? 'A'.repeat(64) : v)]) assert.throws(() => parse(invalid));
   assert.match(LOCAL_CONTROL_HELP, /automatic code repair remain unavailable/);
+});
+
+test('TD fixed route: new exact decode1 package uses the same authenticated launcher seam and preserves legacy constants',async()=>{
+ const f=fixture('terrain');validateLocalStartPackage(f.projectRoot,f.command);const result=await run(f.command,{credentials:f.credentials},f.projectRoot,f.deps);
+ assert.equal(f.launches(),1);assert.equal(result.receipt.status,'unverified_test_launcher_called');
+ assert.equal(capability,'stage4_mvp256_dry_factorized_ecology_quality_v1');assert.equal(adapter,'scripts/run-ai-painter-ecology-quality-v1.mjs');
+});
+test('TD fixed route: new route registration missing/duplicate/extra/tampered fields rejects; legacy row cannot authenticate new cap',()=>{
+ for(const rows of [[],[registration],[LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION,LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION],[{...LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION,extra:true}],
+  [{...LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION,capabilityVersion:capability}],[{...LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION,adapterFile:adapter}]]){
+  const f=fixture('terrain');put(path.join(f.projectRoot,CURRENT_ENTRYPOINT_REGISTRY_PATH),{schemaVersion:'ai-painter-current-entrypoint-registry-v1',status:'active',currentEntrypoints:[],localControlEntrypoints:rows});
+  assert.throws(()=>validateLocalStartPackage(f.projectRoot,f.command),/registered/);assert.equal(f.launches(),0);
+ }
+});
+test('TD fixed route: new package cross-cap/schema/root/adapter mismatch fails before launcher',()=>{
+ for(const change of [f=>f.spec.capabilityVersion=capability,f=>f.plan.schema=LOCAL_CONTROL_PLAN_SCHEMA,f=>f.plan.capabilityVersion=capability,
+  f=>{f.plan.outputRoot=LOCAL_CONTROL_OUTPUT_ROOT+'/'+f.plan.runId;f.spec.outputRoot=f.plan.outputRoot},f=>f.spec.phaseAdapters.execute.path=adapter]){
+  const f=fixture('terrain');change(f);put(path.join(f.projectRoot,f.spec.inputEvidence[0].path),f.plan);f.spec.inputEvidence[0].sha256=hash(fs.readFileSync(path.join(f.projectRoot,f.spec.inputEvidence[0].path)));f.save();
+  assert.throws(()=>validateLocalStartPackage(f.projectRoot,f.command));assert.equal(f.launches(),0);
+ }
 });
 test('CLI plan/output mapping matches actual quality registration; former delivery aliases refuse', () => {
   const actual = fs.readFileSync('scripts/lib/ai-painter-ecology-quality-registration-v1.mjs', 'utf8');

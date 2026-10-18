@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import crypto from 'node:crypto';
 import { readCurrentExecutionRegistry } from '../../src/server/ai-painter-current-execution-registry.mjs';
 import { localOperatorRequest } from './ai-painter-owned-stop-native-control-v1.mjs';
@@ -12,6 +13,7 @@ import { CURRENT_ENTRYPOINT_REGISTRY_PATH, runAutonomousClosedLoop } from './ai-
 import { materializeAutonomousClosedLoopPackage } from './ai-painter-autonomous-package-materializer-v1.mjs';
 import { runLocalControl as runV1 } from '../run-ai-painter-local-control-v1.mjs';
 import { write as writeBudgeted, withOutputBudget } from './ai-painter-mvp256-dry-detail-weight-capture-package-chain-v1.mjs';
+import {JOINT_CAPABILITY,JOINT_PROFILE,sourceFileCountMaximum} from './ai-painter-object-support-structure-quality-registration-v1.mjs';
 
 export const LOCAL_CONTROL_PROTOCOL = 'ai-painter-local-control-v2';
 export const LOCAL_CONTROL_ENTRY = 'scripts/run-ai-painter-local-control-v2.mjs';
@@ -23,9 +25,25 @@ export const LOCAL_CONTROL_REGISTRATION = Object.freeze({entryId:LOCAL_CONTROL_P
 export const LOCAL_DECODE1_PREPARE_REGISTRATION=Object.freeze({...LOCAL_CONTROL_REGISTRATION,
  entryId:'ai-painter-local-control-v2-ecology-decode1-quality-v1',
  capabilityVersion:'stage4_mvp256_dry_factorized_ecology_decode1_weight_precision_quality_v1',candidateSelection:'ecology-decode1-quality-v1'});
+export const LOCAL_TERRAIN_DETAIL_PREPARE_REGISTRATION=Object.freeze({...LOCAL_CONTROL_REGISTRATION,
+ entryId:'ai-painter-local-control-v2-ecology-terrain-detail-quality-v1',
+ capabilityVersion:'stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_quality24_v1',candidateSelection:'ecology-terrain-detail-quality-v1'});
+export const LOCAL_OBJECT_SUPPORT_PREPARE_REGISTRATION=Object.freeze({...LOCAL_CONTROL_REGISTRATION,
+ entryId:'ai-painter-local-control-v2-object-support-structure-quality-v1',
+ capabilityVersion:'stage4_mvp256_dry_object_support_structure_quality24_v1',candidateSelection:'object-support-structure-quality-v1'});
+export const LOCAL_FINAL_RGB_PREPARE_REGISTRATION=Object.freeze({...LOCAL_OBJECT_SUPPORT_PREPARE_REGISTRATION,
+ entryId:'ai-painter-local-control-v2-final-rgb-base-weight-quality-v1',
+ capabilityVersion:'stage4_mvp256_dry_final_rgb_base_weight_quality24_v1',candidateSelection:'final-rgb-base-weight-quality-v1'});
+export const LOCAL_JOINT_PREPARE_REGISTRATION=Object.freeze({...LOCAL_OBJECT_SUPPORT_PREPARE_REGISTRATION,
+ entryId:'ai-painter-local-control-v2-joint-object-priority-quality-v1',
+ capabilityVersion:'stage4_mvp256_dry_joint_object_priority_quality24_v1',candidateSelection:'joint-object-priority-quality-v1'});
 const PREPARATION_ROUTES=Object.freeze([
  Object.freeze({registration:LOCAL_CONTROL_REGISTRATION,capability:CAPABILITY,outputRoot:OUTPUT_ROOT,prefix:'quality-v2-',packagePrefix:'quality-v2-package-',chain:'./ai-painter-ecology-quality-package-chain-v1.mjs',native:'./ai-painter-ecology-quality-owned-native-v1.mjs',adapter:'scripts/run-ai-painter-ecology-quality-v1.mjs'}),
- Object.freeze({registration:LOCAL_DECODE1_PREPARE_REGISTRATION,capability:LOCAL_DECODE1_PREPARE_REGISTRATION.capabilityVersion,outputRoot:'.runtime/ai-painter/ecology-decode1-weight-quality-executions',prefix:'decode1-quality-v2-',packagePrefix:'decode1-quality-v2-package-',chain:'./ai-painter-ecology-decode1-quality-package-chain-v1.mjs',native:'./ai-painter-ecology-decode1-quality-owned-native-v1.mjs',adapter:'scripts/run-ai-painter-ecology-decode1-quality-v1.mjs'})]);
+ Object.freeze({registration:LOCAL_DECODE1_PREPARE_REGISTRATION,capability:LOCAL_DECODE1_PREPARE_REGISTRATION.capabilityVersion,outputRoot:'.runtime/ai-painter/ecology-decode1-weight-quality-executions',prefix:'decode1-quality-v2-',packagePrefix:'decode1-quality-v2-package-',chain:'./ai-painter-ecology-decode1-quality-package-chain-v1.mjs',native:'./ai-painter-ecology-decode1-quality-owned-native-v1.mjs',adapter:'scripts/run-ai-painter-ecology-decode1-quality-v1.mjs'}),
+ Object.freeze({registration:LOCAL_TERRAIN_DETAIL_PREPARE_REGISTRATION,capability:LOCAL_TERRAIN_DETAIL_PREPARE_REGISTRATION.capabilityVersion,outputRoot:'.runtime/ai-painter/ecology-terrain-detail-weight-quality-executions',prefix:'terrain-detail-quality-v2-',packagePrefix:'terrain-detail-quality-v2-package-',chain:'./ai-painter-ecology-terrain-detail-quality-package-chain-v1.mjs',native:'./ai-painter-ecology-terrain-detail-quality-owned-native-v1.mjs',adapter:'scripts/run-ai-painter-ecology-terrain-detail-quality-v1.mjs'}),
+ Object.freeze({registration:LOCAL_OBJECT_SUPPORT_PREPARE_REGISTRATION,capability:LOCAL_OBJECT_SUPPORT_PREPARE_REGISTRATION.capabilityVersion,outputRoot:'.runtime/ai-painter/object-support-structure-quality-executions',prefix:'object-support-quality-v1-',packagePrefix:'object-support-quality-v1-package-',chain:'./ai-painter-object-support-structure-quality-package-chain-v1.mjs',native:'./ai-painter-object-support-structure-quality-owned-native-v1.mjs',adapter:'scripts/run-ai-painter-object-support-structure-quality-v1.mjs'}),
+ Object.freeze({registration:LOCAL_FINAL_RGB_PREPARE_REGISTRATION,capability:LOCAL_FINAL_RGB_PREPARE_REGISTRATION.capabilityVersion,outputRoot:'.runtime/ai-painter/final-rgb-base-weight-quality-executions',prefix:'final-rgb-base-quality-v1-',packagePrefix:'final-rgb-base-quality-v1-package-',chain:'./ai-painter-object-support-structure-quality-package-chain-v1.mjs',native:'./ai-painter-object-support-structure-quality-owned-native-v1.mjs',adapter:'scripts/run-ai-painter-object-support-structure-quality-v1.mjs'}),
+ Object.freeze({registration:LOCAL_JOINT_PREPARE_REGISTRATION,capability:LOCAL_JOINT_PREPARE_REGISTRATION.capabilityVersion,outputRoot:'.runtime/ai-painter/joint-object-priority-quality-executions',prefix:'joint-object-quality-v1-',packagePrefix:'joint-object-quality-v1-package-',chain:'./ai-painter-object-support-structure-quality-package-chain-v1.mjs',native:'./ai-painter-object-support-structure-quality-owned-native-v1.mjs',adapter:'scripts/run-ai-painter-object-support-structure-quality-v1.mjs'})]);
 export function localPreparationRoute(candidateSelection){const route=PREPARATION_ROUTES.find(r=>r.registration.candidateSelection===candidateSelection);need(route,'local_v2_fixed_candidate_required');return route;}
 function routeForId(id){const route=PREPARATION_ROUTES.find(r=>typeof id==='string'&&id.startsWith(r.prefix)&&/^[a-f0-9-]{36}$/u.test(id.slice(r.prefix.length)));need(route,'local_prepare_request_id_invalid');return route;}
 export function localPreparationSelectionFromRequestPath(relativePath){
@@ -60,7 +78,18 @@ function registered(root,route=PREPARATION_ROUTES[0]) {
 }
 export function verifyPreparationSources(root, bindings,candidateSelection=LOCAL_CONTROL_REGISTRATION.candidateSelection) {
   const route=localPreparationRoute(candidateSelection);
-  need(plain(bindings) && Object.keys(bindings).length>0 && Object.keys(bindings).length<=STOP_REQUEST_LIMITS.sourceFiles,'local_prepare_source_count_limit');
+  need(plain(bindings) && Object.keys(bindings).length>0,'local_prepare_source_count_limit');
+  let maximum=STOP_REQUEST_LIMITS.sourceFiles;
+  if(route.capability===JOINT_CAPABILITY){
+    const registered=JOINT_PROFILE.EXECUTION_POLICY;
+    need(Object.values(bindings).some(binding=>plain(binding)&&binding.path===registered.path&&binding.sha256===registered.sha256),'local_prepare_joint_policy_binding');
+    const raw=readOwnedStopProjectFile(root,registered.path,STOP_REQUEST_LIMITS.sourceFileBytes);
+    need(hash(raw)===registered.sha256,'local_prepare_joint_policy_sha');
+    const policy=JSON.parse(raw.toString('utf8'));
+    need(policy.candidate===route.capability&&policy.phaseResources?.programFileCountMaximum===260&&policy.sourceClosure?.maximumEntries===260,'local_prepare_joint_policy_limit');
+    maximum=sourceFileCountMaximum(route.capability);
+  }
+  need(Object.keys(bindings).length<=maximum,'local_prepare_source_count_limit');
   const files=new Set();let total=0;
   for(const binding of Object.values(bindings)) {
     need(plain(binding) && Object.keys(binding).sort().join(',')==='path,sha256','local_prepare_source_binding_invalid');
@@ -112,9 +141,9 @@ export async function startLocalPreparation({root,credentials,candidateSelection
   const before=await available(root),candidateBytes=readOwnedStopProjectFile(root,CANDIDATE.path);
   need(hash(candidateBytes)===CANDIDATE.sha256,'local_prepare_candidate_drift');
   const chain=await import(route.chain);
-  const programBindings=chain.finalProgramBindings(root),sourceMeasurement=verifyPreparationSources(root,programBindings,candidateSelection);
+  const programBindings=chain.finalProgramBindings(root,{capabilityVersion:route.capability}),sourceMeasurement=verifyPreparationSources(root,programBindings,candidateSelection);
   const uuid=crypto.randomUUID(),requestId=route.prefix+uuid,packageId=route.packagePrefix+uuid;
-  if(route!==PREPARATION_ROUTES[0]){const fixedParent=resolveOwnedStopProjectDirectory(root,'.runtime/ai-painter'),target=path.join(fixedParent,'ecology-decode1-weight-quality-executions');if(!fs.existsSync(target))fs.mkdirSync(target);}
+  if(route!==PREPARATION_ROUTES[0]){const fixedParent=resolveOwnedStopProjectDirectory(root,'.runtime/ai-painter'),target=path.join(fixedParent,path.posix.basename(route.outputRoot));if(!fs.existsSync(target))fs.mkdirSync(target);}
   const outputRoot=`${route.outputRoot}/${requestId}`,parent=resolveOwnedStopProjectDirectory(root,route.outputRoot);
   need(!fs.existsSync(path.join(parent,requestId)),'local_prepare_namespace_consumed');fs.mkdirSync(path.join(parent,requestId));fs.mkdirSync(path.join(parent,requestId,'local-prepare'));
   const request={schema:'ai-painter-local-prepare-request-v1',protocol:LOCAL_CONTROL_PROTOCOL,requestId,runId:requestId,packageId,outputRoot,
@@ -267,17 +296,18 @@ export function preservePreparationFailure(error,persist) {
   throw error;
 }
 
-async function executePreparation(root, request, chain, native, loop=runAutonomousClosedLoop, materialize=materializeAutonomousClosedLoopPackage) {
+async function executePreparation(root, request, chain, native, loop=runAutonomousClosedLoop, materialize=materializeAutonomousClosedLoopPackage,checkAvailable=available) {
   const route=localPreparationRoute(request.candidateSelection);
   const preparingAt=Date.now();let finalPackage=null,phaseMaximum=8388608;
   const progress=(stage,extra={})=>writeState(root,request,stage,extra);
   try {
-    await available(root);registered(root,route);
+    await checkAvailable(root);registered(root,route);
     need(hash(readOwnedStopProjectFile(root,CANDIDATE.path))===CANDIDATE.sha256,'local_prepare_candidate_drift');
     verifyPreparationSources(root,request.programBindings,request.candidateSelection);
-    need(canonical(chain.finalProgramBindings(root))===canonical(request.programBindings),'local_prepare_current_source_closure_changed');
+    need(canonical(chain.finalProgramBindings(root,{capabilityVersion:route.capability}))===canonical(request.programBindings),'local_prepare_current_source_closure_changed');
     need(canonical(chain.runtimeIdentity(root))===canonical(request.runtimeIdentity),'local_prepare_runtime_changed');
     const cpuRequest=chain.prepareCpuRequest({root,runId:request.runId,packageId:request.packageId,
+      capabilityVersion:route.capability,
      ...(route===PREPARATION_ROUTES[0]?{}:{preparationRequestBinding:chain.bind(root,requestPath(request.requestId))})});
     withOutputBudget({projectRoot:root,roots:[request.outputRoot],maximum:8388608,reserveBytes:65536},()=>progress('cpu_request_prepared',{cpuRequest}));
     let cpuDeadlineReason=null;
@@ -292,7 +322,7 @@ async function executePreparation(root, request, chain, native, loop=runAutonomo
     await native.withNativeOrdinaryBudget(root,result.ownedReceipt,()=>progress('cpu_accepted',{cpuRequest,cpuAcceptance}));
     const planBinding=await native.withNativeOrdinaryBudget(root,result.ownedReceipt,()=>{
       const binding=chain.preparePlan({root,requestBinding:cpuRequest,finalCpuAcceptance:cpuAcceptance});progress('plan_prepared',{planBinding:binding,cpuAcceptance});return binding;});
-    await available(root);verifyPreparationSources(root,request.programBindings,request.candidateSelection);
+    await checkAvailable(root);verifyPreparationSources(root,request.programBindings,request.candidateSelection);
     const candidate=chain.makeInternalCandidate(root,planBinding);
     const packageResult=materialize(candidate,{root,recoverExistingExact:false});
     finalPackage={path:packageResult.packagePath,sha256:packageResult.packageSha256};
@@ -328,4 +358,22 @@ export async function runLocalPreparationRequest({root,relativePath,sha256}) {
   withOutputBudget({projectRoot:root,roots:[request.outputRoot],maximum:8388608,reserveBytes:65536},()=>writeBudgeted(root,`${evidenceRoot(request.requestId)}/consumed.json`,{requestSha256:sha256,processId:process.pid,processStartIdentity:startup.processStartIdentity,nonce:attempt.nonce,recordedAtUtc:new Date().toISOString(),automaticRetries:0}));
   const route=localPreparationRoute(request.candidateSelection),chain=await import(route.chain),native=await import(route.native);
   return executePreparation(root,request,chain,native);
+}
+
+// Injection is limited to a fresh OS-temp fixture, never a project Run or CLI.
+export async function runFinalRgbPreparationForIsolatedTests({root,relativePath,sha256,chain,native,loop,materialize,readRegistry}){
+  const resolved=fs.realpathSync.native(root),temporary=fs.realpathSync.native(os.tmpdir());
+  need(path.dirname(resolved)===temporary && /^final-rgb-prepare-isolated-[A-Za-z0-9]+$/u.test(path.basename(resolved)),
+    'local_prepare_isolated_temp_root_required');
+  need(!fs.lstatSync(root).isSymbolicLink(),'local_prepare_isolated_redirect');
+  need(localPreparationSelectionFromRequestPath(relativePath)==='final-rgb-base-weight-quality-v1','local_prepare_isolated_final_rgb_only');
+  need(hash(readOwnedStopProjectFile(root,relativePath))===sha256,'local_prepare_internal_request_changed');
+  const value=readJson(root,relativePath),request=readRequest(root,value.requestId);
+  need(relativePath===requestPath(request.requestId),'local_prepare_internal_request_path_mismatch');
+  for(const fn of [loop,materialize,readRegistry])need(typeof fn==='function','local_prepare_isolated_explicit_stubs_required');
+  const check=async()=>{const current=await readRegistry();
+    need(current?.ok===true&&current.status==='verified'&&current.registry.activeExecution===null,'local_prepare_active_or_unknown_registry');
+    const guard=resolveOwnedStopProjectDirectory(root,'.runtime/ai-painter/owned-worker-guards');
+    need(!fs.existsSync(path.join(guard,'active.json')),'local_prepare_owned_guard_busy');return current;};
+  return executePreparation(root,request,chain,native,loop,materialize,check);
 }

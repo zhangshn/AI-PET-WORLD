@@ -206,6 +206,153 @@ if (fs.existsSync(realProfilePath)) {
     assert.throws(() => verifyHistoricalInputs(process.cwd(), candidate), error)
   })
 }
+function qualificationTimeoutFixture() {
+  const root = fs.mkdtempSync(path.join(testParent, 'qualification-'))
+  const put = (logical, value) => {
+    const raw = Buffer.isBuffer(value) ? value : Buffer.from(JSON.stringify(value))
+    const file = path.join(root, logical); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, raw)
+    return { path: logical, sha256: sha256(raw) }
+  }
+  const call = 'c3916799-2942-4912-8d29-e51494ca939d', suffix = 'fee1eb77-57eb-4078-9223-cab74f9bd326'
+  const runId = 'final-rgb-base-quality-v1-' + suffix, packageId = 'final-rgb-base-quality-v1-package-' + suffix
+  const output = '.runtime/ai-painter/final-rgb-base-weight-quality-executions/' + runId
+  const base = '.runtime/ai-painter/owned-worker-guards/private-native', native = base + '/' + call + '-native'
+  const capabilityVersion = 'stage4_mvp256_dry_final_rgb_base_weight_quality24_v1'
+  const source = put('scripts/windows/private-owner.cs', Buffer.from('// private immutable native source; never compiled'))
+  const snapshot = put(native + '/owner.cs', fs.readFileSync(path.join(root, source.path)))
+  const binary = put(native + '/owner.exe', Buffer.from('private native binary fixture; never executed'))
+  const executable = put('fixture/python.exe', Buffer.from('private interpreter fixture; never executed'))
+  const helperSnapshot = put('fixture/helper.snapshot', Buffer.from('// immutable old helper fixture'))
+  const qualifier = put('ml/ai-painter/scripts/qualify_stage4_object_support_structure_quality_gpu_v1.py', Buffer.from('# private qualifier; never imported'))
+  const nativeRunner = { path: 'scripts/lib/ai-painter-object-support-structure-quality-owned-native-v1.mjs', sha256: helperSnapshot.sha256 }
+  const plan = put(output + '/quality-plan.json', { schema: 'object-support-structure-quality-plan-v1', capabilityVersion, runId, packageId, outputRoot: output,
+    runtimeIdentity: { python: { absolutePath: path.join(root, executable.path), sha256: executable.sha256 } },
+    programBindings: { gpuQualifier: qualifier, nativeRunner } })
+  const executionPackage = put('.runtime/ai-painter/autonomous-closed-loop-packages/' + packageId + '/package.json', {
+    schemaVersion: 'ai-painter-autonomous-closed-loop-package-v1', capabilityVersion, packageIdentity: packageId, outputRoot: output,
+    inputEvidence: [plan], programLineage: { gpuQualifier: qualifier.sha256, nativeRunner: helperSnapshot.sha256 } })
+  const guard = { identity: call, runnerPid: 10, recordedAtUtc: oldStart, executable: path.join(root, executable.path),
+    executableSha256: executable.sha256, helperSha256: helperSnapshot.sha256,
+    nativeOwnerSource: { path: path.join(root, source.path), sha256: source.sha256 },
+    commandSha256: sha256(Buffer.from(JSON.stringify(['-B', fs.realpathSync(path.join(root, qualifier.path)), '--package', executionPackage.path, '--sha256', executionPackage.sha256]))),
+    startedEvidence: path.join(root, base, call + '-started.json') }
+  const guardSnapshot = put('fixture/guard.snapshot', guard)
+  put('.runtime/ai-painter/owned-worker-guards/active.json', guard)
+  const build = { source: guard.nativeOwnerSource, snapshot: path.join(root, snapshot.path), binary: path.join(root, binary.path), binarySha256: binary.sha256 }
+  const buildBinding = put(native + '/build.json', build)
+  const commandBinding = Buffer.from(JSON.stringify({ guard, guardSha256: guardSnapshot.sha256, scope: root, nativeBuild: build })).toString('base64')
+  const started = put(base + '/' + call + '-started.json', { ...guard, ownerPid: 11, commandBinding })
+  const observationValue = { schemaVersion: 'ai-painter-owned-job-observation-v1', authority: 'observation_only_no_release_authority',
+    ownerPid: 11, rootPid: 12, rootCreationDateUtc: '2026-10-01T01:00:00.100Z', bindingBase64: commandBinding,
+    assignedBeforeResume: true, activeProcessesAfterCleanup: 0, totalProcesses: 3, rootExitCode: 1,
+    observedAtUtc: '2026-10-01T01:09:59.000Z', stopReasonBase64: Buffer.from('wall_timeout').toString('base64'),
+    cleanupErrorBase64: '', transportErrorBase64: Buffer.from(';;').toString('base64'), streamClosureVersion: 'bounded-stream-capture-v2',
+    stdoutClosed: true, stderrClosed: true, transportCompleted: true, streamCaptureErrorBase64: '', streamTransportErrorBase64: '', stdoutBytes: 0, stderrBytes: 0 }
+  const observation = put(native + '/cleanup-observation.json', observationValue)
+  const proof = { assignedBeforeResume: true, killOnJobClose: true, ownerPid: 11, rootPid: 12,
+    rootCreationDateUtc: observationValue.rootCreationDateUtc, bindingBase64: commandBinding,
+    activeProcessesAfterCleanup: 0, totalProcesses: 3, exitCode: 1, stopReason: 'wall_timeout', cleanupError: null, observationError: null,
+    streamClosureVersion: 'bounded-stream-capture-v2', stdoutClosed: true, stderrClosed: true, transportCompleted: true,
+    streamCaptureError: null, streamTransportError: null, stdoutBytes: 0, stderrBytes: 0 }
+  const receipt = put(output + '/owned-qualification-' + call + '/release-receipt.json', {
+    schema: 'detail-weight-live-native-owner-receipt-v1', phase: 'qualification', budget: { timeoutMs: 600000 }, elapsedMs: 599098,
+    ownerClosed: true, proof, protocolError: 'Error: write EPIPE', stopReason: 'wall_timeout',
+    processCleanupConfirmed: false, cleanupConfirmed: false, ownerIdentity: { pid: 11, identitySource: 'retained_child_handle' },
+    guard: { identity: call, state: 'retained', path: path.join(root, '.runtime/ai-painter/owned-worker-guards/active.json'), nativeEvidenceRoot: base },
+    nativeBuild: build, streamBytes: { stdout: 0, stderr: 0 }, outputAccountingRoots: [output, base] })
+  const failure = put(output + '/native-failure-' + call + '-12d1ac4a-2f6a-4cc0-aa2c-733706f49ad8.json', {
+    schema: 'object-support-structure-quality-native-failure-v1', status: 'failed_closed', executionState: 'failed_closed',
+    capabilityVersion, runId, packageId, phase: 'qualification', stage: 'qualification', callIdentity: call, recordedAtUtc: '2026-10-01T01:10:00.000Z',
+    primaryError: { type: 'Error', code: null, reason: 'wall_timeout', messageRecorded: true, untrustedMessageSuppressed: false, rawStackRecorded: false },
+    streamObservation: { closureVersion: 'bounded-stream-capture-v2', stdoutClosed: true, stderrClosed: true, transportCompleted: true,
+      captureErrorPresent: null, transportErrorPresent: null, streamBytes: 0 },
+    cleanupQualificationGranted: false, guardReleaseGranted: false, normalWriteQualificationGranted: false, automaticRetries: 0, privateCpuFixture: false })
+  const registry = { ...put('.runtime/ai-painter/current-execution-registry/current.json', { registryRevision: 7, activeExecution: null }), revision: 7 }
+  const required = ['docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md', 'scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs',
+    'scripts/run-ai-painter-owned-worker-reboot-recovery.mjs', 'src/server/ai-painter-current-execution-registry.mjs']
+  const profile = { schema: 'ai-painter-owned-worker-reboot-recovery-profile-v1', caseId: 'private-qualification-timeout',
+    guard: { path: '.runtime/ai-painter/owned-worker-guards/active.json', sha256: guardSnapshot.sha256 }, guardIdentity: call,
+    guardSnapshot, started, build: buildBinding, observation, helperSnapshot, plan, executionPackage, receipt, failure, registry,
+    programBindings: required.map(file => put(file, Buffer.from('// private bound program role ' + file))) }
+  const pre = { guardIdentity: call, guard: profile.guard, registry, activeExecution: null,
+    host: { MachineIdentitySha256: machine, BootEventRecordId: 100, OsBootUtc: oldBoot, ObservedUtc: prior } }
+  profile.preBoot = put('fixture/preboot.json', pre)
+  const update = (key, mutate) => {
+    const binding = profile[key], value = JSON.parse(fs.readFileSync(path.join(root, binding.path)))
+    mutate(value); profile[key] = put(binding.path, value)
+  }
+  return { root, profile, put, update, qualifier, snapshot, binary, helperSnapshot, pre }
+}
+await test('actual qualification failure format verifies complete private bound bytes without cleanup authority', () => {
+  const f = qualificationTimeoutFixture(), b = f.put('fixture/profile.json', f.profile)
+  const historical = verifyHistoricalInputs(f.root, loadRecoveryProfile(f.root, b.path, b.sha256).profile)
+  assert.equal(historical.observation.rootPid, 12); assert.equal(historical.nativeObservationMissing, undefined)
+  const args = fixture(); args.historical = historical; args.currentGuardSha256 = f.profile.guard.sha256
+  args.registry.registrySha256 = f.profile.registry.sha256
+  const result = evaluateRecovery(args); assert.equal(result.status, 'eligible_for_quarantine')
+  assert.equal(result.historicalCleanupCertified, false); assert.equal(result.oldExecutionMayReplay, false); assert.equal(result.trainingQualificationGranted, false)
+  args.host.OsBootUtc = oldBoot; args.host.BootEventUtc = oldBoot; args.host.BootEventRecordId = 100
+  assert.equal(evaluateRecovery(args).status, 'blocked', 'vanished PIDs and stored proof cannot replace new kernel evidence')
+})
+const qualificationRejections = [
+  ['failure wrong SHA', f => { f.profile.failure.sha256 = hash }],
+  ['receipt wrong SHA', f => { f.profile.receipt.sha256 = hash }],
+  ['observation wrong SHA', f => { f.profile.observation.sha256 = hash }],
+  ['plan wrong SHA', f => { f.profile.plan.sha256 = hash }],
+  ['package wrong SHA', f => { f.profile.executionPackage.sha256 = hash }],
+  ['guard wrong SHA', f => { f.profile.guard.sha256 = hash }],
+  ['Run mismatch', f => f.update('failure', v => { v.runId = v.runId.replace('fee1', 'abcd') })],
+  ['package mismatch', f => f.update('failure', v => { v.packageId += '-other' })],
+  ['CPU phase', f => f.update('failure', v => { v.phase = 'cpu' })],
+  ['training stage', f => f.update('failure', v => { v.stage = 'training' })],
+  ['other capability', f => f.update('failure', v => { v.capabilityVersion = 'other' })],
+  ['call mismatch', f => f.update('failure', v => { v.callIdentity = 'other' })],
+  ['non-timeout error', f => f.update('failure', v => { v.primaryError.reason = 'runtime_exception' })],
+  ['retry claimed', f => f.update('failure', v => { v.automaticRetries = 1 })],
+  ['private CPU fixture', f => f.update('failure', v => { v.privateCpuFixture = true })],
+  ...['cleanupQualificationGranted', 'guardReleaseGranted', 'normalWriteQualificationGranted'].map(flag => [flag + ' claimed', f => f.update('failure', v => { v[flag] = true })]),
+  ['receipt cleanup claimed', f => f.update('receipt', v => { v.cleanupConfirmed = true })],
+  ['receipt process cleanup claimed', f => f.update('receipt', v => { v.processCleanupConfirmed = true })],
+  ['receipt guard released', f => f.update('receipt', v => { v.guard.state = 'released_after_live_empty_job' })],
+  ['receipt wrong guard', f => f.update('receipt', v => { v.guard.identity = 'other' })],
+  ['receipt wrong namespace', f => f.update('receipt', v => { v.guard.nativeEvidenceRoot += '-other' })],
+  ['receipt wrong owner', f => f.update('receipt', v => { v.ownerIdentity.pid++ })],
+  ['receipt wrong phase', f => f.update('receipt', v => { v.phase = 'training' })],
+  ['receipt wrong stop', f => f.update('receipt', v => { v.stopReason = 'other' })],
+  ['receipt protocol error omitted', f => f.update('receipt', v => { v.protocolError = null })],
+  ['missing proof cannot use V2', f => f.update('receipt', v => { v.proof = null })],
+  ['proof wrong owner', f => f.update('receipt', v => { v.proof.ownerPid++ })],
+  ['proof wrong command', f => f.update('receipt', v => { v.proof.bindingBase64 = 'other' })],
+  ['proof active Job', f => f.update('receipt', v => { v.proof.activeProcessesAfterCleanup = 1 })],
+  ['proof wrong root', f => f.update('receipt', v => { v.proof.rootPid++ })],
+  ['receipt incomplete stream', f => f.update('receipt', v => { v.proof.stdoutClosed = false })],
+  ['receipt changed stream count', f => f.update('receipt', v => { v.streamBytes.stdout++ })],
+  ['failure changed stream count', f => f.update('failure', v => { v.streamObservation.streamBytes++ })],
+  ['observation wrong owner', f => f.update('observation', v => { v.ownerPid++ })],
+  ['observation wrong authority', f => f.update('observation', v => { v.authority = 'cleanup' })],
+  ['observation wrong root', f => f.update('observation', v => { v.rootPid++ })],
+  ['observation timeout mismatch', f => f.update('observation', v => { v.stopReasonBase64 = '' })],
+  ['observation removed', f => { fs.unlinkSync(path.join(f.root, f.profile.observation.path)) }],
+  ['started owner mismatch', f => f.update('started', v => { v.ownerPid++ })],
+  ['build mismatch', f => f.update('build', v => { v.binarySha256 = hash })],
+  ['plan Run mismatch', f => f.update('plan', v => { v.runId += '-other' })],
+  ['package identity mismatch', f => f.update('executionPackage', v => { v.packageIdentity += '-other' })],
+  ['package plan binding mismatch', f => f.update('executionPackage', v => { v.inputEvidence[0].sha256 = hash })],
+  ['package original command changed', f => f.update('executionPackage', v => { v.extra = 'rehashing does not update guard command' })],
+  ['actual qualifier bytes changed', f => fs.appendFileSync(path.join(f.root, f.qualifier.path), '# changed')],
+  ['actual native snapshot changed', f => fs.appendFileSync(path.join(f.root, f.snapshot.path), '// changed')],
+  ['actual native binary changed', f => fs.appendFileSync(path.join(f.root, f.binary.path), 'changed')],
+  ['actual old helper changed', f => fs.appendFileSync(path.join(f.root, f.helperSnapshot.path), '// changed')],
+  ['failure after preboot observation', f => f.update('failure', v => { v.recordedAtUtc = newBoot })],
+  ['V2 missing-observation branch rejects GPU', f => { f.profile.schema = 'ai-painter-owned-worker-reboot-recovery-profile-v2'; f.profile.failureCase = 'cpu_timeout_missing_native_observation_v1'; f.profile.observation = null }],
+  ['V1 CPU timeout branch rejects GPU', f => { f.profile.failureCase = 'cpu_timeout_observation_only_v1' }],
+  ['V3 training branch rejects GPU', f => { f.profile.schema = 'ai-painter-owned-worker-reboot-recovery-profile-v3'; f.profile.failureCase = 'training_kernel_interruption_v1' }],
+]
+for (const [name, mutate] of qualificationRejections) await test('qualification evidence rejects ' + name, () => {
+  const f = qualificationTimeoutFixture(); mutate(f)
+  assert.throws(() => verifyHistoricalInputs(f.root, f.profile))
+})
+
 const report = { schema: 'ai-painter-reboot-recovery-isolated-tests-v1', recordedAtUtc: new Date().toISOString(), passed: results.filter(r => r.passed).length, failed: results.filter(r => !r.passed).length, results, productionGuardTouched: false, gpuInvocations: 0 }
 const output = path.join(testParent, `report-${Date.now()}.json`)
 fs.writeFileSync(output, JSON.stringify(report, null, 2) + '\n', { flag: 'wx' })

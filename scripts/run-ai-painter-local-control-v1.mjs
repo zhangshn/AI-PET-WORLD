@@ -7,7 +7,7 @@ import { projectRoot } from './lib/ai-pet-world-storage.mjs';
 import { launchAutonomousClosedLoopBackground, BACKGROUND_LAUNCH_ROOT } from './lib/ai-painter-autonomous-background-launcher-v1.mjs';
 import { validateClosedLoopPackage, PHASES, CLOSED_LOOP_ROOT, CURRENT_ENTRYPOINT_REGISTRY_PATH } from './lib/ai-painter-autonomous-closed-loop-v1.mjs';
 import { localOperatorRequest, submitOwnedStopIntent } from './lib/ai-painter-owned-stop-native-control-v1.mjs';
-import { readOwnedStopProjectFile, resolveOwnedStopProjectDirectory, validateOwnedStopInput, STOP_REQUEST_LIMITS } from './lib/ai-painter-owned-stop-request-v1.mjs';
+import { readOwnedStopProjectFile, resolveOwnedStopProjectDirectory, validateOwnedStopInput, STOP_REQUEST_LIMITS, ownedStopSourceFileMaximum } from './lib/ai-painter-owned-stop-request-v1.mjs';
 
 export const LOCAL_CONTROL_PROTOCOL = 'ai-painter-local-control-v1';
 export const LOCAL_CONTROL_CAPABILITY = 'stage4_mvp256_dry_factorized_ecology_quality_v1';
@@ -23,10 +23,32 @@ export const LOCAL_DECODE1_CONTROL_REGISTRATION = Object.freeze({...LOCAL_CONTRO
  entryId:'ai-painter-local-control-v1-ecology-decode1-quality-v1',
  capabilityVersion:'stage4_mvp256_dry_factorized_ecology_decode1_weight_precision_quality_v1',
  adapterFile:'scripts/run-ai-painter-ecology-decode1-quality-v1.mjs'});
+export const LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION = Object.freeze({...LOCAL_CONTROL_REGISTRATION,
+ entryId:'ai-painter-local-control-v1-ecology-terrain-detail-quality-v1',
+ capabilityVersion:'stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_quality24_v1',
+ adapterFile:'scripts/run-ai-painter-ecology-terrain-detail-quality-v1.mjs'});
+export const LOCAL_OBJECT_SUPPORT_CONTROL_REGISTRATION = Object.freeze({...LOCAL_CONTROL_REGISTRATION,
+ entryId:'ai-painter-local-control-v1-object-support-structure-quality-v1',
+ capabilityVersion:'stage4_mvp256_dry_object_support_structure_quality24_v1',
+ adapterFile:'scripts/run-ai-painter-object-support-structure-quality-v1.mjs'});
+export const LOCAL_FINAL_RGB_CONTROL_REGISTRATION=Object.freeze({...LOCAL_OBJECT_SUPPORT_CONTROL_REGISTRATION,
+ entryId:'ai-painter-local-control-v1-final-rgb-base-weight-quality-v1',
+ capabilityVersion:'stage4_mvp256_dry_final_rgb_base_weight_quality24_v1'});
+export const LOCAL_JOINT_CONTROL_REGISTRATION=Object.freeze({...LOCAL_OBJECT_SUPPORT_CONTROL_REGISTRATION,
+ entryId:'ai-painter-local-control-v1-joint-object-priority-quality-v1',
+ capabilityVersion:'stage4_mvp256_dry_joint_object_priority_quality24_v1'});
 const CONTROL_ROUTES=Object.freeze([
  Object.freeze({registration:LOCAL_CONTROL_REGISTRATION,capability:LOCAL_CONTROL_CAPABILITY,adapter:LOCAL_CONTROL_ADAPTER,planSchema:LOCAL_CONTROL_PLAN_SCHEMA,outputRoot:LOCAL_CONTROL_OUTPUT_ROOT}),
  Object.freeze({registration:LOCAL_DECODE1_CONTROL_REGISTRATION,capability:LOCAL_DECODE1_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_DECODE1_CONTROL_REGISTRATION.adapterFile,
-  planSchema:'ecology-decode1-weight-quality-plan-v1',outputRoot:'.runtime/ai-painter/ecology-decode1-weight-quality-executions'})]);
+  planSchema:'ecology-decode1-weight-quality-plan-v1',outputRoot:'.runtime/ai-painter/ecology-decode1-weight-quality-executions'}),
+ Object.freeze({registration:LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION,capability:LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION.adapterFile,
+  planSchema:'ecology-terrain-detail-weight-quality-plan-v1',outputRoot:'.runtime/ai-painter/ecology-terrain-detail-weight-quality-executions'}),
+ Object.freeze({registration:LOCAL_OBJECT_SUPPORT_CONTROL_REGISTRATION,capability:LOCAL_OBJECT_SUPPORT_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_OBJECT_SUPPORT_CONTROL_REGISTRATION.adapterFile,
+  planSchema:'object-support-structure-quality-plan-v1',outputRoot:'.runtime/ai-painter/object-support-structure-quality-executions'}),
+ Object.freeze({registration:LOCAL_FINAL_RGB_CONTROL_REGISTRATION,capability:LOCAL_FINAL_RGB_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_FINAL_RGB_CONTROL_REGISTRATION.adapterFile,
+  planSchema:'object-support-structure-quality-plan-v1',outputRoot:'.runtime/ai-painter/final-rgb-base-weight-quality-executions'}),
+ Object.freeze({registration:LOCAL_JOINT_CONTROL_REGISTRATION,capability:LOCAL_JOINT_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_JOINT_CONTROL_REGISTRATION.adapterFile,
+  planSchema:'object-support-structure-quality-plan-v1',outputRoot:'.runtime/ai-painter/joint-object-priority-quality-executions'})]);
 function controlRoute(capability){const found=CONTROL_ROUTES.find(r=>r.capability===capability);need(found,'local_unknown_capability_or_retries');return found;}
 const hash = v => crypto.createHash('sha256').update(v).digest('hex');
 const need = (v, c) => { if (!v) throw Error(c); };
@@ -70,7 +92,7 @@ export function validateLocalStartPackage(root, command) {
   for (const phase of PHASES) need(spec.phaseAdapters?.[phase]?.path === route.adapter &&
     spec.phaseAdapters[phase].exportName === phase, 'local_arbitrary_adapter_rejected');
   const lineage = Object.keys(spec.programLineage ?? {});
-  need(lineage.length > 0 && lineage.length <= STOP_REQUEST_LIMITS.sourceFiles, 'local_source_count_limit');
+  need(lineage.length > 0 && lineage.length <= ownedStopSourceFileMaximum(root,spec), 'local_source_count_limit');
   need(Array.isArray(spec.inputEvidence) && spec.inputEvidence.length > 0 && spec.inputEvidence.length <= 64, 'local_input_evidence_limit');
   const inputs = spec.inputEvidence.map(b => {
     const value = readOwnedStopProjectFile(root, b.path); need(hash(value) === b.sha256, 'local_input_sha_mismatch');

@@ -1,0 +1,126 @@
+{
+  "schemaVersion": "ai-painter-joint-object-priority-cpu-policy-v1",
+  "candidateId": "stage4_mvp256_dry_joint_object_priority_cpu_v1",
+  "status": "registered_inactive_synthetic_cpu_only",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.80",
+    "sha256": "3dcb487c54206c2512f79890f02fb305ef5cda85dc65e684a95b396e60937fa2"
+  },
+  "historicalSpecification": {
+    "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.79-318e7078.txt",
+    "sha256": "318e7078b24f56734af92ba6636d63ec89ef27174866cc72ac2f4e934505b30e",
+    "purpose": "historical_review_only",
+    "executionAllowed": false
+  },
+  "unchangedDefinitions": [
+    {
+      "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-cpu-policy-v1.json",
+      "sha256": "f5842c5005a60a2c51dd84f9baca1d4ecc751a5fed09e8647f7d96acd4efaefe",
+      "role": "unchanged_loss_definition_not_execution_qualification"
+    },
+    {
+      "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-integration-cpu-policy-v1.json",
+      "sha256": "2aa89a112ebc125e9b4bfdea8f7adade22f1d57afb094d1d4b4f1cff36293d82",
+      "role": "original_gradient_gate_and_projection_reference_not_new_anchor_definition"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_priority_update_cpu_v1.py",
+      "sha256": "d2d3238be5e3baab321dce0d697d70723cc69c622c361cc8fe215560f8e1e67c",
+      "role": "immutable_original_core_priority_rule"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_final_rgb_weight_priority_update_v1.py",
+      "sha256": "c56e0c52265686144a7133b9c50bf0cdda794ad426e40ccbbdd5b7fc26eb82e5",
+      "role": "real_parent_model_binding_and_input_validation"
+    }
+  ],
+  "implementation": {
+    "gradientBridge": "ml/ai-painter/src/ai_painter/complete_world/object_joint_rgb_structure_priority_update_cpu_v1.py",
+    "tests": "ml/ai-painter/tests/test_object_joint_rgb_structure_priority_update_cpu_v1.py",
+    "syntheticCpuCheck": "ml/ai-painter/scripts/check_object_joint_rgb_structure_priority_cpu_v1.py"
+  },
+  "model": {
+    "capability": "stage4_mvp256_dry_factorized_ecology_final_rgb_base_weight_precision_v1",
+    "parameterTensors": 108,
+    "parameterElements": 2242687,
+    "objectHeadParameterTensors": 16,
+    "objectHeadParameterElements": 4876,
+    "initializationSeed": 20260929,
+    "freshSourceParameterGraphOnly": true,
+    "forwardOrParameterGraphChanged": false,
+    "parentIdentityBuffersRewritten": false,
+    "checkpointLoading": false
+  },
+  "gradientProtocol": {
+    "componentsInOrder": ["actualTotal", "structuredObjective", "wholeFrameFidelity", "objectCoreRgb", "objectSupportStructure"],
+    "generatorAutogradCallsPerSyntheticGraph": 5,
+    "singleSharedSyntheticScalarGraph": true,
+    "scalarFormula": "(((structured.float() + whole).float() + core).float() + support)",
+    "expectedGradientFormula": "(((g_structured.float() + g_whole.float()).float() + g_core.float()).float() + g_support.float())",
+    "atol": 1e-6,
+    "rtol": 1e-5,
+    "priorityObjective": "existing_weighted_core_rgb_plus_existing_weighted_support_structure",
+    "supportAlreadyWeighted": true,
+    "additionalSupportWeight": false,
+    "anchorFormula": "(g_core.float() + g_support.float()).float()",
+    "otherGradientFormula": "(g_whole.float() + g_structured.float()).float()",
+    "projection": "FP64 q=dot(anchor,anchor), d=dot(anchor,other); q==0 or d>=0 preserves actualTotal bytes and tensor identity; otherwise (actualTotal.float64()-(d/q)*anchor.float64()).float32()",
+    "projectionRoundoffMultiplier": 16,
+    "newNearZeroThreshold": false,
+    "nonHeadActualGradientIdentityPreserved": true,
+    "nonConflictHeadActualBytesPreserved": true,
+    "actualTotalMustNotBeReconstructedFromComponentGradients": true,
+    "callerGradientArraysEstablishProvenance": false,
+    "originalScalarAndFiveIndependentVjpsRequiredForProvenance": true,
+    "guaranteesIndividualLossImprovement": false,
+    "guaranteesAdamWStepImprovement": false,
+    "guaranteesVisualImprovement": false
+  },
+  "cpuScope": {
+    "syntheticOnly": true,
+    "sourceModelParameterConstruction": true,
+    "syntheticScalarAutograd": true,
+    "rendererForwards": 0,
+    "criticForwards": 0,
+    "realTrainSampleContentRead": false,
+    "validationContentRead": false,
+    "challengeOrRegressionContentRead": false,
+    "modelStateBeforeAndAfterMustMatch": true,
+    "rngStateBeforeAndAfterMustMatch": true
+  },
+  "resources": {
+    "cpuThreads": 2,
+    "cpuAffinityMaximum": 2,
+    "syntheticTestsMaxWallSeconds": 120,
+    "maxOutputMiB": 8,
+    "maxJsonBytes": 1048576
+  },
+  "boundaries": {
+    "cpuOnly": true,
+    "optimizerConstruction": false,
+    "weightUpdates": false,
+    "cudaInitialization": false,
+    "checkpointOrImageOutput": false,
+    "oldSourceBytesMutation": false,
+    "productionEntryRouting": false,
+    "currentExecutionRegistryWrite": false,
+    "realModelDiagnosticGranted": false,
+    "gpuQualificationGranted": false,
+    "trainingGranted": false,
+    "visualOrStage4QualificationGranted": false,
+    "runtimePublicationGranted": false
+  },
+  "acceptance": [
+    "Original loss weights, scalar sum order and five-component gradient gate remain exact",
+    "Conflict, nonconflict, zero, exact cancellation, small anchor and core/support conflict cases have independently computed expectations",
+    "Zero support reproduces original core-priority behavior without invoking or mutating the original projection",
+    "FP32 regrouping cannot replace the original ordered total-gradient gate or independent actual-total differentiation",
+    "Nonfinite, bad shape/count/dtype/order, fake model and parameter alias cases fail closed",
+    "Only four object heads may change; all other actual-total gradient tensor identities remain intact",
+    "Five independent differentiations use one synthetic graph; supplied arrays alone never prove provenance",
+    "Model/RNG state remains unchanged; renderer/critic forwards, asset reads, optimizer, CUDA and output saves are prohibited",
+    "Counterexamples demonstrate no individual-loss, AdamW-step, model-quality, Stage or release guarantee",
+    "Historical specification, source, policies, consumed runs, data splits and production registry remain byte-identical"
+  ]
+}

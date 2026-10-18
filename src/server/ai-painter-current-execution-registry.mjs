@@ -44,15 +44,24 @@ const TERMINAL_EXECUTION_STATES = new Set([
 ])
 const VERIFIED_KERNEL_INTERRUPTION_CONTEXTS = new WeakSet()
 
-export async function readCurrentExecutionRegistry(projectRoot = process.cwd()) {
-  return readCurrentExecutionRegistryInternal(projectRoot)
+export function requireRegistryDeadline(deadlineUnixMs = null) {
+  if (deadlineUnixMs === null) return 10_000
+  requireValue(Number.isSafeInteger(deadlineUnixMs), "registry_deadline_invalid")
+  const remaining = deadlineUnixMs - Date.now()
+  requireValue(remaining > 0, "registry_deadline_exhausted")
+  return Math.min(10_000, remaining)
+}
+
+export async function readCurrentExecutionRegistry(projectRoot = process.cwd(), { deadlineUnixMs = null } = {}) {
+  return readCurrentExecutionRegistryInternal(projectRoot, { deadlineUnixMs })
 }
 
 async function readCurrentExecutionRegistryInternal(
   projectRoot,
-  { expiredActiveRecovery = null } = {},
+  { expiredActiveRecovery = null, deadlineUnixMs = null } = {},
 ) {
   try {
+    requireRegistryDeadline(deadlineUnixMs)
     const current = await readBoundJson(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH)
     requireValue(current.value?.schemaVersion === REGISTRY_SCHEMA, "registry_schema_invalid")
     requireValue(Number.isInteger(current.value.registryRevision) && current.value.registryRevision > 0, "registry_revision_invalid")
@@ -79,6 +88,7 @@ async function readCurrentExecutionRegistryInternal(
       current.value,
       archivedNamespaces,
       expiredActiveRecovery,
+      deadlineUnixMs,
     )
     const taskCapsule = await readRegistryBinding(
       projectRoot,
@@ -105,6 +115,7 @@ async function readCurrentExecutionRegistryInternal(
       archivedNamespaces,
     )
 
+    requireRegistryDeadline(deadlineUnixMs)
     return {
       ok: true,
       status: "verified",
@@ -330,10 +341,13 @@ export async function prepareCurrentExecutionRegistryAdvance({
   dependencyManifest = null,
   _testHooks = null,
   _expiredActiveRecovery = null,
+  deadlineUnixMs = null,
 }) {
+  requireRegistryDeadline(deadlineUnixMs)
   const previous = _expiredActiveRecovery === null
-    ? await readCurrentExecutionRegistry(projectRoot)
+    ? await readCurrentExecutionRegistry(projectRoot, { deadlineUnixMs })
     : await readCurrentExecutionRegistryInternal(projectRoot, {
+        deadlineUnixMs,
         expiredActiveRecovery: {
           ..._expiredActiveRecovery,
           processProbe: _testHooks?.probeActiveExecutionProcess ?? null,
@@ -375,6 +389,7 @@ export async function prepareCurrentExecutionRegistryAdvance({
     runId,
     executionState,
     archivedNamespaces,
+    deadlineUnixMs,
   })
   if (normalizedActiveExecution === null) {
     requireValue(!ACTIVE_EXECUTION_STATES.has(executionState), "registry_active_execution_missing")
@@ -424,7 +439,7 @@ export async function prepareCurrentExecutionRegistryAdvance({
   const registryRevision = previous.registry.registryRevision + 1
   const eventSequence = previous.registry.eventSequence + 1
   const transactionId = `current-execution-registry-advance-${compactUtc()}-${randomUUID()}`
-  const processIdentity = resolveCurrentProcessIdentity(_testHooks)
+  const processIdentity = resolveCurrentProcessIdentity(_testHooks, deadlineUnixMs)
   const writerClaim = {
     schemaVersion: "ai-painter-current-execution-registry-writer-claim-v1",
     transactionId,
@@ -432,13 +447,15 @@ export async function prepareCurrentExecutionRegistryAdvance({
     processStartIdentity: processIdentity,
     claimedAtUtc: new Date().toISOString(),
   }
+  requireRegistryDeadline(deadlineUnixMs)
   await acquireWriterClaim(projectRoot, writerClaim)
   let durablePrepared = false
   let transactionRoot = null
   try {
     const lockedPrevious = _expiredActiveRecovery === null
-      ? await readCurrentExecutionRegistry(projectRoot)
+      ? await readCurrentExecutionRegistry(projectRoot, { deadlineUnixMs })
       : await readCurrentExecutionRegistryInternal(projectRoot, {
+          deadlineUnixMs,
           expiredActiveRecovery: {
             ..._expiredActiveRecovery,
             processProbe: _testHooks?.probeActiveExecutionProcess ?? null,
@@ -578,6 +595,7 @@ export async function advanceCurrentExecutionRegistry(options) {
   return finalizePreparedCurrentExecutionRegistryAdvance({
     projectRoot: options.projectRoot ?? process.cwd(),
     transactionId: prepared.transactionId,
+    deadlineUnixMs: options.deadlineUnixMs ?? null,
     _testHooks: options._testHooks ?? null,
   })
 }
@@ -717,16 +735,20 @@ export async function finalizePreparedCurrentExecutionRegistryAdvance({
   projectRoot = process.cwd(),
   transactionId,
   _testHooks = null,
+  deadlineUnixMs = null,
+  beforeAtomicWrite = null,
 }) {
+  requireValue(beforeAtomicWrite === null || typeof beforeAtomicWrite === "function", "registry_resource_guard_invalid")
+  requireRegistryDeadline(deadlineUnixMs)
   requireSafeTransactionId(transactionId)
   const claim = await readWriterClaim(projectRoot)
   requireValue(claim.transactionId === transactionId, "registry_writer_claim_transaction_mismatch")
   requireValue(claim.processId === process.pid, "registry_writer_claim_not_owned_by_current_process")
   requireValue(
-    claim.processStartIdentity === resolveCurrentProcessIdentity(_testHooks),
+    claim.processStartIdentity === resolveCurrentProcessIdentity(_testHooks, deadlineUnixMs),
     "registry_writer_claim_process_identity_mismatch",
   )
-  return finalizePreparedAdvanceInternal({ projectRoot, transactionId, _testHooks })
+  return finalizePreparedAdvanceInternal({ projectRoot, transactionId, _testHooks, deadlineUnixMs, beforeAtomicWrite })
 }
 
 export async function recoverPreparedCurrentExecutionRegistryAdvance({
@@ -747,7 +769,8 @@ export async function recoverPreparedCurrentExecutionRegistryAdvance({
   })
 }
 
-async function finalizePreparedAdvanceInternal({ projectRoot, transactionId, _testHooks }) {
+async function finalizePreparedAdvanceInternal({ projectRoot, transactionId, _testHooks, deadlineUnixMs = null, beforeAtomicWrite = null }) {
+  requireRegistryDeadline(deadlineUnixMs)
   const transactionRoot = `${CURRENT_EXECUTION_REGISTRY_ROOT}/transactions/${transactionId}`
   const pendingPath = `${transactionRoot}/transaction.pending.json`
   const committedPath = `${transactionRoot}/transaction.json`
@@ -772,6 +795,8 @@ async function finalizePreparedAdvanceInternal({ projectRoot, transactionId, _te
     projectRoot,
     stagedCurrentValue,
     normalizeArchivedNamespaces(stagedCurrentValue.archivedEvidenceNamespaces),
+    null,
+    deadlineUnixMs,
   )
   const stagedEventValue = parseSingleJsonLine(stagedEvent.bytes, "registry_staged_event_invalid")
   requireValue(stagedEventValue.transactionId === transactionId, "registry_staged_event_transaction_mismatch")
@@ -786,6 +811,7 @@ async function finalizePreparedAdvanceInternal({ projectRoot, transactionId, _te
     requireValue(currentValue.registryRevision === pending.value.previousRegistryRevision, "registry_previous_revision_changed")
   }
 
+  requireRegistryDeadline(deadlineUnixMs)
   ensurePreparedDatabaseRows(
     projectRoot,
     pending.value,
@@ -796,15 +822,18 @@ async function finalizePreparedAdvanceInternal({ projectRoot, transactionId, _te
   const dependencyVerification = await verifyDependencyManifest(projectRoot, dependencyManifest.value)
   invokeTransactionHook(_testHooks, "after_dependencies_verified", { transactionId })
 
+  requireRegistryDeadline(deadlineUnixMs)
   await ensureAtomicJsonlEvent(
     projectRoot,
     `${CURRENT_EXECUTION_REGISTRY_ROOT}/events.jsonl`,
     stagedEvent.bytes,
     transactionId,
+    beforeAtomicWrite,
   )
   await verifyRegistryEventBytes(projectRoot, stagedEventValue)
   invokeTransactionHook(_testHooks, "after_registry_event_committed", { transactionId })
 
+  requireRegistryDeadline(deadlineUnixMs)
   commitPreparedDatabaseRows(projectRoot, pending.value)
   invokeTransactionHook(_testHooks, "after_database_committed", { transactionId })
 
@@ -825,9 +854,10 @@ async function finalizePreparedAdvanceInternal({ projectRoot, transactionId, _te
   invokeTransactionHook(_testHooks, "before_current_publish", { transactionId })
 
   if (!alreadyPublished) {
+    requireRegistryDeadline(deadlineUnixMs)
     const beforePublish = await readFile(resolveProjectPath(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH))
     requireValue(sha256Bytes(beforePublish) === pending.value.previousCurrentSha256, "registry_previous_current_changed_before_publish")
-    await writeAtomicReplaceBytes(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH, stagedCurrent.bytes)
+    await writeAtomicReplaceBytes(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH, stagedCurrent.bytes, beforeAtomicWrite)
   }
   invokeTransactionHook(_testHooks, "after_current_publish", { transactionId })
   const published = await readFile(resolveProjectPath(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH))
@@ -835,7 +865,7 @@ async function finalizePreparedAdvanceInternal({ projectRoot, transactionId, _te
   verifyCommittedDatabaseRows(projectRoot, stagedCurrentValue, pending.value.currentSha256)
   await verifyRegistryEventBytes(projectRoot, stagedEventValue)
   await releaseWriterClaim(projectRoot, transactionId)
-  return readCurrentExecutionRegistry(projectRoot)
+  return readCurrentExecutionRegistry(projectRoot, { deadlineUnixMs })
 }
 
 function trainingTerminalRunId(terminal) {
@@ -1209,7 +1239,7 @@ async function verifyRegistryEventBytes(projectRoot, expected) {
   requireValue(JSON.stringify(matches[0]) === JSON.stringify(expected), "registry_event_bytes_mismatch")
 }
 
-async function ensureAtomicJsonlEvent(projectRoot, relativePath, stagedBytes, transactionId) {
+async function ensureAtomicJsonlEvent(projectRoot, relativePath, stagedBytes, transactionId, beforeAtomicWrite = null) {
   const absolutePath = resolveProjectPath(projectRoot, relativePath)
   const existing = await readFile(absolutePath).catch((error) => {
     if (error?.code === "ENOENT") return Buffer.alloc(0)
@@ -1234,6 +1264,7 @@ async function ensureAtomicJsonlEvent(projectRoot, relativePath, stagedBytes, tr
         projectRoot,
         relativePath,
         Buffer.from(`${completeLines.join("\n")}\n`, "utf8"),
+        beforeAtomicWrite,
       )
     }
     return
@@ -1242,7 +1273,7 @@ async function ensureAtomicJsonlEvent(projectRoot, relativePath, stagedBytes, tr
     requireValue(targetLine.startsWith(fragment), "registry_event_unrelated_partial_line")
   }
   const nextLines = [...completeLines, targetLine]
-  await writeAtomicReplaceBytes(projectRoot, relativePath, Buffer.from(`${nextLines.join("\n")}\n`, "utf8"))
+  await writeAtomicReplaceBytes(projectRoot, relativePath, Buffer.from(`${nextLines.join("\n")}\n`, "utf8"), beforeAtomicWrite)
   const after = parseCompleteJsonLines(await readFile(absolutePath), "registry_event_log_invalid")
   requireValue(after.filter((event) => event.transactionId === transactionId).length === 1, "registry_event_repair_failed")
   requireValue(JSON.stringify(after.find((event) => event.transactionId === transactionId)) === JSON.stringify(target), "registry_event_repair_bytes_mismatch")
@@ -1396,6 +1427,7 @@ async function verifyStoredActiveExecution(
   registry,
   archivedNamespaces,
   expiredActiveRecovery = null,
+  deadlineUnixMs = null,
 ) {
   if (expiredActiveRecovery !== null) {
     requirePlainObject(expiredActiveRecovery, "registry_expired_active_recovery_invalid")
@@ -1422,6 +1454,7 @@ async function verifyStoredActiveExecution(
     executionState: registry.executionState,
     archivedNamespaces,
     expiredActiveRecovery,
+    deadlineUnixMs,
   })
   if (normalized === null) {
     requireValue(!ACTIVE_EXECUTION_STATES.has(registry.executionState), "registry_active_execution_missing")
@@ -1444,6 +1477,7 @@ async function normalizeAndVerifyActiveExecution({
   executionState,
   archivedNamespaces,
   expiredActiveRecovery = null,
+  deadlineUnixMs = null,
 }) {
   if (activeExecution === null) return null
   const kernelContext = expiredActiveRecovery?.kernelInterruption ?? null
@@ -1483,7 +1517,7 @@ async function normalizeAndVerifyActiveExecution({
   )
   const processProbe = typeof expiredActiveRecovery?.processProbe === "function"
     ? expiredActiveRecovery.processProbe(activeExecution)
-    : queryProcessIdentity(activeExecution.processId)
+    : queryProcessIdentity(activeExecution.processId, deadlineUnixMs)
   requireValue(
     processProbe.status !== "indeterminate",
     "registry_active_execution_process_identity_unavailable",
@@ -1830,9 +1864,9 @@ async function releaseWriterClaim(projectRoot, transactionId) {
   await unlink(resolveProjectPath(projectRoot, REGISTRY_WRITER_CLAIM_PATH))
 }
 
-function resolveCurrentProcessIdentity(testHooks) {
+function resolveCurrentProcessIdentity(testHooks, deadlineUnixMs = null) {
   if (typeof testHooks?.currentProcessIdentity === "string") return testHooks.currentProcessIdentity
-  const probe = queryProcessIdentity(process.pid)
+  const probe = queryProcessIdentity(process.pid, deadlineUnixMs)
   requireValue(probe.status === "active", "registry_current_process_identity_unavailable")
   return probe.identity
 }
@@ -1848,7 +1882,8 @@ function probeClaimProcess(claim, testHooks) {
   }
 }
 
-function queryProcessIdentity(processId) {
+function queryProcessIdentity(processId, deadlineUnixMs = null) {
+  const timeout = requireRegistryDeadline(deadlineUnixMs)
   try {
     if (process.platform === "win32") {
       const script = [
@@ -1861,7 +1896,7 @@ function queryProcessIdentity(processId) {
       const result = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
         encoding: "utf8",
         windowsHide: true,
-        timeout: 10_000,
+        timeout,
       })
       if (result.status === 3) return { status: "dead" }
       if (result.error || result.status !== 0) return { status: "indeterminate" }
@@ -1871,7 +1906,7 @@ function queryProcessIdentity(processId) {
     }
     const result = spawnSync("ps", ["-o", "lstart=", "-p", String(processId)], {
       encoding: "utf8",
-      timeout: 10_000,
+      timeout,
     })
     if (result.status === 1 || String(result.stdout).trim() === "") return { status: "dead" }
     if (result.error || result.status !== 0) return { status: "indeterminate" }
@@ -1913,7 +1948,8 @@ async function writeAtomicExclusiveBytes(projectRoot, relativePath, bytes) {
   }
 }
 
-async function writeAtomicReplaceBytes(projectRoot, relativePath, bytes) {
+async function writeAtomicReplaceBytes(projectRoot, relativePath, bytes, beforeAtomicWrite = null) {
+  beforeAtomicWrite?.(relativePath, bytes.length)
   const absolutePath = resolveProjectPath(projectRoot, relativePath)
   await mkdir(path.dirname(absolutePath), { recursive: true })
   const temporaryPath = `${absolutePath}.tmp-${process.pid}-${randomUUID()}`

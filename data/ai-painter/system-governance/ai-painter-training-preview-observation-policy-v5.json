@@ -1,0 +1,238 @@
+{
+  "schemaVersion": "ai-painter-training-preview-observation-policy-v5",
+  "status": "registered_production_contract_requires_fresh_candidate_adoption",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "7b1867f4351cd68bfcb2912000f1744478a18687f0211f6aa6f04352b222c158",
+    "version": "AI-PAINTER-SPEC-1.84"
+  },
+  "purpose": "Retain truthful bounded images from existing train forwards, including before a later failure, without changing learning or producing historical replacement images",
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "epochs": 24,
+    "trainSamples": 48,
+    "splitsUnchanged": "48/8/4/4",
+    "currentProductionIntegration": false,
+    "oldExecutionPoliciesUnchanged": true,
+    "capabilityVersion": "stage4_mvp256_dry_joint_object_priority_quality24_v1",
+    "modelCapabilityVersion": "stage4_mvp256_dry_factorized_ecology_final_rgb_base_weight_precision_v1",
+    "outputRootPrefix": ".runtime/ai-painter/joint-object-priority-quality-executions/"
+  },
+  "programBindings": {
+    "component": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/training_preview_observer_v1.py",
+      "sha256": "c2bf84932a6ece8fd78b8d79d1cc743af83fad97a2b35b83bc6ac38f920a739c"
+    },
+    "tests": {
+      "path": "ml/ai-painter/tests/test_training_preview_observer_cpu_v1.py",
+      "sha256": "244a17a70462021aca0488832b189f26fb3e69dccd5c58a718fe29779c6915c7"
+    },
+    "storage": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/training_preview_storage_v1.py",
+      "sha256": "5fddbdd0037fce931914397a466e7081d61e3372c5182b884dab1a62337322db"
+    },
+    "storageTests": {
+      "path": "ml/ai-painter/tests/test_training_preview_storage_cpu_v1.py",
+      "sha256": "aeee6cf2e4ab94500b23354b26929057531dde7c447895878f7f1eeb4b975481"
+    }
+  },
+  "capture": {
+    "split": "train",
+    "ordinal": 0,
+    "maxFramesPerEpoch": 1,
+    "maxFrames": 24,
+    "maxFailureReferences": 1,
+    "phase": "after_discriminator_update_before_generator_update",
+    "source": "detached contiguous CPU FP32 copy of the existing generator prediction; no extra forward",
+    "failureReference": "only a previously captured frame with its original identity; no image when no prior capture",
+    "modelBindingMeaning": "model identity metadata, not a checkpoint or a snapshot of weights at this step"
+  },
+  "resources": {
+    "maxPreviewBytes": 4194304,
+    "maxPngBytes": 155648,
+    "maxMetadataBytes": 8192,
+    "maxRecords": 25,
+    "existingExecutionMaxBytes": 134217728,
+    "reservedFailureTensorBytes": 67108864,
+    "reservedFailureMetadataBytes": 1048576,
+    "reservedTerminalBytes": 65536,
+    "extraModelForwards": 0,
+    "extraAutogradCalls": 0,
+    "extraOptimizerUpdates": 0,
+    "additionalGpuAllocationForInference": false
+  },
+  "requiredIdentity": [
+    "run_id",
+    "package_id",
+    "capability_version",
+    "model_capability_version",
+    "execution_package",
+    "plan",
+    "model",
+    "dataset_manifest",
+    "source_rgb",
+    "condition_pack",
+    "world_facts",
+    "configuration_sha256",
+    "program_bindings_sha256",
+    "sample_id",
+    "split",
+    "epoch",
+    "train_ordinal",
+    "train_index",
+    "generator_updates",
+    "discriminator_updates",
+    "forward_sequence",
+    "phase"
+  ],
+  "storage": {
+    "usesExistingRunOutputRoot": true,
+    "usesExistingOutputMeter": true,
+    "atomicPngAndMetadataWritesRequired": true,
+    "usesExistingHistoryAndArtifactInterfaces": true,
+    "parallelBackgroundOrNewApi": false,
+    "unregisteredPartialWrite": "not a valid viewable artifact; retain accurate error and original training first failure",
+    "insufficientBudget": "record preview unavailable without consuming failure reserves or retrying training"
+  },
+  "qualification": {
+    "reviewStatus": "not_reviewed_diagnostic_only",
+    "checkpointSelectionEligible": false,
+    "qualificationEvidence": false,
+    "runtimePublicationEligible": false,
+    "formalOutput": false,
+    "trainingExecutionGranted": false,
+    "productionAdoptionProven": false
+  },
+  "adoptionRequirements": [
+    "New candidate binds actual producer, writer and query adapter source; preserve old consumed package and policy bytes",
+    "Verify trusted identities from existing plan/readers, do not trust syntactically valid SHA strings",
+    "Verify no tensor, RNG, model state, optimizer or gradient change by component observation",
+    "Verify normal, failure, budget and stale/mismatched artifact cases through existing interfaces",
+    "Inactive component metadata remains explicitly component-only until separately versioned production adoption; component-only tests cannot certify it"
+  ],
+  "predecessor": {
+    "path": "data/ai-painter/system-governance/ai-painter-training-preview-observation-policy-v2.json",
+    "sha256": "85127a74cfaae56ab7d848087a2a590aae0f942234f281842543ff731d35236c"
+  },
+  "implementationPaths": {
+    "storage": "ml/ai-painter/src/ai_painter/complete_world/training_preview_storage_v1.py",
+    "storageTests": "ml/ai-painter/tests/test_training_preview_storage_cpu_v1.py",
+    "producerProfile": "ml/ai-painter/scripts/painter_stage4_final_rgb_base_weight_training_profile_v1.py",
+    "producerWorker": "ml/ai-painter/scripts/painter_stage4_object_support_structure_quality_worker_v1.py",
+    "historyAdapter": "src/server/ai-console/training-history-detail-adapters.mjs"
+  },
+  "recordContract": {
+    "schemaVersion": "training-preview-diagnostic-record-v1",
+    "purpose": "not_reviewed_diagnostic_only",
+    "falseFlags": [
+      "formalOutput",
+      "checkpointSelectionEligible",
+      "qualificationEvidence",
+      "runtimePublicationEligible"
+    ],
+    "identityFields": [
+      "runId",
+      "packageId",
+      "capabilityVersion",
+      "modelCapabilityVersion",
+      "configurationSha256",
+      "programBindingsSha256",
+      "worldId",
+      "tick",
+      "split",
+      "sampleId",
+      "epoch",
+      "trainOrdinal",
+      "trainIndex",
+      "optimizerSteps",
+      "phase",
+      "forwardSequence"
+    ],
+    "bindings": [
+      "policy",
+      "plan",
+      "executionPackage",
+      "modelBinding",
+      "datasetManifest",
+      "sourceRgb",
+      "conditionPack",
+      "worldFacts"
+    ],
+    "imageBinding": "image={path,sha256,bytes}",
+    "split": "train",
+    "phase": "after_discriminator_update_before_generator_update",
+    "modelBindingMeaning": "Verified model identity metadata; not a snapshot of mutable weights at the captured step",
+    "counterRule": "G=(epoch-1)*48+trainOrdinal and D=G+1; retain actual distinct counters, no invented completion",
+    "worldRule": "worldId is the verified sample world identity, not a filesystem slug; tick is an actual nonnegative safe integer"
+  },
+  "manifestContract": {
+    "schemaVersion": "training-preview-diagnostic-manifest-v1",
+    "identityFields": [
+      "runId",
+      "packageId"
+    ],
+    "bindings": [
+      "policy",
+      "plan"
+    ],
+    "entries": "[{record:{path,sha256},image:{path,sha256}}]",
+    "maxEntries": 24,
+    "maxBytes": 16384,
+    "terminalField": "trainingPreviewManifest",
+    "progressField": "latestTrainingPreview",
+    "failureReference": "Optional separately bound JSON referencing a previously committed image and its original sample/count/time; never a newly rendered failure image"
+  },
+  "recordAndImageLimits": {
+    "maxRecordBytes": 8192,
+    "maxPngBytes": 155648,
+    "pngWidth": 256,
+    "pngHeight": 192,
+    "format": "RGB8 PNG",
+    "maxManifestBytes": 16384,
+    "maxFailureReferences": 1
+  },
+  "trustedAdoption": {
+    "planField": "trainingPreviewPolicy",
+    "configurationField": "trainingPreviewPolicy",
+    "packagePolicyMustBeInputEvidence": true,
+    "actualProducerAndReaderSourceBindingsRequired": true,
+    "oldRunRetrofittingAllowed": false,
+    "booleanEnableGrantsAdoption": false,
+    "qualificationFromPreview": false
+  },
+  "projection": {
+    "role": "image",
+    "evidenceKind": "training_diagnostic_preview",
+    "label": "未审核训练预览（非Checkpoint／非正式输出）",
+    "source": "Same-Run trusted terminal manifest or same-Run trusted progress latest entry; never directory discovery",
+    "verifyPngBytesAndDimensions": true,
+    "compareAgainstTrustedPlanAndTrainIdentity": true,
+    "ignoreUntrustedPassedForVerdict": true,
+    "previewFailureDoesNotEraseTrainingEvidence": true,
+    "newApiOrPollingLoop": false
+  },
+  "availabilityCodes": [
+    "not_captured",
+    "capture_failed",
+    "budget_exhausted",
+    "publication_incomplete",
+    "unregistered_source",
+    "binding_mismatch"
+  ],
+  "sourceVersioning": "Fresh candidate plan and package collect/recompute actual producer, storage, policy, tests and query-adapter identities; existing consumed packages and current production adoption remain unchanged until their own acceptance",
+  "resourceAccountingPhases": {
+    "captureOpen": "Keep original failure tensor, failure metadata and worker-terminal reserves; account all actual bytes and staging",
+    "terminalMetadataOnly": "finish irreversibly disables captures and can only publish one bounded failure-reference and manifest. Already saved failure bytes are counted once; keep64KiB worker-terminal reserve and unchanged128MiB execution/4MiB subtree ceilings. No image, model operation or late capture is allowed in this phase."
+  },
+  "compatibility": {
+    "historicalV2Preserved": true,
+    "recordSchemaUnchanged": true,
+    "manifestSchemaUnchanged": true,
+    "onlyRegisteredPolicyPathSchemaAndScope": true,
+    "newApiOrUi": false,
+    "oldRunRetrofitting": false
+  }
+}

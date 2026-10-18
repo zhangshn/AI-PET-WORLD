@@ -15,7 +15,7 @@ const expected = {
 const valid = {
   schemaVersion: "ai-painter-stage4-v2-controlled-smoke-failure-adjudication-intent-v1",
   status: "prepared",
-  capabilityVersion: "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2",
+  capabilityVersion: "stage4_v2_machine_review_capability_identity_fixed_program_v6",
   ...expected,
   recordedAtUtc: "2026-09-01T01:02:03.004Z",
 };
@@ -23,6 +23,7 @@ const valid = {
 assert.equal(validateFailureAdjudicationIntent(valid, expected), true);
 
 const tamperedCases = [
+  { ...valid, capabilityVersion: "stage4_full_resolution_typed_semantic_transport_rgb_responsibility_v2" },
   { ...valid, schemaVersion: "legacy-intent-v0" },
   { ...valid, status: "consumed" },
   { ...valid, capabilityVersion: "another-capability" },

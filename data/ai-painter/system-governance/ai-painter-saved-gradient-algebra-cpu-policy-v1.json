@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "ai-painter-saved-gradient-algebra-cpu-policy-v1",
+  "status": "registered_one_attempt_readonly_cpu_not_training",
+  "scope": "saved_gradient_algebra_only",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.73",
+    "sha256": "911eefef314b121e77bd839e17127c10db7df5d7c9edd3211260970ffa7c55eb"
+  },
+  "runId": "object-support-quality-v1-e03cae36-386e-4919-b83c-a8441ab7115c",
+  "registrationInputs": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter88-review-20261016/minimal-cpu-registration-inputs-v1.json",
+    "sha256": "1bd3e3699dbc0e8f07c6516d9bcc10d981a49b492ec4b73ad49e0abb87366cad"
+  },
+  "programBindings": {
+    "driver": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter88-review-20261016/saved_gradient_cpu_algebra_review_v1.py",
+      "sha256": "02c05d2a51bd81feb5e23a1e26a84e53291e680ebd4dd06b4cc9c2c3d22a98b6"
+    },
+    "tests": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter88-review-20261016/test_saved_gradient_cpu_algebra_review_v1.py",
+      "sha256": "3e3284e2c14bba77c9af01d40374765d6c5b0d1789ad448352488e8c6f032a99"
+    }
+  },
+  "executionHost": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/coordination-20261016/run-saved-gradient-audit-once-v1.mjs",
+    "sha256": "2197553f865088da97877d0c8ff39437d03ae599a34474820d1ebf2154a9e412"
+  },
+  "containmentProgramBindings": {
+    "owner": {
+      "path": "scripts/lib/ai-painter-owned-worker-v1.mjs",
+      "sha256": "0e15284e320123e361b49d8b28731559b31f45e3057ac8a6deac99d951672af6"
+    },
+    "nativeBridge": {
+      "path": "scripts/lib/ai-painter-owned-worker-native-v1.mjs",
+      "sha256": "b2925ccdf6e5f3571c868bfaceb3fa5631267d3ab686a8b4e74bb28e0c4cce4c"
+    },
+    "nativeOwnerSource": {
+      "path": "scripts/windows/ai-painter-owned-worker-owner.cs",
+      "sha256": "542b690b20459c445da801f17f3dc974904f35a0c81048c49bb97c04e2d2d353"
+    }
+  },
+  "interpreter": {
+    "absolutePath": "F:/ai-pet-world/ml/ai-painter/.venv/Scripts/python.exe",
+    "sha256": "5912d0884b23c0343983a864c6064242391e2265536f50b88624857e353882c9"
+  },
+  "target": {
+    "parameterIndex": 88,
+    "name": "core.core.final_rgb_decoder.base.layers.2.weight",
+    "shape": [
+      48,
+      48,
+      3,
+      3
+    ]
+  },
+  "comparison": {
+    "atol": 0.000001,
+    "rtol": 0.00001,
+    "gradientLabels": [
+      "actualTotal",
+      "structuredObjective",
+      "wholeFrameFidelity",
+      "objectCoreRgb",
+      "objectSupportStructure"
+    ],
+    "fp32Order": "(((structured.float()+whole.float()).float()+core.float()).float()+support.float())",
+    "gate": "torch.isclose(actual,ordered_fp32_sum,atol=1e-6,rtol=1e-5,equal_nan=False)",
+    "fp64Meaning": "Only FP64 sum of already-saved FP32 component values, not independently recomputed high-precision model gradients",
+    "outcome": "Always preserve a valid completed algebra observation, including disagreement with the original failure; do not force parameter88 to fail"
+  },
+  "resources": {
+    "cpuThreads": 2,
+    "cpuAffinityMaximum": 2,
+    "maxWallSecondsIncludingStartup": 120,
+    "maxRssMiB": 1536,
+    "maxOutputMiB": 8,
+    "maxSingleJsonMiB": 2,
+    "failureReserveBytes": 65536,
+    "archiveReadMaximumBytes": 67108864,
+    "decodedMaximumBytesIncludingArchiveMetadata": 67108864,
+    "attempts": 1,
+    "automaticRetries": 0,
+    "containment": "existing runOwnedWorker, no new service",
+    "rssLimitEnforcement": "phase and parameter-boundary observations; not claimed as an OS hard memory cap",
+    "cudaInitialization": 0,
+    "modelForwards": 0,
+    "autogradCalls": 0,
+    "optimizerUpdates": 0
+  },
+  "outputRoot": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter88-review-20261016/attempt-001",
+  "allowedActions": [
+    "Verify pinned metadata, source and tensor descriptors using exact identities",
+    "Read bounded archive through original weights_only CPU loader without installing any model or RNG state",
+    "Scan all 108 saved parameter-gradient sets with original formula and unchanged tolerance",
+    "Save bounded algebra, resource and cleanup evidence under the one new attempt"
+  ],
+  "forbiddenActions": [
+    "model construction or G/D state installation",
+    "forward, autograd, optimizer, CUDA or training",
+    "real image, condition, validation, challenge or regression decoding",
+    "Checkpoint or image writing",
+    "old evidence mutation, original run replay, production registry writes",
+    "automatic retries or GPU/repair qualification from this audit"
+  ],
+  "qualification": {
+    "rootCauseProven": false,
+    "modelRepaired": false,
+    "gpuQualified": false,
+    "trainingQualified": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false
+  }
+}

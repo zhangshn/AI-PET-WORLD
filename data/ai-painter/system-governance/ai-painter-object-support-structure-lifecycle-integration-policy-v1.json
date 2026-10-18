@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "ai-painter-object-support-structure-lifecycle-integration-policy-v1",
+  "status": "inactive_implementation_and_cpu_integration_only",
+  "capabilityVersion": "stage4_mvp256_dry_object_support_structure_quality24_v1",
+  "modelCapabilityVersion": "stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_v1",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "792bf647336eb59a3cdbe6b4efbe3e630724e810ba0afa125fb4d7cc350c2e19"
+  },
+  "lossDefinition": {
+    "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-cpu-policy-v1.json",
+    "sha256": "f5842c5005a60a2c51dd84f9baca1d4ecc751a5fed09e8647f7d96acd4efaefe"
+  },
+  "gradientDefinition": {
+    "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-integration-cpu-policy-v1.json",
+    "sha256": "2aa89a112ebc125e9b4bfdea8f7adade22f1d57afb094d1d4b4f1cff36293d82"
+  },
+  "priorCpuEvidence": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/object-support-integration-cpu-acceptance-v1.json",
+    "sha256": "45e7d7014f158030b52b1da8620ed87d222c9cf8551e2f97cbc4aab6d8176229"
+  },
+  "implementation": {
+    "objective": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_support_structure_device_v1.py",
+    "gradientBridge": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_priority_update_device_v1.py",
+    "profile": "ml/ai-painter/scripts/painter_stage4_object_support_structure_training_profile_v1.py",
+    "checkpoint": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_checkpoint_v1.py",
+    "lifecycle": "ml/ai-painter/scripts/painter_stage4_object_support_structure_lifecycle_v1.py"
+  },
+  "deviceSemantics": {
+    "supportedDevices": ["cpu", "cuda"],
+    "cpuFormulaAndGradientReferenceUnchanged": true,
+    "supervisoryMasks": "Recompute from detached CPU original facts with the frozen CPU ownership function; transfer detached owned masks to the prediction device without changing pixels",
+    "lossMath": "Original complete total plus the exact FP32 0.1 equal-role centered-luma structural term; same epsilon, aggregation and applicability",
+    "generatorGradients": "One shared forward, five independent complete VJPs; GPU observations copied to the original CPU rule; never synthesize actualTotal from components",
+    "generatorPrecision": "IEEE FP32 without autocast; existing two weight-reduction operators unchanged",
+    "discriminatorPrecision": "unchanged existing device policy",
+    "gradientAtol": 1e-6,
+    "gradientRtol": 1e-5,
+    "corePriorityRuleUnchanged": true
+  },
+  "proposedExecutionConfiguration": {
+    "resolution": [256, 192],
+    "worldCount": 1,
+    "waterFactPresent": false,
+    "seed": 20260929,
+    "freshInitializationOnly": true,
+    "historicalCheckpointMayInitialize": false,
+    "automaticResumeAllowed": false,
+    "dataUse": {"train": 48, "validation": 8, "challenge": 4, "regression": 4},
+    "epochs": 24,
+    "generatorOptimizerSteps": 1152,
+    "discriminatorOptimizerSteps": 1152,
+    "maxWallSeconds": 8400,
+    "observationOnlyEpochs": [12],
+    "checkpointEligibleEpochs": [24],
+    "optimizer": {"name": "AdamW", "generatorLearningRate": 0.0001, "discriminatorLearningRate": 0.0001, "betas": [0.9, 0.999], "eps": 1e-8, "weightDecay": 0.01},
+    "gpuAdmission": {"trainSamples": 48, "maxWallSeconds": 600, "optimizerUpdates": 0, "generatorAutogradPerSample": 5, "discriminatorAutogradPerSample": 1},
+    "cpuThreads": 2,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "reviewSeconds": 120,
+    "attemptsPerExecution": 1,
+    "automaticRetries": 0
+  },
+  "currentWorkBoundary": {
+    "implementationAndSyntheticCpuIntegrationTestsOnly": true,
+    "cpuThreads": 2,
+    "cpuTestMaxWallSeconds": 120,
+    "cudaInitialization": false,
+    "realDataDecodeOrModelForward": false,
+    "realOptimizerConstructionOrUpdates": false,
+    "syntheticInMemoryCheckpointRoundTrip": true,
+    "productionCheckpointLoading": false,
+    "productionRegistryWrite": false,
+    "productionEntryRouting": false,
+    "realGpuAdmission": false,
+    "realTraining": false,
+    "newImageOrTrainingCheckpointFiles": false,
+    "oldSourceDataOrEvidenceMutation": false,
+    "reviewThresholdChange": false,
+    "stageOrRuntimeQualification": false
+  },
+  "acceptance": [
+    "CPU objective and all five gradients remain equivalent to the already verified CPU definitions",
+    "Device dispatch, parameter ownership and GPU-to-CPU reference boundaries reject mismatched devices or identities without claiming real CUDA validation",
+    "The new profile explicitly selects the new objective and bridge, with no mutable patch of parent globals or old fallback",
+    "Synthetic lifecycle executes the fixed 24x48 ledger, midpoint observation, single final selection and exact checkpoint reload; failures preserve original exception, actual counters and capture status",
+    "New checkpoint identity binds Loss/gradient policy, configuration, Run, program, data, count and selected epoch; historical or cross-candidate states fail closed",
+    "Original sources, data, prior CPU receipts, existing backend and console remain unchanged",
+    "No real GPU/optimizer/forward/training/production routing is performed by this implementation task; CPU success grants none of those qualifications"
+  ]
+}

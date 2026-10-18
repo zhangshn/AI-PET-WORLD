@@ -299,6 +299,7 @@ function stage4V2GraphDefinition({ graphId, programLineage }) {
     graphId,
     entrypoints,
     dynamicSuccessors: [
+      { role: "ownedWorkerRebootRecovery", path: "scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs" },
       { role: "qualificationContinuationRuntime", path: QUALIFICATION_CONTINUATION_PATH },
       { role: "autonomousClosedLoopRuntime", path: AUTONOMOUS_CLOSED_LOOP_PATH },
       { role: "controlledSmokePhaseAdapter", path: SMOKE_ADAPTER_PATH },

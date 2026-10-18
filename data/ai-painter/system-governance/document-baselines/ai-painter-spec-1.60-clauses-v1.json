@@ -1,0 +1,355 @@
+{
+  "schema": "ai-painter-frozen-specification-clause-index-v1",
+  "role": "historical_clause_locator_not_execution_contract",
+  "documentVersion": "AI-PAINTER-SPEC-1.60",
+  "logicalPath": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+  "snapshot": {
+    "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt",
+    "sha256": "a88d93514264f8b6c24bcc5f60e87189ba8df1f9f13848030fb0ee9e2ace35cc",
+    "bytes": 247500
+  },
+  "encoding": "utf8",
+  "lineNumbers": "one-based original logical lines; original CRLF bytes preserved in snapshot",
+  "allowedPurpose": "historical_review",
+  "executionAllowed": false,
+  "qualificationGranted": false,
+  "policy": "This locator preserves old section meanings and budgets; it never registers a runner, restores an attempt, authorizes new execution or confers model/CPU/GPU qualification.",
+  "sections": [
+    {
+      "sectionId": "9.6.1",
+      "title": "单次周期性残差受控例外",
+      "startLine": 323,
+      "endLine": 334,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.2",
+      "title": "V21原架构双train样本容量诊断",
+      "startLine": 335,
+      "endLine": 342,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.3",
+      "title": "V21全train终点只读拟合核验",
+      "startLine": 343,
+      "endLine": 354,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.4",
+      "title": "单次全train曝光量研究与稳定证据接口",
+      "startLine": 355,
+      "endLine": 366,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.5",
+      "title": "单次全图保真目标隔离训练",
+      "startLine": 367,
+      "endLine": 378,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.6",
+      "title": "对象核心RGB监督CPU候选",
+      "startLine": 379,
+      "endLine": 390,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.7",
+      "title": "单次对象核心保真目标隔离训练",
+      "startLine": 391,
+      "endLine": 402,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.8",
+      "title": "完整对象支持区归属CPU候选",
+      "startLine": 403,
+      "endLine": 416,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.9",
+      "title": "对象RGB头核心优先更新CPU候选",
+      "startLine": 417,
+      "endLine": 442,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.10",
+      "title": "对象头核心优先更新的受管训练接入",
+      "startLine": 443,
+      "endLine": 462,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.11",
+      "title": "GPU梯度数值差异的有界诊断与实现修复",
+      "startLine": 463,
+      "endLine": 472,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.12",
+      "title": "显式完整FP32后继版本的执行接入",
+      "startLine": 473,
+      "endLine": 480,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.13",
+      "title": "判别器训练／生成器冻结评估状态切换修复",
+      "startLine": 481,
+      "endLine": 490,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.14",
+      "title": "历史规格引用纠正与审核程序当前绑定",
+      "startLine": 491,
+      "endLine": 502,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.15",
+      "title": "单次资源预算后继接入",
+      "startLine": 503,
+      "endLine": 512,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.16",
+      "title": "单世界对象头训练态正则化后继候选",
+      "startLine": 513,
+      "endLine": 526,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.17",
+      "title": "V25心跳执行故障的单次独立恢复",
+      "startLine": 527,
+      "endLine": 536,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.18",
+      "title": "单世界对象局部上下文隔离对照候选",
+      "startLine": 537,
+      "endLine": 552,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.19",
+      "title": "V26数值确定性后继的受管执行边界",
+      "startLine": 553,
+      "endLine": 564,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.20",
+      "title": "四类对象共享隐藏层的有界CPU候选",
+      "startLine": 565,
+      "endLine": 578,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.21",
+      "title": "共享隐藏层CPU检查器的状态身份修复后继",
+      "startLine": 579,
+      "endLine": 590,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.22",
+      "title": "同一V27模型的完整程序依赖检查修复",
+      "startLine": 591,
+      "endLine": 602,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.23",
+      "title": "同一共享隐藏层候选的受管执行接入",
+      "startLine": 603,
+      "endLine": 622,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.24",
+      "title": "同一V27模型的登记接口修复与独立执行修订",
+      "startLine": 623,
+      "endLine": 632,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.25",
+      "title": "历史登记观察绑定与真实Python准入修复",
+      "startLine": 633,
+      "endLine": 642,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.26",
+      "title": "现有季节条件的单一有界CPU候选",
+      "startLine": 643,
+      "endLine": 654,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.27",
+      "title": "季节CPU候选的独立偏置反向精度接入",
+      "startLine": 655,
+      "endLine": 668,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.28",
+      "title": "季节偏置精度后继的受管执行接入",
+      "startLine": 669,
+      "endLine": 688,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.29",
+      "title": "不改变数值模型的有界梯度故障现场采集",
+      "startLine": 689,
+      "endLine": 708,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.30",
+      "title": "同一故障状态的单样本CPU代理对照",
+      "startLine": 709,
+      "endLine": 720,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.31",
+      "title": "已关闭训练失败的本地CPU分析接入",
+      "startLine": 721,
+      "endLine": 732,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.32",
+      "title": "同一故障状态的单样本GPU零更新代理对照",
+      "startLine": 733,
+      "endLine": 746,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.33",
+      "title": "单一细节卷积权重归约精度的有界后继",
+      "startLine": 747,
+      "endLine": 760,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.34",
+      "title": "生产CPU分析资源账本的独立组件边界",
+      "startLine": 761,
+      "endLine": 768,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.35",
+      "title": "单层权重精度后继的训练生命周期接入",
+      "startLine": 769,
+      "endLine": 780,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.36",
+      "title": "损坏失败证据的资源计量与语义核验分离",
+      "startLine": 781,
+      "endLine": 788,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.37",
+      "title": "现有生态类别条件的隔离CPU原型",
+      "startLine": 789,
+      "endLine": 802,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.38",
+      "title": "生态条件模型的训练生命周期组件",
+      "startLine": 803,
+      "endLine": 814,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.39",
+      "title": "生态模型梯度故障的单次有界采集",
+      "startLine": 815,
+      "endLine": 860,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.40",
+      "title": "生态模型的单次短程画质验证",
+      "startLine": 861,
+      "endLine": 878,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.41",
+      "title": "保存故障状态的单样本梯度因果诊断",
+      "startLine": 879,
+      "endLine": 892,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    },
+    {
+      "sectionId": "9.6.42",
+      "title": "单层权重归约精度候选",
+      "startLine": 893,
+      "endLine": 907,
+      "scope": "original_frozen_version_only",
+      "dispatchable": false
+    }
+  ]
+}

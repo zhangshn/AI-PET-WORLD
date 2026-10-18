@@ -1,0 +1,273 @@
+{
+  "schemaVersion": "ai-painter-final-rgb-base-weight-quality-execution-policy-v1",
+  "status": "registered_bounded_candidate_route_not_qualified",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.77",
+    "sha256": "288a8e386e390ceb8fbdfdd35b9cfb17b81c1b71c75c5497cc064f96d4cc5fe5"
+  },
+  "candidate": "stage4_mvp256_dry_final_rgb_base_weight_quality24_v1",
+  "modelCapability": "stage4_mvp256_dry_factorized_ecology_final_rgb_base_weight_precision_v1",
+  "executionProfile": "bounded_final_rgb_base_weight_quality24_v1",
+  "entrypointPath": "scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
+  "outputRoot": ".runtime/ai-painter/final-rgb-base-weight-quality-executions",
+  "sourceCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+    "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+  },
+  "priorCpuEvidence": {
+    "acceptance": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/coordination-20261016/finalrgb88-corrected-v2-controller-acceptance.json",
+      "sha256": "820086b9e57e2661dc331776c12552535a6d5831f5a0d6722a5246ca4315d8ab"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/final-rgb-base-weight-precision-cpu-checks/final-rgb-base-cpu-v2-f37af142-ddf7-4c66-b607-bc5dd8d7d1a5/terminal.json",
+      "sha256": "1628054bf779f01264782cd4426d0cf4abfec1c21a56135071f9eb825264b147"
+    },
+    "policy": {
+      "path": "data/ai-painter/system-governance/ai-painter-final-rgb-base-weight-precision-cpu-policy-v2.json",
+      "sha256": "71e895f3dc744c76880c0f405cf42d9349a6dfdc4c233ec751ac73809d5ff438"
+    },
+    "normativeVersion": "AI-PAINTER-SPEC-1.76",
+    "originalNormativeBytes": {
+      "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.76-59b3ba51.txt",
+      "sha256": "59b3ba516d3b7749cd602f7937401d124cdc33f63021539ee8d488eb21764880"
+    },
+    "oldAttemptReplayAllowed": false,
+    "grantsGpuOrTrainingQualification": false,
+    "scope": "Only frozen model/operator/CPU-bridge support; new adapters and actual execution closure need own behavior tests and CPU preparation"
+  },
+  "modelBoundary": {
+    "parameterCount": 108,
+    "parameterElements": 2242687,
+    "changedTargetIndex": 88,
+    "changedTargetName": "core.core.final_rgb_decoder.base.layers.2.weight",
+    "targetShape": [
+      48,
+      48,
+      3,
+      3
+    ],
+    "parentTargets52And60Kept": true,
+    "nativeForwardAndInputBiasGradientsKept": true,
+    "otherLayersMayChange": false,
+    "initializationSeed": 20260929,
+    "freshInitializationOnly": true,
+    "historicalCheckpointMayInitialize": false,
+    "failedStateMayInitialize": false,
+    "modelArchitectureChanged": false,
+    "numericOperatorsChanged": false,
+    "frozenCpuSources": [
+      {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/final_rgb_base_weight_reduction_precision_v1.py",
+        "sha256": "d28283160c85c71d56df5199ed631fd84d3f5419b71a773686c4b94b09996c05"
+      },
+      {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_final_rgb_base_weight_precision_v1.py",
+        "sha256": "74acbb568fa8dda287c3a4934471d0ec88b8368c476699a221797e9349d09e7a"
+      },
+      {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_final_rgb_weight_priority_update_v1.py",
+        "sha256": "c56e0c52265686144a7133b9c50bf0cdda794ad426e40ccbbdd5b7fc26eb82e5"
+      }
+    ]
+  },
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "worldCount": 1,
+    "waterFactPresent": false,
+    "buildingsRequired": false,
+    "artificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "formalStage4Qualification": false,
+    "runtimePublication": false
+  },
+  "dataUse": {
+    "train": 48,
+    "validation": 8,
+    "challenge": 4,
+    "regression": 4,
+    "weightUpdatesFrom": [
+      "train"
+    ],
+    "checkpointSelectionFrom": [
+      "validation"
+    ],
+    "challengeAndRegressionContentRead": false,
+    "sourceImageOrSplitMutation": false
+  },
+  "executionCeiling": {
+    "epochs": 24,
+    "generatorOptimizerSteps": 1152,
+    "discriminatorOptimizerSteps": 1152,
+    "maxWallSeconds": 8400,
+    "cpuThreads": 2,
+    "trainingAttempts": 1,
+    "automaticRetries": 0,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128
+  },
+  "phaseResources": {
+    "cpuPreparationSeconds": 240,
+    "gpuAdmissionSeconds": 600,
+    "reviewSeconds": 120,
+    "maxStreamBytes": 8388608,
+    "cpuOutputBytes": 8388608,
+    "qualificationAndReviewOutputBytes": 16777216,
+    "captureMiB": 64,
+    "captureMetadataReserveBytes": 1048576,
+    "terminalReserveBytes": 65536,
+    "programFileCountMaximum": 256,
+    "programFileBytesMaximum": 1048576,
+    "totalProgramBytesMaximum": 16777216
+  },
+  "gpuAdmission": {
+    "sampleSplit": "train",
+    "sampleCount": 48,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "samePackageRequired": true,
+    "stateBytesMustRemainUnchanged": true,
+    "originalGradientGateKept": true,
+    "oldCandidateQualificationReusable": false,
+    "generatorForwardsPerSample": 1,
+    "generatorAutogradPerSample": 5,
+    "discriminatorAutogradPerSample": 1,
+    "totalGeneratorAutograd": 240,
+    "totalDiscriminatorAutograd": 48
+  },
+  "optimizer": {
+    "name": "AdamW",
+    "generatorLearningRate": 0.0001,
+    "discriminatorLearningRate": 0.0001,
+    "weightDecay": 0.01,
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "eps": 1e-8
+  },
+  "checkpointSelection": {
+    "eligibleEpochs": [
+      24
+    ],
+    "strictNewCandidateReloadRequired": true,
+    "automaticResumeAllowed": false,
+    "observationOnlyEpochs": [
+      12
+    ]
+  },
+  "stopRules": [
+    "Verify frozen model/operator/CPU bridge hashes and accepted CPU evidence. Do not rerun consumed CPU support verification.",
+    "New device/profile/checkpoint/lifecycle adapters require own component and actual-closure CPU preparation evidence.",
+    "GPU admission and training each consume their own same-package phase once; no automatic retry, old run replay or failed-state initialization.",
+    "Keep the complete original Loss, actual five G-gradient groups, original gate/projection/tolerances, data splits, optimizer, semantic review and resource ceilings unchanged.",
+    "GPU-to-CPU arithmetic carriers retain their genuine parent identity; verify all actual new-model parameter names/shapes/bytes without copying new identity buffers into old models.",
+    "Existing authenticated start/prepare, background, six-phase engine, current registry, SQLite, native owner/streams, guard and stop mechanisms are the only infrastructure.",
+    "Use complete actual execution dependencies within256 entries/1MiB each/16MiB aggregate; retain unused history as immutable provenance, never delete lineage or waive actual imports to fit.",
+    "Preview is only the existing training G forward at the registered pre-G-update point; at most24 images and4MiB inside128MiB. Preserve original failure capture/metadata/terminal reserves.",
+    "CPU preparation may decode only the fixed eight validation rows for original loader regression; no real model forward/autograd/optimizer/GPU or challenge/regression content.",
+    "After own same-package GPU admission, training/fixed validation/strict reload/review/adjudication/terminal run continuously. Runtime publication, formalStage4 and visual qualification are not implied.",
+    "First failure, evidence conflict, resource limit or another-layer gradient violation closes this route with original evidence and managed cleanup; no automatic repair expansion."
+  ],
+  "qualification": {
+    "gpuQualified": false,
+    "trainingQualified": false,
+    "visualQualified": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "runtimeFrameAllowed": false
+  },
+  "sourceAssetsUse": "data_review_and_base_schedule_only_not_execution_qualification",
+  "lossDefinition": {
+    "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-cpu-policy-v1.json",
+    "sha256": "f5842c5005a60a2c51dd84f9baca1d4ecc751a5fed09e8647f7d96acd4efaefe"
+  },
+  "gradientDefinition": {
+    "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-integration-cpu-policy-v1.json",
+    "sha256": "2aa89a112ebc125e9b4bfdea8f7adade22f1d57afb094d1d4b4f1cff36293d82"
+  },
+  "integrationPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-lifecycle-integration-policy-v1.json",
+    "sha256": "7782b99aa6f04c56a14a2f35694c4e67c99911835bc62e1096f25ac3424d17d3"
+  },
+  "checkpointIdentity": {
+    "schema": "final-rgb-base-weight-quality-checkpoint-v1",
+    "configurationSchema": "object-support-structure-quality-configuration-v1",
+    "implementation": "ml/ai-painter/src/ai_painter/complete_world/final_rgb_base_weight_quality_checkpoint_v1.py",
+    "historicalMetadataRenamingAllowed": false
+  },
+  "failureCapture": {
+    "gradientLabels": [
+      "actualTotal",
+      "structuredObjective",
+      "wholeFrameFidelity",
+      "objectCoreRgb",
+      "objectSupportStructure"
+    ],
+    "maxEpoch": 24,
+    "maxGeneratorOptimizerSteps": 1152,
+    "maxDiscriminatorOptimizerSteps": 1152,
+    "maxCaptureBytes": 67108864,
+    "retainPrimaryError": true
+  },
+  "previousExecutionPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-object-support-structure-quality-execution-policy-v3.json",
+    "sha256": "e393944b3e1fd6b344bd7f7511c4f72f51d69e2562c0a60969cd8a51e185039a"
+  },
+  "lifecycleBoundary": {
+    "managedCpuPreparation": true,
+    "samePackageGpuAdmission": true,
+    "boundedTrainingAfterSamePackageGpuAdmission": true,
+    "productionRegistryWrite": true,
+    "oldEvidenceMutation": false,
+    "qualificationOnlyStopsBeforeTraining": true,
+    "cpuPreparationValidationLoaderReadOnly": {
+      "split": "validation",
+      "exactSampleCount": 8,
+      "originalRgbAndConditionsOnly": true,
+      "trainImageRead": false,
+      "challengeImageRead": false,
+      "regressionImageRead": false,
+      "sourceMutation": false,
+      "autograd": false,
+      "checkpointSelection": false
+    }
+  },
+  "candidateSelection": "final-rgb-base-weight-quality-v1",
+  "inheritedPolicyUse": "Original Loss, pure gradient gate/projection, data, optimizer, review and safety references only; no old execution/model/Checkpoint admission",
+  "wireProtocols": {
+    "plan": "object-support-structure-quality-plan-v1",
+    "configuration": "object-support-structure-quality-configuration-v1",
+    "workerTerminal": "object-support-structure-quality-worker-terminal-v1",
+    "reviewTerminal": "object-support-structure-quality-review-terminal-v1",
+    "checkpoint": "final-rgb-base-weight-quality-checkpoint-v1"
+  },
+  "componentPaths": {
+    "deviceBridge": "ml/ai-painter/src/ai_painter/complete_world/object_support_final_rgb_weight_priority_update_device_v1.py",
+    "trainingProfile": "ml/ai-painter/scripts/painter_stage4_final_rgb_base_weight_training_profile_v1.py",
+    "checkpoint": "ml/ai-painter/src/ai_painter/complete_world/final_rgb_base_weight_quality_checkpoint_v1.py"
+  },
+  "sourceClosure": {
+    "maximumEntries": 256,
+    "maximumFileBytes": 1048576,
+    "maximumTotalBytes": 16777216,
+    "scope": "Complete actual execution and verification dependency closure, including registered dynamic imports and executed historical source",
+    "oneExactBindingPerPath": true,
+    "missingLoadedModuleFailsClosed": true,
+    "unusedHistoricalSourceRolesMandatory": false,
+    "historicalProvenanceMustRemainImmutable": true,
+    "historicalReferencesGrantExecution": false
+  },
+  "trainingPreviewPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-training-preview-observation-policy-v3.json",
+    "schemaVersion": "ai-painter-training-preview-observation-policy-v3",
+    "exactHashRequiredInPlanConfigurationAndPackage": true
+  }
+}

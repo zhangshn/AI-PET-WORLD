@@ -110,11 +110,23 @@ async function traverse(root, current) {
       if (!runTaskTerminals.has(snapshot.runId) && snapshot.terminalEvidence) {
         runTaskTerminals.set(snapshot.runId, { ...snapshot.terminalEvidence, taskId: snapshot.taskId, taskKind: snapshot.taskKind ?? null, registryRevision: snapshot.registryRevision })
       }
-      const binding = snapshot.latestTrainingTerminal
-      if (binding?.runId && !records.has(binding.runId)) {
+      // Dispatch is a registered observation source, not a completed training
+      // terminal. Omitting it makes the active Run's bound preview unreachable
+      // until training finishes. Never discover a Run by scanning its directory.
+      const candidates = [{ binding: snapshot.latestTrainingTerminal, dispatch: false }]
+      if (snapshot.registryRevision === current.registry.registryRevision
+        && ['training_pending', 'qualification_pending'].includes(snapshot.terminalEvidence?.status)) {
+        candidates.unshift({ binding: { ...snapshot.terminalEvidence, runId: snapshot.runId }, dispatch: true })
+      }
+      for (const { binding, dispatch } of candidates) {
+        if (!binding?.runId || records.has(binding.runId)) continue
         requireFact(ID.test(binding.runId) && SHA.test(binding.sha256), 'history_run_binding_invalid')
         const terminal = (await json(root, binding)).value
         requireFact((terminal.runId ?? terminal.experimentIdentity) === binding.runId && terminal.status === binding.status, 'history_terminal_identity_conflict')
+        if (dispatch) requireFact(terminal.executionState === 'completed' && terminal.runId === snapshot.runId
+          && typeof terminal.packageId === 'string' && ID.test(terminal.packageId)
+          && typeof terminal.capabilityVersion === 'string' && ID.test(terminal.capabilityVersion)
+          && terminal.executionPackage?.path && SHA.test(terminal.executionPackage.sha256), 'history_dispatch_identity_conflict')
         records.set(binding.runId, {
           runId: binding.runId, taskId: snapshot.runId === binding.runId ? snapshot.taskId : null,
           runKind: snapshot.runId === binding.runId ? snapshot.taskKind ?? 'unclassified' : 'unclassified',
@@ -191,7 +203,7 @@ export async function listTrainingHistory({ root = historyRoot(), cursor = null,
     ...(await verifiedListReviewSummary(root, record, index.sources)) })))
   return { ...envelope(history), dataStatus: history.coverageGap || indexIncomplete ? 'partial' : 'connected', reasonCode: history.coverageGap?.reasonCode ?? index.reasonCode ?? (independentConflicts.size ? 'history_independent_run_conflict' : independentRecords.length ? 'history_independent_only_records' : indexIncomplete ? 'history_index_coverage_incomplete' : null), schemaVersion: 'ai_console_training_history_v1', records: page, total: history.coverageGap || indexIncomplete ? null : combined.length, nextCursor: next < combined.length ? Buffer.from(JSON.stringify({ sha256: cursorIdentity, offset: next })).toString('base64url') : null, refreshIntervalMs: 2000,
     indexRevision: index.indexRevision,
-    coverage: { scope: 'registered_latest_training_terminals_only', revisionsVerified: history.revisionsVerified, verifiedRecordCount: history.records.length,
+    coverage: { scope: 'registered_training_terminals_and_dispatches', revisionsVerified: history.revisionsVerified, verifiedRecordCount: history.records.length,
       gap: history.coverageGap, independentRecordCount: independentRecords.length,
       independentConflicts: [...independentConflicts],
       conflictingSources: index.sources.filter(source => independentConflicts.has(source.runId)).map(source => ({
@@ -432,7 +444,7 @@ async function augmentDryRecoveryEvidence(root, runId, registration, terminal, d
   return detail
 }
 
-export async function readTrainingRun(runId, { root = historyRoot() } = {}) {
+export async function readTrainingRun(runId, { root = historyRoot(), previewArtifactId = null } = {}) {
   requireFact(typeof runId === 'string' && ID.test(runId), 'history_run_id_invalid', 400)
   const history = await verifiedHistory(root)
   const registration = history.records.find(record => record.runId === runId)
@@ -480,6 +492,7 @@ export async function readTrainingRun(runId, { root = historyRoot() } = {}) {
   const endpointSchemas = endpointVersions[terminal.schemaVersion]
   if (!endpointSchemas) {
     const detail = await adaptLegacyTrainingDetail({ runId, terminal, record, base, capsuleBinding: history.runCapsules.get(runId), taskTerminalBinding: history.runTaskTerminals.get(runId),
+      previewReadOptions: { metadataOnly: previewArtifactId === null, artifactId: previewArtifactId },
       readJson: async binding => (await json(root, binding)).value,
       readEvidenceJson: (binding, maximumBytes) => json(root, binding, { cacheParsed: true, maximumBytes }),
       readLargeResultProjection: (binding, request) => readBoundLargeExperimentProjection(root, binding, request),
@@ -570,7 +583,10 @@ export async function readTrainingRunSection(runId, { root = historyRoot(), sect
 }
 export async function readTrainingArtifact(runId, artifactId, options = {}) {
   requireFact(typeof artifactId === 'string' && SHA.test(artifactId), 'history_artifact_id_invalid', 400)
-  const detail = await readTrainingRun(runId, options)
+  // Preview metadata is pageable; before returning a preview's actual bytes,
+  // recheck its own complete provenance and source/image bytes within the same
+  // original per-request bounds, rather than eagerly opening every epoch.
+  const detail = await readTrainingRun(runId, { ...options, previewArtifactId: artifactId })
   const item = detail.record.artifacts.find(value => value.artifactId === artifactId)
   requireFact(item, 'history_artifact_not_found', 404)
   if (item.role === 'checkpoint') return { json: item }

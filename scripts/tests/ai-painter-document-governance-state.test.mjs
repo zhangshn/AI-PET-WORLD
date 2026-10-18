@@ -5,7 +5,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
-import { validateAiPainterDocumentState } from '../lib/ai-painter-document-governance-state.mjs'
+import { validateAiPainterDocumentState, validateProgramAdoptionDeclaration } from '../lib/ai-painter-document-governance-state.mjs'
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url))
 const SPEC = 'docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md'
@@ -31,6 +31,58 @@ function assertNoCertification(result) {
   }
   assert.equal(Object.hasOwn(result, 'fixedAiPainterProgress'), false)
 }
+
+const quote = String.fromCharCode(96)
+const declaration = status => '程序符合状态：' + quote + status + quote + '\n'
+const reference = (file = 'data/evidence/summary.json', digest = 'a'.repeat(64)) =>
+  '程序符合证据：' + quote + file + quote + '；SHA-256：' + quote + digest + quote + '\n'
+const conformantCounts = { document_defined_program_pending: 0,
+  partial_legacy_implementation_not_certified: 0, machine_conformant: 37, superseded: 0 }
+
+test('pending whole-document declaration requires no fabricated summary', () => {
+  const result = validateProgramAdoptionDeclaration(declaration('program_adoption_pending'))
+  assert.deepEqual(result.failures, [])
+  assert.equal(result.programConformanceCertified, false)
+})
+
+test('whole-document declaration rejects unknown and duplicate states', () => {
+  for (const content of ['', declaration('released'),
+    declaration('program_adoption_pending') + declaration('program_conformant')]) {
+    assert.ok(validateProgramAdoptionDeclaration(content).failures.length > 0)
+  }
+})
+
+test('malformed duplicate declarations cannot hide behind a valid declaration', () => {
+  for (const content of [
+    declaration('program_adoption_pending') + '程序符合状态：released\n',
+    declaration('program_adoption_pending') + ' 程序符合状态：released\n',
+    declaration('program_conformant') + reference() + '程序符合证据：not-a-reference\n',
+    declaration('program_conformant') + reference() + ' 程序符合证据：not-a-reference\n',
+    declaration('program_conformant') + reference() + reference(),
+  ]) assert.ok(validateProgramAdoptionDeclaration(content, conformantCounts).failures.length > 0)
+})
+
+test('conformant declaration needs one bounded path and lowercase SHA reference', () => {
+  for (const tail of ['', reference('../outside.json'), reference('data/../outside.json'),
+    reference('C:/outside.json'), reference('data/evidence/summary.json', 'verified=true'),
+    reference('data/evidence/summary.json', 'A'.repeat(64))]) {
+    assert.ok(validateProgramAdoptionDeclaration(declaration('program_conformant') + tail).failures.length > 0)
+  }
+})
+
+test('incomplete requirements conflict with a whole-document conformant declaration', () => {
+  for (const key of ['document_defined_program_pending', 'partial_legacy_implementation_not_certified']) {
+    const counts = { ...conformantCounts, machine_conformant: 36, [key]: 1 }
+    assert.ok(validateProgramAdoptionDeclaration(declaration('program_conformant') + reference(), counts).failures.length > 0)
+  }
+})
+
+test('future complete declaration is permitted structurally but never authenticated here', () => {
+  const result = validateProgramAdoptionDeclaration(declaration('program_conformant') + reference(), conformantCounts)
+  assert.deepEqual(result.failures, [])
+  for (const key of ['machineEvidenceVerified', 'programConformanceCertified', 'modelQualificationGranted',
+    'capabilityReleaseGranted', 'moduleProgressCertified']) assert.equal(result[key], false)
+})
 
 for (const status of STATUSES) {
   test(`all 37 rows may declare ${status} without document certification`, () => {
@@ -136,10 +188,11 @@ function checkerFixture(t) {
   const source = fs.readFileSync(path.join(ROOT, CHECKER), 'utf8')
   // Copy the checker's explicit static inputs and byte-preserved historical
   // contracts. No runtime records, training data or model files are fabricated.
-  const files = new Set([...source.matchAll(/"((?:docs\/|data\/|AGENTS\.md|README\.md|package\.json|\.gitattributes)[^"]*)"/g)].map(match => match[1]))
+  const files = new Set([...source.matchAll(/"((?:docs\/|data\/|AGENTS\.md|README\.md|package\.json|\.gitattributes)[^"]*)"/g)]
+    .map(match => match[1]).filter(file => /^[A-Za-z0-9_./-]+$/u.test(file)))
   const supersession = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/ai-painter/system-governance/contract-supersession-index-v2.json'), 'utf8'))
   for (const entry of supersession.supersessions) files.add(entry.historicalPath)
-  for (const file of [CHECKER, 'scripts/lib/ai-painter-document-governance-state.mjs', 'scripts/lib/unique-module-plan-contract.mjs', ...files]) {
+  for (const file of [CHECKER, 'scripts/lib/ai-painter-document-governance-state.mjs', 'scripts/lib/unique-module-plan-contract.mjs', 'scripts/lib/ai-painter-frozen-document-v1.mjs', ...files]) {
     const target = path.join(directory, file)
     fs.mkdirSync(path.dirname(target), { recursive: true })
     fs.copyFileSync(path.join(ROOT, file), target)

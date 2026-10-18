@@ -1,0 +1,354 @@
+{
+  "schemaVersion": "ai-painter-parameter88-causal-gpu-policy-v1",
+  "status": "registered_one_shot_zero_update_diagnostic_not_training",
+  "purpose": "Distinguish the newly observed target decoder input-adjoint contribution, local native weight reduction and component-sum rounding without changing the model",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.74",
+    "sha256": "9762045ce0dc5834eca8337c13bcaa706f3bc1f79f3597b7a67d88901e423613"
+  },
+  "designBinding": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter88-review-20261016/causal-observation-scope-v1.json",
+    "sha256": "b284900e7729a3fc2fca9dd68c8d94de661b338d90babe482a6287102c662bf0"
+  },
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "failureRunId": "object-support-quality-v1-e03cae36-386e-4919-b83c-a8441ab7115c",
+    "failureSampleId": "ai-cold-start-v7-v7-capacity-slot-169-forested-low-mountain-v2",
+    "sampleSplit": "train",
+    "sampleCount": 1,
+    "originalDataSplits": "48/8/4/4 unchanged",
+    "sourceStateTiming": "after_exception",
+    "sourceReplayAllowedRemainsFalse": true,
+    "waterBuildingPersonalityOrOtherResolutionWork": false
+  },
+  "sourceEvidence": [
+    {
+      "path": ".runtime/ai-painter/object-support-structure-quality-executions/object-support-quality-v1-e03cae36-386e-4919-b83c-a8441ab7115c/quality-plan.json",
+      "sha256": "af372485c1f073091b4302943679fe0cfd276b8688fe89dbec4e79a5808be799",
+      "bytes": 50824
+    },
+    {
+      "path": ".runtime/ai-painter/object-support-structure-quality-executions/object-support-quality-v1-e03cae36-386e-4919-b83c-a8441ab7115c/model-identity.json",
+      "sha256": "0e50b14e74b1ae8b57bf66d943ed6179e8be764541411611f5c917c46f4da92a",
+      "bytes": 13876
+    },
+    {
+      "path": ".runtime/ai-painter/object-support-structure-quality-executions/object-support-quality-v1-e03cae36-386e-4919-b83c-a8441ab7115c/worker-terminal.json",
+      "sha256": "6ccd45712abfbd4850f3234832f035babbac0bfc20a7c98fb24d3aa01ae41303",
+      "bytes": 3861
+    },
+    {
+      "path": ".runtime/ai-painter/object-support-structure-quality-executions/object-support-quality-v1-e03cae36-386e-4919-b83c-a8441ab7115c/gradient-failure/manifest.json",
+      "sha256": "6fa557bad90e86ed90c83b9686bbcf77842215eb4839a9bbd53ca2b851e93605",
+      "bytes": 367791
+    },
+    {
+      "path": ".runtime/ai-painter/object-support-structure-quality-executions/object-support-quality-v1-e03cae36-386e-4919-b83c-a8441ab7115c/gradient-failure/primary.json",
+      "sha256": "98e5e7460b8892eadb9254c5c19c55d33e90ab8c10773572369e9b946814447c",
+      "bytes": 57593
+    },
+    {
+      "path": ".runtime/ai-painter/object-support-structure-quality-executions/object-support-quality-v1-e03cae36-386e-4919-b83c-a8441ab7115c/capture-execution.json",
+      "sha256": "c1f8a0181c2f1e4d507c05f46ccefdad62b7b082941945be7b7d52dbd4990b04",
+      "bytes": 46938
+    }
+  ],
+  "sourceTensorArchive": {
+    "bytes": 50419897,
+    "path": ".runtime/ai-painter/object-support-structure-quality-executions/object-support-quality-v1-e03cae36-386e-4919-b83c-a8441ab7115c/gradient-failure/tensors.pt",
+    "sha256": "2ce433ac36cc2598c342aba193b64e9e008269ba7c89a6b405c2fe3b58138072"
+  },
+  "sourceSampleBindings": {
+    "condition": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-169-2026-07-31T16-10-15-246Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+      "sha256": "5a984e08f5db2bab1e3214859d839cbe31a0d4d63f8ebabdc862e04777af4179"
+    },
+    "source": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-169-forested-low-mountain-v2.png",
+      "sha256": "272fb9f9ce42427f3ff7ae3d958afecdeadd079b6e839f896f0285da94818814"
+    }
+  },
+  "sourceAlgorithmBindings": [
+    {
+      "role": "parameter60_causal_restore_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/parameter60_causal_restore_v1.py",
+        "sha256": "edb87370b17ff1760b5dd812877a64c33fbbdc39199821b0ae31b9c6d9e71547"
+      }
+    },
+    {
+      "role": "parameter60_causal_observation_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/parameter60_causal_observation_v1.py",
+        "sha256": "02a006fea5d939cc3f94f7b1eb193a43a61913b80ce03da787b2852dd3e43dad"
+      }
+    },
+    {
+      "role": "diagnose_parameter60_causal_gpu_v1",
+      "binding": {
+        "path": "ml/ai-painter/scripts/diagnose_parameter60_causal_gpu_v1.py",
+        "sha256": "7b5034e3cd00b306aebc28e6fb5e6bae52c8bd60089481182904a45071ad6f88"
+      }
+    },
+    {
+      "role": "painter_stage4_object_support_structure_training_profile_v1",
+      "binding": {
+        "path": "ml/ai-painter/scripts/painter_stage4_object_support_structure_training_profile_v1.py",
+        "sha256": "8e336764cb56da5ab8a30a4202b1b7531fe13e64d29afa164a8431b9f921aa5b"
+      }
+    },
+    {
+      "role": "object_support_structure_priority_update_device_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_priority_update_device_v1.py",
+        "sha256": "a3c9be4f3d875064c1372199753fe85383bd29c946cdc1df3594dfea4a7d787d"
+      }
+    },
+    {
+      "role": "object_support_structure_priority_update_cpu_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_priority_update_cpu_v1.py",
+        "sha256": "d2d3238be5e3baab321dce0d697d70723cc69c622c361cc8fe215560f8e1e67c"
+      }
+    },
+    {
+      "role": "object_support_structure_failure_capture_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_failure_capture_v1.py",
+        "sha256": "97f441b24bc84055a7981fdacc5276814360f40a455de96c004ce429f38b6f20"
+      }
+    },
+    {
+      "role": "native_rgb_structured_object_cpu_v17",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_cpu_v17.py",
+        "sha256": "e8b18b5e5d7b29befab908bb0a521b0f21b66d927ca2b8e2db99a11287063e78"
+      }
+    },
+    {
+      "role": "native_rgb_complete_support_partition_v23_cpu",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_complete_support_partition_v23_cpu.py",
+        "sha256": "c455e642631352eaaa14cce7070d23260a7fe9abd189591d99e2f8863acca50f"
+      }
+    }
+  ],
+  "target": {
+    "parameterIndex": 88,
+    "parameterName": "core.core.final_rgb_decoder.base.layers.2.weight",
+    "modulePath": "core.core.final_rgb_decoder.base.layers.2",
+    "weightShape": [
+      48,
+      48,
+      3,
+      3
+    ],
+    "elements": 20736,
+    "dtype": "torch.float32",
+    "identityRule": "jointly verify index/name/parameter graph/module type/source SHA/weight bytes and before-after versions; shape alone is insufficient",
+    "historicalVersionRule": "Record actual fresh-instance versions; do not fabricate them to match archived counters",
+    "convolutionConfiguration": "read and bind actual kernel/stride/padding/dilation/groups/bias/layout from the restored original module; no guessed defaults"
+  },
+  "allowedActions": [
+    "authenticate_exact_failed_snapshot",
+    "restore_independent_diagnostic_state",
+    "one_original_generator_forward",
+    "five_original_generator_gradient_calls",
+    "conditional_five_local_fp64_weight_vjps"
+  ],
+  "sourceStateUse": {
+    "purpose": "failure_evidence_zero_update_gpu_diagnostic_only",
+    "trainingInitializationAllowed": false,
+    "historicalReplayAllowed": false,
+    "originalFailureUnchanged": true,
+    "archivedGradientsInstalled": false,
+    "archivedRngRestored": false,
+    "requiresGradHistoricalClaim": false
+  },
+  "gradientLabels": [
+    "actualTotal",
+    "structuredObjective",
+    "wholeFrameFidelity",
+    "objectCoreRgb",
+    "objectSupportStructure"
+  ],
+  "comparison": {
+    "atol": 0.000001,
+    "rtol": 0.00001,
+    "originalGateKept": true,
+    "originalGradientValuesKept": true,
+    "evidenceOnly": true,
+    "definitions": {
+      "A": "Observed native actualTotal target gradient cast to FP64 for arithmetic only",
+      "Bi": "Four observed native component target gradients cast to FP64",
+      "E": "Original ordered FP32 sum of four native component gradients, then cast to FP64",
+      "T": "Same-device finite FP64 linear weight VJP of actualTotal output adjoint",
+      "Si": "Four same-device finite FP64 linear weight VJPs of component output adjoints",
+      "S": "Ordered FP64 sum of Si",
+      "B": "Ordered FP64 sum of four observed FP32 component gradients"
+    },
+    "decomposition": "A-E=(T-S)+(A-T)-(B-S)+(B-E)",
+    "interpretation": "T-S is upstream adjoint contribution; A-T and B-S are native-versus-reference reduction differences; B-E is FP32 component-sum rounding. Finite reference arithmetic, unknown backend algorithm IDs and after_exception reconstruction limit causal claims. No residual threshold may be used to weaken the original gate.",
+    "upstreamRule": "report byte equality, signed differences and contractions; mere closeness of output adjoints is not proof that their weight-VJP contribution is zero"
+  },
+  "resources": {
+    "maxWallSeconds": 180,
+    "threads": 2,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputBytes": 134217728,
+    "maxTargetCaptureBytes": 67108864,
+    "attempts": 1,
+    "automaticRetries": 0,
+    "maxStreamBytes": 8388608,
+    "cleanupReserveMs": 1000,
+    "failureEvidenceReserveBytes": 65536,
+    "temperaturePollMs": 1000,
+    "cpuPreflightMaxWallSeconds": 120,
+    "cpuPreflightMaxOutputBytes": 8388608,
+    "finalizationReserveMs": 8000
+  },
+  "cpuPreparation": {
+    "maxWallSeconds": 120,
+    "threads": 2,
+    "maxOutputBytes": 8388608,
+    "attempts": 1,
+    "automaticRetries": 0,
+    "fullModelForwards": 0,
+    "fullModelAutogradCalls": 0,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "cudaCalls": 0,
+    "scope": "bound archive/state/sample identity, synthetic observer and exact request ABI; no real forward"
+  },
+  "workerPath": "ml/ai-painter/scripts/diagnose_parameter88_causal_gpu_v1.py",
+  "entrypointPath": "scripts/diagnose-ai-painter-parameter88-causal-gpu-v1.mjs",
+  "testPaths": [
+    "ml/ai-painter/tests/test_parameter88_causal_observation_v1.py",
+    "ml/ai-painter/tests/test_diagnose_parameter88_causal_gpu_v1.py",
+    "scripts/tests/ai-painter-parameter88-causal-gpu.test.mjs"
+  ],
+  "outputRoot": ".runtime/ai-painter/parameter88-causal-gpu-diagnostics",
+  "qualification": {
+    "gpuExecutionAllowed": false,
+    "trainingAllowed": false,
+    "modelModificationAllowed": false,
+    "checkpointWritten": false,
+    "rootCauseProven": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "runtimeFrameAllowed": false
+  },
+  "executionBoundary": {
+    "cpuPreparation": true,
+    "oneGpuObservationAfterOwnCpuEvidence": true,
+    "training": false,
+    "modelModification": false,
+    "checkpointOrImage": false,
+    "oldEvidenceMutation": false,
+    "productionCapabilityRelease": false
+  },
+  "stopRules": [
+    "Only the exact target88 original gate and five complete same-call captures permit local contrast after first-error preservation",
+    "No optimizer, discriminator gradient/update, model fix, train restart, Checkpoint selection/save or visual output",
+    "No validation/challenge/regression content, extra samples or layers",
+    "Not reproduced, other failure or missing evidence ends this attempt; no automatic retry or resource extension",
+    "No cleanup inference from stale files or vanished PIDs"
+  ],
+  "acceptance": [
+    "Current policy, actual source graph, interpreter, input and own CPU behaviour evidence match before GPU",
+    "Exactly one original G forward and five G gradients, zero discriminator autograd, optimizer or updates",
+    "State/modes/sample/current RNG unchanged; no historical replay claim",
+    "Same-call original target evidence preserved before finite local reference arithmetic",
+    "Live managed process and stream cleanup verified; failure retains exact original and secondary evidence"
+  ],
+  "counts": {
+    "fullGeneratorForward": 1,
+    "fullGeneratorAutograd": 5,
+    "discriminatorAutograd": 0,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "localFp64WeightVjp": 5,
+    "extraNativeBackwardReplay": 0,
+    "extraModelAutograd": 0
+  },
+  "gateFailureContinuation": {
+    "localContrastPermittedOnlyIf": [
+      "All five original independent G gradients complete",
+      "All five target input/adjoint/native-gradient identities are finite and intact",
+      "Unchanged full original gate fails at parameter88; actual code and traceback provenance verified, not only error text",
+      "No state mutation or optimizer and adequate remaining resource budget"
+    ],
+    "whenExactTargetFailure": "Preserve original error and same-call capture before local math; never return reference gradients to training",
+    "whenGatePasses": "diagnostic_not_reproduced, without local contrast",
+    "whenOtherFailure": "diagnostic_failed_closed, without local contrast"
+  },
+  "captureBudget": {
+    "oneInputFp32Bytes": 9437184,
+    "fiveAdjointsFp32Bytes": 47185920,
+    "fiveNativeWeightGradientsFp32Bytes": 414720,
+    "rawTargetBytes": 57037824,
+    "metadataAndFailureReserveBytes": 1114112,
+    "boundedSmallContrastBytes": 1824768,
+    "totalPlannedRawAndReservesBytes": 59976704,
+    "remainingForArchiveOverheadBytes": 7132160,
+    "rule": "Enforce actual serialized aggregate for target archive+metadata+original error+small contrast <=64MiB before exclusive write; do not rely on compression. Original source archive remains input, never copied to new output."
+  },
+  "captureRestrictions": {
+    "persistFullFp64UpstreamAdjointDifference": false,
+    "persistSecondFullModelOrGlobalGradientSnapshot": false,
+    "originalArchiveCopiedToOutput": false,
+    "actualSerializedBytesMustFit": true,
+    "upstreamDifference": "bounded summaries/hash; original five adjoints retained for recomputation"
+  },
+  "accounting": "phase budgets include startup, restore, math, native supervision, closure, source/build copies, logs, stream output and receipts. Original archive is read-only input, not copied into target capture. Safe decompression is independently bounded by the authenticated archive metadata and decoder's original hard limits.",
+  "cleanup": {
+    "transport": "bounded-stream-capture-v2",
+    "privateJob": true,
+    "assignedBeforeResume": true,
+    "killOnJobClose": true,
+    "requiredLiveProof": [
+      "ownerPid",
+      "bindingBase64",
+      "assignedBeforeResume",
+      "killOnJobClose",
+      "emptyJob",
+      "activeProcessesAfterCleanup=0",
+      "stdoutClosed",
+      "stderrClosed",
+      "transportCompleted",
+      "streamClosureVersion=bounded-stream-capture-v2",
+      "streamCaptureError=null",
+      "streamTransportError=null",
+      "observationError=null"
+    ],
+    "unknownCleanup": "retain_unique_guard_and_fail_closed_without_auto_recovery",
+    "historicalObservationIsAuthority": false
+  },
+  "registry": {
+    "path": ".runtime/ai-painter/current-execution-registry/current.json",
+    "sameWriterAndGuard": true,
+    "latestTrainingTerminalUnchanged": true,
+    "diagnosisIsTraining": false,
+    "activeProcessRole": "parameter88_zero_update_diagnostic_supervisor_not_training_worker"
+  },
+  "sourceGraphRule": "Collect actual original and new diagnostic program closure with paths and recomputed SHA, at most256 entries; authenticate loaded modules and exact current CPU evidence. Prior parameter60 or saved-gradient CPU success grants no admission.",
+  "attemptClaimPath": ".runtime/ai-painter/parameter88-causal-gpu-diagnostics/attempt-v1.json",
+  "terminalStatuses": [
+    "diagnostic_target_evidence_complete",
+    "diagnostic_not_reproduced",
+    "diagnostic_failed_closed"
+  ],
+  "priorSavedGradientAlgebra": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter88-review-20261016/attempt-001/real-cpu-algebra-result-v1.json",
+    "sha256": "802f66ec4f480cbde117f42489482c6af83882bf0b6bafe7705d319b39cf27d2",
+    "bytes": 180686,
+    "role": "evidence_of_original_saved_gradient_gate_not_current_gpu_admission"
+  }
+}

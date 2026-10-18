@@ -1,0 +1,137 @@
+{
+  "schemaVersion": "ai-painter-terrain-detail-weight-quality-execution-policy-v1",
+  "status": "registered_bounded_candidate_route_not_qualified",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.67",
+    "sha256": "ec09cb8ecaac08683178c954fe9aba2636075aa3e4802720973256ead4ba0552"
+  },
+  "candidate": "stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_v1",
+  "modelCapability": "stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_v1",
+  "executionProfile": "bounded_ecology_terrain_detail_weight_quality_v1",
+  "entrypointPath": "scripts/run-ai-painter-ecology-terrain-detail-quality-v1.mjs",
+  "outputRoot": ".runtime/ai-painter/ecology-terrain-detail-weight-quality-executions",
+  "sourceCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+    "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+  },
+  "priorCpuEvidence": {
+    "acceptance": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/terrain-detail-candidate-cpu-acceptance-v1.json",
+      "sha256": "3025b67f3fa82261d870975dca1b35a7ae7c1bb86cfc9db659b867b16e088af7"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/terrain-detail-weight-precision-cpu-checks/terrain-detail-cpu-d112e941-a71e-493e-91ac-286902f59ab0/terminal.json",
+      "sha256": "395f10d6789abe11b29d96eaad9b9be908dfa3c02a59fad55075bc38c0ac74a6"
+    },
+    "normativeVersion": "AI-PAINTER-SPEC-1.66",
+    "originalNormativeBytes": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/documentation-1.66-before-terrain-training.txt",
+      "sha256": "0a82110bb6c9583758f43dfd571a85c0a5a246e176de7d830da815cea3c7c281"
+    },
+    "oldAttemptReplayAllowed": false,
+    "grantsGpuOrTrainingQualification": false
+  },
+  "modelBoundary": {
+    "parameterCount": 108,
+    "parameterElements": 2242687,
+    "changedTargetIndex": 60,
+    "changedTargetName": "core.core.terrain.full_resolution_detail.layers.3.weight",
+    "targetShape": [48, 48, 3, 3],
+    "parentTarget52Kept": true,
+    "nativeForwardAndInputBiasGradientsKept": true,
+    "otherLayersMayChange": false,
+    "initializationSeed": 20260929,
+    "freshInitializationOnly": true,
+    "historicalCheckpointMayInitialize": false,
+    "failedStateMayInitialize": false
+  },
+  "scope": {
+    "resolution": [256, 192],
+    "worldCount": 1,
+    "waterFactPresent": false,
+    "buildingsRequired": false,
+    "artificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "formalStage4Qualification": false,
+    "runtimePublication": false
+  },
+  "dataUse": {
+    "train": 48,
+    "validation": 8,
+    "challenge": 4,
+    "regression": 4,
+    "weightUpdatesFrom": ["train"],
+    "checkpointSelectionFrom": ["validation"],
+    "challengeAndRegressionContentRead": false,
+    "sourceImageOrSplitMutation": false
+  },
+  "executionCeiling": {
+    "epochs": 12,
+    "generatorOptimizerSteps": 576,
+    "discriminatorOptimizerSteps": 576,
+    "maxWallSeconds": 2700,
+    "cpuThreads": 2,
+    "trainingAttempts": 1,
+    "automaticRetries": 0,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128
+  },
+  "phaseResources": {
+    "cpuPreparationSeconds": 240,
+    "gpuAdmissionSeconds": 600,
+    "reviewSeconds": 120,
+    "maxStreamBytes": 8388608,
+    "cpuOutputBytes": 8388608,
+    "qualificationAndReviewOutputBytes": 16777216,
+    "captureMiB": 64,
+    "captureMetadataReserveBytes": 1048576,
+    "terminalReserveBytes": 65536,
+    "programFileCountMaximum": 256,
+    "programFileBytesMaximum": 1048576,
+    "totalProgramBytesMaximum": 16777216
+  },
+  "gpuAdmission": {
+    "sampleSplit": "train",
+    "sampleCount": 48,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "samePackageRequired": true,
+    "stateBytesMustRemainUnchanged": true,
+    "originalGradientGateKept": true,
+    "oldCandidateQualificationReusable": false
+  },
+  "optimizer": {
+    "name": "AdamW",
+    "generatorLearningRate": 0.0001,
+    "discriminatorLearningRate": 0.0001,
+    "weightDecay": 0.01,
+    "betas": [0.9, 0.999],
+    "eps": 1e-8
+  },
+  "checkpointSelection": {
+    "eligibleEpochs": [12],
+    "strictNewCandidateReloadRequired": true,
+    "automaticResumeAllowed": false
+  },
+  "stopRules": [
+    "CPU behavior and native cleanup must pass for the actual execution-source closure before package admission.",
+    "GPU admission and training each consume their own same-package phase once; no automatic retry or restart.",
+    "Do not change data, Loss, thresholds, optimizer, resource ceilings, other model layers or world scope.",
+    "Never initialize from failed state or inherit another candidate's GPU qualification.",
+    "Preserve the first failure, captured evidence, and real managed Job cleanup receipts.",
+    "Use the existing background, registry, SQLite, shared resource guard and observation contracts only.",
+    "Training completion, visual review and capability release remain separate decisions."
+  ],
+  "qualification": {
+    "gpuQualified": false,
+    "trainingQualified": false,
+    "visualQualified": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "runtimeFrameAllowed": false
+  }
+}

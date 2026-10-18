@@ -133,6 +133,92 @@ export function normalizePreBootObservation(pre, profile, guard, readBound) {
     activeExecution: pre.checks.activeExecution, host: pre.host }
 }
 
+// Historical evidence compatibility only. Stored terminal frames never become
+// live cleanup proof; the unchanged new-kernel audit and transaction still apply.
+function verifyQualificationTimeoutFailure(root, profile, guard, started, build, observation, failure, readBound) {
+  requireValue(profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v1'
+    && failure.schema === 'object-support-structure-quality-native-failure-v1'
+    && failure.status === 'failed_closed' && failure.executionState === 'failed_closed'
+    && failure.phase === 'qualification' && failure.stage === 'qualification'
+    && failure.capabilityVersion === 'stage4_mvp256_dry_final_rgb_base_weight_quality24_v1'
+    && failure.callIdentity === guard.identity && failure.automaticRetries === 0 && failure.privateCpuFixture === false,
+  'qualification_failure_scope_invalid')
+  for (const flag of ['cleanupQualificationGranted', 'guardReleaseGranted', 'normalWriteQualificationGranted']) {
+    requireValue(failure[flag] === false, 'failure_qualification_claimed')
+  }
+  requireValue(failure.primaryError?.type === 'Error' && failure.primaryError.reason === 'wall_timeout'
+    && failure.primaryError.code === null && failure.primaryError.messageRecorded === true
+    && failure.primaryError.rawStackRecorded === false && failure.primaryError.untrustedMessageSuppressed === false,
+  'qualification_failure_reason_invalid')
+  const uuid = '[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}'
+  requireValue(new RegExp('^final-rgb-base-quality-v1-' + uuid + '$', 'u').test(failure.runId)
+    && failure.packageId === failure.runId.replace('final-rgb-base-quality-v1-', 'final-rgb-base-quality-v1-package-')
+    && new RegExp('^' + uuid + '$', 'u').test(guard.identity), 'qualification_run_package_invalid')
+  const output = '.runtime/ai-painter/final-rgb-base-weight-quality-executions/' + failure.runId
+  requireValue(profile.plan?.path === output + '/quality-plan.json'
+    && profile.executionPackage?.path === '.runtime/ai-painter/autonomous-closed-loop-packages/' + failure.packageId + '/package.json'
+    && profile.receipt?.path === output + '/owned-qualification-' + guard.identity + '/release-receipt.json'
+    && new RegExp('^native-failure-' + guard.identity + '-' + uuid + '\\.json$', 'u').test(path.posix.basename(profile.failure.path))
+    && path.posix.dirname(profile.failure.path) === output, 'qualification_artifact_path_mismatch')
+  const plan = JSON.parse(readBound(profile.plan)), pkg = JSON.parse(readBound(profile.executionPackage))
+  const receipt = JSON.parse(readBound(profile.receipt))
+  requireValue(plan.schema === 'object-support-structure-quality-plan-v1'
+    && pkg.schemaVersion === 'ai-painter-autonomous-closed-loop-package-v1'
+    && plan.runId === failure.runId && plan.packageId === failure.packageId && pkg.packageIdentity === failure.packageId
+    && plan.capabilityVersion === failure.capabilityVersion && pkg.capabilityVersion === failure.capabilityVersion
+    && plan.outputRoot === output && pkg.outputRoot === output
+    && Array.isArray(pkg.inputEvidence) && pkg.inputEvidence.filter(b => b.path === profile.plan.path).length === 1
+    && pkg.inputEvidence.some(b => referenceMatches(b, profile.plan)), 'qualification_package_plan_mismatch')
+  const roles = plan.programBindings, qualifier = roles?.gpuQualifier
+  requireValue(roles?.nativeRunner?.path === 'scripts/lib/ai-painter-object-support-structure-quality-owned-native-v1.mjs'
+    && roles.nativeRunner.sha256 === guard.helperSha256
+    && qualifier?.path === 'ml/ai-painter/scripts/qualify_stage4_object_support_structure_quality_gpu_v1.py'
+    && pkg.programLineage?.nativeRunner === guard.helperSha256 && pkg.programLineage.gpuQualifier === qualifier.sha256,
+  'qualification_program_binding_mismatch')
+  readBound(qualifier)
+  requireValue(plan.runtimeIdentity?.python?.sha256 === guard.executableSha256
+    && path.resolve(plan.runtimeIdentity.python.absolutePath) === path.resolve(guard.executable)
+    && guard.commandSha256 === sha256(Buffer.from(JSON.stringify(['-B', fs.realpathSync(scopedFile(root, qualifier.path)),
+      '--package', profile.executionPackage.path, '--sha256', profile.executionPackage.sha256]))), 'qualification_command_mismatch')
+  requireValue(receipt.schema === 'detail-weight-live-native-owner-receipt-v1' && receipt.phase === 'qualification'
+    && receipt.stopReason === 'wall_timeout' && receipt.protocolError === 'Error: write EPIPE' && receipt.ownerClosed === true
+    && receipt.processCleanupConfirmed === false && receipt.cleanupConfirmed === false
+    && receipt.ownerIdentity?.pid === started.ownerPid && receipt.ownerIdentity.identitySource === 'retained_child_handle'
+    && receipt.guard?.identity === guard.identity && receipt.guard.state === 'retained'
+    && historicalProjectPath(root, receipt.guard.path) === GUARD && same(receipt.nativeBuild, build)
+    && receipt.guard.nativeEvidenceRoot === path.posix.dirname(profile.started.path)
+    && same(receipt.outputAccountingRoots, [output, receipt.guard.nativeEvidenceRoot])
+    && receipt.budget?.timeoutMs === 600000 && Number.isSafeInteger(receipt.elapsedMs) && receipt.elapsedMs > 0
+    && receipt.elapsedMs <= receipt.budget.timeoutMs, 'qualification_receipt_mismatch')
+  requireValue(profile.observation.path === historicalProjectPath(root, path.join(path.dirname(build.binary), 'cleanup-observation.json'))
+    && observation.schemaVersion === 'ai-painter-owned-job-observation-v1', 'native_observation_path_mismatch')
+  const proof = receipt.proof, stream = failure.streamObservation
+  requireValue(proof && proof.bindingBase64 === started.commandBinding && proof.ownerPid === started.ownerPid
+    && proof.rootPid === observation.rootPid && Number.isInteger(proof.rootPid) && proof.rootPid > 0
+    && proof.rootCreationDateUtc === observation.rootCreationDateUtc && proof.assignedBeforeResume === true && proof.killOnJobClose === true
+    && proof.activeProcessesAfterCleanup === 0 && proof.activeProcessesAfterCleanup === observation.activeProcessesAfterCleanup
+    && proof.totalProcesses === observation.totalProcesses && proof.exitCode === observation.rootExitCode && proof.exitCode === 1
+    && proof.stopReason === 'wall_timeout' && observation.stopReasonBase64 === Buffer.from('wall_timeout').toString('base64')
+    && proof.cleanupError === null && proof.observationError === null && observation.cleanupErrorBase64 === ''
+    && observation.transportErrorBase64 === Buffer.from(';;').toString('base64'), 'qualification_proof_mismatch')
+  for (const key of ['stdout', 'stderr']) {
+    const bytes = receipt.streamBytes?.[key]
+    requireValue(Number.isSafeInteger(bytes) && bytes >= 0 && bytes <= 8388608
+      && proof[key + 'Bytes'] === bytes && observation[key + 'Bytes'] === bytes, 'qualification_stream_mismatch')
+  }
+  requireValue(proof.streamClosureVersion === 'bounded-stream-capture-v2' && observation.streamClosureVersion === proof.streamClosureVersion
+    && stream?.closureVersion === proof.streamClosureVersion && proof.stdoutClosed === true && proof.stderrClosed === true
+    && proof.transportCompleted === true && observation.stdoutClosed === true && observation.stderrClosed === true
+    && observation.transportCompleted === true && stream.stdoutClosed === true && stream.stderrClosed === true && stream.transportCompleted === true
+    && proof.streamCaptureError === null && proof.streamTransportError === null
+    && observation.streamCaptureErrorBase64 === '' && observation.streamTransportErrorBase64 === ''
+    && stream.captureErrorPresent === null && stream.transportErrorPresent === null
+    && stream.streamBytes === receipt.streamBytes.stdout + receipt.streamBytes.stderr, 'qualification_stream_mismatch')
+  requireValue(time(guard.recordedAtUtc) <= time(proof.rootCreationDateUtc) && time(proof.rootCreationDateUtc) <= time(observation.observedAtUtc)
+    && time(observation.observedAtUtc) <= time(failure.recordedAtUtc),
+  'qualification_evidence_time_order_invalid')
+}
+
 export function verifyHistoricalInputs(root, profile) {
   if (profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v3') return verifyTrainingKernelInputs(root, profile)
   if (profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v2') return verifyCpuTimeoutInputs(root, profile, true)
@@ -172,7 +258,10 @@ export function verifyHistoricalInputs(root, profile) {
   const startedFile = scopedFile(root, historicalProjectPath(root, g.startedEvidence))
   requireValue(path.resolve(binding.scope) === root && fs.realpathSync(startedFile) === fs.realpathSync(scopedFile(root, profile.started.path)), 'native_scope_mismatch')
   requireValue(observation.authority === 'observation_only_no_release_authority' && observation.assignedBeforeResume === true, 'observation_authority_invalid')
-  verifyHistoricalFailure(failure, profile, g, readBound)
+  if (failure.schema === 'object-support-structure-quality-native-failure-v1') {
+    verifyQualificationTimeoutFailure(root, profile, g, started, build, observation, failure, readBound)
+    requireValue(time(failure.recordedAtUtc) < time(pre.host.ObservedUtc), 'qualification_evidence_time_order_invalid')
+  } else verifyHistoricalFailure(failure, profile, g, readBound)
   requireValue(pre.guardIdentity === g.identity && pre.guard.sha256 === profile.guard.sha256 && pre.registry.sha256 === profile.registry.sha256 && pre.activeExecution === null, 'pre_boot_chain_mismatch')
   requireValue(time(pre.host.OsBootUtc) <= time(pre.host.ObservedUtc) && time(g.recordedAtUtc) < time(pre.host.ObservedUtc), 'pre_boot_time_order_invalid')
   requireValue(same(g.nativeOwnerSource, build.source), 'native_source_mismatch')

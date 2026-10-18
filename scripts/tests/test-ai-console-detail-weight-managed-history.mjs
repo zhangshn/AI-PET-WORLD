@@ -8,14 +8,18 @@ import { bytes } from '../../src/server/ai-console/training-history-safe-bytes.m
 
 const digest = value => createHash('sha256').update(value).digest('hex')
 function fixture(quality = false, decode1 = false, configurationSchema = null) {
-  const root = '.runtime/ai-painter/managed-test', runId = 'managed-test-run', packageId = 'managed-test-package', capabilityVersion = 'managed-test-capability'
+  const terrain=decode1==='terrain', quality24=configurationSchema==='ecology-terrain-detail-weight-quality-configuration-v2'
+  const root = '.runtime/ai-painter/managed-test', runId = 'managed-test-run', packageId = 'managed-test-package', capabilityVersion = terrain
+    ? (quality24 ? 'stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_quality24_v1'
+      : 'stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_v1') : 'managed-test-capability'
   const documents = new Map(), identity = { runId, packageId, capabilityVersion }
   const bind = (path, value) => { const raw = Buffer.from(JSON.stringify(value)); documents.set(path, raw); return { path, sha256: digest(raw) } }
-  const ceiling = { epochs: quality ? 12 : 48, generatorOptimizerSteps: quality ? 576 : 2304, discriminatorOptimizerSteps: quality ? 576 : 2304 }
-  const selection = { eligibleEpochs: quality ? [12] : [24, 36, 48], validationRowsPerEligibleEpoch: quality ? 8 : 1 }
+  const qualityEpochs=quality24 ? 24 : 12, qualitySteps=qualityEpochs*48
+  const ceiling = { epochs: quality ? qualityEpochs : 48, generatorOptimizerSteps: quality ? qualitySteps : 2304, discriminatorOptimizerSteps: quality ? qualitySteps : 2304 }
+  const selection = { eligibleEpochs: quality ? [qualityEpochs] : [24, 36, 48], validationRowsPerEligibleEpoch: quality ? 8 : 1 }
   const config = { executionCeiling: ceiling, checkpointSelection: selection, scope: { resolution: [256, 192], subjectSampleId: 'sample-1' } }
-  if (quality) config.schema=configurationSchema ?? (decode1 ? 'ecology-decode1-weight-quality-configuration-v1' : 'ecology-regime-quality-configuration-v1')
-  const plan = { schema: quality ? (decode1 ? 'ecology-decode1-weight-quality-plan-v1' : 'ecology-regime-quality-plan-v1') : 'detail-weight-capture-managed-plan-v1',
+  if (quality) config.schema=configurationSchema ?? (terrain ? 'ecology-terrain-detail-weight-quality-configuration-v1' : decode1 ? 'ecology-decode1-weight-quality-configuration-v1' : 'ecology-regime-quality-configuration-v1')
+  const plan = { schema: quality ? (terrain ? 'ecology-terrain-detail-weight-quality-plan-v1' : decode1 ? 'ecology-decode1-weight-quality-plan-v1' : 'ecology-regime-quality-plan-v1') : 'detail-weight-capture-managed-plan-v1',
     ...(quality ? {executionMode:'bounded-quality-training'} : {}), ...identity, outputRoot: root, configuration: config }
   const planBinding = bind(`${root}/${quality ? 'quality-plan.json' : 'detail-weight-capture-plan.json'}`, plan)
   const autonomous = { schemaVersion: 'ai-painter-autonomous-closed-loop-package-v1', packageIdentity: packageId,
@@ -25,10 +29,10 @@ function fixture(quality = false, decode1 = false, configurationSchema = null) {
     resolution: [256, 192], trainingPlan: { ...ceiling }, resourceBudget: { ...ceiling }, autonomousExecutionPackage: executionPackage }
   const observationBinding = bind(`${root}/package.json`, observation)
   const capsule = bind(`${root}/capsule.json`, { schemaVersion: 'ai-painter-local-task-capsule-v1', integrity: { status: 'verified' }, evidence: [observationBinding] })
-  const worker = { schema: quality ? (decode1 ? 'ecology-decode1-weight-quality-worker-terminal-v1' : 'ecology-regime-quality-worker-terminal-v1') : 'detail-weight-managed-worker-terminal-v1', ...identity, executionPackage, executionState: 'failed_closed', status: 'failed_closed',
+  const worker = { schema: quality ? (terrain ? 'ecology-terrain-detail-weight-quality-worker-terminal-v1' : decode1 ? 'ecology-decode1-weight-quality-worker-terminal-v1' : 'ecology-regime-quality-worker-terminal-v1') : 'detail-weight-managed-worker-terminal-v1', ...identity, executionPackage, executionState: 'failed_closed', status: 'failed_closed',
     optimizerStepsGenerator: 475, optimizerStepsDiscriminator: 476, optimizerSteps: { generator: 475, discriminator: 476 }, completedEpochs: 9, checkpoints: [] }
   const cpBinding = { path: `${root}/checkpoint.pt`, sha256: 'a'.repeat(64) }
-  const cpEpoch=quality ? 12 : 24, cpUpdates=cpEpoch*48
+  const cpEpoch=quality ? qualityEpochs : 24, cpUpdates=cpEpoch*48
   const cp = { epoch: cpEpoch, checkpoint: cpBinding, counts: { generator: cpUpdates, discriminator: cpUpdates }, selection: { epoch: cpEpoch },
     validation: Array.from({length:quality ? 8 : 1},(_,index)=>({ sampleId: `sample-${index+1}`, split: 'validation', epoch: cpEpoch, fullRgbMae: 0.03 })) }
   const calls = [], metadataCalls = []
@@ -79,13 +83,13 @@ function fixture(quality = false, decode1 = false, configurationSchema = null) {
       const candidateRgb = { path: `${reviewRoot}/output.png`, sha256: 'b'.repeat(64) }
       const originalRgb = { path: `${reviewRoot}/original.png`, sha256: 'c'.repeat(64) }
       const selectedCheckpoint = worker.selectedCheckpointRecord?.checkpoint ?? cpBinding
-      const review = { schema: quality ? 'ecology-regime-native-review-input-v1' : 'detail-weight-native-review-input-v1', capabilityVersion, executionPackage, workerTerminal: workerBinding,
+      const review = { schema: quality ? (terrain ? 'ecology-terrain-detail-weight-quality-native-review-input-v1' : 'ecology-regime-native-review-input-v1') : 'detail-weight-native-review-input-v1', capabilityVersion, executionPackage, workerTerminal: workerBinding,
         selectedCheckpoint, subject: { sampleId: 'sample-1', split: 'validation' }, candidateRgb, originalRgb,
         artifacts: [candidateRgb] }
       if (quality) {
         review.artifacts=Array.from({length:8},(_,i)=>i===0 ? candidateRgb : {path:`${reviewRoot}/declared-${i}.png`,sha256:'e'.repeat(64)})
         review.validationImages=review.artifacts.map((binding,i)=>({sampleId:`sample-${i+1}`,split:'validation',
-          epoch:12,optimizerStep:576,purpose:'prediction',binding,checkpoint:selectedCheckpoint}))
+          epoch:cpEpoch,optimizerStep:cpUpdates,purpose:'prediction',binding,checkpoint:selectedCheckpoint}))
       }
       if (options.changeReview) options.changeReview(review)
       const reportBinding = bind(`${reviewRoot}/review.json`, review)
@@ -100,7 +104,7 @@ function fixture(quality = false, decode1 = false, configurationSchema = null) {
       task = { ...identity, executionPackage, status: 'dry_review_failed_closed' }
     }
     if (options.preciseReview) {
-      task = { ...task, schema: quality ? (decode1 ? 'ecology-decode1-weight-quality-review-terminal-v1' : 'ecology-regime-quality-review-terminal-v1') : 'detail-weight-managed-review-terminal-v1', ...identity, executionPackage, workerTerminal: workerBinding,
+      task = { ...task, schema: quality ? (terrain ? 'ecology-terrain-detail-weight-quality-review-terminal-v1' : decode1 ? 'ecology-decode1-weight-quality-review-terminal-v1' : 'ecology-regime-quality-review-terminal-v1') : 'detail-weight-managed-review-terminal-v1', ...identity, executionPackage, workerTerminal: workerBinding,
         executionState: options.reviewState ?? 'failed_closed', status: options.reviewStatus ?? 'review_execution_failed_closed' }
       if (options.reviewFailure) {
         const failure = { ...identity, executionPackage, workerTerminal: workerBinding, executionState: 'failed_closed',
@@ -130,6 +134,80 @@ function fixture(quality = false, decode1 = false, configurationSchema = null) {
   }
   return { run, options, worker, complete, complete48, bind, documents, calls, metadataCalls, plan, autonomous, observation, executionPackage, config, cp, root }
 }
+
+for(const [configurationSchema,epochs,steps] of [
+  ['ecology-terrain-detail-weight-quality-configuration-v1',12,576],
+  ['ecology-terrain-detail-weight-quality-configuration-v2',24,1152],
+])for(const preciseAsTerminal of [false,true])test(`terrain history ${configurationSchema} reads final eight images (review primary=${preciseAsTerminal})`,async()=>{
+  const f=fixture(true,'terrain',configurationSchema);f.complete();
+  Object.assign(f.options,{review:true,audit:true,preciseReview:true,preciseAsTerminal,
+    reviewStatus:'dry_single_world_review_failed_closed'});
+  const result=await f.run(),record=result.record;
+  assert.equal(record.detailCoverage.adapter,'ecology_terrain_detail_weight_quality_training_v1');
+  assert.equal(record.targetEpochs,epochs);assert.equal(record.completedEpochs,epochs);
+  assert.equal(record.targetOptimizerSteps,steps);assert.equal(record.targetDiscriminatorOptimizerSteps,steps);
+  assert.deepEqual(record.optimizerSteps,{generator:steps,discriminator:steps});
+  assert.equal(record.selectedEpoch,epochs);assert.equal(record.checkpoints.length,1);assert.equal(record.samples.length,8);
+  assert.deepEqual(record.checkpoints[0].optimizerSteps,{generator:steps,discriminator:steps});
+  assert.equal(record.checkpoints[0].metadataOnly,true);assert.equal(record.checkpoints[0].promotable,false);
+  assert.equal(record.metrics.filter(m=>m.split==='validation'&&m.epoch===epochs).length,8);
+  for(let index=0;index<8;index++){
+    const sample=record.samples[index];assert.equal(sample.sampleId,`sample-${index+1}`);
+    assert.equal(sample.output.sampleId,sample.sampleId);assert.equal(sample.output.epoch,epochs);
+    assert.equal(sample.output.logicalPath,`${f.root}/review-recovery-v1/${index===0?'output':`declared-${index}`}.png`);
+    assert.equal(sample.output.sha256,(index===0?'b':'e').repeat(64));
+    assert.equal(sample.output.formalQualification,false);
+  }
+  assert.equal(record.reviewStatus,'dry_single_world_review_failed_closed');
+  for(const key of ['formalQualificationAllowed','worldEntryAllowed','checkpointPromotionEligible'])assert.equal(record.qualification[key],false);
+  assert.ok(f.calls.every(p=>! /\.(png|pt)$/u.test(p)));
+});
+
+test('terrain configuration-v2 failed history keeps actual unequal counts beyond epoch 12 without inventing images',async()=>{
+  const f=fixture(true,'terrain','ecology-terrain-detail-weight-quality-configuration-v2');
+  Object.assign(f.worker,{completedEpochs:12,optimizerStepsGenerator:601,optimizerStepsDiscriminator:602,
+    optimizerSteps:{generator:601,discriminator:602}});
+  const {record}=await f.run();
+  assert.equal(record.targetEpochs,24);assert.deepEqual(record.optimizerSteps,{generator:601,discriminator:602});
+  assert.equal(record.completedEpochs,12);assert.equal(record.samples.length,0);assert.equal(record.checkpoints.length,0);
+  assert.equal(record.qualification.formalQualificationAllowed,false);
+});
+
+for(const schema of ['ecology-terrain-detail-weight-quality-configuration-v3',
+  'ecology-decode1-weight-quality-configuration-v1',null])test(`terrain history rejects unregistered configuration ${schema} despite quality24 identity`,async()=>{
+  const f=fixture(true,'terrain','ecology-terrain-detail-weight-quality-configuration-v2');
+  if(schema===null)delete f.config.schema;else f.config.schema=schema;
+  f.autonomous.inputEvidence=[f.bind(f.autonomous.inputEvidence[0].path,f.plan)];
+  Object.assign(f.executionPackage,f.bind(f.executionPackage.path,f.autonomous));
+  await assert.rejects(f.run,/history_managed_plan_conflict/u);
+});
+
+for(const [name,change,error] of [
+  ['missing validation image',r=>r.validationImages.pop(),'history_quality_image_coverage_conflict'],
+  ['foreign sample',r=>r.validationImages[3].sampleId='foreign','history_quality_image_identity_conflict'],
+  ['reordered images',r=>r.validationImages.reverse(),'history_quality_image_identity_conflict'],
+  ['training split',r=>r.validationImages[3].split='train','history_quality_image_identity_conflict'],
+  ['old epoch',r=>r.validationImages[3].epoch=12,'history_quality_image_identity_conflict'],
+  ['old optimizer step',r=>r.validationImages[3].optimizerStep=576,'history_quality_image_identity_conflict'],
+  ['wrong purpose',r=>r.validationImages[3].purpose='approved','history_quality_image_identity_conflict'],
+  ['image SHA conflict',r=>r.validationImages[3].binding={...r.validationImages[3].binding,sha256:'f'.repeat(64)},'history_quality_image_binding_conflict'],
+  ['checkpoint SHA conflict',r=>r.validationImages[3].checkpoint={...r.selectedCheckpoint,sha256:'f'.repeat(64)},'history_managed_parent_conflict'],
+  ['worker SHA conflict',r=>r.workerTerminal={...r.workerTerminal,sha256:'f'.repeat(64)},'history_managed_parent_conflict'],
+  ['foreign package',r=>r.packageId='foreign','history_managed_identity_conflict'],
+  ['foreign capability',r=>r.capabilityVersion='foreign','history_managed_identity_conflict'],
+  ['image path escape',r=>r.validationImages[3].binding.path='../outside.png','history_managed_binding_invalid'],
+])test(`terrain configuration-v2 history rejects ${name}`,async()=>{
+  const f=fixture(true,'terrain','ecology-terrain-detail-weight-quality-configuration-v2');f.complete();
+  Object.assign(f.options,{review:true,audit:true,preciseReview:true,preciseAsTerminal:true,
+    reviewStatus:'dry_single_world_review_failed_closed',changeReview:change});
+  await assert.rejects(f.run,new RegExp(error,'u'));
+});
+
+test('terrain history rejects changed plan bytes before projecting limits',async()=>{
+  const f=fixture(true,'terrain','ecology-terrain-detail-weight-quality-configuration-v2');
+  f.config.executionCeiling.epochs=25;f.bind(f.autonomous.inputEvidence[0].path,f.plan);
+  await assert.rejects(f.run,/history_sha_mismatch/u);
+});
 
 test('decode1 history preserves failed counts and explicit reviewed image bindings',async()=>{
   const failed=await fixture(true,true).run();

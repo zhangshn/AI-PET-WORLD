@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "ai-painter-progress-publication-cpu-policy-v1",
+  "candidateId": "bounded_progress_publication_cpu_v1",
+  "status": "registered_inactive_cpu_candidate",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.85",
+    "sha256": "d577ef346084765b4d38858c8f3bbbf3ba2795ef7ef8056e81ac9b970228788f"
+  },
+  "historicalSpecification": {
+    "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.84-7b1867f4.txt",
+    "sha256": "7b1867f4351cd68bfcb2912000f1744478a18687f0211f6aa6f04352b222c158",
+    "executionAllowed": false
+  },
+  "implementation": {
+    "component": "ml/ai-painter/src/ai_painter/complete_world/bounded_progress_publication_cpu_v1.py",
+    "tests": "ml/ai-painter/tests/test_bounded_progress_publication_cpu_v1.py",
+    "historicalAtomicReplacement": {
+      "path": "ml/ai-painter/scripts/painter_stage4_detail_weight_capture_execution_worker.py",
+      "sha256": "2880bbf9f78efe8273134b89ceb5f95027e846f2aa177e5ae4c59bcdf0eade79",
+      "changed": false,
+      "maximumAttemptsPerOperation": 5,
+      "maximumOperationSeconds": 0.25
+    }
+  },
+  "publication": {
+    "targetName": "progress.json",
+    "snapshotMaximumBytes": 65536,
+    "maximumPendingFiles": 1,
+    "freshnessSeconds": 120,
+    "freshnessAnchor": "last_successfully_published_snapshot_original_capture_monotonic_time",
+    "firstPublicationMustSucceed": true,
+    "winerror5AloneEstablishesSharing": false,
+    "sharingProof": "unchanged_regular_physical_files; Windows sharing code32/33 or native current handle-sharing proof with no DELETE action, permission change or process control",
+    "originalDeadlineImmutable": true,
+    "deferredBytesMayBeOverwritten": false,
+    "unconfirmedOrOtherErrorsFatal": true,
+    "firstErrorAndSecondaryChainRetained": true,
+    "existingSnapshotTimestampMayBeRefreshedByRetry": false
+  },
+  "cpuValidation": {
+    "maximumSeconds": 120,
+    "maximumCpuThreads": 2,
+    "maximumFixtureOutputBytes": 1048576,
+    "privateEvidenceRootRequired": true,
+    "realWindowsReaderCasesRequired": true,
+    "productionProgressPathsMayBeWritten": false,
+    "realDatasetReads": 0,
+    "gpuCalls": 0,
+    "modelConstructionOrLoading": false,
+    "optimizerUpdates": 0,
+    "currentRegistryWrites": false,
+    "oldRunReplay": false,
+    "trainingOrBackgroundStart": false
+  },
+  "adoption": {
+    "productionAdopted": false,
+    "trainingEntrypointIntegrated": false,
+    "originalTrainingBudgetsChanged": false,
+    "qualificationGranted": false,
+    "requiredNextProof": "new exact program/execution binding, real progress call integration, original output accounting and fixed deadline, unchanged existing observation API, own CPU checks; no old-run replay or direct training from these component results"
+  }
+}

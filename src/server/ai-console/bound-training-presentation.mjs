@@ -18,6 +18,11 @@ const AUTONOMOUS_PLAN_PROTOCOLS = new Map([
       configuration:'ecology-regime-quality-configuration-v1'},
     {schema:'ecology-decode1-weight-quality-plan-v1', mode:'bounded-quality-training',
       configuration:'ecology-decode1-weight-quality-configuration-v1'},
+    {schema:'ecology-terrain-detail-weight-quality-plan-v1', mode:'bounded-quality-training',
+      configuration:['ecology-terrain-detail-weight-quality-configuration-v1',
+        'ecology-terrain-detail-weight-quality-configuration-v2']},
+    {schema:'object-support-structure-quality-plan-v1', mode:'bounded-quality-training',
+      configuration:'object-support-structure-quality-configuration-v1'},
   ]],
 ]);
 const MAX_PACKAGE_BYTES = 2 * 1024 * 1024;
@@ -200,7 +205,7 @@ async function readAutonomousPresentation(root, registry, envelopeRead, terminal
     && plan.executionMode === protocol.mode, 'training_autonomous_plan_schema_unsupported');
   identity(plan, registry, 'training_autonomous_plan_identity_conflict');
   need(plan.outputRoot === outputRoot, 'training_package_output_root_conflict');
-  need(plan.configuration?.schema === protocol.configuration,
+  need([protocol.configuration].flat().includes(plan.configuration?.schema),
     'training_autonomous_configuration_schema_unsupported');
   need(plan.configuration.capabilityVersion === registry.capabilityVersion,
     'training_autonomous_plan_identity_conflict');
