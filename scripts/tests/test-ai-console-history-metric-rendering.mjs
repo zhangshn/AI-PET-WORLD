@@ -5,6 +5,7 @@ import ts from 'typescript'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createRequire } from 'node:module'
+import { trainingTime } from './helpers/training-time-cpu.mjs'
 
 // Compile the actual pure component, without importing polling or CSS into Node.
 const source = readFileSync(new URL('../../src/app/ai-console/ai-console-training-history.tsx', import.meta.url), 'utf8')
@@ -28,7 +29,7 @@ new Function('exports', statusCompiled)(statusExports)
 
 // Render the whole existing page through React's server renderer. Seed real
 // useState hooks with an already-loaded detail/page; effects perform no reads.
-function renderHistorySteps(detailSteps, checkpointSteps, runFields = {}, artifactItems) {
+function renderHistorySteps(detailSteps, checkpointSteps, runFields = {}, artifactItems, pageFields = {}, detailFailure = null) {
   const run = { runId: 'history-gd-run', runKind: 'dry_single_world_bounded_training', terminalStatus: 'failed_closed', sourceRevision: 1, finishedAtUtc: null, optimizerSteps: detailSteps, ...runFields }
   const checkpoint = { artifactId: 'cp-gd', role: 'checkpoint', url: '/bound-checkpoint', logicalPath: 'run/checkpoint.pt', sha256: 'a'.repeat(64), byteLength: 100, optimizerSteps: checkpointSteps, verificationStatus: 'binding_verified_bytes_not_read' }
   const listing = { sourceRevision: 1, records: [run], nextCursor: null, total: 1, coverage: {} }
@@ -36,13 +37,14 @@ function renderHistorySteps(detailSteps, checkpointSteps, runFields = {}, artifa
   const items = artifactItems ?? [checkpoint]
   // SectionPage carries its own exact record identity; it is now readable even
   // when the independent detail query fails. Match the actual API contract.
-  const page = { dataStatus: 'connected', reasonCode: null, record: run, section: 'artifacts', items, nextCursor: null, knownItemCount: items.length, total: items.length, coverage: {} }
-  const seeded = [listing, detail, run.runId, null, null, null, null, 'artifacts', null, page, null, '']
+  const page = { dataStatus: 'connected', reasonCode: null, record: run, section: 'artifacts', items, nextCursor: null, knownItemCount: items.length, total: items.length, coverage: {}, ...pageFields }
+  const seeded = [listing, detail, run.runId, null, null, null, detailFailure, 'artifacts', null, page, null, '']
   let stateIndex = 0
   const pageExports = {}, nativeRequire = createRequire(import.meta.url)
   const pageCompiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText
   new Function('require', 'exports', pageCompiled)(name => {
     if (name === 'react') return { ...React, useState: () => React.useState(seeded[stateIndex++]) }
+    if (name === './ai-console-training-time') return trainingTime
     if (name.includes('history-poll')) return { startHistoryPolling() { throw new Error('SSR must not start polling') } }
     if (name.includes('training-summary')) return { AiConsoleTrainingSummary: () => null }
     if (name.endsWith('.css')) return { default: {} }
@@ -59,6 +61,87 @@ function renderHistorySteps(detailSteps, checkpointSteps, runFields = {}, artifa
 
 test('raw G/D objects reproduce the reported React child error', () => {
   assert.throws(() => renderToStaticMarkup(React.createElement('p', null, { generator: 475, discriminator: 476 })), /Objects are not valid as a React child/u)
+})
+
+const workerTiming = { availability: 'available', reasonCode: null,
+  sourcePath: '.runtime/ai-painter/private-time/worker-execution-timing.json', sourceSha256: 'b'.repeat(64),
+  scope: trainingTime.WORKER_TIMING_SCOPE, startedAtUtc: '2026-10-19T13:14:37.756250+00:00',
+  endedAtUtc: '2026-10-19T16:22:37.142644+00:00', elapsedSeconds: 11279.391,
+  status: 'completed', stopReason: null }
+test('list with available worker timing immediately shows its own start, end, elapsed and scope without another request', () => {
+  const { html } = renderHistorySteps(0, 0, { workerExecutionTiming: workerTiming })
+  const card = html.split('<article')[0]
+  assert.match(card, /worker开始时间：2026-10-19 21:14:37.756/)
+  assert.match(card, /worker结束时间：2026-10-20 00:22:37.142/)
+  assert.match(card, /3小时7分59.391秒（11279.391秒）/)
+  assert.match(card, /含认证、数据与模型加载、训练、Checkpoint、验证及最终进度/)
+  assert.doesNotMatch(card, /列表未提供可用worker计时/)
+  assert.equal((source.match(/await fetch\(/gu) ?? []).length, 3, 'existing list, selected detail and selected section only')
+})
+test('historical raw start and finish remain visible but registration and UTC difference never create elapsed time', () => {
+  const { html } = renderHistorySteps(0, 0, { startedAtUtc: workerTiming.startedAtUtc,
+    finishedAtUtc: workerTiming.endedAtUtc, registeredAtUtc: '2026-10-20T08:00:00Z' })
+  assert.match(html, /运行记录开始时间/); assert.match(html, /2026-10-19 21:14:37.756/)
+  assert.match(html, /运行记录结束时间/); assert.match(html, /2026-10-20 00:22:37.142/)
+  assert.match(html, /无单调计时证据/); assert.match(html, /列表未提供可用worker计时，请到详情查看/)
+  assert.doesNotMatch(html, /11279.391秒|3小时7分/)
+})
+test('worker timing stays separate from lifecycle times, stale detail, registration and image generation time', () => {
+  const { html } = renderHistorySteps(0, 0, { workerExecutionTiming: workerTiming,
+    startedAtUtc: '2026-10-19T00:00:00Z', finishedAtUtc: '2026-10-20T00:00:00Z' }, [
+    { artifactId: 'png-time', role: 'output', url: '/private.png', logicalPath: 'private.png', sha256: 'a'.repeat(64), verificationStatus: 'verified' },
+  ], {}, '断线测试')
+  assert.match(html, /原始运行记录（与worker范围分开）/)
+  assert.match(html, /计时为上次成功详情快照，已过期/)
+  const image = html.match(/<figure>.*?<\/figure>/u)?.[0]
+  assert.ok(image); assert.match(image, /无自身区间，不采用任务耗时/)
+  assert.doesNotMatch(image, /11279.391|21:14:37/)
+})
+test('missing and unavailable list timing display unknown with detail entry while preserving original known times', () => {
+  for (const workerExecutionTiming of [undefined, { ...workerTiming, availability: 'unavailable', reasonCode: 'worker_timing_missing' }]) {
+    const { html } = renderHistorySteps(0, 0, { workerExecutionTiming, startedAtUtc: workerTiming.startedAtUtc })
+    const card = html.split('<article')[0]
+    assert.match(card, /开始时间：2026-10-19 21:14:37.756/)
+    assert.match(card, /结束时间：未记录／未知/)
+    assert.match(card, /列表未提供可用worker计时，请到详情查看/)
+    assert.doesNotMatch(card, /11279.391|worker结束时间：2026/)
+  }
+})
+test('started-only history timing retains final nulls even if terminal status has closed after interruption', () => {
+  const { html } = renderHistorySteps(0, 0, { terminalStatus: 'interrupted', workerExecutionTiming: {
+    ...workerTiming, status: 'started', endedAtUtc: null, elapsedSeconds: null } })
+  assert.match(html, /最终耗时未知（仅有开始记录）/)
+  assert.match(html, /仅记录开始，不代表当前仍在运行/)
+  assert.doesNotMatch(html, /worker已结束|0\.000秒/)
+})
+
+test('live selected-run timing matches real HTTP and renders through the actual history component', {
+  skip: !process.env.AI_CONSOLE_TIME_HTTP_TEST_ORIGIN,
+}, async t => {
+  const origin = new URL(process.env.AI_CONSOLE_TIME_HTTP_TEST_ORIGIN)
+  assert.equal(origin.hostname, '127.0.0.1'); assert.equal(origin.protocol, 'http:')
+  const currentResponse = await fetch(new URL('/api/ai-console/observability/current-execution', origin), { signal: AbortSignal.timeout(20000) })
+  assert.equal(currentResponse.status, 200)
+  const current = await currentResponse.json(), runId = current.latestTrainingTerminal.runId
+  const response = await fetch(new URL(`/api/ai-console/training/history/${encodeURIComponent(runId)}`, origin), { signal: AbortSignal.timeout(20000) })
+  assert.equal(response.status, 200); assert.match(response.headers.get('cache-control'), /no-store/)
+  const { record } = await response.json()
+  assert.equal(record.runId, runId)
+  assert.deepEqual(record.workerExecutionTiming, current.trainingPresentation.workerExecutionTiming)
+  assert.equal(record.workerExecutionTiming.availability, 'available')
+  const listResponse = await fetch(new URL('/api/ai-console/training/history?limit=50', origin), { signal: AbortSignal.timeout(20000) })
+  assert.equal(listResponse.status, 200); assert.match(listResponse.headers.get('cache-control'), /no-store/)
+  const listing = await listResponse.json(), listed = listing.records.find(row => row.runId === runId)
+  assert.ok(listed, 'the selected latest terminal must be on the verified first page')
+  assert.deepEqual(listed.workerExecutionTiming, record.workerExecutionTiming, 'list and detail must consume the same authenticated Worker timing')
+  const { html } = renderHistorySteps(record.optimizerSteps, null, { ...record, workerExecutionTiming: listed.workerExecutionTiming }, [])
+  const card = html.split('<article')[0]
+  const view = trainingTime.mapWorkerTiming(record.workerExecutionTiming)
+  assert.ok(html.includes(view.startedAt)); assert.ok(html.includes(view.endedAt)); assert.ok(html.includes(view.elapsed))
+  assert.ok(card.includes(view.startedAt)); assert.ok(card.includes(view.endedAt)); assert.ok(card.includes(view.elapsed))
+  assert.doesNotMatch(card, /列表未提供可用worker计时/)
+  t.diagnostic(JSON.stringify({ runId, httpStatus: response.status, timing: record.workerExecutionTiming,
+    renderedElapsed: view.elapsed, acceptance: 'real_http_and_component_ssr_not_browser_or_production_chain_acceptance' }))
 })
 
 test('actual Run and Checkpoint renders preserve legacy scalar integers and zero', () => {
@@ -185,6 +268,95 @@ test('completed history without failure evidence does not acquire a failure noti
   assert.doesNotMatch(html, /已登记失败信息（不是当前执行）/)
 })
 
+test('exact wall_timeout displays the training stop reason and only the selected frozen plan limit', () => {
+  for (const maxWallSeconds of [1, 321, 9017]) {
+    const { html } = renderHistorySteps(null, null, { failureSummary: { type: 'Error', message: 'wall_timeout' },
+      detailCoverage: { phase: 'training' }, trainingPlan: { maxWallSeconds }, targetEpochs: 24 }, [])
+    assert.match(html, /达到本轮训练时间上限，已停止/u)
+    assert.ok(html.includes(`本轮冻结训练时限：${maxWallSeconds}秒`))
+    assert.match(html, /不代表实际运行耗时/u)
+    assert.doesNotMatch(html, /8400|已完成轮数：0/u)
+  }
+})
+
+test('training timeout without a valid same-Run plan limit never invents a duration', () => {
+  for (const maxWallSeconds of [undefined, null, '321', 0, -1, 0.5, NaN, Infinity, {}, true, Number.MAX_SAFE_INTEGER + 1]) {
+    const { html } = renderHistorySteps(null, null, { failureSummary: { type: 'Error', message: 'wall_timeout' },
+      detailCoverage: { phase: 'training' }, trainingPlan: { maxWallSeconds } }, [])
+    assert.match(html, /达到本轮训练时间上限，已停止/u)
+    assert.doesNotMatch(html, /本轮冻结训练时限|8400|\[object Object\]/u)
+  }
+  for (const trainingPlan of [undefined, null, [], 'secret-plan', 17]) {
+    const { html } = renderHistorySteps(null, null, { failureSummary: { type: 'Error', message: 'wall_timeout' },
+      detailCoverage: { phase: 'training' }, trainingPlan }, [])
+    assert.match(html, /达到本轮训练时间上限，已停止/u)
+    assert.doesNotMatch(html, /本轮冻结训练时限|secret-plan/u)
+  }
+})
+
+test('qualification timeout and an unknown phase are not mislabeled as training or assigned its time budget', () => {
+  for (const phase of ['qualification', 'gpu_qualification', undefined, null, 'review', { toString: 'secret-phase' }]) {
+    const { html } = renderHistorySteps(null, null, { failureSummary: { type: 'Error', message: 'wall_timeout' },
+      detailCoverage: { phase }, trainingPlan: { maxWallSeconds: 321 } }, [])
+    assert.match(html, /达到本轮(?:资格检查|执行)时间上限，已停止/u)
+    assert.doesNotMatch(html, /达到本轮训练时间上限|本轮冻结训练时限/u)
+    // The existing collapsed technical coverage intentionally retains escaped
+    // source metadata. Only the user-facing failure notice uses the allowlist.
+    const notice = html.match(/<section aria-label="所选Run失败信息">[\s\S]*?<\/section>/u)?.[0]
+    assert.ok(notice)
+    assert.doesNotMatch(notice, /secret-phase|\[object Object\]/u)
+  }
+})
+
+test('unknown, malicious and decorated timeout messages remain hidden by the exact code allowlist', () => {
+  for (const message of ['wall_timeout\n', 'wall_timeout\r\n', 'wall_timeout suffix', 'prefix wall_timeout', ' wall_timeout',
+    'wall_timeout password=secret', 'wall_timeout C:/private', '<script>secret</script>', 'WALL_TIMEOUT', { secret: true }]) {
+    const { html } = renderHistorySteps(null, null, { failureSummary: { type: 'Error', message },
+      detailCoverage: { phase: 'training' }, trainingPlan: { maxWallSeconds: 321 } }, [])
+    assert.doesNotMatch(html, /达到本轮.*时间上限|本轮冻结训练时限|password=|secret|C:\/private|<script>|\[object Object\]/u)
+    assert.match(html, /错误详情见已绑定终态证据|错误信息未记录或无法核验/u)
+  }
+})
+
+const artifactSourceGap = '缺少受信终态清单，当前接口未接入；不能据此判定未训练、未生成或未保存。'
+test('the exact terminal-manifest gap is explicit outside collapsed technical fields', () => {
+  const { html } = renderHistorySteps(null, null, { detailCoverage: { artifactSourceGap }, artifacts: [] }, [])
+  const message = html.match(/<p[^>]+aria-label="产物来源缺口"[^>]*>(.*?)<\/p>/u)?.[1]
+  assert.equal(message, artifactSourceGap)
+  assert.ok(html.indexOf('aria-label="产物来源缺口"') < html.indexOf('<summary>内容覆盖与缺失项'))
+  assert.doesNotMatch(message, /没有保存|未曾训练|未生成任何/u)
+})
+
+test('unknown or decorated backend gap text is not promoted to a user-facing notice', () => {
+  for (const value of ['secret=do-not-render', artifactSourceGap + '\n', artifactSourceGap + 'secret', {}, null]) {
+    const { html } = renderHistorySteps(null, null, { detailCoverage: { artifactSourceGap: value } }, [])
+    assert.doesNotMatch(html, /aria-label="产物来源缺口"/u)
+    const paragraphs = html.match(/<p\b[^>]*>[\s\S]*?<\/p>/gu)?.join('') ?? ''
+    assert.doesNotMatch(paragraphs, /do-not-render|secret|\[object Object\]/u)
+  }
+})
+
+test('empty-image copy follows actual nextCursor and diagnostic entries, not an assumed other page', () => {
+  const preview = { artifactId: 'diagnostic', role: 'image', evidenceKind: 'training_diagnostic_preview',
+    logicalPath: 'run/preview.png', sha256: 'd'.repeat(64), url: '/existing-preview' }
+  for (const hasPreview of [false, true]) for (const nextCursor of [null, 'opaque-next-page']) {
+    const { html } = renderHistorySteps(null, null, { detailCoverage: { artifactSourceGap } }, hasPreview ? [preview] : [], { nextCursor })
+    assert.match(html, /本页没有原图／结果图/u)
+    if (hasPreview) {
+      assert.match(html, /本页训练诊断预览已单独列示/u)
+      assert.match(html, /aria-label="未审核训练预览"/u)
+    } else {
+      assert.match(html, /本页没有可查看的训练诊断预览条目/u)
+      assert.doesNotMatch(html, /预览另列|预览已单独列示|aria-label="未审核训练预览"/u)
+    }
+    if (nextCursor) assert.match(html, /其他内容可继续分页查看/u)
+    else {
+      assert.match(html, /本节没有下一页/u)
+      assert.doesNotMatch(html, /继续分页|其他页与实际缺口/u)
+    }
+  }
+})
+
 function faultArtifact(kind, overrides = {}) {
   return { artifactId: kind, role: 'evidence', evidenceKind: kind,
     url: `/api/ai-console/training/history/history-gd-run/artifacts/${kind}`,
@@ -300,6 +472,47 @@ test('diagnostic gallery is separate from original/results and keeps per-source 
 
 // Opt-in read-only acceptance against an already-running console. Never start a
 // service, seed a production record or make network access part of unit tests.
+test('live parent training timeout renders its own limit and the actual unbound-image gap', {
+  skip: !process.env.AI_CONSOLE_HISTORY_TIMEOUT_HTTP_TEST_ORIGIN,
+}, async t => {
+  const origin = new URL(process.env.AI_CONSOLE_HISTORY_TIMEOUT_HTTP_TEST_ORIGIN)
+  assert.equal(origin.protocol, 'http:')
+  assert.equal(origin.hostname, '127.0.0.1')
+  assert.equal(origin.pathname, '/')
+  assert.equal(origin.username + origin.password + origin.search + origin.hash, '')
+  const runId = process.env.AI_CONSOLE_HISTORY_TIMEOUT_HTTP_TEST_RUN_ID
+  assert.match(runId ?? '', /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,191}$/u)
+  const endpoint = new URL(`/api/ai-console/training/history/${encodeURIComponent(runId)}`, origin)
+  const response = await fetch(endpoint, { signal: AbortSignal.timeout(20000) })
+  assert.equal(response.status, 200)
+  const detail = await response.json(), run = detail.record
+  assert.equal(detail.schemaVersion, 'ai_console_training_run_detail_v1')
+  assert.equal(run.runId, runId)
+  assert.equal(run.terminalStatus, 'failed_closed')
+  assert.deepEqual(run.failureSummary, { type: 'Error', message: 'wall_timeout' })
+  assert.equal(run.detailCoverage.phase, 'training')
+  assert.equal(run.detailCoverage.artifactSourceGap, artifactSourceGap)
+  assert.ok(Number.isSafeInteger(run.trainingPlan.maxWallSeconds) && run.trainingPlan.maxWallSeconds > 0)
+  const pageResponse = await fetch(new URL(`${endpoint.pathname}?section=artifacts&limit=20`, origin), { signal: AbortSignal.timeout(20000) })
+  assert.equal(pageResponse.status, 200)
+  const page = await pageResponse.json()
+  assert.equal(page.record.runId, runId)
+  assert.equal(page.section, 'artifacts')
+  assert.equal(page.nextCursor, null)
+  assert.ok(page.items.length > 0)
+  assert.ok(page.items.every(item => !['image', 'original', 'output'].includes(item.role)))
+  const { html } = renderHistorySteps(run.optimizerSteps, null, run, page.items, { nextCursor: page.nextCursor })
+  assert.match(html, /达到本轮训练时间上限，已停止/u)
+  assert.ok(html.includes(`本轮冻结训练时限：${run.trainingPlan.maxWallSeconds}秒`))
+  assert.match(html, /aria-label="产物来源缺口"/u)
+  assert.match(html, /本节没有下一页/u)
+  assert.doesNotMatch(html, /<img|其他内容可继续分页|预览另列/u)
+  t.diagnostic(JSON.stringify({ observedAtUtc: new Date().toISOString(), runId,
+    httpStatus: response.status, artifactPageHttpStatus: pageResponse.status,
+    registeredArtifacts: page.items.length, maxWallSeconds: run.trainingPlan.maxWallSeconds,
+    acceptance: 'live_http_and_actual_component_ssr_not_browser_or_image_reader_admission' }))
+})
+
 test('live failure detail and original safe JSON artifact APIs render through the actual component', {
   skip: !process.env.AI_CONSOLE_HISTORY_HTTP_TEST_ORIGIN,
 }, async t => {

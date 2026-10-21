@@ -4,6 +4,7 @@ import {createRequire} from 'node:module';
 import ts from 'typescript';
 import * as liveRegistry from '../../../src/server/ai-painter-current-execution-registry.mjs';
 import * as trainingPresentation from '../../../src/server/ai-console/bound-training-presentation.mjs';
+import * as trainingDetail from '../../../src/server/ai-console/training-history-detail-adapters.mjs';
 
 // Execute the actual TS projection in CPU checks without producing build files.
 // The optional registry double is for isolated unit fixtures, never live checks.
@@ -20,6 +21,7 @@ export function loadCurrentExecutionProjectionForCpu(root, registry = liveRegist
     if(id==='../ai-painter-current-execution-registry.mjs')return registry;
     if(id==='./projection-contract')return contract;
     if(id==='./bound-training-presentation.mjs')return trainingPresentation;
+    if(id==='./training-history-detail-adapters.mjs')return trainingDetail;
     if(['node:crypto','node:fs/promises','node:path'].includes(id))return nativeRequire(id);
     throw new Error(`unexpected projection import: ${id}`);
   });

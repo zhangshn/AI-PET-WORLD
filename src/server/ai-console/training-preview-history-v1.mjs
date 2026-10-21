@@ -5,6 +5,13 @@ import { crc32, inflateSync } from 'node:zlib'
 // Closed compatibility table: a new Run is not a new API, but a new policy
 // version must have explicitly reviewed path, schema and scope semantics.
 const POLICY_PROTOCOLS = new Map([
+  ['data/ai-painter/system-governance/ai-painter-training-preview-observation-policy-v9.json', {
+    schema: 'ai-painter-training-preview-observation-policy-v9',
+    capability: 'stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1',
+    model: 'stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1',
+    root: '.runtime/ai-painter/decode1-entry-weight-quality-same-call-v1-executions/',
+    sourceLimit: 256,
+  }],
   ['data/ai-painter/system-governance/ai-painter-training-preview-observation-policy-v2.json', {
     schema: 'ai-painter-training-preview-observation-policy-v2',
     capability: 'stage4_mvp256_dry_object_support_structure_quality24_v1',
@@ -29,7 +36,123 @@ const POLICY_PROTOCOLS = new Map([
     model: 'stage4_mvp256_dry_factorized_ecology_final_rgb_base_weight_precision_v1',
     root: '.runtime/ai-painter/joint-object-priority-quality-executions/',
   }],
+  ['data/ai-painter/system-governance/ai-painter-training-preview-observation-policy-v6.json', {
+    schema: 'ai-painter-training-preview-observation-policy-v6',
+    capability: 'stage4_mvp256_dry_decode1_entry_weight_quality24_v1',
+    model: 'stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1',
+    root: '.runtime/ai-painter/decode1-entry-weight-quality-executions/',
+    sourceLimit: 256,
+  }],
+  ['data/ai-painter/system-governance/ai-painter-training-preview-observation-policy-v7.json', {
+    schema: 'ai-painter-training-preview-observation-policy-v7',
+    capability: 'stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v1',
+    model: 'stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1',
+    root: '.runtime/ai-painter/decode1-entry-weight-quality-completion-executions/',
+    sourceLimit: 256,
+  }],
+  ['data/ai-painter/system-governance/ai-painter-training-preview-observation-policy-v8.json', {
+    schema: 'ai-painter-training-preview-observation-policy-v8',
+    capability: 'stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2',
+    model: 'stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1',
+    root: '.runtime/ai-painter/decode1-entry-weight-quality-completion-v2-executions/',
+    sourceLimit: 256,
+  }],
 ])
+
+// Protocol admission, not candidate admission. The policy must be reached through
+// an authenticated registry (preparation) or this Run's immutable package (reads).
+// This module never reads the mutable current registry or imports runner code.
+export const TRAINING_INTERFACE_PROTOCOLS = Object.freeze({
+  package: 'ai-painter-current-training-package-v1',
+  progress: 'ai-painter-current-training-progress-v1',
+  previewRecord: 'training-preview-diagnostic-record-v1',
+  previewManifest: 'training-preview-diagnostic-manifest-v1',
+  timing: 'decode1-entry-worker-execution-timing-v1',
+})
+export function decodeTrainingInterfaceJson(raw, maximum=65536) {
+  if (!Buffer.isBuffer(raw) || raw.length === 0 || raw.length > maximum) throw Error('training_interface_json_limit')
+  const source=raw.toString('utf8')
+  if (!Buffer.from(source).equals(raw)) throw Error('training_interface_json_encoding')
+  const tokens=source.match(/"(?:\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|[^"\\\u0000-\u001f])*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null|[{}\[\],:]|[\x20\t\r\n]+/gu)??[]
+  if(tokens.join('')!==source)throw Error('training_interface_json_invalid')
+  const values=tokens.filter(token=>!/^\s+$/u.test(token));let cursor=0
+  const take=expected=>{if(values[cursor++]!==expected)throw Error('training_interface_json_invalid')}
+  const visit=depth=>{
+    if(depth>64)throw Error('training_interface_json_depth')
+    const token=values[cursor++]
+    if(token==='{'){
+      const keys=new Set();if(values[cursor]==='}'){cursor++;return}
+      for(;;){const key=values[cursor++];if(!key?.startsWith('"'))throw Error('training_interface_json_invalid')
+        const decoded=JSON.parse(key);if(keys.has(decoded))throw Error('training_interface_json_duplicate_key');keys.add(decoded)
+        take(':');visit(depth+1);if(values[cursor]==='}'){cursor++;return}take(',')}
+    }
+    if(token==='['){if(values[cursor]===']'){cursor++;return}for(;;){visit(depth+1);if(values[cursor]===']'){cursor++;return}take(',')}}
+    if(token===undefined||!['true','false','null'].includes(token)&&!token.startsWith('"')&&!Number.isFinite(Number(token)))throw Error('training_interface_json_invalid')
+  }
+  visit(0);if(cursor!==values.length)throw Error('training_interface_json_invalid')
+  return JSON.parse(source)
+}
+export function parseTrainingInterfacePolicy(policy) {
+  const fail = message => { throw new Error(`training_interface_${message}`) }
+  const require = (condition, message) => { if (!condition) fail(message) }
+  const descriptor = policy?.interfaceContract
+  require(object(policy) && policy.schemaVersion === 'ai-painter-registered-training-execution-policy-v1'
+    && object(descriptor), 'schema_unsupported')
+  require(isDeepStrictEqual(Object.keys(descriptor).sort(),
+    ['adapterId', 'candidateSelection', 'packagePrefix', 'protocols', 'runPrefix', 'schemaVersion']), 'descriptor_fields')
+  require(descriptor.schemaVersion === 'ai-painter-training-interface-contract-v1'
+    && descriptor.adapterId === 'decode1_entry_same_call_completion_v1'
+    && isDeepStrictEqual(descriptor.protocols, TRAINING_INTERFACE_PROTOCOLS), 'protocol_unsupported')
+  const selector = descriptor.candidateSelection
+  require(typeof selector === 'string' && /^[a-z][a-z0-9-]{7,79}$/u.test(selector)
+    && policy.candidateSelection === selector, 'selector_invalid')
+  require(descriptor.runPrefix === `${selector}-` && descriptor.packagePrefix === `${selector}-package-`, 'prefix_conflict')
+  require(typeof policy.candidate === 'string' && /^[a-z][a-z0-9_]{7,127}$/u.test(policy.candidate)
+    && policy.modelCapability === 'stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1', 'model_unsupported')
+  require(policy.outputRoot === `.runtime/ai-painter/registered-training-${selector}-executions`
+    && typeof policy.executionProfile === 'string' && /^[a-z][a-z0-9_]{7,127}$/u.test(policy.executionProfile), 'namespace_conflict')
+  for (const key of ['formalSpecification', 'trainingPreviewPolicy']) binding(policy[key])
+  binding(policy.progressPublication?.componentPolicy)
+  require(policy.formalSpecification.path === 'docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md'
+    && typeof policy.formalSpecification.version === 'string' && /^AI-PAINTER-SPEC-1\.\d+$/u.test(policy.formalSpecification.version), 'specification_invalid')
+  require(policy.trainingPreviewPolicy.path.startsWith('data/ai-painter/system-governance/')
+    && policy.progressPublication.componentPolicy.path.startsWith('data/ai-painter/system-governance/'), 'policy_boundary_conflict')
+  require(policy.entrypointPath === 'scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs'
+    && policy.progressPublication.componentPath === 'ml/ai-painter/src/ai_painter/complete_world/bounded_progress_publication_cpu_v2.py', 'implementation_unsupported')
+  const ceiling = policy.executionCeiling, resources = policy.phaseResources
+  require(object(ceiling) && ceiling.epochs === 24 && ceiling.generatorOptimizerSteps === 1152
+    && ceiling.discriminatorOptimizerSteps === 1152 && ceiling.trainingWallMode === 'completion'
+    && ceiling.maxWallSeconds === null && object(resources) && resources.gpuAdmissionWallMode === 'completion'
+    && resources.gpuAdmissionSeconds === null && resources.programFileCountMaximum === 256, 'resource_conflict')
+  require(isDeepStrictEqual(policy.scope?.resolution, [256, 192]) && policy.scope?.worldCount === 1
+    && policy.scope?.waterFactPresent === false && policy.scope?.formalStage4Qualification === false
+    && policy.scope?.runtimePublication === false, 'scope_conflict')
+  return { descriptor: structuredClone(descriptor), capability: policy.candidate, model: policy.modelCapability,
+    root: `${policy.outputRoot}/`, profile: policy.executionProfile, sourceLimit: 256,
+    previewPolicy: binding(policy.trainingPreviewPolicy), progressPolicy: binding(policy.progressPublication.componentPolicy),
+    policySchema: policy.schemaVersion, gpuAdmissionCompletion: true }
+}
+
+export async function readBoundTrainingInterface({ envelope, plan, parent, readJson }) {
+  // Absence is legacy. Presence with any invalid value must NOT fall back.
+  if (!Object.hasOwn(plan ?? {}, 'interfacePolicy')) return null
+  const bound = binding(plan.interfacePolicy)
+  same(bound, plan.executionPolicy); same(bound, plan.configuration?.executionPolicy)
+  need(Array.isArray(envelope.inputEvidence) && envelope.inputEvidence.length <= 128
+    && envelope.inputEvidence.filter(item => item?.path === bound.path).length === 1, 'plan_policy_not_bound')
+  same(envelope.inputEvidence.find(item => item?.path === bound.path), bound)
+  const policy = await readJson(bound, 65536), protocol = parseTrainingInterfacePolicy(policy)
+  need(['runId', 'packageId', 'capabilityVersion'].every(key => plan[key] === parent[key])
+    && envelope.packageIdentity === parent.packageId && envelope.capabilityVersion === parent.capabilityVersion
+    && plan.capabilityVersion === protocol.capability && plan.configuration?.capabilityVersion === protocol.capability
+    && plan.configuration?.modelCapabilityVersion === protocol.model
+    && plan.executionProfile === protocol.profile && parent.runId.startsWith(protocol.descriptor.runPrefix)
+    && parent.packageId.startsWith(protocol.descriptor.packagePrefix) && plan.outputRoot === `${protocol.root}${parent.runId}`
+    && envelope.outputRoot === plan.outputRoot && isDeepStrictEqual(plan.configuration.executionCeiling, policy.executionCeiling), 'policy_scope_conflict')
+  same(plan.trainingPreviewPolicy, protocol.previewPolicy); same(plan.configuration.trainingPreviewPolicy, protocol.previewPolicy)
+  same(plan.configuration.progressPublicationPolicy, protocol.progressPolicy)
+  return { ...protocol, policy, policyPath: bound.path, interfacePolicy: bound }
+}
 const PURPOSE = 'not_reviewed_diagnostic_only'
 const PHASE = 'after_discriminator_update_before_generator_update'
 const FLAGS = ['formalOutput', 'checkpointSelectionEligible', 'qualificationEvidence', 'runtimePublicationEligible']
@@ -136,7 +259,7 @@ export async function readTrainingPreviewHistory({ parent, manifestBinding = nul
     return raw
   }
   const json = async (bound, maximum = 2 * 1024 * 1024) => {
-    const value = JSON.parse((await binary(bound, maximum)).toString('utf8'))
+    const value = decodeTrainingInterfaceJson(await binary(bound, maximum),maximum)
     need(object(value), 'document_invalid'); return value
   }
   try {
@@ -162,9 +285,12 @@ export async function readTrainingPreviewHistory({ parent, manifestBinding = nul
     // or the first readable policy in package inputEvidence.
     const policyBinding = binding(plan.trainingPreviewPolicy)
     same(policyBinding, plan.configuration.trainingPreviewPolicy)
-    const policyProtocol = POLICY_PROTOCOLS.get(policyBinding.path)
+    const registered = await readBoundTrainingInterface({ envelope, plan, parent, readJson: json })
+    const policyProtocol = registered
+      ? { ...registered, schema: 'ai-painter-registered-training-preview-policy-v1' }
+      : POLICY_PROTOCOLS.get(policyBinding.path)
     need(policyProtocol, 'schema_unsupported')
-    const policies = envelope.inputEvidence.filter(item => POLICY_PROTOCOLS.has(item?.path))
+    const policies = envelope.inputEvidence.filter(item => registered ? item?.path === policyBinding.path : POLICY_PROTOCOLS.has(item?.path))
     need(policies.length === 1, 'plan_policy_not_bound')
     same(policies[0], policyBinding)
     const policy = await json(policyBinding, 65536)
@@ -180,6 +306,9 @@ export async function readTrainingPreviewHistory({ parent, manifestBinding = nul
       if (policyProtocol.schema !== 'ai-painter-training-preview-observation-policy-v2' || Object.hasOwn(policy.scope ?? {}, key))
         need(policy.scope?.[key] === expected, 'policy_scope_conflict')
     need(plan.outputRoot === root && object(plan.configuration) && object(plan.programBindings), 'plan_conflict')
+    if (policyProtocol.sourceLimit !== undefined)
+      need(Object.keys(plan.programBindings).length > 0 && Object.keys(plan.programBindings).length <= policyProtocol.sourceLimit,
+        'source_identity_conflict')
     const ceiling = plan.configuration.executionCeiling, capture = policy.capture
     need(object(ceiling) && count(ceiling.epochs) && ceiling.epochs > 0
       && object(capture) && capture.split === 'train' && capture.ordinal === 0

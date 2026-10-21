@@ -2,6 +2,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
+import { isDeepStrictEqual } from 'node:util'
+import { parseTrainingInterfacePolicy } from '../../src/server/ai-console/training-preview-history-v1.mjs'
 import { readCurrentExecutionRegistry, recoverExpiredActiveExecutionToFailedClosed, recoverPreparedCurrentExecutionRegistryAdvance } from '../../src/server/ai-painter-current-execution-registry.mjs'
 
 const GUARD = '.runtime/ai-painter/owned-worker-guards/active.json'
@@ -479,6 +481,35 @@ function requireAbsent(root, relative) {
   catch (error) { if (error.code !== 'ENOENT') throw error }
 }
 
+// Historical reads use the same registered wire protocol as preparation and
+// observation. A new namespace never inherits the legacy 576-update ceiling.
+function interruptionTrainingScope(plan, pkg, value) {
+  if (plan.schema === 'ecology-decode1-weight-quality-plan-v1') return {
+    output: '.runtime/ai-painter/ecology-decode1-weight-quality-executions/' + plan.runId,
+    generatorSteps: 576, discriminatorSteps: 576,
+  }
+  requireValue(plan.schema === 'object-support-structure-quality-plan-v1'
+    && referenceMatches(plan.interfacePolicy, plan.executionPolicy)
+    && referenceMatches(plan.interfacePolicy, plan.configuration?.executionPolicy)
+    && Array.isArray(pkg.inputEvidence)
+    && pkg.inputEvidence.filter(item => item.path === plan.interfacePolicy.path).length === 1
+    && pkg.inputEvidence.some(item => referenceMatches(item, plan.interfacePolicy)), 'interruption_registered_policy_not_bound')
+  const policy = value(plan.interfacePolicy), protocol = parseTrainingInterfacePolicy(policy)
+  const config = plan.configuration
+  const suffix = plan.runId?.slice(protocol.descriptor.runPrefix.length)
+  requireValue(plan.runId?.startsWith(protocol.descriptor.runPrefix)
+    && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(suffix)
+    && plan.packageId === protocol.descriptor.packagePrefix + suffix
+    && plan.capabilityVersion === protocol.capability && config?.capabilityVersion === protocol.capability
+    && config.modelCapabilityVersion === protocol.model && plan.executionProfile === protocol.profile
+    && plan.outputRoot === protocol.root + plan.runId && pkg.outputRoot === plan.outputRoot
+    && isDeepStrictEqual(config.executionCeiling, policy.executionCeiling)
+    && plan.historicalCheckpointMayInitialize === false && plan.trainingRestartAllowed === false,
+  'interruption_registered_scope_invalid')
+  return { output: plan.outputRoot, generatorSteps: policy.executionCeiling.generatorOptimizerSteps,
+    discriminatorSteps: policy.executionCeiling.discriminatorOptimizerSteps }
+}
+
 export function verifyTrainingKernelInputs(root, profile) {
   requireValue(profile.failureCase === 'training_kernel_interruption_v1', 'interruption_case_invalid')
   requireValue(Array.isArray(profile.byteLedgers) && profile.byteLedgers.length <= 16, 'interruption_ledgers_invalid')
@@ -511,8 +542,8 @@ export function verifyTrainingKernelInputs(root, profile) {
   const guardBytes = read(profile.guard), guard = JSON.parse(guardBytes)
   const registry = value(profile.registry), started = value(profile.started), build = value(profile.build)
   const plan = value(profile.plan), pkg = value(profile.executionPackage), progress = value(profile.progress)
-  requireValue(plan.schema === 'ecology-decode1-weight-quality-plan-v1'
-    && pkg.schemaVersion === 'ai-painter-autonomous-closed-loop-package-v1', 'interruption_original_schema_invalid')
+  requireValue(pkg.schemaVersion === 'ai-painter-autonomous-closed-loop-package-v1', 'interruption_original_schema_invalid')
+  const trainingScope = interruptionTrainingScope(plan, pkg, value)
   requireValue(profile.guard.path === GUARD && profile.registry.path === REGISTRY
     && profile.registry.revision === registry.registryRevision && guard.identity === profile.guardIdentity, 'interruption_original_identity_invalid')
   const active = registry.activeExecution
@@ -537,9 +568,9 @@ export function verifyTrainingKernelInputs(root, profile) {
   }
   requireValue(progress.runId === plan.runId && progress.packageId === plan.packageId && progress.capabilityVersion === plan.capabilityVersion
     && progress.executionState === 'executing' && progress.selectedCheckpoint === null
-    && Number.isSafeInteger(progress.optimizerStepsGenerator) && progress.optimizerStepsGenerator > 0 && progress.optimizerStepsGenerator <= 576
-    && Number.isSafeInteger(progress.optimizerStepsDiscriminator) && progress.optimizerStepsDiscriminator > 0 && progress.optimizerStepsDiscriminator <= 576, 'interruption_progress_mismatch')
-  const output = '.runtime/ai-painter/ecology-decode1-weight-quality-executions/' + plan.runId
+    && Number.isSafeInteger(progress.optimizerStepsGenerator) && progress.optimizerStepsGenerator > 0 && progress.optimizerStepsGenerator <= trainingScope.generatorSteps
+    && Number.isSafeInteger(progress.optimizerStepsDiscriminator) && progress.optimizerStepsDiscriminator > 0 && progress.optimizerStepsDiscriminator <= trainingScope.discriminatorSteps, 'interruption_progress_mismatch')
+  const output = trainingScope.output
   requireValue(plan.outputRoot === output && profile.plan.path === output + '/quality-plan.json'
     && profile.progress.path === output + '/progress.json' && profile.executionLock.path === output + '/execution-lock.json', 'interruption_output_scope_invalid')
   requireValue(pkg.inputEvidence.some(item => referenceMatches(item, profile.plan)), 'interruption_package_plan_mismatch')

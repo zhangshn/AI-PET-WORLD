@@ -32,10 +32,13 @@ def _bound(predicted, sample, channel_order):
         "conditions": sample["conditions"].detach().to(predicted.device)}, tuple(channel_order)
 
 
-def train_original_object_support_structure(predicted, sample, instance_table, channel_order):
+def train_original_object_support_structure(predicted, sample, instance_table, channel_order,
+        *, support_structure_weight=frozen.OBJECT_SUPPORT_STRUCTURE_WEIGHT):
+    support_structure_weight = frozen._support_structure_weight(support_structure_weight)
     require(isinstance(predicted, torch.Tensor) and predicted.device.type in ("cpu", "cuda"), "CPU/CUDA prediction required")
     if predicted.device.type == "cpu":
-        return frozen.train_original_object_support_structure(predicted, sample, instance_table, channel_order)
+        return frozen.train_original_object_support_structure(predicted, sample, instance_table, channel_order,
+            support_structure_weight=support_structure_weight)
     bound, order = _bound(predicted, sample, channel_order)
     # Only detached authoritative CPU facts define masks, exactly as in the frozen CPU definition.
     masks = frozen._visible_support(sample["conditions"].detach().cpu(), instance_table, order)
@@ -65,7 +68,7 @@ def train_original_object_support_structure(predicted, sample, instance_table, c
                 diagnostic.update(status="applicable", correlation=correlation)
         diagnostics[role] = diagnostic
     loss = torch.stack(terms).mean() if terms else predicted.sum() * 0
-    weighted = frozen.OBJECT_SUPPORT_STRUCTURE_WEIGHT * loss
+    weighted = support_structure_weight * loss
     require(bool(torch.isfinite(weighted.detach())), "nonfinite support structure objective")
     return weighted, {"objectSupportStructureLoss": loss, "objectSupportStructureWeighted": weighted,
         "objectSupportStructureStatus": "applicable" if terms else "not_applicable",
@@ -73,15 +76,19 @@ def train_original_object_support_structure(predicted, sample, instance_table, c
         "objectSupportOwnershipRule": frozen.OWNERSHIP_RULE}
 
 
-def train_object_support_structure_candidate_objective(critic, predicted, sample, instance_table, channel_order):
+def train_object_support_structure_candidate_objective(critic, predicted, sample, instance_table, channel_order,
+        *, support_structure_weight=frozen.OBJECT_SUPPORT_STRUCTURE_WEIGHT):
+    support_structure_weight = frozen._support_structure_weight(support_structure_weight)
     require(isinstance(predicted, torch.Tensor) and predicted.device.type in ("cpu", "cuda"), "CPU/CUDA prediction required")
     if predicted.device.type == "cpu":
-        return frozen.train_object_support_structure_candidate_objective(critic, predicted, sample, instance_table, channel_order)
+        return frozen.train_object_support_structure_candidate_objective(critic, predicted, sample, instance_table, channel_order,
+            support_structure_weight=support_structure_weight)
     bound, order = _bound(predicted, sample, channel_order)
     require(isinstance(critic, torch.nn.Module) and all(v.device == predicted.device
         and (not v.is_floating_point() or v.dtype == torch.float32) for v in (*critic.parameters(), *critic.buffers())),
         "critic must share prediction device/FP32")
-    weighted, parts = train_original_object_support_structure(predicted, bound, instance_table, order)
+    weighted, parts = train_original_object_support_structure(predicted, bound, instance_table, order,
+        support_structure_weight=support_structure_weight)
     inherited_total, inherited_parts = train_object_core_fidelity_candidate_objective(critic, predicted, bound, instance_table, order)
     total = inherited_total.float() + weighted
     require(bool(torch.isfinite(total.detach())), "nonfinite support structure candidate total")

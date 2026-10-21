@@ -1,10 +1,10 @@
 # 退役AI Painter页面资料索引
 
-更新时间：2026-09-21 18:40:21 +08:00
+更新时间：2026-10-22 02:33:00 +08:00
 
 状态：historical-retired-reference
 
-文档版本：`AI-PAINTER-PROGRESS-RETIREMENT-1.1`
+文档版本：`AI-PAINTER-PROGRESS-RETIREMENT-1.2`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
@@ -46,11 +46,13 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 | 路径 | 当前职责 |
 |---|---|
 | `src/app/ai-painter-progress/[[...legacyPath]]/page.tsx` | 唯一允许保留的旧路由兼容文件；永久重定向到`/ai-console`。 |
-| `src/app/api/ai-painter/` | AI Painter共享后台API；仍可能服务`ai-painter-lab`等非退役业务，不随旧UI删除，也不是新控制台查询源。 |
+| `src/app/api/ai-painter/` | AI Painter独立共享后台API；旧页面删除不扩展为API或资产数据清理，也不是新控制台查询源。 |
 | `src/server/ai-painter-current-training-types.ts` | 后台训练证据聚合使用的中立共享类型。 |
 | `.runtime/ai-painter/`、`data/ai-painter/`、SQLite | 正式运行证据和机器状态；不可因页面退役而删除、覆盖或迁移成页面数据。 |
 
 页面退役只删除可视UI和旧页面私有依赖，不删除后台训练程序、共享API、Checkpoint身份、运行证据、审核记录、事件账本或SQLite。
+
+单体资产实验页`/ai-painter-lab`不再提供，原网址返回404；它不继承`/ai-painter-progress`的永久重定向兼容合同。原资产、质量样本与共享后台继续保留，不能以页面删除为由重新设定现行训练前置条件。
 
 ## 4. 固定检查
 
@@ -60,4 +62,4 @@ npm run check:ai-console-structure
 npx tsc --noEmit
 ```
 
-退役检查必须证明：旧UI树只剩永久重定向、后台共享类型不再从页面目录导入、`ai-painter-lab`使用的共享API仍存在、当前AI控制台源码没有旧页面耦合。
+退役检查必须证明：原进度UI树只剩永久重定向、后台共享类型不再从页面目录导入、独立共享API仍存在、当前AI控制台源码没有旧页面耦合。实验页删除另须证明私有源码及外部引用已移除、原网址返回404、共享API和原始数据保持。

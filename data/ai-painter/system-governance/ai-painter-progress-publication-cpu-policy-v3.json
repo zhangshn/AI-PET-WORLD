@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "ai-painter-progress-publication-cpu-policy-v3",
+  "candidateId": "bounded_progress_publication_cpu_v2",
+  "status": "registered_inactive_cpu_candidate",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.99",
+    "sha256": "0bdd8f244f2e75777e75e27a8606c1f7132d464ea5d1efb1aec8d1b1abce294e"
+  },
+  "historicalSpecification": {
+    "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.84-7b1867f4.txt",
+    "sha256": "7b1867f4351cd68bfcb2912000f1744478a18687f0211f6aa6f04352b222c158",
+    "executionAllowed": false
+  },
+  "implementation": {
+    "component": "ml/ai-painter/src/ai_painter/complete_world/bounded_progress_publication_cpu_v2.py",
+    "tests": "ml/ai-painter/tests/test_bounded_progress_publication_cpu_v2.py",
+    "historicalAtomicReplacement": {
+      "path": "ml/ai-painter/scripts/painter_stage4_detail_weight_capture_execution_worker.py",
+      "sha256": "2880bbf9f78efe8273134b89ceb5f95027e846f2aa177e5ae4c59bcdf0eade79",
+      "changed": false,
+      "maximumAttemptsPerOperation": 5,
+      "maximumOperationSeconds": 0.25
+    }
+  },
+  "publication": {
+    "targetName": "progress.json",
+    "snapshotMaximumBytes": 65536,
+    "maximumPendingFiles": 1,
+    "freshnessSeconds": 120,
+    "freshnessAnchor": "last_successfully_published_snapshot_original_capture_monotonic_time",
+    "firstPublicationMustSucceed": true,
+    "winerror5AloneEstablishesSharing": false,
+    "sharingProof": "unchanged_regular_physical_files; Windows sharing code32/33 or native current handle-sharing proof with no DELETE action, permission change or process control",
+    "originalDeadlineImmutable": true,
+    "deferredBytesMayBeOverwritten": false,
+    "unconfirmedOrOtherErrorsFatal": true,
+    "firstErrorAndSecondaryChainRetained": true,
+    "existingSnapshotTimestampMayBeRefreshedByRetry": false,
+    "deadlineMode": "Finite immutable deadline for finite routes; explicit null immutable deadline only after the new authenticated completion-training route is selected.",
+    "completionCapability": "stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2",
+    "completionTrainingTotalDeadline": null,
+    "nullMustNotEnableLegacyRoute": true,
+    "maximumReplacementOperationSeconds": 0.25,
+    "replacementOperationScope": "Only atomic replacement and its original maximum five attempts; staging, fsync, identity and readback do not acquire a new overall250ms deadline.",
+    "completionPublicationBoundary": "Original last-successful-capture120second freshness, or one120second initial publication operation; no training-global deadline or retry-based freshness renewal."
+  },
+  "cpuValidation": {
+    "maximumSeconds": 120,
+    "maximumCpuThreads": 2,
+    "maximumFixtureOutputBytes": 1048576,
+    "privateEvidenceRootRequired": true,
+    "realWindowsReaderCasesRequired": true,
+    "productionProgressPathsMayBeWritten": false,
+    "realDatasetReads": 0,
+    "gpuCalls": 0,
+    "modelConstructionOrLoading": false,
+    "optimizerUpdates": 0,
+    "currentRegistryWrites": false,
+    "oldRunReplay": false,
+    "trainingOrBackgroundStart": false
+  },
+  "adoption": {
+    "productionAdopted": false,
+    "trainingEntrypointIntegrated": false,
+    "originalTrainingBudgetsChanged": true,
+    "qualificationGranted": false,
+    "requiredNextProof": "Current exact execution policy/package authenticates completion route; new component finite/completion/negative CPU tests and actual worker integration; original output accounting/freshness and all other error semantics kept. Component metadata alone grants no GPU/training qualification.",
+    "changedBudgetScope": "Only the explicitly registered completion-v2 route uses completion training; its GPU admission also has no total wall cutoff under its own execution policy. Legacy phase, operation, freshness, startup and cleanup rules remain unchanged."
+  },
+  "predecessor": {
+    "path": "data/ai-painter/system-governance/ai-painter-progress-publication-cpu-policy-v2.json",
+    "sha256": "e4c71f859201cccfac33afacec4f0ec731709c45d73d276886ab642d7c923403"
+  }
+}

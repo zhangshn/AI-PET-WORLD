@@ -6,6 +6,24 @@ import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-stor
 import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
 import { logicalProjectPath } from "./lib/ai-pet-world-storage.mjs"
 
+const correctionFlag = process.argv.indexOf("--source-correction")
+if (correctionFlag >= 0) {
+  const requestPath = process.argv[correctionFlag + 1]
+  if (!requestPath || process.argv.length !== 4) throw new Error("usage: --source-correction <explicit-request.json>")
+  const request = JSON.parse(fs.readFileSync(requestPath, "utf8"))
+  if (request.schemaVersion === "source-correction-dataset-release-request-v1") {
+    const { verifySourceCorrectionPublication, publishSourceCorrectionDataset } = await import("./lib/ai-painter-source-correction-publication-v1.mjs")
+    const result = request.operation === "verify"
+      ? await verifySourceCorrectionPublication({ root: process.cwd(), request })
+      : await publishSourceCorrectionDataset({ root: process.cwd(), request })
+    console.log(JSON.stringify(result, null, 2))
+    process.exit(0)
+  }
+  const { buildSourceCorrectionDatasetCandidate } = await import("./lib/ai-painter-source-correction-intake-v1.mjs")
+  console.log(JSON.stringify(await buildSourceCorrectionDatasetCandidate({ root: process.cwd(), request }), null, 2))
+  process.exit(0)
+}
+
 const ROOT = process.cwd()
 const POLICY_VERSION = "owner-authorized-ai-assisted-cold-start-v1"
 const WORLD_PROFILE_ID = "mainland-southeast-asia-tropical-monsoon-natural-home-v1"

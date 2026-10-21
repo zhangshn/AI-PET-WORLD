@@ -1,0 +1,2 @@
+#!/bin/sh
+exec "$AI_PET_WORLD_GIT_GUARD_NODE" "$AI_PET_WORLD_GIT_GUARD_SCRIPT" "$@"

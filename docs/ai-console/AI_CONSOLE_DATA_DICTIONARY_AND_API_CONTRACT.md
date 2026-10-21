@@ -1,16 +1,20 @@
 # AI控制台数据字典与API合同
 
-更新时间：2026-10-18 03:00:00 +08:00
+更新时间：2026-10-19 19:56:46 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-DATA-API-1.21`
+文档版本：`AI-CONSOLE-DATA-API-1.27`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
 ## 1. 文档职责
 
 本文定义AI控制台统一字段语义、连接状态、只读页面查询合同、错误语义和未来业务投影接入要求。
+
+1.25及1.26原始字节分别保留于[1.25快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.25-ba06d31d.txt)和[1.26快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.26-bbf615ce.txt)，仅供对应历史复核；当前接口以本版合同为准，不回退历史规范建立执行资格。
+
+训练接口接入遵循AI Painter主体规格15.4节：既有四类当前／历史／详情／制品GET与响应Schema保持，新增候选不新增API。新协议从同Run不可变包、计划及执行策略的`interfaceContract`读取，不从当前入口表重选历史身份；服务端只解释支持的协议及实现，不能信任任意Schema字符串。旧协议保留显式历史兼容表，不能据其授予新路线资格。进度、预览和计时共同验证候选、模型、输出根及策略绑定，不分别维护新候选名称名单。缺失、未知、冲突和过期分别投影；未登记图片不因磁盘存在而自动取得展示资格，GET不补证据或触发训练。
 
 ## 2. 字段条目标准
 
@@ -96,7 +100,7 @@ reasonCodes
 GET /api/ai-console/observability/current-execution
 ```
 
-响应Schema固定为`ai_console_ai_painter_current_execution_projection_v1`。接口不接受路径、Run、来源或历史选择参数，返回：
+响应Schema固定为`ai_console_ai_painter_current_execution_projection_v1`。接口不接受路径、Run、来源或历史选择参数。任意非空查询参数集合（含未知、空值、重复或编码后的参数名）均在读取当前证据前返回HTTP 400及`{ok:false,dataStatus:unknown_or_stale,reasonCode:current_execution_parameters_invalid}`，不静默忽略参数后返回当前身份。无参数查询保持原200／503响应、来源核验和无缓存语义，返回：
 
 ```text
 ok
@@ -182,15 +186,35 @@ GET /api/ai-console/training/history/{runId}/artifacts/{artifactId}
 
 #### 受管训练诊断预览
 
-预览继续沿本节既有历史详情、分页和制品接口返回，不新增训练Run专用API。采用主体规格第15.2及17.1节登记的预览v2、v3、v4或v5政策：终态`trainingPreviewManifest`绑定`training-preview-diagnostic-manifest-v1`，`entries`至多24项，每项包含`record`和`image`路径／SHA绑定；活动进度可通过同Run受信`latestTrainingPreview`绑定单项。两种来源独立核验，不扫描目录发现预览，不把历史或资源占用当作当前训练身份。
+预览继续沿本节既有历史详情、分页和制品接口返回，不新增训练Run专用API。采用主体规格第15.2及17.1节登记的预览v2至v9政策：终态`trainingPreviewManifest`绑定`training-preview-diagnostic-manifest-v1`，`entries`至多24项，每项包含`record`和`image`路径／SHA绑定；活动进度可通过同Run受信`latestTrainingPreview`绑定单项。两种来源独立核验，不扫描目录发现预览，不把历史或资源占用当作当前训练身份。
 
-版本兼容仅接受`ai-painter-training-preview-observation-policy-v2.json`、`ai-painter-training-preview-observation-policy-v3.json`、`ai-painter-training-preview-observation-policy-v4.json`或`ai-painter-training-preview-observation-policy-v5.json`与各自对应Schema。四者均位于`data/ai-painter/system-governance/`；v3及v4仅增加各自政策限定的新能力身份和输出根，v4对应联合优先候选；v5仅对应本候选260项源码核验兼容及其真实存储源码版本，不放宽预览数量、字节、安全或用途限制，不将旧资格带入新候选。读取器从同一计划与配置的精确政策绑定定位包输入，要求唯一匹配并重算字节，不扫描所有政策或放开任意路径。保留旧v2／v3／v4查询，未知版本、跨版本替换及路径／Schema／语义冲突拒绝；不改变轮询、分页、图像用途或其他接口字段。1.20原字节见[历史规范快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.20-c6c0a410.txt)，此前版本原字节亦保留。
+版本兼容仅接受`ai-painter-training-preview-observation-policy-v2.json`、`ai-painter-training-preview-observation-policy-v3.json`、`ai-painter-training-preview-observation-policy-v4.json`、`ai-painter-training-preview-observation-policy-v5.json`、`ai-painter-training-preview-observation-policy-v6.json`、`ai-painter-training-preview-observation-policy-v7.json`、`ai-painter-training-preview-observation-policy-v8.json`或`ai-painter-training-preview-observation-policy-v9.json`与各自对应Schema。各政策均位于`data/ai-painter/system-governance/`；v3及v4仅增加各自政策限定的新能力身份和输出根，v4对应联合优先候选；v5仅对应原联合优先候选260项源码核验兼容及其真实存储源码版本。v6对应decode_1入口精度24轮候选，v7对应主体1.98登记的同模型完成量训练身份及其版本感知生产／存储源码，v8对应主体1.99登记的GPU准入及训练均按完成量结束的执行身份，v9对应主体1.105登记的参数90同次取证执行身份；v6至v9源码上限均为256项，不继承v5例外。v9仍使用原预览记录、清单、捕获时点和未审核用途，独立绑定其能力、模型、政策及输出根，不改变数量、字节、新鲜度或读取权限。各版本不将旧资格带入新候选。读取器从同一计划与配置的精确政策绑定定位包输入，要求唯一匹配并重算字节，不扫描所有政策或放开任意路径。保留旧v2至v8查询，未知版本、跨版本替换及路径／Schema／语义冲突拒绝；不改变轮询、分页或图像用途。1.24原字节见[历史规范快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.24-f0e3d58c.txt)，1.23原字节见[历史规范快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.23-d581e573.txt)，1.22及此前版本原字节亦保留。
 
 记录采用`training-preview-diagnostic-record-v1`，绑定Run／package／能力／模型、政策／计划／执行包／数据清单、配置／程序摘要、train样本、原图／条件／世界事实、worldId／tick、Epoch／实际G与D步数／前向序号，以及`after_discriminator_update_before_generator_update`捕获时点。模型绑定只表示已核验身份元数据，不是当步权重快照。读取端须与既有包、计划、样本用途及真实文件字节交叉验证；未知格式、错误用途、路径／SHA冲突或跨Run记录不得成为可查看图片。
 
 核验通过的图片使用现有`role=image`、`evidenceKind=training_diagnostic_preview`和明确的未审核用途标签。`purpose=not_reviewed_diagnostic_only`，`formalOutput`、`checkpointSelectionEligible`、`qualificationEvidence`、`runtimePublicationEligible`均为false；即使外部数据带有`passed=true`也不得显示审核通过。预览不进入Checkpoint选优、正式审核结果、发布或Runtime链。
 
 仅在PNG和对应身份记录均已原子提交、重新读取核验后发布绑定。尚未捕获、捕获失败、已有文件但未提交、哈希冲突及来源未登记分别返回真实缺口；不得统一称为未训练或未保存。一个预览条目失败不能抹去原训练首错、终态、计数或其他合格图像。预览可见不改变整体历史覆盖声明；2秒轮询、分页、历史选择及既有安全限额保持。旧1.17原字节见[历史规范快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.17-1ccaca00.txt)，不作现行执行回退。
+
+#### 完成量训练与实际耗时
+
+下表主体1.99及1.105对应的执行版本，仅在同Run受信政策和配置明确绑定`gpuAdmissionWallMode=completion`及`gpuAdmissionSeconds=null`时解释为按固定48份完成GPU准入。它不是训练状态、GPU资格或训练耗时；沿用实际样本／计算计数、准入计时及同调用回执，不从空时限、心跳或显卡占用推导完成。旧版本仍按其原准入截止解释；有限启动、异常保护和停止清理时限保持，不新增接口或显示承诺。
+
+仅同Run受信政策和配置明确声明`trainingWallMode=completion`、`maxWallSeconds=null`，且属于下表已登记的完成量能力时，才可解释为“按24轮完成，不设训练总时限”。普通缺失值、旧能力的null或调用方标记仍是未知／冲突，不改变旧8400秒路线，也不以资源占用推断训练。轮数、优化步、分辨率、新鲜度与资格继续使用原独立字段，不预填预计完成时间。
+
+完成量观察的版本对应关系如下；每项仍须核验同Run政策、配置及真实字节绑定，不能仅按能力名称或本表授予资格：
+
+| 主体登记版本 | 能力身份 | 执行政策版本 | 预览政策版本 | 按完成量执行的范围 |
+|---|---|---|---|---|
+| 1.98 | `stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v1` | `ai-painter-decode1-entry-weight-quality-execution-policy-v2` | v7 | 24轮训练；GPU准入仍为原有限预算 |
+| 1.99 | `stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2` | `ai-painter-decode1-entry-weight-quality-execution-policy-v3` | v8 | 固定48份GPU准入及24轮训练 |
+| 1.105 | `stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1` | `ai-painter-decode1-entry-weight-quality-execution-policy-v4` | v9 | 固定48份GPU准入及24轮训练 |
+
+以上版本复用当前执行GET、历史详情及制品查询接口。接口Schema、字段语义和安全边界不因新Run或新能力身份改变；能力登记、实际进度发布、完成量读取与预览读取分别按其已登记政策验证对应身份。旧版本不因新版本接入而取得额外能力或重新解释历史终态。
+
+该新能力的可选`workerExecutionTiming`是同Run受信终态或活动进度中的`{path,sha256}`绑定，经既有详情／JSON制品接口读取`decode1-entry-worker-execution-timing-v1`记录；不根据目录或固定文件存在补造绑定。记录的能力、Run、package及`executionPackage`必须与父证据一致，JSON上限32KiB。`startedAtUtc`、`endedAtUtc`保留实际UTC；`elapsedSeconds`来自该worker单调时钟，不能用UTC差值、最后心跳或mtime代替。仅开始记录时结束和最终耗时均为null，不能记为0或完成；已捕获失败保留其真实停止原因，缺少最终记录则明确最终耗时未知。
+
+worker计时范围包含原认证、数据加载、模型准备、训练、Checkpoint及验证，不冒称纯优化器循环。受管阶段另含构建、传输及清理，整次生命周期再包含CPU准备、GPU准入和审核；不同范围不得混用。计时证据缺失或冲突不能抹掉可核验的原训练计数、首错、其他制品或终态，计时本身不授予任何模型或发布资格。旧运行不补写新字段，不新增API、后台或轮询机制。
 
 #### 通用历史查询规则
 
@@ -471,6 +495,7 @@ schemaVersion / recordSha256
 |---|---|---|
 | 400 | `invalid_workspace_identity` | 路由身份格式非法 |
 | 400 | `view_not_in_workspace_contract` | 视图不属于当前工作页 |
+| 400 | `current_execution_parameters_invalid`（`reasonCode`） | 当前执行查询包含参数，读取证据前拒绝；不将请求误解释为历史Run选择 |
 | 404 | `workspace_not_found` | 模块或工作页不存在 |
 | 500 | `catalog_integrity_failure` | 静态目录完整性失败 |
 | 400 | `control_command_*_invalid` / `control_command_*_not_allowed` | 控制命令身份、JSON、字段、类型、目标、修订、幂等键或原因不合法 |

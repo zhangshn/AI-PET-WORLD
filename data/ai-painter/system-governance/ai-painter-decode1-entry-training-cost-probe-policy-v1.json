@@ -1,0 +1,192 @@
+{
+  "schemaVersion": "ai-painter-decode1-entry-training-cost-probe-policy-v1",
+  "status": "registered_one_shot_zero_update_cost_diagnostic_not_training",
+  "capabilityVersion": "stage4_mvp256_dry_decode1_entry_training_cost_probe_v1",
+  "purpose": "Locate inclusive host costs on one unchanged decode1 training-sample zero-update path; no training-throughput or historical-root-cause qualification.",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.97",
+    "sha256": "68a67a265968d013a7d87d926478398bb81e3625072b7e84b1d126f64d1eadc0"
+  },
+  "entrypointPath": "scripts/diagnose-ai-painter-decode1-entry-training-cost-v1.mjs",
+  "workerPath": "ml/ai-painter/scripts/diagnose_decode1_entry_training_cost_gpu_v1.py",
+  "outputRoot": ".runtime/ai-painter/decode1-entry-training-cost-probes",
+  "allowedModes": [
+    "cpu_prepare",
+    "gpu_probe"
+  ],
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "modelCapabilityVersion": "stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1",
+    "sampleSplit": "train",
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "sampleSelector": "first_row_of_exact_parent_train_split",
+    "sampleCount": 1,
+    "initializationSeed": 20260929,
+    "freshInitializationOnly": true,
+    "readValidationChallengeRegressionContents": false,
+    "readHistoricalOrFailureWeights": false,
+    "originalDataSplits": "48/8/4/4 unchanged",
+    "trainingWallSecondsUnchanged": 8400
+  },
+  "parentEvidence": {
+    "scope": "Read-only lineage and frozen configuration; no parent admission, replay, state restoration or execution authority.",
+    "runId": "decode1-entry-quality-v1-054b3669-3a3f-45e9-a647-66502fcb5fcb",
+    "package": {
+      "path": ".runtime/ai-painter/autonomous-closed-loop-packages/decode1-entry-quality-v1-package-054b3669-3a3f-45e9-a647-66502fcb5fcb/package.json",
+      "sha256": "d696c919592dac0f63a766a4623a8fb5e7dc928dd8a8ccb979f9a865ef05d9c2"
+    },
+    "plan": {
+      "path": ".runtime/ai-painter/decode1-entry-weight-quality-executions/decode1-entry-quality-v1-054b3669-3a3f-45e9-a647-66502fcb5fcb/quality-plan.json",
+      "sha256": "9f1c1aa289cf41d50ce8ac348ae209285bc34f0f27710d43b0ec860d6dda1d94"
+    },
+    "modelIdentity": {
+      "path": ".runtime/ai-painter/decode1-entry-weight-quality-executions/decode1-entry-quality-v1-054b3669-3a3f-45e9-a647-66502fcb5fcb/model-identity.json",
+      "sha256": "42c278fa9fee5a5e70194884be7670e8615f5230e43856207e880f3e7d457a59"
+    },
+    "failure": {
+      "path": ".runtime/ai-painter/decode1-entry-weight-quality-executions/decode1-entry-quality-v1-054b3669-3a3f-45e9-a647-66502fcb5fcb/execution-failure.json",
+      "sha256": "208232778d8a0cb9afb1e48cac9450ca940a475c6bb09d59eaac6b53968c4203"
+    },
+    "originalSpecification": {
+      "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+      "sha256": "f33115ca81ff3704e5b47d29f2927c5db9a5e0e97045a04b10813e646506557b"
+    },
+    "originalSpecificationSnapshot": {
+      "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.96-f33115ca.txt",
+      "sha256": "f33115ca81ff3704e5b47d29f2927c5db9a5e0e97045a04b10813e646506557b"
+    }
+  },
+  "modelBoundary": {
+    "parameterCount": 108,
+    "parameterElements": 2242687,
+    "allOriginalLossAndGradientGatesKept": true,
+    "originalFiveVjpBridgeKept": true,
+    "originalJointPriorityArithmeticKept": true,
+    "originalPrecisionRulesForParameters48_52_60_88Kept": true,
+    "frozenAlgorithmBindings": [
+      {
+        "path": "ml/ai-painter/scripts/painter_stage4_decode1_entry_weight_training_profile_v1.py",
+        "sha256": "0a69a96ad0446f91a1fc41f60589fa4e5adc3275edc51e0756e7166e01485c5c"
+      },
+      {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/decode1_entry_weight_reduction_precision_v1.py",
+        "sha256": "2ee9e87343509c298f9cdd44fbbd004bf66690c64cf9edd68a636a2b673e51a6"
+      },
+      {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_decode1_entry_joint_priority_device_v1.py",
+        "sha256": "8fd5c2c8a47446cd07c2a6da0f0c503a916b92fd15d97a253770f5a547b23066"
+      },
+      {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_entry_weight_precision_v1.py",
+        "sha256": "4913645e95b731ea5e51512a726cd2fd777938639122e853289de15308a44083"
+      },
+      {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_joint_rgb_structure_priority_update_cpu_v1.py",
+        "sha256": "99c437fe1cdf31229257c25716736e3c2f580a58f99fde8297c5e06611920324"
+      }
+    ]
+  },
+  "sourceBoundary": {
+    "maximumFiles": 256,
+    "maximumSingleSourceBytes": 1048576,
+    "maximumTotalSourceBytes": 16777216,
+    "uniquePathShaRequired": true,
+    "bindActualImportedAndExecutedDependencies": true,
+    "allowedNewProgramPaths": [
+      "scripts/diagnose-ai-painter-decode1-entry-training-cost-v1.mjs",
+      "scripts/tests/ai-painter-decode1-entry-training-cost-v1.test.mjs",
+      "ml/ai-painter/scripts/diagnose_decode1_entry_training_cost_gpu_v1.py",
+      "ml/ai-painter/tests/test_decode1_entry_training_cost_gpu_v1.py"
+    ],
+    "scopedParentSpecificationMappingOnly": true,
+    "noGlobalReaderOrFrozenParentSourceMutation": true
+  },
+  "resources": {
+    "cpuPreparationSeconds": 120,
+    "gpuDiagnosticSeconds": 180,
+    "cpuThreads": 2,
+    "cpuAffinityCores": 2,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "temperatureComparison": "strictly_less_than",
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputBytes": 134217728,
+    "maxStreamBytes": 8388608,
+    "maxTimingJsonBytes": 32768,
+    "maxTimingAtomicTemporaryBytes": 32768,
+    "failureTerminalReserveBytes": 65536
+  },
+  "executionBoundary": {
+    "cpuPreparationAttempts": 1,
+    "gpuAttempts": 1,
+    "automaticRetries": 0,
+    "cpuFailureMayEnterGpu": false,
+    "realModelForwardsDuringCpuPreparation": 0,
+    "realAutogradDuringCpuPreparation": 0,
+    "cudaInitializationsDuringCpuPreparation": 0,
+    "generatorForwardsMaximum": 1,
+    "generatorAutogradMaximum": 5,
+    "discriminatorAutogradMaximum": 1,
+    "optimizerConstructions": 0,
+    "optimizerUpdates": 0,
+    "writePng": false,
+    "writeCheckpoint": false,
+    "training": false,
+    "replayConsumedParent": false,
+    "preserveAllOriginalResourceChecksAndFrequencies": true,
+    "reuseExistingNativeJobAndUniqueGuard": true,
+    "reuseExistingCurrentExecutionRegistryWriter": true,
+    "latestTrainingTerminalMayChange": false,
+    "allModelStateRngModesAndRequiresGradRestored": true
+  },
+  "observation": {
+    "clock": "host_monotonic_elapsed_not_gpu_kernel_time",
+    "schemaVersion": "ai-painter-decode1-entry-training-cost-observation-v1",
+    "observeOnlyExistingOperations": true,
+    "extraCudaEvents": 0,
+    "extraCudaSynchronizations": 0,
+    "extraModelCalls": 0,
+    "extraGradientCalls": 0,
+    "saveTensors": false,
+    "saveUnboundedEvents": false,
+    "requiredCostGroups": [
+      "authentication",
+      "data_load",
+      "fresh_model_setup",
+      "device_setup",
+      "generator_forward",
+      "generator_vjp_components",
+      "carrier_and_cpu_joint_processing",
+      "discriminator_vjp",
+      "resource_checks"
+    ],
+    "unseparableCostsMustRemainAggregated": true,
+    "parentChildSpansAreNotIndependentCosts": true,
+    "cannotAttributeFullTrainingOrHistoricalState": true
+  },
+  "finalization": {
+    "allowedResults": [
+      "probe_completed_no_training_qualification",
+      "failed_closed"
+    ],
+    "requireOriginalCallCounts": true,
+    "requireModelAndRngUnchanged": true,
+    "requireRetainedProcessAndPipeCleanupProof": true,
+    "unknownMustNotBecomeZero": true,
+    "failurePreservesFirstErrorAndCommittedObservations": true,
+    "uncommittedObservationsMustNotBeReconstructed": true,
+    "noAutomaticFollowupTraining": true
+  },
+  "grants": {
+    "trainingQualification": false,
+    "visualQualification": false,
+    "stage4Qualification": false,
+    "capabilityRelease": false,
+    "runtimeRelease": false
+  }
+}

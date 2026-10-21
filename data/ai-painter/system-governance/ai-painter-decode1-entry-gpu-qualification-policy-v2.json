@@ -1,0 +1,354 @@
+{
+  "schemaVersion": "ai-painter-decode1-entry-gpu-qualification-policy-v2",
+  "status": "registered_qualification_route_not_qualified",
+  "capabilityVersion": "stage4_mvp256_dry_decode1_entry_gpu_qualification_v2",
+  "modelCapabilityVersion": "stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.93",
+    "sha256": "756eced0d7efd0b42e92547fe3b8a0b7fec7db97724699fbe9ac3b289acf6c9a"
+  },
+  "allowedModes": [
+    "cpu_prepare",
+    "gpu_qualify"
+  ],
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "worldCount": 1,
+    "trainSamples": 48,
+    "validationSamples": 8,
+    "splitCapacity": "48/8/4/4 unchanged",
+    "initializationSeed": 20260929,
+    "waterFactPresent": false,
+    "buildingsRequired": false,
+    "personalityRequired": false,
+    "challengeAndRegressionContentRead": false
+  },
+  "target": {
+    "parameterIndex": 48,
+    "parameterName": "core.core.terrain.decode_1.layers.0.weight",
+    "weightShape": [
+      48,
+      144,
+      3,
+      3
+    ]
+  },
+  "dataBindings": {
+    "datasetManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+      "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"
+    },
+    "trainSplit": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/train.json",
+      "sha256": "e1edd2c189800e4a0e0ce4ac4d208b36b58bfde0d50328a931a9e664da27b723"
+    },
+    "validationSplit": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-fresh-lineage-573f8a6ec39527b77e074f04329e87a975a41dd34ae178392715353e56d041d8/splits/validation.json",
+      "sha256": "1daa22941edae95ad408caf5e4eb57ab1354141ff20cd788e637569d52587761"
+    },
+    "conditionContract": {
+      "path": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+      "sha256": "c8941c7730edb73c0b0a733bc877cf550184e2f3ab2adb08102fb0214d38cac2"
+    },
+    "regimeDiagnostic": {
+      "path": ".runtime/ai-painter/stage4-mvp256-dry-v27-v3-executions/mvp256-dry-v27-v3-43ec72f180bd1a412baf3aa8de15a36de9730f65bebf8117/dry-review/diagnostics/generalization-034fbef2a60847e3e2b7d9ec6a7c830dee89e1c11a1e77fbf306fc86bae13e72/report.json",
+      "sha256": "4639d25a8c0f0bc2f60592c15b23971de3a17b131124ea54df52568c4139a09e"
+    }
+  },
+  "priorCpuEvidence": {
+    "acceptance": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter48-review-20261018/decode1-entry-candidate-cpu-acceptance-v1.json",
+      "sha256": "6f1c0a870e8565807dfff34061514dddccb85d0da09b1a37343eaebc779ca689"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/decode1-entry-weight-precision-cpu-checks/decode1-entry-cpu-1eef1a3c-001b-4c26-9a9c-7cca5314238d/terminal.json",
+      "sha256": "1026ff8092dc6276f43bc51998ffec8ffdf5489852c356727ea8499bbada35fd",
+      "bytes": 29371
+    },
+    "request": {
+      "path": ".runtime/ai-painter/decode1-entry-weight-precision-cpu-checks/decode1-entry-cpu-1eef1a3c-001b-4c26-9a9c-7cca5314238d/request.json",
+      "sha256": "7b9aecb21676d5e1a33a6c10962ecc3b0ce32697dbe64b4dd0295bf429a2bca4",
+      "bytes": 24409
+    },
+    "policy": {
+      "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-precision-cpu-policy-v1.json",
+      "sha256": "dc47575ebba60ae13a04be0d934aabf8cc0dc55315f17376c5412f8df07f7237",
+      "bytes": 10163
+    },
+    "originalNormativeBytes": {
+      "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.91-d58ad795.txt",
+      "sha256": "d58ad7953aacf331bfa3be8f32651b7f11a466b23d9ef4237b5d303d16d7a823"
+    },
+    "scope": "Reuse only exact unchanged model/operator bytes and their finite synthetic/one-sample CPU conclusions, not the prior host/source closure or GPU qualification.",
+    "oldAttemptReplayAllowed": false,
+    "grantsGpuOrTrainingQualification": false
+  },
+  "frozenCpuModelBindings": [
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/decode1_entry_weight_reduction_precision_v1.py",
+      "sha256": "2ee9e87343509c298f9cdd44fbbd004bf66690c64cf9edd68a636a2b673e51a6"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_entry_weight_precision_v1.py",
+      "sha256": "4913645e95b731ea5e51512a726cd2fd777938639122e853289de15308a44083"
+    }
+  ],
+  "originalSourceLocator": {
+    "path": ".runtime/ai-painter/joint-object-priority-quality-executions/joint-object-quality-v1-c6ec20e3-a5bc-4969-9bb8-437f47fa2802/gradient-failure/manifest.json",
+    "sha256": "cd809d9c4d7d59507fdcadad78eae09cb1a76c52f4f84830f6c18611a43f3c1a",
+    "bytes": 369744
+  },
+  "sourceAlgorithmBindings": [
+    {
+      "role": "parameter60_causal_restore_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/parameter60_causal_restore_v1.py",
+        "sha256": "edb87370b17ff1760b5dd812877a64c33fbbdc39199821b0ae31b9c6d9e71547"
+      }
+    },
+    {
+      "role": "painter_stage4_joint_object_priority_training_profile_v1",
+      "binding": {
+        "path": "ml/ai-painter/scripts/painter_stage4_joint_object_priority_training_profile_v1.py",
+        "sha256": "c80f98a207f0f6e7414331a9bf0885dad61c476c3c209c035ffa4c93476910cc"
+      }
+    },
+    {
+      "role": "object_joint_rgb_structure_priority_update_device_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_joint_rgb_structure_priority_update_device_v1.py",
+        "sha256": "95bd389afab7e94bbdf78909f8df70292deacaf7a019a3991ee4a047e99a18e7"
+      }
+    },
+    {
+      "role": "object_joint_rgb_structure_priority_update_cpu_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_joint_rgb_structure_priority_update_cpu_v1.py",
+        "sha256": "99c437fe1cdf31229257c25716736e3c2f580a58f99fde8297c5e06611920324"
+      }
+    },
+    {
+      "role": "object_support_structure_failure_capture_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_failure_capture_v1.py",
+        "sha256": "6363c4065b9dbec4376594d56664d6c0ecfdb395df61879f9045b2e75cb9e153"
+      }
+    },
+    {
+      "role": "native_rgb_structured_object_cpu_v17",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_cpu_v17.py",
+        "sha256": "e8b18b5e5d7b29befab908bb0a521b0f21b66d927ca2b8e2db99a11287063e78"
+      }
+    },
+    {
+      "role": "native_rgb_complete_support_partition_v23_cpu",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_complete_support_partition_v23_cpu.py",
+        "sha256": "c455e642631352eaaa14cce7070d23260a7fe9abd189591d99e2f8863acca50f"
+      }
+    }
+  ],
+  "nodeInterpreter": {
+    "path": "C:\\Program Files\\nodejs\\node.exe",
+    "sha256": "63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088"
+  },
+  "metadataCanonicalProgram": {
+    "path": "scripts/lib/real-earth-region-governance.mjs",
+    "sha256": "c4ae942c1f44a60fad1650f02c9dccb0f780472638693e7146fbbe9a2dc85af1"
+  },
+  "resources": {
+    "cpuPreparationSeconds": 240,
+    "gpuQualificationSeconds": 720,
+    "threads": 2,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "cpuOutputBytes": 8388608,
+    "gpuOutputBytes": 16777216,
+    "totalOutputBytes": 134217728,
+    "maxStreamBytes": 8388608,
+    "failureReserveBytes": 65536,
+    "cleanupReserveMs": 1000,
+    "finalizationReserveMs": 8000,
+    "attempts": 1,
+    "automaticRetries": 0
+  },
+  "sourceClosure": {
+    "maximumEntries": 256,
+    "maximumFileBytes": 1048576,
+    "maximumTotalBytes": 16777216,
+    "actualLoadedModulesMustBeBound": true,
+    "old260ExceptionInherited": false
+  },
+  "cpuPreparation": {
+    "modelForwards": 0,
+    "generatorAutograd": 0,
+    "discriminatorAutograd": 0,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "cudaCalls": 0,
+    "validationLoadSamples": 8,
+    "trainImageContentRead": false,
+    "scope": "metadata, own adapter component/request ABI, fresh model identity and original fixed-eight validation loading only; no selection"
+  },
+  "gpuQualification": {
+    "sampleSplit": "train",
+    "sampleCount": 48,
+    "generatorForwardsPerSample": 1,
+    "generatorAutogradPerSample": 5,
+    "discriminatorAutogradPerSample": 1,
+    "totalGeneratorForwards": 48,
+    "totalGeneratorAutograd": 240,
+    "totalDiscriminatorAutograd": 48,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "samePackageRequired": true,
+    "stateAndRngUnchanged": true,
+    "oldQualificationReusable": false
+  },
+  "comparison": {
+    "atol": 0.000001,
+    "rtol": 0.00001,
+    "originalScalarAndGradientGatesKept": true,
+    "jointPriorityArithmeticUnchanged": true,
+    "projectionRoundoffBoundUnchanged": true
+  },
+  "executionBoundary": {
+    "cpuPreparation": true,
+    "gpuQualification": true,
+    "training": false,
+    "checkpoint": false,
+    "png": false,
+    "publication": false,
+    "failedStateInitialization": false,
+    "automaticRetry": false,
+    "automaticLayerExtension": false
+  },
+  "qualification": {
+    "gpuQualified": false,
+    "trainingAllowed": false,
+    "checkpointWritten": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "runtimeFrameAllowed": false
+  },
+  "implementations": {
+    "host": "scripts/qualify-ai-painter-decode1-entry-gpu-v2.mjs",
+    "worker": "ml/ai-painter/scripts/qualify_decode1_entry_gpu_v2.py",
+    "deviceBridge": "ml/ai-painter/src/ai_painter/complete_world/object_decode1_entry_joint_priority_device_v1.py",
+    "nodeTests": "scripts/tests/ai-painter-decode1-entry-gpu-v2.test.mjs",
+    "pythonTests": "ml/ai-painter/tests/test_decode1_entry_gpu_qualification_cpu_v2.py",
+    "sharedNativeWorker": "scripts/lib/ai-painter-decode1-entry-qualification-owned-worker-v2.mjs"
+  },
+  "wireProtocols": {
+    "package": "decode1-entry-gpu-qualification-package-v2",
+    "request": "decode1-entry-gpu-qualification-request-v2",
+    "worker": "decode1-entry-gpu-qualification-worker-result-v2"
+  },
+  "packageFields": [
+    "schemaVersion",
+    "runId",
+    "capabilityVersion",
+    "modelCapabilityVersion",
+    "policy",
+    "programBindings",
+    "interpreter",
+    "nodeInterpreter",
+    "scope",
+    "resources",
+    "dataBindings",
+    "frozenCpuModelBindings"
+  ],
+  "outputRoot": ".runtime/ai-painter/decode1-entry-gpu-qualifications-v2",
+  "attemptClaimPath": ".runtime/ai-painter/decode1-entry-gpu-qualifications-v2/attempt-v1.json",
+  "failureEvidence": {
+    "maxJsonBytes": 65536,
+    "fields": [
+      "firstError",
+      "sampleIdentity",
+      "actualCounts",
+      "finiteGradientSummaries",
+      "cleanup"
+    ],
+    "fullSnapshotCaptured": false,
+    "firstErrorPreserved": true,
+    "noAdditionalForwardOrAutograd": true
+  },
+  "cleanup": {
+    "sameNativeJobAndGuard": true,
+    "proof": "this_invocation_live_owner_pipe_and_empty_job_proof_only",
+    "unknownCleanup": "retain_guard_and_fail_closed",
+    "automaticRecovery": false
+  },
+  "registry": {
+    "path": ".runtime/ai-painter/current-execution-registry/current.json",
+    "sameWriter": true,
+    "latestTrainingTerminalUnchanged": true,
+    "qualificationIsTraining": false
+  },
+  "stopRules": [
+    "Exactly one CPU preparation and, only after that same immutable package is accepted, one zero-update GPU qualification.",
+    "Failure, resource exhaustion or conflicting evidence closes the route without retry or changing model/data/Loss/tolerance.",
+    "CPU and GPU completion never starts training, Checkpoint selection/write, formal Stage4 or release.",
+    "Historical training, diagnostics and consumed CPU support stay closed and byte-preserved; changed shared-host code does not inherit their source qualification.",
+    "v2 changes only source identity lookup and necessary isolated version wiring. v1 code/policy/claims/failure bytes remain unchanged; no implicit extra execution."
+  ],
+  "frozenDeviceBridge": {
+    "path": "ml/ai-painter/src/ai_painter/complete_world/object_decode1_entry_joint_priority_device_v1.py",
+    "sha256": "8fd5c2c8a47446cd07c2a6da0f0c503a916b92fd15d97a253770f5a547b23066"
+  },
+  "sourceIdentityMatching": {
+    "rule": "unique_program_path_and_exact_sha256_not_descriptive_role_key",
+    "missing": "reject_before_sample_or_model_compute",
+    "duplicatePath": "reject_even_when_same_sha256",
+    "sha256Conflict": "reject_before_sample_or_model_compute",
+    "independentHelper": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/parameter60_causal_restore_v1.py",
+      "sha256": "edb87370b17ff1760b5dd812877a64c33fbbdc39199821b0ae31b9c6d9e71547"
+    },
+    "metadataRoleRenamingAllowed": false
+  },
+  "predecessorFailure": {
+    "policy": {
+      "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-gpu-qualification-policy-v1.json",
+      "sha256": "526a4a3748449a795dcd3cb373c228d245ac52de1ae1b73c6cae0df2cced39eb",
+      "bytes": 12182
+    },
+    "claim": {
+      "path": ".runtime/ai-painter/decode1-entry-gpu-qualifications/attempt-v1.json",
+      "sha256": "706854bc74995840920b97ef391eab55dc06f4f231f06d9ec23cc7949291537b",
+      "bytes": 386
+    },
+    "package": {
+      "path": ".runtime/ai-painter/decode1-entry-gpu-qualifications/decode1-entry-qualification-2f87b2f3-e8a8-4b9b-9e5c-a0ac9ce6aa6b/package.json",
+      "sha256": "967e30ba5bf761373f5a91c011a9c182b57437dbda2cf1f4d567cd5e036b292a",
+      "bytes": 40705
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/decode1-entry-gpu-qualifications/decode1-entry-qualification-2f87b2f3-e8a8-4b9b-9e5c-a0ac9ce6aa6b/cpu-terminal.json",
+      "sha256": "394898abf4707dc5ea7466cb5720f3b6d1eac3d43dd7fc09d498e1ac1b45472e",
+      "bytes": 10007
+    },
+    "workerFailure": {
+      "path": ".runtime/ai-painter/decode1-entry-gpu-qualifications/decode1-entry-qualification-2f87b2f3-e8a8-4b9b-9e5c-a0ac9ce6aa6b/cpu-worker-failure.json",
+      "sha256": "20186cdc1c93192a70841f35d0f47243fa9f5dabf5fc4c68fa99529cab4f26df",
+      "bytes": 3704
+    },
+    "controllerReview": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter48-review-20261018/decode1-entry-gpu-qualification-acceptance-v1.json",
+      "sha256": "1377b43ad5628c2406323d428c45eb75a9517f7a10f10a204e6d2ac9c5064b99"
+    },
+    "normativeBytes": {
+      "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.92-b57bfd18.txt",
+      "sha256": "b57bfd1856ddb3092940acf4518b543d15087e959865abe877c843bee646e8dd"
+    },
+    "replayAllowed": false,
+    "oldQualificationReusable": false
+  }
+}

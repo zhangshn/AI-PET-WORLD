@@ -6,9 +6,11 @@ import {
   ORIGINAL_IMAGE_COLLECTION_ID,
   ORIGINAL_IMAGE_INDEX_SCHEMA_VERSION,
   ORIGINAL_IMAGE_RECORD_SCHEMA_VERSION,
+  CURRENT_ORIGINAL_IMAGE_INTAKE_SCHEMA_VERSION,
   directorySegmentsForRequest,
   isBlockedOriginalImageSource,
   isOwnerAuthorizedAiAssistedColdStartSource,
+  isCurrentPolicyAiAssistedColdStartSource,
   isSafeOriginalImageId,
   validateOriginalImageIntakeRequest,
 } from "./lib/original-image-library-contract.mjs"
@@ -27,8 +29,9 @@ let handlingFatalError = false
 function handleFatalError(error) {
   if (handlingFatalError) process.exit(1)
   handlingFatalError = true
-  if (activeStagingDirectory && fs.existsSync(activeStagingDirectory)) fs.rmSync(activeStagingDirectory, { recursive: true, force: true })
-  if (!indexCommitted && activeFinalDirectory && fs.existsSync(activeFinalDirectory)) fs.rmSync(activeFinalDirectory, { recursive: true, force: true })
+  const preserveCurrentEvidence = activeRequest?.schemaVersion === CURRENT_ORIGINAL_IMAGE_INTAKE_SCHEMA_VERSION
+  if (!preserveCurrentEvidence && activeStagingDirectory && fs.existsSync(activeStagingDirectory)) fs.rmSync(activeStagingDirectory, { recursive: true, force: true })
+  if (!preserveCurrentEvidence && !indexCommitted && activeFinalDirectory && fs.existsSync(activeFinalDirectory)) fs.rmSync(activeFinalDirectory, { recursive: true, force: true })
   const rejectionId = `original-image-intake-rejected-${startedAtUtc.replace(/[:.]/g, "-")}`
   const rejection = {
     schemaVersion: "original-image-intake-rejection-v1",
@@ -42,6 +45,8 @@ function handleFatalError(error) {
     reason: error instanceof Error ? error.message : String(error),
     recordCreated: indexCommitted,
     indexUpdated: indexCommitted,
+    ...(preserveCurrentEvidence ? { preservedStagingDirectory: activeStagingDirectory ? projectPath(activeStagingDirectory) : null,
+      preservedRecordDirectory: activeFinalDirectory ? projectPath(activeFinalDirectory) : null } : {}),
     automaticStorage: true,
   }
   const rejectionPath = path.join(FAILURE_ROOT, `${rejectionId}.json`)
@@ -54,14 +59,19 @@ process.on("uncaughtException", handleFatalError)
 process.on("unhandledRejection", handleFatalError)
 
 const requestArg = argumentValue("--request")
-assert(requestArg, "usage: npm run intake:original-image -- --request <original-image-intake-request-v1.json>")
+assert(requestArg, "usage: npm run intake:original-image -- --request <original-image-intake-request-v1-or-v2.json>")
 const requestPath = resolveProjectPath(requestArg)
-const request = readJson(requestPath)
+const requestBytes = fs.readFileSync(requestPath)
+const request = JSON.parse(requestBytes.toString("utf8"))
 activeRequestPath = requestPath
 activeRequest = request
 
 const failures = validateOriginalImageIntakeRequest(request)
 assert(failures.length === 0, `original image intake rejected: ${failures.join(", ")}`)
+const currentPolicyIntake = isCurrentPolicyAiAssistedColdStartSource(request)
+const currentSourceVerification = currentPolicyIntake
+  ? await (await import("./lib/ai-painter-source-correction-intake-v1.mjs")).verifyCurrentSourceCorrection({ root: ROOT, request })
+  : null
 
 const visualSnapshotPath = resolveProjectPath(request.worldBinding.snapshotPath)
 assert(fs.existsSync(visualSnapshotPath) && fs.statSync(visualSnapshotPath).isFile(), "visual snapshot does not exist")
@@ -90,6 +100,7 @@ if (request.categoryId === "complete-maps") {
 }
 
 const imageSha256 = sha256(imageBytes)
+if (currentSourceVerification) assert(imageSha256 === request.sourceCorrection.image.sha256, "current source bytes changed after verification")
 const recordId = request.recordId ?? `${request.categoryId.replace(/s$/, "")}-${imageSha256.slice(0, 16)}`
 assert(isSafeOriginalImageId(recordId), "recordId contains unsupported characters or length")
 const segments = directorySegmentsForRequest(request)
@@ -107,10 +118,28 @@ const stagingRequestPath = path.join(stagingDirectory, "request.json")
 const stagingImagePath = path.join(stagingDirectory, "source", `original${imageExtension}`)
 const indexPath = path.join(LIBRARY_ROOT, "index.json")
 const libraryManifestPath = path.join(LIBRARY_ROOT, "library.json")
-const existingIndex = readIndex(indexPath)
+if (currentPolicyIntake) {
+  const physicalLibrary = fs.realpathSync(LIBRARY_ROOT)
+  for (const candidate of [categoryDirectory, indexPath, libraryManifestPath]) {
+    const relative = path.relative(physicalLibrary, fs.realpathSync(candidate))
+    assert(relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative),
+      "current intake output escaped the original library")
+  }
+}
+const existingIndexBytes = fs.existsSync(indexPath) ? fs.readFileSync(indexPath) : null
+const existingIndex = readIndex(existingIndexBytes)
+const existingIndexSha256 = existingIndexBytes ? sha256(existingIndexBytes) : null
 const duplicate = existingIndex.records.find((record) => record.originalImage?.sha256 === imageSha256)
 if (duplicate) {
   const storedRecord = readJson(resolveProjectPath(duplicate.recordPath))
+  if (currentPolicyIntake) {
+    assert(storedRecord.recordId === request.recordId
+      && storedRecord.sourceCorrection?.intakeRequest?.sha256 === sha256(requestBytes), "duplicate image has a different source identity")
+    currentSourceVerification.verifyStable()
+    console.log(JSON.stringify({ status: "already_intaked", recordId: duplicate.recordId,
+      recordPath: duplicate.recordPath, imageSha256, formalTrainingSampleCreated: false }, null, 2))
+    process.exit(0)
+  }
   const hydratedRecords = existingIndex.records.map((item) => item.recordId === duplicate.recordId
     ? hydrateIndexRecord(item, storedRecord)
     : item)
@@ -137,7 +166,14 @@ fs.copyFileSync(requestPath, stagingRequestPath, fs.constants.COPYFILE_EXCL)
 
 const createdAtUtc = new Date().toISOString()
 const blocked = isBlockedOriginalImageSource(request)
-const aiAssistedColdStart = isOwnerAuthorizedAiAssistedColdStartSource(request)
+const aiAssistedColdStart = currentPolicyIntake || isOwnerAuthorizedAiAssistedColdStartSource(request)
+const currentEvidencePath = path.join(recordDirectory, "source-intake-evidence.json")
+let currentEvidenceBinding = null
+if (currentSourceVerification) {
+  const bytes = Buffer.from(`${JSON.stringify(currentSourceVerification.receipt, null, 2)}\n`)
+  fs.writeFileSync(path.join(stagingDirectory, "source-intake-evidence.json"), bytes, { flag: "wx" })
+  currentEvidenceBinding = { path: projectPath(currentEvidencePath), sha256: sha256(bytes) }
+}
 const record = {
   schemaVersion: ORIGINAL_IMAGE_RECORD_SCHEMA_VERSION,
   recordId,
@@ -164,9 +200,17 @@ const record = {
   classification: request.classification,
   reviews: {
     machineReviewStatus: "not_started",
-    ownerReviewStatus: "pending_review",
-    ipReviewStatus: blocked ? "blocked_by_source" : aiAssistedColdStart ? "owner_authorized_ai_cold_start_pending_review" : "pending_review",
+    ...(currentPolicyIntake ? {} : { ownerReviewStatus: "pending_review" }),
+    ipReviewStatus: currentPolicyIntake ? "provenance_evidence_bound_review_pending"
+      : blocked ? "blocked_by_source" : aiAssistedColdStart ? "owner_authorized_ai_cold_start_pending_review" : "pending_review",
   },
+  ...(currentPolicyIntake ? { sourceCorrection: {
+    schemaVersion: "source-correction-original-record-v1",
+    intakeRequest: { path: projectPath(archivedRequestPath), sha256: sha256(requestBytes) },
+    intakeEvidence: currentEvidenceBinding,
+    parentSampleId: request.sourceCorrection.parentSampleId,
+    split: "train", trainingQualified: false,
+  } } : {}),
   copiedArtifacts,
   requestPath: projectPath(archivedRequestPath),
   recordPath: projectPath(recordPath),
@@ -192,6 +236,7 @@ const indexRecord = {
   source: record.source,
   aiAssistedColdStart: record.aiAssistedColdStart,
   conditionBinding: record.conditionBinding,
+  ...(record.sourceCorrection ? { sourceCorrection: record.sourceCorrection } : {}),
   rebuild64Sequence: record.rebuild64Sequence,
   worldBinding: record.worldBinding,
   classification: record.classification,
@@ -219,6 +264,13 @@ const nextIndex = {
   collectionId: ORIGINAL_IMAGE_COLLECTION_ID,
   updatedAt: createdAtUtc,
   records: [...existingIndex.records, indexRecord],
+}
+if (currentSourceVerification) {
+  currentSourceVerification.verifyStable()
+  assert(sha256(fs.readFileSync(stagingImagePath)) === imageSha256, "stored source bytes differ")
+  assert(sha256(fs.readFileSync(stagingRequestPath)) === sha256(requestBytes), "archived intake request differs")
+  assert((fs.existsSync(indexPath) ? sha256(fs.readFileSync(indexPath)) : null) === existingIndexSha256,
+    "original library index changed during intake; candidate evidence retained")
 }
 commitStagingDirectory(stagingDirectory, recordDirectory)
 activeStagingDirectory = null
@@ -249,9 +301,9 @@ console.log(JSON.stringify({
   formalTrainingSampleCreated: false,
 }, null, 2))
 
-function readIndex(filePath) {
-  if (!fs.existsSync(filePath)) return { schemaVersion: ORIGINAL_IMAGE_INDEX_SCHEMA_VERSION, collectionId: ORIGINAL_IMAGE_COLLECTION_ID, records: [] }
-  const value = readJson(filePath)
+function readIndex(bytes) {
+  if (bytes === null) return { schemaVersion: ORIGINAL_IMAGE_INDEX_SCHEMA_VERSION, collectionId: ORIGINAL_IMAGE_COLLECTION_ID, records: [] }
+  const value = JSON.parse(bytes.toString("utf8"))
   assert(value.schemaVersion === ORIGINAL_IMAGE_INDEX_SCHEMA_VERSION, "original image index schema is invalid")
   assert(value.collectionId === ORIGINAL_IMAGE_COLLECTION_ID, "original image index collection is invalid")
   assert(Array.isArray(value.records), "original image index records are invalid")

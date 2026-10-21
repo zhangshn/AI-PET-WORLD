@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "source-correction-dataset-candidate-v1",
+  "packageId": "source-correction64-0a680355dd12746000e223d7bdab283cd40d93e83af869585766f135d3f76d5c",
+  "candidateIdentity": "source-correction64-0a680355dd12746000e223d7bdab283cd40d93e83af869585766f135d3f76d5c",
+  "datasetReleaseIdentity": null,
+  "createdAtUtc": "2026-10-19T21:37:40.372Z",
+  "status": "draft_not_released",
+  "immutable": true,
+  "sampleCount": 64,
+  "splitCounts": {
+    "train": 48,
+    "validation": 8,
+    "challenge": 4,
+    "regression": 4
+  },
+  "parentDataset": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-v2-mvp64-denoiser-qualified-016bee510b7636115d4241787ac361594dc8c88de7bb74970d86dbd4a3964e71/manifest.json",
+    "sha256": "3d3cb6c594bd3b719e9dd13e366d492e1ac1717caaecca78434468484ac70913"
+  },
+  "sourceIndex": {
+    "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/source-correction64-0a680355dd12746000e223d7bdab283cd40d93e83af869585766f135d3f76d5c/source-index.json",
+    "sha256": "cdf5c2027200d5075a93a425f2a73e609fcf24dd62b1c2d0f1c0b36c7e1bc89e"
+  },
+  "splits": {
+    "train": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/source-correction64-0a680355dd12746000e223d7bdab283cd40d93e83af869585766f135d3f76d5c/splits/train.json",
+      "sha256": "84e5166cb70e82b1b96633c0a14a62afd9f7b57d5f40dbf4e6c02b4b5b370f22"
+    },
+    "validation": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/source-correction64-0a680355dd12746000e223d7bdab283cd40d93e83af869585766f135d3f76d5c/splits/validation.json",
+      "sha256": "f7dddf2070de9b87ebba86d746d2c3aeaad39a204a03c03a58dc3789f385c633"
+    },
+    "challenge": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/source-correction64-0a680355dd12746000e223d7bdab283cd40d93e83af869585766f135d3f76d5c/splits/challenge.json",
+      "sha256": "0f9b3e4bb9249fefc6a6a50d66f9c53ae3f126d023406e36f832bd44ed095d40"
+    },
+    "regression": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/source-correction64-0a680355dd12746000e223d7bdab283cd40d93e83af869585766f135d3f76d5c/splits/regression.json",
+      "sha256": "eceb94d159b16b0d12267ec125ff838c2a6692d4ca2b0f677a10358db3119807"
+    }
+  },
+  "replacedSample": "ai-cold-start-v7-v7-capacity-slot-164-bamboo-grove-v2",
+  "replacementRecord": {
+    "path": "data/world-samples/original-image-library/natural-home-v1/complete-maps/mvp64-slot164-objects-v5-20261020/record.json",
+    "sha256": "4ad01c25897dc6160c2b36baaa914068fac26081d442f3610ecb2d46bd5f9fd2"
+  },
+  "inheritedRows": 63,
+  "blockingGates": [
+    "dataset_release_not_created"
+  ],
+  "canStartFormalTraining": false,
+  "trainingEligible": false,
+  "capabilityReleased": false,
+  "original64Modified": false,
+  "originalSplitsModified": false,
+  "currentDatasetSelected": false
+}

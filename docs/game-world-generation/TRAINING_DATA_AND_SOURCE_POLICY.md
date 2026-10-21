@@ -1,14 +1,14 @@
 # 训练数据与来源正式规则
 
-更新时间：2026-09-23 01:22:17 +08:00
+更新时间：2026-10-20 05:44:15 +08:00
 
 状态：active-long-term-data-and-provenance-contract
 
-文档版本：`AI-PAINTER-DATA-PROVENANCE-1.7`
+文档版本：`AI-PAINTER-DATA-PROVENANCE-1.10`
 
-生效日期：`2026-09-23`
+生效日期：`2026-10-20`
 
-替代版本：`AI-PAINTER-DATA-PROVENANCE-1.6`
+替代版本：`AI-PAINTER-DATA-PROVENANCE-1.9`
 
 文档状态：`active_normative_target`
 
@@ -175,6 +175,16 @@ blocked_source
 
 机器失败记录必须明确为机器门禁失败，不得伪造成项目级否决。数据版本发布否决、机器拒绝和审核漏判可以进入失败学习与回归，但不得成为正向 RGB target。
 
+### 6.1 纠错来源的版本兼容接收
+
+现有`intake:original-image`入口接受显式`original-image-intake-request-v2`；原v1请求仅保留兼容行为，不把历史授权字符串或Owner审核字段迁移为新来源资格。v2复用原图库、不可变原图记录及同一索引，不另建来源库或后台。它只接收同一train样本的纠错候选，绑定本规格、父数据包、完整父样本身份、原记录、原WorldFacts、任务、条件、引导图、生成要求、原始输出及归一化证据；实际字节和派生像素必须由程序重算。验证图、challenge与regression内容不得成为该生成请求的输入，历史失败RGB不得冒充权威引导图。
+
+接收结果仍使用`original-image-record-v1`，新增的`sourceCorrection`只记录可追溯派生关系与接收证据。状态保持`ai_assisted_cold_start_intake`，机器及权属审核未完成，`aiAssistedColdStartEligible`与`independentTrainingEligible`均为false；不创建Owner等待状态，不根据调用方的资格布尔值、外部目视意见或局部颜色响应签发`machine_qualified_positive`。失败保留新候选和已写证据，禁止覆盖旧原图、旧审核或活动数据版本。
+
+当前单世界先行MVP中，同一train纠错候选不再以新增的逐对象RGB语义识别、额外对象检查或来源许可文件及其适用裁决作为来源准入前置条件；其缺失不再产生审核阻断。不设置单图“内部允许”或人工审批替代层。保留来源声明及派生记录、实际文件与像素身份、WorldFacts／23通道绑定、既有风格与条件响应／画幅检查、数据内部去重、用途隔离和数据发布门；不得把未执行的对象识别或许可审核记录为通过。该限定不改变已知禁止来源的限制、实际使用权利、安全保护或训练后模型质量审核，也不直接发布新数据或开训。
+
+既有v2接收格式及`AI-PAINTER-DATA-PROVENANCE-1.8`谱系标记继续兼容，它们只表示原接收身份；不继承旧审核范围。原请求若绑定1.8或1.9文档摘要，按固定[1.8原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.8-b620c6ef.txt)或[1.9原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.9-c75029b6.txt)核验历史接收事实，同时绑定现行规则；新接收可绑定现行1.10文档。审核结论按现行审核存储规格第5.1节形成，不改写原接收记录。[1.7版原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.7-e1555cd1.txt)仅供历史复核。
+
 ## 7. 单条样本合同
 
 每张图片至少绑定：
@@ -225,6 +235,8 @@ dataset-package/
 
 数据包发布后不可覆盖。修复标签、替换图片、改变 split、更新字典或增删样本必须建立新版本并保留父版本。
 
+单条train纠错来源通过原`build:ai-assisted-cold-start-dataset-package`入口的显式`--source-correction`分支生成`source-correction-dataset-candidate-v1`。它保存64条来源、四份独立split及父版本绑定，替代项不得复用旧贡献资格；原世界事实、条件和用途保持。候选的`datasetReleaseIdentity`为null，`canStartFormalTraining=false`，不写活动数据指针，不供旧训练Schema直接读取。后续发布采用第8.3节，重新核验现行保留检查并取得独立身份，不恢复第6.1节已删除的审核。
+
 数据包必须绑定字典、来源政策、导演、任务、条件、审核规则和训练配置快照。四个 split 必须同时按图片哈希、来源窗口、结构哈希、条件哈希、主题架构和实例细节隔离，防止同源、变换派生或语义近邻泄漏。
 
 `manifest.json`和`source-index.json`是`datasetReleaseIdentity`的必备构成文件，不是可选附件或本机私有文件。数据发布记录和每个训练能力都必须分别绑定：
@@ -273,6 +285,16 @@ data/world-samples/ai-assisted-cold-start-dataset-packages/<packageId>/
 - **验收目标**：当前challenge验证的是未参与当前适用模型训练和选择的结构／条件到RGB映射，不声明跨国家、跨生态区或完全独立公共地理底图的泛化能力。进入多区域扩展时必须建立新的地理外推数据版本和验收合同。
 
 正式机器分类合同为`data/ai-painter/system-governance/ai-painter-mvp-source-isolation-classification-contract-v1.json`。分类器只能裁决已绑定的关系记录；它不能从缺少记录推导合格，也不能直接签发数据、模型或GPU资格。
+
+### 8.3 同一train纠错数据发布与读取兼容
+
+原构建入口的`--source-correction`分支接受`source-correction-dataset-release-request-v1`，显式绑定候选Manifest和同图审核记录。`operation=verify`只做CPU复算，`operation=publish`形成新发布包；不新增后台或API。发布和读取均不得相信请求中的资格布尔值，须核验实际程序、来源记录、图像与条件绑定，并复算审核规格第5.1节保留的风格、条件响应和画幅检查。
+
+发布格式为`ai-painter-stage4-source-correction-release-v1`，包含新Manifest、source-index及四份membership文件。仅允许合格父64份数据中的一条train样本被已接收候选替代，其他63条逐字段不变；四份用途只允许对应train样本ID替换，条件和WorldFacts不变。新记录保存纠错来源与新审核，不继承该样本旧贡献资格，不把已删除审核记为通过。
+
+现有Python `load_package`和`SplitReleaseDataset`按新格式复算不可变发布身份、父版本、全部成员与实际文件、分项核验及实现绑定；原格式分支保持。未发布草案仍不能直接作为训练发布包。复用父版本已合格的冻结基础资产时，须保持其原资格和Checkpoint身份，不冒称在新包上重新训练；不得继承失败Denoiser、旧CPU／GPU执行资格或旧训练许可。
+
+发布不修改活动数据指针或当前执行登记，不启动GPU／训练，也不授予模型、Stage4或Runtime资格。新训练仍按既有流程取得自身同包准备与执行证据。验收覆盖真实发布及Python数据读取、63条和四份用途不变、错误来源／审核／图片／条件／split拒绝、重复发布不覆盖、历史格式兼容和旧证据保持。
 
 ## 9. 完整地图结构唯一性
 

@@ -366,8 +366,60 @@ test('kernel interruption verifies historical source bytes from an immutable led
   assert.throws(() => verifyTrainingKernelInputs(root, f.profile), /interruption_original_bytes_mismatch/)
 }))
 
-async function createKernelInterruptionFixture(root, advance) {
-  const runId = advance.runId, output = '.runtime/ai-painter/ecology-decode1-weight-quality-executions/' + runId
+test('registered training interruption accepts its own 1152-step contract and preserves failed history', async () => withFixture(async ({ root, advance }) => {
+  const f = await createKernelInterruptionFixture(root, advance, true)
+  const originalHeartbeat = await readFile(absolute(root, f.profile.heartbeat.path))
+  const historical = verifyTrainingKernelInputs(root, f.profile)
+  assert.equal(historical.progress.optimizerStepsGenerator, 593)
+  const recovered = await recoverExpiredActiveExecutionToFailedClosed(f.options)
+  assert.equal(recovered.ok, true)
+  assert.equal(recovered.registry.activeExecution, null)
+  assert.equal(recovered.currentTaskTerminal.status, 'training_system_interrupted')
+  assert.ok((await readFile(absolute(root, f.profile.heartbeat.path))).equals(originalHeartbeat))
+}))
+
+test('registered interruption rejects invalid policy, namespace and budget without publishing', async context => {
+  for (const [name, change] of [
+    ['unbound policy', ({ pkg }) => { pkg.inputEvidence.pop() }],
+    ['duplicate policy', ({ pkg }) => { pkg.inputEvidence.push(pkg.inputEvidence.at(-1)) }],
+    ['cross package prefix', ({ plan }) => { plan.packageId = 'another-package' }],
+    ['cross namespace', ({ plan }) => { plan.outputRoot = '.runtime/other' }],
+    ['configuration ceiling changed', ({ plan }) => { plan.configuration.executionCeiling.generatorOptimizerSteps++ }],
+    ['policy ceiling changed', ({ policy }) => { policy.executionCeiling.generatorOptimizerSteps++ }],
+    ['unknown protocol', ({ policy }) => { policy.interfaceContract.protocols.progress = 'unknown' }],
+    ['legacy schema cannot borrow ceiling', ({ plan }) => { plan.schema = 'ecology-decode1-weight-quality-plan-v1' }],
+    ['generator exceeds own limit', ({ progress }) => { progress.optimizerStepsGenerator = 1153 }],
+    ['discriminator exceeds own limit', ({ progress }) => { progress.optimizerStepsDiscriminator = 1153 }],
+    ['failed weight resume enabled', ({ plan }) => { plan.trainingRestartAllowed = true }],
+  ]) await context.test(name, async () => withFixture(async ({ root, advance }) => {
+    const f = await createKernelInterruptionFixture(root, advance, true)
+    const original = await readFile(absolute(root, CURRENT_EXECUTION_REGISTRY_PATH))
+    const plan = await readJson(root, f.profile.plan.path), pkg = await readJson(root, f.profile.executionPackage.path)
+    const policy = await readJson(root, plan.interfacePolicy.path), progress = await readJson(root, f.profile.progress.path)
+    await change({ plan, pkg, policy, progress })
+    await writeJson(root, plan.interfacePolicy.path, policy)
+    const policyBinding = { path: plan.interfacePolicy.path, sha256: await sha256File(root, plan.interfacePolicy.path) }
+    for (const key of ['interfacePolicy', 'executionPolicy']) plan[key] = policyBinding
+    plan.configuration.executionPolicy = policyBinding
+    pkg.inputEvidence = pkg.inputEvidence.map(b => b.path === policyBinding.path ? policyBinding : b)
+    await writeJson(root, f.profile.plan.path, plan)
+    f.profile.plan.sha256 = await sha256File(root, f.profile.plan.path)
+    pkg.inputEvidence = pkg.inputEvidence.map(b => b.path === f.profile.plan.path ? f.profile.plan : b)
+    await writeJson(root, f.profile.executionPackage.path, pkg)
+    f.profile.executionPackage.sha256 = await sha256File(root, f.profile.executionPackage.path)
+    await writeJson(root, f.profile.progress.path, progress)
+    f.profile.progress.sha256 = await sha256File(root, f.profile.progress.path)
+    assert.throws(() => verifyTrainingKernelInputs(root, f.profile))
+    assert.ok((await readFile(absolute(root, CURRENT_EXECUTION_REGISTRY_PATH))).equals(original))
+  }))
+})
+
+async function createKernelInterruptionFixture(root, advance, registeredRoute = false) {
+  const selector = 'd1-fixture-v1', suffix = '00000000-0000-4000-8000-000000000001'
+  if (registeredRoute) advance = { ...advance, runId: selector + '-' + suffix,
+    packageId: selector + '-package-' + suffix, capabilityVersion: 'stage4_fixture_registered_v1' }
+  const runId = advance.runId, output = (registeredRoute ? '.runtime/ai-painter/registered-training-' + selector + '-executions/'
+    : '.runtime/ai-painter/ecology-decode1-weight-quality-executions/') + runId
   const active = await createActiveExecution(root, { ...advance, executionState: 'executing' })
   const heartbeat = JSON.parse(await readFile(absolute(root, active.heartbeat.path)))
   heartbeat.ttlSeconds = 120
@@ -401,14 +453,39 @@ async function createKernelInterruptionFixture(root, advance) {
   await writeJson(root, native + '/started.json', { ...guard, ownerPid: 909,
     commandBinding: Buffer.from(JSON.stringify({ guard, guardSha256: guardBinding.sha256, scope: root, nativeBuild: build })).toString('base64') })
   const plan = { schema: 'ecology-decode1-weight-quality-plan-v1', ...advance, runId, outputRoot: output, programBindings: active.programLineage }
+  let policyBinding = null
+  if (registeredRoute) {
+    const fakeBinding = path => ({ path, sha256: 'a'.repeat(64) })
+    const policy = { schemaVersion: 'ai-painter-registered-training-execution-policy-v1', candidateSelection: selector,
+      candidate: advance.capabilityVersion, modelCapability: 'stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1',
+      executionProfile: 'completion_fixture_registered_v1', outputRoot: '.runtime/ai-painter/registered-training-' + selector + '-executions',
+      entrypointPath: 'scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs',
+      formalSpecification: { ...fakeBinding('docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md'), version: 'AI-PAINTER-SPEC-1.108' },
+      trainingPreviewPolicy: fakeBinding('data/ai-painter/system-governance/fixture-preview.json'),
+      progressPublication: { componentPolicy: fakeBinding('data/ai-painter/system-governance/fixture-progress.json'),
+        componentPath: 'ml/ai-painter/src/ai_painter/complete_world/bounded_progress_publication_cpu_v2.py' },
+      executionCeiling: { epochs: 24, generatorOptimizerSteps: 1152, discriminatorOptimizerSteps: 1152, trainingWallMode: 'completion', maxWallSeconds: null },
+      phaseResources: { gpuAdmissionWallMode: 'completion', gpuAdmissionSeconds: null, programFileCountMaximum: 256 },
+      scope: { resolution: [256, 192], worldCount: 1, waterFactPresent: false, formalStage4Qualification: false, runtimePublication: false },
+      interfaceContract: { schemaVersion: 'ai-painter-training-interface-contract-v1', adapterId: 'decode1_entry_same_call_completion_v1',
+        candidateSelection: selector, runPrefix: selector + '-', packagePrefix: selector + '-package-',
+        protocols: { package: 'ai-painter-current-training-package-v1', progress: 'ai-painter-current-training-progress-v1',
+          previewRecord: 'training-preview-diagnostic-record-v1', previewManifest: 'training-preview-diagnostic-manifest-v1', timing: 'decode1-entry-worker-execution-timing-v1' } } }
+    await writeJson(root, output + '/policy.json', policy)
+    policyBinding = await bind(output + '/policy.json')
+    Object.assign(plan, { schema: 'object-support-structure-quality-plan-v1', executionProfile: policy.executionProfile,
+      interfacePolicy: policyBinding, executionPolicy: policyBinding, historicalCheckpointMayInitialize: false, trainingRestartAllowed: false,
+      configuration: { capabilityVersion: policy.candidate, modelCapabilityVersion: policy.modelCapability,
+        executionPolicy: policyBinding, executionCeiling: structuredClone(policy.executionCeiling) } })
+  }
   await writeJson(root, output + '/quality-plan.json', plan)
   const planBinding = await bind(output + '/quality-plan.json')
   await writeJson(root, output + '/original-package.json', { schemaVersion: 'ai-painter-autonomous-closed-loop-package-v1', packageIdentity: advance.packageId, capabilityVersion: advance.capabilityVersion,
-    inputEvidence: [planBinding], programLineage: Object.fromEntries(Object.entries(active.programLineage).map(([role, b]) => [role, b.sha256])) })
+    outputRoot: output, inputEvidence: [planBinding, ...(policyBinding ? [policyBinding] : [])], programLineage: Object.fromEntries(Object.entries(active.programLineage).map(([role, b]) => [role, b.sha256])) })
   const executionPackage = await bind(output + '/original-package.json')
   for (const name of ['training-consumed.json', 'execution-consumed.json']) await writeJson(root, output + '/' + name, { attempt: 1, automaticRetries: 0, executionPackage })
   await writeJson(root, output + '/progress.json', { runId, packageId: advance.packageId, capabilityVersion: advance.capabilityVersion, executionState: 'executing', selectedCheckpoint: null,
-    optimizerStepsGenerator: 286, optimizerStepsDiscriminator: 286, updatedAtUtc: new Date(Date.now() - 240000).toISOString() })
+    optimizerStepsGenerator: registeredRoute ? 593 : 286, optimizerStepsDiscriminator: registeredRoute ? 593 : 286, updatedAtUtc: new Date(Date.now() - 240000).toISOString() })
   const programBindings = []
   for (const p of ['docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md', 'scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs', 'scripts/run-ai-painter-owned-worker-reboot-recovery.mjs', 'src/server/ai-painter-current-execution-registry.mjs']) {
     await writeText(root, p, 'private fixture source training_kernel_interruption_v1'); programBindings.push(await bind(p))

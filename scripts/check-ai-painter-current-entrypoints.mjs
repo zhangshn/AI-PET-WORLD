@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import {registeredTrainingInterfaces} from './lib/ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
 import { verifyCurrentEntrypointCommand } from "./lib/ai-painter-current-entrypoint-command.mjs";
 import {
   readCurrentExecutionRegistry,
@@ -11,6 +12,9 @@ const root = process.cwd();
 const staticOnly = process.argv.slice(2).includes("--static-only");
 const registryPath = "data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json";
 const registry = JSON.parse(fs.readFileSync(path.join(root, registryPath), "utf8"));
+const registeredTrainingInterfaceSummary=registeredTrainingInterfaces(root).map(route=>({
+  candidateSelection:route.candidateSelection,capabilityVersion:route.CAPABILITY,policy:route.EXECUTION_POLICY,
+  adapterId:route.interfaceContract.adapterId,qualificationGranted:false}));
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const retiredBinding = registry.retiredEntrypointIndex;
 assert.equal(typeof retiredBinding?.path, "string", "retired entrypoint index path is missing");
@@ -198,6 +202,7 @@ process.stdout.write(`${JSON.stringify({
   currentAndRetiredEntrypointsDisjoint: true,
   ownerRuntimeEntrypointCount: 0,
   currentExecutionSuccessorClosure,
+  registeredTrainingInterfaces:registeredTrainingInterfaceSummary,
   results,
 }, null, 2)}\n`);
 

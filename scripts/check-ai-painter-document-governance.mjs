@@ -59,6 +59,7 @@ const versionedDocuments = [
   "docs/ARCHITECTURE.md",
   "docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md",
   "docs/DIRECTORY_STRUCTURE.md",
+  "docs/LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md",
   "docs/game-world-generation/README.md",
   "docs/game-world-generation/DOCUMENT_INDEX.md",
   "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
@@ -80,15 +81,16 @@ const implementationBearingDocuments = [
 ]
 
 const exactDocumentVersions = new Map([
-  ["docs/DOCUMENT_AUTHORITY_INDEX.md", "DOCUMENT-AUTHORITY-1.9"],
+  ["docs/DOCUMENT_AUTHORITY_INDEX.md", "DOCUMENT-AUTHORITY-1.10"],
   ["docs/DOCUMENTATION_POLICY.md", "DOCUMENTATION-POLICY-1.6"],
   ["docs/BUSINESS_SPEC.md", "AI-PET-WORLD-BUSINESS-1.6"],
   ["docs/ARCHITECTURE.md", "AI-PET-WORLD-ARCHITECTURE-1.10"],
   ["docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "LOCAL-AI-CAPABILITY-MIGRATION-1.7"],
-  ["docs/DIRECTORY_STRUCTURE.md", "AI-PET-WORLD-DIRECTORY-1.12"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.86"],
-  ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "AI-PAINTER-DATA-PROVENANCE-1.7"],
-  ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "AI-PAINTER-REVIEW-STORAGE-1.20"],
+  ["docs/DIRECTORY_STRUCTURE.md", "AI-PET-WORLD-DIRECTORY-1.15"],
+  ["docs/LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md", "LOCAL-BACKUP-WORK-LEDGER-1.4"],
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "AI-PAINTER-SPEC-1.112"],
+  ["docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md", "AI-PAINTER-DATA-PROVENANCE-1.10"],
+  ["docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", "AI-PAINTER-REVIEW-STORAGE-1.28"],
   ["docs/world-visual-data-dictionary/README.md", "WORLD-VISUAL-DICTIONARY-REFERENCE-1.0"],
 ])
 
@@ -151,7 +153,7 @@ for (const [relativePath, expected] of [
   ["docs/ARCHITECTURE.md", "blocked_policy_boundary"],
   ["docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "Owner可以主动改变业务目标、观察、暂停或紧急停止，但不进入本地AI正常运行状态机"],
   ["docs/DIRECTORY_STRUCTURE.md", "内部票据只承担幂等、防重、状态转换和证据追溯"],
-  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "替代版本：`AI-PAINTER-SPEC-1.85`"],
+  ["docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md", "替代版本：`AI-PAINTER-SPEC-1.111`"],
   ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "240秒仅适用于本节诊断的完整CPU组件验收及其最终新程序自身受管CPU预检"],
   ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "#### 9.6.38 生态条件模型的训练生命周期组件"],
   ["data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt", "#### 9.6.39 生态模型梯度故障的单次有界采集"],
@@ -316,6 +318,10 @@ for (const relativePath of activeAuthorityDocuments.filter((value) => value !== 
 
 const architecture = readText("docs/ARCHITECTURE.md")
 const reviewSpec = readText("docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md")
+for (const requirement of ["### 5.1 同一train纠错候选的现有分项核验", "同图复审显式绑定父审核"]) {
+  if (!reviewSpec.includes(requirement)) failures.push(`source evidence adjudication boundary missing: ${requirement}`)
+}
+if (sha256("data/ai-painter/system-governance/document-baselines/ai-painter-review-1.20-28969e87.txt") !== "28969e870d819a56563c1fe1032d29c0889f067ab98ce060ce37919e1d80760c") failures.push("historical review specification 1.20 bytes differ")
 const capabilityArchitecture = extractCodeBlockAfterHeading(architecture, "### 0.4.1 能力生命周期")
 const executionArchitecture = extractCodeBlockAfterHeading(architecture, "### 0.4.2 单次执行生命周期")
 const reviewArchitecture = extractCodeBlockAfterHeading(architecture, "### 0.4.3 机器审核生命周期")

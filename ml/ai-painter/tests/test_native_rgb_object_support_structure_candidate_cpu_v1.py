@@ -9,6 +9,7 @@ import torch
 from torch.nn import functional as F
 
 from ai_painter.complete_world import native_rgb_object_support_structure_candidate_cpu_v1 as candidate
+from ai_painter.complete_world import native_rgb_object_support_structure_device_v1 as device_candidate
 from ai_painter.complete_world import native_rgb_object_core_fidelity_candidate_cpu as inherited
 from ai_painter.complete_world.native_rgb_complete_support_partition_v23_cpu import complete_typed_support_partition
 from ai_painter.complete_world.object_instance_supervision_cpu import SUPPORT_RADIUS
@@ -94,6 +95,90 @@ class SupportStructureTests(unittest.TestCase):
             self.assertTrue(torch.equal(rho, parts["objectSupportStructureRoles"][role]["correlation"]))
             expected.append(1-rho)
         self.assertTrue(torch.equal(weighted, .1 * torch.stack(expected).mean()))
+
+    def test_default_and_explicit_old_weight_match_value_parts_and_gradient(self):
+        sample, table = scene()
+        p = (.2 + .5 * sample["image"].flip(-1))[None].clone().requires_grad_()
+        default, default_parts = self.term(p, sample, table)
+        explicit, explicit_parts = candidate.train_original_object_support_structure(
+            p, sample, table, ORDER, support_structure_weight=.1)
+        self.assertTrue(torch.equal(default, explicit))
+        self.assertEqual(default_parts.keys(), explicit_parts.keys())
+        for key in ("objectSupportStructureLoss", "objectSupportStructureWeighted"):
+            self.assertTrue(torch.equal(default_parts[key], explicit_parts[key]))
+        for role in ROLES:
+            self.assertTrue(torch.equal(default_parts["objectSupportStructureRoles"][role]["correlation"],
+                explicit_parts["objectSupportStructureRoles"][role]["correlation"]))
+        default_gradient = torch.autograd.grad(default, p)[0]
+        explicit_gradient = torch.autograd.grad(explicit, p)[0]
+        self.assertTrue(torch.equal(default_gradient, explicit_gradient))
+
+    def test_weight_one_multiplies_original_term_before_unchanged_sum(self):
+        sample, table = scene()
+        p = (.2 + .5 * sample["image"].flip(-1))[None].clone().requires_grad_()
+        old_weighted, old_parts = self.term(p, sample, table)
+        weighted, parts = candidate.train_original_object_support_structure(
+            p, sample, table, ORDER, support_structure_weight=1.0)
+        self.assertEqual(weighted.dtype, torch.float32)
+        self.assertTrue(torch.equal(weighted, parts["objectSupportStructureLoss"]))
+        self.assertTrue(torch.equal(old_weighted, .1 * parts["objectSupportStructureLoss"]))
+        self.assertTrue(torch.equal(old_parts["objectSupportStructureLoss"], parts["objectSupportStructureLoss"]))
+        self.assertEqual(old_parts["objectSupportStructureApplicableRoleCount"], parts["objectSupportStructureApplicableRoleCount"])
+        expected_gradient = torch.autograd.grad(parts["objectSupportStructureLoss"], p, retain_graph=True)[0]
+        self.assertTrue(torch.equal(torch.autograd.grad(weighted, p)[0], expected_gradient))
+        inherited_total = p.sum() * .001
+        inherited_parts = {"total": inherited_total, "kept": inherited_total * 2}
+        with patch.object(candidate, "train_object_core_fidelity_candidate_objective",
+                return_value=(inherited_total, inherited_parts)) as original:
+            total, combined = candidate.train_object_support_structure_candidate_objective(
+                SyntheticCritic(), p, sample, table, ORDER, support_structure_weight=1.0)
+        original.assert_called_once()
+        self.assertIs(combined["objectCoreFidelityUnchangedTotal"], inherited_total)
+        self.assertIs(combined["objectCoreFidelityUnchangedParts"], inherited_parts)
+        self.assertTrue(torch.equal(combined["objectSupportStructureWeighted"], weighted))
+        self.assertTrue(torch.equal(total, inherited_total.float() + weighted))
+
+    def test_device_cpu_dispatch_passes_each_explicit_weight(self):
+        sample, table = scene()
+        p = (.2 + .5 * sample["image"].flip(-1))[None].clone().requires_grad_()
+        for weight in (.1, 1.0):
+            with self.subTest(weight=weight):
+                expected, expected_parts = candidate.train_original_object_support_structure(
+                    p, sample, table, ORDER, support_structure_weight=weight)
+                with patch.object(candidate, "train_original_object_support_structure",
+                        wraps=candidate.train_original_object_support_structure) as original:
+                    actual, parts = device_candidate.train_original_object_support_structure(
+                        p, sample, table, ORDER, support_structure_weight=weight)
+                original.assert_called_once()
+                self.assertEqual(original.call_args.kwargs, {"support_structure_weight": weight})
+                self.assertTrue(torch.equal(expected, actual))
+                self.assertTrue(torch.equal(expected_parts["objectSupportStructureLoss"], parts["objectSupportStructureLoss"]))
+                expected_gradient = torch.autograd.grad(expected, p)[0]
+                actual_gradient = torch.autograd.grad(actual, p)[0]
+                self.assertTrue(torch.equal(expected_gradient, actual_gradient))
+                with patch.object(candidate, "train_object_support_structure_candidate_objective",
+                        wraps=candidate.train_object_support_structure_candidate_objective) as original:
+                    total, combined = device_candidate.train_object_support_structure_candidate_objective(
+                        SyntheticCritic(), p, sample, table, ORDER, support_structure_weight=weight)
+                original.assert_called_once()
+                self.assertEqual(original.call_args.kwargs, {"support_structure_weight": weight})
+                self.assertTrue(torch.equal(combined["objectSupportStructureWeighted"], expected))
+                self.assertTrue(torch.equal(total, combined["objectCoreFidelityUnchangedTotal"].float() + expected))
+
+    def test_weight_accepts_only_explicit_supported_floats_before_any_tensor_work(self):
+        functions = (candidate.train_original_object_support_structure,
+            candidate.train_object_support_structure_candidate_objective,
+            device_candidate.train_original_object_support_structure,
+            device_candidate.train_object_support_structure_candidate_objective)
+        for function in functions:
+            args = (None,) * (5 if "candidate_objective" in function.__name__ else 4)
+            for bad in (True, False, 1, 0, 0.0, .2, -.1, float("nan"), float("inf"), "1.0", None, torch.tensor(1.0)):
+                with self.subTest(function=function.__module__ + "." + function.__name__, value=repr(bad)):
+                    with patch.object(candidate, "_bound_inputs") as bound, self.assertRaisesRegex(ValueError, "weight must be float 0.1 or 1.0"):
+                        function(*args, support_structure_weight=bad)
+                    bound.assert_not_called()
+            with self.assertRaises(TypeError):
+                function(*args, 1.0)
 
     def test_support_reproduces_original_partition_for_overlaps_and_boundaries(self):
         cases = (DEFAULT_OBJECTS,

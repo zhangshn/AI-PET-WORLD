@@ -3,7 +3,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL,fileURLToPath } from 'node:url';
+// This same CPU fixture module is copied to the fixed private adapter path.
+// Its phase exports do not import controller/test-driver dependencies there.
+const driverHelpers=path.basename(fileURLToPath(import.meta.url))==='ai-painter-local-control-initiator-exit-cpu-v1.mjs'
+  ?await import('./ai-painter-local-control-native-cpu-v1.mjs'):null;
+const {ACCEPTANCE_DRIVER_PROTOCOL,ACCEPTANCE_DRIVER_CANDIDATES,validateNativeAcceptanceRoot,
+  validateExistingInitiatorAcceptanceRoot,captureCurrentAcceptanceSources,verifyCurrentAcceptanceSources,
+  verifyAcceptanceResourceWindow}=driverHelpers??{};
 
 // Isolated CPU transport/lifecycle fixture. This file is also copied, with its
 // distinct SHA, to the CLI's fixed adapter path inside the private project.
@@ -16,14 +23,17 @@ const fixedCpu = {logicalProcessors: 2, affinity: '3', seconds: 120, bytes: 8388
 const sourceCli = 'scripts/run-ai-painter-local-control-v1.mjs';
 const adapterPath = 'scripts/run-ai-painter-ecology-quality-v1.mjs';
 const phases = ['preflight', 'execute', 'validate', 'review', 'adjudicate', 'finalize'];
+const driverProjectRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 
 export function parseInitiatorExitArguments(argv) {
-  assert.equal(argv.length, 2); assert.equal(argv[0], '--acceptance-root'); assert.ok(path.isAbsolute(argv[1]));
-  const parent = fs.realpathSync('.runtime/ai-painter/controller-parallel-20261011/migration-local-control');
-  const root = path.resolve(argv[1]); assert.equal(path.dirname(root), parent);
-  assert.match(path.basename(root), /^native-acceptance-initiator-exit-[a-z0-9-]{8,64}$/u);
-  assert.equal(fs.existsSync(root), false, 'new acceptance source/attempt only');
-  for (let current = parent; path.dirname(current) !== current; current = path.dirname(current)) assert.equal(fs.lstatSync(current).isSymbolicLink(), false);
+  assert.ok(driverHelpers,'argument parser is not a private phase adapter');
+  assert.ok(argv.length===2||argv.length===6,'exact legacy or explicit initiator fixture arguments required');
+  assert.deepEqual(argv.filter((_,i)=>i%2===0),argv.length===2?['--acceptance-root']:['--acceptance-root','--protocol','--candidate']);
+  assert.ok(path.isAbsolute(argv[1]));
+  if(argv.length===6){assert.equal(argv[3],ACCEPTANCE_DRIVER_PROTOCOL);assert.equal(argv[5],ACCEPTANCE_DRIVER_CANDIDATES.initiator);}
+  const root=path.resolve(argv[1]);
+  validateNativeAcceptanceRoot(root,{kind:'initiator',...(argv.length===6?{protocol:argv[3],candidateSelection:argv[5]}:{})});
+  if(argv.length===2)assert.match(path.basename(root),/^native-acceptance-initiator-exit-[a-z0-9-]{8,64}$/u);
   return root;
 }
 function directoryBytes(root) {
@@ -113,10 +123,54 @@ async function initializePrivateRegistry(projectRoot, acceptanceRoot, putBound) 
   assert.equal(initialized.ok, true); const observed = await readCurrentExecutionRegistry(projectRoot); assert.equal(observed.ok, true); assert.equal(observed.registry.activeExecution, null);
   put(path.join(acceptanceRoot, 'private-registry-initialized.json'), {revision: observed.registry.registryRevision, sha256: observed.registrySha256, syntheticFixture: true});
 }
+export function validateInitiatorFixtureBinding(acceptanceRoot,binding) {
+  assert.ok(driverHelpers,'controller binding checks are not private phase exports');
+  validateExistingInitiatorAcceptanceRoot(acceptanceRoot,{protocol:ACCEPTANCE_DRIVER_PROTOCOL,candidateSelection:ACCEPTANCE_DRIVER_CANDIDATES.initiator});
+  verifyCurrentAcceptanceSources(binding.currentSourceBinding,'initiator');
+  assert.equal(binding.schema,'private-initiator-exit-cpu-binding-v1');
+  assert.equal(binding.acceptanceRoot,acceptanceRoot);
+  assert.equal(binding.fixtureProjectRoot,path.join(acceptanceRoot,'p'));
+  assert.equal(fs.lstatSync(binding.fixtureProjectRoot).isSymbolicLink(),false);
+  assert.equal(fs.realpathSync(binding.fixtureProjectRoot),binding.fixtureProjectRoot);
+  assert.equal(binding.fixtureOnly,true);assert.equal(binding.modelTraining,false);assert.equal(binding.gpuAllowed,false);
+  assert.equal(binding.packagePath,'.runtime/ai-painter/autonomous-closed-loop-packages/pe-cpu-pkg01/package.json');
+  assert.equal(sha(fs.readFileSync(path.join(binding.fixtureProjectRoot,binding.packagePath))),binding.packageSha256);
+  const expectedSources=binding.currentSourceBinding.sources.filter(b=>b.path!==adapterPath);
+  assert.equal(binding.sourceCopies?.length,expectedSources.length,'exact private source copy set required');
+  const expectedBindings={};
+  for(const [i,source]of expectedSources.entries()){
+    const bytes=fs.readFileSync(path.join(binding.fixtureProjectRoot,source.path));
+    assert.deepEqual(binding.sourceCopies[i],{...source,bytes:bytes.length},'private source identity mismatch');
+    assert.equal(sha(bytes),source.sha256,'private source bytes changed');
+    expectedBindings['source'+i]={path:source.path,sha256:source.sha256};
+  }
+  const fixtureSha=binding.currentSourceBinding.sources.find(b=>b.path==='scripts/tests/ai-painter-local-control-initiator-exit-cpu-v1.mjs').sha256;
+  assert.deepEqual(binding.fixtureAdapter,{path:adapterPath,sha256:fixtureSha},'exact fixed CPU adapter required');
+  assert.equal(sha(fs.readFileSync(path.join(binding.fixtureProjectRoot,adapterPath))),fixtureSha,'private CPU adapter bytes changed');
+  expectedBindings.fixtureAdapter=binding.fixtureAdapter;
+  const spec=readJson(path.join(binding.fixtureProjectRoot,binding.packagePath));
+  const outputRoot='.runtime/ai-painter/ecology-regime-quality-executions/pe-cpu-run01';
+  assert.equal(spec.packageIdentity,'pe-cpu-pkg01');assert.equal(spec.capabilityVersion,'stage4_mvp256_dry_factorized_ecology_quality_v1');
+  assert.equal(spec.outputRoot,outputRoot);assert.equal(spec.maxInfrastructureRecoveryAttempts,0);
+  assert.equal(spec.fixtureOnly,true);assert.equal(spec.modelTraining,false);assert.equal(spec.gpuAllowed,false);
+  assert.deepEqual(spec.programLineage,Object.fromEntries(Object.entries(expectedBindings).map(([k,b])=>[k,b.sha256])));
+  assert.deepEqual(spec.phaseAdapters,Object.fromEntries(phases.map(phase=>[phase,{kind:'project_module_export',...binding.fixtureAdapter,exportName:phase}])));
+  const planPath=outputRoot+'/quality-plan.json',planBytes=fs.readFileSync(path.join(binding.fixtureProjectRoot,planPath));
+  assert.deepEqual(spec.inputEvidence,[{path:planPath,sha256:sha(planBytes)}]);
+  const plan=JSON.parse(planBytes);assert.equal(plan.runId,'pe-cpu-run01');assert.equal(plan.packageId,spec.packageIdentity);
+  assert.equal(plan.outputRoot,outputRoot);assert.equal(plan.capabilityVersion,spec.capabilityVersion);assert.deepEqual(plan.programBindings,expectedBindings);
+  assert.ok(Number.isSafeInteger(binding.deadlineMs)&&binding.deadlineMs>Date.now()&&binding.deadlineMs-Date.now()<=120000);
+  assert.equal(fs.existsSync(path.join(binding.fixtureProjectRoot,'.runtime/fixture/initiator.json')),false,'initiator fixture already consumed');
+  return {fixtureOnly:true,trainingQualified:false,nativeCleanupAuthority:false};
+}
 async function initiate(acceptanceRoot) {
-  const binding = readJson(path.join(acceptanceRoot, 'private-project', bindingPath));
+  assert.equal(path.resolve(process.cwd()),driverProjectRoot,'acceptance driver requires its source project working directory');
+  const binding = readJson(path.join(acceptanceRoot, 'p', bindingPath));
+  validateInitiatorFixtureBinding(acceptanceRoot,binding);
   assert.equal(acceptanceRoot, binding.acceptanceRoot); assert.ok(Date.now() < binding.deadlineMs);
-  const {runLocalControl} = await import('../run-ai-painter-local-control-v1.mjs');
+  const {runLocalControl,validateLocalStartPackage} = await import('../run-ai-painter-local-control-v1.mjs');
+  validateLocalStartPackage(binding.fixtureProjectRoot,{command:'start',packagePath:binding.packagePath,packageSha256:binding.packageSha256});
+  await verifyAcceptanceResourceWindow();
   const {issueLocalOperatorSession} = await import('../../src/server/ai-console-control/operator-session.ts');
   put(path.join(binding.fixtureProjectRoot, '.runtime/fixture/initiator.json'), processProbe(process.pid, true));
   const session = issueLocalOperatorSession(new Request('http://localhost:3000/api/ai-console/control/operator-session', {headers: {host: 'localhost:3000'}})); assert.equal(session.ok, true);
@@ -126,21 +180,24 @@ async function initiate(acceptanceRoot) {
   put(path.join(acceptanceRoot, 'initiator-launch-receipt.json'), result); process.stdout.write(JSON.stringify({status: result.receipt.status, backgroundPid: result.receipt.processId}) + '\n');
 }
 async function accept(argv) {
+  assert.equal(path.resolve(process.cwd()),driverProjectRoot,'acceptance driver requires its source project working directory');
   const acceptanceRoot = parseInitiatorExitArguments(argv), beganMs = Date.now(), deadlineMs = beganMs + 120000;
   const {withNativeAcceptanceCredentials} = await import('./ai-painter-local-control-native-cpu-v1.mjs');
-  const frozenReport = readJson('.runtime/ai-painter/controller-parallel-20261011/migration-local-control/revised-delivery-and-source-freeze-native02.json');
-  const frozen = frozenReport.sourceFreeze.filter(row => row.path === sourceCli || row.path.startsWith('scripts/lib/'));
-  for (const row of frozen) assert.equal(sha(fs.readFileSync(row.path)), row.sha256, 'frozen production source changed');
-  await withNativeAcceptanceCredentials({evidenceRoot: acceptanceRoot, credentialMode: 'isolated_acceptance_only'}, async credentialEvidence => {
-    fs.mkdirSync(acceptanceRoot); const projectRoot = path.join(acceptanceRoot, 'private-project'); fs.mkdirSync(projectRoot);
+  const currentSourceBinding=captureCurrentAcceptanceSources('initiator');
+  verifyCurrentAcceptanceSources(currentSourceBinding,'initiator');
+  await verifyAcceptanceResourceWindow();
+  const frozen=currentSourceBinding.sources;
+  await withNativeAcceptanceCredentials({evidenceRoot:acceptanceRoot,credentialMode:'isolated_acceptance_only',kind:'initiator',
+    ...(argv.length===6?{protocol:argv[3],candidateSelection:argv[5]}:{})}, async credentialEvidence => {
+    fs.mkdirSync(acceptanceRoot); const projectRoot = path.join(acceptanceRoot, 'p'); fs.mkdirSync(projectRoot);
     const sourceBindings = {}, sourceCopies = [];
     const sourceFiles = [...frozen.map(row => row.path), 'src/server/ai-console-control/operator-session.ts', 'src/server/ai-painter-current-execution-registry.mjs', 'scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs', 'scripts/lib/ai-painter-local-autonomy-governance-v3.mjs', 'scripts/run-ai-painter-autonomous-closed-loop-package.mjs', 'scripts/lib/ai-painter-autonomous-background-launcher-v1.mjs', 'scripts/lib/ai-painter-exactly-once-background-spawn-v1.mjs', 'scripts/lib/ai-pet-world-storage.mjs'];
     const putBound = (relative, value) => { const file = path.join(projectRoot, relative); put(file, value); return {path: relative, sha256: sha(fs.readFileSync(file))}; };
     try {
-      for (const file of new Set(sourceFiles)) { const bytes = fs.readFileSync(file); sourceBindings[`source${sourceCopies.length}`] = putBound(file, bytes); sourceCopies.push({path: file, sha256: sha(bytes), bytes: bytes.length}); }
-      const driverPath = path.resolve('scripts/tests/ai-painter-local-control-initiator-exit-cpu-v1.mjs');
+      for (const file of new Set(sourceFiles)) { if(file===adapterPath)continue;const bytes = fs.readFileSync(path.join(driverProjectRoot,file));assert.equal(sha(bytes),frozen.find(b=>b.path===file)?.sha256,'current source changed before private copy');sourceBindings[`source${sourceCopies.length}`] = putBound(file, bytes); sourceCopies.push({path: file, sha256: sha(bytes), bytes: bytes.length}); }
+      const driverPath = path.join(driverProjectRoot,'scripts/tests/ai-painter-local-control-initiator-exit-cpu-v1.mjs');
       const fixtureAdapter = putBound(adapterPath, fs.readFileSync(driverPath)); sourceBindings.fixtureAdapter = fixtureAdapter;
-      putBound('data/ai-painter/system-governance/ai-painter-autonomous-closed-loop-contract-v1.json', fs.readFileSync('data/ai-painter/system-governance/ai-painter-autonomous-closed-loop-contract-v1.json'));
+      putBound('data/ai-painter/system-governance/ai-painter-autonomous-closed-loop-contract-v1.json', fs.readFileSync(path.join(driverProjectRoot,'data/ai-painter/system-governance/ai-painter-autonomous-closed-loop-contract-v1.json')));
       const {LOCAL_CONTROL_REGISTRATION, LOCAL_CONTROL_CAPABILITY, LOCAL_CONTROL_PLAN_SCHEMA, LOCAL_CONTROL_OUTPUT_ROOT} = await import('../run-ai-painter-local-control-v1.mjs');
       putBound('data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json', {schemaVersion: 'ai-painter-current-entrypoint-registry-v1', status: 'active', currentEntrypoints: [], localControlEntrypoints: [LOCAL_CONTROL_REGISTRATION]});
       const runId = 'pe-cpu-run01', packageId = 'pe-cpu-pkg01', outputRoot = `${LOCAL_CONTROL_OUTPUT_ROOT}/${runId}`;
@@ -148,11 +205,12 @@ async function accept(argv) {
       const spec = {schemaVersion: 'ai-painter-autonomous-closed-loop-package-v1', packageIdentity: packageId, capabilityVersion: LOCAL_CONTROL_CAPABILITY, ownerAuthorizationRequired: false, ownerInStateMachine: false, maxInfrastructureRecoveryAttempts: 0, outputRoot, programLineage: Object.fromEntries(Object.entries(sourceBindings).map(([role, row]) => [role, row.sha256])), inputEvidence: [plan], phaseAdapters: Object.fromEntries(phases.map(phase => [phase, {kind: 'project_module_export', ...fixtureAdapter, exportName: phase}])), fixtureOnly: true, modelTraining: false, gpuAllowed: false};
       const packagePath = `.runtime/ai-painter/autonomous-closed-loop-packages/${packageId}/package.json`, packageBinding = putBound(packagePath, spec);
       for (const directory of ['autonomous-background-launches', 'autonomous-closed-loop-executions', 'owned-worker-guards']) fs.mkdirSync(path.join(projectRoot, '.runtime/ai-painter', directory));
-      putBound(bindingPath, {schema: 'private-initiator-exit-cpu-binding-v1', acceptanceRoot, fixtureProjectRoot: projectRoot, deadlineMs, packagePath, packageSha256: packageBinding.sha256, sourceCopies, fixtureAdapter, frozenProductionSources: frozen, fixtureOnly: true, modelTraining: false, gpuAllowed: false});
+      putBound(bindingPath, {schema: 'private-initiator-exit-cpu-binding-v1', acceptanceRoot, fixtureProjectRoot: projectRoot, deadlineMs, packagePath, packageSha256: packageBinding.sha256, sourceCopies, fixtureAdapter, currentSourceBinding, frozenProductionSources: frozen, fixtureOnly: true, modelTraining: false, gpuAllowed: false});
       await initializePrivateRegistry(projectRoot, acceptanceRoot, putBound);
       assert.ok(directoryBytes(acceptanceRoot) + 65536 < fixedCpu.bytes); assert.ok(Date.now() < deadlineMs);
+      verifyCurrentAcceptanceSources(currentSourceBinding,'initiator');await verifyAcceptanceResourceWindow();
       const stdout = fs.openSync(path.join(acceptanceRoot, 'initiator-stdout.txt'), 'wx'), stderr = fs.openSync(path.join(acceptanceRoot, 'initiator-stderr.txt'), 'wx');
-      const child = spawn(process.execPath, [driverPath, '--initiator', acceptanceRoot], {cwd: process.cwd(), windowsHide: true, shell: false, stdio: ['ignore', stdout, stderr], env: {...process.env, UV_THREADPOOL_SIZE: '1'}});
+      const child = spawn(process.execPath, [driverPath, '--initiator', acceptanceRoot], {cwd: process.cwd(), windowsHide: true, shell: false, stdio: ['ignore', stdout, stderr], env: {...process.env, CUDA_VISIBLE_DEVICES:'',OMP_NUM_THREADS:'2',MKL_NUM_THREADS:'2',OPENBLAS_NUM_THREADS:'2',UV_THREADPOOL_SIZE: '1'}});
       fs.closeSync(stdout); fs.closeSync(stderr);
       const exit = await new Promise((resolve, reject) => { child.once('error', reject); child.once('close', (code, signal) => resolve({code, signal, observedAtUtc: new Date().toISOString()})); });
       assert.equal(exit.code, 0, fs.readFileSync(path.join(acceptanceRoot, 'initiator-stderr.txt'), 'utf8'));
@@ -170,8 +228,10 @@ async function accept(argv) {
       const rows = fs.readFileSync(path.join(projectRoot, '.runtime/fixture/lifecycle.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
       assert.deepEqual(rows.filter(row => phases.includes(row.phase)).map(row => row.phase), phases);
       assert.ok(rows.find(row => row.phase === 'validate').recordedAtUtc > exit.observedAtUtc);
-      for (const row of frozen) assert.equal(sha(fs.readFileSync(row.path)), row.sha256);
+      for (const row of frozen) assert.equal(sha(fs.readFileSync(path.join(driverProjectRoot,row.path))), row.sha256);
+      verifyCurrentAcceptanceSources(currentSourceBinding,'initiator');
       const result = {schema: 'private-cli-initiator-exit-cpu-receipt-v1', status: 'initiator_exit_private_cpu_lifecycle_passed', beganAtUtc: new Date(beganMs).toISOString(), finishedAtUtc: new Date().toISOString(), elapsedMs: Date.now() - beganMs, resources: fixedCpu, credentialEvidence, initiator: {pid: child.pid, exit}, background: {launch, observedAliveAfterInitiatorExit: afterExit}, terminal, lifecycleLog: rows, diskBytesBeforeResult: directoryBytes(acceptanceRoot), frozenProductionSourcesUnchanged: true, realCliApiUsed: true, injectedReaderOrLauncher: false, modelTraining: false, gpuInitialized: false, nativeJobStarted: false, formalRegistryOrGlobalGuardModified: false, productionAuthenticationVerified: false, productionQualityAdapterTested: false, cpuFixtureAdapterDistinctFromProduction: true, consoleLogsCapturedByWindowsLauncher: launch.consoleLogsCaptured, applicationLifecycleLogsPreserved: true, observerWroteContinuationSignal: false};
+      Object.assign(result,{currentSourceBinding,protocol:ACCEPTANCE_DRIVER_PROTOCOL,candidateSelection:ACCEPTANCE_DRIVER_CANDIDATES.initiator,fullV2PreparationTested:false,physicalNetworkIsolationTested:false,codexApplicationActuallyClosed:false});
       put(path.join(acceptanceRoot, 'result.json'), result); assert.ok(directoryBytes(acceptanceRoot) + 65536 < fixedCpu.bytes);
       process.stdout.write(JSON.stringify({status: result.status, elapsedMs: result.elapsedMs, acceptanceRoot}) + '\n');
     } catch (error) { put(path.join(acceptanceRoot, 'failure.json'), {schema: 'private-cli-initiator-exit-cpu-failure-v1', status: 'failed_closed', error: String(error.stack ?? error), elapsedMs: Date.now() - beganMs, automaticRetries: 0, privateEvidenceRetained: true, unknownProcessesOrGuardsRetained: true}); throw error; }
@@ -179,7 +239,8 @@ async function accept(argv) {
 }
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
   try {
-    if (process.argv[2] === '--initiator') { assert.equal(process.argv.length, 4); await initiate(path.resolve(process.argv[3])); }
+    if(process.argv.length===3&&process.argv[2]==='--help')process.stdout.write(`Fixed initiator-exit CPU acceptance: --acceptance-root <fresh physical private ie-<16 lowercase hex> root> --protocol ${ACCEPTANCE_DRIVER_PROTOCOL} --candidate ${ACCEPTANCE_DRIVER_CANDIDATES.initiator}\nNew roots are restricted to the current driver-adaptation evidence parent. Legacy --acceptance-root syntax retains its historical parent. Uses the current v1 exact-package control implementation with a distinct synthetic CPU adapter, not full v2 preparation or model qualification. One attempt, zero retries, 120 seconds, two CPUs and 8MiB; controller schedules only with no competing training.\n`);
+    else if (process.argv[2] === '--initiator') { assert.equal(process.argv.length, 4); await initiate(path.resolve(process.argv[3])); }
     else await accept(process.argv.slice(2));
   } catch (error) { process.stderr.write(String(error.stack ?? error) + '\n'); process.exitCode = 1; }
 }

@@ -1,9 +1,253 @@
 // Legacy layouts are enabled by explicit package/result discriminants. File
 // extensions classify already-bound artifacts; names never invent relationships.
-import { readTrainingPreviewHistory, readTrustedTrainingPreviewProgress } from './training-preview-history-v1.mjs'
-import { bytes as readPreviewBytes } from './training-history-safe-bytes.mjs'
+import { previewIdentityHash, readTrainingPreviewHistory, readTrustedTrainingPreviewProgress, readBoundTrainingInterface, decodeTrainingInterfaceJson } from './training-preview-history-v1.mjs'
+import { isDeepStrictEqual } from 'node:util'
+import { bytes as readPreviewBytes, HistoryError } from './training-history-safe-bytes.mjs'
 import { readCurrentExecutionRegistry, CURRENT_EXECUTION_REGISTRY_PATH } from '../ai-painter-current-execution-registry.mjs'
 import { readBoundTrainingPresentation } from './bound-training-presentation.mjs'
+
+const COMPLETION_PROTOCOLS = new Map([
+  ['stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1', {
+    root: '.runtime/ai-painter/decode1-entry-weight-quality-same-call-v1-executions/',
+    policyPath: 'data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v4.json',
+    policySchema: 'ai-painter-decode1-entry-weight-quality-execution-policy-v4',
+    profile: 'completion_decode1_entry_weight_quality24_same_call_v1',
+    gpuAdmissionCompletion: true,
+  }],
+  ['stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v1', {
+    root: '.runtime/ai-painter/decode1-entry-weight-quality-completion-executions/',
+    policyPath: 'data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v2.json',
+    policySchema: 'ai-painter-decode1-entry-weight-quality-execution-policy-v2',
+  }],
+  ['stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2', {
+    root: '.runtime/ai-painter/decode1-entry-weight-quality-completion-v2-executions/',
+    policyPath: 'data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v3.json',
+    policySchema: 'ai-painter-decode1-entry-weight-quality-execution-policy-v3',
+    profile: 'completion_decode1_entry_weight_quality24_v2',
+    gpuAdmissionCompletion: true,
+  }],
+])
+const WORKER_TIMING_SCOPE = 'worker_training_execute_including_authentication_data_model_checkpoint_validation_and_final_progress_before_terminal_publication'
+// Only callers holding a registry/event-verified task-terminal binding may use
+// this adapter. The independent review owns a separate, plan-bound root; this
+// does not extend any existing training-root or arbitrary artifact permission.
+/** @param {{terminal: any, terminalBinding: {path: string, sha256: string}, runId: string,
+ * workerBinding?: {path: string, sha256: string} | null,
+ * readJson: (binding: {path: string, sha256: string}, maximumBytes: number) => Promise<any>}} options */
+export async function readBoundIndependentTrainingReview({ terminal, terminalBinding, runId, workerBinding = null, readJson }) {
+  if (terminal?.schema !== 'completed-training-independent-review-v1') return null
+  const need = (ok, suffix) => { if (!ok) throw new HistoryError(`history_independent_review_${suffix}`) }
+  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value)
+  const bound = value => {
+    need(object(value) && typeof value.path === 'string' && /^[a-f0-9]{64}$/u.test(value.sha256)
+      && !/^(?:[A-Za-z]:|\/)/u.test(value.path) && !value.path.includes('\\')
+      && value.path.split('/').every(part => part && part !== '.' && part !== '..'), 'binding_invalid')
+  }
+  const same = (a, b) => { bound(a); bound(b); need(a.path === b.path && a.sha256 === b.sha256, 'parent_conflict') }
+  let reads = 0
+  const read = async binding => {
+    bound(binding); need(++reads <= 10, 'read_limit')
+    const value = await readJson(binding, 2 * 1024 * 1024)
+    need(value !== null, 'evidence_unavailable')
+    return value
+  }
+  bound(terminalBinding)
+  need(terminal.runId === runId && typeof terminal.packageId === 'string' && typeof terminal.capabilityVersion === 'string', 'identity_conflict')
+  const identity = value => need(object(value) && ['runId', 'packageId', 'capabilityVersion'].every(key => value[key] === terminal[key]), 'identity_conflict')
+  const plan = await read(terminal.reviewRecoveryPlan)
+  identity(plan)
+  need(plan.schema === terminal.schema && /^[a-f0-9-]{36}$/u.test(plan.recoveryId)
+    && plan.outputRoot === `.runtime/ai-painter/controller-repair-reviews/independent-review-adoption-004-20261022/review-${plan.recoveryId}`
+    && terminalBinding.path === `${plan.outputRoot}/finalization.json`
+    && terminal.reviewRecoveryPlan.path === `${plan.outputRoot}/plan.json`, 'root_conflict')
+  const own = binding => { bound(binding); need(binding.path.startsWith(`${plan.outputRoot}/`), 'root_conflict') }
+  same(plan.sourceWorkerTerminal, terminal.workerTerminal)
+  same(plan.sourceExecutionPackage, terminal.executionPackage)
+  same(plan.selectedCheckpoint, terminal.selectedCheckpoint)
+  if (workerBinding) same(workerBinding, terminal.workerTerminal)
+  const worker = await read(terminal.workerTerminal), pkg = await read(terminal.executionPackage)
+  identity(worker)
+  need(worker.schema === 'object-support-structure-quality-worker-terminal-v1'
+    && worker.status === 'training_completed_review_pending' && worker.executionState === 'completed', 'worker_conflict')
+  same(worker.executionPackage, terminal.executionPackage)
+  same(worker.selectedCheckpointRecord?.checkpoint, terminal.selectedCheckpoint)
+  need(pkg.schemaVersion === 'ai-painter-autonomous-closed-loop-package-v1' && pkg.packageIdentity === terminal.packageId
+    && pkg.capabilityVersion === terminal.capabilityVersion && typeof pkg.outputRoot === 'string'
+    && pkg.outputRoot.startsWith('.runtime/ai-painter/') && Array.isArray(pkg.inputEvidence) && pkg.inputEvidence.length <= 128
+    && terminal.workerTerminal.path.startsWith(`${pkg.outputRoot}/`)
+    && terminal.selectedCheckpoint.path.startsWith(`${pkg.outputRoot}/`), 'package_conflict')
+  need(plan.sourceTrainingPlan?.path === `${pkg.outputRoot}/quality-plan.json`
+    && pkg.inputEvidence.filter(item => item.path === plan.sourceTrainingPlan.path && item.sha256 === plan.sourceTrainingPlan.sha256).length === 1,
+  'training_plan_conflict')
+  const trainingPlan = await read(plan.sourceTrainingPlan)
+  identity(trainingPlan)
+  need(trainingPlan.schema === 'object-support-structure-quality-plan-v1'
+    && trainingPlan.executionMode === 'bounded-quality-training' && trainingPlan.outputRoot === pkg.outputRoot
+    && trainingPlan.configuration?.schema === 'object-support-structure-quality-configuration-v1'
+    && trainingPlan.configuration.capabilityVersion === terminal.capabilityVersion, 'training_plan_conflict')
+  own(terminal.core)
+  need(terminal.core.path === `${plan.outputRoot}/dry-review/machine-audit-core.json`, 'root_conflict')
+  const core = await read(terminal.core)
+  identity(core); same(core.executionPackage, terminal.executionPackage); same(core.selectedCheckpoint, terminal.selectedCheckpoint)
+  need(core.schema === 'object-support-structure-machine-audit-core-v1'
+    && ['dry_single_world_review_failed_closed', 'dry_single_world_numeric_passed_visual_approval_pending'].includes(core.status)
+    && core.status === terminal.status && terminal.executionState === (core.status === 'dry_single_world_review_failed_closed' ? 'failed_closed' : 'completed')
+    && Array.isArray(core.issueCodes) && core.issueCodes.length <= 128
+    && core.issueCodes.every(code => typeof code === 'string' && /^[a-z0-9_]{1,192}$/u.test(code))
+    && [core.visualApprovalGranted, core.formalStage4QualificationGranted, core.runtimePublicationGranted].every(value => value === false), 'core_conflict')
+  own(core.input)
+  need(core.input.path === `${plan.outputRoot}/dry-review/cpu-review.json`, 'root_conflict')
+  const input = await read(core.input)
+  need(input.schema === 'object-support-structure-quality-native-review-input-v1' && input.capabilityVersion === terminal.capabilityVersion, 'input_conflict')
+  for (const key of ['runId', 'packageId']) if (input[key] !== undefined) need(input[key] === terminal[key], 'identity_conflict')
+  same(input.executionPackage, terminal.executionPackage); same(input.workerTerminal, terminal.workerTerminal)
+  same(input.selectedCheckpoint, terminal.selectedCheckpoint)
+  const manifest = await read(trainingPlan.datasetManifest), index = await read(manifest.sourceIndex), split = await read(trainingPlan.validationSplit)
+  need(manifest.schemaVersion === 'ai-painter-stage4-source-correction-release-v1'
+    && index.schemaVersion === `${manifest.schemaVersion}:source-index`
+    && split.schemaVersion === `${manifest.schemaVersion}:membership`
+    && Array.isArray(index.samples) && index.samples.length <= 128 && split.split === 'validation'
+    && Array.isArray(split.sampleIds) && split.sampleIds.length === 8, 'dataset_conflict')
+  const selected = worker.selectedCheckpointRecord
+  need(Array.isArray(selected.validation) && selected.validation.length === 8 && Array.isArray(core.validationImages)
+    && core.validationImages.length === 8 && isDeepStrictEqual(input.validationImages, core.validationImages)
+    && trainingPlan.configuration.checkpointSelection?.validationRowsPerEligibleEpoch === 8, 'image_coverage_conflict')
+  const seen = new Set(), paths = new Set()
+  for (const [position, image] of core.validationImages.entries()) {
+    const row = selected.validation[position], source = index.samples.filter(item => item.sampleId === image.sampleId)
+    need(object(image) && image.sampleId === row.sampleId && image.sampleId === split.sampleIds[position]
+      && image.split === 'validation' && row.split === 'validation' && image.epoch === selected.epoch
+      && image.optimizerStep === selected.counts?.generator && image.purpose === 'prediction'
+      && !seen.has(image.sampleId) && !paths.has(image.binding?.path) && source.length === 1 && source[0].split === 'validation', 'image_identity_conflict')
+    seen.add(image.sampleId); paths.add(image.binding.path); own(image.binding)
+    need(image.binding.path.startsWith(`${plan.outputRoot}/dry-review/`) && image.binding.path.endsWith('.png'), 'root_conflict')
+    same(image.checkpoint, terminal.selectedCheckpoint); same(image.originalRgb, source[0].image); same(image.condition, source[0].conditionPack)
+  }
+  need(input.subject?.sampleId === core.validationImages[0].sampleId && input.subject.split === 'validation', 'subject_conflict')
+  same(input.subject.referenceRgb, core.validationImages[0].originalRgb); same(input.subject.conditionPack, core.validationImages[0].condition)
+  return { terminal, terminalBinding, plan, worker, core, input, jsonReads: reads }
+}
+// Shared read-only extension for the existing current projection and history.
+// The caller supplies an authenticated parent; only its explicit SHA chain is
+// followed. Failure here cannot replace that parent's counters or first error.
+/** @param {(Awaited<ReturnType<typeof readCurrentExecutionRegistry>> & {presentation: Awaited<ReturnType<typeof readBoundTrainingPresentation>>}) | null} [current] */
+export async function readCompletionTrainingObservation(root, terminal, current = null) {
+  let protocol = COMPLETION_PROTOCOLS.get(terminal?.capabilityVersion)
+  if (!protocol && !terminal?.executionPackage) return null
+  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value)
+  const unavailable = reasonCode => ({ availability: 'unavailable', reasonCode, sourcePath: null, sourceSha256: null,
+    startedAtUtc: null, endedAtUtc: null, elapsedSeconds: null, scope: WORKER_TIMING_SCOPE, status: null, stopReason: null })
+  const result = { trainingWallMode: null, maxWallSeconds: null, workerExecutionTiming: unavailable('worker_timing_not_bound') }
+  const need = (condition, code) => { if (!condition) throw new Error(code) }
+  const same = (a, b) => a?.path === b?.path && a?.sha256 === b?.sha256
+  const read = async (binding, maximum = 2 * 1024 * 1024) => {
+    need(object(binding) && typeof binding.path === 'string' && /^[a-f0-9]{64}$/u.test(binding.sha256), 'worker_timing_binding_invalid')
+    const raw = await readPreviewBytes(root, binding.path, maximum, binding.sha256)
+    return decodeTrainingInterfaceJson(raw.value,maximum)
+  }
+  const identity = value => need(object(value) && ['capabilityVersion', 'runId', 'packageId'].every(key =>
+    typeof terminal[key] === 'string' && value[key] === terminal[key]), 'worker_timing_identity_conflict')
+  try {
+    let parent = terminal
+    let childError = null
+    for (let depth = 0; depth < 3; depth++) {
+      identity(parent)
+      const child = parent.workerTerminal ?? parent.trainingTerminal
+      if (!child) break
+      let next
+      try { next = await read(child) }
+      catch (error) { childError = error; break }
+      identity(next)
+      if (parent.executionPackage) need(same(parent.executionPackage, next.executionPackage), 'worker_timing_package_conflict')
+      parent = next
+    }
+    identity(parent)
+    const pkg = await read(parent.executionPackage)
+    const outputRoot = protocol ? `${protocol.root}${parent.runId}` : pkg.outputRoot
+    need(pkg.schemaVersion === 'ai-painter-autonomous-closed-loop-package-v1'
+      && pkg.packageIdentity === parent.packageId && pkg.capabilityVersion === parent.capabilityVersion
+      && pkg.outputRoot === outputRoot && Array.isArray(pkg.inputEvidence) && pkg.inputEvidence.length <= 128,
+    'worker_timing_package_conflict')
+    const plans = pkg.inputEvidence.filter(item => item?.path === `${outputRoot}/quality-plan.json`)
+    need(plans.length === 1, 'worker_timing_plan_conflict')
+    const plan = await read(plans[0]); identity(plan)
+    const registered = await readBoundTrainingInterface({ envelope: pkg, plan, parent, readJson: read })
+    if (registered) protocol = registered
+    if (!protocol) return null
+    const config = plan.configuration
+    need(plan.schema === 'object-support-structure-quality-plan-v1' && plan.executionMode === 'bounded-quality-training'
+      && plan.outputRoot === outputRoot && config?.schema === 'object-support-structure-quality-configuration-v1'
+      && config.capabilityVersion === parent.capabilityVersion, 'worker_timing_plan_conflict')
+    if (protocol.gpuAdmissionCompletion) {
+      need(plan.executionProfile === protocol.profile, 'worker_timing_profile_conflict')
+      need(config.gpuAdmissionWallMode === 'completion' && config.gpuAdmissionSeconds === null,
+        'worker_timing_gpu_admission_clock_conflict')
+    }
+    // Null by itself never means completion. Authenticate this Run's policy as
+    // well as its configuration before exposing that interpretation.
+    const policyBinding = plan.executionPolicy
+    if (protocol.gpuAdmissionCompletion) need(policyBinding?.path === protocol.policyPath
+      && same(policyBinding, config.executionPolicy)
+      && pkg.inputEvidence.filter(item => same(item, policyBinding)).length === 1, 'worker_timing_execution_policy_conflict')
+    if (policyBinding && same(policyBinding, config.executionPolicy)
+      && policyBinding.path === protocol.policyPath
+      && pkg.inputEvidence.filter(item => same(item, policyBinding)).length === 1) {
+      const policy = await read(policyBinding, 65536)
+      if (protocol.gpuAdmissionCompletion) need(policy.phaseResources?.gpuAdmissionWallMode === 'completion'
+        && policy.phaseResources.gpuAdmissionSeconds === null && policy.executionProfile === protocol.profile
+        && policy.outputRoot === protocol.root.slice(0, -1)
+        && policy.gpuAdmission?.sampleSplit === 'train' && policy.gpuAdmission.sampleCount === 48,
+      'worker_timing_gpu_admission_policy_conflict')
+      const ceiling = config.executionCeiling, frozen = policy.executionCeiling
+      if (policy.schemaVersion === protocol.policySchema
+        && policy.candidate === parent.capabilityVersion && ceiling?.trainingWallMode === 'completion'
+        && ceiling.maxWallSeconds === null && frozen?.trainingWallMode === 'completion' && frozen.maxWallSeconds === null
+        && ['epochs', 'generatorOptimizerSteps', 'discriminatorOptimizerSteps'].every((key, i) =>
+          ceiling[key] === [24, 1152, 1152][i] && frozen[key] === ceiling[key])) result.trainingWallMode = 'completion'
+    }
+    if (protocol.gpuAdmissionCompletion) need(result.trainingWallMode === 'completion', 'worker_timing_execution_policy_conflict')
+    // Qualification duration has a different scope. Never attach the training
+    // worker clock to this route's qualification terminal, even if it carries one.
+    if (protocol.gpuAdmissionCompletion && ['qualification', 'gpu_qualification'].includes(terminal.phase)) return result
+    if (childError) throw childError
+    let timingBinding = parent.workerExecutionTiming
+    if (!timingBinding && (current?.registry?.activeExecution || terminal.status === 'training_pending')) {
+      // Reuse the verified registry/process/lock/heartbeat/TTL projection. Its
+      // exact progress digest authenticates the binding, never file existence.
+      const progress = await readTrustedTrainingPreviewProgress({ runId: terminal.runId,
+        currentPath: CURRENT_EXECUTION_REGISTRY_PATH, readJson: binding => read(binding, 65536),
+        readRegistry: () => current ?? readCurrentExecutionRegistry(root),
+        readPresentation: snapshot => current?.presentation ?? readBoundTrainingPresentation(root,
+          snapshot.registry, snapshot.taskCapsule, snapshot.currentTaskTerminal) })
+      if (progress) { identity(progress); timingBinding = progress.workerExecutionTiming }
+    }
+    if (!timingBinding) return result
+    need(timingBinding.path === `${outputRoot}/worker-execution-timing.json`, 'worker_timing_path_conflict')
+    const timing = await read(timingBinding, 32768); identity(timing)
+    need(timing.schemaVersion === 'decode1-entry-worker-execution-timing-v1', 'worker_timing_schema_unsupported')
+    need(same(timing.executionPackage, parent.executionPackage) && timing.scope === WORKER_TIMING_SCOPE,
+      'worker_timing_package_or_scope_conflict')
+    const utc = value => typeof value === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?(?:Z|\+00:00)$/u.test(value)
+      && Number.isFinite(Date.parse(value))
+    need(utc(timing.startedAtUtc) && (timing.endedAtUtc === null && timing.elapsedSeconds === null
+      || utc(timing.endedAtUtc) && typeof timing.elapsedSeconds === 'number' && Number.isFinite(timing.elapsedSeconds)
+        && timing.elapsedSeconds >= 0), 'worker_timing_time_conflict')
+    const failure = timing.stopReason
+    const failureRecorded = object(failure) && isDeepStrictEqual(Object.keys(failure).sort(), ['message', 'messageSha256', 'type'])
+      && typeof failure.type === 'string' && /^[A-Za-z_][A-Za-z0-9_]{0,127}$/u.test(failure.type)
+      && typeof failure.message === 'string' && [...failure.message].length <= 4096
+      && typeof failure.messageSha256 === 'string' && /^[a-f0-9]{64}$/u.test(failure.messageSha256)
+    need(timing.status === 'started' && timing.endedAtUtc === null && timing.stopReason === null
+      || timing.status === 'completed' && timing.endedAtUtc !== null && timing.stopReason === null
+      || timing.status === 'failed_closed' && timing.endedAtUtc !== null && failureRecorded, 'worker_timing_state_conflict')
+    result.workerExecutionTiming = { availability: 'available', reasonCode: null, sourcePath: timingBinding.path,
+      sourceSha256: timingBinding.sha256, ...Object.fromEntries(['scope', 'startedAtUtc', 'endedAtUtc', 'elapsedSeconds',
+        'status', 'stopReason'].map(key => [key, timing[key]])) }
+  } catch (error) {
+    result.workerExecutionTiming = unavailable(error.code === 'ENOENT' ? 'worker_timing_missing' : error.message ?? 'worker_timing_unavailable')
+  }
+  return result
+}
 const MANAGED_DETAIL_PROTOCOLS = [
   {worker:'detail-weight-managed-worker-terminal-v1', review:'detail-weight-managed-review-terminal-v1',
     plans:new Map([['detail-weight-plan.json','detail-weight-managed-plan-v1'],
@@ -21,10 +265,12 @@ const MANAGED_DETAIL_PROTOCOLS = [
     plans:new Map([['quality-plan.json','ecology-terrain-detail-weight-quality-plan-v1']]),
     configuration:['ecology-terrain-detail-weight-quality-configuration-v1',
       'ecology-terrain-detail-weight-quality-configuration-v2'], mode:'bounded-quality-training',
+    midpointConfiguration:'ecology-terrain-detail-weight-quality-configuration-v2',
     report:'ecology-terrain-detail-weight-quality-native-review-input-v1', adapter:'ecology_terrain_detail_weight_quality_training_v1'},
   {worker:'object-support-structure-quality-worker-terminal-v1', review:'object-support-structure-quality-review-terminal-v1',
     plans:new Map([['quality-plan.json','object-support-structure-quality-plan-v1']]),
     configuration:'object-support-structure-quality-configuration-v1', mode:'bounded-quality-training',
+    midpointConfiguration:'object-support-structure-quality-configuration-v1',
     report:'object-support-structure-quality-native-review-input-v1', adapter:'object_support_structure_quality_training_v1',
     audit:'object-support-structure-machine-audit-v1', core:'object-support-structure-machine-audit-core-v1',
     reviewFailure:'object-support-structure-review-failure-v1',
@@ -213,6 +459,17 @@ export async function adaptLegacyTrainingDetail(options) {
   const detail = await adaptLegacyTrainingDetailCore(options)
   const { runId, terminal, readJson, makeArtifact } = options
   const root = process.env.AI_CONSOLE_HISTORY_ROOT || process.cwd()
+  const completion = await readCompletionTrainingObservation(root, terminal)
+  if (completion) {
+    // Keep legacy start/finish fields and their scope unchanged.
+    detail.record.workerExecutionTiming = completion.workerExecutionTiming
+    detail.record.trainingPlan = { ...detail.record.trainingPlan,
+      trainingWallMode: completion.trainingWallMode, maxWallSeconds: completion.maxWallSeconds }
+    const timing = completion.workerExecutionTiming
+    if (timing.availability === 'available') detail.record.artifacts.push(makeArtifact('evidence',
+      { path: timing.sourcePath, sha256: timing.sourceSha256 }, { evidenceKind: 'workerExecutionTiming' }))
+    else detail.unavailableFields = [...new Set([...(detail.unavailableFields ?? []), 'workerExecutionTiming'])]
+  }
   let parent = terminal, protocol, progress = null, progressVerified = false
   try {
     if (terminal.workerTerminal && terminal.executionPackage) parent = await readJson(terminal.workerTerminal)
@@ -267,6 +524,86 @@ export async function adaptLegacyTrainingDetail(options) {
   }
   return detail
 }
+async function readManagedParentFailure({ runId, terminal, terminalBinding, readJson, requireFact }) {
+  if (terminal.status !== 'failed_closed' || terminal.executionState !== 'failed_closed'
+    || !['training', 'qualification', 'gpu_qualification'].includes(terminal.phase)
+    || terminal.schema || terminal.schemaVersion) return null
+  requireFact(terminal.runId === runId && typeof terminal.packageId === 'string'
+    && typeof terminal.capabilityVersion === 'string'
+    && terminal.executionPackage && /^[a-f0-9]{64}$/u.test(terminal.executionPackage.sha256), 'history_parent_failure_identity_conflict')
+  const pkg = await readJson(terminal.executionPackage)
+  requireFact(pkg.schemaVersion === 'ai-painter-autonomous-closed-loop-package-v1'
+    && pkg.packageIdentity === terminal.packageId && pkg.capabilityVersion === terminal.capabilityVersion
+    && typeof pkg.outputRoot === 'string' && pkg.outputRoot.startsWith('.runtime/ai-painter/')
+    && !pkg.outputRoot.includes('\\') && pkg.outputRoot.split('/').every(part => part && part !== '.' && part !== '..')
+    && terminalBinding.path.startsWith(`${pkg.outputRoot}/`)
+    && Array.isArray(pkg.inputEvidence) && pkg.inputEvidence.length <= 128, 'history_parent_failure_package_conflict')
+  const plans = pkg.inputEvidence.filter(item => item?.path === `${pkg.outputRoot}/quality-plan.json`)
+  requireFact(plans.length === 1 && /^[a-f0-9]{64}$/u.test(plans[0].sha256), 'history_parent_failure_plan_conflict')
+  const plan = await readJson(plans[0])
+  requireFact(plan.runId === runId && plan.packageId === terminal.packageId
+    && plan.capabilityVersion === terminal.capabilityVersion && plan.outputRoot === pkg.outputRoot
+    && plan.configuration?.capabilityVersion === terminal.capabilityVersion, 'history_parent_failure_plan_conflict')
+  const protocol = MANAGED_DETAIL_PROTOCOLS.find(item => item.plans.get('quality-plan.json') === plan.schema
+    && [item.configuration].flat().includes(plan.configuration?.schema) && item.mode === plan.executionMode)
+  if (!protocol) return null
+  return { pkg, plan, planBinding: plans[0], protocol }
+}
+
+async function adaptManagedParentFailure(options) {
+  const { runId, terminal, record, base, readJson, requireFact, makeArtifact } = options
+  const context = await readManagedParentFailure({ runId, terminal, terminalBinding: record.terminalBinding, readJson, requireFact })
+  if (!context) return null
+  let workerAvailability = 'not_recorded'
+  if (terminal.workerTerminal) {
+    requireFact(typeof terminal.workerTerminal.path === 'string'
+      && terminal.workerTerminal.path.startsWith(`${context.pkg.outputRoot}/`)
+      && /^[a-f0-9]{64}$/u.test(terminal.workerTerminal.sha256), 'history_parent_failure_worker_conflict')
+    try { await readJson(terminal.workerTerminal); return null }
+    catch (error) {
+      if (!['ENOENT', 'EACCES', 'EPERM'].includes(error.code)) throw error
+      workerAvailability = error.code === 'ENOENT' ? 'missing' : 'unreadable'
+    }
+  }
+  const config = context.plan.configuration, ceiling = config.executionCeiling, resolution = config.scope?.resolution
+  requireFact(Array.isArray(resolution) && resolution.length === 2 && resolution.every(value => Number.isSafeInteger(value) && value > 0)
+    && ceiling && ['epochs', 'generatorOptimizerSteps', 'discriminatorOptimizerSteps']
+      .every(key => Number.isSafeInteger(ceiling[key]) && ceiling[key] > 0), 'history_parent_failure_plan_conflict')
+  const count = (value, maximum) => {
+    requireFact(value == null || Number.isSafeInteger(value) && value >= 0 && value <= maximum, 'history_parent_failure_count_conflict')
+    return value ?? null
+  }
+  record.runKind = terminal.phase === 'training' ? 'bounded_managed_training' : 'bounded_gpu_qualification'
+  record.resolution = { width: resolution[0], height: resolution[1] }
+  record.trainingPlan = { ...ceiling, checkpointSelection: config.checkpointSelection ?? null }
+  record.targetEpochs = ceiling.epochs
+  record.targetOptimizerSteps = ceiling.generatorOptimizerSteps
+  record.targetDiscriminatorOptimizerSteps = ceiling.discriminatorOptimizerSteps
+  record.optimizerSteps = { generator: terminal.phase === 'training' ? count(terminal.optimizerStepsGenerator, ceiling.generatorOptimizerSteps) : null,
+    discriminator: terminal.phase === 'training' ? count(terminal.optimizerStepsDiscriminator, ceiling.discriminatorOptimizerSteps) : null }
+  record.completedEpochs = terminal.phase === 'training' ? count(terminal.completedEpochs, ceiling.epochs) : null
+  record.trainingStatus = terminal.phase === 'training' ? 'failed_closed' : null
+  record.trainingExecutionState = terminal.phase === 'training' ? 'failed_closed' : null
+  record.failureSummary = terminal.originalError ?? (terminal.error === 'Error: wall_timeout' ? { type: 'Error', message: 'wall_timeout' } : null)
+  record.qualification = { ...record.qualification, formalQualificationAllowed: false, worldEntryAllowed: false,
+    checkpointPromotionEligible: false, checkpointReloadVerified: null }
+  for (const [bound, evidenceKind] of [[terminal.executionPackage, 'autonomousExecutionPackage'], [context.planBinding, 'managedPlan']]) {
+    record.artifacts.push(makeArtifact('evidence', bound, { evidenceKind }))
+  }
+  base.unavailableFields = [...new Set([...base.unavailableFields.filter(field => field !== 'resolution'),
+    'workerTerminal', 'samples', 'metrics', 'checkpoints', 'logs',
+    ...(record.completedEpochs === null ? ['completedEpochs'] : []),
+    ...(Object.values(record.optimizerSteps).some(value => value === null) ? ['optimizerSteps'] : [])])]
+  record.detailCoverage = { adapter: 'managed_parent_execution_failure', supported: true,
+    sourcePolicy: 'verified_registry_explicit_sha256_parents_only', phase: terminal.phase,
+    workerTerminal: workerAvailability, finalCounters: 'terminal_fields_only_not_last_progress', checkpointBytesRead: false,
+    availability: { managedPlan: 'available', workerTerminal: workerAvailability, checkpoints: 'not_recorded' },
+    trainingPreview: { status: 'unavailable', reasonCode: 'history_parent_failure_artifacts_not_bound', verifiedCount: 0, gaps: [] },
+    artifactSourceGap: '缺少受信终态清单，当前接口未接入；不能据此判定未训练、未生成或未保存。' }
+  return { ...base, schemaVersion: 'ai_console_training_run_detail_v1', record, dataStatus: 'partial',
+    reasonCode: 'history_managed_parent_failure_worker_missing' }
+}
+
 async function adaptLegacyTrainingDetailCore({ runId, terminal, record, base, capsuleBinding, taskTerminalBinding, readJson, readEvidenceJson, readLargeResultProjection, makeArtifact, checkpointMetadata, requireFact }) {
   if (terminal.schemaVersion === 'ai-painter-training-system-interruption-terminal-v1')
     return adaptSystemInterruption({ runId, terminal, record, base, readJson, readEvidenceJson, makeArtifact, requireFact })
@@ -277,6 +614,8 @@ async function adaptLegacyTrainingDetailCore({ runId, terminal, record, base, ca
   const managed = await adaptManagedTrainingDetail({ runId, terminal, record, base, capsuleBinding, taskTerminalBinding,
     readJson, readEvidenceJson, makeArtifact, checkpointMetadata, requireFact })
   if (managed) return managed
+  const parentFailure = await adaptManagedParentFailure({ runId, terminal, record, base, readJson, makeArtifact, requireFact })
+  if (parentFailure) return parentFailure
   const finish = (reasonCode = null) => ({ ...base, dataStatus: reasonCode ? 'partial' : 'connected', reasonCode, schemaVersion: 'ai_console_training_run_detail_v1', record })
   const missing = (...fields) => { base.unavailableFields = [...new Set([...base.unavailableFields, ...fields])] }
   let layout = PACKAGE_KINDS[terminal.schemaVersion]
@@ -664,7 +1003,7 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
   const same = (a, b) => { binding(a); binding(b); requireFact(a.path === b.path && a.sha256 === b.sha256, 'history_managed_parent_conflict') }
   const read = async (bound, field) => {
     if (!bound) { gap(field); return null }
-    binding(bound); requireFact(++reads <= limits.jsonReads, 'history_managed_read_limit', 413)
+    binding(bound); requireFact(reads < limits.jsonReads, 'history_managed_read_limit', 413); reads++
     try {
       const value = readEvidenceJson ? (await readEvidenceJson(bound, limits.jsonBytes)).value : await readJson(bound)
       requireFact(object(value), 'history_managed_document_invalid')
@@ -700,6 +1039,7 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
     }
     if (isReviewWrapper(wrapper)) requireFact(worker.schema === schema, 'history_managed_worker_schema_conflict')
     if (worker.schema !== schema) return null
+    requireFact(!['qualification', 'gpu_qualification'].includes(wrapper.phase), 'history_managed_parent_phase_conflict')
   }
   requireFact(worker.runId === runId && text(worker.packageId) && text(worker.capabilityVersion)
     && ['completed', 'failed_closed'].includes(worker.executionState), 'history_managed_identity_conflict')
@@ -862,8 +1202,127 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
   }
   if (!record.checkpoints.length) gap('checkpoints')
   else { removeUnavailable('checkpoints'); if (!gaps.has('checkpoints')) availability.checkpoints = 'available' }
-  if (!sampleIds.size) gap('validationMetrics')
-  else removeUnavailable('metrics')
+  // These two registered quality protocols also persist an unversioned midpoint
+  // record. Its exact shape and signed plan select semantics, never its filename.
+  // It has no checkpoint/image role and cannot supply selectedEpoch or a review.
+  let midpointMetricsAvailable = false
+  if (worker.epochObservations !== undefined && !(Array.isArray(worker.epochObservations) && worker.epochObservations.length === 0)) {
+    const field = 'epochObservations'
+    try {
+      requireFact(Boolean(protocol.midpointConfiguration) && config.schema === protocol.midpointConfiguration,
+        'history_managed_midpoint_schema_unsupported')
+      requireFact(Array.isArray(selection.observationOnlyEpochs) && selection.observationOnlyEpochs.length === 1
+        && selection.observationOnlyEpochs[0] === 12 && selection.eligibleEpochs.length === 1 && selection.eligibleEpochs[0] === 24
+        && selection.validationRowsPerEligibleEpoch === 8 && ceiling.epochs === 24
+        && ceiling.generatorOptimizerSteps === 1152 && ceiling.discriminatorOptimizerSteps === 1152,
+      'history_managed_midpoint_plan_conflict')
+      requireFact(Array.isArray(worker.epochObservations), 'history_managed_midpoint_schema_unsupported')
+      requireFact(worker.epochObservations.length <= selection.observationOnlyEpochs.length,
+        'history_managed_midpoint_limit', 413)
+      const entries = worker.epochObservations
+      const keys = ['runId', 'packageId', 'capabilityVersion', 'modelCapabilityVersion', 'executionPackage',
+        'planBinding', 'modelBinding', 'datasetManifest', 'configurationSha256', 'epoch', 'optimizerSteps',
+        'checkpointSelectionEligible', 'weightUpdates', 'validation', 'metrics']
+      const exactKeys = (value, expected) => object(value) && Object.keys(value).length === expected.length
+        && expected.every(key => Object.hasOwn(value, key))
+      const channels = ['object_footprints', 'object_tree', 'object_rock', 'object_vegetation']
+      const finite = (value, low, high) => typeof value === 'number' && Number.isFinite(value) && value >= low && value <= high
+      for (const entry of entries) {
+        requireFact(exactKeys(entry, [...keys, ...(Object.hasOwn(entry ?? {}, 'artifact') ? ['artifact'] : [])]),
+          'history_managed_midpoint_schema_unsupported')
+        for (const key of ['executionPackage', 'planBinding', 'modelBinding', 'datasetManifest',
+          ...(Object.hasOwn(entry, 'artifact') ? ['artifact'] : [])])
+          requireFact(exactKeys(entry[key], ['path', 'sha256']), 'history_managed_midpoint_schema_unsupported')
+        identity(entry); same(entry.executionPackage, worker.executionPackage); same(entry.planBinding, plans[0])
+        same(entry.modelBinding, plan.modelBinding); same(entry.datasetManifest, plan.datasetManifest)
+        own(entry.modelBinding)
+        requireFact(entry.epoch === 12 && count(record.completedEpochs) && entry.epoch <= record.completedEpochs
+          && entry.checkpointSelectionEligible === false && entry.weightUpdates === 0
+          && exactKeys(entry.optimizerSteps, ['generator', 'discriminator'])
+          && entry.optimizerSteps.generator === 576 && entry.optimizerSteps.discriminator === 576
+          && count(g) && count(d) && entry.optimizerSteps.generator <= g && entry.optimizerSteps.discriminator <= d
+          && text(config.modelCapabilityVersion) && entry.modelCapabilityVersion === config.modelCapabilityVersion
+          && entry.configurationSha256 === previewIdentityHash(config), 'history_managed_midpoint_identity_conflict')
+        requireFact(Array.isArray(entry.validation) && entry.validation.length <= selection.validationRowsPerEligibleEpoch,
+          'history_managed_midpoint_limit', 413)
+        requireFact(entry.validation.length === selection.validationRowsPerEligibleEpoch,
+          'history_managed_midpoint_schema_unsupported')
+      }
+      // Only explicit JSON metadata parents; no weights, RGB or data discovery.
+      for (const bound of [plan.modelBinding, plan.datasetManifest, plan.validationSplit]) {
+        binding(bound)
+        const matches = autonomous.inputEvidence.filter(input => input?.path === bound.path)
+        requireFact(matches.length === 1, 'history_managed_midpoint_parent_conflict'); same(matches[0], bound)
+      }
+      const model = await read(plan.modelBinding, field)
+      const split = model ? await read(plan.validationSplit, field) : null
+      if (model && split) {
+        requireFact(model.capabilityVersion === worker.capabilityVersion && model.modelCapabilityVersion === config.modelCapabilityVersion,
+          'history_managed_midpoint_identity_conflict')
+        requireFact(split.schemaVersion === 'ai-painter-stage4-v2-mvp64-fresh-lineage-dataset-release-v1:membership'
+          && split.split === 'validation' && Array.isArray(split.sampleIds)
+          && split.sampleIds.length === selection.validationRowsPerEligibleEpoch && split.sampleIds.every(text)
+          && new Set(split.sampleIds).size === split.sampleIds.length, 'history_managed_midpoint_schema_unsupported')
+        for (const entry of entries) {
+          const coverage = Object.fromEntries(channels.map(channel => [channel, 0])), correlations = []
+          let mae = 0
+          for (const [index, row] of entry.validation.entries()) {
+            requireFact(exactKeys(row, ['sampleId', 'split', 'epoch', 'fullRgbMae', 'objectCorrelations'])
+              && row.sampleId === split.sampleIds[index] && row.split === 'validation' && row.epoch === entry.epoch
+              && finite(row.fullRgbMae, 0, 1) && exactKeys(row.objectCorrelations, channels),
+            'history_managed_midpoint_schema_unsupported')
+            mae += row.fullRgbMae
+            for (const channel of channels) {
+              const value = row.objectCorrelations[channel]
+              requireFact(value === null || finite(value, -1, 1), 'history_managed_midpoint_schema_unsupported')
+              if (value !== null) { coverage[channel]++; correlations.push(value) }
+            }
+          }
+          const metrics = entry.metrics
+          requireFact(exactKeys(metrics, ['epoch', 'worstApplicableObjectCorrelation', 'meanValidationRgbMae',
+            'applicableImageCounts', 'rank', 'qualificationGranted', 'checkpointPromotionEligible'])
+            && metrics.epoch === entry.epoch && metrics.qualificationGranted === false && metrics.checkpointPromotionEligible === false
+            && channels.every(channel => coverage[channel] > 0) && isDeepStrictEqual(metrics.applicableImageCounts, coverage)
+            && metrics.worstApplicableObjectCorrelation === Math.min(...correlations)
+            && metrics.meanValidationRgbMae === mae / entry.validation.length
+            && isDeepStrictEqual(metrics.rank, [metrics.worstApplicableObjectCorrelation, -metrics.meanValidationRgbMae, -entry.epoch]),
+          'history_managed_midpoint_schema_unsupported')
+          // A failed atomic observation publication may leave only the immutable
+          // worker's inline record. Project that source honestly; invent no file.
+          let source = workerBinding
+          if (Object.hasOwn(entry, 'artifact')) {
+            own(entry.artifact)
+            const saved = await read(entry.artifact, field)
+            if (!saved) continue
+            requireFact(exactKeys(saved, keys), 'history_managed_midpoint_schema_unsupported')
+            const expected = { ...entry }; delete expected.artifact
+            requireFact(isDeepStrictEqual(saved, expected), 'history_managed_midpoint_content_conflict')
+            source = entry.artifact
+          }
+          requireFact(record.metrics.length + entry.validation.length + 1 <= limits.metrics, 'history_managed_metric_limit', 413)
+          const metadata = { source: 'managed_midpoint_observation', epoch: entry.epoch, optimizerStep: entry.optimizerSteps.generator,
+            sourcePath: source.path, sourceSha256: source.sha256 }
+          const measurements = value => ({ ...value, checkpointSelectionEligible: false, weightUpdates: 0 })
+          append('evidence', source, { evidenceKind: 'managed_midpoint_observation', epoch: entry.epoch,
+            sourceLabel: '第12轮中期验证观察（非Checkpoint选择／最终审核）', verificationStatus: 'bytes_verified' })
+          for (const row of entry.validation) {
+            record.metrics.push({ ...metadata, sampleId: row.sampleId, split: row.split, measurements: measurements(row) })
+          }
+          record.metrics.push({ ...metadata, measurements: measurements(metrics) })
+          midpointMetricsAvailable = true
+        }
+      }
+    } catch (error) {
+      // Optional observation gaps never erase an authenticated failure or final
+      // checkpoint. Conflicting data are withheld, never read from another Run.
+      if (!error.message?.startsWith('history_') && !['ENOENT', 'EACCES', 'EPERM'].includes(error.code)) throw error
+      gap(field, error.status === 413 ? 'over_limit' : error.code === 'ENOENT' ? 'missing'
+        : error.message === 'history_sha_mismatch' ? 'hash_conflict'
+          : error.message === 'history_json_invalid' || error.message.endsWith('schema_unsupported') ? 'unsupported_schema' : 'unreadable')
+    }
+  }
+  if (!sampleIds.size && !midpointMetricsAvailable) gap('validationMetrics', availability.epochObservations ?? 'not_recorded')
+  else { removeUnavailable('metrics', 'validationMetrics'); availability.validationMetrics = 'available' }
   const selected = worker.selectedCheckpointRecord
   if (selected) {
     const cp = (rows ?? []).find(row => row.epoch === selected.epoch)
@@ -875,8 +1334,45 @@ export async function adaptManagedTrainingDetail({ runId, terminal, record, base
   // outputRoot/dry-review by convention. Preserve this upstream protocol gap.
   let taskTerminal = wrapper
   if (taskTerminalBinding && taskTerminalBinding.path !== record.terminalBinding?.path) {
-    own(taskTerminalBinding); taskTerminal = await read(taskTerminalBinding, 'taskTerminal')
+    binding(taskTerminalBinding); taskTerminal = await read(taskTerminalBinding, 'taskTerminal')
     if (taskTerminal) { requireFact(taskTerminal.runId === runId, 'history_managed_identity_conflict'); same(taskTerminal.executionPackage, worker.executionPackage) }
+    if (taskTerminal?.schema === 'completed-training-independent-review-v1') {
+      let review
+      try {
+        review = await readBoundIndependentTrainingReview({ terminal: taskTerminal, terminalBinding: taskTerminalBinding,
+          runId, workerBinding, readJson: bound => read(bound, 'independentReview') })
+      } catch (error) {
+        if (error.message !== 'history_independent_review_evidence_unavailable') throw error
+        gap('machineReview', availability.independentReview ?? 'unreadable')
+        return finish()
+      }
+      record.reviewExecutionState = taskTerminal.executionState
+      record.reviewStatus = review.core.status
+      record.independentReviewStatus = review.core.status
+      record.reviewStatusSource = taskTerminal.core.path
+      record.qualification.independentReviewStatus = review.core.status
+      append('evidence', taskTerminalBinding, { evidenceKind: 'managedReviewTerminal' })
+      append('evidence', taskTerminal.reviewRecoveryPlan, { evidenceKind: 'reviewRecoveryPlan' })
+      append('evidence', taskTerminal.core, { evidenceKind: 'machineReview' })
+      append('evidence', review.core.input, { evidenceKind: 'nativeReviewReport' })
+      record.metrics.push({ source: 'managed_machine_review', measurements: {
+        status: review.core.status, issueCodes: review.core.issueCodes, detail: review.core.detail,
+        aesthetic: review.core.aesthetic, alignment: review.core.alignment,
+        validationImprovedWithoutMeanRgbRegression: review.core.validationImprovedWithoutMeanRgbRegression },
+      sourcePath: taskTerminal.core.path, sourceSha256: taskTerminal.core.sha256 })
+      for (const image of review.core.validationImages) {
+        const metadata = { sampleId: image.sampleId, split: image.split, epoch: image.epoch,
+          optimizerStep: image.optimizerStep, purpose: image.purpose, formalQualification: false }
+        const output = append('output', image.binding, metadata)
+        const original = append('original', image.originalRgb, { ...metadata, purpose: 'reference', sourceRole: 'source_reference_rgb' })
+        const condition = append('condition', image.condition, metadata)
+        record.samples.push({ sampleId: image.sampleId, split: image.split, output, original: null, sourceOriginal: original, condition })
+      }
+      availability.machineReview = 'available'; availability.validationImages = 'available'; availability.samples = 'available'
+      removeUnavailable('samples', 'machineReview', 'validationImages')
+      return finish()
+    }
+    own(taskTerminalBinding)
   }
   const preciseReview = isReviewWrapper(taskTerminal)
   if (preciseReview) {

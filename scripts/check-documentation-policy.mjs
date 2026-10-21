@@ -16,6 +16,7 @@ const REQUIRED_GOVERNED_DOCS = [
   "docs/ARCHITECTURE.md",
   "docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md",
   "docs/DIRECTORY_STRUCTURE.md",
+  "docs/LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md",
   "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md",
   "docs/game-world-generation/README.md",
   "docs/game-world-generation/DOCUMENT_INDEX.md",
@@ -58,6 +59,7 @@ const ROOT_CLASSIFICATION = new Map([
   ["BUSINESS_SPEC.md", "active-reference"],
   ["LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md", "active-subsystem-architecture"],
   ["DIRECTORY_STRUCTURE.md", "active-reference"],
+  ["LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md", "active-local-backup-module-specification"],
   ["DOCUMENTATION_POLICY.md", "active-governance"],
   ["DOCUMENT_AUTHORITY_INDEX.md", "active-governance"],
 ])

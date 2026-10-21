@@ -31,6 +31,12 @@ def _require(condition, message):
     if not condition: raise ValueError(message)
 
 
+def _support_structure_weight(value):
+    _require(type(value) is float and value in (OBJECT_SUPPORT_STRUCTURE_WEIGHT, 1.0),
+        "support structure weight must be float 0.1 or 1.0")
+    return value
+
+
 def _bound_inputs(predicted, sample, channel_order):
     _require(isinstance(sample, Mapping) and sample.get("split") == "train", "support structure requires train split")
     _require(torch.get_num_threads() <= 2, "support structure CPU threads exceeded")
@@ -67,12 +73,14 @@ def _visible_support(conditions, instance_table, channel_order):
         return {role: mask.detach() for role, mask in owned.items()}
 
 
-def train_original_object_support_structure(predicted, sample, instance_table, channel_order):
+def train_original_object_support_structure(predicted, sample, instance_table, channel_order,
+        *, support_structure_weight=OBJECT_SUPPORT_STRUCTURE_WEIGHT):
     """Return the weighted new term and explicit applicability diagnostics.
 
     Masks are rebuilt from authoritative facts, never caller overrides or RGB.
     A differentiable zero for all-NA is not a successful structure observation.
     """
+    support_structure_weight = _support_structure_weight(support_structure_weight)
     bound, order = _bound_inputs(predicted, sample, channel_order)
     masks = _visible_support(bound["conditions"], instance_table, order)
     weights = predicted.new_tensor(LUMA_WEIGHTS)[:, None, None]
@@ -99,7 +107,7 @@ def train_original_object_support_structure(predicted, sample, instance_table, c
                 diagnostic.update(status="applicable", correlation=correlation)
         diagnostics[role] = diagnostic
     loss = torch.stack(terms).mean() if terms else predicted.sum() * 0
-    weighted = OBJECT_SUPPORT_STRUCTURE_WEIGHT * loss
+    weighted = support_structure_weight * loss
     _require(bool(torch.isfinite(weighted.detach())), "nonfinite support structure objective")
     return weighted, {"objectSupportStructureLoss": loss, "objectSupportStructureWeighted": weighted,
         "objectSupportStructureStatus": "applicable" if terms else "not_applicable",
@@ -107,13 +115,16 @@ def train_original_object_support_structure(predicted, sample, instance_table, c
         "objectSupportOwnershipRule": OWNERSHIP_RULE}
 
 
-def train_object_support_structure_candidate_objective(discriminator, predicted, sample, instance_table, channel_order):
+def train_object_support_structure_candidate_objective(discriminator, predicted, sample, instance_table, channel_order,
+        *, support_structure_weight=OBJECT_SUPPORT_STRUCTURE_WEIGHT):
     """Call the unchanged complete old objective once, then add the new term."""
+    support_structure_weight = _support_structure_weight(support_structure_weight)
     bound, order = _bound_inputs(predicted, sample, channel_order)
     _require(isinstance(discriminator, torch.nn.Module) and all(value.device.type == "cpu"
         and (not value.is_floating_point() or value.dtype == torch.float32)
         for value in (*discriminator.parameters(), *discriminator.buffers())), "CPU FP32 critic required")
-    weighted, parts = train_original_object_support_structure(predicted, bound, instance_table, order)
+    weighted, parts = train_original_object_support_structure(predicted, bound, instance_table, order,
+        support_structure_weight=support_structure_weight)
     inherited_total, inherited_parts = train_object_core_fidelity_candidate_objective(
         discriminator, predicted, bound, instance_table, order)
     total = inherited_total.float() + weighted

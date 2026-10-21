@@ -1,4 +1,5 @@
 export const ORIGINAL_IMAGE_INTAKE_SCHEMA_VERSION = "original-image-intake-request-v1"
+export const CURRENT_ORIGINAL_IMAGE_INTAKE_SCHEMA_VERSION = "original-image-intake-request-v2"
 export const ORIGINAL_IMAGE_RECORD_SCHEMA_VERSION = "original-image-record-v1"
 export const ORIGINAL_IMAGE_INDEX_SCHEMA_VERSION = "original-image-library-index-v1"
 export const ORIGINAL_IMAGE_COLLECTION_ID = "natural-home-v1"
@@ -24,7 +25,7 @@ export const ORIGINAL_IMAGE_SOURCE_TYPES = new Set([
 
 export function validateOriginalImageIntakeRequest(request) {
   const failures = []
-  check(request?.schemaVersion === ORIGINAL_IMAGE_INTAKE_SCHEMA_VERSION, failures, "invalid_intake_request_schema")
+  check([ORIGINAL_IMAGE_INTAKE_SCHEMA_VERSION, CURRENT_ORIGINAL_IMAGE_INTAKE_SCHEMA_VERSION].includes(request?.schemaVersion), failures, "invalid_intake_request_schema")
   check(ORIGINAL_IMAGE_CATEGORIES.has(request?.categoryId), failures, "invalid_original_image_category")
   check(typeof request?.title === "string" && request.title.trim().length > 0, failures, "title_missing")
   check(typeof request?.imagePath === "string" && /\.(png|jpe?g|webp)$/i.test(request.imagePath), failures, "image_path_missing_or_unsupported")
@@ -44,7 +45,14 @@ export function validateOriginalImageIntakeRequest(request) {
     check(request?.[field] === undefined || validStringArray(request[field]), failures, `${field}_invalid`)
   }
   if (request?.source?.sourceType === "openai_generated") {
-    check(isOwnerAuthorizedAiAssistedColdStartSource(request), failures, "openai_cold_start_authorization_or_provenance_missing")
+    check(request?.schemaVersion === CURRENT_ORIGINAL_IMAGE_INTAKE_SCHEMA_VERSION
+      ? isCurrentPolicyAiAssistedColdStartSource(request)
+      : isOwnerAuthorizedAiAssistedColdStartSource(request), failures, "openai_cold_start_authorization_or_provenance_missing")
+  }
+  if (request?.schemaVersion === CURRENT_ORIGINAL_IMAGE_INTAKE_SCHEMA_VERSION) {
+    check(request.categoryId === "complete-maps" && isSafeOriginalImageId(request.recordId), failures, "current_intake_requires_complete_map_identity")
+    check(isCurrentPolicyAiAssistedColdStartSource(request), failures, "current_source_correction_provenance_missing")
+    check(!hasLegacyApprovalFields(request), failures, "current_intake_legacy_approval_field_forbidden")
   }
   return failures
 }
@@ -63,11 +71,32 @@ export function directorySegmentsForRequest(request) {
 }
 
 export function isBlockedOriginalImageSource(request) {
+  if (isCurrentPolicyAiAssistedColdStartSource(request)) return false
   if (isOwnerAuthorizedAiAssistedColdStartSource(request)) return false
   return request?.source?.thirdPartyContentUsed === true
     || request?.source?.thirdPartyGenerativeModelUsed === true
     || request?.source?.copiedFromExistingWork === true
     || ["external_unreviewed", "external_model_generated", "online_model_generated", "openai_generated", "unknown"].includes(request?.source?.sourceType)
+}
+
+// Shape recognition only. The receiving program must verify real bound bytes
+// before writing a record; this predicate never grants training eligibility.
+export function isCurrentPolicyAiAssistedColdStartSource(request) {
+  return request?.schemaVersion === CURRENT_ORIGINAL_IMAGE_INTAKE_SCHEMA_VERSION
+    && request?.source?.sourceType === "openai_generated"
+    && request.source.thirdPartyContentUsed === false
+    && request.source.thirdPartyGenerativeModelUsed === true
+    && request.source.copiedFromExistingWork === false
+    && request?.aiAssistedColdStart?.trainingLane === "ai_assisted_cold_start"
+    && request.aiAssistedColdStart.policyVersion === "AI-PAINTER-DATA-PROVENANCE-1.8"
+    && request?.sourceCorrection?.schemaVersion === "source-correction-intake-evidence-request-v1"
+}
+
+function hasLegacyApprovalFields(value) {
+  if (!value || typeof value !== "object") return false
+  return Object.entries(value).some(([key, child]) =>
+    /^(owner(?:Authorization|Command|Review|Decision|Signature|Approval)|waiting_owner)/i.test(key)
+    || hasLegacyApprovalFields(child))
 }
 
 export function isOwnerAuthorizedAiAssistedColdStartSource(request) {

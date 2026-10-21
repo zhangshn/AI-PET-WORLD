@@ -112,6 +112,30 @@ class MvpDatasetReleaseTests(unittest.TestCase):
         self.assertFalse(manifest["qualification"]["trainingAllowed"])
         self.assertEqual(len(list((self.root / Path(binding["path"]).parent).rglob("*.json"))), 7)
 
+    def test_known_historical_policy_uses_exact_snapshot_not_current_document(self):
+        original = (self.root / self.policy["path"]).read_bytes()
+        snapshot = self.write("baselines/policy-1.7.txt", original)
+        self.write(self.policy["path"], b"new current policy, not the historical document")
+        frozen = {**self.policy, "snapshot": snapshot["path"]}
+        with patch.object(release, "FROZEN_DATA_POLICY", frozen):
+            self.assertEqual(release._data_policy_bytes(self.root, self.policy), original)
+            manifest, _ = release.build_release(self.root, **self.bindings)
+            self.assertEqual(manifest["identityPayload"]["dataPolicy"], self.policy)
+
+    def test_modified_snapshot_cannot_satisfy_historical_policy(self):
+        original = (self.root / self.policy["path"]).read_bytes()
+        snapshot = self.write("baselines/policy-1.7.txt", original)
+        self.write(self.policy["path"], b"new policy")
+        self.write(snapshot["path"], b"tampered snapshot")
+        with patch.object(release, "FROZEN_DATA_POLICY", {**self.policy, "snapshot": snapshot["path"]}):
+            with self.assertRaisesRegex(ValueError, "data policy SHA-256 mismatch"):
+                release._data_policy_bytes(self.root, self.policy)
+
+    def test_unknown_policy_cannot_fall_back_to_a_snapshot(self):
+        self.write(self.policy["path"], b"new policy")
+        with self.assertRaisesRegex(ValueError, "data policy SHA-256 mismatch"):
+            release._data_policy_bytes(self.root, self.policy)
+
     def test_non_train_optimizer_exposure_is_rejected(self):
         history = split_release.bound_json(self.root, self.history)
         history["perSample"][43]["recordedOptimizerRuns"] = 1

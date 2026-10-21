@@ -140,4 +140,17 @@ next-env.d.ts
 !data/ai-painter/system-governance/document-baselines/
 data/ai-painter/system-governance/document-baselines/*
 !data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-a88d9351.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.86-db7c2a7e.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.87-437f8a60.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.88-6f6bbb4c.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.89-545e71b7.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.90-5696f0d8.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.91-d58ad795.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.92-b57bfd18.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.99-0bdd8f24.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.100-d53ea61f.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.101-ab99d677.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.102-8efd26c3.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.103-0ffb499f.txt
+!data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.104-ad4c4d2c.txt
 !data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.60-clauses-v1.json

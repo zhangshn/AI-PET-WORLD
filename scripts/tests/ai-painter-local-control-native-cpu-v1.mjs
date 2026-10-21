@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { createNativeOwnerCommand, nativeOwnerSourceIdentity } from '../lib/ai-painter-owned-worker-native-v1.mjs';
 import { createOwnedStopNativeControl, initializeOwnedStopControlEvidence, submitOwnedStopIntent } from '../lib/ai-painter-owned-stop-native-control-v1.mjs';
 import { issueLocalOperatorSession } from '../../src/server/ai-console-control/operator-session.ts';
@@ -12,6 +12,59 @@ import { initializeCurrentExecutionRegistry, advanceCurrentExecutionRegistry, re
 // Fixed CPU acceptance fixture, never a model/training package or dispatch API.
 // The controller schedules this driver; merely possessing its argv is not a
 // production launch/stop grant. All registry/guard writes stay in fresh fixtures.
+const acceptanceProjectRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+export const ACCEPTANCE_DRIVER_PROTOCOL='ai-painter-local-control-v1';
+export const ACCEPTANCE_DRIVER_CANDIDATES=Object.freeze({native:'native-cpu-fixture-v1',initiator:'ecology-quality-v1'});
+export const ACCEPTANCE_DRIVER_PARENT='.runtime/ai-painter/controller-repair-reviews/local-autonomy-offline-acceptance-20261021/driver-adaptation-20261022';
+const legacyAcceptanceParent='.runtime/ai-painter/controller-parallel-20261011/migration-local-control';
+// Current fixed code closure, not a historical freeze and not caller paths.
+// The initiator fixture replaces only the registered ecology adapter in its
+// private copy; both the production adapter and fixture driver remain bound.
+export const ACCEPTANCE_SOURCE_FILES=Object.freeze([
+  'scripts/tests/ai-painter-local-control-native-cpu-v1.mjs',
+  'scripts/tests/ai-painter-local-control-initiator-exit-cpu-v1.mjs',
+  'scripts/windows/ai-painter-owned-worker-owner.cs',
+  'scripts/run-ai-painter-local-control-v1.mjs',
+  'scripts/run-ai-painter-ecology-quality-v1.mjs',
+  'scripts/run-ai-painter-autonomous-closed-loop-package.mjs',
+  'scripts/lib/ai-painter-autonomous-background-launcher-v1.mjs',
+  'scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs',
+  'scripts/lib/ai-painter-decode1-entry-weight-quality-registration-v1.mjs',
+  'scripts/lib/ai-painter-exactly-once-background-spawn-v1.mjs',
+  'scripts/lib/ai-painter-local-autonomy-governance-v3.mjs',
+  'scripts/lib/ai-painter-object-support-structure-quality-registration-v1.mjs',
+  'scripts/lib/ai-painter-owned-stop-execution-bridge-v1.mjs',
+  'scripts/lib/ai-painter-owned-stop-handoff-v1.mjs',
+  'scripts/lib/ai-painter-owned-stop-native-control-v1.mjs',
+  'scripts/lib/ai-painter-owned-stop-request-v1.mjs',
+  'scripts/lib/ai-painter-owned-worker-native-v1.mjs',
+  'scripts/lib/ai-pet-world-storage.mjs',
+  'src/server/ai-console-control/operator-session.ts',
+  'src/server/ai-console/training-preview-history-v1.mjs',
+  'src/server/ai-painter-current-execution-registry.mjs',
+].sort());
+const acceptanceHash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
+const acceptanceEntryExists=file=>{try{fs.lstatSync(file);return true;}catch(error){if(error.code==='ENOENT')return false;throw error;}};
+const acceptanceIdentity=kind=>{
+  assert.ok(Object.hasOwn(ACCEPTANCE_DRIVER_CANDIDATES,kind),'unknown acceptance fixture kind');
+  return {protocol:ACCEPTANCE_DRIVER_PROTOCOL,candidateSelection:ACCEPTANCE_DRIVER_CANDIDATES[kind]};
+};
+export function captureCurrentAcceptanceSources(kind) {
+  const identity=acceptanceIdentity(kind);
+  const sources=ACCEPTANCE_SOURCE_FILES.map(relative=>{
+    const file=path.join(acceptanceProjectRoot,relative),stat=fs.lstatSync(file);
+    assert.ok(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1,'acceptance source redirects forbidden');
+    return Object.freeze({path:relative,sha256:acceptanceHash(fs.readFileSync(file))});
+  });
+  return Object.freeze({schema:'ai-painter-local-control-acceptance-current-sources-v1',kind,...identity,
+    sources:Object.freeze(sources),trainingQualified:false,nativeCleanupAuthority:false});
+}
+export function verifyCurrentAcceptanceSources(binding,kind) {
+  const current=captureCurrentAcceptanceSources(kind);
+  assert.deepEqual(Object.keys(binding??{}).sort(),Object.keys(current).sort(),'exact current-source binding fields required');
+  assert.deepEqual(binding,current,'current acceptance source identity mismatch');
+  return {sourceCount:current.sources.length,trainingQualified:false,nativeCleanupAuthority:false};
+}
 export function nativeAcceptanceProcessIdentity(processId, creationDateUtc) {
   assert.ok(Number.isInteger(processId) && processId > 0);
   assert.ok(typeof creationDateUtc === 'string' && creationDateUtc === creationDateUtc.trim() && Number.isFinite(Date.parse(creationDateUtc)));
@@ -19,23 +72,54 @@ export function nativeAcceptanceProcessIdentity(processId, creationDateUtc) {
   return `${processId}:${creationDateUtc}`;
 }
 export function parseNativeAcceptanceArguments(argv) {
-  assert.deepEqual(argv.filter((_, i) => i % 2 === 0), ['--acceptance-root', '--credential-mode']); assert.equal(argv.length, 4);
+  assert.ok(argv.length===4||argv.length===8,'exact legacy or explicit fixture arguments required');
+  assert.deepEqual(argv.filter((_, i) => i % 2 === 0), argv.length===4?['--acceptance-root','--credential-mode']:['--acceptance-root','--credential-mode','--protocol','--candidate']);
+  if(argv.length===8){assert.equal(argv[5],ACCEPTANCE_DRIVER_PROTOCOL);assert.equal(argv[7],ACCEPTANCE_DRIVER_CANDIDATES.native);}
   assert.ok(['existing_configuration', 'isolated_acceptance_only'].includes(argv[3]), 'explicit acceptance credential mode required');
   assert.ok(path.isAbsolute(argv[1]), 'absolute physical private acceptance root required');
-  return { evidenceRoot: path.resolve(argv[1]), credentialMode: argv[3] };
+  return { evidenceRoot: path.resolve(argv[1]), credentialMode: argv[3],...(argv.length===8?acceptanceIdentity('native'):{}) };
 }
-export function validateNativeAcceptanceRoot(evidenceRoot) {
-  assert.ok(path.isAbsolute(evidenceRoot)); assert.equal(fs.existsSync(evidenceRoot), false, 'new attempt only');
-  const expectedParent = fs.realpathSync(path.resolve('.runtime/ai-painter/controller-parallel-20261011/migration-local-control'));
-  assert.equal(path.dirname(evidenceRoot), expectedParent, 'only declared private acceptance parent');
-  assert.match(path.basename(evidenceRoot), /^native-acceptance-[a-z0-9-]{8,80}$/u);
+function acceptanceRootScope(evidenceRoot,options) {
+  assert.ok(path.isAbsolute(evidenceRoot));
+  const kind=options.kind??'native',identity=acceptanceIdentity(kind);
+  const roots=[legacyAcceptanceParent,ACCEPTANCE_DRIVER_PARENT].filter(p=>fs.existsSync(path.join(acceptanceProjectRoot,p))).map(p=>fs.realpathSync(path.join(acceptanceProjectRoot,p)));
+  const expectedParent=roots.find(p=>path.dirname(evidenceRoot)===p);assert.ok(expectedParent,'only declared private acceptance parent');
+  const legacyPath=path.join(acceptanceProjectRoot,legacyAcceptanceParent);
+  const legacy=fs.existsSync(legacyPath)&&expectedParent===fs.realpathSync(legacyPath);
+  if(legacy)assert.match(path.basename(evidenceRoot),kind==='initiator'?/^native-acceptance-initiator-exit-[a-z0-9-]{8,64}$/u:/^native-acceptance-[a-z0-9-]{8,80}$/u);
+  else {
+    assert.equal(options.protocol,identity.protocol,'explicit fixture protocol required for new root');
+    assert.equal(options.candidateSelection,identity.candidateSelection,'exact fixture candidate required for new root');
+    assert.match(path.basename(evidenceRoot),kind==='native'?/^nc-[a-f0-9]{16}$/u:/^ie-[a-f0-9]{16}$/u);
+  }
   for (let directory = expectedParent; path.dirname(directory) !== directory; directory = path.dirname(directory))
     assert.ok(!fs.lstatSync(directory).isSymbolicLink(), 'acceptance physical parent redirects forbidden');
   return evidenceRoot;
 }
-export async function withNativeAcceptanceCredentials({ evidenceRoot, credentialMode }, action) {
+export function validateNativeAcceptanceRoot(evidenceRoot,options={}) {
+  assert.equal(acceptanceEntryExists(evidenceRoot),false,'new attempt only');
+  return acceptanceRootScope(evidenceRoot,options);
+}
+export function validateExistingInitiatorAcceptanceRoot(evidenceRoot,identity) {
+  acceptanceRootScope(evidenceRoot,{...identity,kind:'initiator'});
+  const stat=fs.lstatSync(evidenceRoot);
+  assert.ok(stat.isDirectory()&&!stat.isSymbolicLink()&&fs.realpathSync(evidenceRoot)===evidenceRoot,'exact existing physical initiator fixture required');
+  return evidenceRoot;
+}
+export function requireAcceptanceIdleSnapshot(current,guardPresent) {
+  assert.equal(current?.ok,true,'acceptance requires the verified official idle reader');
+  assert.equal(current.status,'verified','acceptance requires the verified official idle reader');
+  assert.equal(current.registry?.activeExecution,null,'no competing training or managed execution');
+  assert.equal(guardPresent,false,'no competing or unknown managed guard');
+  return {resourceWindowObservedIdle:true,trainingQualified:false,nativeCleanupAuthority:false};
+}
+export async function verifyAcceptanceResourceWindow() {
+  return requireAcceptanceIdleSnapshot(await readCurrentExecutionRegistry(acceptanceProjectRoot),
+    acceptanceEntryExists(path.join(acceptanceProjectRoot,'.runtime/ai-painter/owned-worker-guards/active.json')));
+}
+export async function withNativeAcceptanceCredentials({ evidenceRoot, credentialMode, ...options }, action) {
   assert.ok(['existing_configuration', 'isolated_acceptance_only'].includes(credentialMode));
-  validateNativeAcceptanceRoot(evidenceRoot); assert.equal(typeof action, 'function');
+  validateNativeAcceptanceRoot(evidenceRoot,options); assert.equal(typeof action, 'function');
   const previous = process.env.AI_PET_WORLD_OPERATOR_SESSION_SECRET;
   if (credentialMode === 'isolated_acceptance_only') process.env.AI_PET_WORLD_OPERATOR_SESSION_SECRET = crypto.randomBytes(48).toString('hex');
   else assert.ok(Buffer.byteLength(previous?.trim() ?? '') >= 32, 'existing stable operator secret required');
@@ -54,19 +138,23 @@ if (argv[0] === '--fixture-worker') {
   else if (argv[1] === 'failure') { process.stderr.write('local CPU deliberate fixture failure\n'); process.exitCode = 7; }
   else { process.stdout.write('local CPU operator-stop fixture ready\n'); setInterval(() => {}, 100); }
 } else if (argv.length === 1 && argv[0] === '--help') {
+  process.stdout.write(`Explicit current-source syntax: --acceptance-root <fresh physical ${ACCEPTANCE_DRIVER_PARENT}/nc-<16 lowercase hex>> --credential-mode <existing_configuration|isolated_acceptance_only> --protocol ${ACCEPTANCE_DRIVER_PROTOCOL} --candidate ${ACCEPTANCE_DRIVER_CANDIDATES.native}\nLegacy four-argument syntax retains its historical restricted parent. New roots require the explicit protocol/candidate. Current source hashes are recomputed; they never confer qualification or cleanup authority. Full v2 preparation is not tested.\n`);
   process.stdout.write('Fixed owned local-control CPU native acceptance v1\nUsage (only after controller resource slot): node scripts/tests/ai-painter-local-control-native-cpu-v1.mjs --acceptance-root <fresh absolute physical directory> --credential-mode <existing_configuration|isolated_acceptance_only>\nRuns only normal/failure/operator-stop CPU fixtures with existing native Job owner and official current registry reader. One shared 120s deadline, CPU affinity 3/two logical processors, 8MiB combined disk/streams with 64KiB terminal reserve, one attempt, no GPU or production mutations. Isolated mode generates an ephemeral test key only after validating the declared fresh physical root; key exists only in this process memory and child environment, is never saved or printed, and does not establish production authentication. Preserves all evidence and unknown guards. This driver does not test production CLI start, initiator exit, or qualify model training.\n');
 } else {
   const acceptance = parseNativeAcceptanceArguments(argv);
+  assert.equal(path.resolve(process.cwd()),acceptanceProjectRoot,'acceptance driver requires its source project working directory');
   assert.equal(process.platform, 'win32');
-  const evidenceRoot = validateNativeAcceptanceRoot(acceptance.evidenceRoot);
-  assert.equal(fs.existsSync(path.resolve('.runtime/ai-painter/owned-worker-guards/active.json')), false, 'no competing managed call');
+  const evidenceRoot = validateNativeAcceptanceRoot(acceptance.evidenceRoot,acceptance);
+  const currentSourceBinding=captureCurrentAcceptanceSources('native');
+  await verifyAcceptanceResourceWindow();
+  assert.equal(acceptanceEntryExists(path.join(acceptanceProjectRoot,'.runtime/ai-painter/owned-worker-guards/active.json')),false,'no competing managed call');
   await withNativeAcceptanceCredentials(acceptance, async credentialEvidence => {
   fs.mkdirSync(evidenceRoot);
   const began = Date.now(), deadline = began + 120000, maximum = 8388608, reserve = 65536;
   const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-  const sourceIdentity = nativeOwnerSourceIdentity(), driverPath = path.resolve('scripts/tests/ai-painter-local-control-native-cpu-v1.mjs');
-  const sourceFreeze = [driverPath, sourceIdentity.path, ...['native-control', 'handoff', 'request', 'execution-bridge'].map(n => path.resolve(`scripts/lib/ai-painter-owned-stop-${n}-v1.mjs`)),
-    path.resolve('scripts/lib/ai-painter-owned-worker-native-v1.mjs'), path.resolve('scripts/lib/ai-pet-world-storage.mjs'), path.resolve('src/server/ai-console-control/operator-session.ts'), path.resolve('src/server/ai-painter-current-execution-registry.mjs')].map(file => ({ path: file, sha256: hash(fs.readFileSync(file)) }));
+  const sourceIdentity = nativeOwnerSourceIdentity(), driverPath = path.join(acceptanceProjectRoot,'scripts/tests/ai-painter-local-control-native-cpu-v1.mjs');
+  verifyCurrentAcceptanceSources(currentSourceBinding,'native');
+  const sourceFreeze=currentSourceBinding.sources.map(b=>({path:path.join(acceptanceProjectRoot,b.path),sha256:b.sha256}));
   const results = []; let streamDebit = 0, helperOutputDebit = 0;
   const size = directory => {
     let bytes = 0;
@@ -87,7 +175,7 @@ if (argv[0] === '--fixture-worker') {
   helperOutputDebit += Buffer.byteLength(identityText); const supervisorIdentity = nativeAcceptanceProcessIdentity(process.pid, identityText.trim());
   const session = issueLocalOperatorSession(new Request('http://localhost:3000/api/ai-console/control/operator-session', { headers: { host: 'localhost:3000' } })); assert.equal(session.ok, true);
   const credentials = { cookie: session.setCookie.split(';')[0], csrf: session.session.csrfToken };
-  put(path.join(evidenceRoot, 'acceptance-binding.json'), { schema: 'local-control-native-cpu-acceptance-binding-v1', sourceFreeze, credentialEvidence, beganAtUtc: new Date(began).toISOString(), deadlineAtUtc: new Date(deadline).toISOString(), maximumBytes: maximum, reserveBytes: reserve, cpuAffinity: '3', attempts: 1, automaticRetries: 0, trainingPerformed: false, productionMutations: false });
+  put(path.join(evidenceRoot, 'acceptance-binding.json'), { schema: 'local-control-native-cpu-acceptance-binding-v1', sourceFreeze, currentSourceBinding, credentialEvidence, beganAtUtc: new Date(began).toISOString(), deadlineAtUtc: new Date(deadline).toISOString(), maximumBytes: maximum, reserveBytes: reserve, cpuAffinity: '3', attempts: 1, automaticRetries: 0, trainingPerformed: false, productionMutations: false });
   async function registry(root, mode, roles) {
     const rel = '.runtime/fixture', file = name => path.join(root, rel, name), binding = name => ({ path: `${rel}/${name}`, sha256: hash(fs.readFileSync(file(name))) });
     put(file('candidate.json'), { schemaVersion: 'stage4-post-decode-bounded-candidate-v1', status: 'cpu_inactive_candidate_planned_not_implemented' });
@@ -120,6 +208,8 @@ if (argv[0] === '--fixture-worker') {
   try {
     for (const mode of ['normal', 'failure', 'stop']) {
       budget(0); const root = path.join(evidenceRoot, mode); fs.mkdirSync(root);
+      verifyCurrentAcceptanceSources(currentSourceBinding,'native');
+      await verifyAcceptanceResourceWindow();
       const roles = {};
       for (const [n, b] of sourceFreeze.entries()) { const rel = `sources/source-${n}.txt`; put(path.join(root, rel), fs.readFileSync(b.path).toString('utf8')); roles[`source${n}`] = { path: rel, sha256: b.sha256 }; }
       const { context, revision } = await registry(root, mode, roles), stopRoot = path.join(root, 'operator-stop-control'); initializeOwnedStopControlEvidence(stopRoot);
@@ -130,7 +220,7 @@ if (argv[0] === '--fixture-worker') {
       helperOutputDebit += Buffer.byteLength(command.nativeBuild.output); budget(0);
       // Genuine private retained child. Descriptor is minted here, never on disk.
       const child = spawn(command.executable, command.args, { cwd: root, windowsHide: true, shell: false, stdio: ['pipe', 'pipe', 'pipe'],
-        env: { ...process.env, UV_THREADPOOL_SIZE: '1', OMP_NUM_THREADS: '2', MKL_NUM_THREADS: '2', OPENBLAS_NUM_THREADS: '2' } });
+        env: { ...process.env, CUDA_VISIBLE_DEVICES:'', UV_THREADPOOL_SIZE: '1', OMP_NUM_THREADS: '2', MKL_NUM_THREADS: '2', OPENBLAS_NUM_THREADS: '2' } });
       const descriptor = Object.freeze({ callId: id, ...Object.fromEntries(Object.entries(context).filter(([k]) => k !== 'executionPackagePath')) });
       let closed = false, proof = null, protocolError = null, delivered = null, pending = '', ownerError = '', fastTimer, slowTimer, resourceReason = null;
       const counts = { stdout: 0, stderr: 0 }, frames = [], ownerErrors = [];
@@ -176,10 +266,11 @@ if (argv[0] === '--fixture-worker') {
       put(path.join(root, 'native-acceptance-receipt.json'), receipt); results.push(receipt); budget(0);
     }
     for (const b of sourceFreeze) assert.equal(hash(fs.readFileSync(b.path)), b.sha256, 'source changed during acceptance');
+    verifyCurrentAcceptanceSources(currentSourceBinding,'native');
     const report = { status: 'native_cpu_normal_failure_operator_stop_passed', beganAtUtc: new Date(began).toISOString(), finishedAtUtc: new Date().toISOString(), elapsedMs: Date.now() - began,
       cpuAffinity: '3', maximumBytes: maximum, diskBytes: size(evidenceRoot), streamDebit, helperOutputDebit, terminalReserveBytes: reserve, results,
       productionStartTested: false, productionSecretConfiguredByDriver: false, codexRuntimeOrchestrationRequired: false,
-      credentialEvidence, detachedInitiatorExitTested: false, modelTrainingQualified: false, gpuUsed: false, attempts: 1, automaticRetries: 0 };
+      credentialEvidence, currentSourceBinding, detachedInitiatorExitTested: false, fullV2PreparationTested:false, physicalNetworkIsolationTested:false,codexApplicationActuallyClosed:false, modelTrainingQualified: false, gpuUsed: false, attempts: 1, automaticRetries: 0 };
     put(path.join(evidenceRoot, 'result.json'), report); process.stdout.write(JSON.stringify({ status: report.status, evidenceRoot, elapsedMs: report.elapsedMs }) + '\n');
   } catch (error) {
     try { put(path.join(evidenceRoot, 'failure.json'), { status: 'failed_closed', error: String(error.stack ?? error), results, elapsedMs: Date.now() - began, streamDebit, unknownGuardsRetained: true, automaticRetries: 0 }); } catch (secondary) { process.stderr.write(String(secondary.message) + '\n'); }

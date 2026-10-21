@@ -1,5 +1,6 @@
 import type { AiPainterCurrentExecutionSnapshot } from "@/server/ai-console/ai-painter-current-execution-projection"
 import type { AiConsoleLiveSnapshot } from "./ai-console-live-observability"
+import { mapWorkerTiming, type WorkerExecutionTiming } from "./ai-console-training-time"
 
 export type CurrentTrainingMetrics = {
   availability: "available" | "unavailable"
@@ -41,6 +42,7 @@ export type TrainingPresentation = {
   packagePath: string | null
   packageSha256: string | null
   currentMetrics?: CurrentTrainingMetrics | null
+  workerExecutionTiming?: WorkerExecutionTiming | null
 }
 
 export type CurrentSummarySnapshot = Omit<AiPainterCurrentExecutionSnapshot, "trainingPresentation"> & { trainingPresentation?: TrainingPresentation | null }
@@ -69,6 +71,16 @@ function count(value: unknown): number | null {
 function safeErrorLabel(value: unknown): string | null {
   if (typeof value !== "string" || !value.trim()) return null
   return /^[a-zA-Z0-9_.:-]{1,128}$/.test(value) ? value : "错误详情见已绑定终态证据"
+}
+// ENOENT is expected only for this exact observation file, not a missing lock,
+// package, parent directory, or another Run. Paths are compared, never read here.
+function missingProgress(reason: unknown, directory: string) {
+  if (typeof reason !== "string") return false
+  const match = /^ENOENT: no such file or directory, (?:realpath|open) '([^'\r\n]+)'$/.exec(reason)
+  if (!match) return false
+  const filename = match[1].replaceAll("\\", "/")
+  return !filename.split("/").some(part => part === "." || part === "..")
+    && (filename === `${directory}/progress.json` || filename.endsWith(`/${directory}/progress.json`))
 }
 export function terminalLabel(status: string | null | undefined) {
   if (!status) return "尚无最近训练终态"
@@ -104,7 +116,8 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
   const terminalErrorCode = !active && latestFailed && presentation?.runId === latest?.runId
     ? safeErrorLabel(presentation?.errorCode) : null
   const phase = String(active?.executionState ?? "")
-  const phases: Record<string, string> = { preflight: "准备与检查中", validating: "验证中（非训练）", reviewing: "审核中（非训练）", adjudicating: "裁决中（非训练）", finalizing: "收尾中（非训练）" }
+  const phases: Record<string, string> = { package_materialized: "执行包已准备（非训练）", preflight: "准备／CPU检查阶段（非训练）", validating: "验证中（非训练）", reviewing: "审核中（非训练）", adjudicating: "裁决中（非训练）", finalizing: "收尾中（非训练）", completed: "执行已完成（非训练）", failed_closed: "执行已失败关闭（非训练）", blocked_policy_boundary: "政策边界阻断（非训练）" }
+  const registeredStage = Object.prototype.hasOwnProperty.call(phases, phase) ? phases[phase] : null
   const rawPresentation = registry?.trainingPresentation
   // Presence is decisive: a rejected or null extension must never fall back to SQLite.
   const hasBoundMetrics = !!rawPresentation && Object.prototype.hasOwnProperty.call(rawPresentation, "currentMetrics")
@@ -118,11 +131,14 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
     if (!presentation || !bound || bound.availability !== "available") {
       metricReasonCode = bound?.reasonCode ?? rawPresentation?.reasonCode ?? "training_bound_progress_unavailable"
     } else if (bound.sourceIdentity !== "current_registry_bound_progress_v1" || bound.progressTtlSeconds !== 120
-      || !text(bound.sourcePath) || !/^[a-f0-9]{64}$/.test(bound.sourceSha256 ?? "")) {
+      || !text(bound.sourcePath) || !/^[a-f0-9]{64}$/.test(bound.sourceSha256 ?? "")
+      || (Object.prototype.hasOwnProperty.call(presentation, "packageSha256") && !/^[a-f0-9]{64}$/.test(presentation.packageSha256 ?? ""))) {
       metricReasonCode = "training_bound_progress_source_invalid"
     } else if (bound.runId !== activeRunId || rawPresentation?.runId !== activeRunId
       || task?.runId !== activeRunId || pid === null || pid <= 0 || bound.processId !== pid
-      || !text(active?.processStartIdentity) || bound.processStartIdentity !== active?.processStartIdentity) {
+      || !text(active?.processStartIdentity) || bound.processStartIdentity !== active?.processStartIdentity
+      || (task?.packageId != null && task.packageId !== active?.packageId)
+      || (task?.capabilityVersion != null && task.capabilityVersion !== active?.capabilityVersion)) {
       metricReasonCode = "training_bound_progress_identity_mismatch"
     } else if (!["executing", "validating", "completed", "failed_closed"].includes(bound.phase ?? "")) {
       metricReasonCode = "training_bound_progress_phase_invalid"
@@ -152,8 +168,39 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
   const metrics = matched ? hasBoundMetrics ? bound : telemetry : null
   const metricPhase = matched ? hasBoundMetrics ? bound?.phase : phase : null
   const training = matched && active?.executionState === "executing" && metricPhase === "executing"
-  const lastKnown = matched && !training && phase !== "preflight"
+  const lastKnown = matched && !training && !["preflight", "package_materialized"].includes(phase)
   const metricSource = matched ? hasBoundMetrics ? "current_registry_bound_progress_v1" : "matched_training_telemetry_v1" : null
+  // A verified registry authenticates stage evidence, not training. In particular
+  // dispatch activity can remain pending while a fresh worker progress supersedes it.
+  const stageIdentity = registryFresh && !!activeRunId && task?.runId === activeRunId
+    && pid !== null && pid > 0 && !!text(active?.processStartIdentity)
+    && task?.executionState === phase
+    && !!text(task?.capabilityVersion) && task?.capabilityVersion === active?.capabilityVersion
+    && !!text(task?.packageId) && task?.packageId === active?.packageId
+  const heartbeat = active?.heartbeat as { path?: unknown } | undefined
+  const lock = active?.lock as { path?: unknown } | undefined
+  const heartbeatPath = text(heartbeat?.path)
+  const directory = heartbeatPath?.endsWith("/heartbeat.json") ? heartbeatPath.slice(0, -15) : null
+  const emptyBound = bound?.availability === "unavailable" && bound.runId === activeRunId
+    && bound.sourceIdentity === "current_registry_bound_progress_v1" && bound.progressTtlSeconds === 120
+    && [bound.processId, bound.processStartIdentity, bound.phase, bound.sourcePath, bound.sourceSha256,
+      bound.reportedAtUtc, bound.heartbeatAtUtc, bound.epoch, bound.optimizationStep, bound.discriminatorOptimizerSteps,
+      bound.loss, bound.learningRate, bound.batchIndex, bound.batchCount, bound.throughputSamplesPerSecond,
+      bound.estimatedCompletionAtUtc, bound.checkpointIdentity].every(value => value === null)
+  const stagePresentation = !!presentation && !presentation.reasonCode && !presentation.errorCode
+    && !current.errorCode && !registry?.reasonCode
+    && !!text(presentation.packagePath) && /^[a-f0-9]{64}$/.test(presentation.packageSha256 ?? "")
+  const expectedProgressMissing = !!stageIdentity && !readOnly && phase === "executing"
+    && ["diagnostic_gpu_qualification_pending", "gpu_qualification_pending"].includes(task?.activity ?? "")
+    && task?.terminalStatus === "qualification_pending"
+    && !!directory && directory.startsWith(".runtime/ai-painter/")
+    && lock?.path === `${directory}/execution-lock.json`
+    && task?.terminalPath === `${directory}/dispatched.json` && /^[a-f0-9]{64}$/.test(task?.terminalSha256 ?? "")
+    && stagePresentation && emptyBound
+    && missingProgress(metricReasonCode, directory)
+  const nonTrainingStage = !!stageIdentity && stagePresentation && emptyBound
+    && Object.prototype.hasOwnProperty.call(phases, phase)
+    && metricReasonCode === "training_progress_active_phase_not_training"
   let status = "当前执行不可用"
   let reason = "等待受信当前登记"
   if (current.connection === "failed" || !registryFresh && registry) {
@@ -162,23 +209,38 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
   } else if (registryFresh && !active) {
     status = "当前无活动执行"
     reason = "最近结束记录不代表正在训练"
+    if (task && Object.prototype.hasOwnProperty.call(phases, task.executionState ?? "")) {
+      status += ` · ${phases[task.executionState!]}`
+      reason = "当前任务阶段来自已核验登记；无活动执行，不代表训练仍在运行"
+    }
   } else if (activeRunId) {
     const progressStatus = metricPhase === "validating" ? "验证中（非训练）"
       : metricPhase === "completed" ? "训练已完成（非训练）"
         : metricPhase === "failed_closed" ? "训练已失败关闭（非训练）" : null
-    status = readOnly ? "只读诊断中（非训练）" : training ? "正在训练（身份与进度已匹配）" : phases[phase] ?? progressStatus ?? "执行已登记，训练状态待核验"
+    status = readOnly ? "只读诊断中（非训练）" : training ? "正在训练（身份与进度已匹配）"
+      : metricPhase === "failed_closed" ? progressStatus! : registeredStage ?? progressStatus ?? "执行已登记，训练状态待核验"
     reason = training ? hasBoundMetrics ? "仅显示匹配 Run、PID、进程启动身份的绑定进度；进度有效期 120 秒，心跳有效期 15 秒"
       : "仅显示匹配 Run、PID 且新鲜的训练遥测"
       : lastKnown ? "优化训练已停止；最后核验的计数单独保留，验证或审核不计作训练"
         : "当前训练指标未核验，不以 GPU 占用推断训练"
-    if (hasBoundMetrics && metricReasonCode && !readOnly) reason = `当前绑定进度不可用（${metricReasonCode}）`
-    else if (!liveFresh && !phases[phase] && !readOnly && !hasBoundMetrics) reason = "实时遥测断线或过期，保留值不作为当前指标"
+    if (expectedProgressMissing) {
+      status = "GPU准入检查阶段（尚未进入训练）"
+      reason = "当前登记仍为准入待回执，训练进度尚未生成；不据此认定准入通过或训练开始"
+    } else if (nonTrainingStage) {
+      reason = "当前阶段来自同Run已核验登记，不作为优化训练；该阶段未提供当前训练进度"
+    } else if (hasBoundMetrics && metricReasonCode && !readOnly) {
+      status = "当前阶段／训练进度待核验"
+      reason = `当前绑定进度不可用（${safeErrorLabel(metricReasonCode) === metricReasonCode ? metricReasonCode : "读取异常，原始原因见技术详情"}）`
+    }
+    else if (!liveFresh && !registeredStage && !readOnly && !hasBoundMetrics) reason = "实时遥测断线或过期，保留值不作为当前指标"
   }
   const resolution = presentation?.resolution
   const width = count(resolution?.width), height = count(resolution?.height)
+  const currentFailure = registryFresh && ["failed_closed", "blocked_policy_boundary"].includes(active ? phase : task?.executionState ?? "")
   return {
     status, reason, training, registryFresh, metricSource, metricReasonCode, metricPhase,
-    tone: training ? "active" : !registryFresh || !!activeRunId && !matched ? "warning" : "neutral",
+    tone: training ? "active" : !registryFresh || !!activeRunId && !matched && !expectedProgressMissing && !nonTrainingStage
+      || metricPhase === "failed_closed" || currentFailure ? "warning" : "neutral",
     activeRunId, processId: pid,
     epoch: training ? count(metrics?.epoch) : null,
     optimizerStep: training ? count(metrics?.optimizationStep) : null,
@@ -204,6 +266,8 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
     latestRunId: latest?.runId ?? null,
     latestStatus: registryFresh ? latestFailed ? "最近训练失败或受阻（不是正在运行） · 证据保留" : terminalLabel(latest?.status) : "不可用（当前登记未核验）",
     latestFailed, terminalErrorCode,
+    activeTiming: mapWorkerTiming(activeRunId && presentation?.runId === activeRunId ? presentation.workerExecutionTiming : null),
+    latestTiming: mapWorkerTiming(latest?.runId && presentation?.runId === latest.runId ? presentation.workerExecutionTiming : null),
     terminalEpochs: !active && presentation ? count(presentation.completedEpochs) : null,
     terminalGeneratorSteps: !active && presentation ? count(presentation.actualOptimizerSteps?.generator) : null,
     terminalCriticSteps: !active && presentation ? count(presentation.actualOptimizerSteps?.critic) : null,
@@ -213,5 +277,7 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
     packagePath: presentation?.packagePath ?? null, packageSha256: presentation?.packageSha256 ?? null,
     telemetryRunId: telemetry?.runId ?? null, telemetryProcessId: telemetry?.processId ?? null,
     rawMetricAt: telemetry?.reportedAtUtc ?? null,
+    rawActivity: text(task?.activity), rawExecutionState: text(active?.executionState ?? task?.executionState),
+    rawTerminalStatus: text(task?.terminalStatus),
   }
 }

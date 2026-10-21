@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "source-correction-dataset-membership-v1",
+  "packageId": "source-correction64-099c2453462bc6525691cbd54369986ef84418234a6fffe5f03f78ffb18b0a3e",
+  "split": "validation",
+  "sampleIds": [
+    "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+    "ai-cold-start-v7-v7-capacity-slot-195-seasonal-evergreen-semi-evergreen-forest-v2",
+    "ai-cold-start-v7-v7-capacity-slot-196-seasonal-evergreen-semi-evergreen-forest-v2",
+    "ai-cold-start-v7-v7-capacity-slot-197-tropical-forest-glade-v2",
+    "ai-cold-start-v7-v7-capacity-slot-198-grassland-forest-transition-v4",
+    "ai-cold-start-v7-v7-capacity-slot-199-grassland-forest-transition-v1",
+    "ai-cold-start-v7-v7-capacity-slot-200-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-201-bamboo-grove-v1"
+  ]
+}

@@ -20,6 +20,11 @@ SOURCE_SCHEMA = SCHEMA + ":source-index"
 MEMBERSHIP_SCHEMA = SCHEMA + ":membership"
 EVIDENCE_SCHEMA = SCHEMA + ":qualification-evidence"
 POLICY_VERSION = "AI-PAINTER-DATA-PROVENANCE-1.7"
+FROZEN_DATA_POLICY = {
+    "path": "docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md",
+    "sha256": "e1555cd191c87766fc29b55b56616991cfdf8c5fc7f69f1fa5bc22718b763db6",
+    "snapshot": "data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.7-e1555cd1.txt",
+}
 SOURCE_ISOLATION_SCHEMA = "ai-painter-mvp-source-isolation-classification-contract-v1"
 PAIRING_SCHEMA = "ai-painter-stage4-source-pairing-observation-v1"
 SEMANTIC_SCHEMA = "controller-regrouped64-current-semantic-rights-verification-v1"
@@ -42,6 +47,18 @@ def _row_identity(rows: list[dict]) -> list[dict]:
             for row in rows]
 
 
+def _data_policy_bytes(root: Path, binding: dict) -> bytes:
+    # Historical release identity still names its original document bytes.
+    # Only the exact known 1.7 binding may resolve to its preserved snapshot.
+    current = project_file(root, binding["path"])
+    data = current.read_bytes() if current.exists() else b""
+    if digest(data) != binding.get("sha256") and binding == {
+            "path": FROZEN_DATA_POLICY["path"], "sha256": FROZEN_DATA_POLICY["sha256"]}:
+        data = project_file(root, FROZEN_DATA_POLICY["snapshot"]).read_bytes()
+    require(digest(data) == binding.get("sha256"), "data policy SHA-256 mismatch")
+    return data
+
+
 def _verify_evidence(root: Path, candidate_binding: dict, rows: list[dict],
                      source_pairing_binding: dict, semantic_rights_binding: dict,
                      historical_exposure_binding: dict,
@@ -55,9 +72,7 @@ def _verify_evidence(root: Path, candidate_binding: dict, rows: list[dict],
             and contract.get("policyVersion") == POLICY_VERSION
             and contract.get("scope") == "single_primitive_natural_world_mvp",
             "source-isolation contract mismatch")
-    policy_bytes = project_file(root, data_policy_binding["path"]).read_bytes()
-    require(digest(policy_bytes) == data_policy_binding.get("sha256"),
-            "data policy SHA-256 mismatch")
+    policy_bytes = _data_policy_bytes(root, data_policy_binding)
     policy_text = policy_bytes.decode("utf-8")
     require(f"文档版本：`{POLICY_VERSION}`" in policy_text
             and "### 8.2 单世界MVP的公共地理输入与样本泄漏边界" in policy_text

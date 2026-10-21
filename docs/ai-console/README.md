@@ -1,10 +1,10 @@
 # AI控制台文档入口
 
-更新时间：2026-10-03 15:25:45 +08:00
+更新时间：2026-10-22 02:33:00 +08:00
 
 状态：active-module-document-index
 
-文档版本：`AI-CONSOLE-DOC-INDEX-2.7`
+文档版本：`AI-CONSOLE-DOC-INDEX-2.8`
 
 生效日期：`2026-08-27`
 
@@ -103,7 +103,7 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 - `.runtime/ai-console/observability/training-telemetry-v1.sqlite`：V17新平台训练遥测登记；只有新平台训练服务调用固定内部写入器时创建并追加Run、Epoch、Batch、Loss、学习率、吞吐、ETA、Checkpoint和心跳。当前旧训练不导入，未上报时明确显示`not_connected`。
 - `src/app/ai-painter-progress/`：退役路由兼容层；仅允许把旧网址永久重定向到`/ai-console`，不得保留旧UI、状态读取或控制逻辑。
 - `docs/ai-painter-progress/`：退役页面的历史设计资料；只用于旧实现复核，不是现行页面、后台、状态或授权规格。
-- `src/app/api/ai-painter/`：AI Painter共享后台API；继续服务`ai-painter-lab`等非退役业务，不属于旧页面UI，也不得被新控制台查询层调用。
+- `src/app/api/ai-painter/`：AI Painter独立共享后台API；单体资产实验页删除不删除这些后台能力与数据，它们也不得被新控制台查询层调用。当前训练与审核状态统一沿本控制台的正式受信接口读取。
 - `docs/DOCUMENT_AUTHORITY_INDEX.md`：项目文档权威顺序和Owner职责唯一来源。
 - `docs/DIRECTORY_STRUCTURE.md`：项目目录职责。
 

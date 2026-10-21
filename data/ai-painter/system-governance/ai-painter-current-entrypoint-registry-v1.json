@@ -6,7 +6,35 @@
   "resolverIdentity": "local_ai_painter_current_entrypoint_resolver",
   "normalAuthority": "local_ai_pet_world_program",
   "ownerInNormalStateMachine": false,
+  "trainingInterfaces": [
+    {
+      "candidateSelection": "d1-ss1-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v8.json",
+        "sha256": "0729f440961a6b2471853e83f6f4c736d29cb9b16d4e1062c27cb1a3f2e39cf3"
+      }
+    },
+    {
+      "candidateSelection": "d1-src-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v7.json",
+        "sha256": "f8cd0b7a9e87d2fb3172971aaa6a30a68788f643d7f07fdf0def34be407c1990"
+      }
+    },
+    {
+      "candidateSelection": "d1-if-v2",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v6.json",
+        "sha256": "21c5a5088c51b2350147d55c372034686d746f00aa58314f86c0e17e443eb59c"
+      }
+    }
+  ],
   "currentEntrypoints": [
+    {
+      "packageScript": "control:ai-painter-decode1-entry-weight-quality",
+      "entryFile": "scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs",
+      "role": "decode1_entry_weight_quality24_six_phase_adapter_same_package_cpu_gpu_training_review"
+    },
     {
       "packageScript": "control:ai-painter-object-support-structure-quality",
       "entryFile": "scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
@@ -164,6 +192,102 @@
     }
   ],
   "localControlEntrypoints": [
+    {
+      "entryId": "ai-painter-local-control-v1-decode1-entry-weight-quality-same-call-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",
+      "role": "fixed_local_start_status_stop_v1",
+      "protocol": "ai-painter-local-control-v1",
+      "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1",
+      "adapterFile": "scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs",
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v2-decode1-entry-weight-quality-same-call-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "role": "fixed_local_prepare_start_status_stop_v2",
+      "protocol": "ai-painter-local-control-v2",
+      "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1",
+      "adapterFile": "scripts/lib/ai-painter-local-prepare-v1.mjs",
+      "runnerFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "candidateSelection": "decode1-entry-weight-quality-same-call-v1",
+      "candidateBinding": {
+        "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+        "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+      },
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v1-decode1-entry-weight-quality-completion-v2",
+      "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",
+      "role": "fixed_local_start_status_stop_v1",
+      "protocol": "ai-painter-local-control-v1",
+      "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2",
+      "adapterFile": "scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs",
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v2-decode1-entry-weight-quality-completion-v2",
+      "entryFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "role": "fixed_local_prepare_start_status_stop_v2",
+      "protocol": "ai-painter-local-control-v2",
+      "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2",
+      "adapterFile": "scripts/lib/ai-painter-local-prepare-v1.mjs",
+      "runnerFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "candidateSelection": "decode1-entry-weight-quality-completion-v2",
+      "candidateBinding": {
+        "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+        "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+      },
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v1-decode1-entry-weight-quality-completion-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",
+      "role": "fixed_local_start_status_stop_v1",
+      "protocol": "ai-painter-local-control-v1",
+      "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v1",
+      "adapterFile": "scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs",
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v2-decode1-entry-weight-quality-completion-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "role": "fixed_local_prepare_start_status_stop_v2",
+      "protocol": "ai-painter-local-control-v2",
+      "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v1",
+      "adapterFile": "scripts/lib/ai-painter-local-prepare-v1.mjs",
+      "runnerFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "candidateSelection": "decode1-entry-weight-quality-completion-v1",
+      "candidateBinding": {
+        "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+        "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+      },
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v1-decode1-entry-weight-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",
+      "role": "fixed_local_start_status_stop_v1",
+      "protocol": "ai-painter-local-control-v1",
+      "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_v1",
+      "adapterFile": "scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs",
+      "commands": ["start", "status", "stop"]
+    },
+    {
+      "entryId": "ai-painter-local-control-v2-decode1-entry-weight-quality-v1",
+      "entryFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "role": "fixed_local_prepare_start_status_stop_v2",
+      "protocol": "ai-painter-local-control-v2",
+      "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_v1",
+      "adapterFile": "scripts/lib/ai-painter-local-prepare-v1.mjs",
+      "runnerFile": "scripts/run-ai-painter-local-control-v2.mjs",
+      "candidateSelection": "decode1-entry-weight-quality-v1",
+      "candidateBinding": {
+        "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+        "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+      },
+      "commands": ["start", "status", "stop"]
+    },
     {
       "entryId": "ai-painter-local-control-v1-joint-object-priority-quality-v1",
       "entryFile": "scripts/run-ai-painter-local-control-v1.mjs",

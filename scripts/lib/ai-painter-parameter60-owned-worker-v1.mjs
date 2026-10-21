@@ -60,11 +60,54 @@ export function validateParameter60NativeProof(proof, observed = {}) {
 // CP60 invocation adapter only: private Job, existing unique active.json, no
 // registry writes, service, retries, historical observations or guard recovery.
 export function runParameter60OwnedWorker(executable, args, {
-  cwd, env, timeout, maxBuffer = STREAM_LIMIT, abortReason = () => null, onSpawn = null,
+  ...options
 } = {}) {
+  return runOwnedWorker(executable, args, options, 180000);
+}
+
+// Same native Job transport; only the separately registered qualification
+// package may use its CPU240/GPU720 phase budgets. Legacy callers retain180s.
+export function runQualificationOwnedWorker(executable, args, {
+  qualificationPolicy, phase, ...options
+} = {}) {
+  const logical="data/ai-painter/system-governance/ai-painter-decode1-entry-gpu-qualification-policy-v1.json";
+  assert.equal(qualificationPolicy?.path,logical,"exact qualification policy required");
+  assert.match(qualificationPolicy.sha256??"",/^[a-f0-9]{64}$/u);
+  assert.ok(typeof options.cwd==="string"&&path.isAbsolute(options.cwd),"explicit qualification root required");
+  const root=path.resolve(options.cwd),raw=fs.readFileSync(path.join(root,logical));
+  assert.equal(hash(raw),qualificationPolicy.sha256,"qualification policy bytes differ");
+  const policy=JSON.parse(raw);
+  assert.equal(policy.schemaVersion,"ai-painter-decode1-entry-gpu-qualification-policy-v1");
+  assert.equal(policy.capabilityVersion,"stage4_mvp256_dry_decode1_entry_gpu_qualification_v1");
+  assert.equal(policy.outputRoot,".runtime/ai-painter/decode1-entry-gpu-qualifications");
+  assert.deepEqual(policy.allowedModes,["cpu_prepare","gpu_qualify"]);
+  assert.equal(policy.executionBoundary.training,false);
+  assert.equal(policy.resources.cpuPreparationSeconds,240);
+  assert.equal(policy.resources.gpuQualificationSeconds,720);
+  assert.ok(phase==="cpu"||phase==="qualification","registered qualification phase required");
+  assert.ok(Array.isArray(args)&&args.length===6&&args[0]==="-B"&&args[2]==="--request"&&args[4]==="--request-sha256",
+    "fixed qualification worker arguments required");
+  assert.equal(path.resolve(args[1]),path.join(root,"ml/ai-painter/scripts/qualify_decode1_entry_gpu_v1.py"));
+  assert.ok(typeof args[3]==="string"&&!/[\\:\x00-\x1f]/u.test(args[3])&&!args[3].startsWith("/")
+    &&args[3].split("/").every(part=>part&&part!=="."&&part!==".."),"logical qualification request required");
+  assert.match(args[5],/^[a-f0-9]{64}$/u);
+  const requestRaw=fs.readFileSync(path.join(root,args[3]));
+  assert.equal(hash(requestRaw),args[5],"qualification request bytes differ");
+  const request=JSON.parse(requestRaw);
+  assert.equal(request.schemaVersion,"decode1-entry-gpu-qualification-request-v1");
+  assert.match(request.runId??"",/^decode1-entry-qualification-[a-f0-9-]{36}$/u);
+  assert.deepEqual(request.policy,qualificationPolicy);
+  assert.equal(request.mode,phase==="cpu"?"cpu_prepare":"gpu_qualify","request/phase mismatch");
+  assert.equal(request.outputRoot,policy.outputRoot+"/"+request.runId);
+  return runOwnedWorker(executable,args,options,phase==="cpu"?240000:720000);
+}
+
+function runOwnedWorker(executable, args, {
+  cwd, env, timeout, maxBuffer = STREAM_LIMIT, abortReason = () => null, onSpawn = null,
+} = {}, maximumTimeoutMs=180000) {
   const started = Date.now(), monotonicStarted = performance.now();
   assert.equal(process.platform, "win32", "parameter60_owned_worker_windows_required");
-  assert.ok(Number.isInteger(timeout) && timeout > 1000 && timeout <= 180000, "total timeout must include the 1000ms cleanup reserve and be <=180s");
+  assert.ok(Number.isInteger(timeout) && timeout > 1000 && timeout <= maximumTimeoutMs, "total timeout must include the 1000ms cleanup reserve and be <="+(maximumTimeoutMs/1000)+"s");
   assert.equal(maxBuffer, STREAM_LIMIT, "CP60 total stream limit must remain 8 MiB");
   assert.ok(typeof cwd === "string" && path.isAbsolute(cwd), "explicit absolute cwd required");
   assert.ok(typeof executable === "string" && executable.length > 0 && !executable.includes("\0"));

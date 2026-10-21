@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 import vm from 'node:vm'
+import { trainingTime } from './helpers/training-time-cpu.mjs'
 
 // Exercise the real component's state, effects and click handlers without a
 // desktop browser. This does not claim DOM, image decoding or browser coverage.
@@ -48,6 +49,7 @@ function harness(initialUrl = null, { hydrating = false } = {}) {
     require(name) {
       if (name === 'react') return hooks
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'fragment' }
+      if (name === './ai-console-training-time') return trainingTime
       if (name.includes('history-poll')) return { startHistoryPolling(run, failed) {
         const queries = typeof run === 'function' ? [{ run, failed }] : run
         poll = { async run(signal) { for (const query of queries) { if (signal.aborted) break; try { await query.run(signal) } catch (error) { if (!signal.aborted) query.failed(error) } } }, failed(error) { queries.forEach(query => query.failed(error)) } }

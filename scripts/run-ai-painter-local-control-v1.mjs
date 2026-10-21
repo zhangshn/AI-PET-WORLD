@@ -8,6 +8,7 @@ import { launchAutonomousClosedLoopBackground, BACKGROUND_LAUNCH_ROOT } from './
 import { validateClosedLoopPackage, PHASES, CLOSED_LOOP_ROOT, CURRENT_ENTRYPOINT_REGISTRY_PATH } from './lib/ai-painter-autonomous-closed-loop-v1.mjs';
 import { localOperatorRequest, submitOwnedStopIntent } from './lib/ai-painter-owned-stop-native-control-v1.mjs';
 import { readOwnedStopProjectFile, resolveOwnedStopProjectDirectory, validateOwnedStopInput, STOP_REQUEST_LIMITS, ownedStopSourceFileMaximum } from './lib/ai-painter-owned-stop-request-v1.mjs';
+import {registeredTrainingInterfaces} from './lib/ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
 
 export const LOCAL_CONTROL_PROTOCOL = 'ai-painter-local-control-v1';
 export const LOCAL_CONTROL_CAPABILITY = 'stage4_mvp256_dry_factorized_ecology_quality_v1';
@@ -37,8 +38,33 @@ export const LOCAL_FINAL_RGB_CONTROL_REGISTRATION=Object.freeze({...LOCAL_OBJECT
 export const LOCAL_JOINT_CONTROL_REGISTRATION=Object.freeze({...LOCAL_OBJECT_SUPPORT_CONTROL_REGISTRATION,
  entryId:'ai-painter-local-control-v1-joint-object-priority-quality-v1',
  capabilityVersion:'stage4_mvp256_dry_joint_object_priority_quality24_v1'});
+export const LOCAL_DECODE1_ENTRY_WEIGHT_CONTROL_REGISTRATION=Object.freeze({...LOCAL_OBJECT_SUPPORT_CONTROL_REGISTRATION,
+ entryId:'ai-painter-local-control-v1-decode1-entry-weight-quality-v1',
+ capabilityVersion:'stage4_mvp256_dry_decode1_entry_weight_quality24_v1',
+ adapterFile:'scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs'});
+export const LOCAL_DECODE1_ENTRY_COMPLETION_CONTROL_REGISTRATION=Object.freeze({...LOCAL_DECODE1_ENTRY_WEIGHT_CONTROL_REGISTRATION,
+ entryId:'ai-painter-local-control-v1-decode1-entry-weight-quality-completion-v1',
+ capabilityVersion:'stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v1'});
+export const LOCAL_DECODE1_ENTRY_COMPLETION_V2_CONTROL_REGISTRATION=Object.freeze({...LOCAL_DECODE1_ENTRY_COMPLETION_CONTROL_REGISTRATION,
+ entryId:'ai-painter-local-control-v1-decode1-entry-weight-quality-completion-v2',
+ capabilityVersion:'stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2'});
+export const LOCAL_DECODE1_ENTRY_SAME_CALL_CONTROL_REGISTRATION=Object.freeze({...LOCAL_DECODE1_ENTRY_COMPLETION_V2_CONTROL_REGISTRATION,
+ entryId:'ai-painter-local-control-v1-decode1-entry-weight-quality-same-call-v1',
+ capabilityVersion:'stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1'});
 const CONTROL_ROUTES=Object.freeze([
+ Object.freeze({registration:LOCAL_DECODE1_ENTRY_SAME_CALL_CONTROL_REGISTRATION,
+  capability:LOCAL_DECODE1_ENTRY_SAME_CALL_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_DECODE1_ENTRY_SAME_CALL_CONTROL_REGISTRATION.adapterFile,
+  planSchema:'object-support-structure-quality-plan-v1',outputRoot:'.runtime/ai-painter/decode1-entry-weight-quality-same-call-v1-executions'}),
  Object.freeze({registration:LOCAL_CONTROL_REGISTRATION,capability:LOCAL_CONTROL_CAPABILITY,adapter:LOCAL_CONTROL_ADAPTER,planSchema:LOCAL_CONTROL_PLAN_SCHEMA,outputRoot:LOCAL_CONTROL_OUTPUT_ROOT}),
+ Object.freeze({registration:LOCAL_DECODE1_ENTRY_WEIGHT_CONTROL_REGISTRATION,
+  capability:LOCAL_DECODE1_ENTRY_WEIGHT_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_DECODE1_ENTRY_WEIGHT_CONTROL_REGISTRATION.adapterFile,
+  planSchema:'object-support-structure-quality-plan-v1',outputRoot:'.runtime/ai-painter/decode1-entry-weight-quality-executions'}),
+ Object.freeze({registration:LOCAL_DECODE1_ENTRY_COMPLETION_CONTROL_REGISTRATION,
+  capability:LOCAL_DECODE1_ENTRY_COMPLETION_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_DECODE1_ENTRY_COMPLETION_CONTROL_REGISTRATION.adapterFile,
+  planSchema:'object-support-structure-quality-plan-v1',outputRoot:'.runtime/ai-painter/decode1-entry-weight-quality-completion-executions'}),
+ Object.freeze({registration:LOCAL_DECODE1_ENTRY_COMPLETION_V2_CONTROL_REGISTRATION,
+  capability:LOCAL_DECODE1_ENTRY_COMPLETION_V2_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_DECODE1_ENTRY_COMPLETION_V2_CONTROL_REGISTRATION.adapterFile,
+  planSchema:'object-support-structure-quality-plan-v1',outputRoot:'.runtime/ai-painter/decode1-entry-weight-quality-completion-v2-executions'}),
  Object.freeze({registration:LOCAL_DECODE1_CONTROL_REGISTRATION,capability:LOCAL_DECODE1_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_DECODE1_CONTROL_REGISTRATION.adapterFile,
   planSchema:'ecology-decode1-weight-quality-plan-v1',outputRoot:'.runtime/ai-painter/ecology-decode1-weight-quality-executions'}),
  Object.freeze({registration:LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION,capability:LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_TERRAIN_DETAIL_CONTROL_REGISTRATION.adapterFile,
@@ -49,7 +75,12 @@ const CONTROL_ROUTES=Object.freeze([
   planSchema:'object-support-structure-quality-plan-v1',outputRoot:'.runtime/ai-painter/final-rgb-base-weight-quality-executions'}),
  Object.freeze({registration:LOCAL_JOINT_CONTROL_REGISTRATION,capability:LOCAL_JOINT_CONTROL_REGISTRATION.capabilityVersion,adapter:LOCAL_JOINT_CONTROL_REGISTRATION.adapterFile,
   planSchema:'object-support-structure-quality-plan-v1',outputRoot:'.runtime/ai-painter/joint-object-priority-quality-executions'})]);
-function controlRoute(capability){const found=CONTROL_ROUTES.find(r=>r.capability===capability);need(found,'local_unknown_capability_or_retries');return found;}
+function controlRoute(capability,root=process.cwd()){
+ const legacy=CONTROL_ROUTES.find(r=>r.capability===capability);if(legacy)return legacy;
+ const profile=registeredTrainingInterfaces(root).find(r=>r.CAPABILITY===capability);need(profile,'local_unknown_capability_or_retries');
+ return {capability,adapter:'scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs',
+  planSchema:'object-support-structure-quality-plan-v1',outputRoot:profile.OUTPUT_ROOT,interfacePolicy:profile.EXECUTION_POLICY};
+}
 const hash = v => crypto.createHash('sha256').update(v).digest('hex');
 const need = (v, c) => { if (!v) throw Error(c); };
 const plain = v => v !== null && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype;
@@ -70,6 +101,8 @@ export function parseLocalControlArguments(args) {
 
 function readJson(root, name) { return JSON.parse(readOwnedStopProjectFile(root, name).toString('utf8')); }
 function registered(root,route=CONTROL_ROUTES[0]) {
+  if(route.interfacePolicy){const current=controlRoute(route.capability,root);
+    need(JSON.stringify(current)===JSON.stringify(route),'local_interface_registration_changed');return;}
   const expected=route.registration;
   const index = readJson(root, CURRENT_ENTRYPOINT_REGISTRY_PATH);
   need(index.schemaVersion === 'ai-painter-current-entrypoint-registry-v1' && index.status === 'active' &&
@@ -86,7 +119,7 @@ export function validateLocalStartPackage(root, command) {
   const bytes = readOwnedStopProjectFile(root, command.packagePath);
   need(hash(bytes) === command.packageSha256, 'local_package_sha_mismatch');
   const spec = JSON.parse(bytes.toString('utf8'));
-  const route=controlRoute(spec.capabilityVersion);registered(root,route);
+  const route=controlRoute(spec.capabilityVersion,root);registered(root,route);
   need(spec.maxInfrastructureRecoveryAttempts === 0, 'local_unknown_capability_or_retries');
   need(command.packagePath === `.runtime/ai-painter/autonomous-closed-loop-packages/${spec.packageIdentity}/package.json`, 'local_package_identity_mismatch');
   for (const phase of PHASES) need(spec.phaseAdapters?.[phase]?.path === route.adapter &&

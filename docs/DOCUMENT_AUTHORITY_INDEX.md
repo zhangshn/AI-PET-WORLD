@@ -1,14 +1,14 @@
 # 项目文档权威索引
 
-更新时间：2026-10-14 14:26:17 +08:00
+更新时间：2026-10-22 02:00:00 +08:00
 
 状态：active-document-governance-index
 
-文档版本：`DOCUMENT-AUTHORITY-1.9`
+文档版本：`DOCUMENT-AUTHORITY-1.10`
 
-生效日期：`2026-10-14`
+生效日期：`2026-10-22`
 
-替代版本：`DOCUMENT-AUTHORITY-1.8`
+替代版本：`DOCUMENT-AUTHORITY-1.9`
 
 文档状态：`active_normative_target`
 
@@ -36,6 +36,7 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 | AI控制台页面与后台规格 | `docs/ai-console/` | 唯一现行控制台的产品、功能、架构、路由、UI、数据和API合同 |
 | 退役AI Painter页面资料 | `docs/ai-painter-progress/` | 仅复核旧页面设计；不得参与当前控制台、任务选择、状态投影或程序依赖解析 |
 | 项目目录结构 | `docs/DIRECTORY_STRUCTURE.md` | 逻辑目录职责、数据包根、运行证据和RuntimeFrame目录边界 |
+| 本地数据总汇、备份与工作台账 | `docs/LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md` | 同一应用内独立模块的数据覆盖、手动备份、按功能工作记录、计划引用、API、目录和验收；不替代唯一模块计划表或训练登记 |
 | 世界视觉数据字典 | `docs/world-visual-data-dictionary/` | 视觉事实、标签、失败码和机器审核语义 |
 | 人格数据子系统 | `docs/ziwei/` | 紫微斗数、八字与人格映射输入数据 |
 | 文档治理 | 本文件、`docs/DOCUMENTATION_POLICY.md` | 文档分类、必备元数据、链接和唯一性规则 |

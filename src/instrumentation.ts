@@ -2,6 +2,15 @@
 // start scans or mutate its state. The global guard avoids duplicate dev reloads.
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
+  // This observer has its own singleton; GET handlers never start it. Keep it
+  // independent of the existing history indexer guard and polling behavior.
+  const workCwd = process.cwd().replaceAll('\\', '/')
+  const workUrl = `${workCwd.startsWith('/') ? 'file://' : 'file:///'}${workCwd}/src/server/local-backup/work-observer.mjs`
+  try {
+    const { startWorkObserver } = await import(/* webpackIgnore: true */ workUrl)
+    const observer = startWorkObserver()
+    void observer.ready.catch(() => console.error('local_work_recording_startup_failed'))
+  } catch { console.error('local_work_recording_startup_unavailable') }
   const scope = globalThis as typeof globalThis & { __aiConsoleHistoryIndexerStarted?: boolean }
   if (scope.__aiConsoleHistoryIndexerStarted) return
   // Next also compiles instrumentation for Edge. The indexer is Node-only and

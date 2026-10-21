@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "ai-painter-saved-gradient-algebra-cpu-policy-v3",
+  "status": "registered_one_attempt_readonly_cpu_not_training",
+  "scope": "saved_gradient_algebra_only",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "6f6bbb4cc6f618e58e8bebefe546d948636d8438f826c511e39b0aa8ae91ab61",
+    "version": "AI-PAINTER-SPEC-1.88"
+  },
+  "runId": "joint-object-quality-v1-c6ec20e3-a5bc-4969-9bb8-437f47fa2802",
+  "registrationInputs": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter48-review-20261018/registration-inputs-v2.json",
+    "sha256": "a18280f7a74576031453ffadaaa875f049fd15afcf9cb0be83e8b7e8efbffd14"
+  },
+  "programBindings": {
+    "driver": {
+      "path": "ml/ai-painter/scripts/check_saved_gradient_algebra_cpu_v3.py",
+      "sha256": "93e985c9ad31c429644f3970c168436bf4b193c7ae69fc9331e37e0b54483d4b"
+    },
+    "tests": {
+      "path": "ml/ai-painter/tests/test_saved_gradient_algebra_cpu_v3.py",
+      "sha256": "d6751c9a6881211271a3b9440fd93153e27ddcef9dd7a1e72e57c5aaba32a0d7"
+    }
+  },
+  "executionHost": {
+    "path": "scripts/check-ai-painter-saved-gradient-algebra-cpu-v3.mjs",
+    "sha256": "d3cf675f27ec0fc6998ecd0a55f72fd4f20f236bc3d4bdcc635bde3136b348d6"
+  },
+  "containmentProgramBindings": {
+    "owner": {
+      "path": "scripts/lib/ai-painter-owned-worker-v1.mjs",
+      "sha256": "0e15284e320123e361b49d8b28731559b31f45e3057ac8a6deac99d951672af6"
+    },
+    "nativeBridge": {
+      "path": "scripts/lib/ai-painter-owned-worker-native-v1.mjs",
+      "sha256": "b2925ccdf6e5f3571c868bfaceb3fa5631267d3ab686a8b4e74bb28e0c4cce4c"
+    },
+    "nativeOwnerSource": {
+      "path": "scripts/windows/ai-painter-owned-worker-owner.cs",
+      "sha256": "542b690b20459c445da801f17f3dc974904f35a0c81048c49bb97c04e2d2d353"
+    },
+    "pathResolver": {
+      "path": "scripts/lib/ai-painter-owned-stop-request-v1.mjs",
+      "sha256": "029ed981665f662afc14efdbfcbe4c931f02722d328474be7501f92cf72e0a1c"
+    },
+    "storageConfiguration": {
+      "path": "scripts/lib/ai-pet-world-storage.mjs",
+      "sha256": "49d155cb63cbc026366b538e8204c37f51eb3221364d6d5ac99517a37b6e2fdc"
+    },
+    "operatorSession": {
+      "path": "src/server/ai-console-control/operator-session.ts",
+      "sha256": "54c6cc9daf03a664af99d8c005ce113547c83b68afa8a4d280b9e38c659233b5"
+    },
+    "candidateRegistration": {
+      "path": "scripts/lib/ai-painter-object-support-structure-quality-registration-v1.mjs",
+      "sha256": "8beceea07b856ac1f3780a3a505e8aa19a34ac5c6393a61a9874dca0d77fae4c"
+    }
+  },
+  "interpreter": {
+    "absolutePath": "F:/ai-pet-world/ml/ai-painter/.venv/Scripts/python.exe",
+    "sha256": "5912d0884b23c0343983a864c6064242391e2265536f50b88624857e353882c9"
+  },
+  "target": {
+    "parameterIndex": 48,
+    "name": "core.core.terrain.decode_1.layers.0.weight",
+    "shape": [
+      48,
+      144,
+      3,
+      3
+    ]
+  },
+  "comparison": {
+    "atol": 0.000001,
+    "rtol": 0.00001,
+    "gradientLabels": [
+      "actualTotal",
+      "structuredObjective",
+      "wholeFrameFidelity",
+      "objectCoreRgb",
+      "objectSupportStructure"
+    ],
+    "fp32Order": "(((structured.float()+whole.float()).float()+core.float()).float()+support.float())",
+    "gate": "torch.isclose(actual,ordered_fp32_sum,atol=1e-6,rtol=1e-5,equal_nan=False)",
+    "fp64Meaning": "Only FP64 sum of already-saved FP32 component values, not independently recomputed high-precision model gradients",
+    "outcome": "Preserve valid observations including non-reproduction. Scan all 108 tensors; distinguish finite tolerance failures and nonfinite ordered sums. Full counts, at most 64 failure locations per parameter."
+  },
+  "resources": {
+    "cpuThreads": 2,
+    "cpuAffinityMaximum": 2,
+    "maxWallSecondsIncludingStartup": 120,
+    "maxRssMiB": 1536,
+    "maxOutputMiB": 8,
+    "maxSingleJsonMiB": 2,
+    "failureReserveBytes": 65536,
+    "archiveReadMaximumBytes": 67108864,
+    "decodedMaximumBytesIncludingArchiveMetadata": 67108864,
+    "attempts": 1,
+    "automaticRetries": 0,
+    "containment": "existing runOwnedWorker, no new service",
+    "rssLimitEnforcement": "phase and parameter-boundary observations; not claimed as an OS hard memory cap",
+    "cudaInitialization": 0,
+    "modelForwards": 0,
+    "autogradCalls": 0,
+    "optimizerUpdates": 0,
+    "affinityEnforcement": "Set own allowed affinity to at most two CPUs and verify before importing Torch."
+  },
+  "outputRoot": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter48-review-20261018/attempt-002",
+  "allowedActions": [
+    "Verify pinned metadata, source and tensor descriptors using exact identities",
+    "Read bounded archive through original weights_only CPU loader without installing any model or RNG state",
+    "Scan all 108 saved parameter-gradient sets with original formula and unchanged tolerance",
+    "Save bounded algebra, resource and cleanup evidence under the one new attempt"
+  ],
+  "forbiddenActions": [
+    "model construction or G/D state installation",
+    "forward, autograd, optimizer, CUDA or training",
+    "real image, condition, validation, challenge or regression decoding",
+    "Checkpoint or image writing",
+    "old evidence mutation, original run replay, production registry writes",
+    "automatic retries or GPU/repair qualification from this audit"
+  ],
+  "qualification": {
+    "rootCauseProven": false,
+    "modelRepaired": false,
+    "gpuQualified": false,
+    "trainingQualified": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false
+  },
+  "executionHostTests": {
+    "path": "scripts/tests/ai-painter-saved-gradient-algebra-host-v3.test.mjs",
+    "sha256": "7d3fe0ab91dd29859bbc6280cef2405da4e4d43e0996a072d6524b62f916881a"
+  },
+  "predecessor": {
+    "path": "data/ai-painter/system-governance/ai-painter-saved-gradient-algebra-cpu-policy-v2.json",
+    "sha256": "09d2684dfde08bbbcc95775c5555427adda1b7427f993288636532f636801038"
+  },
+  "predecessorFailure": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter48-review-20261018/host-attempt-001/failure.json",
+    "sha256": "7791842276d272544711eefdb632b448cbb557be965c97b2d36870a87817c138"
+  },
+  "outputAccounting": {
+    "maximumBytes": 8388608,
+    "failureReserveBytes": 65536,
+    "hostTransportConservativeDebitBytes": 16384,
+    "included": [
+      "driver result",
+      "host evidence",
+      "this exact native call build and cleanup evidence",
+      "settled worker raw stdout and stderr",
+      "compiler output",
+      "bounded host CLI transport"
+    ],
+    "enforcement": "Before/after normal evidence writes, during owned-worker monitor and after this exact call settles. Settled stdio is actual counts, not claimed as an OS-hard live combined stream cap.",
+    "reportSnapshot": "The saved host report identifies its pre-write snapshot; final return includes that report and the conservative CLI debit."
+  }
+}

@@ -286,6 +286,16 @@ def materialize_package(root: Path, *, parent_binding: dict | None = None) -> di
 
 def load_package(root: Path, binding: dict) -> tuple[dict, list[dict]]:
     manifest = bound_json(root, binding)
+    if manifest.get("schemaVersion") == "ai-painter-stage4-source-correction-release-v1":
+        from .source_correction_release import reproduce_release
+        expected, artifacts, rows = reproduce_release(root, manifest)
+        _require(manifest == expected, "corrected release does not reproduce its evidence")
+        relative = f"{PACKAGE_ROOT}/{manifest['packageId']}"
+        _require(binding["path"] == relative + "/manifest.json", "corrected release namespace mismatch")
+        for name, data in artifacts.items():
+            _require(project_file(root, relative + "/" + name).read_bytes() == data,
+                     "corrected release bytes mismatch: " + name)
+        return manifest, rows
     if manifest.get("schemaVersion") == "ai-painter-stage4-v2-mvp64-denoiser-dataset-release-v1":
         from .mvp_denoiser_release import reproduce_release
         expected, rows = reproduce_release(root, manifest)

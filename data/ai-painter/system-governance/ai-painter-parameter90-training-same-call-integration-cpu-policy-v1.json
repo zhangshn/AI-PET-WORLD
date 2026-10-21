@@ -1,0 +1,664 @@
+{
+  "schemaVersion": "ai-painter-parameter90-training-same-call-integration-cpu-policy-v1",
+  "status": "registered_cpu_integration_validation_only",
+  "scope": "training_same_call_integration_synthetic_cpu_only",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.103",
+    "sha256": "0ffb499fd1965195eb9e834b03f1ca3b05e3de4a5e88823468b404f76a68a7c0"
+  },
+  "designBinding": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/parameter90-review-20261019/same-call-integration-cpu/design-v1.json",
+    "sha256": "1a8ba2ac72bcf390e49cf560d0105d5fded4a5cff8a57bcb0eee14f5177769b4"
+  },
+  "executionHost": {
+    "path": "scripts/check-ai-painter-parameter90-training-same-call-integration-cpu-v1.mjs",
+    "sha256": "d46ccef007c1e3cc94c9f6bcbcf5b499e5a44424f94684d3142303455c0af2f1"
+  },
+  "executionHostTests": {
+    "path": "scripts/tests/ai-painter-parameter90-training-same-call-integration-cpu-v1.test.mjs",
+    "sha256": "662cd00dd898f29538fa55cd07cc3e24110a2922b352737fffe459010081797c"
+  },
+  "programBindings": [
+    {
+      "path": "ml/ai-painter/scripts/check_parameter90_training_same_call_capture_cpu_v1.py",
+      "sha256": "8b5f6768a9426e31c4043d739fd6a51aae2400cbc8ab6c446fc84649afe66cc8"
+    },
+    {
+      "path": "ml/ai-painter/scripts/check_parameter90_training_same_call_integration_cpu_v1.py",
+      "sha256": "2efe58f68ff4490de898a9928e2a499115acc5b1486afb9174e9bf8bb186ad2b"
+    },
+    {
+      "path": "ml/ai-painter/scripts/check_stage4_mvp256_dry_appearance_regime_cpu.py",
+      "sha256": "f31f116a391e8d08cc48dbd22e6c6f62b032c98bb5c1375d572b4d9a7d2d9b7a"
+    },
+    {
+      "path": "ml/ai-painter/scripts/check_stage4_mvp_structured_object_v18_cpu_acceptance.py",
+      "sha256": "91d7902e48cf2e1d79fb209013de8ceea21dffd2309c959a4b32f4660ba58da6"
+    },
+    {
+      "path": "ml/ai-painter/scripts/decode1_entry_weight_quality_auth_v1.py",
+      "sha256": "fc4854d10e497768e74d046d7c350cb16768fe0c2f0d06d6633554a01ab0da3e"
+    },
+    {
+      "path": "ml/ai-painter/scripts/diagnose_stage4_mvp256_dry_appearance_regime_gradient_cpu.py",
+      "sha256": "8893866e75c9fa07ba3cffd82a239efa681f0c0f99dcb1a8105f338000920ccf"
+    },
+    {
+      "path": "ml/ai-painter/scripts/diagnose_stage4_mvp_v21_all_train_fit_readonly.py",
+      "sha256": "b9f782e3e6054f1e40ac5c5d98989d03c265bc8545b7e1d9f1db6b187da38927"
+    },
+    {
+      "path": "ml/ai-painter/scripts/diagnose_stage4_mvp_v21_selected_fit_readonly.py",
+      "sha256": "f1777377c011de6fd3a421110ecae2bcb72b443a77edc78ffef17b79a38f8cc8"
+    },
+    {
+      "path": "ml/ai-painter/scripts/ecology_quality_ranking_v1.py",
+      "sha256": "29c733034002328dcbe6f5515c40d5f1d8caf469ef6def9cbfea3c56dd9d46a3"
+    },
+    {
+      "path": "ml/ai-painter/scripts/ecology_regime_execution_auth.py",
+      "sha256": "900b50d3228db16b1404626b7ae20c7eebd93c58b18a2d0a0d9d9e5b9aff2aae"
+    },
+    {
+      "path": "ml/ai-painter/scripts/materialize_stage4_mvp_object_residual_v21_dry_review.py",
+      "sha256": "bedb4b2865a009a9c113095595b178498313b3bb55d781abcc37aafc2d6e2506"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_appearance_regime_probe.py",
+      "sha256": "9ecab55a1a62c92e13f2ab59aa9325bea703b0bd29c9e9334308061afc19371c"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_decode1_entry_same_call_training_profile_v1.py",
+      "sha256": "c864831cbf85e8d43df272cd22ae580a359d874bc09d49d5f63787bada93a455"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_decode1_entry_weight_lifecycle_v1.py",
+      "sha256": "7dcf891570c918875d5f915f0ad9a91e6369cef23dbd91ad61ce618ea89c978b"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_decode1_entry_weight_training_profile_v1.py",
+      "sha256": "0a69a96ad0446f91a1fc41f60589fa4e5adc3275edc51e0756e7166e01485c5c"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_ecology_terrain_detail_weight_quality_lifecycle_v1.py",
+      "sha256": "354696651cd728920b2aad3dba8aeacc4a7331d5d4ef326fa3f5951161aeaab4"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_ecology_terrain_detail_weight_training_profile_v1.py",
+      "sha256": "becb6fdabda3a5a7bf9d34011dd29b872204eab6aa39ab7daf2129d0fb1086d2"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_object_support_structure_training_profile_cpu_v1.py",
+      "sha256": "90af49f58e5a1749f4586c9017657c331f66a7f47f9041e2c7d236de57ee9b07"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_v21_full_train_exposure_probe.py",
+      "sha256": "1ff3dedf2d32d90a545a001e6cdb7b53fda24aa61b805c880c5ae9a27ac10372"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_v21_object_core_fidelity_probe.py",
+      "sha256": "96f67bfb58f27614fcce8a47356b3636cf3a6788373f3a17b0867469d5d3469b"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_v21_train_only_capacity_probe.py",
+      "sha256": "4df03c70f057b39ef18e0da1a4d7551a802b6520af03142e08e61f0d3095e9d8"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_v21_whole_frame_fidelity_probe.py",
+      "sha256": "dee53c718b15cd5fbd14a5bfc2cb5b82a9378436b09118d695f80c281ec7cdc3"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_v23_complete_support_partition_probe.py",
+      "sha256": "cdef7834b6697cd0e745a469dd0b94e0c7a340d036b5e17a7c6b85ecd0337156"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_v24_dry_single_world_checkpoint_worker.py",
+      "sha256": "e471fd5d7d1d77609a73853bcf2e59deaeae1ad2ca3a1a0028e7d28e5eac4602"
+    },
+    {
+      "path": "ml/ai-painter/scripts/painter_stage4_v24_object_head_core_priority_probe.py",
+      "sha256": "7d39e99b695f4191a867acadd8446d436f36bcdadf4768c06445307ef7eb5f3d"
+    },
+    {
+      "path": "ml/ai-painter/scripts/run_stage4_mvp_object_residual_v21_readonly_gpu_qualification.py",
+      "sha256": "330d9d9304480b7ba24a66f2da4245b2425b6999289f70aca7a956c27f751207"
+    },
+    {
+      "path": "ml/ai-painter/scripts/run_stage4_mvp_structured_object_v18_readonly_gpu_qualification.py",
+      "sha256": "6f2489dfa295aa6f1bc36106897a50aac001c1d97f021ec543fa824af9b3251a"
+    },
+    {
+      "path": "ml/ai-painter/scripts/train_stage4_mvp_object_residual_v21_dry_stage0.py",
+      "sha256": "fdfe01452afb512e6b829112744931be9a800ef8db077f5efbdafbe542648520"
+    },
+    {
+      "path": "ml/ai-painter/scripts/train_stage4_mvp_structured_object_v18_dry_stage0.py",
+      "sha256": "07ff9450ec2c38f61ee1229fc598c2c4bbd272982339f2d0027add53c9c29340"
+    },
+    {
+      "path": "ml/ai-painter/scripts/v21_object_residual_admission.py",
+      "sha256": "562baba003194262ed81d83b5a9bb31588365b34952808ba7a009ddd1f298734"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/__init__.py",
+      "sha256": "cd5c6b57e901a33f088923792eb02198c016a22be6345ac99f1c2bdd82b39338"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/__init__.py",
+      "sha256": "1d01b434e6393d2d7eaf9e04faf2ed0cbfd23381c9a7b8933abb21665cc16e07"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/channels.py",
+      "sha256": "371684c39416cea870230c35fc78b04a847a592b8c6e22b319d7809a77201846"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/schema.py",
+      "sha256": "ad9e2bf69c19240e378cb470a39e624411af4f52a20b3435239a289e58440ac1"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/v1_masks.py",
+      "sha256": "894407b2e314f645048c5a074beb7d4b185436d4b533083d5e9e3f6f3e229d9f"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/v1_schema.py",
+      "sha256": "d33da70c332c3e2a0a3c19e69064f9c1873b218f7d8928797c02d029e173bca4"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/v1_types.py",
+      "sha256": "26d17ec200c682b405e0fb62224b7550af5bec8c3e1e42be5ca182ae0b511ca2"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/blueprint/v1_validator.py",
+      "sha256": "4627edfe2bca7e4417a9229bd4acc7006a493d1ab8e4c0f61202ef87646e10c6"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/__init__.py",
+      "sha256": "f6aa5e22608ae309a6362da1e432f98f2794fd63e2fed32bf12d8944c38d3d53"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/decode1_entry_weight_quality_checkpoint_v1.py",
+      "sha256": "5ee492ee7dc865dcdb2d1846456ab5956a009ad32c8a1a99e2c6ef23ca1becd1"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/decode1_entry_weight_reduction_precision_v1.py",
+      "sha256": "2ee9e87343509c298f9cdd44fbbd004bf66690c64cf9edd68a636a2b673e51a6"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/decode1_weight_reduction_precision_v1.py",
+      "sha256": "500b1485a87beb208856c76638e1ee4c733931456cd9769ca25805114d1a38ec"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/detail_weight_checkpoint_codec.py",
+      "sha256": "43abab94078f4be825d843b6db9b3ffa7f77c63a9334c826ff80ad6b2cb79696"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/detail_weight_reduction_precision.py",
+      "sha256": "cbe9d9bf00d4bf5c8a1a217d0cbd59e2bd05a2233cbc1b6ee9c1f0bb2c196608"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/diffusion.py",
+      "sha256": "2b1b5fa94178b4f47c5f395dbce86870490b37d31dd25f7448f5a7ac5487e3a4"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/ecology_regime_gradient_failure_capture.py",
+      "sha256": "0786d2f24f074fac7f9583abf377b7ee7213778c020340d1963bab0703cd4aba"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/ecology_terrain_detail_weight_checkpoint_v1.py",
+      "sha256": "cb821dd0dd2ff33c241a1c51523ba0aca6bf0438db16f005a32a5722b0d80507"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/final_rgb_base_weight_reduction_precision_v1.py",
+      "sha256": "d28283160c85c71d56df5199ed631fd84d3f5419b71a773686c4b94b09996c05"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/joint_object_priority_quality_checkpoint_v1.py",
+      "sha256": "6f47fcd638a517df908f7284fc3bc3f35b5fc50ca2d5e929eddeb2ba5e3b46df"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/model.py",
+      "sha256": "22d4d980be37b2c706c6ba7dbe5deb7d0f2f7a060e11af19024f96ffd2aa6bd0"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/mvp_dataset_release.py",
+      "sha256": "0727a97084b05c3a5d12182bf4f0a0ac5aec176855705083f3961486eb89c559"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/mvp_denoiser_release.py",
+      "sha256": "170472a9bde5243d30d1dc41b4bbbe2629fb78019d01eda4044a177000058580"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_aperiodic_detail_renderer.py",
+      "sha256": "d7c5b31f4fedd076f3c3d9336f997551188edb724a3c2c1ad4bc505206c8d702"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_complete_support_partition_v23_cpu.py",
+      "sha256": "c455e642631352eaaa14cce7070d23260a7fe9abd189591d99e2f8863acca50f"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_conditional_texture_cpu.py",
+      "sha256": "2a54a37d2c42de2415bbda8e8af1327c0ca7a932ae560df74b79e54b7de5565c"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_instance_object_prototype.py",
+      "sha256": "3f3850acfc9d5c9251690ad4170c831170883434431c2168c7e2039dcb59dc62"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_local_texture_objective_v12.py",
+      "sha256": "f0565a0cba1f1748fd14c67d5ea4a617ffa8231979df4839766fbe5b4c32fa73"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_context_renderer.py",
+      "sha256": "a5dfe23343aa8eee504a1effcd3e5f4f30f3085bb90637ccbfd63eb2467dc105"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_core_fidelity_candidate_cpu.py",
+      "sha256": "4bf0a03616bcad1f3549a0a607358a6f02fc56a7690993f3a9701cfa5d40ecb0"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_residual_v21_cpu.py",
+      "sha256": "3c78e6991f11e8ae95ebb90d6636bc54ee1c6962039a9454bafbcb0ad34bd3e5"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_support_structure_candidate_cpu_v1.py",
+      "sha256": "3aa3c4e8a0a75799f64a4e8cca9bcc65652cf67f057f15f955130a459bd2859a"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_object_support_structure_device_v1.py",
+      "sha256": "4138d2b08eb3d52b6518226bf406aec8b8a75d322a05fb8ac08492197e965ec6"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_cpu_v17.py",
+      "sha256": "e8b18b5e5d7b29befab908bb0a521b0f21b66d927ca2b8e2db99a11287063e78"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_objective_cpu_v17.py",
+      "sha256": "d36542ad2fa2e8ffd1d133d75f6ee4059265660650fb23a8a74cc1d83c0294b8"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_v18_cpu.py",
+      "sha256": "d190c5e5ed48368f43ba1c05a21942770be6235e48e9169b8248584582ad0370"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_whole_frame_fidelity_candidate_cpu.py",
+      "sha256": "35f7ee4eec43540d9396cdba59f25824ee886857a2541471f43e119ffa3685bc"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_appearance_regime_bias_precision.py",
+      "sha256": "b39c29fb918a304f798a8fa1bd3457b6cae43829295c1d4514f67e83c692366c"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_appearance_regime_conditioned_cpu.py",
+      "sha256": "5dac55bc6a1d941563b50f65ae4131a7f9430f3b3ae9751a2bf2943eed5ea454"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_appearance_regime_detail_weight_precision.py",
+      "sha256": "1a5468eb982e786c819861740fdd2921ef4873cebe2145c9d6e27507f70dafa9"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_appearance_regime_input_cpu.py",
+      "sha256": "cc50569223573d45b72635191ad4fb09d38ddf47fa598bb5a64d780ca82d27ec"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_appearance_regime_priority_update.py",
+      "sha256": "e44e8081c9f49975dd6b58cb1e65aa2a0e9fcdad659502ca292c5b810a6593f0"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_decode1_entry_joint_priority_device_v1.py",
+      "sha256": "8fd5c2c8a47446cd07c2a6da0f0c503a916b92fd15d97a253770f5a547b23066"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_entry_weight_precision_v1.py",
+      "sha256": "4913645e95b731ea5e51512a726cd2fd777938639122e853289de15308a44083"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_weight_precision_v1.py",
+      "sha256": "4ffa5fafdb06c83c296beeb3cbf34fbee4a4caa5452115dc4d83ea693333aa76"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_final_rgb_base_weight_precision_v1.py",
+      "sha256": "74acbb568fa8dda287c3a4934471d0ec88b8368c476699a221797e9349d09e7a"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_regime_conditioned.py",
+      "sha256": "293f8890762a8be4e1487d16f313c346cf3df561013d8399143e87dc948e86a3"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_regime_input_cpu.py",
+      "sha256": "98b1bfa9ad1aab537ba0c78a372ddb760bb32b7e08be888bbe31ea49abab839e"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_terrain_detail_weight_precision_v1.py",
+      "sha256": "ae696008318c4e04084bf74d8164bac76f671500564a1f1c153cf670f338e627"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_terrain_detail_weight_priority_update_v1.py",
+      "sha256": "a1b176263a381273da345b4875ec3d4cd7d926297c5465b6b3685517c94e44b2"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_feature_aggregation_v26_v2_cpu.py",
+      "sha256": "2addb1c60136ae42ebb68afb6b1a9c2908b761498dbe74957f93a7b18e5bef8f"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_core_priority_update_v24.py",
+      "sha256": "b8c0e84732d4911a667c41c27bf927b65bff4ae1a78f7a5644e599c193dacab0"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_head_core_priority_update_v24_cpu.py",
+      "sha256": "b0bc959700244ee508e2a9f3dd257f882abf4717f4e99b7d21f40d4a5b47f1ad"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_instance_supervision_cpu.py",
+      "sha256": "2300cfdf7c99d50c64ea4d81d6fa753acec73f18baf55ab98a27f76505a54334"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_joint_rgb_structure_priority_update_cpu_v1.py",
+      "sha256": "99c437fe1cdf31229257c25716736e3c2f580a58f99fde8297c5e06611920324"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_local_context_isolation_v26_cpu.py",
+      "sha256": "a6961e818f3136f9e60dc8b6c18b3ffc9e0b0b740930891df7de860c35f9ae70"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_final_rgb_weight_priority_update_v1.py",
+      "sha256": "c56e0c52265686144a7133b9c50bf0cdda794ad426e40ccbbdd5b7fc26eb82e5"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_checkpoint_v1.py",
+      "sha256": "71156016acdfab3fef30fd2aafd30f44ca3772ad75b4ad760f9f072973d939d8"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_failure_capture_v1.py",
+      "sha256": "6363c4065b9dbec4376594d56664d6c0ecfdb395df61879f9045b2e75cb9e153"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_priority_update_cpu_v1.py",
+      "sha256": "d2d3238be5e3baab321dce0d697d70723cc69c622c361cc8fe215560f8e1e67c"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/parameter90_training_same_call_bridge_v1.py",
+      "sha256": "a1e334e8fe067deebb368dd3faa998ba01a6e75753c1dae851a4c5ca760564bd"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/parameter90_training_same_call_capture_v1.py",
+      "sha256": "7c26b8371aaebaf760ffb2a5a8f46664e16c222775a85a56bf232948cf0b7360"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/parameter90_training_same_call_storage_v1.py",
+      "sha256": "b44befe45aa4878529c44ec33d83185eae0e1fbb8970f93e24fadda236c5a8b8"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/regrouped_candidate.py",
+      "sha256": "8619332f4837b846feec7a978be2ba576c87583b23a00e1bced0c6b0fc08cf87"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/rgb_bias_reduction_precision.py",
+      "sha256": "842aefc1a4f278535e97a57b52f1d52026156181be72b5ea0c1b4ddc86dcc008"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/rgb_bias_reduction_precision_cpu.py",
+      "sha256": "958ece1e2bd967d9c0b7f9f99f183d2b496c6b23bb767702816aeed89c8c2cab"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/split_release.py",
+      "sha256": "02932d6a41d9114bb552e8287f9174a925f904e9862916c9174826905ee7a75c"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/split_training.py",
+      "sha256": "71b91e93e5cb1cb6b973d0761491cb885293225596a6467ca7b11543cba0c526"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/stage4_semantic_transport_v2.py",
+      "sha256": "8cf06a8d3e32ae830151d35aa237710eab8d6aa651c2647058b5821ffe198e97"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/stage4_v17_responsibility_artifact.py",
+      "sha256": "d675cdc4f9e761ba1d131c40906528d8d6c8eccbb15dea4b8e8f07a55a73fb56"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/terrain_detail_weight_reduction_precision_v1.py",
+      "sha256": "eb23495907e37e07f2969e9ddac49903a7914b9f76ac3aac78ad7def881eea84"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/__init__.py",
+      "sha256": "c0be4ae4d52232de6db48269b38ca5fdb45f3c0cd709fd4694c5688ee9e5bc69"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/audit.py",
+      "sha256": "151226fa72ea92fe7574a5f5a9db4f0f4decf04cf3ad92603155db301cb469b5"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/hashing.py",
+      "sha256": "41e25458e58738f214ee4cf31a8e06af78829c085f6bf1dddedc2b02c0ae78f8"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/importer.py",
+      "sha256": "607b4c7332e8841b0af430f5d286c98e06d08b6be8e356151159086effba849a"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/indexer.py",
+      "sha256": "8c1beb9b305557468b8af12109187390d378e655360b5553306e99115186d149"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/layout.py",
+      "sha256": "0b6d4c62a20e731fa22834baf4d7cad1227709cd0f0ccadcdf02e922658ee3a6"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/metadata.py",
+      "sha256": "bbb94c2ac0fcf2626a293a331399a21c8afc346224002eecef193d2e14232d39"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/source_registry.py",
+      "sha256": "fd73fe40eda746d7ec0bc26d3bb34641a2112b41a083836104134d6bcaa0a875"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/taxonomy.py",
+      "sha256": "9d3d46a19552499950cc582005e03584e5cf583e84994753ee29284739fad5a0"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/v1_review.py",
+      "sha256": "f449075d71f0dc23906ea1b4d3e376b87799cb1639252d4a173e14ef1435418d"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/dataset/validator.py",
+      "sha256": "2cf482137d2912059ccc3ffbe1ada5cc1eaffa54ecee38562f40508d32b7199c"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/training/__init__.py",
+      "sha256": "0e47a041d26119b302e3438c7f59448380ba3042b07bc3639400c75c6f0612c0"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/training/checkpoint.py",
+      "sha256": "56803c0b64ece65224fbd6a396a63a8bf010ea561c83fed817ebf9ff6767d3b8"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/training/dataset.py",
+      "sha256": "c2585e5498bbe58f61bd65d23a0faf90110875808f2361ff6561a2a2a52e2da9"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/training/discriminator.py",
+      "sha256": "04820604e54f40fb74fc96c0f6a1185393da7e4e44766686d57de58313743d9d"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/training/losses.py",
+      "sha256": "18739e7614335bb59ae6c04e1754607220d6655ae0cfe8ec586cf4830b226e63"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/training/model.py",
+      "sha256": "4f7105e9544b5ac4b683a09098edab00d3ce12b3d40a8e20f4360c4f263ac84a"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/training/torch_runtime.py",
+      "sha256": "17bf5c5315466b7656b04e3e32d10f4d5e5595f0bb4db4c4a0dddb66027dbcc3"
+    },
+    {
+      "path": "ml/ai-painter/src/ai_painter/training/trainer.py",
+      "sha256": "3e14317f0779067f4f1a2604b272dfedaed8b6c72a3e8b808fec4fffb7fe34ed"
+    },
+    {
+      "path": "ml/ai-painter/tests/test_parameter90_training_same_call_capture_cpu_v1.py",
+      "sha256": "a791fd0b67c11b1b5d7de20583aa682cd392cc198a6c59695fa6cfb4e11404bc"
+    },
+    {
+      "path": "ml/ai-painter/tests/test_parameter90_training_same_call_integration_cpu_v1.py",
+      "sha256": "0bb98316b6f7f2dcfba916c9ac4a060a51c23781bb2c6022c9adc6ddd74386e0"
+    },
+    {
+      "path": "ml/ai-painter/tests/test_parameter90_training_same_call_storage_cpu_v1.py",
+      "sha256": "b1574bab73fae1c97f5fad78ffbc3f00129854f11151d60ebee13bf5c3e32aae"
+    }
+  ],
+  "containmentProgramBindings": {
+    "owner": {
+      "path": "scripts/lib/ai-painter-owned-worker-v1.mjs",
+      "sha256": "0e15284e320123e361b49d8b28731559b31f45e3057ac8a6deac99d951672af6"
+    },
+    "nativeBridge": {
+      "path": "scripts/lib/ai-painter-owned-worker-native-v1.mjs",
+      "sha256": "b2925ccdf6e5f3571c868bfaceb3fa5631267d3ab686a8b4e74bb28e0c4cce4c"
+    },
+    "nativeOwnerSource": {
+      "path": "scripts/windows/ai-painter-owned-worker-owner.cs",
+      "sha256": "542b690b20459c445da801f17f3dc974904f35a0c81048c49bb97c04e2d2d353"
+    },
+    "pathResolver": {
+      "path": "scripts/lib/ai-painter-owned-stop-request-v1.mjs",
+      "sha256": "029ed981665f662afc14efdbfcbe4c931f02722d328474be7501f92cf72e0a1c"
+    },
+    "storageConfiguration": {
+      "path": "scripts/lib/ai-pet-world-storage.mjs",
+      "sha256": "49d155cb63cbc026366b538e8204c37f51eb3221364d6d5ac99517a37b6e2fdc"
+    },
+    "operatorSession": {
+      "path": "src/server/ai-console-control/operator-session.ts",
+      "sha256": "54c6cc9daf03a664af99d8c005ce113547c83b68afa8a4d280b9e38c659233b5"
+    },
+    "candidateRegistration": {
+      "path": "scripts/lib/ai-painter-object-support-structure-quality-registration-v1.mjs",
+      "sha256": "8beceea07b856ac1f3780a3a505e8aa19a34ac5c6393a61a9874dca0d77fae4c"
+    }
+  },
+  "interpreter": {
+    "absolutePath": "F:/ai-pet-world/ml/ai-painter/.venv/Scripts/python.exe",
+    "sha256": "5912d0884b23c0343983a864c6064242391e2265536f50b88624857e353882c9"
+  },
+  "target": {
+    "parameterIndex": 90,
+    "parameterName": "core.core.final_rgb_decoder.base.layers.4.weight",
+    "weightShape": [
+      3,
+      48,
+      1,
+      1
+    ],
+    "coordinate": [
+      0,
+      1,
+      0,
+      0
+    ],
+    "inputChannel": 1,
+    "outputChannel": 0
+  },
+  "comparison": {
+    "atol": 0.000001,
+    "rtol": 0.00001,
+    "gradientLabels": [
+      "actualTotal",
+      "structuredObjective",
+      "wholeFrameFidelity",
+      "objectCoreRgb",
+      "objectSupportStructure"
+    ],
+    "fp32Order": "(((structured.float()+whole.float()).float()+core.float()).float()+support.float())",
+    "originalGateKept": true
+  },
+  "resources": {
+    "cpuThreads": 2,
+    "cpuAffinityMaximum": 2,
+    "maxWallSecondsIncludingStartup": 120,
+    "maxRssMiB": 1536,
+    "maxOutputMiB": 8,
+    "maxSingleJsonMiB": 2,
+    "failureReserveBytes": 65536,
+    "attempts": 1,
+    "automaticRetries": 0
+  },
+  "captureBudget": {
+    "targetSidecarMaximumBytes": 2097152,
+    "aggregateFailureMaximumBytes": 67108864,
+    "executionMaximumBytes": 134217728
+  },
+  "executionBoundary": {
+    "syntheticCpuOnly": true,
+    "gpu": false,
+    "training": false,
+    "productionIntegrated": false,
+    "oldRunReplay": false,
+    "originalDataRead": false
+  },
+  "outputRoot": ".runtime/ai-painter/controller-repair-reviews/parameter90-review-20261019/same-call-integration-cpu/attempt-001",
+  "allowedActions": [
+    "verify_exact_sources_policy_and_interpreter",
+    "one_managed_synthetic_cpu_suite",
+    "synthetic_D_G_schedule_and_original_error_boundary",
+    "private_current_fixture_failure_and_sidecar_write_readback",
+    "combined_actual_file_expansion_pending_and_manifest_quota_checks",
+    "save_resources_tests_and_real_managed_cleanup"
+  ],
+  "forbiddenActions": [
+    "real_image_or_condition_decode",
+    "old_archive_or_checkpoint_numerical_load",
+    "real_model_forward_autograd_or_weight_update",
+    "optimizer_construction",
+    "cuda_initialization",
+    "production_registry_or_entrypoint_write",
+    "old_evidence_mutation",
+    "automatic_retry",
+    "production_training_or_gpu_entry"
+  ],
+  "qualification": {
+    "rootCauseProven": false,
+    "modelRepaired": false,
+    "gpuQualified": false,
+    "trainingQualified": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "productionIntegrated": false
+  },
+  "normalLifecycle": "Release all per-step copies and hooks before a legitimate optimizer update; context-free updates are simulated only in small synthetic CPU fixtures",
+  "failureProof": "Only authenticated same-call original gate at90 and fixed-coordinate failure with complete original five labels permits sealed target packet. Non-target, fabricated message/boolean, partial/tampered data or secondary observer failure cannot create proof or replace the primary error.",
+  "accounting": "CPU stage includes owned fixtures, host/native and streams within 8MiB. Original failure disk representation and archive-expanded representation are checked separately against 64MiB, replacing the archive in the expanded view, never double-counting both; all new sidecar, pending, manifests and reserves count in both. Existing execution output roots/ceilings remain unchanged.",
+  "implementationAcceptance": [
+    "D no-grad forward outside capture, G forward and five original gradient scope, release before G commit",
+    "unchanged predecessor numerical pair AST and mocked CPU schedule",
+    "original failure first and independent sidecar immutable readback",
+    "same package plan Run train image condition model code evidence identity",
+    "combined 64MiB failure and 128MiB execution with 2MiB sidecar and reserves",
+    "no production activation GPU real training or numerical repair claim"
+  ],
+  "sourceClosure": {
+    "kind": "static_ast_actual_imports_reverified",
+    "excludedInactiveFunctions": [
+      {
+        "path": "ml/ai-painter/scripts/ecology_regime_execution_auth.py",
+        "sha256": "900b50d3228db16b1404626b7ae20c7eebd93c58b18a2d0a0d9d9e5b9aff2aae",
+        "functions": [
+          "derive_model_metadata",
+          "load_execution_package"
+        ],
+        "scope": "inactive legacy model builder; imported exact binding/JSON helpers remain bound; actual loaded modules checked"
+      },
+      {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_appearance_regime_detail_weight_precision.py",
+        "sha256": "1a5468eb982e786c819861740fdd2921ef4873cebe2145c9d6e27507f70dafa9",
+        "functions": [
+          "_install_diagnostic_capture",
+          "authenticate_diagnostic_capture"
+        ],
+        "scope": "unchanged inactive legacy routes only; actual imports remain verified"
+      }
+    ]
+  }
+}

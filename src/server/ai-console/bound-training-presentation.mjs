@@ -1,6 +1,7 @@
 import path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
 import { bytes as readSafeBytes } from './training-history-safe-bytes.mjs';
+import {readBoundTrainingInterface} from './training-preview-history-v1.mjs';
 
 const PACKAGE_SCHEMA = 'ai-painter-learning-capacity-experiment-package-v1';
 const DRY_PACKAGE = /^ai-painter-stage4-mvp256-dry-v\d+(?:-v\d+)?-execution-package-v1$/u;
@@ -209,6 +210,8 @@ async function readAutonomousPresentation(root, registry, envelopeRead, terminal
     'training_autonomous_configuration_schema_unsupported');
   need(plan.configuration.capabilityVersion === registry.capabilityVersion,
     'training_autonomous_plan_identity_conflict');
+  await readBoundTrainingInterface({envelope,plan,parent:registry,
+    readJson:async(binding,maximum)=>(await json(root,binding,maximum)).value});
   const ceiling = plan.configuration?.executionCeiling, resolution = plan.configuration?.scope?.resolution;
   need(record(ceiling) && ['epochs','generatorOptimizerSteps','discriminatorOptimizerSteps'].every(k => positive(ceiling[k])),
     'training_plan_fields_unavailable');

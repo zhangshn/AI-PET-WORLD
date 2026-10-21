@@ -4,8 +4,42 @@ import path from 'node:path';
 import os from 'node:os';
 import {createHash} from 'node:crypto';
 import test from 'node:test';
+import vm from 'node:vm';
+import ts from 'typescript';
 import {loadCurrentExecutionProjectionForCpu} from './helpers/current-execution-projection-cpu.mjs';
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+
+function currentHttpRoute(snapshot){
+  const exports={},calls=[];
+  const source=fs.readFileSync(new URL('../../src/app/api/ai-console/observability/current-execution/route.ts',import.meta.url),'utf8');
+  const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+  vm.runInNewContext(compiled,{exports,URL,Response,require:name=>{
+    assert.equal(name,'@/server/ai-console/ai-painter-current-execution-projection');
+    return {readAiPainterCurrentExecutionSnapshot:async()=>{calls.push('read');return snapshot;}};
+  }});
+  return {get:exports.GET,calls};
+}
+
+for(const query of ['runId=foreign-run','path=data/other.json','source=history','selectedHistoricalRun=old-run',
+  'runId=','runId=first&runId=second','%72unId=foreign-run','runId%5B%5D=foreign-run','limit=20','unknown=1']){
+  test('current HTTP route refuses unsupported query before reading current evidence: '+query,async()=>{
+    const route=currentHttpRoute({ok:true,registryRevision:7});
+    const response=await route.get(new Request('http://localhost:3000/api/ai-console/observability/current-execution?'+query));
+    assert.equal(response.status,400);assert.deepEqual(route.calls,[]);
+    assert.equal(response.headers.get('Cache-Control'),'no-store, max-age=0');
+    assert.equal(response.headers.get('X-Content-Type-Options'),'nosniff');
+    assert.deepEqual(await response.json(),{ok:false,dataStatus:'unknown_or_stale',reasonCode:'current_execution_parameters_invalid'});
+  });
+}
+
+for(const ok of [true,false]) test('current HTTP route keeps original '+(ok?'200':'503')+' and snapshot for parameter-free requests',async()=>{
+  const snapshot={ok,registryRevision:7,dataStatus:ok?'connected':'unknown_or_stale',activeExecution:null};
+  const route=currentHttpRoute(snapshot);
+  const response=await route.get(new Request('http://localhost:3000/api/ai-console/observability/current-execution'));
+  assert.equal(response.status,ok?200:503);assert.deepEqual(await response.json(),snapshot);
+  assert.deepEqual(route.calls,['read']);assert.equal(response.headers.get('Cache-Control'),'no-store, max-age=0');
+});
+
 function fixture(t,mode){
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'painter-projection-availability-'));
   t.after(()=>{const resolved=fs.realpathSync(root);assert.equal(path.dirname(resolved),fs.realpathSync(os.tmpdir()));

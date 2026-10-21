@@ -1,0 +1,223 @@
+{
+  "schemaVersion": "ai-painter-decode1-entry-weight-precision-cpu-policy-v1",
+  "status": "registered_cpu_candidate_verification_only",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "version": "AI-PAINTER-SPEC-1.91",
+    "sha256": "d58ad7953aacf331bfa3be8f32651b7f11a466b23d9ef4237b5d303d16d7a823"
+  },
+  "candidate": "stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1",
+  "target": {
+    "parameterIndex": 48,
+    "parameterName": "core.core.terrain.decode_1.layers.0.weight",
+    "weightShape": [
+      48,
+      144,
+      3,
+      3
+    ]
+  },
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-172-seasonal-evergreen-semi-evergreen-forest-v2",
+    "split": "train",
+    "sampleCount": 1,
+    "originalDataSplits": "48/8/4/4 unchanged",
+    "initializationSeed": 20260929,
+    "parameterCount": 108,
+    "parameterElements": 2242687,
+    "failureStateInitializationAllowed": false
+  },
+  "dataLocator": {
+    "path": ".runtime/ai-painter/joint-object-priority-quality-executions/joint-object-quality-v1-c6ec20e3-a5bc-4969-9bb8-437f47fa2802/gradient-failure/manifest.json",
+    "sha256": "cd809d9c4d7d59507fdcadad78eae09cb1a76c52f4f84830f6c18611a43f3c1a",
+    "bytes": 369744
+  },
+  "sourceEvidence": [
+    {
+      "path": ".runtime/ai-painter/joint-object-priority-quality-executions/joint-object-quality-v1-c6ec20e3-a5bc-4969-9bb8-437f47fa2802/quality-plan.json",
+      "sha256": "f85ef2fcb104baa9da6defb01bad2dba1291ba8fc0319380a10d7183047ae3b0",
+      "bytes": 54530
+    },
+    {
+      "path": ".runtime/ai-painter/joint-object-priority-quality-executions/joint-object-quality-v1-c6ec20e3-a5bc-4969-9bb8-437f47fa2802/model-identity.json",
+      "sha256": "31941544a638885e107850786ca60e26735b94db0d3d5f656d087b981250666f",
+      "bytes": 14012
+    },
+    {
+      "path": ".runtime/ai-painter/joint-object-priority-quality-executions/joint-object-quality-v1-c6ec20e3-a5bc-4969-9bb8-437f47fa2802/worker-terminal.json",
+      "sha256": "10d93bd556f95c595e7a085c16c147eaf4592ae98fcb7c2f3d176f944ec4a37f",
+      "bytes": 9005
+    },
+    {
+      "path": ".runtime/ai-painter/joint-object-priority-quality-executions/joint-object-quality-v1-c6ec20e3-a5bc-4969-9bb8-437f47fa2802/gradient-failure/manifest.json",
+      "sha256": "cd809d9c4d7d59507fdcadad78eae09cb1a76c52f4f84830f6c18611a43f3c1a",
+      "bytes": 369744
+    },
+    {
+      "path": ".runtime/ai-painter/joint-object-priority-quality-executions/joint-object-quality-v1-c6ec20e3-a5bc-4969-9bb8-437f47fa2802/gradient-failure/primary.json",
+      "sha256": "1c974547e2c7c2488978ad4f20ca06c579b850b0ca92141eaf71e843a7f44cfd",
+      "bytes": 59597
+    },
+    {
+      "path": ".runtime/ai-painter/joint-object-priority-quality-executions/joint-object-quality-v1-c6ec20e3-a5bc-4969-9bb8-437f47fa2802/capture-execution.json",
+      "sha256": "9c62c44cd2a8efac29754143a3ef1cfce92670cceb2d909fbc3afb7ca17059b9",
+      "bytes": 48842
+    }
+  ],
+  "sourceSampleBindings": {
+    "condition": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-172-2026-07-31T15-17-06-812Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+      "sha256": "c6720c40e77574bb5537fbbbe76f1f04c81845aab626dbb847cb47dfc804f64d"
+    },
+    "source": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-172-seasonal-evergreen-semi-evergreen-forest-v2.png",
+      "sha256": "fc1d686251a16bf9eb1e5fa0d7685ae07e2888a70b03fd93bfa8a44c1059b963"
+    }
+  },
+  "sourceAlgorithmBindings": [
+    {
+      "role": "parameter60_causal_restore_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/parameter60_causal_restore_v1.py",
+        "sha256": "edb87370b17ff1760b5dd812877a64c33fbbdc39199821b0ae31b9c6d9e71547"
+      }
+    },
+    {
+      "role": "painter_stage4_joint_object_priority_training_profile_v1",
+      "binding": {
+        "path": "ml/ai-painter/scripts/painter_stage4_joint_object_priority_training_profile_v1.py",
+        "sha256": "c80f98a207f0f6e7414331a9bf0885dad61c476c3c209c035ffa4c93476910cc"
+      }
+    },
+    {
+      "role": "object_joint_rgb_structure_priority_update_device_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_joint_rgb_structure_priority_update_device_v1.py",
+        "sha256": "95bd389afab7e94bbdf78909f8df70292deacaf7a019a3991ee4a047e99a18e7"
+      }
+    },
+    {
+      "role": "object_joint_rgb_structure_priority_update_cpu_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_joint_rgb_structure_priority_update_cpu_v1.py",
+        "sha256": "99c437fe1cdf31229257c25716736e3c2f580a58f99fde8297c5e06611920324"
+      }
+    },
+    {
+      "role": "object_support_structure_failure_capture_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_failure_capture_v1.py",
+        "sha256": "6363c4065b9dbec4376594d56664d6c0ecfdb395df61879f9045b2e75cb9e153"
+      }
+    },
+    {
+      "role": "native_rgb_structured_object_cpu_v17",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_cpu_v17.py",
+        "sha256": "e8b18b5e5d7b29befab908bb0a521b0f21b66d927ca2b8e2db99a11287063e78"
+      }
+    },
+    {
+      "role": "native_rgb_complete_support_partition_v23_cpu",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_complete_support_partition_v23_cpu.py",
+        "sha256": "c455e642631352eaaa14cce7070d23260a7fe9abd189591d99e2f8863acca50f"
+      }
+    }
+  ],
+  "nodeInterpreter": {
+    "path": "C:\\Program Files\\nodejs\\node.exe",
+    "sha256": "63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088"
+  },
+  "metadataCanonicalProgram": {
+    "path": "scripts/lib/real-earth-region-governance.mjs",
+    "sha256": "c4ae942c1f44a60fad1650f02c9dccb0f780472638693e7146fbbe9a2dc85af1"
+  },
+  "diagnosticEvidence": {
+    "path": ".runtime/ai-painter/parameter48-causal-gpu-diagnostics-v2/parameter48-gpu-0c0805c1-1a02-4542-9d7f-70ae5cf67057/terminal.json",
+    "sha256": "a93b14a437de930ab5a5a4398ac91a9e56cc94a9062a0b69733ea508f9095dea",
+    "bytes": 72850
+  },
+  "controllerReview": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/fix-a69-20261014/parameter48-review-20261018/causal-execution-review-v2.json",
+    "sha256": "59c52c5816246cb3a54811d1bb9c2ba345ab734d83137909c2fd4e42f45208cc",
+    "bytes": 14429
+  },
+  "frozenPredecessorSpecification": {
+    "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.90-5696f0d8.txt",
+    "sha256": "5696f0d8ada5d79d65557b102e13610aa8b7c2d756b22c4f7b6b688938eceed6",
+    "bytes": 130204
+  },
+  "resources": {
+    "maxWallSeconds": 120,
+    "threads": 2,
+    "maxOutputBytes": 8388608,
+    "maxStreamBytes": 8388608,
+    "failureReserveBytes": 65536,
+    "cleanupReserveMs": 1000,
+    "finalizationReserveMs": 8000,
+    "attempts": 1,
+    "automaticRetries": 0
+  },
+  "limits": {
+    "fullBaselineForwards": 1,
+    "fullCandidateForwards": 1,
+    "fullGeneratorAutogradCalls": 5,
+    "discriminatorAutogradCalls": 0,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "cudaCalls": 0
+  },
+  "comparison": {
+    "atol": 0.000001,
+    "rtol": 0.00001,
+    "originalGateKept": true,
+    "nativeForwardBytesIdentical": true,
+    "onlyTargetWeightGradientChanged": true
+  },
+  "qualification": {
+    "gpuExecutionAllowed": false,
+    "trainingAllowed": false,
+    "checkpointWritten": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "runtimeFrameAllowed": false
+  },
+  "sourceClosure": {
+    "maxFiles": 256,
+    "maxFileBytes": 1048576,
+    "maxTotalBytes": 16777216,
+    "loadedModulesMustBeVerified": true,
+    "scope": "Original explicitly bound source closure plus exact new candidate and validation source; inactive functions remain source-bound, no imported project module may be omitted."
+  },
+  "candidateImplementation": {
+    "operator": "ml/ai-painter/src/ai_painter/complete_world/decode1_entry_weight_reduction_precision_v1.py",
+    "model": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_entry_weight_precision_v1.py"
+  },
+  "entrypointPath": "scripts/check-ai-painter-decode1-entry-weight-precision-cpu-v1.mjs",
+  "workerPath": "ml/ai-painter/scripts/check_decode1_entry_weight_precision_cpu_v1.py",
+  "testPaths": [
+    "ml/ai-painter/tests/test_decode1_entry_weight_precision_cpu_v1.py",
+    "ml/ai-painter/tests/test_check_decode1_entry_weight_precision_cpu_v1.py",
+    "scripts/tests/ai-painter-decode1-entry-weight-precision-cpu-v1.test.mjs"
+  ],
+  "outputRoot": ".runtime/ai-painter/decode1-entry-weight-precision-cpu-checks",
+  "attemptClaimPath": ".runtime/ai-painter/decode1-entry-weight-precision-cpu-checks/attempt-v1.json",
+  "arithmeticCarrier": {
+    "capability": "stage4_mvp256_dry_factorized_ecology_final_rgb_base_weight_precision_v1",
+    "qualificationInherited": false,
+    "purpose": "Byte-identical fresh original-identity model only for unchanged pure CPU gradient arithmetic; not the candidate, no autograd on this carrier."
+  },
+  "fixtureBoundary": "Earlier diagnostic retains one input channel and cannot be used as a complete full-layer fixture. Its terminal is provenance only; no failed-state, archive or captured tensor loading.",
+  "stopRules": [
+    "One managed CPU verification; fail or exceed budget closes without retry or expanding layers.",
+    "Original train sample only; no validation/challenge/regression content.",
+    "No failed G/D state or old Checkpoint initialization, CUDA, optimizer, update, PNG or Checkpoint write.",
+    "CPU result is not GPU admission, original failure repair proof, model quality, Stage4 or capability release.",
+    "All old policies, claims, failures and source bytes remain unchanged."
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "schemaVersion": "stage4-mvp256-dry-v24-closed-loop-candidate-v1",
+  "status": "cpu_candidate_not_execution_qualified",
+  "capabilityVersion": "stage4_mvp256_dry_v24_closed_loop_candidate_v1",
+  "purpose": "one_bounded_local_model_training_checkpoint_selection_and_dry_world_review",
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "worldCount": 1,
+    "subjectSampleId": "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2",
+    "subjectSplit": "validation",
+    "waterFactPresent": false,
+    "buildingsRequired": false,
+    "artificialRoadNetworkRequired": false,
+    "personalityRequired": false,
+    "formalStage4Qualification": false,
+    "runtimePublication": false
+  },
+  "frozenBindings": {
+    "dryScope": {
+      "path": "data/ai-painter/system-governance/stage4-mvp-v17-dry-single-world-scope-v1.json",
+      "sha256": "f6e6b9ce2c9da4944e647f60e924a612800ce75da1f2272d809c6afc2c51fdaf"
+    },
+    "sourcePolicy": {
+      "path": "data/ai-painter/system-governance/stage4-mvp-v24-object-head-core-priority-policy-v5.json",
+      "sha256": "87e9ea6eda1682d2d423c60b0e21ea27e6aa65b6b829392a09b22ecbe6783203"
+    },
+    "datasetManifest": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-src64-4c32aee371b5fcaaa36b316199c7e7560892af7c0a5b908cfd6a6d44b4f0e6f7/manifest.json",
+      "sha256": "499daf40061da91ce1e367ee5c4e3493491b5e5c1701806d8c4246502e73cd23"
+    },
+    "trainSplit": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-src64-4c32aee371b5fcaaa36b316199c7e7560892af7c0a5b908cfd6a6d44b4f0e6f7/splits/train.json",
+      "sha256": "36fe4bb66eb7844f9eeb0b231eaae807af26305ac84a7d807e7f449c20105186"
+    },
+    "validationSplit": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/stage4-src64-4c32aee371b5fcaaa36b316199c7e7560892af7c0a5b908cfd6a6d44b4f0e6f7/splits/validation.json",
+      "sha256": "257ea164c153236e2855417455fce795bd177c9b5ac38775c438e0db18d48707"
+    },
+    "numericReview": {
+      "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+      "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"
+    },
+    "detailReview": {
+      "path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json",
+      "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"
+    },
+    "trainingDiagnostic": {
+      "path": ".runtime/ai-painter/source-correction-training-inputs/src-a76ee209769c6204f8a9a188/metadata.json",
+      "sha256": "a76ee209769c6204f8a9a18853a842176e584ac645bcf4bcca1c1e7da8c75f6e"
+    },
+    "sourceStandardReaderReceipt": {
+      "path": ".runtime/ai-painter/source-correction-training-inputs/src-a76ee209769c6204f8a9a188/source-reader-receipt.json",
+      "sha256": "ce5a5cbedcd71669b54de42162d088cbc23859fb19544623a10304c15b59b4a2"
+    }
+  },
+  "dataUse": {
+    "train": 48,
+    "validation": 8,
+    "challenge": 4,
+    "regression": 4,
+    "weightUpdatesFrom": [
+      "train"
+    ],
+    "checkpointSelectionFrom": [
+      "validation"
+    ],
+    "challengeAndRegressionContentRead": false,
+    "sourceImageOrSplitMutation": false
+  },
+  "executionCeiling": {
+    "trainingAttempts": 1,
+    "automaticRetries": 0,
+    "epochs": 48,
+    "generatorOptimizerSteps": 2304,
+    "discriminatorOptimizerSteps": 2304,
+    "maxWallSeconds": 2700,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2
+  },
+  "checkpointSelection": {
+    "eligibleEpochs": [
+      24,
+      36,
+      48
+    ],
+    "validationRowsPerEligibleEpoch": 8,
+    "firstCriterion": "maximum_worst_applicable_object_class_masked_luminance_correlation",
+    "secondCriterion": "minimum_mean_validation_rgb_mae",
+    "thirdCriterion": "earliest_epoch",
+    "allFourNaturalObjectClassesMustHaveValidationCoverage": true,
+    "validationMayUpdateWeights": false,
+    "selectedCheckpointMustReloadExactly": true,
+    "historicalV24CheckpointMayInitializeTraining": false
+  },
+  "review": {
+    "candidateCount": 1,
+    "subjectMustBePreselected": true,
+    "required": [
+      "source_and_world_fact_identity",
+      "native_256x192_complete_rgb_from_selected_checkpoint",
+      "seven_responsibility_outputs_bound_to_same_candidate",
+      "applicable_terrain_and_natural_object_semantics",
+      "absence_of_hallucinated_water",
+      "professional_aesthetic",
+      "minimum_detail"
+    ],
+    "nearest_1024_projection_role": "existing_alignment_auditor_input_only_not_native_generation",
+    "numericThresholdOverridesAllowed": false,
+    "positiveWaterAndShorelineCapability": "unverified_not_passed",
+    "reviewScoresMayTrainWeightsOrChooseCheckpoint": false,
+    "historicallyViewedValidationIsIndependentChallenge": false,
+    "numericPassIsVisualApproval": false
+  },
+  "activation": {
+    "cpuPreflightAllowed": true,
+    "gpuQualificationAllowed": false,
+    "trainingAllowed": false,
+    "reviewExecutionAllowed": false,
+    "checkpointPromotionAllowed": false,
+    "formalStageAdvancementAllowed": false,
+    "runtimePublicationAllowed": false
+  },
+  "activationRule": "new_program_and_tests_plus_cpu_acceptance_plus_current_candidate_gpu_qualification_plus_one_bound_execution_package_required_before_training;_review_requires_selected_checkpoint_and_immutable_candidate",
+  "historicalV24": "diagnostic_predecessor_only_not_parent_checkpoint_or_qualification",
+  "parentCandidate": {
+    "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
+    "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
+  }
+}

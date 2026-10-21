@@ -2,6 +2,8 @@ import { createHash } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { readBoundTrainingPresentation } from "./bound-training-presentation.mjs"
+import { readBoundIndependentTrainingReview, readCompletionTrainingObservation } from "./training-history-detail-adapters.mjs"
+import { bytes as readHistoryBytes } from "./training-history-safe-bytes.mjs"
 import {
   CURRENT_EXECUTION_REGISTRY_PATH,
   readCurrentExecutionRegistry,
@@ -109,12 +111,16 @@ export async function readAiPainterCurrentExecutionSnapshot(
     const executionState = requiredString(registry.executionState, "current_project_execution_state_missing")
     const terminalBinding = requiredBinding(registry.terminalEvidence, "current_project_terminal")
     const latestBinding = optionalLatestTrainingTerminal(registry.latestTrainingTerminal)
-    const trainingPresentation = await readBoundTrainingPresentation(projectRoot, registry, read.taskCapsule, read.currentTaskTerminal)
+    const presentation = await readBoundTrainingPresentation(projectRoot, registry, read.taskCapsule, read.currentTaskTerminal)
+    const completion = presentation.availability === "available"
+      ? await readCompletionTrainingObservation(projectRoot, read.currentTaskTerminal, { ...read, presentation }) : null
+    const trainingPresentation = completion ? { ...presentation, ...completion } : presentation
     const machineReview = await readBoundMachineReview(
       projectRoot,
       latestBinding,
       isRecord(read.currentTaskTerminal) ? read.currentTaskTerminal : null,
       runId,
+      terminalBinding,
     )
     // A lifecycle transition during the read must not mix two current identities.
     const currentBytes = await readFile(path.resolve(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH))
@@ -264,7 +270,8 @@ export async function queryAiPainterCurrentReviewProjection(
         inputRunId: snapshot.latestTrainingTerminal?.runId ?? null,
         validationStage: snapshot.currentProjectTask?.lifecycleStage ?? null,
         reviewerIdentity: null,
-        nodeProgress: `${review.completedReviewCount}/${review.targetReviewCount}`,
+        nodeProgress: review.completedReviewCount === null || review.targetReviewCount === null
+          ? null : `${review.completedReviewCount}/${review.targetReviewCount}`,
         validationStatus: review.status,
         previewPassCount: review.previewPassCount,
         previewFailCount: review.previewFailCount,
@@ -373,7 +380,32 @@ async function readBoundMachineReview(
   latestBinding: ReturnType<typeof optionalLatestTrainingTerminal>,
   currentTaskTerminal: JsonRecord | null,
   currentRunId: string,
+  currentTerminalBinding: { path: string; sha256: string },
 ): Promise<AiPainterMachineReviewSummary> {
+  if (currentTaskTerminal?.schema === "completed-training-independent-review-v1") {
+    if (!latestBinding || latestBinding.source.runId !== currentRunId) {
+      throw new Error("independent_review_training_terminal_not_registered")
+    }
+    const review = await readBoundIndependentTrainingReview({ terminal: currentTaskTerminal,
+      terminalBinding: currentTerminalBinding, runId: currentRunId, workerBinding: latestBinding,
+      readJson: async (binding: { path: string; sha256: string }, limit: number) => {
+        const read = await readHistoryBytes(projectRoot, binding.path, limit, binding.sha256)
+        return JSON.parse(read.value.toString("utf8"))
+      } })
+    if (!review) throw new Error("independent_review_schema_unavailable")
+    const core = review.core, image = core.validationImages[0]
+    const binding = requiredBinding(currentTaskTerminal.core, "independent_review_core")
+    return { availability: "available", reasonCode: null, sourcePath: binding.path,
+      sourceSha256: binding.sha256, integrityStatus: "verified", schemaVersion: core.schema,
+      status: core.status, runId: core.runId, sampleId: review.input.subject.sampleId, sampleSplit: "validation",
+      // The core records an aggregate/subject verdict, not eight per-image
+      // review nodes. Do not invent timeline counts or completion timestamps.
+      completedReviewCount: null, targetReviewCount: null, previewPassCount: null, previewFailCount: null,
+      updatedAtUtc: null, completedAtUtc: null, reviews: [{ epoch: image.epoch,
+        passed: core.status === "dry_single_world_numeric_passed_visual_approval_pending", issueCodes: core.issueCodes,
+        previewPath: image.binding.path, previewSha256: image.binding.sha256, reproductionPath: null,
+        reproductionSha256: null, normalizedPath: null, normalizedSha256: null }] }
+  }
   if (isRecord(currentTaskTerminal?.detailReview)) {
     return readBoundMvpDetailReview(
       projectRoot,

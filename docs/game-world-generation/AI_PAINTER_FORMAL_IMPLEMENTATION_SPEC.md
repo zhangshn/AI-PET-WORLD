@@ -1,14 +1,14 @@
 # AI Painter 正式主体规格
 
-更新时间：2026-10-18 12:34:55 +08:00
+更新时间：2026-10-22 06:02:31 +08:00
 
 状态：active-long-term-module-specification
 
-文档版本：`AI-PAINTER-SPEC-1.86`
+文档版本：`AI-PAINTER-SPEC-1.112`
 
-生效日期：`2026-10-18`
+生效日期：`2026-10-22`
 
-替代版本：`AI-PAINTER-SPEC-1.85`
+替代版本：`AI-PAINTER-SPEC-1.111`
 
 文档状态：`active_normative_target`
 
@@ -574,6 +574,54 @@ PNG和身份记录须通过既有输出计量与原子写入保存，由原历�
 
 采用前必须在新程序／执行版本中完成实际发布调用、原输出计量、固定截止时间及既有查询语义的接入验证；原64KiB进度读取界限和全部原执行上限保持。联合优先路线的接入由[`ai-painter-joint-object-priority-quality-execution-policy-v3.json`](../../data/ai-painter/system-governance/ai-painter-joint-object-priority-quality-execution-policy-v3.json)独立登记：绑定组件政策与实际程序，不接受调用方布尔开关；仅该版本采用有界容错，其他旧路线保留原规则。模型、四项Loss及权重、数据、审核、优化器、轮次、GPU准入和训练预算均不变，旧CPU／GPU资格不得继承。首次失败规则只对已确认的进度共享占用作本条范围内的延后处理，其他失败照旧关闭。组件、实际入口CPU接入、同包执行资格、真实训练和画质分别验收；不得把历史占用者未定位改写为已定位，也不得据CPU通过自动恢复或重放旧运行。
 
+### 15.4 训练接口的候选登记与冻结解析
+
+同协议候选的接入定义由现有入口登记表定位不可变执行策略，不另建候选注册表、查询API或后台。登记只定位策略；策略内的`interfaceContract`使用`ai-painter-training-interface-contract-v1`，绑定已实现的`adapterId`、包／进度／预览／计时协议、候选选择及Run／包前缀。候选、模型、输出根和资源仍分别使用执行策略已有字段，不在消费者内建立第二份候选定义。当前适配器只覆盖已有decode1自然地图训练实现，不接受任意模块路径、未知模型、任意资源或调用方资格布尔值。
+
+入口表的`trainingInterfaces`是最多64项的有界扩展，每项仅为`candidateSelection`及`executionPolicy={path,sha256}`；选择标识、能力、输出根不得重复或覆盖旧登记。新执行策略Schema为`ai-painter-registered-training-execution-policy-v1`，描述区只允许`schemaVersion`、`adapterId`、`candidateSelection`、`runPrefix`、`packagePrefix`及`protocols`六个字段；当前`adapterId=decode1_entry_same_call_completion_v1`。`protocols`仅包含`package`、`progress`、`previewRecord`、`previewManifest`、`timing`，分别对应下述既有协议。准备请求与计划的`interfacePolicy`绑定同一执行策略；`entrypointSnapshot={schemaVersion,registry,selection}`保留原入口表文件绑定与选中项，不保存自指SHA、不查询其他候选、不产生资格。新增模型实现、资源模式或协议语义仍须独立版本与机器核验，不能用扩展字段绕过。
+
+本地准备器必须读取并核验登记及策略的真实字节，将选中登记、策略引用及源码身份冻结到同一Run；实际执行继续验证当前源码及冻结策略，历史查询只沿原包证据链读取，不根据修改后的入口登记重新解释旧Run。原始文件SHA-256是跨语言绑定依据，不以重新序列化JSON代替文件摘要；已使用的规范化内容摘要维持对应旧协议的原算法。未知协议、重复身份、路径越界、摘要或模式冲突失败关闭，不扫描目录选择替代物，不从历史资格推导当前资格。
+
+包观察协议`ai-painter-current-training-package-v1`、进度协议`ai-painter-current-training-progress-v1`、预览记录／清单及计时协议保留原语义。数值能力代号不是接口版本；同协议新Run不修改消费者，新候选只新增一处接入登记及其不可变策略。改变字段类型、单位、状态含义或必填规则须版本化并验证兼容。进度组件只承担已认证发布模式的机械发布，不独立判断候选名称是否具有执行资格；空截止时间必须先由执行认证层验证完成量策略，原新鲜度、输出、共享占用及清理边界不变。
+
+新协议的适配与旧协议解析分离：旧策略、包及失败Run保留原字节；兼容读取不使旧任务重新可执行。新实现须取得自身源码闭包与CPU证据，GPU、训练和视觉资格分别取得，不继承旧运行。原256项、单文件1MiB及总16MiB源码上限不变；快照及新增数据记录计入既有输入和输出预算，不以隐去实际依赖或将代码伪装成数据绕过限制。
+
+本接口范围的验收为：同一实现的两个不同候选身份在CPU隔离夹具中由同一解析器贯通准备、实际进度发布接线和当前／历史观察，新增身份不修改消费者源码；同时验证未知协议、重复绑定、越界、篡改、身份及新鲜度冲突拒绝，旧历史读取和GET只读不退化。该验收不构造／加载模型、不调用GPU、不更新权重、不启动训练，也不授予模型、Stage4或发布资格。主体1.105原字节保留于[规范快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.105-4492b064.txt)，只供原运行复核。
+
+### 15.5 已发布纠错数据的实际训练采用
+
+第15.4节适配器从已登记执行策略的既有`sourceCandidate`字段解析数据候选，不得另从固定旧候选覆盖它。新候选可在`frozenBindings`绑定已按来源规格第8.3节发布的纠错数据、实际train／validation成员及版本化`trainingDiagnostic`。旧策略、数据、诊断与已消费Run保留，不获得新执行资格。
+
+训练来源映射由本地程序先复算完整纠错发布及其父版本，再按原诊断生成不可变元数据：只替换对应train样本的ID、RGB来源及新来源记录，原WorldFacts、条件、任务、对象表、季节和生态来源均须相同；其余63条及四份用途、顺序保持。映射绑定原诊断、发布清单、同图分项核验和实际生成程序，不以调用方布尔值或改名旧贡献记录产生资格。
+
+CPU准备、同包GPU准入、真实训练、验证、预览、Checkpoint和审核必须沿同一新数据身份。CPU准备保持原两线程及预算，只解码原8份validation；train像素摘要与事实元数据核验不是额外训练或权重更新。真实train取样对替换项验证新来源记录及同一条件、任务、事实、对象表和实际RGB，不伪造旧贡献；其他样本沿用原读取与审核。不得改模型、Loss、优化器、24轮／1152组更新、审核标准、资源、安全、停止及失败留档边界；通过自身准备和48份零更新准入后，原训练、验证、严格重载、审核及终态连续执行，失败不自动重试。
+
+采用验收必须证明新RGB确实进入实际取样、旧RGB未冒充新来源，且固定validation、季节／生态、23通道和机器审核口径不变；仅发布数据、构建包或标准读取测试不能代替该证据。此接线不授予画质、Stage4或Runtime资格。
+
+#### 15.5.1 已发布train纠错父版本的基准可比性
+
+固定基准的原候选、数据包与validation绑定三项完全相同的比较分支保持。若只因第15.5节采用已发布train纠错版本导致这三项绑定变化，可增加一个限定父版本兼容分支，但必须同时重新核验：纠错发布及其真实父候选、父Manifest和原来源链；基准恰属于该绑定父版本；仅获准train项的ID／RGB及相应来源记录变化，其余63项及四份用途、顺序保持；同一原8份validation的ID、顺序、整行元数据、原图、条件、WorldFacts、通道及对象表真实路径与字节摘要逐项一致。来源声明、自报布尔值、文件名相似或仅SHA格式正确均不能建立可比性。
+
+兼容只解决已发布父版本之间的审核输入身份比较，不使不同验证域、其他数据版本、模型或审计器继承资格。固定基准的原Checkpoint选择、严格解码与重载、同8图原计算、精确基准指标复算和候选审核阈值保持；不得直接删除原身份检查、跳过基准前向、替换验证图或把训练完成改称画质通过。正反CPU验收须覆盖原相同身份、真实纠错父版本、非父版本、变化validation、额外train变化、来源或文件篡改及错误用途。
+
+此分支的训练后恢复以审核存储第11.12节为准，独立绑定实际恢复程序、原程序快照与本条证据，不改原执行包、计划、消费和失败。原审核已用墙钟、流和产物累计计入原120秒及16MiB上限；预算不足或证据不完整即关闭，不新增额度、重训或自动重试。[主体1.108原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.108-385d9a2a.txt)只用于原身份复核，不授予后继恢复资格。
+
+原只读恢复因入口模块求值循环在原生guard及owner创建前退出时，修正版后继与该失败的真实收尾采用审核存储第11.12节的限定规则。保留[主体1.109原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.109-6232b96b.txt)，以新身份绑定全部前任失败与实际修复程序，不重放已消费恢复。只允许一个修正版后继，所有实际审核执行累计仍为原120秒及16MiB；限定身份比较之外的模型、取数、数值审核、Checkpoint和验证图不变。该修正不构成重复训练或无限恢复的授权，也不得以控制台或平台改造延误已具备条件的正常训练衔接。
+
+上述120秒约束继续解释其已消费的历史审核与恢复，不追溯修改旧终态。后继独立完整审核的预算版本由审核存储第11.12.1节定义：累计墙钟300秒，扣除同一审核范围已实际消耗的全部执行时间；输出与流累计仍为16MiB，单次新任务最多16前向、两CPU、零训练、零自动重试。该版本只确定后继预算及接入条件，不表示程序已采用或当前已启动审核；不提高模型、画质、Stage4或Runtime资格。[主体1.110原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.110-c360fdc0.txt)保留用于前任身份核验。
+
+### 15.6 既有对象结构目标的单系数对照
+
+本项只登记256×192单一无水自然地图的对象支撑结构损失权重对照。既有按类型支撑掩码计算的有效角色平均`1-correlation`保持，仅将其系数从`0.1`改为`1.0`；不增加Loss项，不改变掩码、Pearson公式、epsilon、适用条件、原四项FP32相加顺序、五组独立生成器梯度及原一致性门、联合梯度规则、参数图或前向绘制。实际训练重新计算原四项，不能在旧total上事后加差额。
+
+使用独立候选`stage4_mvp256_dry_decode1_support_structure_weight1_v1`及短选择身份`d1-ss1-v1`，通过第15.4节既有登记、准备和生命周期接口接入。旧候选的`0.1`定义、策略、消费、Checkpoint和失败证据保持，未知身份或任意系数不得进入本分支。新包绑定实际使用的系数、源码、训练配置和规范版本，不原地改写旧执行身份。
+
+其余沿用已发布纠错数据训练边界：同一108组、2242687参数模型从种子`20260929`新建，不恢复旧权重；同一原图、WorldFacts、23通道及48／8／4／4用途；AdamW、G／D学习率`1e-4`和weight decay `0.01`保持；24轮、G／D各1152次更新、固定8份validation、原Checkpoint选择及完整审核门不变。仅train用于更新。当前同模型、同数据、同24轮的已完成结果作为此单变量对照，原正式父基准仍独立承担原资格门，不将不同训练长度的父基准冒充匹配控制组。读取已有对照证据不增加模型调用。
+
+复用未变组件的精确证据，不重跑已消费旧任务；变化部分须完成自身CPU行为与身份回归，新包自身受管CPU准备及同包48份train零更新GPU准入通过后，连续进行一次训练、严格重载、固定验证、审核和终态登记，不在普通步骤再等待人工握手。CPU／GPU／训练／审核、资源、输出、温度、显存及原生清理沿用原已登记边界；新运行不继承旧准入或已消费次数，不新增资源额度、后台或接口，不因本条获得其他候选资格。原训练及GPU准入完成量模式、审核120秒、阶段和整Run输出上限保持。
+
+一次训练、零自动重试，不扫参或因不佳继续追加系数、Loss和候选。本项是待检验的学习假设，不证明原系数是故障根因，也不证明整体架构、画质、Stage4或Runtime合格；失败保留真实终态并按第14节收口。1.111原字节见[冻结快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.111-89a0d3f9.txt)，旧审核预算只解释其原范围，不授予本次训练或继承独立审核额度。
+
 ## 16. 验收标准
 
 AI Painter 正式能力必须同时满足：
@@ -611,6 +659,18 @@ AI Painter 正式能力必须同时满足：
 本文不保存 Run ID、单次 SHA-256、当前 Epoch、临时失败或逐命令历史。
 
 ### 17.1 唯一机器合同登记
+
+decode_1入口精度模型的按既定检查量及训练量完成路线由[`ai-painter-decode1-entry-weight-quality-execution-policy-v3.json`](../../data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v3.json)独立登记。新执行身份为`stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2`，只取消GPU准入与训练正常运行的总墙钟截止，不以超大数、Infinity或续期代替空时限。配置明确绑定`gpuAdmissionWallMode=completion`、`gpuAdmissionSeconds=null`及原训练完成量模式；GPU准入仍完整检查48份train、48次G前向、240组G梯度及48组D梯度，零优化器构造及零权重更新、完整状态与RNG不变。训练仍为24轮、G／D各1152次优化更新。模型与原数值算子、五组梯度、联合优先算术、四项Loss及权重、优化器、固定种子、64份用途、审核门限均保持；不采用耗时试验中的CPU批处理候选，也不恢复旧或失败权重。
+
+同一新执行包须完成自身CPU准备及完整GPU准入，再连续完成训练、严格Checkpoint重载、固定8份validation、原审核、裁决和真实终态。CPU准备240秒、审核120秒、单次发布／停止清理／流关闭的原有限预算不变。GPU准入原生启动720秒及训练原生启动8400秒仅约束编译至同调用受信S启动确认之前，确认后不得再充当阶段总截止；GPU使用独立的`qualification`完成量模式，不借用训练模式或预先伪造GPU成功回执。沿用同一原生Job及S／C／R传输、guard、身份、温度85℃、显存比例0.70、空闲显存／磁盘各2048MiB、两CPU线程及最多两核、输出128MiB与原采集／终态预留、人工停止、进度120秒新鲜度及其他失败停止。停止或自然退出后首次锚定原1000ms清理窗口，确认原生进程树、输出流与证据；不能因取消总时限而取消有限清理，也不得自行新增“无样本进展”总时限。心跳只证明身份存活，实际进展按已提交样本及计算计数核对。只有重新核验受信政策和不可变包得到明确阶段、模式及新身份，才可取消相应总截止；缺少字段、调用方布尔值或旧能力的null仍拒绝。
+
+实际耗时由程序记录，不预填预计结束时间。沿用准入计时快照、同调用原生回执及训练worker实际起止／单调elapsed，分别说明GPU准入、训练worker与整次生命周期；快照不冒充最终回执，嵌套主机计时不相加为GPU内核成本。固定完成量、实际样本／轮数／G／D计数、正常完成或首个停止原因必须对应同一Run。失败或系统中断时保留已提交耗时与未知终态，不从最后心跳补造最终持续时间。旧v1有限训练政策、旧v2仅取消训练截止的政策、已消费Run及[主体1.98原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.98-d8590b62.txt)保持，各按原预算只读复核，不回填、不重放、不继承资格。新身份使用独立输出根、入口、政策、预览与精确程序绑定；复用实现须保留版本分支及旧原始字节。取消总截止不等于准入成功、训练成功、画质通过、Stage4晋级或发布。
+
+decode_1入口精度模型的单样本零更新耗时诊断由[`ai-painter-decode1-entry-training-cost-probe-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-decode1-entry-training-cost-probe-policy-v1.json)独立登记。它只测量原train划分中冻结的一份256×192样本，固定种子从源码新建原G／D；不装载旧Checkpoint、失败权重或复演已消费Run。原模型、参数48／52／60／88精度实现、五组G梯度桥、联合优先算术、Loss、容差、来源与64份用途均保持原字节。一次GPU诊断至多一次原G前向、五组独立完整G梯度及一组D梯度；不构造优化器、不更新权重、不写PNG、Checkpoint或地图，不授予训练、画质、Stage4或发布资格。自身CPU准备只核验身份、元数据及合成观察协议，禁止真实模型前向、求导或CUDA。
+
+诊断只以主机单调时钟包围既有操作。初始认证、数据加载、新模型与设备准备、前向、逐组求导、载体构造／参数搬运／验证／CPU算术及资源检查按实际可分边界记录；不能安全分离时保留聚合及未知项。父子计时显式注明嵌套，不相加为独立成本；主机跨度不冒充GPU内核时间。禁止为计时增加模型调用、CUDA事件、同步或张量采集，原保护核验及其频率不得减免。结果仅代表冻结样本及新建状态，不代表训练后状态、整轮吞吐或历史超时根因，不能据微基准直接启动重训。
+
+本诊断独立固定CPU准备120秒、GPU阶段180秒（均含启动、验证、记录及受管清理），两CPU线程及最多两核、显存比例0.70、温度严格低于85℃、空闲显存与磁盘各至少2048MiB、128MiB总输出、8MiB总流和64KiB失败终态预留；计时JSON及替换暂存各至多32KiB并计入总额。沿用现有原生Job、唯一guard、当前执行登记及写者，不另建后台或执行服务；最近训练终态不被诊断覆盖。每阶段最多一次，CPU失败不进GPU，失败、预算耗尽或证据／清理不完整均关闭，不自动重试、恢复旧任务、修改数学代码或衔接训练。新请求绑定实际源码（最多256项、单项1MiB、合计16MiB）、父证据及自身CPU结果；父合同仅作来源核验，不能作为本诊断执行资格。1.96原字节保存在[冻结快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.96-f33115ca.txt)，旧路径—摘要的有限映射仅用于本诊断读取原规范，不更改父合同、全局路径或已消费绑定。
 
 进度发布共享占用容错的独立CPU候选采用[`ai-painter-progress-publication-cpu-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-progress-publication-cpu-policy-v1.json)，行为与采用边界见第15.3节；该候选没有生产、GPU或训练执行资格，不替代现有训练政策或冻结发布器。
 
@@ -664,6 +724,62 @@ CPU验收分为组件／身份反例、已保存目标算子夹具和一个固�
 
 保存梯度的只读代数复核由[`ai-painter-saved-gradient-algebra-cpu-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-saved-gradient-algebra-cpu-policy-v1.json)限定：核验精确失败档案、参数图及原程序，只对已经保存的五组梯度按原顺序、原容差复算；FP64仅用于求和这些已保存的FP32值，不是独立高精度模型梯度。可受限装载档案作完整性核验，但不得构建模型、安装G／D状态、恢复RNG、前向、autograd、优化、CUDA、制图或改写生产登记。一次执行、120秒及两线程等资源由该政策绑定，不自动重试。复核只能给出原代数门是否违例、位置及求和舍入差异；不据此宣称历史轨迹复现、根因或修复成立。
 
+同类复核的独立当前绑定采用[`ai-painter-saved-gradient-algebra-cpu-policy-v2.json`](../../data/ai-painter/system-governance/ai-painter-saved-gradient-algebra-cpu-policy-v2.json)，不得借用v1的旧Run、目标参数或已消费次数。v2逐项核验精确Run、完整参数图、五组保存梯度、原公式与容差；扫描全部参数，区分有限值超差与原顺序求和产生非有限值。完整计数与受限位置明细分别记录，未复现也须保留，不强求指定参数失败。120秒含启动、两CPU线程及最多两核、1536MiB采样RSS、64MiB档案／展开上限、8MiB输出和单JSON 2MiB上限保持；执行前设定并核验自身CPU亲和性，沿用原受管执行及清理。不得由保存值复算推导模型修复、GPU或训练资格。1.86原始规范保存在[冻结字节快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.86-db7c2a7e.txt)，原训练政策及失败运行仍按其原绑定核验。
+
+保存梯度复核的接线修正版由[`ai-painter-saved-gradient-algebra-cpu-policy-v3.json`](../../data/ai-painter/system-governance/ai-painter-saved-gradient-algebra-cpu-policy-v3.json)独立绑定，v2及其已消费证据不改写。v3保持原输入、原数值算法和全部资源上限；加载器摘要必须与登记输入及失败现场程序绑定一致，正式存储映射以外的内部链接不得进入读取或输出路径。8MiB累计计量包括结果、主机证据、本调用原生构建与清理证据及实际输出流，64KiB失败预留不得挪作正常输出；120秒包含准备、受管执行、验证和最终写盘，超时后不得签发成功。只执行本版本一次，不复用原尝试或自动重试，不改变模型、训练或GPU范围。1.87原始字节保存在[冻结快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.87-437f8a60.txt)。
+
+保存梯度复核的本轮独立绑定采用[`ai-painter-saved-gradient-algebra-cpu-policy-v4.json`](../../data/ai-painter/system-governance/ai-painter-saved-gradient-algebra-cpu-policy-v4.json)，入口为[`scripts/check-ai-painter-saved-gradient-algebra-cpu-v4.mjs`](../../scripts/check-ai-painter-saved-gradient-algebra-cpu-v4.mjs)。v4仅将已保存五组梯度的只读复核绑定到新的精确失败记录及目标参数；按完整名称、形状、模型、程序和原始错误核验身份，扫描全部108个参数，不因首个违例提前结束。原FP32求和顺序、容差、有限值分类及FP64保存值求和含义保持；完整违例计数与每参数最多64个位置明细分别输出，目标参数另列，不强求指定参数失败或将未复现当作修复通过。
+
+v4沿用v3的120秒含准备／执行／验证／最终写盘总预算、两线程及最多两核、1536MiB采样RSS、64MiB档案与展开上限、8MiB累计输出、单JSON 2MiB和64KiB失败预留，以及原受管执行器和有限清理。输入档案只能作CPU安全装载及数值复算，不构建模型、安装G／D或RNG状态、前向、autograd、优化、CUDA、图像解码、生产登记写入或训练。新输出根的一次尝试失败、证据不完整或预算耗尽即收口，不重试、不重放旧运行或自动进入模型修复／GPU／训练。v1至v3、已消费记录及[主体1.99原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.99-0bdd8f24.txt)保持；新登记不继承旧资格，不以保存值复算声称完整autograd轨迹或数值根因已证明。
+
+参数90同次取证的生产采用版本由[`ai-painter-decode1-entry-weight-quality-execution-policy-v4.json`](../../data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v4.json)登记，使用独立能力`stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1`及输出根。只在该已认证执行版本的训练阶段采用已验同次取证组件，接入现有逐对训练、原故障保存及样本上下文三个接口；旧路线不启用，新模块导入或调用方布尔值不授予采用权。模型、原数值算子、四项Loss、五组原G梯度、原门及容差、优化器、固定种子、原64份用途、审核与原24轮完成量保持，不恢复失败状态或旧Checkpoint。
+
+本次采用验收复用现有准备、同包准入、唯一登记、原生Job／guard与控制台接口，不增加执行服务、API或轮询。自身CPU准备沿用240秒、固定8份validation读取且无真实前向／求导／CUDA；随后只运行一次同包48份train零更新GPU准入，仍为48次G前向、240组G梯度及48组D梯度、零优化器构造与更新。沿用完成量准入模式，准入总墙钟为空、原生启动720秒与清理1000ms等有限操作保持；两线程及最多两核、显存0.70、85℃、剩余显存／磁盘各2048MiB、CPU输出8MiB、准入16MiB、整次128MiB与原故障和终态预留均不变。使用既有`qualify-only`终态在训练前停止；本次不执行训练、Checkpoint或发布，失败不自动重试。历史组件CPU通过不替代本版本自身准入，也不证明生产真实故障采集、根因、画质或Stage4通过。
+
+实际源码仍须每路径唯一、不超过256项、单项1MiB及合计16MiB。仅该新路线可以在精确源码摘要约束下不遍历`split_release.load_package`的旧发布重建导入，以及原保存器中仅供其他JOINT路线超过256项时使用的`_joint_program_limit`导入；本路线在此前已拒绝超过256项。保留这些文件及历史证据，其他模块级和实际执行／测试依赖不得省略；实际加载未绑定模块仍立即拒绝。共享适配器只增新版本选择及必要读取兼容，原字节按不可变输入保留，不追改旧证据。[主体1.104原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.104-ad4c4d2c.txt)与旧CPU政策、已消费运行保持。
+
+参数90同次取证的独立接线版本采用[`ai-painter-parameter90-training-same-call-integration-cpu-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-parameter90-training-same-call-integration-cpu-policy-v1.json)。范围仅为现有训练调用接口、故障保存接口及合计字节核验的接入实现和CPU验证；不激活生产入口，不启动GPU、真实训练或旧Run。原模型、Loss、梯度门及容差、数据、优化顺序和次数保持；新G取证上下文只包围原G前向和五组原梯度，D无梯度前向与合法G权重更新在其外部。连续成功步骤须释放钩子和图引用，任何附加观察失败不得改变原首错或资源停止。
+
+故障保存先保留并核验原故障记录，再将真实同次密封取证与执行包、训练计划、Run、train样本、条件、模型及源码身份共同绑定，不能由调用方布尔字段或身份标签自行成立。新文件使用独立子目录和不可覆盖清单，不改写原故障Manifest。全部实际文件、原子提交暂存及清单开销按磁盘表示计量；展开表示将同一压缩档案的体积替换为真实展开体积，不能将同一档案两种表示重复相加。两种表示分别受原64MiB故障限额、128MiB整次限额及终态预留约束，其他文件和新增现场在两种表示中均计入，目标编码仍不超过2MiB。无密封现场、其他参数失败、保存或核验失败必须如实记录，禁止补造旧输入、覆盖首错或授予模型资格。
+
+本次CPU验证复用已有受管执行与清理，使用有限合成实例及私有文件夹具，核验原D／G顺序、取证边界、原失败保存与新现场关联、防篡改、配额、失败优先级和退出释放；不读真实图像、条件、历史张量或Checkpoint，不对真实模型前向、求导、优化或初始化CUDA。资源保持120秒含启动／验证／清理／终态、两线程及最多两核、1536MiB采样RSS、8MiB累计输出、单JSON 2MiB、64KiB失败预留，一次受管尝试、不自动重试。CPU接线通过不表示生产激活、GPU／训练资格、根因或画质修复；后继生产采用须绑定完整实际依赖并取得自身资格，不沿用旧包。原组件、已消费CPU记录及[主体1.102原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.102-8efd26c3.txt)保留。
+
+上述接线的CPU宿主兼容修正版采用独立政策[`ai-painter-parameter90-training-same-call-integration-cpu-policy-v2.json`](../../data/ai-painter/system-governance/ai-painter-parameter90-training-same-call-integration-cpu-policy-v2.json)。仅修正私有测试夹具计量和失败回执保存：在固定、受限的`private-fixtures`内，普通文件按目录项实际字节计量，硬链接不取得源码或结果身份；已识别的重解析／符号链接只计链接自身，不递归目标。目录打开前后、递归与结束时复核祖先身份，变化即拒绝；该方法不声称原子非跟随或认证换出再换回的未捕获竞态。夹具根、宿主证据、正式源码和结果仍执行原身份及单链接检查。失败记录使用原64KiB预留，计量异常时如实记录计量不可用，保留有界首错及本次返回的清理回执，不以历史释放前观察替代实时回执。回执超过固定封套时保留原编码长度／摘要及未完整留档说明，不签发清理确认，不能扩大预算或伪称原件已保存。新宿主、驱动及输出独立绑定，原接线和全部120秒、CPU、内存及输出上限保持；仅一次修正版CPU复验，不自动重试、启用生产、GPU或训练。[主体1.103原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.103-0ffb499f.txt)和已失败尝试保持。
+
+最终RGB输出权重的训练同次取证组件及CPU验证采用[`ai-painter-parameter90-training-same-call-capture-cpu-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-parameter90-training-same-call-capture-cpu-policy-v1.json)。本阶段只实现、核验组件与受限编码，不接入生产训练、GPU、控制台或旧Run，不授予后继执行资格。目标仅为参数90、`core.core.final_rgb_decoder.base.layers.4.weight`、`[3,48,1,1]`及固定坐标`[0,1,0,0]`；输入通道1、输出伴随通道0。每个明确的G阶段建立独立收集上下文，只观察同一次原G前向和五组原梯度；早期D阶段的无梯度前向不得混入。正常结束后移除钩子、释放引用，合法优化更新发生在收集上下文之外；不得跨步骤保留计算图、累积现场或把正常权重更新判为异常。
+
+临时保留必须是脱离计算图、独立紧凑且有限的目标输入、五组输出伴随量和原目标梯度。只有原梯度门、异常来源、同次身份、目标参数与该坐标超差全部核验后，才可形成密封取证对象及受限字节编码；调用方布尔字段、伪造异常消息或其他位置失败不能建立该证明。原首错优先，观察或编码失败另列，不掩盖原训练失败，不增加前向、求导、更新或局部高精度参考。新编码至多2MiB，属于原64MiB故障总限额之内；原128MiB执行总限额、首错和终态预留保持。合成字节组合的限额测试不等于生产文件读取、聚合计量或发布已接入。
+
+本次独立CPU验证只用小型合成实例及必要的源码身份，不读取真实原图、条件、历史故障张量或Checkpoint，不对真实模型前向、autograd或优化，不安装旧状态、不初始化CUDA，不写生产登记。纯合成前向、求导及上下文外的参数变更分别计数，不能把它们冒充真实训练或全部求导计数为零。验证须覆盖连续两个合法步骤、五组同次原值、原门异常认证、错误位置、未复现、缺失或非有限数据、篡改、编码配额、首错优先及全部出口的钩子／图引用释放。自身受管执行含准备、测试、清理和终态最多120秒、两线程及最多两核、1536MiB采样RSS、8MiB全部输出、单JSON 2MiB和64KiB失败预留，一次尝试、不自动重试。通过只表示该CPU组件范围通过，不表示原故障已修复、生产已接入、GPU／训练或Stage4通过。[主体1.101原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.101-ab99d677.txt)及旧诊断保持不变。
+
+最终RGB输出权重的独立零更新观测采用[`ai-painter-parameter90-causal-gpu-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-parameter90-causal-gpu-policy-v1.json)。范围仅为政策绑定的精确失败Run、一个原train样本、条件、G／D故障后状态及实际执行源码；独立实例只用于诊断，不安装保存梯度或RNG、不恢复旧运行或初始化新训练。目标按索引90、完整名称`core.core.final_rgb_decoder.base.layers.4.weight`、完整108参数图、`[3,48,1,1]`形状和实际`PrecisionFinalRGBConv`算子身份联合核验；只捕获政策指定单坐标所需的一个输入通道、五组输出伴随通道及五组原目标梯度，不扩大到其他层、坐标或样本。
+
+本项先完成自身受管CPU准备，核验受限状态、真实样本读取链、合成观察与请求协议，零真实模型前向、autograd或CUDA；通过后最多一次原G前向及五组原G梯度，零D求导、优化器和更新。仅同次原108参数门在目标位置失败且该坐标超差、身份与采集完整、状态不变时，才可先保存原首错和采集，再作五组单坐标CPU FP64乘积与稳定求和参考。原Loss、原梯度值及容差不变；局部分解仅区分新观察中的上游贡献、本层原生与参考归约差异、末端求和舍入，不证明完整历史轨迹或全模型根因，不将参考值送回训练。CPU准备120秒、GPU诊断180秒均含自身启动、检查、清理及终态；两线程及最多两核、显存比例0.70、85℃、空闲显存／磁盘各2048MiB、CPU输出8MiB、目标采集64MiB、GPU阶段累计输出128MiB、流8MiB及64KiB失败预留由独立政策约束。沿用唯一受管Job、guard和登记写者，最近训练终态不变。目标证据完整、未复现或失败均关闭一次尝试，不自动重试、改模型或训练；旧CPU复核和参数48／88资格不继承。[主体1.100原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.100-d53ea61f.txt)保留供历史核验。
+
+目标卷积两坐标的独立零更新观测由[`ai-painter-parameter48-causal-gpu-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-parameter48-causal-gpu-policy-v1.json)登记。它绑定精确失败身份、原train样本、条件、G／D故障后状态及实际源码，仅用于一次新观测，不恢复历史执行、安装原梯度或RNG，也不将故障权重用于训练初始化。自身CPU准备须核验原状态与单样本身份、当前请求协议及受限合成组件，不执行真实模型前向、求导或CUDA；通过后至多一次原G前向、五组原G梯度，零D求导、优化器或权重更新。原108参数一致性门、四项Loss及其权重保持。
+
+观测对象固定为`core.core.terrain.decode_1.layers.0.weight`及机器政策指定的两个坐标；参数索引、名称、完整参数图、卷积几何、实际张量形状和源码必须联合核验。仅独立复制这两坐标所需的一个输入通道、五组对应输出伴随通道及五组原目标梯度，不保存第二份全模型现场或扩展到其他层。只有原门在目标参数失败、两坐标均按原容差超差且同次采集和状态核验完整，才可在先保存首错与原值后，对两坐标执行五组CPU局部FP64乘积及稳定累加参考；不得增加前向或求导，也不得将参考值送回模型。参考只区分新观测中上游伴随量贡献、本层原生与参考计算差异及末端求和舍入，不据此直接认定实现错误、全模型根因或精度修复必要性。钩子和同步可能改变时序，不宣称历史轨迹重放。
+
+新政策独立固定CPU准备120秒、诊断180秒（含启动、采集、参考、清理和终态）、两CPU线程、显存比例0.70、85℃、剩余显存与磁盘各2048MiB、64MiB目标采集、128MiB总输出、8MiB流及64KiB失败保留；全部实际字节与序列化开销累计计量，不按压缩后的估计放行。仍使用现有受管执行、唯一guard及登记写者，最近训练终态保持不变。目标证据完整、未复现或失败均为本次终点，不自动重试、改模型、放宽门限或训练；旧参数60／88政策及CPU复算资格不得继承。主体1.88原始字节保存在[冻结快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.88-6f6bbb4c.txt)。
+
+两坐标观测的来源绑定修正版采用[`ai-painter-parameter48-causal-gpu-policy-v2.json`](../../data/ai-painter/system-governance/ai-painter-parameter48-causal-gpu-policy-v2.json)。v2只将原季节／地域读取链必需的规范摘要程序纳入诊断源码血缘和单样本读取白名单，并核验原失败计划绑定的实际Node二进制；不放开任意路径，不改变原读取算法、模型、Loss、门限、数学观测或资源上限。CPU回归须经过原季节／地域派生与摘要读取步骤，覆盖缺失绑定、错误摘要及越权读取，不能仅用替身跳过该依赖。v1源码、政策、消费和失败保留；v2使用独立命名空间和一次CPU消费，取得自身CPU证据后才允许本版本一次GPU观测，不重置、重放或继承前任资格。CPU准备120秒、诊断180秒及全部原资源与失败关闭规则保持，失败不自动再试；该特定修正不构成通用重试授权。主体1.89原字节保存在[冻结快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.89-545e71b7.txt)。
+
+decode_1入口卷积的隔离精度候选由[`ai-painter-decode1-entry-weight-precision-cpu-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-decode1-entry-weight-precision-cpu-policy-v1.json)登记，仅验证`core.core.terrain.decode_1.layers.0.weight`（参数48、`[48,144,3,3]`）的权重梯度FP64归约后一次回FP32；原生前向、输入与bias梯度、既有其他层精度规则、四项Loss及权重、联合优先算术、108参数图、数据用途和原梯度门保持。新模型与严格重载使用独立身份；规范种子从源码新建，不用失败权重、旧Checkpoint或诊断状态初始化。一次CPU验证只读取一个固定train样本，基线与候选各一次256×192前向，候选五组独立完整G梯度，并使用参数名、形状及字节一致的原身份CPU载体调用未修改的联合优先纯算术门；载体不是新模型，不继承其资格。已有两坐标采集仅作故障依据，不扩充采集或将单通道夹具冒充完整目标层参考。组件合成测试与该一次真实验证分别记录；不计算D梯度、不构造优化器或更新权重、不写PNG或Checkpoint、不初始化CUDA。完整验证含准备、检查、受管清理与终态最多120秒、两线程及最多两核、8MiB累计输出、8MiB流和64KiB失败预留，一次消费、自动重试0；原模型、原诊断及失败按原字节保留。真实CPU超时、另一层门失败、身份或证据不足均关闭本候选检查，不自动扩层、重试、GPU或训练；CPU通过不证明原故障彻底修复或画质通过。主体1.90原字节保存在[冻结快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.90-5696f0d8.txt)。
+
+decode_1入口精度候选的独立GPU资格接入采用[`ai-painter-decode1-entry-gpu-qualification-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-decode1-entry-gpu-qualification-policy-v1.json)。它只复用已验模型与算子原字节、原取数与Loss、原五组梯度和联合优先纯算术，增加明确新身份的设备适配及资格包；旧CPU支持只在未变的数值实现范围内作为依据，新包仍须取得自身CPU准备及GPU证据。资格适配不导入未使用的训练／审核／发布流程，不省略实际加载依赖，源码上限仍为256项、单项1MiB、合计16MiB，不继承旧260项例外。固定种子从源码新建模型，CPU准备最多240秒，仅元数据、固定8份validation加载回归、身份与协议检查，不执行真实模型前向／autograd／CUDA；GPU最多720秒，在同一不可变包上对48份train各执行一次G前向、五组G梯度及一组D梯度。零优化器、零更新、不加载失败权重、不写PNG或Checkpoint，全部原门、状态及RNG不变性保持。两CPU线程及最多两核、显存0.70、85℃、剩余显存和磁盘各2048MiB、CPU输出8MiB、GPU输出16MiB、整次128MiB、流8MiB及64KiB失败保留空间均为该政策的独立上限，含启动、源码核验、清理及终态。沿用同一原生Job实现、唯一guard及唯一登记；仅本政策的新受限接口可采用240／720秒，原180秒调用不放宽。各阶段一次消费，CPU失败不进入GPU；GPU通过或失败均为本次终点，不进入训练、不自动重试、扩层或签发画质、Stage4及发布资格。最近训练终态保持，当前任务明确为资格检查；清除活动执行仍须本调用真实清理证明。资格失败在16MiB内保留首错、实际样本、计数及有限摘要，不把未保存完整现场称为可复现档案。主体1.91原字节保存在[冻结快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.91-d58ad795.txt)。
+
+上述资格入口的源码身份匹配修正版单独采用[`ai-painter-decode1-entry-gpu-qualification-policy-v2.json`](../../data/ai-painter/system-governance/ai-painter-decode1-entry-gpu-qualification-policy-v2.json)。v1代码、政策、已消费尝试、失败及绑定保持原字节，只供原范围复核，不用于新运行。v2仅将历史程序登记的查找方式改为按唯一文件路径及SHA-256匹配实际值，不把算法说明名称当作历史字典键；缺失、同路径重复或摘要冲突均在取数和模型计算前拒绝，原明确独立绑定的恢复辅助程序不伪造为历史训练依赖。模型、算子、设备梯度桥、取数、Loss、五组梯度、原门限及全部240／720秒等预算不变。新入口、worker、测试、有限原生适配与协议使用独立版本身份和输出根，沿用同一原生Job、唯一guard及正式登记，不覆盖v1、不继承旧CPU／GPU资格。完成对应身份查找正反回归后，只执行一次新包CPU准备，通过才执行同包48份train零更新GPU检查；失败即关闭，不自动重试、不训练。成功也在训练前结束，不签发模型画质、Stage4或发布资格。主体1.92原字节保存在[冻结快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.92-b57bfd18.txt)。
+
+跨阶段计量与失败交接修正版单独采用[`ai-painter-decode1-entry-gpu-qualification-policy-v3.json`](../../data/ai-painter/system-governance/ai-painter-decode1-entry-gpu-qualification-policy-v3.json)。仅将已完成阶段的原生、事务、实际流、原子写入及退役字节账本封存，Run根继续动态计量；不得将复用的active.json当作旧阶段身份，也不得漏计旧阶段费用。固定原生调用在正常、worker失败及onSpawn前异常时，均须凭该调用私有、当前阶段绑定的真实owner／流关闭／空Job回执完成交接；JSON形状、历史磁盘回执或上一阶段回执不授予关闭权，清理不明仍保留失败和占用。新入口、worker、有限原生适配、阶段组件及协议采用独立版本身份，v1／v2与已关闭尝试按原字节保留，不继承旧准入或重放旧包。模型、数值、数据、Loss、审核及上一款240／720秒等全部资源、次数和停止边界保持；新包先完成自身CPU准备，通过才进行同包48份train零更新GPU检查，成功或失败均在训练前终止。组件证据、旧登记收口或旧CPU成功均不替代本版本自身资格。[主体1.93原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.93-756eced0.txt)供历史复核。
+
+资源保护错误留存修正版采用[`ai-painter-decode1-entry-gpu-qualification-policy-v4.json`](../../data/ai-painter/system-governance/ai-painter-decode1-entry-gpu-qualification-policy-v4.json)。仅在既有`firstError.message`及原生`firstStop.reason`中保留触发停止的同一次采样：GPU索引／UUID、采样UTC、空闲显存、温度、对应限值及所有触发项；消息最多2048字节，不新增终态字段、持续监控或服务。资源查询及身份错误保持各自首错，禁止以停止后的重新查询替换触发值，也不得补造旧运行缺失值；停止期间的worker次生错误单独保留，不覆盖已确认的资源首错。原空闲显存2048MiB、温度85℃、显存比例0.70、240／720秒及全部原输出、源码、计量、清理、次数和训练前停止规则保持。新入口、worker、有限原生适配及阶段组件采用独立身份，原v3、已消费尝试及失败按原字节保留；不继承旧资格、重放或自动重试。组件回归不能替代新包自身CPU准备及完整GPU资格，也不签发训练、画质、Stage4或发布资格。[主体1.94原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.94-b7c3cf01.txt)供历史复核。
+
+decode_1入口精度候选的24轮完整执行接入由[`ai-painter-decode1-entry-weight-quality-execution-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v1.json)登记。已验模型、参数48权重归约算子及五组梯度桥保持原字节，参数52／60／88处理、四项Loss及权重、联合优先纯算术、108参数图、原梯度容差、64份及48／8／4／4用途、原审核均不变。新能力身份为`stage4_mvp256_dry_decode1_entry_weight_quality24_v1`，模型身份仍为`stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1`；固定种子20260929从源码新建，不使用历史或失败权重。复用原本地准备／后台、六阶段引擎、唯一登记与SQLite、原生Job／guard、状态查询及停止，不建立平行执行服务；新适配绑定本次实际源码，每路径唯一且不超过256项、单项1MiB、合计16MiB，不继承旧联合优先260项例外。
+
+同一不可变训练包先完成自身CPU准备240秒（只加载原固定8份validation及身份／ABI检查，无真实前向、求导、CUDA或优化器），再完成720秒内48份train零更新GPU准入，各一G前向、五组G梯度及一组D梯度。准入成功后连续进入原24轮训练，G／D各1152次更新、8400秒、原AdamW配置；第12轮仅观察，第24轮为唯一合格Checkpoint选择点，严格重载后生成固定8份validation及原机器审核／裁决／终态，审核阶段120秒。两CPU线程及最多两核、显存比例0.70、85℃、空闲显存／磁盘各2048MiB、总输出128MiB、流8MiB、CPU输出8MiB、准入及审核各16MiB、64MiB失败采集及64KiB终态预留等原上限保持。各真实阶段最多一次，失败即关闭，不重试、不重放旧Run、不扩层、不降低门槛；已保存预览、指标、首错、实际计数及清理证据保留，未执行项和未知值不得补造。资源触发按前款记录同次采样与分项限值。训练结束不等于画质、完整Stage4、能力发布或Runtime资格，沿用原正式门禁。
+
+该新候选的训练预览采用[`ai-painter-training-preview-observation-policy-v6.json`](../../data/ai-painter/system-governance/ai-painter-training-preview-observation-policy-v6.json)：只绑定新能力／模型、输出根及实际生产／存储／读取源码，记录和manifest协议、每轮至多1张、24张合计4MiB及无额外前向／求导／更新的规则保持；通过原历史及制品接口读取，不新增UI、API或轮询。旧资格v1至v4、旧训练候选和失败均保留，不继承其资格；组件测试不等于自身CPU／GPU准入。原v4仍为独立检查专用入口，不被本次接入原地改成训练器。[主体1.95原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.95-ce25f243.txt)供历史复核。
+
 24轮训练的预览组件及采用边界由[`ai-painter-training-preview-observation-policy-v1.json`](../../data/ai-painter/system-governance/ai-painter-training-preview-observation-policy-v1.json)登记，遵守第15.2节。该政策不修改原执行政策或准入，不单独授予真实训练、旧运行重放或生产采用资格。1.72规范原字节保存在[`1.72规范快照`](../../data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.72-376b1158.txt)，供旧包按原绑定复核，不将新预览要求追溯施加于旧失败运行。
 
 对象支撑区域结构候选由[`ai-painter-object-support-structure-quality-execution-policy-v3.json`](../../data/ai-painter/system-governance/ai-painter-object-support-structure-quality-execution-policy-v3.json)登记，版本化适配入口为[`scripts/run-ai-painter-object-support-structure-quality-v1.mjs`](../../scripts/run-ai-painter-object-support-structure-quality-v1.mjs)。该候选只接入已定义的完整可见tree／rock／vegetation支撑区域结构Loss；原模型、全部原Loss、核心优先规则、梯度容差、数据用途、审核与资源上限保持。一次生成器前向独立计算五组完整梯度；48份train的零更新GPU准入应有240次G及48次D梯度计算，不接受旧四梯度资格。失败采集须保留五组原梯度及实际位置、更新计数与首错，并继续遵守64MiB采集及128MiB整次执行上限。新Checkpoint、包、审核和终态绑定新候选，不将旧权重或历史资格改名复用。固定24轮、G／D各1152次更新、第12轮只观察、固定8份validation及所有停止规则按新机器政策明确绑定。入口登记和CPU合成验证不授予GPU、训练、画质、Stage或发布资格。
@@ -704,7 +820,7 @@ v3仅登记诊断器设备摘要兼容修正后的同范围独立观测，数学
 | 完整地图与未来动态就绪业务合同 | [`data/ai-painter/system-governance/complete-map-world-business-contract-v3.json`](../../data/ai-painter/system-governance/complete-map-world-business-contract-v3.json) | 长期业务机器合同 |
 | 64 份地图语义拓扑差异合同 | [`data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json`](../../data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json) | 数据发布机器合同 |
 | 现行完整地图23通道条件合同 | [`ai-painter-complete-map-condition-contract-v1.json`](../../data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json) | 当前条件顺序、类型、存储、归一化、重采样、身份血缘与缺失策略的唯一机器权威；不包含训练或能力发布资格 |
-| Stage4 V2 64份数据发布合同 | [`ai-painter-stage4-v2-mvp64-dataset-release-v1.json`](../../data/ai-painter/system-governance/ai-painter-stage4-v2-mvp64-dataset-release-v1.json) | 当前后继候选的唯一数据输入身份；固定从116条来源索引精确选择64条、48/8/4/4，并绑定每张RGB、条件包和贡献证据，不授予模型、GPU或训练资格 |
+| Stage4 V2 64份数据发布合同 | [`ai-painter-stage4-v2-mvp64-dataset-release-v1.json`](../../data/ai-painter/system-governance/ai-painter-stage4-v2-mvp64-dataset-release-v1.json) | 原64份父数据身份；固定从116条来源索引选择64条、48/8/4/4。单条train纠错后的不可变发布采用来源规格第8.3节，不覆盖本合同，不授予模型、GPU或执行资格 |
 | V7迁移期23通道顺序、类型和缩放快照 | [`ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json`](../../ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json) | 已退役未发布实现的历史复核输入；现行条件合同已独立物化，当前程序不得再读取本文件建立条件、训练或运行身份 |
 | Stage4全分辨率类型化语义传输与RGB责任后继合同 | [`stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2.json`](../../data/ai-painter/system-governance/stage4-full-resolution-typed-semantic-transport-rgb-responsibility-contract-v2.json) | `cpu_supported_inactive`后继能力父合同；以`declared_shared_substrate`登记共享底座和七个隔离责任命名空间，并冻结条件、数据、Loss、审核、基础资产及CPU验收前置门；不表示GPU资格、训练通过或能力发布 |
 | Stage4 V2 Trainer与正式Loss支持合同 | [`stage4-semantic-transport-v2-trainer-loss-support-contract-v1.json`](../../data/ai-painter/system-governance/stage4-semantic-transport-v2-trainer-loss-support-contract-v1.json) | 逐项登记正式V6复合Loss的公式、权重、形状、遮罩、归一化、实现和测试血缘；V2只复用已登记目标，不增加加权Loss，也不把审核阈值或失败像素作为训练目标 |

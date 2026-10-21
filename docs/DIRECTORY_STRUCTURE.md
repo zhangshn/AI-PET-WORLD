@@ -1,14 +1,14 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-10-14 14:26:17 +08:00
+更新时间：2026-10-22 03:32:28 +08:00
 
 状态：active-directory-reference
 
-文档版本：`AI-PET-WORLD-DIRECTORY-1.12`
+文档版本：`AI-PET-WORLD-DIRECTORY-1.15`
 
-生效日期：`2026-10-14`
+生效日期：`2026-10-22`
 
-替代版本：`AI-PET-WORLD-DIRECTORY-1.11`
+替代版本：`AI-PET-WORLD-DIRECTORY-1.14`
 
 文档状态：`active_normative_target`
 
@@ -39,6 +39,7 @@ docs/
 ├─ ARCHITECTURE.md
 ├─ LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md
 ├─ DIRECTORY_STRUCTURE.md
+├─ LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md
 ├─ game-world-generation/
 │  ├─ README.md
 │  ├─ DOCUMENT_INDEX.md
@@ -67,6 +68,7 @@ docs/
 | `docs/BUSINESS_SPEC.md` | 两大核心业务和长期业务边界。 |
 | `docs/ARCHITECTURE.md` | AI 管家与类地球世界的长期架构。 |
 | `docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md` | 本地自研AI能力建设、任务执行和Codex职能迁移主体架构。 |
+| `docs/LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md` | 本地数据总汇、手动备份、工作台账与计划对照的单模块规格；包含接口、数据目录和分段验收，不建立第二计划表。 |
 | `docs/game-world-generation/` | AI Painter正式主体、数据来源、审核发布、补充合同和唯一模块计划表。 |
 | `docs/ai-console/` | 新AI控制台的平台总纲、功能规格、系统架构、信息架构与UI标准、数据字典与API合同。 |
 | `docs/world-visual-data-dictionary/` | 分层视觉事实、对象、地形、过渡、失败码和训练标签。 |
@@ -132,9 +134,11 @@ AI Painter 是类地球世界的视觉表达系统，不能决定世界事实：
 | `.runtime/ai-console/runtime/world-control-registry-v1.sqlite` | 新控制台V16世界控制登记；以独立SQLite原子保存V15正式Frame消费、发布暂停/恢复、合法祖先回退、视觉冻结、事件和命令回执，当前为空库，不导入且不写入旧World Runtime、游戏世界、WorldFacts或训练状态。 |
 | `.runtime/ai-console/observability/training-telemetry-v1.sqlite` | 新控制台V17训练遥测登记；由新平台固定内部写入器追加Run、Execution、Stage、Epoch、Batch、Loss、学习率、吞吐、ETA、Checkpoint与心跳。旧AI Painter训练记录不迁移，浏览器GET不得创建该库。 |
 | `src/app/ai-painter-progress/` | 退役路由兼容层；目录只能保留`[[...legacyPath]]/page.tsx`，把全部旧网址永久重定向到`/ai-console`，不得包含旧UI、状态读取或训练控制。 |
-| `src/app/api/ai-painter/` | AI Painter共享后台API；仍由`ai-painter-lab`及其他非退役业务使用，不能随旧页面删除，也不得作为新AI控制台查询源。 |
+| `src/app/api/ai-painter/` | AI Painter独立共享后台API；旧实验页面删除不授权删除共享API、资产或训练数据，也不得作为新AI控制台查询源。 |
 | `src/server/ai-painter-current-training-types.ts` | 后台训练证据聚合使用的中立共享类型；不得从退役页面目录导入服务端类型。 |
 | `.runtime/ai-painter/` | 程序自动保存的训练与推理证据。 |
+
+`/ai-painter-lab`单体资产实验页面及页面私有依赖不再提供，原网址返回404，不保留替代实验页面。原单体资产、质量样本、训练脚本与共享API保持各自职责；该页面的旧进度表、单体数量和正负样本门槛不是现行整图训练条件。现行训练状态从`/ai-console`及其正式受信接口查询。
 
 AI Painter现行自主执行使用以下逻辑目录。具体能力或执行未物化时不提前创建其身份目录：
 
@@ -307,3 +311,16 @@ RuntimeFrame生命周期固定为`working -> candidates -> accepted frame / reje
 `/world` 只能展示由机器发布能力版本生成并通过机器审核与Runtime发布门的完整 RuntimeFrame；第一版与后续能力使用同一机器发布规则。训练图、局部图、候选图、失败图和程序占位图不得进入正式世界。
 
 `data/ai-painter/system-governance/document-baselines/`只保存正式规格的不可变历史机器输入及章节定位索引：原始文本字节、逻辑路径、版本、SHA-256与字节数须一致。`.txt`快照不是现行Markdown，不参与当前状态、模块安排或权限选择；读取器只提供历史复核，不能调度训练或绕过现行入口。该目录不建立平行文档树、后台或第二张计划表。
+
+## 6. 本地数据管理辅助模块
+
+本模块按[本地备份与工作台账规格](LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md)与控制台、训练和世界运行隔离；复用现有应用，不建立第二网站服务或修改52个控制台工作页。
+
+| 路径 | 唯一职责 |
+|---|---|
+| `src/app/local-backup/` | 本地管理平台统一布局及总览，`inventory/`数据资产、`backups/`备份任务、`work/`详细工作记录、`git/`代码版本页面；复用同一应用与后端。 |
+| `src/app/api/local-backup/` | 固定查询及认证后的模块操作，不接受任意文件或命令。 |
+| `src/server/local-backup/` | 模块合同、事务存储、只读投影、受限服务与工作台账。 |
+| `scripts/lib/local-backup/` | 固定来源根的有界清点与备份适配器。 |
+| `scripts/tests/local-backup*.mjs` | 本模块隔离夹具及正反回归。 |
+| `.runtime/local-backup/` | 原生日记录与事件、派生备份索引、清点报告、Run清单及失败证据；不是训练当前登记或第二权威计划。 |
