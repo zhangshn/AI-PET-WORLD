@@ -34,6 +34,18 @@ def _require(condition, message):
         raise ValueError(message)
 
 
+def _validated_coordinates(coordinates):
+    _require(type(coordinates) in (tuple, list) and len(coordinates) == 1,
+             "exactly one parameter90 coordinate required")
+    coordinate = coordinates[0]
+    _require(type(coordinate) in (tuple, list) and len(coordinate) == 4
+             and all(type(v) is int for v in coordinate), "four integer parameter90 coordinate indices required")
+    output_channel, input_channel, ky, kx = coordinate
+    _require(0 <= output_channel < 3 and 0 <= input_channel < 48 and ky == kx == 0,
+             "parameter90 coordinate outside 3x48x1x1 weight")
+    return (tuple(coordinate),)
+
+
 def _tensor(value, *, device=None, contiguous=False):
     _require(type(value) in (torch.Tensor, nn.Parameter) and value.layout == torch.strided
              and value.dtype == torch.float32 and value.device.type in ("cpu", "cuda"),
@@ -82,8 +94,10 @@ class _PlaneObserver:
     def _spatial(self):
         raise NotImplementedError
 
-    def __init__(self, model, *, max_capture_bytes=MAX_CAPTURE_BYTES, resource=None):
+    def __init__(self, model, *, max_capture_bytes=MAX_CAPTURE_BYTES, resource=None, coordinates=COORDINATES):
         _require(isinstance(model, nn.Module), "model required")
+        self._coordinates = _validated_coordinates(coordinates)
+        self._output_channel, self._input_channel, _, _ = self._coordinates[0]
         _require(type(max_capture_bytes) is int and METADATA_RESERVE <= max_capture_bytes <= MAX_CAPTURE_BYTES,
                  "capture budget invalid")
         _require(resource is None or callable(resource), "resource callback invalid")
@@ -130,7 +144,8 @@ class _PlaneObserver:
 
     def _config(self):
         return (self.module.in_channels, self.module.out_channels, self.module.kernel_size, self.module.stride,
-                self.module.padding, self.module.dilation, self.module.groups, self.module.padding_mode, id(self.module.bias))
+                self.module.padding, self.module.dilation, self.module.groups, self.module.padding_mode, id(self.module.bias),
+                self._coordinates, self._input_channel, self._output_channel)
 
     def _check(self):
         _require(not self._checking, "reentrant observation/resource callback")
@@ -164,7 +179,7 @@ class _PlaneObserver:
             if self._input_ref is not None:
                 source = self._input_ref()
                 if source is not None:
-                    _require(_sha(source[:, INPUT_CHANNEL:INPUT_CHANNEL + 1]) == self._descriptors["input"]["sha256"],
+                    _require(_sha(source[:, self._input_channel:self._input_channel + 1]) == self._descriptors["input"]["sha256"],
                              "shared input plane bytes changed")
             if self._output_ref is not None:
                 output = self._output_ref()
@@ -219,7 +234,7 @@ class _PlaneObserver:
         self._forwards = 1
         self._input_ref, self._output_ref = weakref.ref(value), weakref.ref(output)
         self._output_signature, self._output_shape = _signature(output), tuple(output.shape)
-        self._input = self._clone("input", value, INPUT_CHANNEL)
+        self._input = self._clone("input", value, self._input_channel)
         self._handles.append(output.register_hook(self._adjoint))
         return None
 
@@ -227,7 +242,7 @@ class _PlaneObserver:
         self._check()
         _require(self._active is not None and self._active not in self._adjoints, "missing/repeated adjoint label")
         _require(tuple(value.shape) == self._output_shape, "adjoint shape differs")
-        self._adjoints[self._active] = self._clone("adjoint." + self._active, value, OUTPUT_CHANNEL)
+        self._adjoints[self._active] = self._clone("adjoint." + self._active, value, self._output_channel)
         return None
 
     def gradient_event(self, stage, label, raw):
@@ -287,7 +302,8 @@ class _PlaneObserver:
                 parameterIndex=TARGET_INDEX, parameterName=TARGET_NAME, weightSha256=self._weight_sha,
                 currentInstanceVersion=self._versions[TARGET_INDEX][5], targetForwards=self._forwards,
                 objectiveCaptures=len(self._gradients), captureBytes=self.used, metadataReserveBytes=METADATA_RESERVE,
-                coordinates=[list(v) for v in COORDINATES], inputChannel=INPUT_CHANNEL, outputAdjointChannel=OUTPUT_CHANNEL,
+                coordinates=[list(v) for v in self._coordinates], inputChannel=self._input_channel,
+                outputAdjointChannel=self._output_channel,
                 productionGeometryVerified=type(self) is Parameter90Observer and tuple(self._input.shape[2:]) == PRODUCTION_SPATIAL,
                 descriptors=deepcopy(self._descriptors), cpuRngSha256=self._cpu_rng_sha, cudaRngSha256=self._cuda_rng_sha,
                 releasedSources=[key for reference, _, key in self._sources if reference() is None],
@@ -325,13 +341,13 @@ def _planes(input_tensor, adjoints, native_gradients, convolution):
     return retained, workspace
 
 
-def _selected_reference(input_tensor, adjoint, resource):
+def _selected_reference(input_tensor, adjoint, resource, *, coordinates=COORDINATES):
     spatial = tuple(input_tensor.shape[2:])
     height, width = spatial
     x = input_tensor[0, 0].to(torch.float64)
     dy = adjoint[0, 0].to(torch.float64)
     values = []
-    for _, _, ky, kx in COORDINATES:
+    for _, _, ky, kx in coordinates:
         if resource is not None:
             resource()
         products = dy * x
@@ -361,14 +377,17 @@ def _adjoint_summary(adjoints, resource):
                 meaning="selected_output_channel_observed_adjoint_difference_not_whole_model_reference"), equal
 
 
-def decompose_target_gradients(input_tensor, adjoints, native_gradients, *, convolution, resource=None, on_reference=None):
+def decompose_target_gradients(input_tensor, adjoints, native_gradients, *, convolution, resource=None, on_reference=None,
+                              coordinates=COORDINATES):
     """Five single-coordinate CPU references; never authenticate a gate or start one.
 
     Small actual plane sizes are supported only as pure synthetic arithmetic;
     their summary explicitly fails the production spatial-shape condition.
     The public observer has no such relaxation. The worker owns non-reproduction
     handling and MUST preserve/authenticate its first error before calling here.
+    Coordinates bind the selected planes and native entry, not any authority.
     """
+    coordinates = _validated_coordinates(coordinates)
     _require(resource is None or callable(resource), "resource callback invalid")
     _require(on_reference is None or callable(on_reference), "reference callback invalid")
     retained, workspace = _planes(input_tensor, adjoints, native_gradients, convolution)
@@ -381,19 +400,19 @@ def decompose_target_gradients(input_tensor, adjoints, native_gradients, *, conv
                 resource()
             if on_reference is not None:
                 on_reference("attempt", label)
-            references.append(_selected_reference(input_tensor, value, resource))
+            references.append(_selected_reference(input_tensor, value, resource, coordinates=coordinates))
             if on_reference is not None:
                 on_reference("complete", label)
             if resource is not None:
                 resource()
         references = tuple(references)
-        native = tuple(torch.tensor([float(v[c]) for c in COORDINATES], dtype=torch.float32) for v in native_gradients)
+        native = tuple(torch.tensor([float(v[c]) for c in coordinates], dtype=torch.float32) for v in native_gradients)
         A = native[0].double()
         E32 = ((native[1] + native[2]) + native[3]) + native[4]
         _require(bool(torch.isfinite(E32).all()), "selected native FP32 component sum nonfinite")
         E, T = E32.double(), references[0]
-        S = torch.tensor([math.fsum(float(v[i]) for v in references[1:]) for i in range(len(COORDINATES))], dtype=torch.float64)
-        B = torch.tensor([math.fsum(float(v[i]) for v in native[1:]) for i in range(len(COORDINATES))], dtype=torch.float64)
+        S = torch.tensor([math.fsum(float(v[i]) for v in references[1:]) for i in range(len(coordinates))], dtype=torch.float64)
+        B = torch.tensor([math.fsum(float(v[i]) for v in native[1:]) for i in range(len(coordinates))], dtype=torch.float64)
         upstream, total_reduction, component_reduction, rounding = T - S, A - T, B - S, B - E
         difference = A - E
         residual = difference - (((upstream + total_reduction) - component_reduction) + rounding)
@@ -408,7 +427,7 @@ def decompose_target_gradients(input_tensor, adjoints, native_gradients, *, conv
         outside = ~torch.isclose(native[0], E32, atol=ATOL, rtol=RTOL)
         summary = dict(schemaVersion="parameter90-local-decomposition-v1", labels=list(LABELS),
             meaning="single_coordinate_pure_arithmetic_not_authenticated_gate_or_causal_qualification",
-            formula="A-E=(T-S)+(A-T)-(B-S)+(B-E)", coordinates=[list(c) for c in COORDINATES], referenceVjpCount=5,
+            formula="A-E=(T-S)+(A-T)-(B-S)+(B-E)", coordinates=[list(c) for c in coordinates], referenceVjpCount=5,
             spatialMatchesProduction=tuple(input_tensor.shape[2:]) == PRODUCTION_SPATIAL,
             referenceMethod="CPU_FP64_products_of_observed_FP32_values_then_math.fsum",
             scope="selected_single_weight_only_not_full_weight_or_model_FP64", maximumResidual=float(residual.abs().max()),

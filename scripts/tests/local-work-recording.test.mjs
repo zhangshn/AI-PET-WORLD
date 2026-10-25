@@ -36,6 +36,25 @@ function input(f,ctx,extra={}) {
   return {eventId:'report-001',moduleId:'capability-migration',taskId:'TASK-001',runId:null,eventKind:'execution_finished',executionResult:'succeeded',workReport:report(),attributedClaims:{validationStatus:'passed',acceptanceStatus:'unknown'},evidenceReferences:[evidence],originalStartedAtUtc:'2026-10-21T15:59:59.123456+00:00',originalFinishedAtUtc:'2026-10-21T16:00:00.654321+00:00',monotonicElapsedMs:1530.865,originalEventAtUtc:'2026-10-21T16:00:00.654321+00:00',planReference:ctx.planReference('capability-migration'),...extra}
 }
 const rows=ctx=>ctx.ledger.events(new URLSearchParams({limit:'50'})).records
+
+test('controller takeover fixes new report identity while preserving the original persisted controller event bytes',async()=>{
+ const f=fixture(),ctx=f.make(),{createWorkLedger}=await import('../../src/server/local-backup/work-ledger.mjs')
+ const previous={id:'codex-controller',name:'总控｜文档、调度与验收',threadId:'01a06c76-0c98-7e62-a132-d8035ccbdab0'}
+ const producer={id:'codex-work-codex-controller',sourceCategory:'codex',reporter:previous,verifyEvidence:()=>true,verifyPlan:()=>true}
+ const legacy=input(f,ctx,{eventId:'legacy-controller-private-event',reporter:previous,validationStatus:'unknown',acceptanceStatus:'unknown',workReport:report({title:'旧总控私有报告'})})
+ createWorkLedger(f.store,[producer]).appendProduced(producer,legacy)
+ const before=f.store.read(db=>db.prepare('SELECT payload_json,sha FROM work_events WHERE event_id=?').get(legacy.eventId))
+ const next=input(f,ctx,{eventId:'new-controller-private-report',workReport:report({title:'接替总控私有报告'})})
+ const result=await ctx.recordCodex(next,'codex-controller');assert.equal(result.recorded,true,JSON.stringify(result))
+ const current=ctx.ledger.find(result.eventIds[0])
+ assert.equal(current.sourceCategory,'codex');assert.deepEqual(current.reporter,{id:'codex-controller',name:'总控|文档、调度与验收2',threadId:'01a16ccd-a67b-7ae0-b614-a0415398ae0b'})
+ assert.equal(current.validationStatus,'unknown');assert.equal(current.acceptanceStatus,'unknown');assert.equal(current.attributedClaims.validationStatus,'passed')
+ assert.equal((await ctx.recordCodex(next,'codex-controller')).replayed,true);assert.equal(rows(ctx).length,2)
+ assert.deepEqual(ctx.ledger.find(legacy.eventId).reporter,previous)
+ assert.deepEqual(f.store.read(db=>db.prepare('SELECT payload_json,sha FROM work_events WHERE event_id=?').get(legacy.eventId)),before)
+ assert.equal((await ctx.recordCodex({...next,reporter:previous},'codex-controller')).recorded,false)
+ const summary=ctx.ledger.summary(new URLSearchParams()).records[0];assert.equal(summary.validationPassed,0);assert.equal(summary.acceptanceCompleted,0)
+})
 test('Codex source, reporter, sequence, literal microseconds and attribution are trusted separately',async()=>{
   const f=fixture(),ctx=f.make(),value=input(f,ctx)
   const result=await ctx.recordCodex(value,'codex-migration');assert.equal(result.recorded,true,JSON.stringify(result))
@@ -97,12 +116,15 @@ test('backup records require a saved bound terminal; missing source stays unavai
   const ref=f.write('.runtime/local-backup/runs/private-case/terminal.json',{schemaVersion:'local_backup_run_terminal_v1',backupId:'private-case',state:'failed',failureCode:'fixture_disk_missing',startedAtUtc:null,finishedAtUtc:null,elapsedMs:null})
   const r=await ctx.recordBackupRun({backupId:'private-case',sha256:ref.sha256});assert.equal(r.recorded,true,JSON.stringify(r));assert.equal(rows(ctx)[0].executionResult,'failed');assert.equal(rows(ctx)[0].originalEventAtUtc,null);assert.equal(rows(ctx)[0].acceptanceStatus,'unknown')
 })
-function registry(f,{uncommitted=false}={}) {
+function registry(f,{uncommitted=false,workerOverride={},preview=null,reviewOverride={},core=null}={}) {
   const pkg=f.write('.runtime/ai-painter/fixture/package.json',{schemaVersion:'ai-painter-autonomous-closed-loop-package-v1',packageIdentity:'PKG-001'})
   const executionPackage={path:pkg.logicalPath,sha256:pkg.sha256}
-  const worker={schema:'object-support-structure-quality-worker-terminal-v1',status:'training_completed_review_pending',executionState:'completed',runId:'RUN-001',packageId:'PKG-001',executionPackage,recordedAtUtc:'2026-10-21T19:01:00.123456+00:00'}
+  const worker={schema:'object-support-structure-quality-worker-terminal-v1',status:'training_completed_review_pending',executionState:'completed',runId:'RUN-001',packageId:'PKG-001',executionPackage,recordedAtUtc:'2026-10-21T19:01:00.123456+00:00',...workerOverride}
+  if(preview){const ref=f.write('.runtime/ai-painter/fixture/preview.json',{schemaVersion:'training-preview-diagnostic-manifest-v1',runId:'RUN-001',packageId:'PKG-001',...preview});worker.trainingPreviewManifest={path:ref.logicalPath,sha256:ref.sha256}}
   const t=f.write('.runtime/ai-painter/fixture/worker.json',worker)
-  const failure=f.write('.runtime/ai-painter/fixture/review.json',{schema:'object-support-structure-review-failure-v1',status:'review_execution_failed_closed',runId:'RUN-001',packageId:'PKG-001',executionPackage,workerTerminal:{path:t.logicalPath,sha256:t.sha256}})
+  const review={schema:'object-support-structure-review-failure-v1',status:'review_execution_failed_closed',runId:'RUN-001',packageId:'PKG-001',executionPackage,workerTerminal:{path:t.logicalPath,sha256:t.sha256},...reviewOverride}
+  if(core){const ref=f.write('.runtime/ai-painter/fixture/core.json',{schema:'object-support-structure-machine-audit-core-v1',runId:'RUN-001',packageId:'PKG-001',executionPackage,...core});review.core={path:ref.logicalPath,sha256:ref.sha256}}
+  const failure=f.write('.runtime/ai-painter/fixture/review.json',review)
   const head={schemaVersion:'ai-painter-current-execution-registry-v1',writerIdentity:'local_ai_capability_lifecycle_orchestrator',registryRevision:1,transactionId:'tx-001',runId:'RUN-001',eventSequence:1,latestTrainingTerminal:{path:t.logicalPath,sha256:t.sha256,runId:'RUN-001'},terminalEvidence:{path:failure.logicalPath,sha256:failure.sha256}}
   const current=f.write(REG+'/transactions/tx-001/current.staged.json',head)
   f.write(REG+'/transactions/tx-001/transaction.json',{schemaVersion:'ai-painter-current-execution-registry-transaction-v1',status:'committed',transactionId:'tx-001',currentSha256:current.sha256,registryRevision:1,eventSequence:1})
@@ -168,4 +190,78 @@ test('CLI accepts only bounded JSON, registered reporter and exact arguments',as
   await assert.rejects(readRecordInput(Readable.from([Buffer.alloc(65537)])),/input_limit/)
   await assert.rejects(readRecordInput(Readable.from([Buffer.from('{')])),/json_invalid/)
   assert.deepEqual(await readRecordInput(Readable.from([Buffer.from('{"中文":true}')])),{中文:true})
+})
+
+test('failed training records business impact, primary and preview secondary errors under its Run without granting qualification',async()=>{
+ const f=fixture(),r=registry(f,{workerOverride:{status:'failed_closed',executionState:'failed_closed',completedEpochs:5,optimizerSteps:{generator:250,discriminator:251},failurePosition:{epoch:6,trainIndex:27,zeroBasedEpochPosition:10},checkpointSelectionExecuted:false,originalError:{type:'ValueError',message:'actual four-term total gradient identity differs at parameter 90'},captureReceipt:{secondaryCaptureFailure:null}},preview:{secondaryError:{errorType:'KeyError',message:"'contribution'"}}}),ctx=f.make({readRegistry:r.reader})
+ assert.equal((await ctx.observeCommittedRegistry()).recorded,true)
+ const event=rows(ctx).find(e=>e.taskId==='training-RUN-001'),text=JSON.stringify(event.workReport)
+ for(const expected of ['业务影响','parameter 90','contribution','epoch 6','G更新 250','修复状态','未验证'])assert(text.includes(expected),expected)
+ assert.equal(event.runId,'RUN-001');assert.equal(event.executionResult,'failed');assert.equal(event.sourceCategory,'local_program');assert.equal(event.validationStatus,'unknown');assert.equal(event.acceptanceStatus,'unknown')
+ assert.equal(event.evidenceReferences.length,2);assert.equal(Object.keys(event.workReport).length,10)
+ const count=rows(ctx).length;assert.equal((await ctx.observeCommittedRegistry()).recorded,true);assert.equal(rows(ctx).length,count)
+})
+
+test('damaged preview and timing evidence cannot hide the saved training first error or manufacture timing',async()=>{
+ const f=fixture(),r=registry(f,{workerOverride:{status:'failed_closed',executionState:'failed_closed',originalError:{type:'ValueError',message:'actual four-term total gradient identity differs at parameter 90'},workerExecutionTiming:{path:'.runtime/ai-painter/fixture/missing-timing.json',sha256:'a'.repeat(64)}},preview:{secondaryError:{errorType:'KeyError',message:"'contribution'"}}})
+ fs.appendFileSync(path.join(f.root,'.runtime/ai-painter/fixture/preview.json'),' ')
+ const ctx=f.make({readRegistry:r.reader}),result=await ctx.observeCommittedRegistry();assert.equal(result.recorded,true,JSON.stringify(result))
+ const event=rows(ctx).find(e=>e.taskId==='training-RUN-001'),text=JSON.stringify(event.workReport)
+ assert(text.includes('parameter 90'));assert(text.includes('摘要或身份不一致'));assert(text.includes('计时证据不可核对'));assert.equal(event.monotonicElapsedMs,null);assert.equal(event.originalStartedAtUtc,null)
+ assert.equal(event.evidenceReferences.length,1);assert(!text.includes('缺少 contribution 字段'))
+})
+
+test('completed native review records adverse findings separately from execution success and external controller review',async()=>{
+ const f=fixture(),r=registry(f,{reviewOverride:{schema:'completed-training-independent-review-v1',status:'dry_single_world_review_failed_closed'},core:{status:'dry_single_world_review_failed_closed',issueCodes:['condition_object_tree_reference_semantic_mismatch','validation_not_improved_without_mean_rgb_regression'],formalStage4QualificationGranted:true}}),ctx=f.make({readRegistry:r.reader})
+ assert.equal((await ctx.observeCommittedRegistry()).recorded,true)
+ const event=rows(ctx).find(e=>e.taskId==='review-RUN-001'),text=JSON.stringify(event.workReport)
+ assert.equal(event.executionResult,'succeeded');assert.equal(event.validationStatus,'unknown');assert.equal(event.acceptanceStatus,'unknown');assert(text.includes('树木与留出参考语义不一致'));assert(text.includes('未满足验证改善'));assert(text.includes('不授予Stage4'))
+ const submission=input(f,ctx,{moduleId:'ai-painter',runId:'RUN-001',planReference:ctx.planReference('ai-painter'),workReport:report({title:'总控独立复核',issues:['程序结论另记；组件通过不等于画质通过']})})
+ assert.equal((await ctx.recordCodex(submission,'codex-controller')).recorded,true)
+ const external=rows(ctx).find(e=>e.reporter.id==='codex-controller');assert.equal(external.runId,event.runId);assert.equal(external.sourceCategory,'codex');assert.equal(external.validationStatus,'unknown');assert.equal(external.acceptanceStatus,'unknown')
+})
+
+test('unbound or wrong-Run review supplements remain gaps, and arbitrary exception text never enters the public report',async()=>{
+ const f=fixture(),r=registry(f,{workerOverride:{status:'failed_closed',executionState:'failed_closed',originalError:{type:'Error',message:'Cookie=session-value SECRET_TOKEN=never-display'}},preview:{runId:'OTHER-RUN',secondaryError:{message:'secret-preview'}}}),ctx=f.make({readRegistry:r.reader})
+ assert.equal((await ctx.observeCommittedRegistry()).recorded,true)
+ const event=rows(ctx).find(e=>e.taskId==='training-RUN-001'),text=JSON.stringify(event.workReport)
+ assert(!text.includes('session-value'));assert(!text.includes('never-display'));assert(!text.includes('secret-preview'));assert(text.includes('原消息仅保留于受限证据'));assert(text.includes('身份不一致'));assert.equal(event.evidenceReferences.length,1)
+})
+
+test('unknown diagnostic schemas are reported as incomplete coverage, never invented training or audit results',async()=>{
+ const f=fixture(),r=registry(f,{reviewOverride:{schema:'unconnected-numerical-diagnostic-v1',status:'diagnostic_target_evidence_complete'}}),ctx=f.make({readRegistry:r.reader})
+ const result=await ctx.observeCommittedRegistry();assert.equal(result.recorded,true);assert(result.coverage.unsupportedSchemasObserved>0);assert.equal(rows(ctx).length,1);assert.equal(ctx.getState('ai-painter-registry-v1').reasonCode,'work_terminal_schemas_not_connected')
+})
+
+test('oversized audit issue arrays remain explicit coverage gaps within the existing report limits',async()=>{
+ const f=fixture(),r=registry(f,{reviewOverride:{schema:'completed-training-independent-review-v1',status:'dry_single_world_review_failed_closed'},core:{status:'dry_single_world_review_failed_closed',issueCodes:Array(65).fill('unmapped')}}),ctx=f.make({readRegistry:r.reader})
+ assert.equal((await ctx.observeCommittedRegistry()).recorded,true)
+ const event=rows(ctx).find(e=>e.taskId==='review-RUN-001');assert(event.workReport.issues.some(v=>v.includes('列表缺失或超限')));assert(event.workReport.issues.length<=64)
+})
+
+test('upgrading detailed templates appends without rewriting an old event or double-counting its task and Run',async()=>{
+ const f=fixture(),r=registry(f),ctx=f.make({readRegistry:r.reader}),{createWorkLedger}=await import('../../src/server/local-backup/work-ledger.mjs')
+ const producer={id:'ai-painter-work-v1',sourceCategory:'local_program'},oldId='program-'+hash(['training',r.head.latestTrainingTerminal.path,r.head.latestTrainingTerminal.sha256])
+ const old={eventId:oldId,producerSequence:1,moduleId:'ai-painter',taskId:'training-RUN-001',runId:'RUN-001',eventKind:'execution_finished',executionResult:'succeeded',validationStatus:'unknown',acceptanceStatus:'unknown',evidenceReferences:[],originalStartedAtUtc:null,originalFinishedAtUtc:null,monotonicElapsedMs:null,originalEventAtUtc:'2026-10-21T19:01:00.123456+00:00',planReference:null,reporter:{id:'local-ai-painter',name:'本地训练与审核程序',threadId:null},workReport:report({title:'旧模板原件'})}
+ createWorkLedger(f.store,[producer]).append(producer,old)
+ const before=f.store.read(db=>db.prepare('SELECT payload_json,sha FROM work_events WHERE event_id=?').get(oldId))
+ assert.equal((await ctx.observeCommittedRegistry()).recorded,true)
+ assert.equal(rows(ctx).length,3)
+ assert.deepEqual(f.store.read(db=>db.prepare('SELECT payload_json,sha FROM work_events WHERE event_id=?').get(oldId)),before)
+ const training=rows(ctx).filter(e=>e.taskId==='training-RUN-001');assert.equal(training.length,2);assert(training.some(e=>e.eventId.startsWith('program-detail-v2-')))
+ const summary=ctx.ledger.summary(new URLSearchParams({reporterId:'local-ai-painter'}));assert.equal(summary.records.reduce((n,g)=>n+g.executionEnded,0),2)
+})
+
+test('direct bound audit core and malformed supplementary SHA retain provenance without promoting machine qualification',async()=>{
+ const f=fixture(),r=registry(f,{reviewOverride:{schema:'object-support-structure-machine-audit-core-v1',status:'dry_single_world_numeric_passed_visual_approval_pending',issueCodes:[]},workerOverride:{trainingPreviewManifest:{path:'.runtime/ai-painter/fixture/review.json'}}}),ctx=f.make({readRegistry:r.reader})
+ assert.equal((await ctx.observeCommittedRegistry()).recorded,true)
+ const audit=rows(ctx).find(e=>e.taskId==='review-RUN-001');assert.equal(audit.executionResult,'succeeded');assert.equal(audit.validationStatus,'unknown');assert.equal(audit.acceptanceStatus,'unknown');assert(JSON.stringify(audit.workReport).includes('numeric_passed_visual_approval_pending'))
+ const training=rows(ctx).find(e=>e.taskId==='training-RUN-001');assert(training.workReport.issues.some(t=>t.includes('证据缺失、超限、摘要或身份不一致')))
+})
+
+test('malformed or prototype-named audit codes remain unmapped without exposing object values or inherited functions',async()=>{
+ const f=fixture(),r=registry(f,{reviewOverride:{schema:'completed-training-independent-review-v1',status:'dry_single_world_review_failed_closed'},core:{status:'dry_single_world_review_failed_closed',issueCodes:['constructor','toString',{toString:null,secret:'never-display-code'}]}}),ctx=f.make({readRegistry:r.reader})
+ assert.equal((await ctx.observeCommittedRegistry()).recorded,true)
+ const text=JSON.stringify(rows(ctx).find(e=>e.taskId==='review-RUN-001').workReport)
+ assert.equal(text.split('问题码未映射').length-1,3);assert(!text.includes('native code'));assert(!text.includes('never-display-code'))
 })

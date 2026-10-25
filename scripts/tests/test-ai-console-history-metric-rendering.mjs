@@ -27,6 +27,79 @@ const statusCompiled = ts.transpileModule(`${source.slice(statusStart, statusEnd
 const statusExports = {}
 new Function('exports', statusCompiled)(statusExports)
 
+const timingAst = ts.createSourceFile('actual-history.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+const timingNodes = timingAst.statements.filter(node => ts.isFunctionDeclaration(node)
+  && ['RunTiming', 'timeLabel', 'readableJson'].includes(node.name?.text))
+assert.equal(timingNodes.length, 3)
+const timingExports = {}, timingCompiled = ts.transpileModule(timingNodes.map(node => node.getText(timingAst)).join('\n')
+  + '\nexport { RunTiming };', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText
+new Function('require', 'exports', 'formatTrainingTime', 'mapWorkerTiming', timingCompiled)(createRequire(import.meta.url),
+  timingExports, trainingTime.formatTrainingTime, trainingTime.mapWorkerTiming)
+const renderTiming = (run, compact = false, stale = false) => renderToStaticMarkup(React.createElement(timingExports.RunTiming, { run, compact, stale }))
+function qualificationFailureTiming() {
+  return { runId: 'synthetic-qualification-run', runKind: 'bounded_gpu_qualification', terminalStatus: 'failed_closed',
+    startedAtUtc: null, finishedAtUtc: null, completedEpochs: null, optimizerSteps: { generator: null, discriminator: null },
+    trainingStatus: null, trainingExecutionState: null,
+    detailCoverage: { adapter: 'managed_parent_execution_failure', supported: true,
+      sourcePolicy: 'verified_registry_explicit_sha256_parents_only', phase: 'qualification',
+      workerTerminal: 'not_recorded', availability: { workerTerminal: 'not_recorded' } },
+    workerExecutionTiming: { availability: 'unavailable', reasonCode: 'worker_timing_not_bound', sourcePath: null,
+      sourceSha256: null, startedAtUtc: null, endedAtUtc: null, elapsedSeconds: null, status: null, stopReason: null } }
+}
+test('verified pre-training qualification failure has not-applicable timing without borrowing qualification or registration time', () => {
+  for (const phase of ['qualification', 'gpu_qualification']) {
+    const run = qualificationFailureTiming(); run.detailCoverage.phase = phase
+    const html = renderTiming(run)
+    assert.match(html, /GPU准入阶段失败，训练未启动；训练计时不适用。/u)
+    assert.doesNotMatch(html, /训练worker开始时间|训练worker结束时间|330\.613|0\.000秒/u)
+    assert.match(renderTiming(run, false, true), /上次成功详情快照，已过期/u)
+    assert.doesNotMatch(renderTiming(run, true), /训练未启动；训练计时不适用/u)
+  }
+})
+for (const [name, mutate] of [
+  ['only unavailable timing, no verified run kind', run => { run.runKind = 'ecology_quality_training' }],
+  ['unknown adapter', run => { run.detailCoverage.adapter = 'unverified' }],
+  ['unsupported coverage', run => { run.detailCoverage.supported = false }],
+  ['unverified source policy', run => { run.detailCoverage.sourcePolicy = 'directory_guess' }],
+  ['training phase', run => { run.detailCoverage.phase = 'training' }],
+  ['unknown phase', run => { delete run.detailCoverage.phase }],
+  ['unknown terminal state', run => { run.terminalStatus = 'unknown' }],
+  ['missing worker evidence', run => { run.detailCoverage.workerTerminal = 'missing' }],
+  ['unreadable worker evidence', run => { run.detailCoverage.workerTerminal = 'unreadable' }],
+  ['conflicting coverage availability', run => { run.detailCoverage.availability.workerTerminal = 'missing' }],
+  ['recorded training state', run => { run.trainingStatus = 'failed_closed' }],
+  ['recorded execution state', run => { run.trainingExecutionState = 'failed_closed' }],
+  ['completed training epoch', run => { run.completedEpochs = 1 }],
+  ['generator update', run => { run.optimizerSteps.generator = 1 }],
+  ['discriminator update', run => { run.optimizerSteps.discriminator = 1 }],
+  ['no counters evidence', run => { delete run.optimizerSteps }],
+  ['timing hash conflict', run => { run.workerExecutionTiming.reasonCode = 'worker_timing_hash_conflict' }],
+  ['missing timing source', run => { run.workerExecutionTiming.reasonCode = 'worker_timing_missing' }],
+  ['unexpected bound source', run => { run.workerExecutionTiming.sourcePath = '.runtime/bound.json' }],
+  ['unexpected recorded start', run => { run.workerExecutionTiming.startedAtUtc = '2026-10-22T08:46:49.393797+00:00' }],
+  ['unexpected elapsed clock', run => { run.workerExecutionTiming.elapsedSeconds = 1 }],
+  ['unexpected terminal status', run => { run.workerExecutionTiming.status = 'failed_closed' }],
+  ['unexpected stopping failure', run => { run.workerExecutionTiming.stopReason = { type: 'Error' } }],
+]) test(`pre-training label does not hide ${name}`, () => {
+  const run = qualificationFailureTiming(); mutate(run)
+  const html = renderTiming(run)
+  assert.doesNotMatch(html, /训练未启动；训练计时不适用/u)
+  assert.match(html, /未知|未记录/u)
+})
+test('available failed training clock retains the original dates and 2707.828-second formatting', () => {
+  const run = qualificationFailureTiming(); run.runKind = 'bounded_managed_training'
+  run.workerExecutionTiming = { availability: 'available', reasonCode: null,
+    sourcePath: '.runtime/ai-painter/synthetic-run/worker-execution-timing.json', sourceSha256: 'a'.repeat(64),
+    scope: trainingTime.WORKER_TIMING_SCOPE, status: 'failed_closed', stopReason: null,
+    startedAtUtc: '2026-10-22T08:46:49.393797+00:00', endedAtUtc: '2026-10-22T09:31:57.224522+00:00', elapsedSeconds: 2707.8279999999995 }
+  for (const compact of [false, true]) {
+    const html = renderTiming(run, compact)
+    assert.match(html, /2026-10-22 16:46:49\.393/u); assert.match(html, /2026-10-22 17:31:57\.224/u)
+    assert.match(html, /45分7\.828秒（2707\.828秒）/u)
+    assert.doesNotMatch(html, /训练未启动；训练计时不适用/u)
+  }
+})
+
 // Render the whole existing page through React's server renderer. Seed real
 // useState hooks with an already-loaded detail/page; effects perform no reads.
 function renderHistorySteps(detailSteps, checkpointSteps, runFields = {}, artifactItems, pageFields = {}, detailFailure = null) {

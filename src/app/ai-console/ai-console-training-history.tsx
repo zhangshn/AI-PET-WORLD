@@ -51,6 +51,31 @@ function reasonLabel(reason: string | null) {
 function timeLabel(value: string | null | undefined) { return formatTrainingTime(value) }
 function RunTiming({ run, compact = false, stale = false }: { run: Run; compact?: boolean; stale?: boolean }) {
   const timing = mapWorkerTiming(run.workerExecutionTiming)
+  const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value)
+  const coverage = object(run.detailCoverage) ? run.detailCoverage : null
+  const availability = object(coverage?.availability) ? coverage.availability : null
+  const counters = object(run.optimizerSteps) ? run.optimizerSteps : null
+  const training = run as Run & { trainingStatus?: unknown; trainingExecutionState?: unknown }
+  // Only the verified pre-training failure adapter establishes non-applicability.
+  // Missing/corrupt timing alone says nothing about whether training started.
+  const notStarted = run.runKind === 'bounded_gpu_qualification' && run.terminalStatus === 'failed_closed'
+    && coverage?.adapter === 'managed_parent_execution_failure' && coverage.supported === true
+    && coverage.sourcePolicy === 'verified_registry_explicit_sha256_parents_only'
+    && ['qualification', 'gpu_qualification'].includes(String(coverage.phase))
+    && coverage.workerTerminal === 'not_recorded' && availability?.workerTerminal === 'not_recorded'
+    && training.trainingStatus == null && training.trainingExecutionState == null && run.completedEpochs == null
+    && counters !== null && counters.generator == null && counters.discriminator == null
+    && run.workerExecutionTiming?.availability === 'unavailable' && timing.reasonCode === 'worker_timing_not_bound'
+    && run.workerExecutionTiming.sourcePath === null && run.workerExecutionTiming.sourceSha256 === null
+    && run.workerExecutionTiming.startedAtUtc === null && run.workerExecutionTiming.endedAtUtc === null
+    && run.workerExecutionTiming.elapsedSeconds === null && run.workerExecutionTiming.status === null
+    && run.workerExecutionTiming.stopReason === null
+  if (!compact && notStarted) return <section aria-label="所选Run起止与耗时"><h4>开始、结束与实际耗时</h4>
+    {stale && <p role="status">阶段为上次成功详情快照，已过期；不代表当前执行状态。</p>}
+    <p>GPU准入阶段失败，训练未启动；训练计时不适用。</p>
+    <p>GPU准入耗时与训练worker计时属于不同阶段；本页不以准入、登记或文件时间替代训练起止与耗时。</p>
+    <p>最近登记时间：{timeLabel(run.registeredAtUtc ?? run.recordedAtUtc)}（仅登记事件，不代替开始或结束）。</p>
+  </section>
   // Raw run times retain their own scope. Never combine them with worker times
   // or calculate an elapsed duration from them, even when both are present.
   const hasWorker = run.workerExecutionTiming != null

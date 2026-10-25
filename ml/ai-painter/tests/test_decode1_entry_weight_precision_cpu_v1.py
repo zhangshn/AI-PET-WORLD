@@ -382,6 +382,105 @@ class FactoryTests(unittest.TestCase):
             candidate.validate_model_identity(model)
 
 
+class Decode2EntryTests(unittest.TestCase):
+    def test_all_masks_native_forward_input_bias_and_fp64_weight(self):
+        rng = torch.Generator().manual_seed(20261022)
+        for mask in itertools.product((False, True), repeat=3):
+            original = nn.Conv2d(192, 96, 3, padding=1)
+            wrapped = operator.Decode2EntryWeightReductionConv(original)
+            self.assertIs(wrapped.weight, original.weight)
+            self.assertIs(wrapped.bias, original.bias)
+            source = (torch.randn((1, 192, 4, 5), generator=rng).requires_grad_(mask[0]),
+                      original.weight.requires_grad_(mask[1]), original.bias.requires_grad_(mask[2]))
+            actual = wrapped(source[0])
+            self.assertEqual(digest(actual), digest(F.conv2d(*source, padding=1)))
+            if not any(mask):
+                self.assertFalse(actual.requires_grad)
+                continue
+            upstream = torch.linspace(-.5, .5, actual.numel()).reshape_as(actual)
+            native = torch.ops.aten.convolution_backward.default
+            with patch.object(torch.ops.aten.convolution_backward, "default", wraps=native) as observed:
+                gradients = torch.autograd.grad(actual, tuple(v for v, needed in zip(source, mask) if needed), grad_outputs=upstream)
+            self.assertEqual(tuple(observed.call_args.args[-1]), mask)
+            reference = native(upstream, source[0], source[1], [96], [1, 1], [1, 1], [1, 1], False, [0, 0], 1, mask)
+            weight_reference = (upstream.double().reshape(1, 96, -1)
+                                @ F.unfold(source[0].detach().double(), (3, 3), padding=1).transpose(1, 2)).reshape_as(source[1]).float()
+            for index, gradient in zip((i for i, needed in enumerate(mask) if needed), gradients):
+                self.assertEqual(digest(gradient), digest(weight_reference if index == 1 else reference[index]))
+            if mask[1]:
+                terms = [float(source[0][0, 101, y-1, x-1]) * float(upstream[0, 95, y, x])
+                         for y in range(1, 4) for x in range(1, 5)]
+                self.assertEqual(float(weight_reference[95, 101, 0, 0]), float(torch.tensor(math.fsum(terms), dtype=torch.float32)))
+
+    def test_exact_new_identity_same_parameters_and_only_target40_module_added(self):
+        old = candidate.build_fresh_object_ecology_decode1_entry_weight_precision()
+        new = candidate.build_fresh_object_ecology_decode2_entry_weight_precision()
+        self.assertEqual(new.capability_version, candidate.DECODE2_CAPABILITY)
+        self.assertNotEqual(old.capability_version, new.capability_version)
+        self.assertEqual(tuple((n, digest(p)) for n, p in old.named_parameters()), tuple((n, digest(p)) for n, p in new.named_parameters()))
+        self.assertEqual(sum(p.numel() for p in new.parameters()), 2242687)
+        changed = [(a, type(x), type(y)) for (a, x), (b, y) in zip(old.named_modules(), new.named_modules()) if type(x) is not type(y)]
+        self.assertEqual([row[0] for row in changed], ["", candidate.DECODE2_TARGET])
+        candidate.validate_model_identity(new)
+        for current, wrong in ((new, old.state_dict()), (old, new.state_dict())):
+            before = state(current)
+            with self.assertRaises(ValueError):
+                current.load_state_dict(wrong)
+            self.assertEqual(state(current), before)
+        new.load_state_dict({key: value.clone() for key, value in new.state_dict().items()})
+        candidate.validate_model_identity(new)
+
+    def test_native_target_and_wrong_metadata_cannot_claim_new_identity(self):
+        new = candidate.build_fresh_object_ecology_decode2_entry_weight_precision()
+        new.capability_version = candidate.CAPABILITY
+        with self.assertRaises(ValueError): candidate.validate_model_identity(new)
+        new.capability_version = candidate.DECODE2_CAPABILITY
+        target = new.get_submodule(candidate.DECODE2_TARGET)
+        target.padding = (0, 0)
+        with self.assertRaises(ValueError): candidate.validate_model_identity(new)
+        with self.assertRaises(ValueError): operator.Decode2EntryWeightReductionConv(nn.Conv2d(144, 48, 3, padding=1))
+        with self.assertRaises(ValueError): operator.Decode1EntryWeightReductionConv(nn.Conv2d(192, 96, 3, padding=1))
+
+
+class RgbOutputIdentityTests(unittest.TestCase):
+    def test_new_identity_preserves_parameters_and_changes_only_output_module(self):
+        old=candidate.build_fresh_object_ecology_decode2_entry_weight_precision()
+        new=candidate.build_fresh_object_ecology_decode2_output_weight_precision()
+        self.assertEqual(new.capability_version,candidate.RGB_OUTPUT_CAPABILITY)
+        self.assertEqual(new.numeric_rule,candidate.RGB_OUTPUT_RULE)
+        before,after=tuple(old.named_parameters()),tuple(new.named_parameters())
+        self.assertEqual(len(after),108)
+        for (name,left),(other,right) in zip(before,after):
+            self.assertEqual(name,other);self.assertEqual(digest(left),digest(right))
+        changed=[name for (name,kind,config),(other,next_kind,next_config) in zip(graph._module_graph(old),graph._module_graph(new))
+                 if kind is not next_kind]
+        self.assertEqual(changed,["",candidate.RGB_OUTPUT_TARGET])
+        self.assertEqual(tuple(after[90][1].shape),(3,48,1,1))
+        candidate.validate_model_identity(new)
+
+    def test_cross_numeric_identity_rejected_and_strict_own_reload_preserved(self):
+        old=candidate.build_fresh_object_ecology_decode2_entry_weight_precision()
+        new=candidate.build_fresh_object_ecology_decode2_output_weight_precision()
+        before=state(new);objects=tuple(new.parameters())+tuple(new.buffers())
+        with self.assertRaises(ValueError):new.load_state_dict(old.state_dict())
+        self.assertEqual(before,state(new))
+        new.load_state_dict({key:value.detach().clone() for key,value in new.state_dict().items()})
+        self.assertEqual(before,state(new))
+        self.assertTrue(all(a is b for a,b in zip(objects,(*new.parameters(),*new.buffers()))))
+        with self.assertRaises(ValueError):old.load_state_dict(new.state_dict())
+
+    def test_native_output_and_wrong_numeric_claim_are_rejected(self):
+        from ai_painter.complete_world.object_appearance_regime_bias_precision import PrecisionFinalRGBConv
+        new=candidate.build_fresh_object_ecology_decode2_output_weight_precision()
+        original=new.get_submodule(candidate.RGB_OUTPUT_TARGET)
+        native=PrecisionFinalRGBConv(nn.Conv2d(48,3,1))
+        new.core.core.final_rgb_decoder.base.layers[4]=native
+        with self.assertRaises(ValueError):candidate.validate_model_identity(new)
+        new.core.core.final_rgb_decoder.base.layers[4]=original
+        new.numeric_rule=candidate.DECODE2_RULE
+        with self.assertRaises(ValueError):candidate.validate_model_identity(new)
+
+
 if __name__ == "__main__":
     result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromModule(sys.modules[__name__]))
     print(json.dumps({"testsRun": result.testsRun, "passed": result.wasSuccessful(), "seconds": time.monotonic() - STARTED,

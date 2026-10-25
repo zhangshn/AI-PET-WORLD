@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { loadRecoveryProfile, auditBoundRecovery, quarantineRecovery, saveRecoveryAudit, registerTrainingKernelInterruption, verifyTrainingKernelInputs, verifyKernelInterruptionHost, queryNativeHost } from './lib/ai-painter-owned-worker-reboot-recovery-v1.mjs'
+import { loadRecoveryProfile, auditBoundRecovery, quarantineRecovery, saveRecoveryAudit, registerTrainingKernelInterruption, verifyHistoricalInputs, isKernelInterruptionProfile, verifyKernelInterruptionHost, queryNativeHost } from './lib/ai-painter-owned-worker-reboot-recovery-v1.mjs'
 
 const args = process.argv.slice(2)
 const get = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined }
@@ -11,10 +11,10 @@ for (let i = 0; i < args.length; i++) {
 const root = path.resolve(process.cwd())
 try {
   const bound = loadRecoveryProfile(root, get('--profile'), get('--sha256'))
-  if (bound.profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v3') {
+  if (isKernelInterruptionProfile(bound.profile)) {
     if (args.includes('--apply')) await registerTrainingKernelInterruption(root, bound)
     else {
-      const historical = verifyTrainingKernelInputs(root, bound.profile), host = queryNativeHost()
+      const historical = verifyHistoricalInputs(root, bound.profile), host = queryNativeHost()
       verifyKernelInterruptionHost(historical, host)
       console.log(JSON.stringify({ caseId: bound.profile.caseId, status: 'historical_inputs_and_native_host_verified_registration_pending', historicalCleanupCertified: false, trainingQualificationGranted: false }))
       process.exit(0)

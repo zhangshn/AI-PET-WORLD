@@ -137,6 +137,65 @@ class StorageCpuTests(unittest.TestCase):
     def test_completion_v7_exact_policy_capability_root_and_no_legacy_adoption(self):
         self.completion_policy_case(7)
 
+    def corrected_source_case(self, *, task_bindings=None, review_status="review_passed"):
+        sample_id = self.ids[0]
+        intake = self.put("data/synthetic/intake.json", {"image": {"sha256": self.rgb["sha256"]}})
+        record = self.put("data/synthetic/record.json", dict(recordId=sample_id,
+            relativeDirectory="data/synthetic", originalImage=dict(path="source.png", sha256=self.rgb["sha256"]),
+            sourceCorrection=dict(parentSampleId="synthetic-parent", intakeEvidence=intake)))
+        review = self.put("data/synthetic/review.json", dict(recordId=sample_id,
+            status=review_status, inputImageSha256=self.rgb["sha256"]))
+        index = self.read(self.read(self.dataset)["sourceIndex"])
+        row = index["samples"][0]
+        row.pop("contribution", None)
+        row.update(sourceRecord=record, sourceReview=review, sourceCorrection=intake,
+                   parentSampleId="synthetic-parent")
+        index_binding = self.put("data/synthetic/index.json", index)
+        self.dataset = self.put(self.dataset["path"], {"sourceIndex": index_binding})
+        self.plan["datasetManifest"] = self.dataset
+        self.plan["dataClosure"] = self.put(self.run + "/data-closure.json", dict(
+            schema="object-support-structure-quality-data-closure-v1",
+            bindings=[self.task] if task_bindings is None else task_bindings))
+        self.rebind()
+
+    def test_corrected_rgb_uses_frozen_task_without_parent_contribution(self):
+        self.corrected_source_case()
+        sink = self.sink()
+        self.assertIsNotNone(self.capture(sink))
+        self.assertIsNone(sink.secondary_error)
+
+    def test_corrected_rgb_rejects_missing_or_duplicate_task(self):
+        for bindings in ([], [self.task, self.task]):
+            with self.subTest(bindings=bindings):
+                self.corrected_source_case(task_bindings=bindings)
+                sink = self.sink()
+                self.assertIsNone(self.capture(sink))
+                self.assertEqual(sink.secondary_error["availabilityCode"], "binding_mismatch")
+
+    def test_corrected_rgb_rejects_task_digest_mismatch(self):
+        self.corrected_source_case(task_bindings=[dict(self.task, sha256="0" * 64)])
+        sink = self.sink()
+        self.assertIsNone(self.capture(sink))
+        self.assertEqual(sink.entries, [])
+
+    def test_corrected_rgb_rejects_missing_closure_or_unpassed_source_review(self):
+        self.corrected_source_case(review_status="rejected")
+        sink = self.sink()
+        self.assertIsNone(self.capture(sink))
+        self.corrected_source_case()
+        self.plan.pop("dataClosure")
+        self.rebind()
+        self.assertIsNone(self.capture(self.sink()))
+
+    def test_new_rgb_output_model_identity_mapping_keeps_parent_identities(self):
+        self.assertEqual(memory.model_capability(
+            "stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1"),
+            "stage4_mvp256_dry_factorized_ecology_decode2_rgb_output_weight_precision_v1")
+        self.assertEqual(memory.model_capability(
+            "stage4_mvp256_dry_decode2_support_structure_weight1_v1"),
+            "stage4_mvp256_dry_factorized_ecology_decode2_entry_weight_precision_v1")
+        self.assertEqual(memory.model_capability(memory.CAPABILITY), memory.MODEL_CAPABILITY)
+
     def test_completion_v8_exact_policy_capability_root_and_no_legacy_adoption(self):
         self.completion_policy_case(8)
 

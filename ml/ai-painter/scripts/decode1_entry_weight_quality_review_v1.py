@@ -274,16 +274,16 @@ def baseline_comparison_identity(reader, plan, package):
         return {"mode":"exact_original_bindings","qualificationGranted":False}
     capability=plan.get("capabilityVersion")
     require(capability in ("stage4_mvp256_dry_decode1_registered_source_v1",
-        "stage4_mvp256_dry_decode1_support_structure_weight1_v1"),
+        "stage4_mvp256_dry_decode1_support_structure_weight1_v1", "stage4_mvp256_dry_decode2_support_structure_weight1_v1", "stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1", checkpoint.QUALIFICATION_CAPTURE_CAPABILITY, *checkpoint.TRAINING_CAPTURE_CAPABILITIES),
         "V24 comparison data differs: unregistered corrected-source route")
     current=auth.Reader(reader.root)
     specification=CURRENT_SPECIFICATION
-    if capability=="stage4_mvp256_dry_decode1_support_structure_weight1_v1":
+    if capability in ("stage4_mvp256_dry_decode1_support_structure_weight1_v1", "stage4_mvp256_dry_decode2_support_structure_weight1_v1", "stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1", checkpoint.QUALIFICATION_CAPTURE_CAPABILITY, *checkpoint.TRAINING_CAPTURE_CAPABILITIES):
         route=auth.execution_route(capability)
         policy=read_json(current,route.execution_policy)
         require(type(policy.get("objectSupportStructureWeight")) is int
             and policy["objectSupportStructureWeight"]==1
-            and policy.get("modelCapability")==auth.MODEL_CAPABILITY
+            and policy.get("modelCapability")==auth.execution_route(plan["capabilityVersion"]).model_capability
             and policy.get("sourceCandidate")==plan["sourceCandidate"]
             and type(plan.get("configuration",{}).get("objectSupportStructureWeight")) is int
             and plan["configuration"]["objectSupportStructureWeight"]==1,
@@ -470,7 +470,7 @@ def run(package_binding, terminal_binding, *, root=ROOT, recovery_binding=None):
         runtime=(*own.runtime(route.capability),None)
         torch,profile,shared,_source=runtime
     codec=auth.checkpoint_components(route.capability)
-    require(profile.CAPABILITY == auth.CAPABILITY and profile.MODEL_CAPABILITY == route.model_capability,"own frozen runtime profile differs")
+    require(profile.CAPABILITY == auth.CAPABILITY and profile.MODEL_CAPABILITY == auth.MODEL_CAPABILITY,"own frozen runtime profile differs")
     configuration = plan["configuration"]
     exact_binding(package_binding)
     sources = list((recovery["programBindings"] if recovery else plan["programBindings"]).values())
@@ -535,7 +535,7 @@ def run(package_binding, terminal_binding, *, root=ROOT, recovery_binding=None):
                 and all(sample.get("split") == "validation" for sample in samples), "fixed8/preselected189 differs")
         baseline = baseline_review(reader, plan, samples, order, resource, runtime=runtime)
         resource()
-        model, critic = profile.fresh_networks(order)
+        model, critic = profile.fresh_networks(order, **auth.model_arguments(route.capability))
         codec.reload(read_bytes(reader, selected["checkpoint"]), model=model, critic=critic,
             configuration=configuration, run_id=plan["runId"], package_binding=package_binding,
             dataset_binding=plan["datasetManifest"], epoch=selected["epoch"],

@@ -67,7 +67,7 @@ export function loadRecoveryProfile(root, relative, expectedSha) {
   const file = scopedFile(root, relative)
   const bytes = readFile(file, expectedSha)
   const profile = JSON.parse(bytes)
-  requireValue(['ai-painter-owned-worker-reboot-recovery-profile-v1', 'ai-painter-owned-worker-reboot-recovery-profile-v2', 'ai-painter-owned-worker-reboot-recovery-profile-v3'].includes(profile.schema), 'profile_schema_invalid')
+  requireValue(['ai-painter-owned-worker-reboot-recovery-profile-v1', 'ai-painter-owned-worker-reboot-recovery-profile-v2', 'ai-painter-owned-worker-reboot-recovery-profile-v3', 'ai-painter-owned-worker-reboot-recovery-profile-v4'].includes(profile.schema), 'profile_schema_invalid')
   if (profile.schema.endsWith('-v2')) requireValue(profile.failureCase === 'cpu_timeout_missing_native_observation_v1' && profile.observation === null, 'missing_observation_case_invalid')
   requireValue(/^[a-z0-9-]{1,64}$/.test(profile.caseId), 'case_id_invalid')
   requireValue(profile.guard.path === GUARD && profile.registry.path === REGISTRY, 'profile_target_invalid')
@@ -222,6 +222,7 @@ function verifyQualificationTimeoutFailure(root, profile, guard, started, build,
 }
 
 export function verifyHistoricalInputs(root, profile) {
+  if (profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v4') return verifyQualificationKernelInputs(root, profile)
   if (profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v3') return verifyTrainingKernelInputs(root, profile)
   if (profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v2') return verifyCpuTimeoutInputs(root, profile, true)
   if (profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v1' && profile.failureCase === 'cpu_timeout_observation_only_v1') return verifyCpuTimeoutInputs(root, profile, false)
@@ -444,16 +445,17 @@ export async function auditBoundRecovery(root, bound) {
   const active = path.join(root, GUARD)
   const currentGuardSha256 = fs.existsSync(active) ? sha256(readFile(active)) : null
   const decision = evaluateRecovery({ historical, registry, host, currentGuardSha256 })
-  if (bound.profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v3') {
+  if (isKernelInterruptionProfile(bound.profile)) {
     requireValue(registry.ok && registry.registry?.activeExecution === null, 'interruption_terminal_not_registered')
-    requireValue(registry.currentTaskTerminal?.schemaVersion === 'ai-painter-training-system-interruption-terminal-v1'
+    const identity = kernelInterruptionTerminalIdentity(bound.profile)
+    requireValue(registry.currentTaskTerminal?.schemaVersion === identity.schemaVersion
       && registry.currentTaskTerminal.profileSha256 === bound.profileSha256
       && referenceMatches(registry.currentTaskTerminal.originalRegistry, bound.profile.registry)
-      && registry.currentTaskTerminal.status === 'training_system_interrupted', 'interruption_terminal_mismatch')
+      && registry.currentTaskTerminal.status === identity.status, 'interruption_terminal_mismatch')
     const adjusted = { ...registry, registrySha256: bound.profile.registry.sha256,
       registry: { ...registry.registry, registryRevision: bound.profile.registry.revision } }
     Object.assign(decision, evaluateRecovery({ historical, registry: adjusted, host, currentGuardSha256 }))
-    requireValue(time(host.OsBootUtc) > time(historical.progress.updatedAtUtc), 'interruption_boot_before_progress')
+    requireValue(time(host.OsBootUtc) > time(historical.lastEvidenceAtUtc), 'interruption_boot_before_progress')
   }
   return { ...decision, schema: 'ai-painter-owned-worker-reboot-recovery-audit-v1', caseId: bound.profile.caseId, recordedAtUtc: new Date().toISOString(), profileSha256: bound.profileSha256, nativeObservationMissing: historical.nativeObservationMissing === true, failure: bound.profile.failure, receipt: bound.profile.receipt ?? null, host, registry: { ok: registry.ok, errorCode: registry.errorCode ?? null, sha256: registry.registrySha256, revision: registry.registry?.registryRevision ?? null, activeExecution: registry.registry?.activeExecution ?? null }, guardSha256: currentGuardSha256 }
 }
@@ -510,8 +512,29 @@ function interruptionTrainingScope(plan, pkg, value) {
     discriminatorSteps: policy.executionCeiling.discriminatorOptimizerSteps }
 }
 
+export function isKernelInterruptionProfile(profile) {
+  return ['ai-painter-owned-worker-reboot-recovery-profile-v3', 'ai-painter-owned-worker-reboot-recovery-profile-v4'].includes(profile.schema)
+}
+
+export function kernelInterruptionTerminalIdentity(profile) {
+  requireValue(isKernelInterruptionProfile(profile), 'interruption_profile_invalid')
+  return profile.schema.endsWith('-v4')
+    ? { schemaVersion: 'ai-painter-qualification-system-interruption-terminal-v1', status: 'qualification_system_interrupted' }
+    : { schemaVersion: 'ai-painter-training-system-interruption-terminal-v1', status: 'training_system_interrupted' }
+}
+
+export function verifyQualificationKernelInputs(root, profile) {
+  requireValue(profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v4'
+    && profile.failureCase === 'qualification_kernel_interruption_v1', 'qualification_interruption_case_invalid')
+  return verifyKernelInputs(root, profile, true)
+}
+
 export function verifyTrainingKernelInputs(root, profile) {
   requireValue(profile.failureCase === 'training_kernel_interruption_v1', 'interruption_case_invalid')
+  return verifyKernelInputs(root, profile, false)
+}
+
+function verifyKernelInputs(root, profile, qualification) {
   requireValue(Array.isArray(profile.byteLedgers) && profile.byteLedgers.length <= 16, 'interruption_ledgers_invalid')
   const seen = new Set()
   for (const item of profile.byteLedgers) {
@@ -525,7 +548,7 @@ export function verifyTrainingKernelInputs(root, profile) {
   }
   for (const binding of profile.programBindings) readFile(scopedFile(root, binding.path), binding.sha256)
   const rule = profile.programBindings.find(b => b.path === 'docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md')
-  requireValue(readFile(scopedFile(root, rule.path), rule.sha256).toString('utf8').includes('training_kernel_interruption_v1'), 'interruption_rule_not_bound')
+  requireValue(readFile(scopedFile(root, rule.path), rule.sha256).toString('utf8').includes(qualification ? 'qualification_kernel_interruption_v1' : 'training_kernel_interruption_v1'), 'interruption_rule_not_bound')
   const cache = new Map()
   let evidenceBytes = 0
   const read = binding => {
@@ -541,7 +564,7 @@ export function verifyTrainingKernelInputs(root, profile) {
   const value = binding => JSON.parse(read(binding))
   const guardBytes = read(profile.guard), guard = JSON.parse(guardBytes)
   const registry = value(profile.registry), started = value(profile.started), build = value(profile.build)
-  const plan = value(profile.plan), pkg = value(profile.executionPackage), progress = value(profile.progress)
+  const plan = value(profile.plan), pkg = value(profile.executionPackage), progress = qualification ? null : value(profile.progress)
   requireValue(pkg.schemaVersion === 'ai-painter-autonomous-closed-loop-package-v1', 'interruption_original_schema_invalid')
   const trainingScope = interruptionTrainingScope(plan, pkg, value)
   requireValue(profile.guard.path === GUARD && profile.registry.path === REGISTRY
@@ -559,25 +582,27 @@ export function verifyTrainingKernelInputs(root, profile) {
   requireValue(profile.heartbeat.path === active.heartbeat.path && active.heartbeat.ttlSeconds === 120, 'interruption_heartbeat_path_mismatch')
   const heartbeatBytes = read(profile.heartbeat)
   requireValue(heartbeatBytes.length > 0 && heartbeatBytes.length <= 65536, 'interruption_heartbeat_size_invalid')
-  if (!heartbeatBytes.every(byte => byte === 0)) {
-    const heartbeat = JSON.parse(heartbeatBytes)
+  let heartbeat = null
+  if (qualification || !heartbeatBytes.every(byte => byte === 0)) {
+    heartbeat = JSON.parse(heartbeatBytes)
     requireValue(heartbeat.schemaVersion === 'ai-painter-current-active-execution-heartbeat-v1'
       && heartbeat.executionState === 'executing' && heartbeat.ttlSeconds === active.heartbeat.ttlSeconds, 'interruption_heartbeat_invalid')
     for (const key of ['runId', 'packageId', 'capabilityVersion', 'processId', 'processStartIdentity']) requireValue(heartbeat[key] === active[key], 'interruption_heartbeat_identity_mismatch')
     requireValue(Date.now() - time(heartbeat.heartbeatAtUtc) > active.heartbeat.ttlSeconds * 1000, 'interruption_heartbeat_not_expired')
   }
-  requireValue(progress.runId === plan.runId && progress.packageId === plan.packageId && progress.capabilityVersion === plan.capabilityVersion
+  if (!qualification) requireValue(progress.runId === plan.runId && progress.packageId === plan.packageId && progress.capabilityVersion === plan.capabilityVersion
     && progress.executionState === 'executing' && progress.selectedCheckpoint === null
     && Number.isSafeInteger(progress.optimizerStepsGenerator) && progress.optimizerStepsGenerator > 0 && progress.optimizerStepsGenerator <= trainingScope.generatorSteps
     && Number.isSafeInteger(progress.optimizerStepsDiscriminator) && progress.optimizerStepsDiscriminator > 0 && progress.optimizerStepsDiscriminator <= trainingScope.discriminatorSteps, 'interruption_progress_mismatch')
   const output = trainingScope.output
   requireValue(plan.outputRoot === output && profile.plan.path === output + '/quality-plan.json'
-    && profile.progress.path === output + '/progress.json' && profile.executionLock.path === output + '/execution-lock.json', 'interruption_output_scope_invalid')
+    && (qualification || profile.progress.path === output + '/progress.json') && profile.executionLock.path === output + '/execution-lock.json', 'interruption_output_scope_invalid')
   requireValue(pkg.inputEvidence.some(item => referenceMatches(item, profile.plan)), 'interruption_package_plan_mismatch')
-  for (const key of ['trainingConsumed', 'executionConsumed']) {
+  for (const key of [qualification ? 'gpuConsumed' : 'trainingConsumed', 'executionConsumed']) {
     const consumed = value(profile[key])
-    requireValue(profile[key].path === output + (key === 'trainingConsumed' ? '/training-consumed.json' : '/execution-consumed.json')
+    requireValue(profile[key].path === output + (key === 'gpuConsumed' ? '/gpu-consumed.json' : key === 'trainingConsumed' ? '/training-consumed.json' : '/execution-consumed.json')
       && consumed.attempt === 1 && consumed.automaticRetries === 0 && referenceMatches(consumed.executionPackage, profile.executionPackage), 'interruption_consumption_mismatch')
+    if (qualification && key === 'gpuConsumed') requireValue(consumed.capabilityVersion === plan.capabilityVersion, 'qualification_consumption_capability_mismatch')
   }
   requireValue(Object.keys(active.programLineage).length === Object.keys(pkg.programLineage).length
     && Object.entries(active.programLineage).every(([role, binding]) => binding.sha256 === pkg.programLineage[role]
@@ -591,6 +616,30 @@ export function verifyTrainingKernelInputs(root, profile) {
   const command = JSON.parse(Buffer.from(commandBinding, 'base64').toString('utf8'))
   requireValue(same(command.guard, guard) && command.guardSha256 === profile.guard.sha256
     && same(command.nativeBuild, build) && path.resolve(command.scope) === path.resolve(root), 'native_chain_mismatch')
+  if (qualification) {
+    const qualifier = plan.programBindings.gpuQualifier
+    requireValue(plan.programBindings.nativeRunner?.sha256 === guard.helperSha256
+      && qualifier?.path === 'ml/ai-painter/scripts/qualify_stage4_decode1_entry_weight_quality_gpu_v1.py'
+      && plan.runtimeIdentity?.python?.sha256 === guard.executableSha256
+      && path.resolve(plan.runtimeIdentity.python.absolutePath) === path.resolve(guard.executable)
+      && guard.commandSha256 === sha256(Buffer.from(JSON.stringify(['-B', fs.realpathSync(scopedFile(root, qualifier.path)),
+        '--package', profile.executionPackage.path, '--sha256', profile.executionPackage.sha256]))), 'qualification_command_mismatch')
+    requireValue(plan.schema === 'object-support-structure-quality-plan-v1'
+      && registry.activity === 'diagnostic_gpu_qualification_pending'
+      && command.executionTiming?.phase === 'qualification'
+      && command.executionTiming.mode === 'registered_qualification_completion'
+      && command.executionTiming.runId === plan.runId && command.executionTiming.packageId === plan.packageId
+      && referenceMatches(command.executionTiming.policy, plan.interfacePolicy), 'qualification_interruption_phase_mismatch')
+    requireValue(profile.progress == null && profile.trainingConsumed == null, 'qualification_training_evidence_forbidden')
+    for (const name of ['training-consumed.json', 'progress.json', 'gpu-gate.json', 'gpu-acceptance.json', 'execution-failure.json', 'worker-execution-timing.json']) requireAbsent(root, output + '/' + name)
+    const receiptDirectory = output + '/owned-qualification-' + guard.identity
+    requireValue(profile.missingReceiptPath === receiptDirectory + '/release-receipt.json', 'qualification_receipt_path_mismatch')
+    requireAbsent(root, profile.missingReceiptPath)
+    requireValue(time(heartbeat.heartbeatAtUtc) >= time(guard.recordedAtUtc), 'qualification_heartbeat_before_start')
+    const cpu = value(profile.cpuAcceptance)
+    requireValue(profile.cpuAcceptance.path === output + '/cpu-acceptance.json' && cpu.status === 'passed'
+      && isDeepStrictEqual(cpu.programBindings, plan.programBindings), 'qualification_cpu_identity_mismatch')
+  }
   requireValue(historicalProjectPath(root, guard.startedEvidence) === profile.started.path
     && same(guard.nativeOwnerSource, build.source), 'native_scope_mismatch')
   for (const [file, expected] of [[build.snapshot, build.source.sha256], [build.binary, build.binarySha256]]) readFile(scopedFile(root, historicalProjectPath(root, file)), expected)
@@ -605,8 +654,9 @@ export function verifyTrainingKernelInputs(root, profile) {
     && Math.abs(time(preBoot.host.OsBootUtc) - time(preBoot.host.BootEventUtc)) <= 1000
     && time(preBoot.host.ObservedUtc) >= time(preBoot.host.OsBootUtc)
     && time(preBoot.host.ObservedUtc) < time(guard.recordedAtUtc)
-    && time(progress.updatedAtUtc) > time(guard.recordedAtUtc), 'interruption_prior_host_invalid')
+    && time(qualification ? heartbeat.heartbeatAtUtc : progress.updatedAtUtc) > time(guard.recordedAtUtc), 'interruption_prior_host_invalid')
   return { guard, guardBytes, started, observation: null, preBoot, progress, registry, plan, inputs: profile, nativeObservationMissing: true,
+    phase: qualification ? 'qualification' : 'training', lastEvidenceAtUtc: qualification ? heartbeat.heartbeatAtUtc : progress.updatedAtUtc,
     readProgramBinding: binding => ({ path: binding.path, sha256: binding.sha256, bytes: read(binding) }) }
 }
 
@@ -615,7 +665,7 @@ export function verifyKernelInterruptionHost(historical, host, auditPid = proces
   const registry = { ok: true, registrySha256: inputs.registry.sha256, registry: { registryRevision: inputs.registry.revision, activeExecution: null } }
   const result = evaluateRecovery({ historical, registry, host, currentGuardSha256: inputs.guard.sha256, auditPid })
   requireValue(result.status === 'eligible_for_quarantine', result.errors.join(';') || 'interruption_host_blocked')
-  requireValue(time(host.OsBootUtc) > time(historical.progress.updatedAtUtc), 'interruption_boot_before_progress')
+  requireValue(time(host.OsBootUtc) > time(historical.lastEvidenceAtUtc), 'interruption_boot_before_progress')
   return result
 }
 
@@ -624,7 +674,9 @@ export function verifyLiveInterruptionGuard(root, profile) {
 }
 
 export async function registerTrainingKernelInterruption(root, bound) {
-  const historical = verifyTrainingKernelInputs(root, bound.profile)
+  const historical = verifyHistoricalInputs(root, bound.profile)
+  requireValue(isKernelInterruptionProfile(bound.profile), 'interruption_profile_invalid')
+  const terminalIdentity = kernelInterruptionTerminalIdentity(bound.profile)
   const host = queryNativeHost()
   verifyKernelInterruptionHost(historical, host)
   const base = path.join(root, '.runtime/ai-painter/owned-worker-guards', `reboot-recovery-${bound.profile.caseId}`)
@@ -637,20 +689,21 @@ export async function registerTrainingKernelInterruption(root, bound) {
   const capsulePath = historicalProjectPath(root, path.join(records, 'capsule.json'))
   const identities = { capabilityVersion: historical.registry.capabilityVersion, packageId: historical.registry.packageId, runId: historical.registry.runId }
   if (!fs.existsSync(path.join(records, 'report.json'))) {
-    writeExclusive(path.join(records, 'report.json'), { schemaVersion: 'ai-painter-training-system-interruption-report-v1',
+    writeExclusive(path.join(records, 'report.json'), { schemaVersion: terminalIdentity.schemaVersion.replace('terminal', 'report'),
       recordedAtUtc: new Date().toISOString(), ...identities, profileSha256: bound.profileSha256,
       originalRegistry: bound.profile.registry, heartbeat: bound.profile.heartbeat, host,
-      lastDurableProgress: historical.progress, modelRootCauseEstablished: false,
+      phase: historical.phase, lastEvidenceAtUtc: historical.lastEvidenceAtUtc, lastDurableProgress: historical.progress, modelRootCauseEstablished: false,
+      originalExitCauseEstablished: false,
       historicalCleanupCertified: false, oldExecutionMayReplay: false, trainingQualificationGranted: false })
   }
   const reportBytes = readFile(path.join(records, 'report.json'))
   requireValue(JSON.parse(reportBytes).profileSha256 === bound.profileSha256, 'interruption_report_conflict')
   if (!fs.existsSync(path.join(records, 'terminal.json'))) {
-    writeExclusive(path.join(records, 'terminal.json'), { schemaVersion: 'ai-painter-training-system-interruption-terminal-v1',
-      recordedAtUtc: new Date().toISOString(), ...identities, executionState: 'failed_closed', status: 'training_system_interrupted',
+    writeExclusive(path.join(records, 'terminal.json'), { ...terminalIdentity,
+      recordedAtUtc: new Date().toISOString(), ...identities, executionState: 'failed_closed',
       profileSha256: bound.profileSha256, originalRegistry: bound.profile.registry,
       recoveryReport: { path: reportPath, sha256: sha256(reportBytes) }, lastDurableProgress: historical.progress,
-      selectedCheckpoint: null, historicalCleanupCertified: false, oldExecutionMayReplay: false, trainingQualificationGranted: false })
+      phase: historical.phase, selectedCheckpoint: null, originalExitCauseEstablished: false, historicalCleanupCertified: false, oldExecutionMayReplay: false, trainingQualificationGranted: false })
   }
   const terminalBytes = readFile(path.join(records, 'terminal.json'))
   requireValue(JSON.parse(terminalBytes).profileSha256 === bound.profileSha256, 'interruption_terminal_conflict')
@@ -796,7 +849,7 @@ export async function quarantineRecovery(root, bound, verify, checkpoint = () =>
     }
     readFile(target, bound.profile.guard.sha256)
     requireValue(!fs.existsSync(source), 'new_guard_conflict')
-    const result = { schema: 'ai-painter-owned-worker-reboot-recovery-result-v1', caseId: intent.caseId, transactionId: intent.transactionId, recordedAtUtc: new Date().toISOString(), status: 'quarantined_not_cleanup_certified', profileSha256: bound.profileSha256, guardSha256: bound.profile.guard.sha256, archivePath: historicalProjectPath(root, target), intentSha256: sha256(readFile(intentFile)), recoveredSameTransaction, nativeObservationMissing: ['ai-painter-owned-worker-reboot-recovery-profile-v2', 'ai-painter-owned-worker-reboot-recovery-profile-v3'].includes(bound.profile.schema), failure: bound.profile.failure ?? null, receipt: bound.profile.receipt ?? null, historicalCleanupCertified: false, oldExecutionMayReplay: false, trainingQualificationGranted: false }
+    const result = { schema: 'ai-painter-owned-worker-reboot-recovery-result-v1', caseId: intent.caseId, transactionId: intent.transactionId, recordedAtUtc: new Date().toISOString(), status: 'quarantined_not_cleanup_certified', profileSha256: bound.profileSha256, guardSha256: bound.profile.guard.sha256, archivePath: historicalProjectPath(root, target), intentSha256: sha256(readFile(intentFile)), recoveredSameTransaction, nativeObservationMissing: bound.profile.schema === 'ai-painter-owned-worker-reboot-recovery-profile-v2' || isKernelInterruptionProfile(bound.profile), failure: bound.profile.failure ?? null, receipt: bound.profile.receipt ?? null, historicalCleanupCertified: false, oldExecutionMayReplay: false, trainingQualificationGranted: false }
     writeExclusive(resultFile, result)
     return result
   } finally {

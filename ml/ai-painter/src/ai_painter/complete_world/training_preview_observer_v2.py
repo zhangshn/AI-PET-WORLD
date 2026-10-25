@@ -20,6 +20,20 @@ COMPLETION_CAPABILITY = "stage4_mvp256_dry_decode1_entry_weight_quality24_comple
 COMPLETION_V2_CAPABILITY = "stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2"
 MODEL_CAPABILITY = "stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1"
 
+
+def model_capability(capability):
+    if capability in ("stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1",
+                      "stage4_mvp256_dry_decode2_rgb_output_qualification_capture_v1",
+                      "stage4_mvp256_dry_decode2_rgb_output_training_capture_v1",
+                      "stage4_mvp256_dry_decode2_rgb_output_training_capture_v2",
+                      "stage4_mvp256_dry_decode2_rgb_output_training_capture_v3",
+                "stage4_mvp256_dry_decode2_rgb_output_training_capture_v4",
+                "stage4_mvp256_dry_decode2_rgb_output_training_capture_v5",
+                "stage4_mvp256_dry_decode2_rgb_output_training_capture_v6"):
+        return "stage4_mvp256_dry_factorized_ecology_decode2_rgb_output_weight_precision_v1"
+    return ("stage4_mvp256_dry_factorized_ecology_decode2_entry_weight_precision_v1"
+            if capability == "stage4_mvp256_dry_decode2_support_structure_weight1_v1" else MODEL_CAPABILITY)
+
 MIB = 1024 * 1024
 TOTAL_BYTES = 128 * MIB
 CAPTURE_RESERVED_BYTES = 64 * MIB
@@ -94,7 +108,7 @@ class PreviewIdentity:
     def validate(self, *, identity_protocol=None):
         _require(identity_protocol in (None,"training-preview-diagnostic-record-v1"), "preview identity protocol unsupported")
         _require((identity_protocol is not None or self.capability_version in (CAPABILITY,COMPLETION_CAPABILITY,COMPLETION_V2_CAPABILITY))
-                 and self.model_capability_version == MODEL_CAPABILITY,
+                 and self.model_capability_version == model_capability(self.capability_version),
                  "preview v6 exact decode1 entry-weight identity required")
         _require(all(_slug(v) for v in (self.run_id, self.package_id,
                      self.capability_version, self.model_capability_version, self.sample_id)),

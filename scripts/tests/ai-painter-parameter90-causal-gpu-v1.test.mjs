@@ -7,6 +7,7 @@ import test from "node:test";
 import {POLICY,bindPolicy,byteBinding,validateGpuPolicy,validateWorkerTerminal,requireDeadline,directoryBytes,currentCpuAcceptance,makeOutput,proofPassed,collectPythonClosure,runCpuPreflight} from "../diagnose-ai-painter-parameter90-causal-gpu-v1.mjs";
 import {requireRegistryDeadline} from "../../src/server/ai-painter-current-execution-registry.mjs";
 import {frozenInactiveFunctions} from "../diagnose-ai-painter-parameter90-causal-gpu-v1.mjs";
+import {validateCoordinateNarrative} from "../diagnose-ai-painter-parameter90-causal-gpu-v1.mjs";
 const policy={
   "schemaVersion": "ai-painter-parameter90-causal-gpu-policy-v1",
   "status": "registered_one_shot_zero_update_diagnostic_not_training",
@@ -289,6 +290,52 @@ test("actual AST closure handles package submodule imports and ignores unused ol
  assert(read.length<20);assert(!read.some(p=>p.endsWith(".pt")));
  const stale={...original,profile:{path:profile,sha256:"0".repeat(64)}};
  assert.throws(()=>collectPythonClosure(root,reader,stale,[],Date.now()+120000),/fixture immutable/);
+});
+
+test("current decode2 failure uses a distinct bound route, coordinate and weight without changing resources",()=>{
+ const next=structuredClone(policy);
+ next.schemaVersion="ai-painter-parameter90-causal-gpu-policy-v2";
+ next.capabilityVersion="parameter90_causal_zero_update_v2";
+ next.formalSpecification.version="AI-PAINTER-SPEC-1.118";
+ next.modelCapabilityVersion="stage4_mvp256_dry_factorized_ecology_decode2_entry_weight_precision_v1";
+ next.objectSupportStructureWeight=1;
+ next.scope.failureRunId="d2-ss1-v1-a43899c0-e05e-4ec6-b0fd-b99457b0fb64";
+ next.scope.failureSampleId="ai-cold-start-v7-v7-capacity-slot-173-grassland-forest-transition-v2";
+ next.target.coordinates=[[1,7,0,0]];next.target.captureInputChannel=7;next.target.captureOutputChannel=1;
+ next.outputRoot=".runtime/ai-painter/parameter90-causal-gpu-diagnostics-v2";
+ next.attemptClaimPath=next.outputRoot+"/attempt-v1.json";
+ validateGpuPolicy(next);assert.deepEqual(next.resources,policy.resources);
+ for(const change of [p=>{p.target.coordinates=[[0,1,0,0]]},p=>{p.objectSupportStructureWeight=.1},
+   p=>{p.modelCapabilityVersion="old-model"},p=>{p.outputRoot=policy.outputRoot},p=>{p.comparison.atol=1e-5}]){
+   const bad=structuredClone(next);change(bad);assert.throws(()=>validateGpuPolicy(bad));
+ }
+});
+
+test("the exact greater-than256 capture-only branch stays inactive in the bounded diagnostic",()=>{
+ const logical="ml/ai-painter/src/ai_painter/complete_world/object_support_structure_failure_capture_v1.py";
+ const bytes=fs.readFileSync(logical),binding={path:logical,sha256:"6363c4065b9dbec4376594d56664d6c0ecfdb395df61879f9045b2e75cb9e153"};
+ assert.deepEqual(frozenInactiveFunctions(logical,bytes,binding),["_joint_program_limit"]);
+ assert.throws(()=>frozenInactiveFunctions(logical,Buffer.concat([bytes,Buffer.from("\n")]),binding),/changed/);
+ assert.throws(()=>frozenInactiveFunctions(logical,bytes,{...binding,sha256:"0".repeat(64)}),/binding/);
+});
+
+test("single-row diagnosis does not activate the exact unused package loader",()=>{
+ const logical="ml/ai-painter/src/ai_painter/complete_world/split_release.py";
+ const bytes=fs.readFileSync(logical),binding={path:logical,sha256:"d6e05cf98a7902592d1b6518968eedb72961a57872d67a6e0695a4572101d7ea"};
+ assert.deepEqual(frozenInactiveFunctions(logical,bytes,binding),["load_package"]);
+ assert.throws(()=>frozenInactiveFunctions(logical,Buffer.concat([bytes,Buffer.from("\n")]),binding),/changed/);
+ assert.throws(()=>frozenInactiveFunctions(logical,bytes,{...binding,sha256:"0".repeat(64)}),/binding/);
+});
+
+test("coordinate and channel prose must agree with the actual bound target",()=>{
+ const p={target:{coordinates:[[1,7,0,0]],captureInputChannel:7,captureOutputChannel:1},
+  gateFailureContinuation:{localContrastPermittedOnlyIf:['a','b','The bound [1,7,0,0] coordinate exceeds the unchanged original absolute/relative tolerance']},
+  captureRestrictions:{upstreamDifference:'Only channel7 input and channel1 output-adjoint planes for bound [1,7,0,0]; no second full activation or global-gradient capture.'}};
+ validateCoordinateNarrative(p);
+ const oldCoordinate=structuredClone(p);oldCoordinate.gateFailureContinuation.localContrastPermittedOnlyIf[2]=oldCoordinate.gateFailureContinuation.localContrastPermittedOnlyIf[2].replace('[1,7,0,0]','[0,1,0,0]');
+ assert.throws(()=>validateCoordinateNarrative(oldCoordinate),/coordinate narrative/);
+ const oldChannels=structuredClone(p);oldChannels.captureRestrictions.upstreamDifference=oldChannels.captureRestrictions.upstreamDifference.replace('channel7 input and channel1','channel1 input and channel0');
+ assert.throws(()=>validateCoordinateNarrative(oldChannels),/channel narrative/);
 });
 
 test("consumed CPU preparation fails before source or original archive access",async()=>{

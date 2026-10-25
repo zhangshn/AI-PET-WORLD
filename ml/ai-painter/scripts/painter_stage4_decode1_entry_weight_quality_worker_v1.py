@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import hashlib
 from importlib.machinery import SourceFileLoader
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -402,6 +403,56 @@ class WorkerExecutionTiming:
     def finish(self,error=None):return self._commit(error,True)
 
 
+def canonical_initialization_observation(context, status, previous=None, *, error=None):
+    """Bounded aggregate only; ordinary/staged bytes retain the original reserve."""
+    if context.plan["capabilityVersion"] not in auth.CANONICAL_CAPABILITIES:return None
+    try:
+        require(status in ("initialization_started","training_loop_pending","completed","failed_closed"),"unknown canonical observation status")
+        value=auth.canonical_observation(context)
+        value.update(status=status,recordedAtUtc=datetime.now(timezone.utc).isoformat(),
+            primaryError=None if error is None else capture.primary_error(error))
+        raw=capture.json_bytes(value);require(len(raw)<=32768,"canonical observation32768 ceiling")
+        reader=context.reader;plan=context.plan
+        logical=plan["outputRoot"]+"/"+auth.CANONICAL_VERIFICATION["observationFile"]
+        reader.mapping.check();target=reader.path(logical);parent=capture._directory_identity(target.parent)
+        roots=json.loads(os.environ.get("DETAIL_WEIGHT_OUTPUT_ROOTS","[]")) or [plan["outputRoot"]]
+        require(type(roots) is list and 1<=len(roots)<=32 and len(set(roots))==len(roots)
+            and plan["outputRoot"] in roots,"canonical observation accounting roots differ")
+        maximum=min(capture.MAX_EXECUTION,int(os.environ.get("DETAIL_WEIGHT_OUTPUT_MAX",capture.MAX_EXECUTION)))
+        require(sum(capture.directory_bytes(reader.path(root)) for root in roots)+len(raw)<=maximum-65536,
+            "canonical observation ordinary/terminal reserve")
+        if previous is None:
+            require(not target.exists(),"canonical observation already consumed")
+            output=target
+        else:
+            require(auth.exact_binding(previous)["path"]==logical,"cross Run canonical observation")
+            reader.mapping.binding(previous,maximum=32768)
+            output=target.with_name(target.name+".staged")
+        with output.open("xb") as stream:
+            require(stream.write(raw)==len(raw),"short canonical observation write")
+            stream.flush();os.fsync(stream.fileno())
+        if previous is not None:os.replace(output,target)
+        require(capture._directory_identity(target.parent)==parent,"canonical observation parent changed")
+        bound={"path":logical,"sha256":hashlib.sha256(raw).hexdigest()}
+        reader.mapping.binding(bound,maximum=32768)
+        return bound
+    except BaseException as secondary:
+        if error is None:raise
+        error.secondary_canonical_observation_error=str(secondary).encode("utf-8")[:2048].decode("utf-8",errors="ignore")
+        # A successful replace may already have removed the prior bytes, or the
+        # prior file itself may be corrupt. Never return its old SHA on assumption.
+        if previous is not None:
+            try:
+                require(auth.exact_binding(previous)["path"]==context.plan["outputRoot"]+"/"+
+                    auth.CANONICAL_VERIFICATION["observationFile"],"cross Run previous canonical observation")
+                context.reader.mapping.binding(previous,maximum=32768)
+                return previous
+            except BaseException as verification:
+                detail=error.secondary_canonical_observation_error+"; prior binding unavailable: "+str(verification)
+                error.secondary_canonical_observation_error=detail.encode("utf-8")[:2048].decode("utf-8",errors="ignore")
+        return None
+
+
 def _gpu_uuid(value):
     """Only the two standard textual forms of one 128-bit GPU identity."""
     require(type(value) is str and re.fullmatch(
@@ -432,13 +483,18 @@ def _driver_device_zero(raw):
         index, text, temperature = [part[1:] if position and part.startswith(" ") else part
             for position, part in enumerate(parts)]
         require(re.fullmatch(r"0|[1-9][0-9]*", index) is not None and
-            re.fullmatch(r"[0-9]{1,3}", temperature) is not None, "GPU driver query malformed index/temperature")
+            re.fullmatch(r"[0-9]{1,3}(?:\.[0-9]+)?", temperature) is not None, "GPU driver query malformed index/temperature")
+        # Preserve decimal driver readings; integer conversion would hide
+        # the actual failing poll value. Keep legacy integer rows unchanged.
+        temperature_value = float(temperature) if "." in temperature else int(temperature)
+        require(math.isfinite(temperature_value) and 0 <= temperature_value <= 999,
+            "GPU driver query malformed index/temperature")
         identity, canonical = _gpu_uuid(text)
         require(index not in indices and identity not in uuids, "GPU driver query duplicate index/UUID")
         indices.add(index)
         uuids.add(identity)
         if index == "0":
-            zero = (identity, canonical, int(temperature))
+            zero = (identity, canonical, temperature_value)
     require(zero is not None, "GPU driver query device0 absent")
     return zero
 
@@ -465,7 +521,7 @@ def verify_gpu_gate(reader, plan, package_binding, gate_binding):
             gate.get("checkpointLoaded") is False and gate.get("checkpointWritten") is False and
             auth.same_json(gate.get("initialState"), gate.get("finalState")) and
             auth.same_json(gate.get("initialCpuState"), auth.read_json(reader, plan["modelBinding"])["initialState"]), "own full48 zero-update GPU proof differs")
-    if plan["capabilityVersion"] == "stage4_mvp256_dry_decode1_support_structure_weight1_v1":
+    if plan["capabilityVersion"] in ("stage4_mvp256_dry_decode1_support_structure_weight1_v1", "stage4_mvp256_dry_decode2_support_structure_weight1_v1", "stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1", checkpoint.QUALIFICATION_CAPTURE_CAPABILITY, *checkpoint.TRAINING_CAPTURE_CAPABILITIES):
         require(type(plan["configuration"].get("objectSupportStructureWeight")) is int
             and plan["configuration"]["objectSupportStructureWeight"] == 1
             and all(type(row["proof"].get("fiveGradientFacts",{}).get("objectSupportStructureWeight")) is int
@@ -558,8 +614,8 @@ class ResourceGuard:
 
 def require_gpu_resource_poll(*, free_bytes, uuid, temperature, sampled_at):
     _gpu_uuid(uuid)
-    require(type(free_bytes) is int and free_bytes >= 0 and type(temperature) is int
-        and 0 <= temperature <= 999 and type(sampled_at) is str and sampled_at,
+    require(type(free_bytes) is int and free_bytes >= 0 and type(temperature) in (int, float)
+        and 0 <= temperature <= 999 and math.isfinite(temperature) and type(sampled_at) is str and sampled_at,
         "GPU resource poll metadata invalid")
     reasons = []
     if free_bytes < 2048 * 1024**2:
@@ -708,7 +764,8 @@ def progress_publisher(reader, plan, guard, *, worker_execution_timing=None):
     return publish
 
 
-def terminal(error, result, binding, plan, gpu_binding, *, training_preview_manifest=None,worker_execution_timing=None):
+def terminal(error, result, binding, plan, gpu_binding, *, training_preview_manifest=None,worker_execution_timing=None,
+        learning_observations=None,canonical_observation_binding=None):
     counts = result.get("optimizerSteps") if result is not None else getattr(error, "actual_optimizer_counts", None)
     if counts is not None:
         require(type(counts) is dict and set(counts) == {"generator", "discriminator"} and
@@ -736,11 +793,18 @@ def terminal(error, result, binding, plan, gpu_binding, *, training_preview_mani
         "recordedAtUtc": datetime.now(timezone.utc).isoformat()}
     if training_preview_manifest is not None:
         body["trainingPreviewManifest"] = auth.exact_binding(training_preview_manifest)
+    if learning_observations is not None:
+        body["learningObservations"] = learning_observations
     if worker_execution_timing is not None:
         require(checkpoint.execution_values(plan["capabilityVersion"])["completion"],"legacy terminal cannot adopt completion timing")
         body["workerExecutionTiming"]=auth.exact_binding(worker_execution_timing)
     if error is not None and hasattr(error,"secondary_worker_timing_error"):
         body["secondaryWorkerExecutionTimingError"]=str(error.secondary_worker_timing_error)[:2048]
+    if canonical_observation_binding is not None:
+        require(plan["capabilityVersion"] in auth.CANONICAL_CAPABILITIES,"legacy canonical observation forbidden")
+        body["canonicalInitializationObservation"]=auth.exact_binding(canonical_observation_binding)
+    if error is not None and hasattr(error,"secondary_canonical_observation_error"):
+        body["secondaryCanonicalObservationError"]=error.secondary_canonical_observation_error
     return body
 
 
@@ -750,6 +814,9 @@ def verify_capture_terminal(reader, body, plan):
         receipt = body.get("captureReceipt")
         require(type(receipt) is dict and receipt.get("status") == "captured" and
                 auth.same_json(receipt.get("primaryError"), body["originalError"]), "captured primary/receipt differs")
+        if plan["capabilityVersion"] in checkpoint.TRAINING_CAPTURE_CAPABILITIES:
+            from ai_painter.complete_world.parameter0_training_same_call_storage_v1 import verify_same_call_failure
+            verify_same_call_failure(receipt, reader.mapping, plan=plan, body=body)
         manifest, _ = capture.verify_capture(receipt, reader.mapping)
         require(auth.same_json(manifest["context"]["optimizerSteps"], body["optimizerSteps"]) and
                 auth.same_json(manifest["context"]["failurePosition"], body["failurePosition"]) and
@@ -911,6 +978,12 @@ def training_loop_callbacks(context, train, model, *, profile, plan_binding,
         execution_binding, preview, capture_sink, context_for_sample):
     """Only the exact adopted route replaces the three existing callbacks."""
     capability = context.plan["capabilityVersion"]
+    if capability in checkpoint.TRAINING_CAPTURE_CAPABILITIES:
+        from ai_painter.complete_world.parameter0_training_same_call_bridge_v1 import TrainingSameCallBridge
+        bridge = TrainingSameCallBridge(context, train, model, plan_binding=plan_binding,
+            execution_binding=execution_binding, preview=preview)
+        return dict(pair_runner=bridge.pair_runner, capture_sink=bridge.capture_sink,
+            context_for_sample=bridge.sample_context)
     if capability == "stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1":
         require(checkpoint.execution_values(capability).get("same_call_capture") is True,
             "exact same-call execution route required")
@@ -919,11 +992,45 @@ def training_loop_callbacks(context, train, model, *, profile, plan_binding,
             execution_binding=execution_binding, preview=preview)
         return dict(pair_runner=bridge.pair_runner, capture_sink=bridge.capture_sink,
             context_for_sample=bridge.sample_context)
-    if capability == "stage4_mvp256_dry_decode1_support_structure_weight1_v1":
+    if capability in ("stage4_mvp256_dry_decode1_support_structure_weight1_v1", "stage4_mvp256_dry_decode2_support_structure_weight1_v1", "stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1", checkpoint.QUALIFICATION_CAPTURE_CAPABILITY):
         return dict(pair_runner=training_pair_runner(profile, model, preview, configuration=context.plan["configuration"]),
             capture_sink=capture_sink, context_for_sample=context_for_sample)
     return dict(pair_runner=training_pair_runner(profile, model, preview),
         capture_sink=capture_sink, context_for_sample=context_for_sample)
+
+
+def learning_observation_recorder(context):
+    """New-source telemetry only; legacy package SHA checks still apply first."""
+    from painter_stage4_decode1_entry_weight_lifecycle_v1 import LearningObservations, MAX_RECORD_BYTES
+    require(type(context) is auth.Context, "authenticated learning observation context required")
+    reader, plan = context.reader, context.plan
+
+    def record(index, value):
+        require(type(index) is int and 1 <= index <= 120, "bounded learning record index required")
+        raw = capture.json_bytes(value)
+        require(len(raw) <= MAX_RECORD_BYTES, "learning record byte ceiling")
+        roots = json.loads(os.environ.get("DETAIL_WEIGHT_OUTPUT_ROOTS", "[]")) or [plan["outputRoot"]]
+        require(plan["outputRoot"] in roots, "learning output root outside owned accounting")
+        maximum = min(capture.MAX_EXECUTION, int(os.environ.get("DETAIL_WEIGHT_OUTPUT_MAX", capture.MAX_EXECUTION)))
+        used = sum(capture.directory_bytes(reader.path(root)) for root in roots)
+        require(used + len(raw) + capture.MAX_CAPTURE + 1048576 + 65536 <= maximum,
+            "learning write must preserve capture, metadata and terminal reserves")
+        return write(reader.root, plan["outputRoot"] + f"/learning-observations/update-{index:03d}.json", value)
+
+    return LearningObservations(run_id=plan["runId"], write_record=record)
+
+
+def finish_learning_observations(context, recorder):
+    if recorder is None:
+        return {"status": "not_started", "manifest": None}
+    summary = recorder.finish()
+    try:
+        binding = write(context.reader.root, context.plan["outputRoot"] + "/learning-observations/manifest.json", summary)
+        return {"status": summary["status"], "manifest": binding,
+                "successfulPairCount": summary["successfulPairCount"], "missingResultCount": summary["missingResultCount"]}
+    except Exception as error:
+        return {"status": "manifest_write_failed", "manifest": None, "errorType": type(error).__name__,
+                "successfulPairCount": summary["successfulPairCount"], "missingResultCount": summary["missingResultCount"]}
 
 
 def run(binding, gpu_binding, *, root=ROOT):
@@ -938,9 +1045,13 @@ def run(binding, gpu_binding, *, root=ROOT):
     write(root, plan["outputRoot"] + "/training-consumed.json", {"executionPackage": binding, "attempt": 1, "automaticRetries": 0})
     result = None
     preview = None
+    learning = None
+    learning_result = None
+    canonical_binding = None
     validation_read = False
     try:
         if timing is not None:timing.start()
+        canonical_binding=canonical_initialization_observation(context,"initialization_started")
         gate = verify_owned_gpu(reader, plan, binding, gpu_binding)
         loaded, order = load_samples(reader, plan, splits=("train", "validation"))
         validation_read = True
@@ -981,7 +1092,7 @@ def run(binding, gpu_binding, *, root=ROOT):
                     receipt = {**receipt, "status": "capture_incomplete", "secondaryCaptureFailure": capture.primary_error(secondary),
                         "missing": [*receipt.get("missing", []), "independent capture verification failed"]}
             return receipt
-        model, critic = profile.fresh_networks(order)
+        model, critic = profile.fresh_networks(order, **auth.model_arguments(plan["capabilityVersion"]))
         initial(model, critic)
         model, critic = model.to("cuda:0"), critic.to("cuda:0")
         plan_binding = next(b for b in context.package["inputEvidence"] if b["path"] == plan["outputRoot"] + "/quality-plan.json")
@@ -1003,10 +1114,12 @@ def run(binding, gpu_binding, *, root=ROOT):
         callbacks = training_loop_callbacks(context, train, model, profile=profile,
             plan_binding=plan_binding, execution_binding=ticket, preview=preview,
             capture_sink=sink, context_for_sample=sample_context)
+        canonical_binding=canonical_initialization_observation(context,"training_loop_pending",canonical_binding)
+        learning = learning_observation_recorder(context)
         result = loop.training_loop(model=model, critic=critic, train=train, validation=loaded["validation"],
             order=order, configuration=plan["configuration"], package_binding=binding, plan=plan,
             plan_binding=plan_binding, resource=guard, checkpoint_sink=checkpoint_sink,
-            progress_sink=progress_sink, observation_sink=observation_sink, **callbacks)
+            progress_sink=progress_sink, observation_sink=observation_sink, learning_sink=learning.observe, **callbacks)
         require(result["optimizerSteps"] == {"generator": 1152, "discriminator": 1152}
             and result["completedEpochs"] == 24, "quality fixed24 completion differs")
         authenticate_live(binding, root=root)
@@ -1016,9 +1129,13 @@ def run(binding, gpu_binding, *, root=ROOT):
             "selectedCheckpoint": result["selectedCheckpointRecord"]["checkpoint"]}
         progress(value if preview is None else preview.progress(value), state="completed", force=True)
         if timing is not None:timing.finish()
+        learning_result = finish_learning_observations(context, learning)
+        canonical_binding=canonical_initialization_observation(context,"completed",canonical_binding)
         return write(root, plan["outputRoot"] + "/worker-terminal.json", terminal(None, result, binding, plan, gpu_binding,
-            training_preview_manifest=manifest,worker_execution_timing=None if timing is None else timing.binding), terminal=True)
+            training_preview_manifest=manifest,worker_execution_timing=None if timing is None else timing.binding,
+            learning_observations=learning_result,canonical_observation_binding=canonical_binding), terminal=True)
     except BaseException as error:
+        canonical_binding=canonical_initialization_observation(context,"failed_closed",canonical_binding,error=error)
         error.quality_validation_rgb_read = validation_read
         if result is not None:
             error.actual_optimizer_counts = result["optimizerSteps"]
@@ -1028,9 +1145,12 @@ def run(binding, gpu_binding, *, root=ROOT):
         if timing is not None and timing.binding is not None and not timing.closed:
             try:timing.finish(error)
             except BaseException as secondary:error.secondary_worker_timing_error=str(secondary)[:2048]
+        if learning_result is None:
+            learning_result = finish_learning_observations(context, learning)
         try:
             body = terminal(error, result, binding, plan, gpu_binding, training_preview_manifest=manifest,
-                worker_execution_timing=None if timing is None else timing.binding)
+                worker_execution_timing=None if timing is None else timing.binding, learning_observations=learning_result,
+                canonical_observation_binding=canonical_binding)
             try:
                 verify_capture_terminal(reader, body, plan)
             except BaseException as secondary:

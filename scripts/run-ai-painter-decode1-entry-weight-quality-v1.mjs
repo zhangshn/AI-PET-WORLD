@@ -6,7 +6,7 @@ import {replaceHeartbeatFile} from './run-ai-painter-learning-capacity-experimen
 import {createPresentation,createActiveIdentity,validateTrainingFailureTerminal,gpuAdmissionSeconds as admissionSeconds,registeredTrainingInterfaces} from './lib/ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
 import {runNative,cleanupForCurrentCall,hasLiveOwnedProof,validateNativeReceipt,requireLiveOwnedReceipt,withNativeOrdinaryBudget,withNativeReceiptBudget,persistNativeFailureEvidence,boundedNativeFailureMetadata,currentNativeFailureScope} from './lib/ai-painter-decode1-entry-weight-quality-owned-native-v1.mjs';
 import {nativeOwnerSourceIdentity,validateCompletionNativeTimingProof} from './lib/ai-painter-decode1-entry-completion-native-owner-v1.mjs';
-import {executionRoute,inside,read,write,json,bind,loadContext,validateTerminal} from './lib/ai-painter-decode1-entry-weight-quality-package-chain-v1.mjs';
+import {executionRoute,inside,read,write,json,bind,loadContext,validateTerminal,withOutputBudget} from './lib/ai-painter-decode1-entry-weight-quality-package-chain-v1.mjs';
 import {fileURLToPath} from 'node:url';import path from 'node:path';
 import {prepareCpuRequest,finalizeCpuAcceptance,preparePlan,makeInternalCandidate,ROLES,runtimeIdentity} from './lib/ai-painter-decode1-entry-weight-quality-package-chain-v1.mjs';
 import {materializeAutonomousClosedLoopPackage} from './lib/ai-painter-autonomous-package-materializer-v1.mjs';
@@ -110,24 +110,44 @@ function verifyStoredPreflight(ready,preflightBinding,dependencies={}){
  assert.equal(validateNativeReceipt({proof:receipt.proof,ownerPid:receipt.ownerIdentity.pid,bindingBase64:encoded,ownerClosed:receipt.ownerClosed,
   protocolError:receipt.protocolError,stdoutBytes:receipt.streamBytes.stdout,stderrBytes:receipt.streamBytes.stderr}),true);return body;
 }
+function boundedDispatchFailureMetadata(error){
+ const text=(value,maximum)=>{
+  if(typeof value!=='string')return null;
+  let bounded=Buffer.from(value.slice(0,maximum)).subarray(0,maximum).toString('utf8');
+  while(Buffer.byteLength(bounded)>maximum)bounded=bounded.slice(0,-1);
+  return bounded;
+ };
+ const metadata=value=>({name:text(value?.name,128)??'Error',message:text(value?.message,8192)??'',code:text(value?.code,128),
+  errno:Number.isSafeInteger(value?.errno)?value.errno:null,syscall:text(value?.syscall,128),
+  path:text(value?.path,4096),dest:text(value?.dest,4096)}),result=metadata(error),publication=error?.publicationDiagnostics;
+ if(publication&&typeof publication==='object'&&!Array.isArray(publication)){
+  const attempts=Array.isArray(publication.attempts)?publication.attempts:[];
+  result.publicationDiagnostics={transactionId:text(publication.transactionId,128),status:text(publication.status,128),
+   attempts:attempts.slice(0,3).map(row=>({attempt:Number.isSafeInteger(row?.attempt)?row.attempt:null,
+    atUtc:text(row?.atUtc,64),code:text(row?.code,128),message:text(row?.message,2048)})),
+   attemptsTruncated:attempts.length>3,secondaryError:publication.secondaryError?metadata(publication.secondaryError):null};
+ }
+ return result;
+}
 function createPhaseAdapters(dependencies={}){
  const deps={loadContext,runNative,hasLiveOwnedProof,cleanupForCurrentCall,requireLiveOwnedReceipt,withNativeOrdinaryBudget,withNativeReceiptBudget,
   readRegistry:readCurrentExecutionRegistry,advanceRegistry:advanceCurrentExecutionRegistry,processIdentity,
-  createPresentation,createActiveIdentity,verifyGpuOutcome,verifyStoredGpuAcceptance,validateTerminal,write,json,bind,inside,read,
+  createPresentation,createActiveIdentity,verifyGpuOutcome,verifyStoredGpuAcceptance,validateTerminal,write,json,bind,inside,read,withOutputBudget,
   hasGpuAcceptance:ready=>fs.existsSync(inside(ready.root,ready.plan.outputRoot+'/gpu-acceptance.json')),
   persistNativeFailureEvidence,currentNativeFailureScope,
   hasConsumedQualification:ready=>fs.existsSync(inside(ready.root,ready.plan.outputRoot+'/qualification-consumed.json')),
   hasOwnPreflight:ready=>fs.existsSync(inside(ready.root,ready.plan.outputRoot+'/preflight.json')),verifyStoredPreflight,...dependencies};
  async function advance(ready,{activeExecution,evidence,state,activity,latestTrainingTerminal,capsuleLogical,qualificationOnly=false}){
+  const deadlineUnixMs=Date.now()+10000;
   const terminal=deps.json(ready.root,evidence);
   for(const key of ['capabilityVersion','packageId','runId'])assert.equal(terminal[key],ready.plan[key]);
   assert.deepEqual(terminal.executionPackage,ready.packageBinding);
   assert.ok(['completed','failed_closed','blocked_policy_boundary'].includes(terminal.executionState),'registry evidence must be terminal');
-  const current=await deps.readRegistry(ready.root);assert.equal(current.ok,true);
+  const current=await deps.readRegistry(ready.root,{deadlineUnixMs});assert.equal(current.ok,true);
   const capsule=deps.write(ready.root,capsuleLogical??ready.plan.outputRoot+'/capsule-'+crypto.randomUUID()+'.json',{
    schemaVersion:'ai-painter-local-task-capsule-v1',taskId:ready.plan.runId,integrity:{status:'verified'},
    evidence:[{...evidence,kind:'diagnostic_execution_evidence',sha256Verified:true},{...ready.packageBinding,kind:'execution_package',sha256Verified:true}]});
-  const result=await deps.advanceRegistry({projectRoot:ready.root,capabilityVersion:ready.plan.capabilityVersion,packageId:ready.plan.packageId,
+  const result=await deps.advanceRegistry({projectRoot:ready.root,deadlineUnixMs,capabilityVersion:ready.plan.capabilityVersion,packageId:ready.plan.packageId,
    taskId:ready.plan.runId,taskKind:qualificationOnly?'ecology_decode1_weight_readonly_gpu_qualification':'ecology_quality_training',
    taskGoal:qualificationOnly?'48 train samples, zero optimizer updates, GPU qualification only; no training/checkpoint/publication.':'One24-epoch quality train/checkpoint/review with readonly epoch12 observation; no formal qualification or publication.',
    priority:5,queueStatus:state==='executing'?'running':state,nextMachineAction:null,queuedAtUtc:new Date().toISOString(),
@@ -173,10 +193,11 @@ function createPhaseAdapters(dependencies={}){
   const dispatch=deps.write(root,plan.outputRoot+(qualificationOnly?'/qualification-dispatched.json':'/dispatched.json'),{status:dispatchStatus,executionState:'completed',
    completedAction:'execution_dispatch_record_only_not_training',capabilityVersion:plan.capabilityVersion,packageId:plan.packageId,runId:plan.runId,
    executionPackage:packageBinding,trainingStarted:false});
-  await advance(ready,{activeExecution:active,evidence:dispatch,state:'executing',activity:existingAdmission?'training_pending':'diagnostic_gpu_qualification_pending',qualificationOnly});
-  const executable=deps.inside(root,'ml/ai-painter/.venv/Scripts/python.exe'),base=['--package',packageBinding.path,'--sha256',packageBinding.sha256];
-  let lastReceipt=null,phase='qualification';
+  let lastReceipt=null,phase='dispatch';
   try{
+   await advance(ready,{activeExecution:active,evidence:dispatch,state:'executing',activity:existingAdmission?'training_pending':'diagnostic_gpu_qualification_pending',qualificationOnly});
+   phase='qualification';
+   const executable=deps.inside(root,'ml/ai-painter/.venv/Scripts/python.exe'),base=['--package',packageBinding.path,'--sha256',packageBinding.sha256];
    let admission=existingAdmission;
    if(!admission){const gpu=await deps.runNative({root,outputRoot:plan.outputRoot,phase,executionPlan:plan,executable,
     args:['-B',deps.inside(root,plan.programBindings.gpuQualifier.path),...base],onHeartbeat:()=>heartbeat(context,ready,identity,qualificationOnly)});
@@ -200,8 +221,9 @@ function createPhaseAdapters(dependencies={}){
    await deps.withNativeReceiptBudget(root,lastReceipt,()=>advance(ready,{activeExecution:null,evidence:terminal,state:'completed',activity:body.status,latestTrainingTerminal:{runId:plan.runId,...terminal,status:body.status}}));
    return {status:'passed',workerTerminal:terminal,captureStatus:'capture_not_triggered',rootCauseConfirmed:false,ownedReceipt:result.receiptBinding};
   }catch(error){
+   const dispatchFailure=phase==='dispatch',dispatchError=dispatchFailure?boundedDispatchFailureMetadata(error):null;
    let terminal=null,body=null,workerTerminalMissing=false,terminalBound=false;
-   try{terminal=deps.bind(root,plan.outputRoot+'/worker-terminal.json');terminalBound=true;body=deps.json(root,terminal);deps.validateTerminal(body,packageBinding,plan);}catch(observed){
+   if(!dispatchFailure)try{terminal=deps.bind(root,plan.outputRoot+'/worker-terminal.json');terminalBound=true;body=deps.json(root,terminal);deps.validateTerminal(body,packageBinding,plan);}catch(observed){
     workerTerminalMissing=!terminalBound&&observed?.code==='ENOENT'&&typeof observed.path==='string'&&
      path.resolve(observed.path)===path.resolve(deps.inside(root,plan.outputRoot+'/worker-terminal.json'));
     terminal=null;body=null;
@@ -210,9 +232,15 @@ function createPhaseAdapters(dependencies={}){
     const failure=deps.write(root,plan.outputRoot+(qualificationOnly?'/qualification-failure.json':'/execution-failure.json'),{status:'failed_closed',executionState:'failed_closed',phase,
      runId:plan.runId,packageId:plan.packageId,capabilityVersion:plan.capabilityVersion,executionPackage:packageBinding,workerTerminal:terminal,
      optimizerStepsGenerator:body?.optimizerStepsGenerator??null,optimizerStepsDiscriminator:body?.optimizerStepsDiscriminator??null,
-     captureStatus:body?.captureStatus??'capture_incomplete',originalError:body?.originalError??null,error:String(error),automaticRetries:0,
-     cleanupConfirmed:deps.cleanupForCurrentCall(error,lastReceipt),formalStage4QualificationAllowed:false,runtimePublicationAllowed:false});
-    if(deps.cleanupForCurrentCall(error,lastReceipt)){
+     captureStatus:body?.captureStatus??'capture_incomplete',originalError:body?.originalError??null,
+     error:dispatchFailure?dispatchError.name+': '+dispatchError.message:String(error),automaticRetries:0,
+     ...(dispatchFailure?{failureScope:'initial_registry_dispatch_before_native_call',dispatchError,dispatchRecord:dispatch,
+      nativeCallsAttempted:0,gpuQualificationStarted:false,trainingStarted:false,nativeCleanupStatus:'no_current_native_call',
+      registryPublication:{status:'unverified_after_initial_advance_error',transactionRecoveryStatus:'requires_registry_verification_or_transaction_recovery',
+       adapterRetryAttempted:false}}:{}),
+     cleanupConfirmed:!dispatchFailure&&deps.cleanupForCurrentCall(error,lastReceipt),formalStage4QualificationAllowed:false,runtimePublicationAllowed:false});
+    if(dispatchFailure)error.dispatchFailureEvidence=failure;
+    if(!dispatchFailure&&deps.cleanupForCurrentCall(error,lastReceipt)){
      let latestTrainingTerminal;
      if(phase==='training'&&!qualificationOnly){
       if(terminal)latestTrainingTerminal={runId:plan.runId,...terminal,status:body.status};
@@ -226,9 +254,19 @@ function createPhaseAdapters(dependencies={}){
      await advance(ready,{activeExecution:null,evidence:failure,state:'failed_closed',activity:'diagnostic_failed_closed',qualificationOnly,...(latestTrainingTerminal?{latestTrainingTerminal}:{})});
     }
    };
-   const receipt=Object.hasOwn(error,'ownedReceipt')?error.ownedReceipt:lastReceipt;
+   const receipt=dispatchFailure?null:Object.hasOwn(error,'ownedReceipt')?error.ownedReceipt:lastReceipt;
    try{if(receipt)error.nativeFailureEvidence=await deps.persistNativeFailureEvidence(root,receipt,error,phase);}catch(secondary){error.failureEvidenceError=boundedNativeFailureMetadata(secondary);}
-   try{if(receipt?.outputAccountingRoots)await deps.withNativeReceiptBudget(root,receipt,persist);else await persist();}catch(secondary){error.secondaryEvidenceError=boundedNativeFailureMetadata(secondary);}
+   try{
+    if(dispatchFailure){
+     // Count this Run's already persisted CPU/native evidence without treating
+     // any earlier receipt as cleanup authority for this undispatched call.
+     assert.equal(plan.configuration.executionCeiling.maxOutputMiB,128);
+     const key=crypto.createHash('sha256').update(plan.outputRoot).digest('hex').slice(0,32);
+     const namespace=[key.slice(0,8),key.slice(8,12),key.slice(12,16),key.slice(16,20),key.slice(20)].join('-');
+     await deps.withOutputBudget({projectRoot:root,roots:[plan.outputRoot,'.runtime/ai-painter/owned-worker-guards/'+namespace],
+      maximum:128*1024**2,reserveBytes:65536},persist);
+    }else if(receipt?.outputAccountingRoots)await deps.withNativeReceiptBudget(root,receipt,persist);else await persist();
+   }catch(secondary){error.secondaryEvidenceError=boundedNativeFailureMetadata(secondary);}
    throw error;
   }
  }

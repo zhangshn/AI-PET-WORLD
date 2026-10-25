@@ -7,13 +7,14 @@ import { createStore } from './store.mjs'
 import { createWorkLedger, workTimestamp, validateWorkReport } from './work-ledger.mjs'
 import { hash, need, fields, identity, ModuleError } from './contracts.mjs'
 import { readCurrentExecutionRegistry } from '../ai-painter-current-execution-registry.mjs'
+import { trainingTerminalKind, describeTrainingTerminal } from './training-work-report.mjs'
 
 const PLAN='docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md'
 const SPEC='docs/LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md'
 const REG='.runtime/ai-painter/current-execution-registry'
 const SOURCES=['ai-painter-registry-v1','git-operations-v1','backup-runs-v1','codex-records-v1','training-history-index-v1']
 export const CODEX_REPORTERS=Object.freeze([
-  Object.freeze({id:'codex-controller',name:'总控｜文档、调度与验收',threadId:'01a06c76-0c98-7e62-a132-d8035ccbdab0'}),
+  Object.freeze({id:'codex-controller',name:'总控|文档、调度与验收2',threadId:'01a16ccd-a67b-7ae0-b614-a0415398ae0b'}),
   Object.freeze({id:'codex-migration',name:'能力迁移｜本地连续执行',threadId:'01a094ed-39ee-7e60-a949-d726cdda7e09'}),
   Object.freeze({id:'codex-training',name:'训练｜256×192质量改进',threadId:'01a094ed-39ee-7e60-a949-d7183f57a7ce'}),
   Object.freeze({id:'codex-console',name:'控制台｜状态、图像与证据',threadId:'01a07f58-6ad4-77f2-be64-5e470aee4dea'}),
@@ -186,28 +187,43 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
     if(!binding?.path||!binding.sha256)return null
     need(binding.path.startsWith('.runtime/ai-painter/'),'work_terminal_scope_invalid',409)
     const original=read(binding.path,binding.sha256),v=original.value,schema=v.schema??v.schemaVersion
-    let type,result,title
-    if(schema==='object-support-structure-quality-worker-terminal-v1'&&v.status==='training_completed_review_pending'&&v.executionState==='completed') {
-      type='training';result='succeeded';title='本地训练执行完成（审核另记）'
-    }else if(schema==='object-support-structure-review-failure-v1'&&v.status==='review_execution_failed_closed') {
-      type='review';result='failed';title='本地审核执行失败'
-    }else return {unsupported:true,schema:schema??'unknown'}
+    const kind=trainingTerminalKind(v)
+    if(!kind)return {unsupported:true,schema:schema??'unknown'}
+    const {type,result,title}=kind
     const runId=v.runId??binding.runId;identity(runId)
-    need(v.packageId&&(!binding.runId||binding.runId===runId),'work_terminal_identity_conflict',409)
-    need(v.executionPackage?.path?.startsWith('.runtime/ai-painter/'),'work_terminal_package_missing',409)
+    need(v.runId===runId&&v.packageId&&(!binding.runId||binding.runId===runId),'work_terminal_identity_conflict',409)
+    need(v.executionPackage?.path?.startsWith('.runtime/ai-painter/')&&/^[a-f0-9]{64}$/.test(v.executionPackage.sha256),'work_terminal_package_missing',409)
     const executionPackage=read(v.executionPackage.path,v.executionPackage.sha256).value
     need(executionPackage.schemaVersion==='ai-painter-autonomous-closed-loop-package-v1'&&executionPackage.packageIdentity===v.packageId,'work_terminal_package_conflict',409)
     if(type==='review') {
-      need(v.workerTerminal?.path?.startsWith('.runtime/ai-painter/'),'work_review_worker_missing',409)
-      const worker=read(v.workerTerminal.path,v.workerTerminal.sha256).value
+      const workerBinding=kind.core?snapshotValue?.latestTrainingTerminal:v.workerTerminal
+      need(workerBinding?.path?.startsWith('.runtime/ai-painter/')&&/^[a-f0-9]{64}$/.test(workerBinding.sha256),'work_review_worker_missing',409)
+      const worker=read(workerBinding.path,workerBinding.sha256).value
       need(worker.runId===runId&&worker.packageId===v.packageId&&worker.executionPackage?.sha256===v.executionPackage.sha256,'work_review_worker_identity_conflict',409)
+      if(kind.audit)need(worker.schema==='object-support-structure-quality-worker-terminal-v1'&&worker.status==='training_completed_review_pending'&&worker.executionState==='completed','work_review_worker_not_completed',409)
     }
-    const eventId='program-'+hash([type,binding.path,binding.sha256])
+    // Existing events are immutable. Append a detailed version under the same
+    // task/Run identity; aggregate sets deduplicate execution counts on upgrade.
+    const eventId='program-detail-v2-'+hash([type,binding.path,binding.sha256])
+    if(ledger.find(eventId))return {recorded:true,replayed:true,eventIds:[eventId]}
     const input=baseEvent(eventId,'ai-painter',type+'-'+runId,runId,'execution_finished',result)
-    Object.assign(input,nativeTiming(v,original),{title,completedText:type==='training'?'训练执行结果已由本地程序保存；不代表画质、Stage4或发布资格。':'保留原始审核程序失败；不将其混为训练失败或视觉拒绝。',
+    const supplementGaps=[]
+    let timing={originalEventAtUtc:v.recordedAtUtc??null}
+    try{timing=nativeTiming(v,original)}catch{supplementGaps.push('原始计时证据不可核对；起止与耗时保持未知，不用其他时间推算。')}
+    Object.assign(input,timing,{title,completedText:type==='training'?'训练执行结果已由本地程序保存；不代表画质、Stage4或发布资格。':kind.audit?'本地审核原报告已保存；原结论与执行成功分别记录，不授予能力资格。':'保留原始审核程序失败；不将其混为训练失败或视觉拒绝。',
       reasonCode:result==='failed'?v.status:null,evidenceReferences:[snapshot(original,'program')],
       sourceReference:{kind:type+'_terminal',originId:runId,revision:null}})
-    void snapshotValue
+    const supplement=(ref,validate,label)=>{
+      if(!ref){supplementGaps.push(label+'：未绑定，详细覆盖未知。');return null}
+      try {
+        need(ref.path?.startsWith('.runtime/ai-painter/')&&/^[a-f0-9]{64}$/.test(ref.sha256),'work_terminal_supplement_scope',409)
+        const r=read(ref.path,ref.sha256);need(validate(r.value),'work_terminal_supplement_identity',409)
+        input.evidenceReferences.push(snapshot(r,'program'));return r.value
+      }catch{supplementGaps.push(label+'：证据缺失、超限、摘要或身份不一致；保留首错，不冒称已核对。');return null}
+    }
+    const preview=type==='training'?supplement(v.trainingPreviewManifest,p=>p.schemaVersion==='training-preview-diagnostic-manifest-v1'&&p.runId===runId&&p.packageId===v.packageId,'预览次错证据'):null
+    const core=kind.core?v:kind.audit?supplement(v.core,c=>c.schema==='object-support-structure-machine-audit-core-v1'&&c.runId===runId&&c.packageId===v.packageId&&c.executionPackage?.sha256===v.executionPackage.sha256&&c.status===v.status,'机器审核结论'):null
+    input.workReport=describeTrainingTerminal({input,terminal:v,kind,preview,core,supplementGaps})
     return appendSource(producers.registry,input)
   }
   // Historical terminal facts do not prove that an execution is still alive.

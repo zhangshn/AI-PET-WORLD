@@ -13,7 +13,10 @@ const SELF=fileURLToPath(import.meta.url);
 const ROOT=path.resolve(path.dirname(SELF),"..");
 export let POLICY=Object.freeze({path:"data/ai-painter/system-governance/ai-painter-parameter90-causal-gpu-policy-v1.json",sha256:null});
 export function bindPolicy(binding){
-  assert.equal(binding?.path,POLICY.path); assert(/^[a-f0-9]{64}$/.test(binding.sha256),"explicit policy SHA required");
+  assert(["data/ai-painter/system-governance/ai-painter-parameter90-causal-gpu-policy-v1.json",
+    "data/ai-painter/system-governance/ai-painter-parameter90-causal-gpu-policy-v2.json"].includes(binding?.path),"registered policy path required");
+  assert(/^[a-f0-9]{64}$/.test(binding.sha256),"explicit policy SHA required");
+  if(POLICY.sha256!==null)assert.equal(binding.path,POLICY.path,"policy route cannot change");
   if(POLICY.sha256!==null)assert.equal(binding.sha256,POLICY.sha256,"policy binding cannot change");
   POLICY=Object.freeze({path:binding.path,sha256:binding.sha256}); return POLICY;
 }
@@ -37,21 +40,27 @@ const OWN=[
 ];
 const RESERVE=65536;
 export function validateGpuPolicy(p){
-  assert.equal(p.schemaVersion,"ai-painter-parameter90-causal-gpu-policy-v1");
+  const current=p.schemaVersion==="ai-painter-parameter90-causal-gpu-policy-v2";
+  assert(current||p.schemaVersion==="ai-painter-parameter90-causal-gpu-policy-v1");
   assert.equal(p.status,"registered_one_shot_zero_update_diagnostic_not_training");
   assert.equal(p.formalSpecification.path,"docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md");
-  assert.equal(p.formalSpecification.version,"AI-PAINTER-SPEC-1.101");
+  assert.equal(p.formalSpecification.version,current?"AI-PAINTER-SPEC-1.118":"AI-PAINTER-SPEC-1.101");
   assert(/^[a-f0-9]{64}$/.test(p.formalSpecification.sha256));
-  assert.equal(p.scope.failureSampleId,"ai-cold-start-v7-v7-capacity-slot-174-forested-low-mountain-v2");
+  assert.equal(p.scope.failureSampleId,current?"ai-cold-start-v7-v7-capacity-slot-173-grassland-forest-transition-v2":"ai-cold-start-v7-v7-capacity-slot-174-forested-low-mountain-v2");
   assert.equal(p.scope.sampleSplit,"train"); assert.equal(p.scope.sampleCount,1);
   assert.deepEqual(p.scope.resolution,[256,192]);
   assert.equal(p.scope.sourceStateTiming,"after_exception");
   assert.equal(p.sourceStateUse.trainingInitializationAllowed,false);
   assert.equal(p.sourceStateUse.historicalReplayAllowed,false);
   assert.equal(p.target.parameterIndex,90);
-  assert.equal(p.scope.failureRunId,"decode1-entry-completion-v2-079d72e9-1a7e-4c2c-84a3-767836b72fe1");
-  assert.deepEqual(p.target.coordinates,[[0,1,0,0]]);
-  assert.equal(p.target.captureInputChannel,1);assert.equal(p.target.captureOutputChannel,0);
+  assert.equal(p.scope.failureRunId,current?"d2-ss1-v1-a43899c0-e05e-4ec6-b0fd-b99457b0fb64":"decode1-entry-completion-v2-079d72e9-1a7e-4c2c-84a3-767836b72fe1");
+  assert.deepEqual(p.target.coordinates,current?[[1,7,0,0]]:[[0,1,0,0]]);
+  assert.equal(p.target.captureInputChannel,current?7:1);assert.equal(p.target.captureOutputChannel,current?1:0);
+  if(current){
+    assert.equal(p.modelCapabilityVersion,"stage4_mvp256_dry_factorized_ecology_decode2_entry_weight_precision_v1");
+    assert.equal(p.objectSupportStructureWeight,1);
+    assert.equal(p.capabilityVersion,"parameter90_causal_zero_update_v2");
+  }
   assert.equal(p.target.parameterName,"core.core.final_rgb_decoder.base.layers.4.weight");
   assert.deepEqual(p.target.weightShape,[3,48,1,1]);
   assert.equal(p.comparison.atol,1e-6); assert.equal(p.comparison.rtol,1e-5);
@@ -72,13 +81,23 @@ export function validateGpuPolicy(p){
   assert.equal(p.cleanup.historicalObservationIsAuthority,false);
   assert.equal(p.registry.diagnosisIsTraining,false);
   assert.deepEqual(p.qualification,{gpuExecutionAllowed:false,trainingAllowed:false,modelModificationAllowed:false,checkpointWritten:false,rootCauseProven:false,stage4Qualified:false,capabilityReleased:false,runtimeFrameAllowed:false});
-  assert.equal(p.outputRoot,".runtime/ai-painter/parameter90-causal-gpu-diagnostics-v1");
+  assert.equal(p.outputRoot,current?".runtime/ai-painter/parameter90-causal-gpu-diagnostics-v2":".runtime/ai-painter/parameter90-causal-gpu-diagnostics-v1");
   assert.equal(p.attemptClaimPath,p.outputRoot+"/attempt-v1.json");
   assert.deepEqual(p.gradientLabels,["actualTotal","structuredObjective","wholeFrameFidelity","objectCoreRgb","objectSupportStructure"]);
   assert.deepEqual(p.cpuPreparation,{maxWallSeconds:120,threads:2,maxOutputBytes:8388608,attempts:1,automaticRetries:0,
     fullModelForwards:0,fullModelAutogradCalls:0,optimizerConstruction:0,optimizerUpdates:0,cudaCalls:0,
     scope:"bound archive/state/sample identity, synthetic observer and exact request ABI; no real forward"});
   return true;
+}
+export function validateCoordinateNarrative(policy){
+ const coordinate=JSON.stringify(policy.target.coordinates[0]);
+ assert.equal(policy.gateFailureContinuation?.localContrastPermittedOnlyIf?.[2],
+  'The bound '+coordinate+' coordinate exceeds the unchanged original absolute/relative tolerance',
+  'policy coordinate narrative conflicts with bound target');
+ assert.equal(policy.captureRestrictions?.upstreamDifference,
+  'Only channel'+policy.target.captureInputChannel+' input and channel'+policy.target.captureOutputChannel+
+  ' output-adjoint planes for bound '+coordinate+'; no second full activation or global-gradient capture.',
+  'policy channel narrative conflicts with bound target');
 }
 export function requireDeadline(deadline,now=Date.now()){assert(now<deadline,"diagnostic total wall budget exhausted");}
 export function byteBinding(binding){
@@ -161,6 +180,23 @@ function environment(root,cpu){
     OMP_NUM_THREADS:"2",MKL_NUM_THREADS:"2",OPENBLAS_NUM_THREADS:"2"};
 }
 export function frozenInactiveFunctions(logical,bytes,expected){
+  if(logical==="ml/ai-painter/src/ai_painter/complete_world/split_release.py"){
+    const splitSha="d6e05cf98a7902592d1b6518968eedb72961a57872d67a6e0695a4572101d7ea";
+    assert.equal(expected?.sha256,splitSha,"inactive split loader requires exact original binding");
+    assert.equal(digest(bytes),splitSha,"inactive split loader source changed");
+    // This single-row diagnostic calls the bound original raster loader,
+    // never load_package, prepare_metadata or the release builder.
+    return ["load_package"];
+  }
+  if(logical==="ml/ai-painter/src/ai_painter/complete_world/object_support_structure_failure_capture_v1.py"){
+    const captureSha="6363c4065b9dbec4376594d56664d6c0ecfdb395df61879f9045b2e75cb9e153";
+    assert.equal(expected?.sha256,captureSha,"inactive capture branch requires exact original binding");
+    assert.equal(digest(bytes),captureSha,"inactive capture branch source changed");
+    // The diagnosis accepts at most256 original program roles. This exact
+    // function only serves the distinct257..260 joint package, never this route.
+    // Its bytes remain bound; runtime imports still undergo _verify_imports.
+    return ["_joint_program_limit"];
+  }
   const source="ml/ai-painter/src/ai_painter/complete_world/object_appearance_regime_detail_weight_precision.py";
   const sha="1a5468eb982e786c819861740fdd2921ef4873cebe2145c9d6e27507f70dafa9";
   if(logical!==source)return [];
@@ -253,7 +289,7 @@ json.dump(result,sys.stdout,separators=(',',':'))`;
 }
 export function resolvePolicy(root,deadline=Date.now()+120000){
   assert(/^[a-f0-9]{64}$/.test(POLICY.sha256??""),"policy must be explicitly bound");
-  const reader=createReader(root),policy=reader.bound(POLICY);validateGpuPolicy(policy);
+  const reader=createReader(root),policy=reader.bound(POLICY);validateGpuPolicy(policy);validateCoordinateNarrative(policy);
   reader.bytes(policy.formalSpecification.path,policy.formalSpecification.sha256);
   reader.bytes(policy.designBinding.path,policy.designBinding.sha256);
   const evidence=policy.sourceEvidence.map(b=>reader.bound(b));
@@ -263,10 +299,20 @@ export function resolvePolicy(root,deadline=Date.now()+120000){
   assert.equal(nodeInterpreter.sha256,sourcePlan.runtimeIdentity.node.sha256,"original Node bytes differ");
   assert.deepEqual(policy.nodeInterpreter,nodeInterpreter,"policy Node binding differs");
   reader.bytes(policy.metadataCanonicalProgram.path,policy.metadataCanonicalProgram.sha256);
-  assert.deepEqual(byteBinding(policy.priorSavedGradientAlgebra),{path:".runtime/ai-painter/controller-repair-reviews/parameter90-review-20261019/attempt-001/real-cpu-algebra-result-v4.json",sha256:"2adfa56d1364b35ce46d8896a199c03e909d66fa2288d703ed3ff23eae502c94"});
+  const current=policy.schemaVersion==="ai-painter-parameter90-causal-gpu-policy-v2";
+  if(current)assert.equal(policy.priorSavedGradientAlgebra.path,".runtime/ai-painter/controller-repair-reviews/parameter90-saved-gradient-014-20261023/recompute-result.json");
+  else assert.deepEqual(byteBinding(policy.priorSavedGradientAlgebra),{path:".runtime/ai-painter/controller-repair-reviews/parameter90-review-20261019/attempt-001/real-cpu-algebra-result-v4.json",sha256:"2adfa56d1364b35ce46d8896a199c03e909d66fa2288d703ed3ff23eae502c94"});
   const prior=reader.bound(byteBinding(policy.priorSavedGradientAlgebra));
-  assert.equal(prior.runId,policy.scope.failureRunId);assert.equal(prior.schema,"parameter90-saved-gradient-cpu-algebra-result-v4");
-  assert.equal(prior.rootCauseProven,false);assert.equal(prior.qualificationGranted,false);
+  assert.equal(prior.runId,policy.scope.failureRunId);
+  if(current){
+    assert.equal(prior.status,"saved_arithmetic_recomputed_not_causal_diagnosis");
+    assert.deepEqual(prior.failedParameterIndexes,[90]);
+    assert.deepEqual(prior.parameters[90].failedCoordinates.map(row=>row.coordinate),[[1,7,0,0]]);
+    assert.deepEqual(prior.prohibitedCalls,{modelCalls:0,autogradCalls:0,optimizerCalls:0,cudaCalls:0});
+  }else{
+    assert.equal(prior.schema,"parameter90-saved-gradient-cpu-algebra-result-v4");
+    assert.equal(prior.rootCauseProven,false);assert.equal(prior.qualificationGranted,false);
+  }
   const manifest=evidence[policy.sourceEvidence.findIndex(b=>b.path.endsWith("/gradient-failure/manifest.json"))];
   assert.equal(manifest.context.sampleId,policy.scope.failureSampleId);
   assert.equal(manifest.context.split,"train");
@@ -286,7 +332,7 @@ export function resolvePolicy(root,deadline=Date.now()+120000){
 export function makeOutput(root,prefix,policy){
   const runId=prefix+"-"+crypto.randomUUID(),logical=policy.outputRoot+"/"+runId,absolute=path.join(root,logical);
   fs.mkdirSync(path.dirname(absolute),{recursive:true});fs.mkdirSync(absolute);
-  assert.equal(fs.realpathSync(absolute),path.join(fs.realpathSync(path.join(root,".runtime")),"ai-painter","parameter90-causal-gpu-diagnostics-v1",runId));
+  assert.equal(fs.realpathSync(absolute),path.join(fs.realpathSync(path.join(root,".runtime")),...policy.outputRoot.split("/").slice(1),runId));
   let completeAccounting=null;
   const put=(name,value,{failure=false,replace=false}={})=>{
     assert(/^[a-z-]+\.json$/.test(name),"private evidence name");
@@ -363,7 +409,7 @@ async function emptyRegistry(root,deadlineUnixMs){
 }
 export async function runCpuPreflight(root=ROOT,policyBinding=POLICY){
   bindPolicy(policyBinding);
-  const cpuClaim=path.join(root,".runtime/ai-painter/parameter90-causal-gpu-diagnostics-v1/cpu-preparation-attempt-v1.json");
+  const cpuClaim=path.join(root,".runtime/ai-painter/parameter90-causal-gpu-diagnostics-"+(POLICY.path.endsWith("-v2.json")?"v2":"v1")+"/cpu-preparation-attempt-v1.json");
   assert(!fs.existsSync(cpuClaim),"CPU preparation already consumed; no retry");
   const start=Date.now(),bound=resolvePolicy(root,start+120000),{policy,reader,lineage,python,interpreter}=bound;
   const deadline=start+policy.cpuPreparation.maxWallSeconds*1000;
@@ -470,13 +516,14 @@ export async function runGpuDiagnostic(root=ROOT,policyBinding=POLICY){
     runId,request:requestBinding,trainingAllowed:false});
   const capsule=put("task-capsule.json",{schemaVersion:"ai-painter-local-task-capsule-v1",taskId:runId,runId,
     integrity:{status:"verified"},evidence:[{...requestBinding,sha256Verified:true},{...admission,sha256Verified:true}]});
-  const common={projectRoot:root,capabilityVersion:CAPABILITY,packageId,taskId:runId,taskKind:"zero_update_causal_diagnostic",
+  const capability=policy.schemaVersion==="ai-painter-parameter90-causal-gpu-policy-v2"?policy.capabilityVersion:CAPABILITY;
+  const common={projectRoot:root,capabilityVersion:capability,packageId,taskId:runId,taskKind:"zero_update_causal_diagnostic",
     taskGoal:"Observe the exact failed G phase without updates; stop with bounded selected-coordinate evidence.",
     priority:1,runId,lifecycleStage:"numerical_diagnosis",taskCapsulePath:capsule.path,nextMachineAction:null,deadlineUnixMs:deadline};
   let lastGpuCheck=0;
   try{
     const identity=processIdentity(),activeBase={schemaVersion:"ai-painter-current-active-execution-lock-v1",
-      capabilityVersion:CAPABILITY,packageId,runId,processId:process.pid,processStartIdentity:identity};
+      capabilityVersion:capability,packageId,runId,processId:process.pid,processStartIdentity:identity};
     const lock=put("active-lock.json",activeBase);
     const beat=()=>put("heartbeat.json",{...activeBase,schemaVersion:"ai-painter-current-active-execution-heartbeat-v1",
       executionState:"executing",heartbeatAtUtc:new Date().toISOString(),ttlSeconds:30},{replace:fs.existsSync(path.join(absolute,"heartbeat.json"))});

@@ -9,7 +9,7 @@ import {CAPABILITY,MODEL_CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,OUTPUT_ROOT,SP
  PROFILE,binding,deriveConfiguration,validate,validateModelIdentity,validateTerminal,validateCompleted,
  LOSS,GRADIENT,INTEGRATION_POLICY,JOINT_LEARNING_RULE,PROGRESS_PUBLICATION_POLICY,executionRoute,gpuAdmissionSeconds,sourceFileCountMaximum,sourceCandidateBinding}
  from './ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
-import {COMPLETION_CAPABILITY} from './ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
+import {COMPLETION_CAPABILITY,QUALIFICATION_CAPTURE_CAPABILITY,TRAINING_CAPTURE_CAPABILITY,TRAINING_CAPTURE_V2_CAPABILITY,TRAINING_CAPTURE_V3_CAPABILITY,TRAINING_CAPTURE_V4_CAPABILITY,TRAINING_CAPTURE_V5_CAPABILITY,TRAINING_CAPTURE_V6_CAPABILITY,TRAINING_CAPTURE_CAPABILITIES} from './ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
 export {CAPABILITY,MODEL_CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,OUTPUT_ROOT,SPECIFICATION,EXECUTION_POLICY,CANDIDATE,deriveConfiguration,
  validateTerminal,validateCompleted,executionRoute,gpuAdmissionSeconds,sourceFileCountMaximum,sourceCandidateBinding};
 export const ADAPTER='scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs';
@@ -156,15 +156,129 @@ export function authorityBindings(policy){
   route.completion?policy.priorProgressPublicationCpuEvidence:policy.progressPublicationCpuEvidence,policy.previousExecutionPolicy,policy.modelBoundary.jointCpuRule,...policy.modelBoundary.frozenCpuSources,
   policy.priorCpuEvidence.request,policy.qualificationOnlyPredecessor.policy,policy.qualificationOnlyPredecessor.normativeBytes,
   policy.resourceFailureRecord.componentEvidence];
+ if(['stage4_mvp256_dry_decode2_support_structure_weight1_v1','stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1',QUALIFICATION_CAPTURE_CAPABILITY,...TRAINING_CAPTURE_CAPABILITIES].includes(policy.candidate))refs.push(policy.numericRepairCpuEvidence);
+ const qualificationCapture=verifyQualificationFailureCapturePolicy(policy);
+ if(qualificationCapture)refs.push(...qualificationCapture.componentSources,qualificationCapture.cpuEvidence);
+ const trainingCapture=verifyTrainingFailureCapturePolicy(policy);
+ if(trainingCapture)refs.push(...trainingCapture.componentSources,trainingCapture.cpuEvidence);
+ const canonicalVerification=verifyCanonicalVerificationPolicy(policy);
+ if(canonicalVerification)refs.push(canonicalVerification.canonicalProgram);
  for(const key of ['priorCpuEvidence','jointRuleCpuEvidence'])for(const name of ['acceptance','terminal','policy','originalNormativeBytes'])refs.push(policy[key][name]);
- if(route.sameCallCapture){
+ if(route.sameCallCapture&&!TRAINING_CAPTURE_CAPABILITIES.includes(policy.candidate)){
   const same=policy.sameCallCapture;
   assert.equal(same.parameterIndex,90);assert.equal(same.maximumSidecarBytes,2097152);
   refs.push(same.cpuSupport.acceptance,same.cpuSupport.report,...same.componentSources);
  }
  return refs.map(({path,sha256})=>({path,sha256}));
 }
+const QUALIFICATION_CAPTURE_CORE={
+ schemaVersion:'qualification-parameter0-sequence-capture-v1',capabilityVersion:QUALIFICATION_CAPTURE_CAPABILITY,
+ phase:'qualification',sampleId:'ai-cold-start-v7-v7-capacity-slot-163-tropical-forest-glade-v2',sampleOrdinal:17,split:'train',
+ target:{index:0,name:'core.core.terrain.base_stem.layers.0.weight',shape:[48,31,3,3],spatial:[192,256]},
+ sequenceSamples:48,sameGeneratorAndDiscriminatorInstances:true,originalOrderAndSeedKept:true,
+ originalGateAndToleranceKept:true,originalFailureFirst:true,additionalForwardCalls:0,additionalAutogradCalls:0,
+ additionalOptimizerUpdates:0,maximumCaptureAndWorkspaceBytes:67108864,maximumAggregateSidecarBytes:2097152,
+ terminalReserveBytes:65536,rawTargetGradientSets:5,finiteReferenceCoordinates:1,nonfiniteSumReferenceCalls:0,
+ otherSampleCaptureAllowed:false,qualificationGranted:false,activation:'authenticated_new_package_only',
+ failureAction:'preserve_primary_and_close_no_retry',
+ completeSequenceAction:'original_same_package_training_only_after_all48_and_state_checks'};
+const QUALIFICATION_CAPTURE_SOURCES=[
+ 'ml/ai-painter/scripts/qualification_parameter0_capture_v1.py',
+ 'ml/ai-painter/scripts/qualification_gradient_gate_authentication_cpu_v1.py',
+ 'ml/ai-painter/src/ai_painter/complete_world/parameter40_qualification_observation_v1.py',
+ 'ml/ai-painter/src/ai_painter/complete_world/parameter40_qualification_reference_v1.py'];
+export function verifyQualificationFailureCapturePolicy(policy){
+ if(policy.candidate!==QUALIFICATION_CAPTURE_CAPABILITY){
+  assert.equal(Object.hasOwn(policy,'qualificationFailureCapture'),false,'legacy policy cannot activate qualification failure capture');return null;
+ }
+ const capture=policy.qualificationFailureCapture;
+ assert.ok(capture&&typeof capture==='object'&&!Array.isArray(capture),'qualification capture contract required');
+ const {componentSources,cpuEvidence,...core}=capture;
+ assert.deepEqual(core,QUALIFICATION_CAPTURE_CORE,'exact qualification capture contract required');
+ assert.ok(Array.isArray(componentSources));assert.deepEqual(componentSources.map(b=>binding(b).path),QUALIFICATION_CAPTURE_SOURCES);
+ binding(cpuEvidence);assert.equal(cpuEvidence.path,'.runtime/ai-painter/controller-repair-reviews/qualification-sequence-capture-019-20261024/controller-integration-review.json');
+ return capture;
+}
+export function verifyQualificationFailureCaptureCpuEvidence(proof,capture){
+ assert.equal(proof.status,'cpu_component_passed_not_admitted');
+ assert.equal(proof.taskId,'QUALIFICATION-SEQUENCE-CAPTURE-019-CPU');assert.equal(proof.qualificationGranted,false);
+ assert.deepEqual(proof.sourceBindings,capture.componentSources,'capture CPU evidence must bind the actual four source bytes');
+ assert.equal(proof.tests.passed,true);assert.ok(Number.isSafeInteger(proof.tests.testsRun)&&proof.tests.testsRun>0);
+ assert.equal(proof.tests.cudaInitialized,false);
+ for(const key of ['modelCalls','autogradCalls','optimizerUpdates'])assert.equal(proof.tests[key],0);
+ return proof;
+}
+export const TRAINING_CAPTURE_CORE={"schemaVersion":"parameter0-training-same-call-capture-v1","capabilityVersion":"stage4_mvp256_dry_decode2_rgb_output_training_capture_v1","phase":"training","activation":"authenticated_new_package_exact_g_call_only","sampleId":"ai-cold-start-v7-v7-capacity-slot-154-tropical-forest-glade-v2","split":"train","epoch":1,"zeroBasedEpochPosition":14,"trainIndex":8,"optimizerSteps":{"generator":14,"discriminator":15},"maximumObservedGCalls":1,"target":{"index":0,"name":"core.core.terrain.base_stem.layers.0.weight","shape":[48,31,3,3],"spatial":[192,256],"coordinate":[1,13,0,0],"inputChannel":13,"outputChannel":1,"operator":"torch.nn.Conv2d","stride":[1,1],"padding":[1,1],"dilation":[1,1],"groups":1,"paddingMode":"zeros"},"gradientLabels":["actualTotal","structuredObjective","wholeFrameFidelity","objectCoreRgb","objectSupportStructure"],"sameGeneratorAndDiscriminatorInstances":true,"originalGateAndToleranceKept":true,"originalFailureFirst":true,"rawTargetGradientSets":5,"weightWitness":true,"additionalForwardCalls":0,"additionalAutogradCalls":0,"additionalOptimizerUpdates":0,"localReferenceCalls":0,"maximumCaptureAndWorkspaceBytes":67108864,"maximumAggregateSidecarBytes":2097152,"terminalReserveBytes":65536,"aggregateIncludesStagingAndManifests":true,"originalFailureMaximumBytes":67108864,"executionMaximumBytes":134217728,"nonTargetSampleCaptureAllowed":false,"otherParameterFailureDoesNotCreatePacket":true,"fixedCoordinateNotViolatingAction":"retain_authenticated_target0_fixed_projection_mark_not_violating_no_reference","nonfiniteAction":"preserve_original_failure_and_classify_capture_availability_no_reference","successAction":"release_all_hooks_and_graph_references_before_original_generator_commit","failureAction":"preserve_primary_and_close_no_retry","qualificationGranted":false};
+export const TRAINING_CAPTURE_V2_CORE={...structuredClone(TRAINING_CAPTURE_CORE),capabilityVersion:TRAINING_CAPTURE_V2_CAPABILITY};
+export const TRAINING_CAPTURE_V3_CORE={...structuredClone(TRAINING_CAPTURE_CORE),capabilityVersion:TRAINING_CAPTURE_V3_CAPABILITY};
+export const TRAINING_CAPTURE_V4_CORE={...structuredClone(TRAINING_CAPTURE_CORE),capabilityVersion:TRAINING_CAPTURE_V4_CAPABILITY};
+export const TRAINING_CAPTURE_V5_CORE={...structuredClone(TRAINING_CAPTURE_CORE),capabilityVersion:TRAINING_CAPTURE_V5_CAPABILITY};
+export const TRAINING_CAPTURE_V6_CORE={"schemaVersion":"parameter0-training-call-coverage-v1","capabilityVersion":"stage4_mvp256_dry_decode2_rgb_output_training_capture_v6","phase":"training","activation":"authenticated_new_package_sequential_g_calls_only","split":"train","maximumObservedGCalls":1152,"target":{"index":0,"name":"core.core.terrain.base_stem.layers.0.weight","shape":[48,31,3,3],"spatial":[192,256],"coordinate":[1,13,0,0],"inputChannel":13,"outputChannel":1,"operator":"torch.nn.Conv2d","stride":[1,1],"padding":[1,1],"dilation":[1,1],"groups":1,"paddingMode":"zeros"},"gradientLabels":["actualTotal","structuredObjective","wholeFrameFidelity","objectCoreRgb","objectSupportStructure"],"sameGeneratorAndDiscriminatorInstances":true,"originalGateAndToleranceKept":true,"originalFailureFirst":true,"rawTargetGradientSets":5,"weightWitness":true,"additionalForwardCalls":0,"additionalAutogradCalls":0,"additionalOptimizerUpdates":0,"localReferenceCalls":0,"maximumCaptureAndWorkspaceBytes":67108864,"maximumAggregateSidecarBytes":2097152,"terminalReserveBytes":65536,"aggregateIncludesStagingAndManifests":true,"originalFailureMaximumBytes":67108864,"executionMaximumBytes":134217728,"nonTargetSampleCaptureAllowed":true,"otherParameterFailureDoesNotCreatePacket":true,"fixedCoordinateNotViolatingAction":"retain_authenticated_target0_fixed_projection_mark_not_violating_no_reference","nonfiniteAction":"preserve_original_failure_and_classify_capture_availability_no_reference","successAction":"release_all_hooks_graph_references_and_current_copies_before_original_generator_commit","failureAction":"preserve_primary_and_close_coverage_instance_no_retry","qualificationGranted":false,"sampleScope":"all48_bound_train_samples_in_original_epoch_schedule","epochCount":24,"firstGeneratorCount":0,"lastGeneratorCount":1151,"maximumLiveObservationContexts":1,"sequenceRule":"pre_D_G_equals_D_equals_observed_calls_then_pre_G_D_equals_G_plus_one","previousSuccessReleasedBeforeNextD":true,"concurrentPairAllowed":false,"successfulTensorHistoryRetained":false,"storageIdentityRule":"recompute_epoch_position_train_index_from_seed_and_actual_G_D_counts"};
+export function trainingCaptureIdentity(capability){
+ assert.ok(TRAINING_CAPTURE_CAPABILITIES.includes(capability),'unknown training capture identity');
+ const identities={
+  [TRAINING_CAPTURE_CAPABILITY]:{core:TRAINING_CAPTURE_CORE,evidencePath:'.runtime/ai-painter/controller-repair-reviews/parameter0-training-same-call-023-20261024/cpu-component-acceptance.json',taskId:'TRAINING-SAME-CALL-CAPTURE-023-CPU'},
+  [TRAINING_CAPTURE_V2_CAPABILITY]:{core:TRAINING_CAPTURE_V2_CORE,evidencePath:'.runtime/ai-painter/controller-repair-reviews/registry-publication-repair-024-20261024/cpu-component-acceptance.json',taskId:'TRAINING-SAME-CALL-CAPTURE-024-CPU'},
+  [TRAINING_CAPTURE_V3_CAPABILITY]:{core:TRAINING_CAPTURE_V3_CORE,evidencePath:'.runtime/ai-painter/controller-repair-reviews/canonical-initialization-repair-025-20261024/cpu-component-acceptance.json',taskId:'TRAINING-SAME-CALL-CAPTURE-025-CPU'},
+  [TRAINING_CAPTURE_V4_CAPABILITY]:{core:TRAINING_CAPTURE_V4_CORE,evidencePath:'.runtime/ai-painter/controller-repair-reviews/canonical-fixture-isolation-repair-026-20261024/cpu-component-acceptance.json',taskId:'TRAINING-SAME-CALL-CAPTURE-026-CPU'},
+  [TRAINING_CAPTURE_V5_CAPABILITY]:{core:TRAINING_CAPTURE_V5_CORE,evidencePath:'.runtime/ai-painter/controller-repair-reviews/backend-observation-compatibility-repair-027-20261024/cpu-component-acceptance.json',taskId:'TRAINING-SAME-CALL-CAPTURE-027-CPU'},
+  [TRAINING_CAPTURE_V6_CAPABILITY]:{core:TRAINING_CAPTURE_V6_CORE,evidencePath:'.runtime/ai-painter/controller-repair-reviews/failure-call-adoption-031-20261025/cpu-component-acceptance.json',taskId:'TRAINING-SAME-CALL-CAPTURE-031-CPU'}};
+ assert.ok(Object.hasOwn(identities,capability),'unmapped training capture identity');return identities[capability];
+}
+export const TRAINING_CAPTURE_SOURCES=Object.freeze([
+ 'ml/ai-painter/src/ai_painter/complete_world/parameter0_training_same_call_capture_v1.py',
+ 'ml/ai-painter/src/ai_painter/complete_world/parameter0_training_same_call_storage_v1.py',
+ 'ml/ai-painter/src/ai_painter/complete_world/parameter0_training_same_call_bridge_v1.py',
+ 'ml/ai-painter/scripts/painter_stage4_decode2_rgb_output_training_same_call_profile_v1.py']);
+export function verifyTrainingFailureCapturePolicy(policy){
+ if(!TRAINING_CAPTURE_CAPABILITIES.includes(policy.candidate)){
+  assert.equal(Object.hasOwn(policy,'trainingFailureCapture'),false,'legacy policy cannot activate training capture');return null;
+ }
+ assert.equal(Object.hasOwn(policy,'sameCallCapture'),false,'training capture cannot activate legacy parameter90 contract');
+ assert.equal(Object.hasOwn(policy,'qualificationFailureCapture'),false,'training capture cannot activate qualification observer');
+ const capture=policy.trainingFailureCapture;
+ assert.ok(capture&&typeof capture==='object'&&!Array.isArray(capture),'training capture contract required');
+ const {componentSources,cpuEvidence,...core}=capture;
+ assert.deepEqual(core,trainingCaptureIdentity(policy.candidate).core,'exact training capture contract required');
+ assert.ok(Array.isArray(componentSources));assert.deepEqual(componentSources.map(b=>binding(b).path),TRAINING_CAPTURE_SOURCES);
+ binding(cpuEvidence);assert.equal(cpuEvidence.path,trainingCaptureIdentity(policy.candidate).evidencePath);
+ return capture;
+}
+export function verifyTrainingFailureCaptureCpuEvidence(proof,capture){
+ assert.equal(proof.status,'cpu_component_passed_not_admitted');
+ assert.equal(proof.taskId,trainingCaptureIdentity(capture.capabilityVersion).taskId);assert.equal(proof.qualificationGranted,false);
+ assert.deepEqual(proof.sourceBindings,capture.componentSources,'training capture CPU evidence must bind actual four source bytes');
+ assert.equal(proof.tests.passed,true);assert.ok(Number.isSafeInteger(proof.tests.testsRun)&&proof.tests.testsRun>0);
+ assert.equal(proof.tests.cudaInitialized,false);
+ for(const key of ['realModelCalls','realAutogradCalls','realOptimizerUpdates'])assert.equal(proof.tests[key],0);
+ assert.ok(typeof proof.tests.syntheticOperations==='string'&&proof.tests.syntheticOperations.length>0&&proof.tests.syntheticOperations.length<=4096);
+ return proof;
+}
+export const CANONICAL_VERIFICATION_CORE=Object.freeze({
+ schemaVersion:'canonical-region-verification-v1',activation:'authenticated_live_v3_reader_run_package_only',
+ cacheScope:'reader_process_run_package',maximumCacheEntries:64,maximumCacheBytes:65536,cacheSuccessfulDigestsOnly:true,
+ revalidateSourceBytesEveryCall:true,canonicalProgram:Object.freeze({path:'scripts/lib/real-earth-region-governance.mjs',
+ sha256:'c4ae942c1f44a60fad1650f02c9dccb0f780472638693e7146fbbe9a2dc85af1'}),nodeIdentity:'verified_runtimeIdentity_node',
+ subprocessTimeoutSeconds:10,observationFile:'canonical-initialization-observation.json',maximumObservationBytes:32768,terminalReserveBytes:65536});
+export const CANONICAL_VERIFICATION_V4_CORE=Object.freeze({...CANONICAL_VERIFICATION_CORE,activation:'authenticated_live_v4_reader_run_package_only'});
+export const CANONICAL_VERIFICATION_V5_CORE=Object.freeze({...CANONICAL_VERIFICATION_CORE,activation:'authenticated_live_v5_reader_run_package_only'});
+export const CANONICAL_VERIFICATION_V6_CORE=Object.freeze({...CANONICAL_VERIFICATION_CORE,activation:'authenticated_live_v6_reader_run_package_only'});
+export const CANONICAL_CAPABILITIES=Object.freeze([TRAINING_CAPTURE_V3_CAPABILITY,TRAINING_CAPTURE_V4_CAPABILITY,TRAINING_CAPTURE_V5_CAPABILITY,TRAINING_CAPTURE_V6_CAPABILITY]);
+export function canonicalVerificationIdentity(capability){
+ const identities={[TRAINING_CAPTURE_V3_CAPABILITY]:CANONICAL_VERIFICATION_CORE,[TRAINING_CAPTURE_V4_CAPABILITY]:CANONICAL_VERIFICATION_V4_CORE,[TRAINING_CAPTURE_V5_CAPABILITY]:CANONICAL_VERIFICATION_V5_CORE,[TRAINING_CAPTURE_V6_CAPABILITY]:CANONICAL_VERIFICATION_V6_CORE};
+ assert.ok(Object.hasOwn(identities,capability),'unknown canonical verification identity');return identities[capability];
+}
+export function verifyCanonicalVerificationPolicy(policy,programs=null){
+ if(!CANONICAL_CAPABILITIES.includes(policy.candidate)){
+  assert.equal(Object.hasOwn(policy,'canonicalVerification'),false,'canonical verification is restricted to registered versions');return null;
+ }
+ assert.deepEqual(policy.canonicalVerification,canonicalVerificationIdentity(policy.candidate),'exact canonical verification contract required');
+ if(programs!==null)assert.deepEqual(programs.canonicalRegionProgram,policy.canonicalVerification.canonicalProgram,
+  'canonical program role differs from authenticated policy');
+ return policy.canonicalVerification;
+}
 export function verifyExecutionPolicy(policy,configuration){
+ verifyCanonicalVerificationPolicy(policy);
  const route=executionRoute(configuration.capabilityVersion),{CAPABILITY,MODEL_CAPABILITY,EXECUTION_PROFILE,OUTPUT_ROOT,SPECIFICATION}=route;
  const progress=route.progressPolicy??PROGRESS_PUBLICATION_POLICY,roles=rolesFor(route.CAPABILITY);
  const canonical=value=>Array.isArray(value)?value.map(canonical):value!==null&&typeof value==='object'
@@ -176,7 +290,9 @@ export function verifyExecutionPolicy(policy,configuration){
  assert.equal(policy.candidate,CAPABILITY);assert.equal(policy.modelCapability,MODEL_CAPABILITY);
  assert.equal(policy.executionProfile,EXECUTION_PROFILE);assert.equal(policy.outputRoot,OUTPUT_ROOT);assert.equal(policy.entrypointPath,ADAPTER);
  assert.equal(policy.candidateSelection,route.candidateSelection);
- if(configuration.capabilityVersion==='stage4_mvp256_dry_decode1_support_structure_weight1_v1'){
+ verifyQualificationFailureCapturePolicy(policy);
+ verifyTrainingFailureCapturePolicy(policy);
+ if(['stage4_mvp256_dry_decode1_support_structure_weight1_v1','stage4_mvp256_dry_decode2_support_structure_weight1_v1','stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1',QUALIFICATION_CAPTURE_CAPABILITY,...TRAINING_CAPTURE_CAPABILITIES].includes(configuration.capabilityVersion)){
   assert.equal(policy.objectSupportStructureWeight,1);assert.equal(configuration.objectSupportStructureWeight,1);
  }else{
   assert.equal(Object.hasOwn(policy,'objectSupportStructureWeight'),false,'legacy policy cannot activate support weight1');
@@ -206,13 +322,24 @@ export function verifyExecutionPolicy(policy,configuration){
   trainingProfile:ROLES.trainingProfile,checkpoint:ROLES.managedCheckpoint});
  assert.deepEqual(policy.checkpointIdentity,{schema:'decode1-entry-weight-quality-checkpoint-v1',configurationSchema:'object-support-structure-quality-configuration-v1',
   implementation:ROLES.managedCheckpoint,historicalMetadataRenamingAllowed:false});
- const m=policy.modelBoundary;for(const [key,want]of Object.entries({parameterCount:108,parameterElements:2242687,changedTargetIndex:48,
-  changedTargetName:'core.core.terrain.decode_1.layers.0.weight',initializationSeed:20260929,freshInitializationOnly:true,
-  historicalCheckpointMayInitialize:false,failedStateMayInitialize:false,otherLayersMayChange:false,relativeToAcceptedCpuCandidateNoModelOrNumericChanges:true,
-  parentTargets52And60Kept:true,parentFinalRgb88Kept:true,nativeForwardAndInputBiasGradientsKept:true,modelArchitectureChanged:false,numericOperatorsChanged:false}))
+ const rgbOutput=['stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1',QUALIFICATION_CAPTURE_CAPABILITY,...TRAINING_CAPTURE_CAPABILITIES].includes(configuration.capabilityVersion);
+ const decode2=rgbOutput||configuration.capabilityVersion==='stage4_mvp256_dry_decode2_support_structure_weight1_v1';
+ const m=policy.modelBoundary;for(const [key,want]of Object.entries({parameterCount:108,parameterElements:2242687,changedTargetIndex:rgbOutput?90:decode2?40:48,
+  changedTargetName:rgbOutput?'core.core.final_rgb_decoder.base.layers.4.weight':decode2?'core.core.terrain.decode_2.layers.0.weight':'core.core.terrain.decode_1.layers.0.weight',initializationSeed:20260929,freshInitializationOnly:true,
+  historicalCheckpointMayInitialize:false,failedStateMayInitialize:false,otherLayersMayChange:false,relativeToAcceptedCpuCandidateNoModelOrNumericChanges:!decode2,
+  parentTargets52And60Kept:true,parentFinalRgb88Kept:true,nativeForwardAndInputBiasGradientsKept:true,modelArchitectureChanged:false,numericOperatorsChanged:decode2}))
   assert.equal(m[key],want);
- assert.deepEqual(m.targetShape,[48,144,3,3]);
- assert.deepEqual(m.frozenCpuSources,[
+ assert.deepEqual(m.targetShape,rgbOutput?[3,48,1,1]:decode2?[96,192,3,3]:[48,144,3,3]);
+ if(decode2){
+  assert.equal(m.parentDecode1Entry48Kept,true);assert.equal(m.frozenCpuSources.length,rgbOutput?4:3);
+  if(rgbOutput)assert.equal(m.parentDecode2Entry40Kept,true);
+  assert.deepEqual(m.frozenCpuSources.map(b=>b.path),[
+   'ml/ai-painter/src/ai_painter/complete_world/decode1_entry_weight_reduction_precision_v1.py',
+   'ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_entry_weight_precision_v1.py',
+   'ml/ai-painter/src/ai_painter/complete_world/object_decode1_entry_joint_priority_device_v1.py',
+   ...(rgbOutput?['ml/ai-painter/src/ai_painter/complete_world/final_rgb_base_weight_reduction_precision_v1.py']:[])]);
+  m.frozenCpuSources.forEach(binding);binding(policy.numericRepairCpuEvidence);
+ }else assert.deepEqual(m.frozenCpuSources,[
  {path:'ml/ai-painter/src/ai_painter/complete_world/decode1_entry_weight_reduction_precision_v1.py',sha256:'2ee9e87343509c298f9cdd44fbbd004bf66690c64cf9edd68a636a2b673e51a6'},
  {path:'ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_entry_weight_precision_v1.py',sha256:'4913645e95b731ea5e51512a726cd2fd777938639122e853289de15308a44083'},
  {path:'ml/ai-painter/src/ai_painter/complete_world/object_decode1_entry_joint_priority_device_v1.py',sha256:'8fd5c2c8a47446cd07c2a6da0f0c503a916b92fd15d97a253770f5a547b23066'}]);
@@ -243,7 +370,7 @@ export function verifyAuthority(root,{capabilityVersion=CAPABILITY}={}){
  const route=executionRoute(capabilityVersion),{CAPABILITY,MODEL_CAPABILITY,OUTPUT_ROOT,SPECIFICATION,EXECUTION_POLICY}=route;
  const progressPolicy=route.progressPolicy??PROGRESS_PUBLICATION_POLICY,roles=rolesFor(capabilityVersion);
  const policy=json(root,EXECUTION_POLICY),previewBinding=bind(root,route.previewPath);
- if(route.sameCallCapture){
+ if(route.sameCallCapture&&!TRAINING_CAPTURE_CAPABILITIES.includes(policy.candidate)){
   const support=json(root,policy.sameCallCapture.cpuSupport.acceptance),report=json(root,policy.sameCallCapture.cpuSupport.report);
   assert.equal(support.status,'accepted_cpu_integration_host_correction_only');
   assert.deepEqual(report.tests,{run:55,failures:0,errors:0,skipped:0});
@@ -254,8 +381,24 @@ export function verifyAuthority(root,{capabilityVersion=CAPABILITY}={}){
  const configuration=deriveConfiguration(json(root,sourceCandidateBinding(capabilityVersion)),{capabilityVersion,trainingPreviewPolicy:previewBinding});
  verifyExecutionPolicy(policy,configuration);
  for(const ref of authorityBindings(policy))read(root,ref);
+ const qualificationCapture=verifyQualificationFailureCapturePolicy(policy);
+ if(qualificationCapture)verifyQualificationFailureCaptureCpuEvidence(json(root,qualificationCapture.cpuEvidence),qualificationCapture);
+ const trainingCapture=verifyTrainingFailureCapturePolicy(policy);
+ if(trainingCapture)verifyTrainingFailureCaptureCpuEvidence(json(root,trainingCapture.cpuEvidence),trainingCapture);
  const accepted=json(root,policy.priorCpuEvidence.acceptance),terminal=json(root,authorityBindings(policy).find(b=>b.path===policy.priorCpuEvidence.terminal.path));
- assert.equal(accepted.status,'cpu_candidate_verified_inactive_scope_closed');assert.equal(accepted.candidate,MODEL_CAPABILITY);
+ assert.equal(accepted.status,'cpu_candidate_verified_inactive_scope_closed');
+ assert.equal(accepted.candidate,'stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1');
+ if(['stage4_mvp256_dry_decode2_support_structure_weight1_v1','stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1',QUALIFICATION_CAPTURE_CAPABILITY,...TRAINING_CAPTURE_CAPABILITIES].includes(route.CAPABILITY)){
+  const rgbOutput=['stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1',QUALIFICATION_CAPTURE_CAPABILITY,...TRAINING_CAPTURE_CAPABILITIES].includes(route.CAPABILITY);
+  const numeric=json(root,policy.numericRepairCpuEvidence);
+  assert.equal(numeric.schemaVersion,rgbOutput?'parameter90-numeric-repair-component-cpu-v1':'parameter40-numeric-repair-component-cpu-v1');assert.equal(numeric.status,'component_passed_not_admitted');
+  assert.equal(numeric.exitCode,0);assert.equal(numeric.modelCapability,MODEL_CAPABILITY);
+  if(rgbOutput)assert(Number.isSafeInteger(numeric.summary.testsRun)&&numeric.summary.testsRun>0);
+  else assert.equal(numeric.summary.testsRun,18);
+  assert.equal(numeric.summary.passed,true);assert.equal(numeric.summary.cudaInitialized,false);
+  assert.equal(numeric.summary.optimizerConstruction,0);assert.equal(numeric.summary.optimizerUpdates,0);
+  numeric.programBindings.forEach(source=>read(root,source));
+ }
  assert.equal(terminal.status,'cpu_candidate_verified_inactive');assert.equal(terminal.executionState,'completed');
  assert.equal(terminal.ownedReceipt.cleanupConfirmed,true);assert.equal(terminal.ownedReceipt.guardReleaseConfirmed,true);
  assert.equal(terminal.registryBeforeSha256,terminal.registryAfterSha256);assert.ok(Object.values(terminal.qualification).every(x=>x===false));
@@ -275,10 +418,11 @@ function provenance(policy){return {schemaVersion:'ai-painter-execution-provenan
  priorCpuAcceptance:{...policy.priorCpuEvidence.acceptance},priorCpuTerminal:Object.fromEntries(['path','sha256'].map(k=>[k,policy.priorCpuEvidence.terminal[k]])),
  jointRuleCpuAcceptance:{...policy.jointRuleCpuEvidence.acceptance},role:'immutable_historical_source_references_not_execution_permission'};}
 export function prepareCpuRequest({root,runId,packageId,preparationRequestBinding=null,capabilityVersion=CAPABILITY}){
- const route=executionRoute(capabilityVersion),{OUTPUT_ROOT,SPECIFICATION}=route;
+ const route=executionRoute(capabilityVersion),{OUTPUT_ROOT,SPECIFICATION,MODEL_CAPABILITY}=route;
  assert.match(runId,new RegExp('^'+(route.runPrefix??'decode1-entry-quality-v1-')+'[a-f0-9-]{36}$','u'));assert.match(packageId,new RegExp('^'+(route.packagePrefix??'decode1-entry-quality-v1-package-')+'[a-f0-9-]{36}$','u'));
  const sourceCandidate=sourceCandidateBinding(capabilityVersion),{policy,configuration}=verifyAuthority(root,{capabilityVersion}),candidate=json(root,sourceCandidate),outputRoot=OUTPUT_ROOT+'/'+runId;
  const programBindings=finalProgramBindings(root,{capabilityVersion}),runtime=runtimeIdentity(root),directory=inside(root,outputRoot);
+ verifyCanonicalVerificationPolicy(policy,programBindings);
  if(fs.existsSync(directory)){assert.ok(preparationRequestBinding,'existing Run requires its exact registered preparation request');
   assert.deepEqual(fs.readdirSync(directory).sort(),['local-prepare'],'existing model/CPU/consumed namespace refused');
   validatePreparationNamespace(preparationRequestBinding,json(root,preparationRequestBinding),{outputRoot,runId,packageId,programBindings,runtimeIdentity:runtime});
@@ -296,6 +440,7 @@ export function validatePlan(root,plan){
  validate({plan,planBinding:{path:plan.outputRoot+'/quality-plan.json',sha256:sha(JSON.stringify(plan))},
  packageBinding:{path:'.runtime/ai-painter/autonomous-closed-loop-packages/'+plan.packageId+'/package.json',sha256:sha('shape-only')},
  modelBinding:plan.modelBinding,modelIdentity:json(root,plan.modelBinding)});
+ verifyCanonicalVerificationPolicy(policy,plan.programBindings);
  verifyProgramBindingAliases(plan.programBindings,{capabilityVersion:plan.capabilityVersion});assert.deepEqual(plan.programBindings,finalProgramBindings(root,{capabilityVersion:plan.capabilityVersion}),'actual current execution closure differs');
  const candidate=json(root,sourceCandidateBinding(plan.capabilityVersion));for(const key of ['datasetManifest','trainSplit','validationSplit'])assert.deepEqual(plan[key],candidate.frozenBindings[key]);
  let bytes=0;for(const b of Object.values(plan.programBindings)){const raw=read(root,b);assert.ok(raw.length<=1048576);bytes+=raw.length;assert.ok(bytes<=16777216);}

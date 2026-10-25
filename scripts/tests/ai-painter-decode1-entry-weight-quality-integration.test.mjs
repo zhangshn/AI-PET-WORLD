@@ -21,6 +21,7 @@ import {verifyGpuOutcome,parsePreparationArguments,createPreparationAdaptersForI
 import {inside,bind as fileBinding,read as readBound,directoryBytes,ROLES,withOutputBudget as withCandidateOutputBudget,write as writeCandidateBudgeted}
   from '../lib/ai-painter-decode1-entry-weight-quality-package-chain-v1.mjs';
 import {directoryBytes as historicalDirectoryBytes} from '../lib/ai-painter-mvp256-dry-detail-weight-capture-package-chain-v1.mjs';
+import {write as writeCandidateAccounting} from '../lib/ai-painter-decode1-entry-weight-output-accounting-v1.mjs';
 import {decodeTrainingInterfaceJson,parseTrainingInterfacePolicy} from '../../src/server/ai-console/training-preview-history-v1.mjs';
 
 test('registered interface index is shared by preparation and Python without changing candidate consumers',()=>{
@@ -471,7 +472,8 @@ test('preparation failure is not retried and cannot materialize a package',async
 // Explicit in-memory orchestration stubs, separate from the three real SQLite
 // fixtures below. No stub invokes a native owner, process, model or GPU.
 function simulated({gpuFailure=false,unknownCleanup=false,invalidStored=false,diskOnlyReviewReceipt=false,
- trainingFailure=false,trainingCleanupUnknown=false,workerMode='missing',scopeChange=null,failureChange=null,failureReadConflict=false}={}){
+ trainingFailure=false,trainingCleanupUnknown=false,workerMode='missing',scopeChange=null,failureChange=null,failureReadConflict=false,
+ initialAdvanceError=null,dispatchRegistryUnreadable=false,failureWriteError=null,failureWriter=null,dispatchBudget=null}={}){
   const clone=structuredClone,zero='1'.repeat(64),runId=fixtureOutputRoot().split('/').at(-2);
   const outputRoot=registration.OUTPUT_ROOT+'/'+runId,packageId='synthetic-support-package-0001';
   // Historical metadata contributes graph shape only, never an execution grant.
@@ -491,8 +493,8 @@ function simulated({gpuFailure=false,unknownCleanup=false,invalidStored=false,di
   const packageBinding=binding('.runtime/ai-painter/autonomous-closed-loop-packages/'+packageId+'/package.json');
   const input={plan,packageBinding,planBinding:binding(outputRoot+'/quality-plan.json'),modelBinding:plan.modelBinding,modelIdentity:model};
   const f={root:process.cwd(),plan,packageBinding,input},store=new Map(),live=new WeakSet(),budgeted=new WeakSet(),liveReceipts=new Map();
-  const nativeCalls=[],registryWrites=[],liveBudgetReceipts=[],liveReceiptLookups=[];
-  let current={registryRevision:409,activeExecution:null},terminal=null;
+  const nativeCalls=[],registryWrites=[],liveBudgetReceipts=[],liveReceiptLookups=[],cleanupLookups=[],nativeFailurePersistenceCalls=[],dispatchBudgetScopes=[],registryReadOptions=[];
+  let current={registryRevision:409,activeExecution:null},terminal=null,registryReads=0;
   const put=(_root,p,value)=>{assert.equal(store.has(p),false,'exclusive duplicate fixture write');store.set(p,clone(value));return binding(p);};
   function completed(){
     const checkpoint={epoch:24,counts:{generator:1152,discriminator:1152},checkpoint:binding(outputRoot+'/checkpoint-24.pt'),
@@ -510,20 +512,26 @@ function simulated({gpuFailure=false,unknownCleanup=false,invalidStored=false,di
       challengeContentRead:false,regressionContentRead:false,checkpointPromotable:false,formalStage4QualificationAllowed:false,runtimePublicationAllowed:false,automaticRetries:0};
   }
   const adapters=createPhaseAdaptersForIsolatedTests({
-    loadContext:()=>f,write:(_root,p,value)=>{const changed=clone(value);if(p===outputRoot+'/execution-failure.json'&&failureChange)failureChange(changed);return put(_root,p,changed);},
+    loadContext:()=>f,write:(_root,p,value)=>{if(/(execution|qualification)-failure\.json$/u.test(p)){
+      if(failureWriteError)throw failureWriteError;if(failureWriter)return failureWriter(_root,p,value);}
+      const changed=clone(value);if(p===outputRoot+'/execution-failure.json'&&failureChange)failureChange(changed);return put(_root,p,changed);},
     json:(_root,b)=>{assert.ok(store.has(b.path),'missing private stub binding');if((failureReadConflict&&b.path===outputRoot+'/execution-failure.json')||(workerMode==='digest-conflict'&&b.path===outputRoot+'/worker-terminal.json'))throw Error('input SHA differs');return clone(store.get(b.path));},
     bind:(_root,p)=>{if(!store.has(p))throw Object.assign(Error('missing fixture file'),{code:'ENOENT',path:path.resolve(_root,p)});return binding(p);},inside:(r,p)=>path.resolve(r,p),read:()=>Buffer.from('synthetic-no-model-bytes'),
-    processIdentity:()=> 'synthetic-process-creation',readRegistry:async()=>({ok:true,registry:clone(current),registrySha256:zero,currentTaskTerminal:clone(terminal)}),
-    advanceRegistry:async options=>{registryWrites.push(clone(options));current={...current,registryRevision:current.registryRevision+1,activeExecution:options.activeExecution,
+    processIdentity:()=> 'synthetic-process-creation',readRegistry:async(_root,options)=>{
+      registryReadOptions.push(clone(options??null));registryReads++;if(dispatchRegistryUnreadable&&registryReads===2)return {ok:false,state:'unknown_or_stale',errors:['committed_pointer_unpublished']};
+      return {ok:true,registry:clone(current),registrySha256:zero,currentTaskTerminal:clone(terminal)};},
+    advanceRegistry:async options=>{registryWrites.push(clone(options));if(initialAdvanceError&&registryWrites.length===1)throw initialAdvanceError;
+      current={...current,registryRevision:current.registryRevision+1,activeExecution:options.activeExecution,
       capabilityVersion:options.capabilityVersion,packageId:options.packageId,runId:options.runId};terminal=clone(store.get(options.terminalEvidencePath));return {ok:true};},
     withNativeOrdinaryBudget:async(_r,receipt,action)=>{assert.ok(live.has(receipt));return action();},
     withNativeReceiptBudget:async(_r,receipt,action)=>{assert.ok(budgeted.has(receipt));liveBudgetReceipts.push(receipt);return action();},
+    withOutputBudget:(options,action)=>{dispatchBudgetScopes.push(clone(options));return dispatchBudget?dispatchBudget(options,action):action();},
     requireLiveOwnedReceipt:(_root,b)=>{liveReceiptLookups.push(clone(b));const receipt=liveReceipts.get(b.path);
       assert.ok(receipt&&live.has(receipt),'same-process live receipt required; disk copy is not authority');return receipt;},
     hasGpuAcceptance:()=>store.has(outputRoot+'/gpu-acceptance.json'),hasConsumedQualification:()=>store.has(outputRoot+'/qualification-consumed.json'),
     hasOwnPreflight:()=>store.has(outputRoot+'/preflight.json'),verifyStoredPreflight:()=>({fixtureKind:'explicit-private-preflight-stub'}),
-    hasLiveOwnedProof:p=>live.has(p),cleanupForCurrentCall:(error,last)=>live.has(Object.hasOwn(error,'ownedReceipt')?error.ownedReceipt:last),
-    persistNativeFailureEvidence:async()=>({fixtureKind:'explicit-private-failure-stub'}),
+    hasLiveOwnedProof:p=>live.has(p),cleanupForCurrentCall:(error,last)=>{cleanupLookups.push({error,last});return live.has(Object.hasOwn(error,'ownedReceipt')?error.ownedReceipt:last);},
+    persistNativeFailureEvidence:async(...args)=>{nativeFailurePersistenceCalls.push(args);return {fixtureKind:'explicit-private-failure-stub'};},
     currentNativeFailureScope:(_root,receipt)=>{assert.ok(live.has(receipt));const scope={capabilityVersion:plan.capabilityVersion,runId,packageId,outputRoot,phase:receipt.phase};if(scopeChange)scopeChange(scope);return scope;},
     verifyGpuOutcome:()=>({fixtureKind:'simulated-protocol-no-GPU'}),verifyStoredGpuAcceptance:()=>assert.equal(invalidStored,false,'untrusted stored GPU receipt'),
     runNative:async options=>{
@@ -560,8 +568,119 @@ function simulated({gpuFailure=false,unknownCleanup=false,invalidStored=false,di
       return {stdout:JSON.stringify(put(f.root,outputRoot+'/dry-review/machine-audit-core.json',core)),ownedReceipt:receipt,receiptBinding};
     },
   });
-  return {f,store,adapters,nativeCalls,registryWrites,liveReceipts,liveBudgetReceipts,liveReceiptLookups,getCurrent:()=>current};
+  return {f,store,adapters,nativeCalls,registryWrites,liveReceipts,liveBudgetReceipts,liveReceiptLookups,cleanupLookups,nativeFailurePersistenceCalls,dispatchBudgetScopes,registryReadOptions,
+    registryReadCount:()=>registryReads,getCurrent:()=>current};
 }
+
+test('initial dispatch rename EPERM preserves exact first error and records zero-native recovery scope',async()=>{
+ const primary=Object.assign(Error('EPERM: operation not permitted, rename'),{code:'EPERM',errno:-4048,syscall:'rename',
+  path:'F:\\synthetic\\current.json.tmp',dest:'F:\\synthetic\\current.json'});
+ const s=simulated({initialAdvanceError:primary});
+ await assert.rejects(s.adapters.execute({heartbeat(){}}),error=>error===primary);
+ const failed=s.store.get(s.f.plan.outputRoot+'/execution-failure.json');
+ assert.equal(failed.phase,'dispatch');assert.equal(failed.failureScope,'initial_registry_dispatch_before_native_call');
+ assert.deepEqual(failed.dispatchError,{name:'Error',message:primary.message,code:'EPERM',errno:-4048,syscall:'rename',path:primary.path,dest:primary.dest});
+ assert.equal(failed.error,'Error: '+primary.message);assert.equal(failed.workerTerminal,null);assert.equal(failed.originalError,null);
+ for(const key of ['cleanupConfirmed','gpuQualificationStarted','trainingStarted'])assert.equal(failed[key],false);
+ assert.equal(failed.nativeCallsAttempted,0);assert.equal(failed.nativeCleanupStatus,'no_current_native_call');
+ assert.equal(failed.registryPublication.status,'unverified_after_initial_advance_error');
+ assert.equal(failed.registryPublication.transactionRecoveryStatus,'requires_registry_verification_or_transaction_recovery');
+ assert.equal(failed.registryPublication.adapterRetryAttempted,false);
+ assert.equal(primary.dispatchFailureEvidence.path,s.f.plan.outputRoot+'/execution-failure.json');
+ assert.equal(s.nativeCalls.length,0);assert.equal(s.registryWrites.length,1);assert.equal(s.registryReadCount(),2);
+ assert.equal(s.cleanupLookups.length,0);assert.equal(s.nativeFailurePersistenceCalls.length,0);
+ assert.equal(s.store.has(s.f.plan.outputRoot+'/worker-terminal.json'),false);
+ await assert.rejects(s.adapters.execute({heartbeat(){}}),/exclusive duplicate fixture write/u);
+ assert.equal(s.nativeCalls.length,0);assert.equal(s.registryWrites.length,1);
+});
+
+test('initial dispatch unreadable registry records failure without any replacement registry write',async()=>{
+ const s=simulated({dispatchRegistryUnreadable:true});let primary;
+ try{await s.adapters.execute({heartbeat(){}})}catch(error){primary=error}
+ assert.equal(primary.code,'ERR_ASSERTION');assert.equal(s.registryWrites.length,0);assert.equal(s.nativeCalls.length,0);
+ assert.equal(s.registryReadCount(),2);assert.equal(s.getCurrent().registryRevision,409);
+ const failed=s.store.get(s.f.plan.outputRoot+'/execution-failure.json');assert.equal(failed.phase,'dispatch');
+ assert.equal(failed.cleanupConfirmed,false);assert.equal(failed.registryPublication.adapterRetryAttempted,false);
+});
+
+test('initial dispatch read and advance share one absolute existing ten-second operation deadline',async()=>{
+ const primary=Object.assign(Error('original deadline-bound rename refusal'),{code:'EPERM'}),s=simulated({initialAdvanceError:primary});
+ const before=Date.now();await assert.rejects(s.adapters.execute({heartbeat(){}}),error=>error===primary);const after=Date.now();
+ assert.equal(s.registryReadOptions.length,2);assert.equal(s.registryReadOptions[0],null);
+ const deadline=s.registryReadOptions[1].deadlineUnixMs;
+ assert.ok(Number.isSafeInteger(deadline)&&deadline>=before+10000&&deadline<=after+10000);
+ assert.equal(s.registryWrites.length,1);assert.equal(s.registryWrites[0].deadlineUnixMs,deadline);
+ assert.equal(primary.message,'original deadline-bound rename refusal');assert.equal(s.nativeCalls.length,0);
+});
+
+test('initial dispatch after completed CPU preflight cannot borrow its cleanup or discover a worker terminal',async()=>{
+ const primary=Object.assign(Error('rename refused'),{code:'EPERM',syscall:'rename'}),s=simulated({initialAdvanceError:primary}),context={heartbeat(){}};
+ await s.adapters.preflight(context);primary.ownedReceipt=s.liveReceipts.get(s.f.plan.outputRoot+'/owned-cpu.json');
+ s.store.set(s.f.plan.outputRoot+'/worker-terminal.json',{status:'pretend-worker-terminal'});
+ await assert.rejects(s.adapters.qualifyOnly(context),error=>error===primary);
+ const failed=s.store.get(s.f.plan.outputRoot+'/qualification-failure.json');
+ assert.deepEqual(s.nativeCalls.map(v=>v.phase),['cpu']);assert.equal(failed.phase,'dispatch');
+ assert.equal(failed.workerTerminal,null);assert.equal(failed.cleanupConfirmed,false);assert.equal(failed.trainingStarted,false);
+ assert.equal(s.cleanupLookups.length,0);assert.equal(s.nativeFailurePersistenceCalls.length,0);
+ assert.equal(primary.nativeFailureEvidence,undefined);assert.equal(s.registryWrites.length,1);
+});
+
+test('initial dispatch failure evidence write failure stays secondary to the original system error',async()=>{
+ const primary=Object.assign(Error('original rename refusal'),{code:'EPERM',errno:-4048,syscall:'rename'});
+ const secondary=Object.assign(Error('no evidence space'),{code:'ENOSPC',errno:-4055,syscall:'write'});
+ const s=simulated({initialAdvanceError:primary,failureWriteError:secondary});
+ await assert.rejects(s.adapters.execute({heartbeat(){}}),error=>error===primary);
+ assert.equal(primary.message,'original rename refusal');assert.equal(primary.code,'EPERM');
+ assert.equal(primary.secondaryEvidenceError.errno,-4055);assert.equal(primary.secondaryEvidenceError.operation,'write');
+ assert.equal(primary.dispatchFailureEvidence,undefined);assert.equal(s.nativeCalls.length,0);assert.equal(s.registryWrites.length,1);
+});
+
+test('initial dispatch system metadata is UTF8 bounded without mutating the original error',async()=>{
+ const primary=Object.assign(Error('错'.repeat(10000)),{code:'EPERM',errno:-4048,syscall:'rename',path:'路'.repeat(6000),dest:'终'.repeat(6000)});
+ const s=simulated({initialAdvanceError:primary});await assert.rejects(s.adapters.execute({heartbeat(){}}),error=>error===primary);
+ const failed=s.store.get(s.f.plan.outputRoot+'/execution-failure.json');
+ for(const [key,maximum]of [['message',8192],['path',4096],['dest',4096]])assert.ok(Buffer.byteLength(failed.dispatchError[key])<=maximum);
+ assert.equal(primary.message.length,10000);assert.equal(primary.path.length,6000);assert.equal(failed.dispatchError.code,'EPERM');
+});
+
+test('initial dispatch real candidate aggregate quota exhaustion preserves the original publication error',async t=>{
+ const f=entryTimingFixture(t,{mapped:false}),primary=Object.assign(Error('first rename refusal'),{code:'EPERM',errno:-4048,syscall:'rename'});
+ let privateNativeRoot,quotaError;
+ const s=simulated({initialAdvanceError:primary,
+  dispatchBudget:(options,action)=>{
+   assert.equal(options.projectRoot,process.cwd());assert.equal(options.maximum,128*1024**2);assert.equal(options.reserveBytes,65536);
+   assert.equal(options.roots.length,2);assert.equal(options.roots[0],s.f.plan.outputRoot);
+   const key=crypto.createHash('sha256').update(s.f.plan.outputRoot).digest('hex').slice(0,32);
+   assert.equal(options.roots[1],'.runtime/ai-painter/owned-worker-guards/'+[key.slice(0,8),key.slice(8,12),key.slice(12,16),key.slice(16,20),key.slice(20)].join('-'));
+   privateNativeRoot=options.roots[1];fs.mkdirSync(path.join(f.projectRoot,privateNativeRoot),{recursive:true});
+   fs.writeFileSync(path.join(f.projectRoot,privateNativeRoot,'existing-native-evidence.bin'),Buffer.alloc(7900));
+   fs.writeFileSync(path.join(f.dir,'existing-run-evidence.bin'),Buffer.alloc(100));
+   return withCandidateOutputBudget({projectRoot:f.projectRoot,roots:[f.logical,privateNativeRoot],maximum:8192,reserveBytes:64},action);
+  },failureWriter:(_root,_logical,value)=>{
+   try{return writeCandidateAccounting(f.projectRoot,f.logical+'/execution-failure.json',value)}catch(error){quotaError=error;throw error}
+  }});
+ await assert.rejects(s.adapters.execute({heartbeat(){}}),error=>error===primary);
+ assert.equal(primary.message,'first rename refusal');assert.equal(primary.code,'EPERM');
+ assert.match(quotaError.message,/total output reserve/u);assert.equal(primary.secondaryEvidenceError.reason,'contract_assertion');
+ assert.equal(primary.secondaryEvidenceError.code,'ERR_ASSERTION');assert.equal(primary.dispatchFailureEvidence,undefined);
+ assert.equal(fs.existsSync(path.join(f.dir,'execution-failure.json')),false);
+ assert.equal(directoryBytes(path.join(f.projectRoot,privateNativeRoot)),7900);assert.equal(directoryBytes(f.dir),100);
+ assert.equal(s.nativeCalls.length,0);assert.equal(s.registryWrites.length,1);assert.equal(s.dispatchBudgetScopes.length,1);
+});
+
+test('initial dispatch keeps exact transaction publication diagnostics as evidence without retry authority',async()=>{
+ const primary=Object.assign(Error('first rename refusal'),{code:'EPERM',errno:-4048,syscall:'rename',publicationDiagnostics:{
+  transactionId:'synthetic-same-transaction',status:'rename_failed',attempts:[1,2,3].map(attempt=>({attempt,
+   atUtc:'2026-10-24T11:00:0'+attempt+'.000Z',code:'EPERM',message:'same temporary file publication refused'})),
+  secondaryError:{code:'ERR_ASSERTION',message:'publication identity changed'}}});
+ const s=simulated({initialAdvanceError:primary});await assert.rejects(s.adapters.execute({heartbeat(){}}),error=>error===primary);
+ const failure=s.store.get(s.f.plan.outputRoot+'/execution-failure.json'),observed=failure.dispatchError.publicationDiagnostics;
+ assert.equal(observed.transactionId,primary.publicationDiagnostics.transactionId);
+ assert.equal(observed.status,'rename_failed');assert.deepEqual(observed.attempts,primary.publicationDiagnostics.attempts);
+ assert.equal(observed.attemptsTruncated,false);assert.equal(observed.secondaryError.message,'publication identity changed');
+ assert.equal(observed.secondaryError.code,'ERR_ASSERTION');assert.equal(s.registryWrites.length,1);assert.equal(s.nativeCalls.length,0);
+ assert.equal(primary.message,'first rename refusal');assert.equal(primary.code,'EPERM');
+});
 
 test('mock qualificationOnly cannot enter training, optimizer, checkpoint or training-terminal handoff',async()=>{
   const s=simulated(),out=await s.adapters.qualifyOnly({heartbeat(){}}),base=s.f.plan.outputRoot;
@@ -1000,12 +1119,31 @@ test('zero or missing worker exit cannot manufacture an execution failure or byp
 const readPolicy=()=>JSON.parse(fs.readFileSync(registration.EXECUTION_POLICY.path));
 const freshConfiguration=()=>registration.deriveConfiguration(candidate,{trainingPreviewPolicy:binding(registration.PROFILE.previewPath)});
 
-test('independent identity pins the final real policy and keeps accepted target48 model/operator/bridge bytes',()=>{
+test('historical identity keeps its original pins; numeric successor binds changed bytes without reusing old source qualification',()=>{
  const p=readPolicy();assert.equal(candidateChain.verifyExecutionPolicy(p,freshConfiguration()),p);
  assert.equal(digest(fs.readFileSync(registration.EXECUTION_POLICY.path)),registration.EXECUTION_POLICY.sha256);
  assert.equal(digest(fs.readFileSync('data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.96-f33115ca.txt')),registration.SPECIFICATION.sha256);
  assert.equal(digest(fs.readFileSync('data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.98-d8590b62.txt')),registration.COMPLETION_PROFILE.SPECIFICATION.sha256);
- for(const b of p.modelBoundary.frozenCpuSources)assert.equal(digest(fs.readFileSync(b.path)),b.sha256);
+ const parent=registration.executionRoute('stage4_mvp256_dry_decode2_support_structure_weight1_v1');
+ assert.equal(digest(fs.readFileSync(parent.EXECUTION_POLICY.path)),parent.EXECUTION_POLICY.sha256);
+ const numeric=registration.executionRoute('stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1');
+ const current=JSON.parse(fs.readFileSync(numeric.EXECUTION_POLICY.path));
+ assert.equal(digest(fs.readFileSync(numeric.EXECUTION_POLICY.path)),numeric.EXECUTION_POLICY.sha256);
+ assert.equal(current.previousExecutionPolicy.path,parent.EXECUTION_POLICY.path);
+ assert.equal(current.previousExecutionPolicy.sha256,parent.EXECUTION_POLICY.sha256);
+ for(const b of p.modelBoundary.frozenCpuSources){
+  assert.match(b.sha256,/^[a-f0-9]{64}$/u);
+  const updated=current.modelBoundary.frozenCpuSources.find(v=>v.path===b.path);
+  assert.ok(updated);assert.notEqual(updated.sha256,b.sha256);assert.equal(digest(fs.readFileSync(b.path)),updated.sha256);
+ }
+ assert.equal(current.modelBoundary.numericOperatorsChanged,true);
+ assert.equal(current.modelBoundary.changedTargetIndex,90);
+ assert.equal(current.modelBoundary.parentDecode2Entry40Kept,true);
+ assert.equal(current.modelBoundary.frozenCpuSources.length,4);
+ const parsed=parseTrainingInterfacePolicy(current);
+ assert.equal(parsed.model,'stage4_mvp256_dry_factorized_ecology_decode2_rgb_output_weight_precision_v1');
+ const wrongModel=structuredClone(current);wrongModel.modelCapability=parent.MODEL_CAPABILITY;
+ assert.throws(()=>parseTrainingInterfacePolicy(wrongModel),/model_unsupported/);
  assert.equal(registration.sourceFileCountMaximum(),256);assert.equal(registration.gpuAdmissionSeconds(),720);
  for(const old of ['stage4_mvp256_dry_joint_object_priority_quality24_v1','stage4_mvp256_dry_decode1_entry_gpu_qualification_v4','stage4_mvp256_dry_object_support_structure_quality24_v1']){
   assert.throws(()=>registration.executionRoute(old));assert.throws(()=>registration.sourceFileCountMaximum(old));

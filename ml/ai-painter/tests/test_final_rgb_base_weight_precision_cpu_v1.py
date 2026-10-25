@@ -6,11 +6,13 @@ import hashlib
 import io
 import itertools
 import json
+import math
 import os
 import subprocess
 from pathlib import Path
 import sys
 import time
+import types
 import unittest
 from unittest.mock import patch
 
@@ -516,9 +518,37 @@ class WorkerBoundaryTests(unittest.TestCase):
             b=worker.PREDECESSOR[key]
             self.assertEqual(mapping.put(b["path"],(ROOT/b["path"]).read_bytes()),b)
         for item in policy["sourceAlgorithmBindings"]:
-            b=item["binding"];mapping.put(b["path"],(ROOT/b["path"]).read_bytes())
+            b=item["binding"]
+            if item["role"]=="supportLoss":
+                # Explicit historical overlay for this synthetic worker only.
+                # Keep its policy, loaded module and single-version source map
+                # consistent; never label the current weight1 source as old.
+                archived=ROOT/".runtime/ai-painter/controller-repair-reviews/parameter90-review-20261019/same-call-production-adoption-v1/inputs/refused-attempt-programs"/b["path"]
+                raw=archived.read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(),b["sha256"])
+                rows=[row for row in programs if row["path"]==b["path"]]
+                self.assertEqual(len(rows),1,"actual Node collector omitted the support module")
+                current_support_binding=rows[0]
+                frozen_support_binding=dict(b)
+                programs=[dict(b) if row["path"]==b["path"] else row for row in programs]
+                module_name="ai_painter.complete_world.native_rgb_object_support_structure_device_v1"
+                frozen_support=types.ModuleType(module_name)
+                frozen_support.__file__=str(ROOT/b["path"])
+                frozen_support.__package__=module_name.rpartition(".")[0]
+                exec(compile(raw,frozen_support.__file__,"exec",dont_inherit=True),frozen_support.__dict__)
+                self.assertEqual(frozen_support.train_object_support_structure_candidate_objective.__module__,module_name)
+            else:
+                raw=(ROOT/b["path"]).read_bytes()
+            self.assertEqual(mapping.put(b["path"],raw),b)
+        if current_support_binding["sha256"]!=frozen_support_binding["sha256"]:
+            with self.assertRaisesRegex(ValueError,"synthetic exact byte binding differs"):
+                mapping.binding(current_support_binding)
         formal=policy["formalSpecification"]
-        mapping.put(formal["path"],(ROOT/formal["path"]).read_bytes())
+        # The historical worker's private fixture needs its policy-bound bytes,
+        # not the current formal document at the same logical path.
+        formal_bytes=(ROOT/"data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.76-59b3ba51.txt").read_bytes()
+        self.assertEqual(hashlib.sha256(formal_bytes).hexdigest(),formal["sha256"])
+        self.assertEqual(mapping.put(formal["path"],formal_bytes),{key:formal[key] for key in ("path","sha256")})
         request={"schemaVersion":"final-rgb-base-precision-cpu-request-v1","runId":"synthetic-main-not-real-cpu-attempt",
             "policy":p_binding,"verificationRevision":2,"predecessorVerification":deepcopy(worker.PREDECESSOR),
             "programBindings":programs,"interpreter":{"path":sys.executable,
@@ -542,6 +572,8 @@ class WorkerBoundaryTests(unittest.TestCase):
         def interop(n):self.assertEqual((n,torch.get_num_interop_threads()),(2,2))
         output=io.StringIO()
         with self.source_guard(fixture),ExitStack() as guards:
+            guards.enter_context(patch.dict(sys.modules,{module_name:frozen_support}))
+            guards.enter_context(patch.object(sys.modules[frozen_support.__package__],module_name.rsplit(".",1)[1],frozen_support))
             guards.enter_context(patch.object(worker.capture.RuntimeMap,"current",return_value=mapping))
             guards.enter_context(patch.object(worker,"LOCATOR",locator_binding))
             guards.enter_context(patch.object(worker,"FIXTURES",fixtures))
@@ -593,6 +625,309 @@ class WorkerBoundaryTests(unittest.TestCase):
         md["descriptors"]["input"]["sha256"]="0"*64
         with self.assertRaisesRegex(ValueError,"descriptor"):
             self.worker.decode_fixture(stream.getvalue(),md)
+
+
+class OutputPrecisionTests(unittest.TestCase):
+    """Target90 operator and standalone original Conv only; no renderer factory."""
+    @classmethod
+    def setUpClass(cls):
+        torch.set_num_threads(2)
+        if torch.get_num_interop_threads() != 2:
+            torch.set_num_interop_threads(2)
+        import psutil
+        process = psutil.Process()
+        process.cpu_affinity(process.cpu_affinity()[:2])
+
+    def setUp(self):
+        self.guards = ExitStack()
+        self.addCleanup(self.guards.close)
+        self.guards.enter_context(patch.object(torch.cuda, "_lazy_init", side_effect=AssertionError("GPU forbidden")))
+        self.guards.enter_context(patch.object(torch.optim.Optimizer, "__init__", side_effect=AssertionError("optimizer forbidden")))
+
+    def tearDown(self):
+        self.assertFalse(torch.cuda.is_initialized())
+        self.assertEqual(torch.get_num_threads(), 2)
+
+    @staticmethod
+    def source(mask=(True, True, True), size=(4, 5)):
+        rng = torch.Generator(device="cpu").manual_seed(20261023)
+        return tuple(torch.randn(shape, generator=rng).requires_grad_(needed) for shape, needed in zip(
+            ((1, 48, *size), (3, 48, 1, 1), (3,)), mask))
+
+    @staticmethod
+    def original():
+        with torch.random.fork_rng(devices=[]):
+            return operator.PrecisionFinalRGBConv(nn.Conv2d(48, 3, 1))
+
+    @staticmethod
+    def independent_reference(features, upstream):
+        # Independent exact FP32 products in Python FP64 and stable summation,
+        # not the candidate's matrix multiplication or saved/native weight VJP.
+        return torch.tensor([[math.fsum(float(dy) * float(x) for dy, x in zip(
+            upstream[0, output].reshape(-1), features[0, channel].reshape(-1)))
+            for channel in range(48)] for output in range(3)], dtype=torch.float64).reshape(3, 48, 1, 1)
+
+    def test_8_masks_full_native_mask_bitwise_forward_input_old_bias_and_fp64_weight(self):
+        from ai_painter.complete_world.rgb_bias_reduction_precision import rgb_bias_reduction_precision
+        native = torch.ops.aten.convolution_backward.default
+        native_calls, roundings = [], []
+        ordinary_to = torch.Tensor.to
+        def observe_native(*args, **kwargs):
+            native_calls.append(tuple(args[-1]))
+            self.assertEqual(args[3:10], ([3], [1, 1], [0, 0], [1, 1], False, [0, 0], 1))
+            return native(*args, **kwargs)
+        def observe_to(value, *args, **kwargs):
+            result = ordinary_to(value, *args, **kwargs)
+            if value.dtype == torch.float64 and result.dtype == torch.float32:
+                roundings.append((tuple(value.shape), value.device, result.device))
+            return result
+        for mask in itertools.product((False, True), repeat=3):
+            with self.subTest(mask=mask):
+                source = self.source(mask)
+                baseline = tuple(v.detach().clone().requires_grad_(needed) for v, needed in zip(source, mask))
+                old_source = tuple(v.detach().clone().requires_grad_(needed) for v, needed in zip(source, mask))
+                before = [(digest(v), v._version, v.untyped_storage()._cdata, v.grad) for v in source]
+                rng = torch.get_rng_state().clone()
+                output = operator.final_rgb_output_weight_reduction_precision(*source)
+                expected = F.conv2d(*baseline, stride=1, padding=0, dilation=1, groups=1)
+                old = rgb_bias_reduction_precision(*old_source)
+                self.assertEqual(digest(output), digest(expected))
+                self.assertEqual(digest(output), digest(old))
+                if not any(mask):
+                    self.assertFalse(output.requires_grad)
+                    continue
+                upstream = torch.linspace(-.5, .5, output.numel()).reshape_as(output)
+                native_calls.clear(); roundings.clear()
+                with patch.object(torch.ops.aten.convolution_backward, "default", observe_native), \
+                     patch.object(torch.Tensor, "to", observe_to):
+                    gradients = torch.autograd.grad(output, tuple(v for v, needed in zip(source, mask) if needed), grad_outputs=upstream)
+                self.assertEqual(native_calls, [mask])
+                self.assertEqual([shape for shape, _, _ in roundings],
+                    ([(3, 48, 1, 1)] if mask[1] else []) + ([(3,)] if mask[2] else []))
+                self.assertTrue(all(left == right == source[0].device for _, left, right in roundings))
+                original = torch.autograd.grad(expected, tuple(v for v, needed in zip(baseline, mask) if needed), grad_outputs=upstream)
+                unchanged = torch.autograd.grad(old, tuple(v for v, needed in zip(old_source, mask) if needed), grad_outputs=upstream)
+                reference = self.independent_reference(source[0].detach(), upstream).float()
+                for index, actual, ordinary, previous in zip([i for i, needed in enumerate(mask) if needed], gradients, original, unchanged):
+                    if index == 1:
+                        self.assertEqual(digest(actual), digest(reference))
+                    else:
+                        self.assertEqual(digest(actual), digest(previous))
+                        if index == 0:
+                            self.assertEqual(digest(actual), digest(ordinary))
+                        else:
+                            self.assertEqual(digest(actual), digest(upstream.double().sum(dim=(0, 2, 3)).float()))
+                self.assertTrue(torch.equal(rng, torch.get_rng_state()))
+                for value, (sha, version, storage, grad) in zip(source, before):
+                    self.assertEqual((digest(value), value._version, value.untyped_storage()._cdata), (sha, version, storage))
+                    self.assertIs(value.grad, grad)
+
+    def test_independent_fp64_conv_reference_impulse_and_cancellation(self):
+        source = self.source((False, True, False))
+        upstream = torch.linspace(-.7, .3, 60).reshape(1, 3, 4, 5)
+        weight64 = source[1].detach().double().requires_grad_()
+        reference_output = F.conv2d(source[0].double(), weight64, source[2].double())
+        reference, = torch.autograd.grad(reference_output, weight64, grad_outputs=upstream.double())
+        torch.testing.assert_close(reference, self.independent_reference(source[0], upstream), atol=1e-12, rtol=1e-12)
+        actual, = torch.autograd.grad(operator.final_rgb_output_weight_reduction_precision(*source), source[1], grad_outputs=upstream)
+        self.assertEqual(digest(actual), digest(reference.float()))
+        features, weight, bias = self.source((False, True, False), (1, 3))
+        features.zero_(); features[0, 7, 0] = torch.tensor([1e8, 1., -1e8])
+        dy = torch.zeros(1, 3, 1, 3); dy[0, 1] = 1
+        gradient, = torch.autograd.grad(operator.final_rgb_output_weight_reduction_precision(features, weight, bias), weight, grad_outputs=dy)
+        wanted = torch.zeros_like(weight); wanted[1, 7, 0, 0] = 1
+        self.assertEqual(digest(gradient), digest(wanted))
+        features.zero_(); features[0, 7, 0, 1] = 2
+        dy.zero_(); dy[0, 1, 0, 1] = 3
+        gradient, = torch.autograd.grad(operator.final_rgb_output_weight_reduction_precision(features, weight, bias), weight, grad_outputs=dy)
+        wanted.zero_(); wanted[1, 7, 0, 0] = 6
+        self.assertEqual(digest(gradient), digest(wanted))
+
+    def test_broadcast_and_noncontiguous_adjoints_preserve_native_input_old_bias_and_fp64_weight(self):
+        from ai_painter.complete_world.rgb_bias_reduction_precision import rgb_bias_reduction_precision
+        native = torch.ops.aten.convolution_backward.default
+        adjoints = (torch.tensor([-.5, .25, .75]).reshape(1, 3, 1, 1).expand(1, 3, 4, 5),
+                    torch.linspace(-.7, .3, 60).reshape(1, 3, 5, 4).transpose(2, 3))
+        for dy in adjoints:
+            for mask in itertools.product((False, True), repeat=3):
+                with self.subTest(stride=dy.stride(), mask=mask):
+                    self.assertFalse(dy.is_contiguous())
+                    before = (digest(dy), dy._version, dy.untyped_storage()._cdata, dy.stride(), dy.storage_offset())
+                    source = self.source(mask)
+                    baseline = tuple(v.detach().clone().requires_grad_(needed) for v, needed in zip(source, mask))
+                    previous = tuple(v.detach().clone().requires_grad_(needed) for v, needed in zip(source, mask))
+                    output = operator.final_rgb_output_weight_reduction_precision(*source)
+                    expected = F.conv2d(*baseline)
+                    old = rgb_bias_reduction_precision(*previous)
+                    self.assertEqual(digest(output), digest(expected))
+                    self.assertEqual(digest(output), digest(old))
+                    if not any(mask):
+                        self.assertFalse(output.requires_grad)
+                        continue
+                    calls = []
+                    def observe(*args, **kwargs):
+                        self.assertFalse(args[0].is_contiguous())
+                        calls.append(tuple(args[-1]))
+                        return native(*args, **kwargs)
+                    with patch.object(torch.ops.aten.convolution_backward, "default", observe):
+                        gradients = torch.autograd.grad(output, tuple(v for v, needed in zip(source, mask) if needed), grad_outputs=dy)
+                    self.assertEqual(calls, [mask])
+                    ordinary = torch.autograd.grad(expected, tuple(v for v, needed in zip(baseline, mask) if needed), grad_outputs=dy)
+                    unchanged = torch.autograd.grad(old, tuple(v for v, needed in zip(previous, mask) if needed), grad_outputs=dy)
+                    reference = self.independent_reference(source[0].detach(), dy).float()
+                    for index, actual, raw, old_gradient in zip([i for i, needed in enumerate(mask) if needed], gradients, ordinary, unchanged):
+                        self.assertEqual(digest(actual), digest(reference if index == 1 else old_gradient))
+                        if index == 0:
+                            self.assertEqual(digest(actual), digest(raw))
+                    self.assertEqual((digest(dy), dy._version, dy.untyped_storage()._cdata, dy.stride(), dy.storage_offset()), before)
+        # sum() supplies a broadcast all-ones adjoint through the actual engine.
+        source = self.source()
+        previous = tuple(v.detach().clone().requires_grad_() for v in source)
+        actual = torch.autograd.grad(operator.final_rgb_output_weight_reduction_precision(*source).sum(), source)
+        unchanged = torch.autograd.grad(rgb_bias_reduction_precision(*previous).sum(), previous)
+        reference = self.independent_reference(source[0].detach(), torch.ones(1, 3, 4, 5)).float()
+        for index, (left, right) in enumerate(zip(actual, unchanged)):
+            self.assertEqual(digest(left), digest(reference if index == 1 else right))
+
+    def test_forward_rejects_wrong_shape_dtype_layout_device_alias_and_amp(self):
+        for index, wrong in ((0, torch.zeros(2, 48, 4, 5)), (0, torch.zeros(1, 47, 4, 5)),
+                (0, torch.zeros(1, 48, 0, 5)), (0, torch.zeros(48, 4, 5)),
+                (1, torch.zeros(48, 48, 3, 3)), (1, torch.zeros(3, 48, 1, 2)), (2, torch.zeros(48)),
+                (0, torch.zeros(1, 48, 4, 5, dtype=torch.float64)), (2, None),
+                (0, torch.empty(1, 48, 4, 5, device="meta")), (1, torch.empty(3, 48, 1, 1, device="meta")),
+                (2, torch.empty(3, device="meta")), (0, torch.zeros(1, 48, 5, 4).transpose(2, 3))):
+            with self.subTest(index=index, wrong=type(wrong).__name__):
+                source = list(self.source()); source[index] = wrong
+                with self.assertRaises(ValueError):
+                    operator.final_rgb_output_weight_reduction_precision(*source)
+        shared = torch.zeros(1024)
+        with self.assertRaisesRegex(ValueError, "alias"):
+            operator.final_rgb_output_weight_reduction_precision(shared[:960].reshape(1, 48, 4, 5),
+                shared[:144].reshape(3, 48, 1, 1), shared[:3])
+        with torch.autocast("cpu", dtype=torch.bfloat16), self.assertRaisesRegex(ValueError, "autocast"):
+            operator.final_rgb_output_weight_reduction_precision(*self.source())
+        with patch.object(torch, "get_num_threads", return_value=3), self.assertRaisesRegex(ValueError, "threads"):
+            operator.final_rgb_output_weight_reduction_precision(*self.source())
+        with self.assertRaises(TypeError):
+            operator.final_rgb_output_weight_reduction_precision(*self.source(), padding=1)
+
+    def test_nonfinite_inputs_forward_and_grad_output_refuse(self):
+        for index in range(3):
+            for bad in (float("nan"), float("inf"), -float("inf")):
+                source = [v.detach().clone() for v in self.source()]
+                source[index].reshape(-1)[0] = bad
+                with self.assertRaisesRegex(ValueError, "finite"):
+                    operator.final_rgb_output_weight_reduction_precision(*source)
+        source = [torch.full_like(v, torch.finfo(torch.float32).max) for v in self.source()]
+        with self.assertRaisesRegex(ValueError, "forward nonfinite"):
+            operator.final_rgb_output_weight_reduction_precision(*source)
+        for bad in (float("nan"), float("inf")):
+            source = self.source()
+            output = operator.final_rgb_output_weight_reduction_precision(*source)
+            dy = torch.ones_like(output); dy[0, 1, 0, 0] = bad
+            with self.assertRaisesRegex(ValueError, "grad_output"):
+                torch.autograd.grad(output, source, grad_outputs=dy)
+
+    def test_grad_output_geometry_device_dtype_layout_and_higher_order_refuse(self):
+        from types import SimpleNamespace
+        source = self.source()
+        ctx = SimpleNamespace(saved_tensors=source, output_shape=(1, 3, 4, 5), needs_input_grad=(True, True, True))
+        for dy in (torch.zeros(1, 4, 4, 5), torch.zeros(1, 3, 4, 5, dtype=torch.float64),
+                torch.empty(1, 3, 4, 5, device="meta"), torch.zeros(1, 3, 4, 5).to_sparse()):
+            with torch.no_grad(), patch.object(torch.ops.aten.convolution_backward, "default", side_effect=AssertionError("invalid native call")):
+                with self.assertRaisesRegex(ValueError, "grad_output"):
+                    operator._FinalRgbOutputWeightReduction.backward(ctx, dy)
+        output = operator.final_rgb_output_weight_reduction_precision(*source)
+        with self.assertRaisesRegex(ValueError, "higher-order"):
+            torch.autograd.grad(output, source[1], grad_outputs=torch.ones_like(output), create_graph=True)
+        for mode in ("autocast", "threads"):
+            source = self.source(); output = operator.final_rgb_output_weight_reduction_precision(*source)
+            guard = torch.autocast("cpu", dtype=torch.bfloat16) if mode == "autocast" else patch.object(torch, "get_num_threads", return_value=3)
+            with guard, self.assertRaisesRegex(ValueError, mode):
+                torch.autograd.grad(output, source[1], grad_outputs=torch.ones_like(output))
+
+    def test_requested_gradient_overflow_and_saved_version_change_refuse(self):
+        source = self.source((False, True, False))
+        with torch.no_grad(): source[0].fill_(torch.finfo(torch.float32).max)
+        output = operator.final_rgb_output_weight_reduction_precision(source[0], torch.zeros_like(source[1], requires_grad=True), source[2])
+        with self.assertRaisesRegex(ValueError, "requested gradient"):
+            output.backward(torch.full_like(output, torch.finfo(torch.float32).max))
+        source = self.source(); output = operator.final_rgb_output_weight_reduction_precision(*source)
+        with torch.no_grad(): source[0].add_(1)
+        with self.assertRaisesRegex(RuntimeError, "modified by an inplace operation"):
+            torch.autograd.grad(output, source[1], grad_outputs=torch.ones_like(output))
+
+    def test_wrapper_conv2d_metadata_parameters_rng_state_and_modes_unchanged(self):
+        original = self.original().eval()
+        original.weight.requires_grad_(False)
+        original.bias.grad = torch.ones_like(original.bias)
+        before = [(p, digest(p), p._version, p.untyped_storage()._cdata, p.requires_grad, p.grad) for p in original.parameters()]
+        rng = torch.get_rng_state().clone()
+        with patch.object(nn.Parameter, "__new__", side_effect=AssertionError("new Parameter forbidden")), \
+             patch.object(nn.Conv2d, "reset_parameters", side_effect=AssertionError("random initialization forbidden")):
+            wrapper = operator.FinalRgbOutputWeightReductionConv(original)
+        self.assertIsInstance(wrapper, nn.Conv2d)
+        self.assertIsInstance(wrapper, operator.PrecisionFinalRGBConv)
+        self.assertEqual(wrapper.extra_repr(), original.extra_repr())
+        for name in operator._OUTPUT_CONV_METADATA:
+            self.assertEqual(getattr(wrapper, name), getattr(original, name))
+        self.assertFalse(wrapper.training)
+        self.assertEqual(tuple(wrapper.state_dict()), tuple(original.state_dict()))
+        self.assertEqual(state(wrapper), state(original))
+        self.assertEqual(list(wrapper.buffers()), [])
+        features = self.source((False, False, False))[0]
+        self.assertEqual(digest(wrapper(features)), digest(original(features)))
+        self.assertTrue(torch.equal(rng, torch.get_rng_state()))
+        for actual, (parameter, sha, version, storage, needed, grad) in zip(wrapper.parameters(), before):
+            self.assertIs(actual, parameter)
+            self.assertEqual((digest(actual), actual._version, actual.untyped_storage()._cdata, actual.requires_grad), (sha, version, storage, needed))
+            self.assertIs(actual.grad, grad)
+        original.train()
+        self.assertTrue(operator.FinalRgbOutputWeightReductionConv(original).training)
+
+    def test_wrapper_rejects_wrong_original_configuration_state_and_mutation(self):
+        for original in (nn.Conv2d(48, 3, 1), nn.Identity(), None):
+            with self.assertRaisesRegex(ValueError, "PrecisionFinalRGBConv"):
+                operator.FinalRgbOutputWeightReductionConv(original)
+        for name, bad in (("in_channels", 47), ("out_channels", 48), ("kernel_size", (3, 3)),
+                ("stride", (2, 2)), ("padding", (1, 1)), ("dilation", (2, 2)), ("groups", 2),
+                ("padding_mode", "reflect"), ("transposed", True), ("output_padding", (1, 1)),
+                ("_reversed_padding_repeated_twice", (1, 1, 1, 1))):
+            original = self.original(); setattr(original, name, bad)
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, "configuration"):
+                operator.FinalRgbOutputWeightReductionConv(original)
+            wrapper = operator.FinalRgbOutputWeightReductionConv(self.original()); setattr(wrapper, name, bad)
+            with self.assertRaisesRegex(ValueError, "configuration"):
+                wrapper(self.source()[0])
+        for mode in ("dtype", "shape", "bias", "nonfinite", "device", "alias", "layout"):
+            original = self.original()
+            if mode == "dtype": original.double()
+            elif mode == "shape": original.weight = nn.Parameter(torch.zeros(3, 47, 1, 1))
+            elif mode == "bias": original.bias = None
+            elif mode == "nonfinite": original.weight.data[0, 0, 0, 0] = float("nan")
+            elif mode == "device": original.bias = nn.Parameter(torch.empty(3, device="meta"))
+            elif mode == "alias": original.bias = nn.Parameter(original.weight.detach().reshape(-1)[:3])
+            else: original.weight = nn.Parameter(torch.zeros(48, 3, 1, 1).transpose(0, 1))
+            with self.subTest(mode=mode), self.assertRaises(ValueError):
+                operator.FinalRgbOutputWeightReductionConv(original)
+
+    def test_legacy_base_operator_and_numeric_rule_remain_unchanged(self):
+        from ai_painter.complete_world.decode1_weight_reduction_precision_v1 import decode1_weight_reduction_precision
+        self.assertEqual(operator.NUMERIC_RULE, "final_rgb_base_conv2_fp32_native_forward_native_input_bias_vjp_full_mask_original_device_fp64_unfold_matmul_weight_once_fp32_v1")
+        self.assertEqual(operator.OUTPUT_NUMERIC_RULE, "final_rgb_output_conv4_fp32_native_forward_native_input_vjp_full_mask_original_device_fp64_weight_and_bias_reduce_once_fp32_v1")
+        source = values(); baseline = tuple(v.detach().clone().requires_grad_() for v in source)
+        actual = operator.final_rgb_base_weight_reduction_precision(*source)
+        expected = decode1_weight_reduction_precision(*baseline)
+        self.assertEqual(digest(actual), digest(expected))
+        dy = torch.linspace(-1, 1, actual.numel()).reshape_as(actual)
+        for left, right in zip(torch.autograd.grad(actual, source, grad_outputs=dy), torch.autograd.grad(expected, baseline, grad_outputs=dy)):
+            self.assertEqual(digest(left), digest(right))
+
+    def test_legacy_88_existing_eight_mask_case_without_renderer_setup(self):
+        PrecisionTests().test_8_masks_native_forward_input_bias_and_fp64_weight()
+
+    def test_legacy_88_existing_rejection_case_without_renderer_setup(self):
+        PrecisionTests().test_operator_invalid_dtype_shape_alias_nonfinite_autocast_gradgrad()
 
 
 if __name__ == "__main__":

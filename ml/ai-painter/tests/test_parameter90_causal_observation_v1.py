@@ -26,6 +26,15 @@ component = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(component)
 LABELS = component.LABELS
 CONFIG = dict(weight_shape=component.TARGET_SHAPE, stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1)
+NEW_COORDINATES = ((1, 7, 0, 0),)
+INVALID_COORDINATES = (
+    None, True, 0, {}, (), (0, 1, 0, 0), ((),), ((0, 1, 0),), ((0, 1, 0, 0, 0),),
+    ((0, 1, 0, 0), (1, 7, 0, 0)), ("0100",),
+    ((False, 1, 0, 0),), ((0, True, 0, 0),), ((0, 1, False, 0),), ((0, 1, 0, False),),
+    ((0., 1, 0, 0),), ((0, 1., 0, 0),), ((0, 1, 0., 0),), ((0, 1, 0, "0"),),
+    ((-1, 1, 0, 0),), ((3, 1, 0, 0),), ((0, -1, 0, 0),), ((0, 48, 0, 0),),
+    ((0, 1, 1, 0),), ((0, 1, 0, 1),), ((0, 1, -1, 0),), ((0, 1, 0, -1),),
+)
 
 
 def setUpModule():
@@ -82,22 +91,22 @@ def observe_five(observer, model, output, coefficients):
     return rows
 
 
-def arithmetic_fixture():
+def arithmetic_fixture(coordinates=component.COORDINATES):
     value = torch.arange(1, 21, dtype=torch.float32).reshape(1, 1, 4, 5).clone()
     parts = tuple(torch.full_like(value, scale) for scale in (2., -.5, .25, .125))
     total = (((parts[0] + parts[1]) + parts[2]) + parts[3]).clone()
     adjoints = (total, *parts)
     native = tuple(torch.zeros(component.TARGET_SHAPE) for _ in LABELS)
     for gradient, adjoint in zip(native, adjoints):
-        for coordinate, expected in zip(component.COORDINATES, direct_reference(value, adjoint)):
+        for coordinate, expected in zip(coordinates, direct_reference(value, adjoint, coordinates)):
             gradient[coordinate] = expected
     return value, adjoints, native
 
 
-def direct_reference(value, adjoint):
+def direct_reference(value, adjoint, coordinates=component.COORDINATES):
     height, width = value.shape[2:]
     results = []
-    for _, _, ky, kx in component.COORDINATES:
+    for _, _, ky, kx in coordinates:
         products = []
         for h in range(height):
             for w in range(width):
@@ -115,6 +124,95 @@ class CpuTest(unittest.TestCase):
 
 
 class ObserverTests(CpuTest):
+    def test_coordinate_validation_boundaries_and_legacy_constants(self):
+        self.assertEqual(component.COORDINATES, ((0, 1, 0, 0),))
+        self.assertEqual((component.INPUT_CHANNEL, component.OUTPUT_CHANNEL), (1, 0))
+        model, _, _ = fixture()
+        for observer_type in (SmallObserver, component.Parameter90Observer):
+            for coordinates in (component.COORDINATES, NEW_COORDINATES, ((0, 0, 0, 0),), ((2, 47, 0, 0),)):
+                with self.subTest(observer=observer_type.__name__, coordinates=coordinates):
+                    observer = observer_type(model, coordinates=coordinates)
+                    self.assertEqual(observer._coordinates, coordinates)
+                    self.assertEqual((observer._output_channel, observer._input_channel), coordinates[0][:2])
+        with patch.object(model, "named_parameters", side_effect=AssertionError("invalid coordinate reached graph")):
+            for coordinates in INVALID_COORDINATES:
+                for observer_type in (SmallObserver, component.Parameter90Observer):
+                    with self.subTest(observer=observer_type.__name__, coordinates=coordinates):
+                        with self.assertRaisesRegex(ValueError, "coordinate"):
+                            observer_type(model, coordinates=coordinates)
+
+    def test_new_coordinate_captures_actual_planes_and_decomposes_same_native_entry(self):
+        model, value, coefficients = fixture()
+        coordinates = [[1, 7, 0, 0]]
+        observer = SmallObserver(model, coordinates=coordinates)
+        coordinates[0][:] = [0, 1, 0, 0]
+        with observer:
+            rows = observe_five(observer, model, model(value), coefficients)
+        evidence = observer.evidence()
+        self.assertTrue(torch.equal(evidence["input_tensor"], value[:, 7:8]))
+        self.assertFalse(torch.equal(evidence["input_tensor"], value[:, 1:2]))
+        expected_total = ((coefficients[0] + coefficients[1]) + coefficients[2]) + coefficients[3]
+        for captured, expected in zip(evidence["adjoints"], (expected_total, *coefficients)):
+            torch.testing.assert_close(captured, expected[:, 1:2], atol=1e-7, rtol=1e-6)
+        for captured, raw in zip(evidence["native_gradients"], rows):
+            self.assertTrue(torch.equal(captured, raw[90]))
+        metadata = evidence["metadata"]
+        self.assertEqual(metadata["coordinates"], [[1, 7, 0, 0]])
+        self.assertEqual((metadata["inputChannel"], metadata["outputAdjointChannel"]), (7, 1))
+        self.assertEqual(metadata["descriptors"]["input"]["selectedChannel"], 7)
+        for label in LABELS:
+            self.assertEqual(metadata["descriptors"]["adjoint." + label]["selectedChannel"], 1)
+        self.assertEqual(metadata["captureBytes"], component.METADATA_RESERVE + 6 * 20 * 4 + 5 * 144 * 4)
+        json.dumps(metadata, allow_nan=False)
+        report = component.decompose_target_gradients(evidence["input_tensor"], evidence["adjoints"],
+            evidence["native_gradients"], convolution=evidence["convolution"], coordinates=metadata["coordinates"])
+        self.assertEqual(report["coordinates"], metadata["coordinates"])
+        for actual, adjoint, native in zip(report["referenceGradients"], evidence["adjoints"], evidence["native_gradients"]):
+            expected = direct_reference(value.detach()[:, 7:8], adjoint, NEW_COORDINATES)
+            torch.testing.assert_close(actual, torch.tensor(expected, dtype=torch.float64), atol=1e-12, rtol=0)
+            self.assertNotEqual(float(native[NEW_COORDINATES[0]]), float(native[component.COORDINATES[0]]))
+        selected = [row[90][NEW_COORDINATES[0]].detach() for row in rows]
+        ordered = ((selected[1] + selected[2]) + selected[3]) + selected[4]
+        self.assertEqual(float(report["observedDifference"][0]), float(selected[0].double() - ordered.double()))
+        self.assertLessEqual(report["maximumResidual"], 1e-12)
+        self.assertFalse(report["spatialMatchesProduction"])
+        self.assertNotIn("gatePassed", report)
+        self.assertFalse(observer.module._forward_hooks)
+
+    def test_new_coordinate_source_bytes_capture_bytes_and_configuration_are_checked(self):
+        for mode in ("source", "capture", "coordinates", "input_channel", "output_channel"):
+            with self.subTest(mode=mode):
+                model, value, coefficients = fixture()
+                observer = SmallObserver(model, coordinates=NEW_COORDINATES)
+                with observer:
+                    observe_five(observer, model, model(value), coefficients)
+                evidence = observer.evidence()
+                if mode == "source":
+                    version = value._version
+                    value.data[:, 7:8].add_(1)
+                    self.assertEqual(value._version, version)
+                    message = "shared input plane bytes changed"
+                elif mode == "capture":
+                    evidence["input_tensor"].add_(1)
+                    message = "shared input plane bytes changed|captured tensor bytes changed"
+                else:
+                    setattr(observer, "_" + mode, component.COORDINATES if mode == "coordinates" else 0)
+                    message = "configuration"
+                with self.assertRaisesRegex(ValueError, message):
+                    observer.evidence()
+
+    def test_new_coordinate_keeps_production_geometry_and_capture_budget(self):
+        model, value, _ = fixture()
+        for observer in (component.Parameter90Observer(model, coordinates=NEW_COORDINATES),
+                         SmallObserver(model, coordinates=NEW_COORDINATES, max_capture_bytes=component.METADATA_RESERVE)):
+            with self.subTest(observer=type(observer).__name__):
+                with patch.object(observer, "_clone", side_effect=AssertionError("copy before geometry/budget")):
+                    with self.assertRaisesRegex(ValueError, "exact target N1|budget exceeded before first copy"):
+                        with observer:
+                            model(value)
+                self.assertEqual(observer.used, component.METADATA_RESERVE)
+                self.assertFalse(observer.module._forward_hooks)
+
     def test_correct_three_output_channels_and_wrong_48_channels_refused(self):
         model, value, coefficients = fixture()
         observer = SmallObserver(model)
@@ -345,6 +443,58 @@ class ObserverTests(CpuTest):
 
 
 class MathematicsTests(CpuTest):
+    def test_explicit_legacy_coordinate_matches_omitted_default(self):
+        value, adjoints, native = arithmetic_fixture()
+        default = component.decompose_target_gradients(value, adjoints, native, convolution=CONFIG)
+        explicit = component.decompose_target_gradients(value, adjoints, native, convolution=CONFIG,
+            coordinates=component.COORDINATES)
+        self.assertEqual(default["summary"], explicit["summary"])
+        for actual, wanted in zip(default["referenceGradients"], explicit["referenceGradients"]):
+            self.assertTrue(torch.equal(actual, wanted))
+        for key in default["terms"]:
+            self.assertTrue(torch.equal(default["terms"][key], explicit["terms"][key]))
+        self.assertTrue(torch.equal(default["observedDifference"], explicit["observedDifference"]))
+
+    def test_invalid_coordinates_refuse_before_reference_or_resource_callback(self):
+        value, adjoints, native = arithmetic_fixture()
+        for coordinates in INVALID_COORDINATES:
+            with self.subTest(coordinates=coordinates):
+                with patch.object(component, "_planes", side_effect=AssertionError("invalid coordinate reached tensors")), \
+                     patch.object(component, "_selected_reference", side_effect=AssertionError("invalid reference")):
+                    with self.assertRaisesRegex(ValueError, "coordinate"):
+                        component.decompose_target_gradients(value, adjoints, native, convolution=CONFIG,
+                            coordinates=coordinates, resource=lambda: self.fail("invalid resource callback"),
+                            on_reference=lambda *args: self.fail("invalid reference callback"))
+
+    def test_new_coordinate_selects_native_entry_not_legacy_and_freezes_caller_list(self):
+        value, adjoints, native = arithmetic_fixture(NEW_COORDINATES)
+        coordinate = NEW_COORDINATES[0]
+        for index, gradient in enumerate(native):
+            gradient[component.COORDINATES[0]] = 1000 + index
+        adjoints[0][0, 0, 1, 1] += .25
+        native[0][coordinate] += .125
+        originals = [v.clone() for v in (value, *adjoints, *native)]
+        coordinates = [list(coordinate)]
+        def mutate_caller_coordinates(stage, label):
+            coordinates[0][:] = [0, 1, 0, 0]
+        with patch.object(torch.autograd, "grad", side_effect=AssertionError("reference must not autograd")), \
+             patch.object(F, "unfold", side_effect=AssertionError("no full-channel unfold")), \
+             patch.object(F, "conv2d", side_effect=AssertionError("no reference model forward")):
+            report = component.decompose_target_gradients(value, adjoints, native, convolution=CONFIG,
+                coordinates=coordinates, on_reference=mutate_caller_coordinates)
+        self.assertEqual(report["coordinates"], [[1, 7, 0, 0]])
+        for actual, adjoint in zip(report["referenceGradients"], adjoints):
+            expected = direct_reference(value, adjoint, NEW_COORDINATES)
+            torch.testing.assert_close(actual, torch.tensor(expected, dtype=torch.float64), atol=1e-12, rtol=0)
+        selected = [gradient[coordinate] for gradient in native]
+        ordered = ((selected[1] + selected[2]) + selected[3]) + selected[4]
+        self.assertEqual(float(report["observedDifference"][0]), float(selected[0].double() - ordered.double()))
+        self.assertEqual(report["originalFp32Comparison"]["outsideToleranceElements"], 1)
+        self.assertEqual((report["originalFp32Comparison"]["atol"], report["originalFp32Comparison"]["rtol"]), (1e-6, 1e-5))
+        self.assertLessEqual(report["maximumResidual"], 1e-12)
+        for current, before in zip((value, *adjoints, *native), originals):
+            self.assertTrue(torch.equal(current, before))
+
     def test_selected_reference_matches_independent_small_fp64_conv_autograd(self):
         value, adjoints, native = arithmetic_fixture()
         weight = torch.zeros(1, 1, 1, 1, dtype=torch.float64, requires_grad=True)

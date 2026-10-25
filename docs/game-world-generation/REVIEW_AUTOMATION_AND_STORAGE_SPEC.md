@@ -1,14 +1,14 @@
 # 审核、自动闭环与存储正式规格
 
-更新时间：2026-10-22 04:22:26 +08:00
+更新时间：2026-10-25 15:48:00 +08:00
 
 状态：active-long-term-review-automation-storage-contract
 
-文档版本：`AI-PAINTER-REVIEW-STORAGE-1.28`
+文档版本：`AI-PAINTER-REVIEW-STORAGE-1.30`
 
-生效日期：`2026-10-22`
+生效日期：`2026-10-25`
 
-替代版本：`AI-PAINTER-REVIEW-STORAGE-1.27`
+替代版本：`AI-PAINTER-REVIEW-STORAGE-1.29`
 
 文档状态：`active_normative_target`
 
@@ -341,19 +341,27 @@ transactionId
 
 ### 11.3 唯一写入者与原子事务
 
-当前执行登记的唯一写入者为本地能力生命周期编排器。其他组件只能提交已完成的不可变证据，不得直接写`current.json`。每次更新顺序固定为：
+当前执行登记的唯一写入者为本地能力生命周期编排器。其他组件只能提交已完成的不可变证据，不得直接写`current.json`。已有登记的持续推进采用下述可恢复发布顺序：
 
 ```text
-验证前一registryRevision和当前任务身份
--> 重新计算任务胶囊、终态和执行包SHA-256
--> 在SQLite事务内预留新registryRevision与eventSequence
--> 写入同目录临时文件，flush并fsync
--> 以同卷原子替换更新current.json
--> 追加events.jsonl并登记SQLite事件
--> 提交事务并保存transactionId
+取得唯一写入声明，验证前一registryRevision和当前任务身份
+-> 重新计算任务胶囊、终态、执行包与依赖SHA-256
+-> 预留新registryRevision与eventSequence，保存不可变staged字节及待提交事务
+-> 幂等追加events.jsonl并完成SQLite提交、保存committed事务证据
+-> 重核写入者、前任指针、staged和依赖身份、原截止时间及资源余额
+-> 写同目录临时文件并flush/fsync，以同卷原子替换发布原staged字节到current.json
+-> 读回并交叉验证current、事件、SQLite和事务，释放自身写入声明
 ```
 
-`registryRevision`比较失败、事件序号重复、证据SHA不符或SQLite唯一约束冲突时，必须失败关闭。不得覆盖并发写入，不得为显示正常而只修改指针文件。
+首次初始化必须独占创建，不能覆盖已有登记；其文件、事件、SQLite和事务全链完成并验证前不能被视为可信当前状态。本条区分首次初始化与已有登记推进，不将初始化的中间指针视为提交完成。
+
+`registryRevision`比较失败、事件序号重复、证据SHA不符或SQLite唯一约束冲突时，必须失败关闭。已提交事件或SQLite修订高于已发布指针时，普通读取返回`unknown_or_stale`，不能降级到旧指针或启动新执行；不得覆盖并发写入。发布完成后才可返回正常已验证状态。
+
+新隔离训练适配器在每次登记推进入口固定一个10秒绝对截止时间，首次读取和正式推进共用该值；这只约束登记操作，不代替训练完成量或延长原生执行预算。显式恢复调用采用其已声明的统一有限截止时间。
+
+同一指针原子替换仅对EPERM、EACCES或EBUSY允许最多三次尝试，等待参数分别为25和50毫秒，实际等待仍受原绝对截止时间约束，不推断其根因一定是共享占用。各次共用原绝对截止时间，并重核真实写入声明、目标前任或同一已发布SHA、原staged、依赖、活动身份及资源；非上述错误、身份变化、截止或配额不足立即停止。不得重置计时、重放执行、删除目的指针、改变ACL或终止其他进程。失败保留原首错、次生原因和原staged／事务证据，不能把重试耗尽解释为成功。
+
+进程已经退出的已提交未发布事务，只能由正式恢复API重核原transactionId／修订／SHA、事件和SQLite、写入者创建身份、任务锁与过期心跳后，完成同一原staged字节发布。程序已变更时，须把staged全部唯一源码路径逐项绑定到原字节快照，核验清单身份、实际SHA及原256项／单项1MiB／总16MiB上限；此历史上下文仅在内部恢复调用有效，不能给普通读取或新执行使用。中间死活动登记保持`unknown_or_stale`且不给续训资格；立即由正式过期执行恢复API生成新的失败关闭修订，清空活动与后续动作，未发生训练时保留此前最近训练终态。无法完成时保持冲突并留证，不改写原失败、不重放旧Run、不把CPU回执当成未启动GPU的清理认证。原规格字节见[1.28快照](../../data/ai-painter/system-governance/document-baselines/ai-painter-review-storage-1.28-4b4e4d08.txt)。
 
 ### 11.4 合法转换与历史隔离
 
@@ -522,6 +530,18 @@ V2另须覆盖真实文件读取及摘要重算的完整缺失正例，已有观
 | 输出与边界 | 分别记录登记事务与隔离事务身份；`historicalCleanupCertified=false`、`oldExecutionMayReplay=false`、`trainingQualificationGranted=false`、零自动重试。没有原训练终态时，本次终态表示系统中断，不将其解释为已经证实的训练实现或模型缺陷；训练、画质、离线自主及Stage4资格仍独立验收。 |
 
 回归必须覆盖真实字节与摘要核验、全零心跳和合法过期心跳正例，同周期／异机／活跃worker／错Run或包／源码缺失或错摘要／任意未知心跳／已有终态／权限错误／链接反例，正式登记与SQLite一致性，以及登记后、隔离前后中断的同事务接续。私有夹具不得代替真实项目收尾；真实采用须保留独立核验记录。
+
+#### 11.11.6 GPU准入缺终态的跨内核中断收尾
+
+独立`ai-painter-owned-worker-reboot-recovery-profile-v4`及`qualification_kernel_interruption_v1`仅处理注册配置的完成量GPU准入已启动、结果及原生结束回执均未持久化、尚无训练消费或进度的情况。它是第11.11.1节原观察缺失规则的另一明确例外，不修改V1、V2或V3的适用条件。新内核周期只证明原执行已不可能存活，不证明最初退出由关机、超时或模型错误造成；退出原因保持未知。
+
+恢复器重新核验同一Run、包、能力、CPU通过记录及源码映射、GPU和执行消费各一次且零重试、登记处于GPU准入、执行锁、合法过期心跳、started命令中的qualification阶段与注册政策、原构建及helper、全部原源码字节。不得用训练消费、伪造正更新计数或其他Run的报告补齐身份。已有GPU结果、准入结论、训练消费／进度、执行失败、worker终态、finalization、计时或原生清理／释放回执时，拒绝本缺失分支；访问错误和链接不能当作不存在。
+
+同机历史原生主机观察须真实保存在原执行之前；当前程序重新查询MachineGuid摘要、Kernel-General事件12、CIM开机时间及完整进程身份，证明新的完整内核周期晚于原执行与最后心跳，排除相关worker。沿用REC-BOOT-001至006的身份、独占租约、原字节隔离及中断接续要求；不因PID消失、聊天中断或文件日期释放占用。
+
+全部证据通过后，复用正式登记事务将精确原Run收尾为`failed_closed`／`qualification_system_interrupted`，随后在读回一致和再次原生核验后隔离guard。终态将阶段标记为qualification，真实训练进度为空；不得更新最近训练终态指针或写成GPU失败门、训练完成、历史清理成功。旧Run、消费、心跳和原登记字节保持；`historicalCleanupCertified=false`、`oldExecutionMayReplay=false`、`trainingQualificationGranted=false`，不自动重训、不改变资源或数值规则。
+
+验收须覆盖真实文件身份、错误阶段／Run／包／政策／源码、CPU证据冲突、GPU重复消费、已有结果／训练消费／回执、错缺失路径、同周期／异机／新内核早于心跳／活动worker、正式登记与SQLite一致及隔离幂等。夹具与真实恢复分开记录。原[审核存储1.29字节](../../data/ai-painter/system-governance/document-baselines/review-storage-1.29-8e7faa0e.txt)保留供旧执行核验。
 
 ### 11.12 训练完成后的只读审核恢复
 

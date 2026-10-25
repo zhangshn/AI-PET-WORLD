@@ -1,14 +1,14 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-10-22 03:32:28 +08:00
+更新时间：2026-10-22 09:10:45 +08:00
 
 状态：active-directory-reference
 
-文档版本：`AI-PET-WORLD-DIRECTORY-1.15`
+文档版本：`AI-PET-WORLD-DIRECTORY-1.17`
 
 生效日期：`2026-10-22`
 
-替代版本：`AI-PET-WORLD-DIRECTORY-1.14`
+替代版本：`AI-PET-WORLD-DIRECTORY-1.16`
 
 文档状态：`active_normative_target`
 
@@ -318,9 +318,9 @@ RuntimeFrame生命周期固定为`working -> candidates -> accepted frame / reje
 
 | 路径 | 唯一职责 |
 |---|---|
-| `src/app/local-backup/` | 本地管理平台统一布局及总览，`inventory/`数据资产、`backups/`备份任务、`work/`详细工作记录、`git/`代码版本页面；复用同一应用与后端。 |
+| `src/app/local-backup/` | 本地管理平台统一布局及八类顶层页面，`inventory/`数据资产、`backups/`备份任务、`work/`分页摘要、`work/[eventId]/`完整详情、`git/`代码版本、`documents/`相关文档、`diagrams/`分层设计图及`business-map/`单张全业务线图；CSS与展示职责拆分，复用同一应用与后端。 |
 | `src/app/api/local-backup/` | 固定查询及认证后的模块操作，不接受任意文件或命令。 |
-| `src/server/local-backup/` | 模块合同、事务存储、只读投影、受限服务与工作台账。 |
+| `src/server/local-backup/` | 模块合同、事务存储、只读投影、受限服务与工作台账；文档固定清单／受限读取、图源提取及工作详情查询分别由小型服务端模块负责，不向客户端导出后端实现。 |
 | `scripts/lib/local-backup/` | 固定来源根的有界清点与备份适配器。 |
 | `scripts/tests/local-backup*.mjs` | 本模块隔离夹具及正反回归。 |
 | `.runtime/local-backup/` | 原生日记录与事件、派生备份索引、清点报告、Run清单及失败证据；不是训练当前登记或第二权威计划。 |

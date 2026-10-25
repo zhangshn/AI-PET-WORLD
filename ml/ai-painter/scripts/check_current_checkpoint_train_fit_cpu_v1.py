@@ -215,4 +215,10 @@ if __name__ == "__main__":
     parser.add_argument("--sha256", required=True)
     parser.add_argument("--batch", type=int, required=True)
     args = parser.parse_args()
-    run({"path": args.request, "sha256": args.sha256}, args.batch)
+    if args.request == ".runtime/ai-painter/controller-repair-reviews/fit-comparison-006-20261022/evaluation-v1/request.json":
+        sys.path.insert(0, str(ROOT / "ml/ai-painter/scripts"))
+        sys.path.insert(0, str(ROOT / "ml/ai-painter/src"))
+        from current_checkpoint_fit_comparison_cpu_v1 import run as run_comparison
+        run_comparison(ROOT, {"path": args.request, "sha256": args.sha256}, args.batch)
+    else:
+        run({"path": args.request, "sha256": args.sha256}, args.batch)

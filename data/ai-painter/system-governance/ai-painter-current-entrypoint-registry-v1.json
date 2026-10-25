@@ -8,10 +8,73 @@
   "ownerInNormalStateMachine": false,
   "trainingInterfaces": [
     {
+      "candidateSelection": "d2o-p0t6-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v18.json",
+        "sha256": "be2ac2546b850e40b4f64b16cd38e9a71cf6139a06f4f93486f8a380036d5db4"
+      }
+    },
+    {
+      "candidateSelection": "d2o-p0t5-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v17.json",
+        "sha256": "a2b8b59faa0632966cd07510e97a08caa1a5a19b8613654d0f5ef6f029570740"
+      }
+    },
+    {
+      "candidateSelection": "d2o-p0t4-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v16.json",
+        "sha256": "7ac52ed69daa96267f6d160f62c68155f5735c20ce6957f97c1ac0d039eb2399"
+      }
+    },
+    {
+      "candidateSelection": "d2o-p0t3-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v15.json",
+        "sha256": "8b0a919f8d68aee84abab6656e4a823ca7d05e0c4a491f5fce76e5483506c5b9"
+      }
+    },
+    {
+      "candidateSelection": "d2o-p0t2-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v14.json",
+        "sha256": "a81d29304da5eba9105e016b7b823a9f9f735653d084d118fb6a499c82bacd2d"
+      }
+    },
+    {
+      "candidateSelection": "d2o-p0t-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v13.json",
+        "sha256": "1611f7dd0faf5f70e86094d0f795eddf266fbe5ae9598f44d8db3a4804169b65"
+      }
+    },
+    {
+      "candidateSelection": "d2o-p0c-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v12.json",
+        "sha256": "75915541a1af577bb379207e953d7eb52655aab8c1bb93b1f72cda3863fea316"
+      }
+    },
+    {
+      "candidateSelection": "d2o-ss1-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v11.json",
+        "sha256": "625f318575294a07c5bb27635ad1ad8db04a401d5004a202dbb4fd308444cea2"
+      }
+    },
+    {
+      "candidateSelection": "d2-ss1-v1",
+      "executionPolicy": {
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v10.json",
+        "sha256": "8c42a06e1c3cb936a8ccc57c02bd41a538a05a174af9338c82e130ab0da5b956"
+      }
+    },
+    {
       "candidateSelection": "d1-ss1-v1",
       "executionPolicy": {
-        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v8.json",
-        "sha256": "0729f440961a6b2471853e83f6f4c736d29cb9b16d4e1062c27cb1a3f2e39cf3"
+        "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v9.json",
+        "sha256": "f972ad4f978ec6f163e795b24cb54486c48bf92e69814ae88ec1900b3324222a"
       }
     },
     {
@@ -199,7 +262,11 @@
       "protocol": "ai-painter-local-control-v1",
       "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1",
       "adapterFile": "scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs",
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v2-decode1-entry-weight-quality-same-call-v1",
@@ -214,7 +281,11 @@
         "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
         "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
       },
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v1-decode1-entry-weight-quality-completion-v2",
@@ -223,7 +294,11 @@
       "protocol": "ai-painter-local-control-v1",
       "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2",
       "adapterFile": "scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs",
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v2-decode1-entry-weight-quality-completion-v2",
@@ -238,7 +313,11 @@
         "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
         "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
       },
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v1-decode1-entry-weight-quality-completion-v1",
@@ -247,7 +326,11 @@
       "protocol": "ai-painter-local-control-v1",
       "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v1",
       "adapterFile": "scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs",
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v2-decode1-entry-weight-quality-completion-v1",
@@ -262,7 +345,11 @@
         "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
         "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
       },
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v1-decode1-entry-weight-quality-v1",
@@ -271,7 +358,11 @@
       "protocol": "ai-painter-local-control-v1",
       "capabilityVersion": "stage4_mvp256_dry_decode1_entry_weight_quality24_v1",
       "adapterFile": "scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs",
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v2-decode1-entry-weight-quality-v1",
@@ -286,7 +377,11 @@
         "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
         "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
       },
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v1-joint-object-priority-quality-v1",
@@ -295,7 +390,11 @@
       "protocol": "ai-painter-local-control-v1",
       "capabilityVersion": "stage4_mvp256_dry_joint_object_priority_quality24_v1",
       "adapterFile": "scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v2-joint-object-priority-quality-v1",
@@ -323,7 +422,11 @@
       "protocol": "ai-painter-local-control-v1",
       "capabilityVersion": "stage4_mvp256_dry_final_rgb_base_weight_quality24_v1",
       "adapterFile": "scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v2-final-rgb-base-weight-quality-v1",
@@ -338,7 +441,11 @@
         "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
         "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
       },
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v1-object-support-structure-quality-v1",
@@ -347,7 +454,11 @@
       "protocol": "ai-painter-local-control-v1",
       "capabilityVersion": "stage4_mvp256_dry_object_support_structure_quality24_v1",
       "adapterFile": "scripts/run-ai-painter-object-support-structure-quality-v1.mjs",
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v2-object-support-structure-quality-v1",
@@ -362,7 +473,11 @@
         "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
         "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
       },
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v1-ecology-terrain-detail-quality-v1",
@@ -371,7 +486,11 @@
       "protocol": "ai-painter-local-control-v1",
       "capabilityVersion": "stage4_mvp256_dry_factorized_ecology_terrain_detail_weight_precision_quality24_v1",
       "adapterFile": "scripts/run-ai-painter-ecology-terrain-detail-quality-v1.mjs",
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v2-ecology-terrain-detail-quality-v1",
@@ -386,7 +505,11 @@
         "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
         "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
       },
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v1-ecology-decode1-quality-v1",
@@ -395,7 +518,11 @@
       "protocol": "ai-painter-local-control-v1",
       "capabilityVersion": "stage4_mvp256_dry_factorized_ecology_decode1_weight_precision_quality_v1",
       "adapterFile": "scripts/run-ai-painter-ecology-decode1-quality-v1.mjs",
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v2-ecology-decode1-quality-v1",
@@ -410,7 +537,11 @@
         "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
         "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
       },
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v1",
@@ -419,7 +550,11 @@
       "protocol": "ai-painter-local-control-v1",
       "capabilityVersion": "stage4_mvp256_dry_factorized_ecology_quality_v1",
       "adapterFile": "scripts/run-ai-painter-ecology-quality-v1.mjs",
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     },
     {
       "entryId": "ai-painter-local-control-v2",
@@ -434,7 +569,11 @@
         "path": "data/ai-painter/system-governance/stage4-mvp256-dry-v24-closed-loop-candidate-v1.json",
         "sha256": "ec33965acc69ca6f2e2463a6552d6a560489a8e8d2d21c7de77a7153c7d04566"
       },
-      "commands": ["start", "status", "stop"]
+      "commands": [
+        "start",
+        "status",
+        "stop"
+      ]
     }
   ],
   "routingPrecedence": {

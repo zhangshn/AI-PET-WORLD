@@ -11,16 +11,16 @@ const normalFetch=async url=>{
  if(url==='/api/local-backup/summary')return response({inventory})
  if(url.startsWith('/api/local-backup/runs?'))return response({records:[],nextCursor:null})
  if(url.includes('/work-summary'))return response(summary)
- if(url.includes('/work-events'))return response({records:[],nextCursor:null})
+ if(url.includes('/work-records'))return response({records:[],nextCursor:null})
  if(url.includes('/journal?'))return response({record:null})
  throw Error('Unexpected API '+url)
 }
-test('five distinct panels query only their responsibility and neither shell nor Git mount starts business work',async()=>{
+test('eight-page platform panels query only their responsibility and neither shell nor Git mount starts business work',async()=>{
  for(const [file,name,expected] of [
   ['local-backup-overview.tsx','LocalBackupOverview',['/api/local-backup/summary']],
   ['local-backup-inventory.tsx','LocalBackupInventoryPanel',['/api/local-backup/summary']],
   ['local-backup-backups.tsx','LocalBackupTasksPanel',['/api/local-backup/runs?limit=20']],
-  ['local-backup-work.tsx','LocalBackupWorkPanel',['/api/local-backup/work-summary?date=2026-10-22','/api/local-backup/work-events?date=2026-10-22&limit=20','/api/local-backup/journal?date=2026-10-22']],
+  ['local-backup-work.tsx','LocalBackupWorkPanel',['/api/local-backup/work-records?date=2026-10-22&limit=20','/api/local-backup/work-summary?date=2026-10-22','/api/local-backup/journal?date=2026-10-22']],
   ['local-backup-git.tsx','LocalBackupGitPanel',[]],
   ['local-backup-shell.tsx','LocalBackupShell',[]],
  ]){
@@ -32,10 +32,10 @@ test('five distinct panels query only their responsibility and neither shell nor
  assert(!fs.existsSync(root+'local-backup-panel.tsx'),'the giant component must be removed')
 })
 test('each route has one active main navigation item and the matching page title, with no business queries',async()=>{
- for(const [suffix,title] of [['','工作台总览'],['/inventory','数据资产'],['/backups','备份任务'],['/work','工作记录'],['/git','Git版本提交']]){
+ for(const [suffix,title] of [['','工作台总览'],['/inventory','数据资产'],['/backups','备份任务'],['/work','工作记录'],['/git','Git版本提交'],['/documents','相关文档'],['/diagrams','设计图总览'],['/business-map','业务全景']]){
   const ui=uiHarness(root+'local-backup-shell.tsx','LocalBackupShell',{fetch:normalFetch,pathname:'/local-backup'+suffix,props:{children:'child'}});await ui.tick()
   const nav=ui.nodes().find(node=>node.type==='nav'&&node.props['aria-label']==='数据管理主导航')
-  const links=nav.props.children;assert.equal(links.length,5);assert.equal(links.filter(link=>link.props['aria-current']==='page').length,1)
+  const links=nav.props.children;assert.equal(links.length,8);assert.equal(links.filter(link=>link.props['aria-current']==='page').length,1)
   assert.equal(links.find(link=>link.props['aria-current']==='page').props.href,'/local-backup'+suffix)
   assert(ui.nodes().some(node=>node.type==='h1'&&node.props.children===title));assert.equal(ui.requests.length,0)
  }
@@ -50,22 +50,22 @@ test('legacy hash links map only to fixed functional routes, including optional 
 test('work filters bind both queries, preserve URL, and late old-window responses cannot overwrite the chosen window',async()=>{
  let finishOld
  const ui=uiHarness(root+'local-backup-work.tsx','LocalBackupWorkPanel',{props:{date:'2026-10-22',moduleId:'local-backup',reporterId:'window-a'},fetch:async url=>{
-  if(url.includes('/work-events')){if(new URL('http://localhost'+url).searchParams.get('reporterId')==='window-a')return new Promise(resolve=>{finishOld=resolve});return response({records:[workEvent('new-window-result')],nextCursor:null})}
+  if(url.includes('/work-records')){if(new URL('http://localhost'+url).searchParams.get('reporterId')==='window-a')return new Promise(resolve=>{finishOld=resolve});return response({records:[workEvent('new-window-result')],nextCursor:null})}
   return normalFetch(url)
  }});await ui.tick()
  const requests=ui.requests.filter(request=>request.url.includes('/work-'));assert(requests.every(request=>request.url.includes('date=2026-10-22&moduleId=local-backup&reporterId=window-a')))
  const selects=ui.nodes().filter(node=>node.type==='select');selects[1].props.onChange({target:{value:'window-b'}});ui.render();await ui.tick()
- assert.equal(ui.navigation.at(-1).destination,'/local-backup/work?date=2026-10-22&moduleId=local-backup&reporterId=window-b')
+ assert.equal(ui.navigation.at(-1).destination,'/local-backup/work?date=2026-10-22&moduleId=local-backup&reporterId=window-b&limit=20')
  assert(ui.text().includes('new-window-result'));finishOld(response({records:[workEvent('old-window-result')],nextCursor:null}));await ui.tick();assert(!ui.text().includes('old-window-result'))
 })
 test('browser back date/filter changes reject an outstanding old-filter page and retain the restored URL scope',async()=>{
  let finishPage
  const ui=uiHarness(root+'local-backup-work.tsx','LocalBackupWorkPanel',{props:{date:'2026-10-22',moduleId:'local-backup',reporterId:'window-a'},fetch:async url=>{
-  if(url.includes('/work-events')){const query=new URL('http://localhost'+url).searchParams;if(query.has('cursor'))return new Promise(resolve=>{finishPage=resolve});return response({records:[workEvent(query.get('date')==='2026-10-22'?'day-22':'restored-day-21')],nextCursor:query.get('date')==='2026-10-22'?'private-cursor':null})}
+  if(url.includes('/work-records')){const query=new URL('http://localhost'+url).searchParams;if(query.has('cursor'))return new Promise(resolve=>{finishPage=resolve});return response({records:[workEvent(query.get('date')==='2026-10-22'?'day-22':'restored-day-21')],nextCursor:query.get('date')==='2026-10-22'?'private-cursor':null})}
   return normalFetch(url)
- }});await ui.tick();const oldPaging=ui.button('加载更多自动记录').props.onClick,pending=oldPaging();await oldPaging();assert.equal(ui.requests.filter(request=>request.url.includes('cursor=')).length,1);ui.render()
+ }});await ui.tick();const oldPaging=ui.button('下一页').props.onClick,pending=oldPaging();ui.render();await ui.tick();await oldPaging();ui.render();await ui.tick();assert.equal(ui.requests.filter(request=>request.url.includes('cursor=')).length,1);ui.render()
  ui.backTo('/local-backup/work?date=2026-10-21&moduleId=ai-console&reporterId=window-b');await ui.tick();assert(ui.text().includes('restored-day-21'))
  finishPage(response({records:[workEvent('stale-paged-result')],nextCursor:null}));await pending;ui.render();assert(!ui.text().includes('stale-paged-result'));assert(!ui.text().includes('day-22'))
- const current=ui.requests.filter(request=>request.url.includes('/work-events')).at(-1).url;assert(current.includes('date=2026-10-21&moduleId=ai-console&reporterId=window-b'))
+ const current=ui.requests.filter(request=>request.url.includes('/work-records')).at(-1).url;assert(current.includes('date=2026-10-21&moduleId=ai-console&reporterId=window-b'))
  const requestCount=ui.requests.length;await oldPaging();assert.equal(ui.requests.length,requestCount)
 })

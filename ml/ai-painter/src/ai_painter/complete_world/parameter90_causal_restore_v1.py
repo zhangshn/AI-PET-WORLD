@@ -39,6 +39,39 @@ ALGORITHM_ROLES = {"parameter60_causal_restore_v1", "painter_stage4_decode1_entr
     "object_appearance_regime_bias_precision", "rgb_bias_reduction_precision", "rgb_bias_reduction_precision_cpu"}
 require = capture.require
 
+CURRENT_SCHEMA = "ai-painter-parameter90-causal-gpu-policy-v2"
+CURRENT_ROOT = ".runtime/ai-painter/registered-training-d2-ss1-v1-executions/d2-ss1-v1-a43899c0-e05e-4ec6-b0fd-b99457b0fb64/"
+CURRENT_RUN = "d2-ss1-v1-a43899c0-e05e-4ec6-b0fd-b99457b0fb64"
+CURRENT_SAMPLE = "ai-cold-start-v7-v7-capacity-slot-173-grassland-forest-transition-v2"
+CURRENT_PROFILE_SHA = "8dcd598f5fa5e1ee8af27e197666dce53eb66bb132be4007be042daae2a7b0ce"
+CURRENT_HASHES = {
+    "worker-terminal.json": "739c2ae71e7da6307f26b1deab0ef114d7f8afd5f7577862fe697c256b9a530a",
+    "gradient-failure/manifest.json": "3aa3733f3832f4f6a7dd1c7c136479d40fc5b033f4938a1a008786906e71b030",
+    "gradient-failure/primary.json": "e8d0f63fd27790889204f133897041918807737bd71e83834067bc7d3d595c80",
+    "model-identity.json": "0054938a965797fa55f15563602ada6404b5b7fab0c7d6f12457661ad4d8e519",
+    "quality-plan.json": "cc087a60c83ffffd9b2395c4e5c5d0aae3dc8cddb701e532cd02ad233b6fad25",
+    "capture-execution.json": "e40cd125ef1d79ff484c89216cdd8781e973eb21abd62110a00f2172810022e6",
+}
+
+
+def source_route(policy=None):
+    """Two exact archived failures, not caller-selected runs or model factories."""
+    current = policy is not None and policy.get("schemaVersion") == CURRENT_SCHEMA
+    if policy is not None:
+        require(policy.get("schemaVersion") in (CURRENT_SCHEMA, "ai-painter-parameter90-causal-gpu-policy-v1"),
+                "registered parameter90 policy required")
+    return dict(root=CURRENT_ROOT if current else SOURCE_ROOT, run=CURRENT_RUN if current else SOURCE_RUN_ID,
+        sample=CURRENT_SAMPLE if current else SAMPLE_ID, hashes=CURRENT_HASHES if current else SOURCE_HASHES,
+        archive_sha="f9bb2917ba66361b01c4da2f3ca8597944645c2efafd6e6d035080553d6a8049" if current else ARCHIVE_SHA,
+        archive_bytes=50443617 if current else ARCHIVE_BYTES,
+        profile_sha=CURRENT_PROFILE_SHA if current else PROFILE_SHA,
+        coordinates=[[1, 7, 0, 0]] if current else [[0, 1, 0, 0]],
+        position=dict(epoch=6 if current else 15, zeroBasedEpochPosition=10 if current else 8,
+            trainIndex=27 if current else 28, sampleId=CURRENT_SAMPLE if current else SAMPLE_ID),
+        steps=dict(generator=250 if current else 680, discriminator=251 if current else 681),
+        model_capability="stage4_mvp256_dry_factorized_ecology_decode2_entry_weight_precision_v1" if current else None,
+        structure_weight=1.0 if current else 0.1, current=current)
+
 
 def _binding(value):
     require(type(value) is dict and set(value) in ({"path", "sha256"}, {"path", "sha256", "bytes"}), "exact binding required")
@@ -49,9 +82,10 @@ def _is_original_python_source(path):
     return path.startswith(("ml/ai-painter/src/", "ml/ai-painter/scripts/")) and path.endswith(".py")
 
 
-def _fresh_networks(project_root, order, verified_programs):
+def _fresh_networks(project_root, order, verified_programs, *, policy=None):
+    route = source_route(policy)
     path = project_root / PROFILE_PATH
-    require(verified_programs.get(str(path)) == PROFILE_SHA and capture.digest(path.read_bytes()) == PROFILE_SHA,
+    require(verified_programs.get(str(path)) == route["profile_sha"] and capture.digest(path.read_bytes()) == route["profile_sha"],
             "exact original decode1-entry profile required")
     old = list(sys.path)
     try:
@@ -73,27 +107,33 @@ def _fresh_networks(project_root, order, verified_programs):
                     dependency = value if isinstance(value, ModuleType) else sys.modules.get(getattr(value, "__module__", ""))
                     if isinstance(dependency, ModuleType): queue.append(dependency)
         with torch.device("cpu"):
-            return profile.fresh_networks(order)
+            return (profile.fresh_networks(order, model_capability=route["model_capability"])
+                    if route["current"] else profile.fresh_networks(order))
     finally:
         sys.path[:] = old
 
 
 def validate_source_policy(policy):
+    route = source_route(policy)
     require(type(policy.get("sourceEvidence")) is list and len(policy["sourceEvidence"]) == 6 and
             {_binding(b)["path"]: _binding(b)["sha256"] for b in policy["sourceEvidence"]} ==
-            {SOURCE_ROOT + name: sha for name, sha in SOURCE_HASHES.items()},
+            {route["root"] + name: sha for name, sha in route["hashes"].items()},
             "six exact metadata inputs required")
-    require(policy.get("sourceTensorArchive") == {"path": SOURCE_ROOT + "gradient-failure/tensors.pt", "sha256": ARCHIVE_SHA,
-                                                "bytes": ARCHIVE_BYTES}, "exact original archive required")
+    require(policy.get("sourceTensorArchive") == {"path": route["root"] + "gradient-failure/tensors.pt", "sha256": route["archive_sha"],
+                                                "bytes": route["archive_bytes"]}, "exact original archive required")
     scope = policy.get("scope", {})
-    require(scope.get("failureSampleId") == SAMPLE_ID and scope.get("sampleSplit") == "train" and scope.get("sampleCount") == 1
-            and scope.get("failureRunId") == SOURCE_RUN_ID
+    require(scope.get("failureSampleId") == route["sample"] and scope.get("sampleSplit") == "train" and scope.get("sampleCount") == 1
+            and scope.get("failureRunId") == route["run"]
             and scope.get("resolution") == [256, 192] and scope.get("sourceStateTiming") == "after_exception", "exact source scope required")
     require(policy.get("target", {}).get("parameterIndex") == 90 and policy["target"].get("parameterName") == TARGET_NAME
             and policy["target"].get("weightShape") == [3, 48, 1, 1]
-            and policy["target"].get("coordinates") == [[0, 1, 0, 0]]
-            and policy["target"].get("captureInputChannel") == 1
-            and policy["target"].get("captureOutputChannel") == 0, "target90 identity required")
+            and policy["target"].get("coordinates") == route["coordinates"]
+            and policy["target"].get("captureInputChannel") == route["coordinates"][0][1]
+            and policy["target"].get("captureOutputChannel") == route["coordinates"][0][0], "target90 identity required")
+    if route["current"]:
+        require(policy.get("modelCapabilityVersion") == route["model_capability"]
+                and type(policy.get("objectSupportStructureWeight")) is int
+                and policy["objectSupportStructureWeight"] == 1, "current decode2/structure weight binding required")
     use = policy.get("sourceStateUse", {})
     require(all(use.get(k) is False for k in ("trainingInitializationAllowed", "historicalReplayAllowed", "archivedGradientsInstalled",
                 "archivedRngRestored", "requiresGradHistoricalClaim")), "restore cannot grant historical/training identity")
@@ -102,11 +142,12 @@ def validate_source_policy(policy):
 def prepare_exact_failure_state(mapping, policy, *, resource):
     """CPU fresh instances with exact after_exception bytes; no forward or VJP."""
     validate_source_policy(policy)
+    route = source_route(policy)
     records = {}
     for binding in policy["sourceEvidence"]:
         resource()
         records[binding["path"]] = json.loads(mapping.binding(_binding(binding)))
-    terminal, manifest, primary, identity, plan, execution = [records[SOURCE_ROOT + name] for name in
+    terminal, manifest, primary, identity, plan, execution = [records[route["root"] + name] for name in
         ("worker-terminal.json", "gradient-failure/manifest.json", "gradient-failure/primary.json", "model-identity.json", "quality-plan.json", "capture-execution.json")]
     context = manifest["context"]
     original_python = plan["runtimeIdentity"]["python"]
@@ -114,15 +155,18 @@ def prepare_exact_failure_state(mapping, policy, *, resource):
             capture.digest(Path(sys.executable).read_bytes()) == original_python["sha256"], "original interpreter differs")
     require(terminal["schema"] == "object-support-structure-quality-worker-terminal-v1" and
             terminal["status"] == terminal["executionState"] == "failed_closed" and
-            context == primary["context"] and terminal["runId"] == context["runId"] == plan["runId"] == execution["runId"] == SOURCE_RUN_ID and
+            context == primary["context"] and terminal["runId"] == context["runId"] == plan["runId"] == execution["runId"] == route["run"] and
             terminal["executionPackage"] == context["executionPackage"] and terminal["originalError"] == primary["primaryError"],
             "failure terminal/context differs")
     require(primary["timing"] == manifest["stateTiming"] == "after_exception" and
             primary["primaryError"]["type"] == "ValueError" and primary["primaryError"]["message"] ==
             "actual four-term total gradient identity differs at parameter 90", "original parameter90 error differs")
-    require(terminal["failurePosition"] == context["failurePosition"] == {"epoch": 15, "zeroBasedEpochPosition": 8,
-                "trainIndex": 28, "sampleId": SAMPLE_ID} and context["optimizerSteps"] == terminal["optimizerSteps"] ==
-                {"generator": 680, "discriminator": 681}, "source failure position/counts differ")
+    require(terminal["failurePosition"] == context["failurePosition"] == route["position"]
+            and context["optimizerSteps"] == terminal["optimizerSteps"] == route["steps"], "source failure position/counts differ")
+    if route["current"]:
+        require(plan["configuration"]["modelCapabilityVersion"] == route["model_capability"]
+                and plan["configuration"].get("objectSupportStructureWeight") == 1,
+                "captured decode2/structure weight differs")
     capture.validate_manifest(manifest)
     require(manifest["schema"] == capture.SCHEMA and manifest["status"] == "captured" and not manifest["missing"]
             and not manifest["nonfiniteTensorKeys"] and manifest["labels"] == list(capture.LABELS)
@@ -131,7 +175,7 @@ def prepare_exact_failure_state(mapping, policy, *, resource):
     require(plan["modelBinding"] == context["modelBinding"] == execution["modelBinding"] and
             plan["programBindings"] == context["programBindings"] == execution["programBindings"] and
             execution["schema"] == "object-support-structure-failure-capture-execution-v1", "capture program/model identity differs")
-    require(context["sampleId"] == SAMPLE_ID and context["split"] == "train" and
+    require(context["sampleId"] == route["sample"] and context["split"] == "train" and
             context["sampleBindings"] == policy["sourceSampleBindings"], "single train identity differs")
     require(manifest["artifacts"]["tensors"] == policy["sourceTensorArchive"] == terminal["captureReceipt"]["artifacts"]["tensors"]
             and terminal["captureReceipt"]["replayAllowed"] is False and manifest["replayAllowed"] is False, "archive/replay receipt differs")
@@ -167,7 +211,8 @@ def prepare_exact_failure_state(mapping, policy, *, resource):
     order = [c["id"] for c in context["sampleIdentity"]["channels"]]
     require(len(order) == len(set(order)) == 23, "original23 channels required")
     with _preserve_current_rng():
-        model, critic = _fresh_networks(mapping.project, order, verified)
+        model, critic = (_fresh_networks(mapping.project, order, verified, policy=policy)
+                         if route["current"] else _fresh_networks(mapping.project, order, verified))
         capture.validate_graph(tuple(model.named_parameters(remove_duplicate=False)), manifest["graph"])
         require(len(tuple(critic.parameters())) == 14, "original D14 required")
         named = tuple(model.named_parameters())

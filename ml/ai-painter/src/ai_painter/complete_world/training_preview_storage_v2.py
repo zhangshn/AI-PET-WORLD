@@ -133,7 +133,7 @@ class TrainingPreviewStorage:
                 and descriptor.get("protocols",{}).get("previewManifest")==MANIFEST_SCHEMA
                 and execution.get("outputRoot")==".runtime/ai-painter/registered-training-"+selector+"-executions"
                 and execution.get("candidate")==self.plan.get("capabilityVersion")
-                and execution.get("modelCapability")==MODEL_CAPABILITY
+                and execution.get("modelCapability")==memory.model_capability(self.plan.get("capabilityVersion"))
                 and execution.get("executionProfile")==self.plan.get("executionProfile")
                 and _source_binding(execution.get("trainingPreviewPolicy"))==self.policy_binding,
                 "registered preview interface conflict")
@@ -179,9 +179,9 @@ class TrainingPreviewStorage:
         policy, plan, package = self.policy, self.plan, self.package
         _require(policy.get("schemaVersion") == self.policy_schema, "preview policy schema")
         _require(plan.get("capabilityVersion") == self.capability
-                 and plan.get("configuration", {}).get("modelCapabilityVersion") == MODEL_CAPABILITY
+                 and plan.get("configuration", {}).get("modelCapabilityVersion") == memory.model_capability(self.capability)
                  and policy.get("scope", {}).get("capabilityVersion") == self.capability
-                 and policy["scope"].get("modelCapabilityVersion") == MODEL_CAPABILITY
+                 and policy["scope"].get("modelCapabilityVersion") == memory.model_capability(self.capability)
                  and policy["scope"].get("outputRootPrefix") == self.run_prefix,
                  "preview v6 exact decode1 entry-weight identity/scope required")
         expected_capture = dict(split="train", ordinal=0, maxFramesPerEpoch=1, maxFrames=24,
@@ -368,8 +368,36 @@ class TrainingPreviewStorage:
                  and _source_binding(row["conditionPack"]) == _as_binding(identity.condition_pack), "source RGB/condition binding")
         self._read(_source_binding(row["image"]), memory.TOTAL_BYTES // 2)
         pack = self._json(_source_binding(row["conditionPack"]))
-        contribution = self._json(_source_binding(row["contribution"]))
-        task_binding = {"path": contribution["taskPackagePath"], "sha256": contribution["taskPackageSha256"]}
+        if "contribution" in row:
+            contribution = self._json(_source_binding(row["contribution"]))
+            task_binding = {"path": contribution["taskPackagePath"], "sha256": contribution["taskPackageSha256"]}
+        else:
+            # A corrected RGB keeps its original conditions, not a current
+            # contribution. Resolve the task only through this Run's frozen,
+            # authenticated data closure; the parent is lineage, not authority.
+            record = self._json(_source_binding(row["sourceRecord"]))
+            review = self._json(_source_binding(row["sourceReview"]))
+            correction = record["sourceCorrection"]
+            intake_binding = _source_binding(row["sourceCorrection"])
+            _require(_source_binding(correction["intakeEvidence"]) == intake_binding,
+                     "corrected preview intake binding")
+            intake = self._json(intake_binding)
+            _require(record["recordId"] == review["recordId"] == row["sampleId"]
+                     and correction["parentSampleId"] == row["parentSampleId"]
+                     and review["status"] == "review_passed"
+                     and intake["image"]["sha256"] == record["originalImage"]["sha256"]
+                         == review["inputImageSha256"] == row["image"]["sha256"]
+                     and row["image"]["path"] == record["relativeDirectory"] + "/" + record["originalImage"]["path"],
+                     "corrected preview RGB/source review")
+            closure = self._json(_binding(plan["dataClosure"]))
+            bindings = closure.get("bindings")
+            _require(closure.get("schema") == "object-support-structure-quality-data-closure-v1"
+                     and type(bindings) is list and 1 <= len(bindings) <= 4096,
+                     "corrected preview data closure")
+            tasks = [value for value in bindings if type(value) is dict
+                     and value.get("path") == pack["sourceBindings"]["taskPackagePath"]]
+            _require(len(tasks) == 1, "corrected preview unique frozen task required")
+            task_binding = _binding(tasks[0])
         task = self._json(task_binding)
         _require(type(world_id) is str and world_id and type(tick) is int and 0 <= tick <= 2**53 - 1
                  and pack["worldId"] == task["worldId"] == world_id and pack["tick"] == task["tick"] == tick

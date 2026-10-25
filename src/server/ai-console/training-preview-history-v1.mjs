@@ -108,7 +108,34 @@ export function parseTrainingInterfacePolicy(policy) {
     && policy.candidateSelection === selector, 'selector_invalid')
   require(descriptor.runPrefix === `${selector}-` && descriptor.packagePrefix === `${selector}-package-`, 'prefix_conflict')
   require(typeof policy.candidate === 'string' && /^[a-z][a-z0-9_]{7,127}$/u.test(policy.candidate)
-    && policy.modelCapability === 'stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1', 'model_unsupported')
+    && policy.modelCapability === (['stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1',
+      'stage4_mvp256_dry_decode2_rgb_output_qualification_capture_v1',
+      'stage4_mvp256_dry_decode2_rgb_output_training_capture_v1',
+      'stage4_mvp256_dry_decode2_rgb_output_training_capture_v2',
+      'stage4_mvp256_dry_decode2_rgb_output_training_capture_v3',
+      'stage4_mvp256_dry_decode2_rgb_output_training_capture_v4',
+      'stage4_mvp256_dry_decode2_rgb_output_training_capture_v5',
+      'stage4_mvp256_dry_decode2_rgb_output_training_capture_v6'].includes(policy.candidate)
+      ? 'stage4_mvp256_dry_factorized_ecology_decode2_rgb_output_weight_precision_v1'
+      : policy.candidate === 'stage4_mvp256_dry_decode2_support_structure_weight1_v1'
+      ? 'stage4_mvp256_dry_factorized_ecology_decode2_entry_weight_precision_v1'
+      : 'stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1'), 'model_unsupported')
+  if (policy.candidate === 'stage4_mvp256_dry_decode2_rgb_output_qualification_capture_v1') {
+    require(selector === 'd2o-p0c-v1'
+      && policy.executionProfile === 'completion_decode2_rgb_output_qualification_capture_v1', 'capture_identity_conflict')
+  }
+  const trainingCaptureIdentities = {
+    stage4_mvp256_dry_decode2_rgb_output_training_capture_v1: ['d2o-p0t-v1', 'completion_decode2_rgb_output_training_capture_v1'],
+    stage4_mvp256_dry_decode2_rgb_output_training_capture_v2: ['d2o-p0t2-v1', 'completion_decode2_rgb_output_training_capture_v2'],
+    stage4_mvp256_dry_decode2_rgb_output_training_capture_v3: ['d2o-p0t3-v1', 'completion_decode2_rgb_output_training_capture_v3'],
+    stage4_mvp256_dry_decode2_rgb_output_training_capture_v4: ['d2o-p0t4-v1', 'completion_decode2_rgb_output_training_capture_v4'],
+    stage4_mvp256_dry_decode2_rgb_output_training_capture_v5: ['d2o-p0t5-v1', 'completion_decode2_rgb_output_training_capture_v5'],
+    stage4_mvp256_dry_decode2_rgb_output_training_capture_v6: ['d2o-p0t6-v1', 'completion_decode2_rgb_output_training_capture_v6'],
+  }
+  if (Object.hasOwn(trainingCaptureIdentities, policy.candidate)) {
+    const [expectedSelector, expectedProfile] = trainingCaptureIdentities[policy.candidate]
+    require(selector === expectedSelector && policy.executionProfile === expectedProfile, 'training_capture_identity_conflict')
+  }
   require(policy.outputRoot === `.runtime/ai-painter/registered-training-${selector}-executions`
     && typeof policy.executionProfile === 'string' && /^[a-z][a-z0-9_]{7,127}$/u.test(policy.executionProfile), 'namespace_conflict')
   for (const key of ['formalSpecification', 'trainingPreviewPolicy']) binding(policy[key])

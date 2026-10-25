@@ -1,0 +1,399 @@
+{
+  "schemaVersion": "ai-painter-parameter0-training-causal-gpu-policy-v1",
+  "status": "registered_one_shot_zero_update_diagnostic_not_training",
+  "purpose": "Observe one bound parameter0 3x3 stem weight coordinate in a new zero-update call using independently restored training-failure state; separate selected local numerical components without replay or model changes.",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "7e558608b91dc8beea0b58f6633557bd6d640e5a8518c0997335842fbee108ea",
+    "version": "AI-PAINTER-SPEC-1.122",
+    "clause": "15.14"
+  },
+  "designBinding": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/parameter0-training-local-diagnostic-022-20261024/causal-design-v1.json",
+    "sha256": "09ba42bca7107f9d47411a24889cfb1a1538f9216e3839114164c8a1311707b9"
+  },
+  "scope": {
+    "resolution": [
+      256,
+      192
+    ],
+    "failureRunId": "d2o-p0c-v1-b1b09f3e-1822-4a4d-b9f7-2f47a4585ad5",
+    "failureSampleId": "ai-cold-start-v7-v7-capacity-slot-154-tropical-forest-glade-v2",
+    "sampleSplit": "train",
+    "sampleCount": 1,
+    "originalDataSplits": "48/8/4/4 unchanged",
+    "sourceStateTiming": "after_exception",
+    "sourceReplayAllowedRemainsFalse": true,
+    "waterBuildingPersonalityOrOtherResolutionWork": false
+  },
+  "sourceEvidence": [
+    {
+      "path": ".runtime/ai-painter/registered-training-d2o-p0c-v1-executions/d2o-p0c-v1-b1b09f3e-1822-4a4d-b9f7-2f47a4585ad5/quality-plan.json",
+      "sha256": "74cee78715b88c5dba5cd910cf46f912e36b2d5e4154309f16aff607291c9f6a",
+      "bytes": 55405
+    },
+    {
+      "path": ".runtime/ai-painter/registered-training-d2o-p0c-v1-executions/d2o-p0c-v1-b1b09f3e-1822-4a4d-b9f7-2f47a4585ad5/model-identity.json",
+      "sha256": "190d3b65b5ee8e9b0cc3240d722102e1b904bf4f5c3c04fb7cc95e74e9c193aa",
+      "bytes": 14481
+    },
+    {
+      "path": ".runtime/ai-painter/registered-training-d2o-p0c-v1-executions/d2o-p0c-v1-b1b09f3e-1822-4a4d-b9f7-2f47a4585ad5/worker-terminal.json",
+      "sha256": "c0bd95383abc70066728e9b0244bbebe8ca383fd409cf710d55d9113c5c8d343",
+      "bytes": 4586
+    },
+    {
+      "path": ".runtime/ai-painter/registered-training-d2o-p0c-v1-executions/d2o-p0c-v1-b1b09f3e-1822-4a4d-b9f7-2f47a4585ad5/gradient-failure/manifest.json",
+      "sha256": "43aaa9781a117ab7bef518dd0f2c75620f331488ebbcba1607e2b8675eba4789",
+      "bytes": 369225
+    },
+    {
+      "path": ".runtime/ai-painter/registered-training-d2o-p0c-v1-executions/d2o-p0c-v1-b1b09f3e-1822-4a4d-b9f7-2f47a4585ad5/gradient-failure/primary.json",
+      "sha256": "b100bbd1895d248abbe26b2f63326a15d6a03665867a9b449265b5c72b0b0b16",
+      "bytes": 59348
+    },
+    {
+      "path": ".runtime/ai-painter/registered-training-d2o-p0c-v1-executions/d2o-p0c-v1-b1b09f3e-1822-4a4d-b9f7-2f47a4585ad5/capture-execution.json",
+      "sha256": "dd42ff1f46425a44943b8db6eb6a6b3b84dee361ef23f45dc09f8da52cbc379e",
+      "bytes": 48681
+    }
+  ],
+  "sourceTensorArchive": {
+    "path": ".runtime/ai-painter/registered-training-d2o-p0c-v1-executions/d2o-p0c-v1-b1b09f3e-1822-4a4d-b9f7-2f47a4585ad5/gradient-failure/tensors.pt",
+    "sha256": "39fc29fa80f8f425fcb400a07c45ec1d604b803e98e82c56116b6a96c56c8dcf",
+    "bytes": 50447477
+  },
+  "sourceSampleBindings": {
+    "condition": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-154-2026-07-31T15-15-59-036Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+      "sha256": "51fa93e2565e7b43007e5f9c4a0ac20372c588a63a1ce24d253a733c194bbf6e"
+    },
+    "source": {
+      "path": "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/images/complete-maps/ai-cold-start-v7-v7-capacity-slot-154-tropical-forest-glade-v2.png",
+      "sha256": "d8aba4d7f9d9c2df0c89bd0a94f7a05ea7cf6218d8821140ee86966573b49ca9"
+    }
+  },
+  "sourceAlgorithmBindings": [
+    {
+      "role": "parameter60_causal_restore_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/parameter60_causal_restore_v1.py",
+        "sha256": "edb87370b17ff1760b5dd812877a64c33fbbdc39199821b0ae31b9c6d9e71547"
+      }
+    },
+    {
+      "role": "painter_stage4_decode1_entry_weight_training_profile_v1",
+      "binding": {
+        "path": "ml/ai-painter/scripts/painter_stage4_decode1_entry_weight_training_profile_v1.py",
+        "sha256": "c3ad26b9b4d766522c6428c9f5e4dad303af461aeefba4c47b543224cf0afecb"
+      }
+    },
+    {
+      "role": "object_decode1_entry_joint_priority_device_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_decode1_entry_joint_priority_device_v1.py",
+        "sha256": "4387b21e1d11e1a834e98c0a2b1fdf1508135664cb858360db561bd7ffda033e"
+      }
+    },
+    {
+      "role": "object_joint_rgb_structure_priority_update_cpu_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_joint_rgb_structure_priority_update_cpu_v1.py",
+        "sha256": "99c437fe1cdf31229257c25716736e3c2f580a58f99fde8297c5e06611920324"
+      }
+    },
+    {
+      "role": "object_support_structure_failure_capture_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_support_structure_failure_capture_v1.py",
+        "sha256": "6363c4065b9dbec4376594d56664d6c0ecfdb395df61879f9045b2e75cb9e153"
+      }
+    },
+    {
+      "role": "native_rgb_structured_object_cpu_v17",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_structured_object_cpu_v17.py",
+        "sha256": "e8b18b5e5d7b29befab908bb0a521b0f21b66d927ca2b8e2db99a11287063e78"
+      }
+    },
+    {
+      "role": "native_rgb_complete_support_partition_v23_cpu",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/native_rgb_complete_support_partition_v23_cpu.py",
+        "sha256": "c455e642631352eaaa14cce7070d23260a7fe9abd189591d99e2f8863acca50f"
+      }
+    },
+    {
+      "role": "object_ecology_decode1_entry_weight_precision_v1",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_ecology_decode1_entry_weight_precision_v1.py",
+        "sha256": "3c8934c330b9a414a061baf08709a7d3fb9f87336962e503c3bbfccdd4e66873"
+      }
+    },
+    {
+      "role": "object_appearance_regime_bias_precision",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/object_appearance_regime_bias_precision.py",
+        "sha256": "b39c29fb918a304f798a8fa1bd3457b6cae43829295c1d4514f67e83c692366c"
+      }
+    },
+    {
+      "role": "rgb_bias_reduction_precision",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/rgb_bias_reduction_precision.py",
+        "sha256": "842aefc1a4f278535e97a57b52f1d52026156181be72b5ea0c1b4ddc86dcc008"
+      }
+    },
+    {
+      "role": "rgb_bias_reduction_precision_cpu",
+      "binding": {
+        "path": "ml/ai-painter/src/ai_painter/complete_world/rgb_bias_reduction_precision_cpu.py",
+        "sha256": "958ece1e2bd967d9c0b7f9f99f183d2b496c6b23bb767702816aeed89c8c2cab"
+      }
+    }
+  ],
+  "target": {
+    "parameterIndex": 0,
+    "parameterName": "core.core.terrain.base_stem.layers.0.weight",
+    "modulePath": "core.core.terrain.base_stem.layers.0",
+    "weightShape": [
+      48,
+      31,
+      3,
+      3
+    ],
+    "elements": 13392,
+    "dtype": "torch.float32",
+    "identityRule": "jointly verify index/name/parameter graph/module type/source SHA/weight bytes and before-after versions; shape alone is insufficient",
+    "historicalVersionRule": "Record actual fresh-instance versions; do not fabricate them to match archived counters",
+    "convolutionConfiguration": "Bind exact torch.nn.Conv2d at canonical index0/name/module; batch1,input[1,31,192,256],output[1,48,192,256],kernel3x3/stride1/pad1/dilation1/groups1/zeros; retain selected input13/output1 planes and five original full target gradients. Preserve all existing model arithmetic.",
+    "coordinates": [
+      [
+        1,
+        13,
+        0,
+        0
+      ]
+    ],
+    "captureInputChannel": 13,
+    "captureOutputChannel": 1
+  },
+  "allowedActions": [
+    "authenticate_exact_failed_snapshot",
+    "restore_independent_diagnostic_state",
+    "one_original_generator_forward",
+    "five_original_generator_gradient_calls",
+    "conditional_five_cpu_one_coordinate_local_vjps"
+  ],
+  "sourceStateUse": {
+    "purpose": "failure_evidence_zero_update_gpu_diagnostic_only",
+    "trainingInitializationAllowed": false,
+    "historicalReplayAllowed": false,
+    "originalFailureUnchanged": true,
+    "archivedGradientsInstalled": false,
+    "archivedRngRestored": false,
+    "requiresGradHistoricalClaim": false
+  },
+  "gradientLabels": [
+    "actualTotal",
+    "structuredObjective",
+    "wholeFrameFidelity",
+    "objectCoreRgb",
+    "objectSupportStructure"
+  ],
+  "comparison": {
+    "atol": 0.000001,
+    "rtol": 0.00001,
+    "originalGateKept": true,
+    "originalGradientValuesKept": true,
+    "evidenceOnly": true,
+    "definitions": {
+      "A": "The selected coordinate of observed native actualTotal target gradient, cast to FP64 only for arithmetic",
+      "Bi": "The selected coordinate of each of four native component target gradients cast to FP64",
+      "E": "The selected coordinate of the original ordered FP32 sum of four native component gradients, then cast to FP64",
+      "T": "CPU FP64 products with stable summation at [1,13,0,0] using input13 and actualTotal output1-adjoint planes, applying original 3x3 zero-padding index offsets",
+      "Si": "Four CPU FP64 selected-coordinate references using the respective component adjoint planes",
+      "S": "FP64 stable sum of the four Si",
+      "B": "FP64 stable sum of the four saved native FP32 component values at this selected coordinate"
+    },
+    "decomposition": "A-E=(T-S)+(A-T)-(B-S)+(B-E)",
+    "interpretation": "Only the one selected coordinate in this new observation is covered. T-S observes selected upstream contribution; A-T and B-S compare native gradients to finite-precision local references; B-E is final component-sum rounding. The observational decomposition is not a proof of implementation error, necessary FP64 repair, complete-model cause or historical replay. Hooks and synchronization may perturb timing. No threshold changes.",
+    "upstreamRule": "Retain exact original FP32 input13 and output1-adjoint planes, check identity/finiteness and count; record plane hashes and signed contractions. This is an input projection, not proof of upstream elementwise equality. Other channels and coordinates are outside this diagnosis."
+  },
+  "resources": {
+    "maxWallSeconds": 180,
+    "threads": 2,
+    "maxGpuMemoryFraction": 0.7,
+    "maximumTemperatureC": 85,
+    "minimumFreeVramMiB": 2048,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputBytes": 134217728,
+    "maxTargetCaptureBytes": 67108864,
+    "attempts": 1,
+    "automaticRetries": 0,
+    "maxStreamBytes": 8388608,
+    "cleanupReserveMs": 1000,
+    "failureEvidenceReserveBytes": 65536,
+    "temperaturePollMs": 1000,
+    "cpuPreflightMaxWallSeconds": 120,
+    "cpuPreflightMaxOutputBytes": 8388608,
+    "finalizationReserveMs": 8000,
+    "maxTargetPersistedBytes": 2097152
+  },
+  "cpuPreparation": {
+    "maxWallSeconds": 120,
+    "threads": 2,
+    "maxOutputBytes": 8388608,
+    "attempts": 1,
+    "automaticRetries": 0,
+    "fullModelForwards": 0,
+    "fullModelAutogradCalls": 0,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "cudaCalls": 0,
+    "scope": "bound archive/state/sample identity, synthetic observer and exact request ABI; no real forward"
+  },
+  "workerPath": "ml/ai-painter/scripts/diagnose_parameter0_training_causal_gpu_v1.py",
+  "entrypointPath": "scripts/diagnose-ai-painter-parameter0-training-causal-gpu-v1.mjs",
+  "testPaths": [
+    "ml/ai-painter/tests/test_parameter0_training_causal_observation_v1.py",
+    "ml/ai-painter/tests/test_diagnose_parameter0_training_causal_gpu_v1.py",
+    "scripts/tests/ai-painter-parameter0-training-causal-gpu-v1.test.mjs"
+  ],
+  "outputRoot": ".runtime/ai-painter/parameter0-training-causal-gpu-runs",
+  "qualification": {
+    "gpuExecutionAllowed": false,
+    "trainingAllowed": false,
+    "modelModificationAllowed": false,
+    "checkpointWritten": false,
+    "rootCauseProven": false,
+    "stage4Qualified": false,
+    "capabilityReleased": false,
+    "runtimeFrameAllowed": false
+  },
+  "executionBoundary": {
+    "cpuPreparation": true,
+    "oneGpuObservationAfterOwnCpuEvidence": true,
+    "training": false,
+    "modelModification": false,
+    "checkpointOrImage": false,
+    "oldEvidenceMutation": false,
+    "productionCapabilityRelease": false
+  },
+  "stopRules": [
+    "Only an authentic unchanged full108 original gate failure at target0 and the bound [1,13,0,0] coordinate over original tolerance with five complete same-call captures permits local references after first-error preservation",
+    "No optimizer, D gradient/update, model modification, train restart, Checkpoint selection/save or image output",
+    "No validation/challenge/regression asset content, extra sample, extra layer or extra coordinate",
+    "Gate pass, other gate position, selected coordinate not reproduced, mutation or incomplete evidence closes the one attempt without local reference or retry",
+    "Cleanup must derive from this invocation's live native proof, not historical files or vanished PID"
+  ],
+  "acceptance": [
+    "Exact current policy, formal version, original source graph, interpreter, failed state and sample plus own CPU synthetic behaviour match",
+    "One original G forward and five G gradient groups; no D gradient, optimizer or updates",
+    "Actual original torch.nn.Conv2d type/source/geometry, original selected coordinate, independent copies, versions/modes/sample/RNG verified; no historical replay claim",
+    "First original gate error and selected FP32 evidence committed before bounded CPU reference",
+    "Real total timing, bytes, stream and managed cleanup accounted; completion/not-reproduced/failure closes the attempt",
+    "The exact canonical metadata program and original Node interpreter are bound in the request and restricted reader; own CPU suite reaches the real derive_regime_record/bound_regime snapshot path without mocking that dependency."
+  ],
+  "counts": {
+    "fullGeneratorForward": 1,
+    "fullGeneratorAutograd": 5,
+    "discriminatorAutograd": 0,
+    "optimizerConstruction": 0,
+    "optimizerUpdates": 0,
+    "localFp64WeightVjp": 5,
+    "extraNativeBackwardReplay": 0,
+    "extraModelAutograd": 0
+  },
+  "gateFailureContinuation": {
+    "localContrastPermittedOnlyIf": [
+      "All five original G gradients complete in the original order",
+      "Unchanged actual gate source, function code, traceback and parameter0 locals match these same-call target gradients",
+      "The bound [1,13,0,0] coordinate exceeds the unchanged original absolute/relative tolerance",
+      "All selected input/adjoint planes and target native gradients finite, exact identity and copies preserved",
+      "Original first error and target capture persisted before any local reference; state unchanged and resources remain"
+    ],
+    "whenExactTargetFailure": "Preserve original error and same-call capture before local math; never return reference gradients to training",
+    "whenGatePasses": "diagnostic_not_reproduced, without local contrast",
+    "whenOtherFailure": "diagnostic_failed_closed, or diagnostic_not_reproduced for selected-coordinate non-reproduction; neither performs local reference"
+  },
+  "captureBudget": {
+    "oneInputPlaneFp32Bytes": 196608,
+    "fiveAdjointPlanesFp32Bytes": 983040,
+    "fiveNativeTargetGradientsFp32Bytes": 267840,
+    "rawTargetBytes": 1447488,
+    "maxTargetPersistedBytes": 2097152,
+    "failureReserveBytes": 65536,
+    "rule": "Enforce actual aggregate target archive/metadata/error/reference plus temporaries and terminal reserve <=2MiB; observation/copy/reference working tensors <=64MiB. All GPU-phase output including host, native builds, registry, streams, temporary bytes and closure <=128MiB; CPU preparation <=8MiB. Estimates do not grant admission. Original archive is input only and never copied to output."
+  },
+  "captureRestrictions": {
+    "persistFullFp64UpstreamAdjointDifference": false,
+    "persistSecondFullModelOrGlobalGradientSnapshot": false,
+    "originalArchiveCopiedToOutput": false,
+    "actualSerializedBytesMustFit": true,
+    "upstreamDifference": "Only channel13 input and channel1 output-adjoint planes for bound [1,13,0,0]; no second full activation or global-gradient capture persisted. Fixed coordinate is not dynamically replaced."
+  },
+  "accounting": "Phase budgets include startup, restore, math, native supervision, closure, source/build copies, logs, stream output and receipts. Safe decoder separately bounds compressed bytes, decompressed archive and decoded tensors. Release archive and decoded objects before observation; 64MiB target observation workspace is not a whole-process CPU RSS claim.",
+  "cleanup": {
+    "transport": "bounded-stream-capture-v2",
+    "privateJob": true,
+    "assignedBeforeResume": true,
+    "killOnJobClose": true,
+    "requiredLiveProof": [
+      "ownerPid",
+      "bindingBase64",
+      "assignedBeforeResume",
+      "killOnJobClose",
+      "emptyJob",
+      "activeProcessesAfterCleanup=0",
+      "stdoutClosed",
+      "stderrClosed",
+      "transportCompleted",
+      "streamClosureVersion=bounded-stream-capture-v2",
+      "streamCaptureError=null",
+      "streamTransportError=null",
+      "observationError=null"
+    ],
+    "unknownCleanup": "retain_unique_guard_and_fail_closed_without_auto_recovery",
+    "historicalObservationIsAuthority": false
+  },
+  "registry": {
+    "path": ".runtime/ai-painter/current-execution-registry/current.json",
+    "sameWriterAndGuard": true,
+    "latestTrainingTerminalUnchanged": true,
+    "diagnosisIsTraining": false,
+    "activeProcessRole": "parameter0_training_zero_update_diagnostic_v1_supervisor_not_training_worker"
+  },
+  "sourceGraphRule": "Collect actual original and new diagnostic program closure with paths and recomputed SHA, at most256 entries; authenticate loaded modules and exact current CPU evidence. Prior parameter60 or saved-gradient CPU success grants no admission.",
+  "attemptClaimPath": ".runtime/ai-painter/parameter0-training-causal-gpu-runs/attempt-v1.json",
+  "terminalStatuses": [
+    "diagnostic_target_evidence_complete",
+    "diagnostic_not_reproduced",
+    "diagnostic_failed_closed"
+  ],
+  "priorSavedGradientAlgebra": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/training-failure-analysis-021-20261024/numeric/parameter0-analysis-001.json",
+    "sha256": "96e825e0d65b9002459dee1593633b1e002d2b65589ecff68dc8d5a4a27e44d7"
+  },
+  "nodeInterpreter": {
+    "path": "C:\\Program Files\\nodejs\\node.exe",
+    "sha256": "63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088"
+  },
+  "metadataCanonicalProgram": {
+    "path": "scripts/lib/real-earth-region-governance.mjs",
+    "sha256": "c4ae942c1f44a60fad1650f02c9dccb0f780472638693e7146fbbe9a2dc85af1"
+  },
+  "capabilityVersion": "parameter0_training_causal_zero_update_v1",
+  "modelCapabilityVersion": "stage4_mvp256_dry_factorized_ecology_decode2_rgb_output_weight_precision_v1",
+  "objectSupportStructureWeight": 1,
+  "sourceFailurePosition": {
+    "epoch": 1,
+    "sampleId": "ai-cold-start-v7-v7-capacity-slot-154-tropical-forest-glade-v2",
+    "trainIndex": 8,
+    "zeroBasedEpochPosition": 14
+  },
+  "sourceOptimizerSteps": {
+    "discriminator": 15,
+    "generator": 14
+  }
+}

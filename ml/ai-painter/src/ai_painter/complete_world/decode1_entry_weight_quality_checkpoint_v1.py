@@ -27,6 +27,16 @@ CONFIGURATION_SCHEMA = "object-support-structure-quality-configuration-v1"
 EXECUTION_QUALIFIED = False
 MAX_BYTES = tools.MAX_BYTES
 SUPPORT_WEIGHT1_CAPABILITY = "stage4_mvp256_dry_decode1_support_structure_weight1_v1"
+DECODE2_SUPPORT_WEIGHT1_CAPABILITY = "stage4_mvp256_dry_decode2_support_structure_weight1_v1"
+RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY = "stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1"
+QUALIFICATION_CAPTURE_CAPABILITY = "stage4_mvp256_dry_decode2_rgb_output_qualification_capture_v1"
+TRAINING_CAPTURE_CAPABILITY = "stage4_mvp256_dry_decode2_rgb_output_training_capture_v1"
+TRAINING_CAPTURE_V2_CAPABILITY = "stage4_mvp256_dry_decode2_rgb_output_training_capture_v2"
+TRAINING_CAPTURE_V3_CAPABILITY = "stage4_mvp256_dry_decode2_rgb_output_training_capture_v3"
+TRAINING_CAPTURE_V4_CAPABILITY = "stage4_mvp256_dry_decode2_rgb_output_training_capture_v4"
+TRAINING_CAPTURE_V5_CAPABILITY = "stage4_mvp256_dry_decode2_rgb_output_training_capture_v5"
+TRAINING_CAPTURE_V6_CAPABILITY = "stage4_mvp256_dry_decode2_rgb_output_training_capture_v6"
+TRAINING_CAPTURE_CAPABILITIES = (TRAINING_CAPTURE_CAPABILITY, TRAINING_CAPTURE_V2_CAPABILITY, TRAINING_CAPTURE_V3_CAPABILITY, TRAINING_CAPTURE_V4_CAPABILITY, TRAINING_CAPTURE_V5_CAPABILITY, TRAINING_CAPTURE_V6_CAPABILITY)
 # The controller fills these exact pins after formal 1.96/policy registration.
 POLICY = {"path":"data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v1.json",
     "sha256":"94363da6660fb4c6c2789f0d7567babea231d8814f5e8652098b8891e9897fa9"}
@@ -60,8 +70,19 @@ exact_binding, configuration_digest, require = tools.exact_binding, tools.config
 _same_json = tools._same_json
 
 
-def components():
-    return torch, strict, identity.validate_model_identity, identity.ARCHITECTURE, identity.NUMERIC_RULE
+def components(capability_version=CAPABILITY):
+    if capability_version in (RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY, QUALIFICATION_CAPTURE_CAPABILITY, *TRAINING_CAPTURE_CAPABILITIES):
+        return (torch, strict, identity.validate_model_identity, identity.RGB_OUTPUT_ARCHITECTURE, identity.RGB_OUTPUT_RULE)
+    decode2 = capability_version == DECODE2_SUPPORT_WEIGHT1_CAPABILITY
+    return (torch, strict, identity.validate_model_identity,
+            identity.DECODE2_ARCHITECTURE if decode2 else identity.ARCHITECTURE,
+            identity.DECODE2_RULE if decode2 else identity.NUMERIC_RULE)
+
+
+def model_capability(capability_version=CAPABILITY):
+    if capability_version in (RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY, QUALIFICATION_CAPTURE_CAPABILITY, *TRAINING_CAPTURE_CAPABILITIES):
+        return identity.RGB_OUTPUT_CAPABILITY
+    return identity.DECODE2_CAPABILITY if capability_version == DECODE2_SUPPORT_WEIGHT1_CAPABILITY else MODEL_CAPABILITY
 
 
 def _source_configuration():
@@ -137,7 +158,18 @@ def registered_training_interfaces(root=None):
             and d["packagePrefix"] == selector + "-package-", "interface selector/prefix conflict")
         capability = policy.get("candidate")
         require(type(capability) is str and re.fullmatch(r"[a-z][a-z0-9_]{7,127}", capability)
-            and policy.get("modelCapability") == MODEL_CAPABILITY, "interface model unsupported")
+            and policy.get("modelCapability") == model_capability(capability), "interface model unsupported")
+        if capability in TRAINING_CAPTURE_CAPABILITIES:
+            expected_selector, expected_profile = {
+                TRAINING_CAPTURE_CAPABILITY: ("d2o-p0t-v1", "completion_decode2_rgb_output_training_capture_v1"),
+                TRAINING_CAPTURE_V2_CAPABILITY: ("d2o-p0t2-v1", "completion_decode2_rgb_output_training_capture_v2"),
+                TRAINING_CAPTURE_V3_CAPABILITY: ("d2o-p0t3-v1", "completion_decode2_rgb_output_training_capture_v3"),
+                TRAINING_CAPTURE_V4_CAPABILITY: ("d2o-p0t4-v1", "completion_decode2_rgb_output_training_capture_v4"),
+                TRAINING_CAPTURE_V5_CAPABILITY: ("d2o-p0t5-v1", "completion_decode2_rgb_output_training_capture_v5"),
+                TRAINING_CAPTURE_V6_CAPABILITY: ("d2o-p0t6-v1", "completion_decode2_rgb_output_training_capture_v6"),
+            }[capability]
+            require(selector == expected_selector and policy.get("executionProfile") == expected_profile,
+                "training capture fixed identity conflict")
         output = policy.get("outputRoot")
         require(output == ".runtime/ai-painter/registered-training-" + selector + "-executions"
             and type(policy.get("executionProfile")) is str
@@ -213,7 +245,7 @@ def expected_configuration(training_preview_policy,capability_version=CAPABILITY
     require(training_preview_policy["path"] == route["preview_path"], "registered route preview required")
     result = template.expected_configuration()
     result["sourceAssetsCandidate"] = source_assets(capability_version)
-    result.update(schema=CONFIGURATION_SCHEMA,capabilityVersion=capability_version,modelCapabilityVersion=MODEL_CAPABILITY,
+    result.update(schema=CONFIGURATION_SCHEMA,capabilityVersion=capability_version,modelCapabilityVersion=model_capability(capability_version),
         formalSpecification=route["specification"],executionPolicy=route["policy"],trainingPreviewPolicy=dict(training_preview_policy),
         jointLearningRule=dict(JOINT_LEARNING_RULE),gpuAdmissionSeconds=720,
         progressPublicationPolicy=route["progress_policy"])
@@ -221,7 +253,8 @@ def expected_configuration(training_preview_policy,capability_version=CAPABILITY
         result["executionCeiling"].update(maxWallSeconds=None,trainingWallMode="completion")
     if route.get("qualification_completion"):
         result.update(gpuAdmissionWallMode="completion",gpuAdmissionSeconds=None)
-    if capability_version == SUPPORT_WEIGHT1_CAPABILITY:
+    if capability_version in (SUPPORT_WEIGHT1_CAPABILITY, DECODE2_SUPPORT_WEIGHT1_CAPABILITY,
+                              RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY, QUALIFICATION_CAPTURE_CAPABILITY, *TRAINING_CAPTURE_CAPABILITIES):
         require(type(route["policy_value"].get("objectSupportStructureWeight")) is int
             and route["policy_value"]["objectSupportStructureWeight"] == 1, "registered support weight1 policy required")
         result["objectSupportStructureWeight"] = 1
@@ -259,7 +292,10 @@ def validate_execution_policy(policy, configuration):
 def _references(model,critic):
     identity.validate_model_identity(model)
     with torch.device("cpu"),torch.random.fork_rng(devices=[]):
-        fresh=identity.build_fresh_object_ecology_decode1_entry_weight_precision(condition_channel_order=model.condition_channel_order)
+        factory = (identity.build_fresh_object_ecology_decode2_output_weight_precision
+                   if model.capability_version == identity.RGB_OUTPUT_CAPABILITY else identity.build_fresh_object_ecology_decode2_entry_weight_precision
+                   if model.capability_version == identity.DECODE2_CAPABILITY else identity.build_fresh_object_ecology_decode1_entry_weight_precision)
+        fresh=factory(condition_channel_order=model.condition_channel_order)
         fresh_critic=build_conditional_texture_discriminator()
     require(tools._graph(model)==tools._graph(fresh),"new generator complete graph differs")
     def graph(network):
@@ -315,8 +351,8 @@ def _metadata(configuration, run_id, package_binding, dataset_binding, epoch, se
         require(binding["path"] not in by_path,
             "one source path has conflicting identities")
         by_path[binding["path"]] = binding["sha256"]
-    _, _, _, architecture, numeric = components()
-    return {"schema": SCHEMA, "capabilityVersion": route["capability"], "modelCapabilityVersion": MODEL_CAPABILITY,
+    _, _, _, architecture, numeric = components(configuration["capabilityVersion"])
+    return {"schema": SCHEMA, "capabilityVersion": route["capability"], "modelCapabilityVersion": model_capability(configuration["capabilityVersion"]),
         "architecture": architecture, "numericRule": numeric,
         "configuration": deepcopy(configuration), "configurationSha256": configuration_digest(configuration),
         "runId": run_id, "executionPackage": dict(package_binding), "datasetManifest": dict(dataset_binding),
@@ -330,6 +366,7 @@ def encode(model, critic, *, configuration, run_id, package_binding, dataset_bin
     torch, _, _, _, _ = components()
     payload = _metadata(configuration, run_id, package_binding, dataset_binding, epoch, selection, counts,
         program_bindings, plan_binding)
+    require(model.capability_version == configuration["modelCapabilityVersion"], "checkpoint model/config numeric identity differs")
     g_reference, d_reference = _references(model, critic)
     payload.update(graph={"generator": tools._graph(model), "discriminator": tools._graph(critic)},
         generator=_state({n: v.detach().cpu().clone() for n, v in model.state_dict().items()}, g_reference, "generator"),
@@ -349,6 +386,7 @@ def reload(raw, *, model, critic, configuration, run_id, package_binding, datase
     require(all(v.device.type == "cpu" for network in (model, critic)
         for v in (*network.parameters(), *network.buffers())), "final RGB reload requires CPU destinations")
     validate(model)
+    require(model.capability_version == configuration["modelCapabilityVersion"], "reload model/config numeric identity differs")
     with zipfile.ZipFile(io.BytesIO(raw)) as archive:
         entries = archive.infolist()
         require(len(entries) <= 2048 and len({e.filename for e in entries}) == len(entries), "unsafe checkpoint member count/alias")

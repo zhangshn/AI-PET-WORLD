@@ -14,6 +14,63 @@ ROOT = Path(__file__).absolute().parents[3]
 sys.path.insert(0, str(ROOT / "ml/ai-painter/scripts"))
 import painter_stage4_decode1_entry_weight_quality_worker_v1 as worker
 from qualification_timing_coalesced_publication_cpu_v1 import CoalescedTimingPublication
+
+
+def qualification_probe_options(profile, plan):
+    capability = plan["capabilityVersion"]
+    if capability in worker.checkpoint.TRAINING_CAPTURE_CAPABILITIES:
+        configuration = plan["configuration"]
+        worker.require(type(configuration) is dict
+            and configuration.get("capabilityVersion") == capability
+            and type(configuration.get("objectSupportStructureWeight")) is int
+            and configuration["objectSupportStructureWeight"] == 1,
+            "registered training-capture qualification weight1 required")
+        return {"support_structure_weight": 1.0}
+    if capability in ("stage4_mvp256_dry_decode1_support_structure_weight1_v1",
+            "stage4_mvp256_dry_decode2_support_structure_weight1_v1",
+            "stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1",
+            worker.checkpoint.QUALIFICATION_CAPTURE_CAPABILITY):
+        return {"support_structure_weight": profile.execution_support_structure_weight(plan["configuration"])}
+    return {}
+
+
+def invoke_original_probe(probe, *args, capture=None, **kwargs):
+    """Only the authenticated target call supplies a passive capture."""
+    if capture is None:
+        return probe(*args, **kwargs)
+    from qualification_parameter0_capture_v1 import invoke_probe
+    return invoke_probe(probe, *args, capture=capture, **kwargs)
+
+
+def capture_for_sample(context, model, resource, train, index, calls, completed):
+    """Fixed new route only; this function never authenticates a caller's flag."""
+    auth = worker.auth
+    worker.require(type(context) is auth.Context, "authenticated qualifier Context required")
+    plan = context.plan
+    if plan["capabilityVersion"] != worker.checkpoint.QUALIFICATION_CAPTURE_CAPABILITY:
+        return None
+    worker.require(type(index) is int and 0 <= index < 48 and len(train) == 48,
+                   "original full48 sequence required")
+    if index != 17:
+        return None
+    from qualification_parameter0_capture_v1 import Parameter0ProbeCapture, target_selected
+    worker.require(target_selected(train[index], index) and completed == 17
+        and calls.counts == {kind + suffix: 17 * (5 if kind == "generator" else 1)
+            for kind in Calls.LIMITS for suffix in ("Attempted", "Completed")},
+        "target capture requires the original successful seventeen-sample prefix")
+    route = auth.execution_route(plan["capabilityVersion"])
+    policy = auth.read_json(context.reader, route.execution_policy)
+    auth.verify_qualification_capture_policy(context.reader, policy)
+    worker.require(model.capability_version == route.model_capability
+        and plan["configuration"]["modelCapabilityVersion"] == route.model_capability,
+        "capture must observe this exact initialized RGB model")
+    paths = [value["path"] for value in plan["programBindings"].values()]
+    worker.require(len(paths) == len(set(paths)) and all(logical in paths
+        for logical in auth.QUALIFICATION_CAPTURE_SOURCES), "actual capture sources missing or duplicated")
+    context.reader.unchanged()
+    return Parameter0ProbeCapture(model, resource, sample=train[index], ordinal=index)
+
+
 # Only the bounded event counter is reused, never the predecessor's run/gate.
 class Calls:
     LIMITS = {"forward": 48, "generator": 240, "discriminator": 48}
@@ -270,13 +327,14 @@ def run(package_binding, *, root=ROOT):
          "attempt": 1, "automaticRetries": 0})
     calls, cases, attempted_sample = Calls(), [], None
     observation=None
+    failure_capture=None
     try:
         observation=observation_for_context(context,calls,started,authentication_finished)
         def measured(point,action,*args,**kwargs):
             return action(*args,**kwargs) if observation is None else observation.measure(point,action,*args,**kwargs)
         train, order = measured("data_load",worker.load_samples,reader,plan)
         def model_setup():
-            model,critic=profile.fresh_networks(order)
+            model,critic=profile.fresh_networks(order, **worker.auth.model_arguments(route.capability))
             state={"generator":shared.v24.core.cpu.state_hash(model),"discriminator":shared.v24.core.cpu.state_hash(critic)}
             metadata=worker.auth.read_json(reader,plan["modelBinding"])
             worker.require(worker.auth.same_json(state,metadata["initialState"]),"own fresh GPU candidate differs from bound CPU identity")
@@ -302,13 +360,15 @@ def run(package_binding, *, root=ROOT):
             resource=lambda:observation.resource(original_resource)
         for index,sample in enumerate(train):
             resource()
+            failure_capture = capture_for_sample(context, model, resource, train, index, calls, len(cases))
             calls.begin()
             attempted_sample = {"sampleId": sample["sampleId"]}
             if observation is not None:observation.enter_sample(sample["sampleId"],index)
-            probe_options = ({"support_structure_weight": profile.execution_support_structure_weight(plan["configuration"])}
-                if plan["capabilityVersion"] == "stage4_mvp256_dry_decode1_support_structure_weight1_v1" else {})
-            proof = profile.zero_update_probe(model, critic, sample, order, resource,
-                event=calls.event if observation is None else observation.event, failure_evidence=attempted_sample, **probe_options)
+            probe_options = qualification_probe_options(profile, plan)
+            proof = invoke_original_probe(profile.zero_update_probe, model, critic, sample, order, resource,
+                capture=failure_capture, event=calls.event if observation is None else observation.event,
+                failure_evidence=attempted_sample, **probe_options)
+            failure_capture = None
             if observation is not None:observation.probe_returned()
             worker.require(proof.get("passed") is True
                 and all(p.grad is None for network in (model, critic) for p in network.parameters()),
@@ -337,7 +397,7 @@ def run(package_binding, *, root=ROOT):
     except BaseException as error:
         if observation is not None:observation.finish(error)
         try:
-            worker.write(root, plan["outputRoot"] + "/gpu-failure.json", {
+            primary_binding = worker.write(root, plan["outputRoot"] + "/gpu-failure.json", {
                 "schema": worker.GPU_SCHEMA, "status": "failed_closed",
                 "capabilityVersion": route.capability, "executionPackage": package_binding,
                 "runId": plan["runId"], "packageId": plan["packageId"],
@@ -349,8 +409,28 @@ def run(package_binding, *, root=ROOT):
                 "actualCounts": calls.counts, "completedCases": len(cases),
                 "attemptedSample": attempted_sample, "optimizerSteps": 0, "automaticRetries": 0,
                 "formalStage4QualificationAllowed": False, "runtimePublicationAllowed": False}, terminal=True)
+            if failure_capture is not None and failure_capture.used and failure_capture.primary is error:
+                # Re-read the committed primary before writing any sidecar.
+                worker.auth.Reader(root).read(primary_binding, 65536)
+                capture_result = failure_capture.persist_failure(error, primary_binding=primary_binding,
+                    identity={**{key: plan[key] for key in ("runId", "packageId", "capabilityVersion")},
+                        "executionPackage": package_binding, "modelBinding": plan["modelBinding"]},
+                    programs={value["path"]: value for value in plan["programBindings"].values()},
+                    actual_counts=calls.counts, attempted_sample=attempted_sample,
+                    write=lambda name, value: worker.write(root, plan["outputRoot"] + "/" + name, value,
+                        terminal=name == "qualification-target0-result.json"), resource=resource)
+                if capture_result.get("status") == "incomplete":
+                    # In particular, a failed final sidecar cannot hide its own
+                    # error. Python's original exception notes reach the bounded
+                    # native stderr stream even when no further file can commit.
+                    summary = {key: capture_result.get(key) for key in
+                        ("status", "incompleteAt", "failureClassification", "secondaryErrors", "manifest")}
+                    note = json.dumps(summary, ensure_ascii=False, allow_nan=False, sort_keys=True)[:8192]
+                    error.qualification_capture_error = summary
+                    error.add_note("qualification_capture_secondary: " + note)
         except BaseException as other:
             error.secondary_evidence_error = str(other)[:2048]
+            error.add_note("qualification_evidence_secondary: " + type(other).__name__ + ": " + str(other)[:2048])
         raise
 
 

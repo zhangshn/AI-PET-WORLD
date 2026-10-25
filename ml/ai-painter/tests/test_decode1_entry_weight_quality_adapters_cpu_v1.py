@@ -63,7 +63,149 @@ def state(network):
         for n,v in network.state_dict().items()}
 
 class AdmissionTests(unittest.TestCase):
+    def heartbeat_failure(self, error, *, logger=None, clock=None):
+        scope={"runId":"synthetic-heartbeat-error-log","packageId":"synthetic-package"}
+        logical=auth.ROOT_PREFIX+scope["runId"]+"/heartbeat.json"
+        reader=SimpleNamespace(path=unittest.mock.Mock(side_effect=error))
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(auth,"_heartbeat_clock",side_effect=clock or [0,0,.001]))
+            log=stack.enter_context(patch.object(auth,"_heartbeat_log",side_effect=logger))
+            pause=stack.enter_context(patch.object(auth,"_heartbeat_pause"))
+            with self.assertRaises(type(error)) as caught:
+                auth._snapshot_heartbeat(reader,logical,scope)
+            self.assertIs(caught.exception,error)
+            self.assertEqual(reader.path.call_count,1)
+            pause.assert_not_called()
+            return log
+
+    def test_heartbeat_failure_logs_existing_bounded_error_without_retry(self):
+        error=OSError(13,"synthetic original failure");error.winerror=5
+        log=self.heartbeat_failure(error)
+        log.assert_called_once()
+        raw=log.call_args.args[0]
+        self.assertLess(len(raw.encode("utf8")),16384)
+        value=json.loads(raw)
+        self.assertEqual(value,error.heartbeat_read)
+        self.assertEqual(value["schema"],"ecology-heartbeat-read-error-v1")
+        self.assertEqual((value["attempts"],value["operation"],value["elapsedMilliseconds"]),(1,"path_before",1))
+        self.assertEqual(value["reasons"],[{"attempt":1,"operation":"path_before","reason":"failure","errno":13,"winerror":5}])
+
+    def test_heartbeat_window_failure_still_rejects_and_logs_without_open(self):
+        scope={"runId":"synthetic-heartbeat-window","packageId":"synthetic-package"}
+        reader=SimpleNamespace(path=unittest.mock.Mock())
+        with patch.object(auth,"_heartbeat_clock",side_effect=[0,.101,.101]), \
+                patch.object(auth,"_heartbeat_log") as log,patch.object(auth,"_heartbeat_pause") as pause:
+            with self.assertRaisesRegex(ValueError,"heartbeat observation window exhausted") as caught:
+                auth._snapshot_heartbeat(reader,auth.ROOT_PREFIX+scope["runId"]+"/heartbeat.json",scope)
+        reader.path.assert_not_called();pause.assert_not_called();log.assert_called_once()
+        self.assertEqual(json.loads(log.call_args.args[0]),caught.exception.heartbeat_read)
+        self.assertEqual(caught.exception.heartbeat_read["elapsedMilliseconds"],101)
+
+    def test_heartbeat_failure_logging_errors_preserve_first_error(self):
+        for logging_error in (OSError("synthetic write failure"),RuntimeError("synthetic flush failure")):
+            with self.subTest(error=type(logging_error).__name__):
+                first=OSError(13,"synthetic primary")
+                self.heartbeat_failure(first,logger=logging_error).assert_called_once()
+
+    def test_heartbeat_failure_serialization_error_preserves_first_error(self):
+        first=OSError(13,"synthetic primary")
+        with patch.object(auth.json,"dumps",side_effect=RuntimeError("synthetic serialization failure")):
+            self.heartbeat_failure(first).assert_not_called()
+
+    def test_heartbeat_oversize_error_log_is_not_published_or_retried(self):
+        first=OSError(13,"synthetic primary")
+        with patch.object(auth.json,"dumps",return_value="x"*16384):
+            self.heartbeat_failure(first).assert_not_called()
+
     """Metadata/control cases are safe inside the real no-compute CPU harness."""
+    def _qualifier_model_setup(self, capability, *, constructor_error=None):
+        route=codec.execution_values(capability)
+        configuration=codec.expected_configuration({"path":route["preview_path"],"sha256":"a"*64},capability)
+        plan={"capabilityVersion":capability,"configuration":configuration,"runId":"private-entry","packageId":"private-package",
+            "outputRoot":"private/qualifier-entry","modelBinding":{"path":"private/model.json","sha256":"b"*64}}
+        context=SimpleNamespace(reader=object(),plan=plan)
+        model,critic=object(),object()
+        initial={"generator":"c"*64,"discriminator":"d"*64}
+        def state_hash(network):
+            self.assertIn(network,(model,critic))
+            return initial["generator" if network is model else "discriminator"]
+        shared=SimpleNamespace(v24=SimpleNamespace(core=SimpleNamespace(cpu=SimpleNamespace(state_hash=state_hash))))
+        reached_cuda=RuntimeError("CPU fixture reached CUDA boundary; no CUDA executed")
+        fake_torch=SimpleNamespace(cuda=SimpleNamespace(is_available=lambda:(_ for _ in ()).throw(reached_cuda)))
+        writes=[]
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(worker,"authenticate_live",return_value=context))
+            stack.enter_context(patch.object(worker,"runtime_for_plan",return_value=(fake_torch,profile,shared)))
+            stack.enter_context(patch.object(worker,"configure_cpu"))
+            stack.enter_context(patch.object(worker,"load_samples",return_value=([],ORDER)))
+            stack.enter_context(patch.object(qualifier,"observation_for_context",return_value=None))
+            stack.enter_context(patch.object(auth,"read_json",return_value={"initialState":initial}))
+            stack.enter_context(patch.object(worker,"write",side_effect=lambda root,logical,value,**kwargs:writes.append(value)))
+            fresh=stack.enter_context(patch.object(profile,"fresh_networks",return_value=(model,critic),side_effect=constructor_error))
+            stack.enter_context(patch.object(torch.cuda,"init",side_effect=AssertionError("real CUDA forbidden")))
+            with self.assertRaises(RuntimeError) as caught:qualifier.run(PACKAGE)
+        self.assertIs(caught.exception,constructor_error or reached_cuda)
+        fresh.assert_called_once_with(ORDER,**auth.model_arguments(capability))
+        self.assertEqual(writes[-1]["actualCounts"],{kind+suffix:0 for kind in qualifier.Calls.LIMITS for suffix in ("Attempted","Completed")})
+        self.assertEqual(writes[-1]["completedCases"],0)
+        self.assertEqual(writes[-1]["optimizerSteps"],0)
+        self.assertEqual(writes[-1]["originalError"]["message"],str(caught.exception))
+
+    def test_actual_qualifier_entry_selects_new_and_legacy_model_before_cuda(self):
+        for capability in (codec.RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY,codec.DECODE2_SUPPORT_WEIGHT1_CAPABILITY,auth.CAPABILITY):
+            with self.subTest(capability=capability):self._qualifier_model_setup(capability)
+
+    def test_actual_qualifier_entry_preserves_constructor_failure_without_cuda(self):
+        self._qualifier_model_setup(codec.DECODE2_SUPPORT_WEIGHT1_CAPABILITY,
+            constructor_error=RuntimeError("original synthetic model construction failure"))
+
+    def test_decode2_numeric_route_keeps_exact_model_weight_and_constructor_selection(self):
+        capability = codec.DECODE2_SUPPORT_WEIGHT1_CAPABILITY
+        route = codec.execution_values(capability)
+        configuration = codec.expected_configuration({"path":route["preview_path"],"sha256":"a"*64}, capability)
+        codec.validate_configuration(configuration)
+        self.assertEqual(configuration["modelCapabilityVersion"], identity.DECODE2_CAPABILITY)
+        self.assertEqual(configuration["objectSupportStructureWeight"], 1)
+        self.assertEqual(profile.execution_support_structure_weight(configuration), 1.0)
+        self.assertEqual(auth.model_arguments(capability), {"model_capability":identity.DECODE2_CAPABILITY})
+        self.assertEqual(auth.model_arguments(codec.SUPPORT_WEIGHT1_CAPABILITY), {})
+        self.assertEqual(codec.components(capability)[3:], (identity.DECODE2_ARCHITECTURE,identity.DECODE2_RULE))
+        for change in ({"modelCapabilityVersion":identity.CAPABILITY}, {"objectSupportStructureWeight":.1}):
+            with self.assertRaises(ValueError): codec.validate_configuration({**configuration, **change})
+
+    def test_decode2_training_callbacks_pass_actual_weight1_not_legacy_default(self):
+        capability = codec.DECODE2_SUPPORT_WEIGHT1_CAPABILITY
+        route=codec.execution_values(capability)
+        configuration=codec.expected_configuration({"path":route["preview_path"],"sha256":"a"*64},capability)
+        context=SimpleNamespace(plan={"capabilityVersion":capability,"configuration":configuration})
+        sink=object();sample_context=object();model=object()
+        with patch.object(worker,"observed_pair",return_value={"observed":True}) as observed:
+            callbacks=worker.training_loop_callbacks(context,[],model,profile=profile,plan_binding=PLAN,
+                execution_binding=PACKAGE,preview=None,capture_sink=sink,context_for_sample=sample_context)
+            callbacks["pair_runner"]("pair-sentinel")
+        self.assertEqual(observed.call_args.kwargs["support_structure_weight"],1.0)
+        self.assertIs(callbacks["capture_sink"],sink)
+        self.assertIs(callbacks["context_for_sample"],sample_context)
+
+    def test_rgb_output_route_uses_own_model_and_weight1_through_training_callback(self):
+        capability = codec.RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY
+        route = codec.execution_values(capability)
+        configuration = codec.expected_configuration({"path": route["preview_path"], "sha256": "a" * 64}, capability)
+        codec.validate_configuration(configuration)
+        self.assertEqual(configuration["modelCapabilityVersion"], identity.RGB_OUTPUT_CAPABILITY)
+        self.assertEqual(auth.model_arguments(capability), {"model_capability": identity.RGB_OUTPUT_CAPABILITY})
+        self.assertEqual(codec.components(capability)[3:], (identity.RGB_OUTPUT_ARCHITECTURE, identity.RGB_OUTPUT_RULE))
+        self.assertEqual(profile.execution_support_structure_weight(configuration), 1.0)
+        context = SimpleNamespace(plan={"capabilityVersion": capability, "configuration": configuration})
+        with patch.object(worker, "observed_pair", return_value={}) as observed:
+            callbacks = worker.training_loop_callbacks(context, [], object(), profile=profile,
+                plan_binding=PLAN, execution_binding=PACKAGE, preview=None,
+                capture_sink=None, context_for_sample=None)
+            callbacks["pair_runner"]("synthetic-pair")
+        self.assertEqual(observed.call_args.kwargs["support_structure_weight"], 1.0)
+        for change in ({"modelCapabilityVersion": identity.DECODE2_CAPABILITY}, {"objectSupportStructureWeight": .1}):
+            with self.assertRaises(ValueError): codec.validate_configuration({**configuration, **change})
+
     def test_registered_corrected_source_selects_policy_binding_not_legacy(self):
         routes = [r for r in codec.registered_training_interfaces() if r["policy_value"]["sourceCandidate"] != auth.CANDIDATE]
         self.assertTrue(routes)
@@ -293,6 +435,51 @@ class AdmissionTests(unittest.TestCase):
 
     def test_resource_floor_accepts2048_below85(self):
         worker.require_gpu_resource_poll(free_bytes=2048*1024**2,uuid="GPU-12345678-1234-1234-1234-123456789abc",temperature=84,sampled_at="2026-10-18T00:00:00Z")
+
+    def test_driver_temperature_preserves_decimal_and_legacy_integer(self):
+        uuid="GPU-12345678-1234-1234-1234-123456789abc"
+        for text,expected,kind in (("36.27",36.27,float),("84.99",84.99,float),("85.01",85.01,float),("84",84,int),("85.00",85.0,float)):
+            with self.subTest(text=text):
+                identity,canonical,temperature=worker._driver_device_zero(f"0, {uuid}, {text}\n")
+                self.assertEqual((identity,canonical),worker._gpu_uuid(uuid))
+                self.assertEqual(temperature,expected)
+                self.assertIs(type(temperature),kind)
+
+    def test_resource_decimal_threshold_and_unrounded_error_value(self):
+        uuid="GPU-12345678-1234-1234-1234-123456789abc"
+        for temperature in (0.0,36.27,84.99):
+            worker.require_gpu_resource_poll(free_bytes=2048*1024**2,uuid=uuid,temperature=temperature,sampled_at="now")
+        for temperature in (85.0,85.01,999.0):
+            with self.subTest(temperature=temperature):
+                with self.assertRaisesRegex(ValueError,"GPU resource guard") as caught:
+                    worker.require_gpu_resource_poll(free_bytes=2048*1024**2,uuid=uuid,temperature=temperature,sampled_at="now")
+                value=json.loads(str(caught.exception).split(": ",1)[1])
+                self.assertEqual(value["temperatureC"],temperature)
+                self.assertEqual(value["triggered"],["temperature_at_or_above_maximum"])
+        with self.assertRaisesRegex(ValueError,"GPU resource guard") as caught:
+            worker.require_gpu_resource_poll(free_bytes=2047*1024**2,uuid=uuid,temperature=85.01,sampled_at="now")
+        value=json.loads(str(caught.exception).split(": ",1)[1])
+        self.assertEqual(value["temperatureC"],85.01)
+        self.assertEqual(value["triggered"],["free_vram_below_minimum","temperature_at_or_above_maximum"])
+
+    def test_resource_temperature_rejects_nonfinite_boolean_and_invalid_values(self):
+        for temperature in (True,False,float("nan"),float("inf"),float("-inf"),-0.01,999.01,1000,"36.27",None):
+            with self.subTest(temperature=temperature), self.assertRaisesRegex(ValueError,"metadata invalid"):
+                worker.require_gpu_resource_poll(free_bytes=2048*1024**2,uuid="GPU-12345678-1234-1234-1234-123456789abc",temperature=temperature,sampled_at="now")
+
+    def test_driver_temperature_rejects_malformed_values(self):
+        uuid="GPU-12345678-1234-1234-1234-123456789abc"
+        for text in ("NaN","inf","-inf","N/A","36.27 C","3.627e1","+36.27","-0.1",".5","36."," 36.27","36.27 ","999.01","1000",""):
+            with self.subTest(text=text), self.assertRaisesRegex(ValueError,"malformed"):
+                worker._driver_device_zero(f"0, {uuid}, {text}\n")
+
+    def test_driver_decimal_reading_keeps_device_identity_guards(self):
+        uuid="GPU-12345678-1234-1234-1234-123456789abc"
+        other="GPU-87654321-4321-4321-4321-cba987654321"
+        valid=f"0, {uuid}, 36.27\n"
+        for raw in (valid+f"0, {other}, 36.27\n",valid+f"1, {uuid}, 36.27\n",f"1, {other}, 36.27\n",f"0,  {uuid}, 36.27\n",f"0, {uuid} , 36.27\n",f"0, {uuid}, 36.27, extra\n"):
+            with self.subTest(raw=raw), self.assertRaises(ValueError): worker._driver_device_zero(raw)
+        self.assertEqual(worker._driver_device_zero(f"1, {other}, 40.25\n"+valid)[2],36.27)
 
     def test_resource_error_retains_both_trigger_values(self):
         with self.assertRaisesRegex(ValueError,"GPU resource guard") as caught:
@@ -942,6 +1129,30 @@ def completion_admission_test_case(capability):
     return CompletionV2AdmissionTests if capability == codec.COMPLETION_V2_CAPABILITY else CompletionAdmissionTests
 
 
+def route_wiring_test_case(capability):
+    if capability == codec.TRAINING_CAPTURE_V6_CAPABILITY:
+        return TrainingCaptureV6RouteTests
+    if capability == codec.TRAINING_CAPTURE_V5_CAPABILITY:
+        return TrainingCaptureV5RouteTests
+    if capability == codec.TRAINING_CAPTURE_V4_CAPABILITY:
+        return TrainingCaptureV4RouteTests
+    if capability == codec.TRAINING_CAPTURE_V3_CAPABILITY:
+        return TrainingCaptureV3RouteTests
+    if capability == codec.TRAINING_CAPTURE_V2_CAPABILITY:
+        return TrainingCaptureV2RouteTests
+    if capability == codec.TRAINING_CAPTURE_CAPABILITY:
+        return TrainingCaptureRouteTests
+    return QualificationSequenceRouteTests if capability == codec.QUALIFICATION_CAPTURE_CAPABILITY else SameCallRouteTests
+
+
+def canonical_verification_test_case(capability):
+    if capability == codec.TRAINING_CAPTURE_V3_CAPABILITY:return CanonicalVerificationTests
+    if capability == codec.TRAINING_CAPTURE_V4_CAPABILITY:return CanonicalVerificationV4Tests
+    if capability == codec.TRAINING_CAPTURE_V5_CAPABILITY:return CanonicalVerificationV5Tests
+    if capability == codec.TRAINING_CAPTURE_V6_CAPABILITY:return CanonicalVerificationV6Tests
+    raise ValueError("unknown canonical verification capability")
+
+
 def cpu_request(binding):
     """Fresh current-package metadata plus bounded regression, never old CPU replay."""
     started = time.monotonic()
@@ -995,7 +1206,9 @@ def cpu_request(binding):
         suite = unittest.defaultTestLoader.loadTestsFromTestCase(AdmissionTests)
         if codec.execution_values(route.capability)["completion"]:
             suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(completion_admission_test_case(route.capability)))
-        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(SameCallRouteTests))
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(route_wiring_test_case(route.capability)))
+        if route.capability in auth.CANONICAL_CAPABILITIES:
+            suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(canonical_verification_test_case(route.capability)))
         result = unittest.TextTestRunner(stream=output, verbosity=2, resultclass=_CpuResult).run(suite)
         node_exit_code = run_node_entry_regression(reader, request, started)
     worker.write(ROOT, request["outputRoot"] + "/python-output.txt", output.getvalue().encode())
@@ -1014,6 +1227,766 @@ def cpu_request(binding):
     return worker.write(ROOT, request["outputRoot"] + "/cpu-report.json", report)
 
 
+
+
+class QualificationSequenceRouteTests(unittest.TestCase):
+    """Actual new-route admission wiring with inert model/observer construction."""
+    def fixture(self):
+        from qualification_parameter0_capture_v1 import target_selected, SAMPLE_ID
+        component = sys.modules[target_selected.__module__]
+        train = [{"sampleId":"synthetic-sequence-"+str(i),"split":"train"} for i in range(48)]
+        train[17]["sampleId"] = SAMPLE_ID
+        model = SimpleNamespace(capability_version="stage4_mvp256_dry_factorized_ecology_decode2_rgb_output_weight_precision_v1")
+        reader = SimpleNamespace(unchanged=unittest.mock.Mock())
+        plan = {"capabilityVersion":codec.QUALIFICATION_CAPTURE_CAPABILITY,
+            "configuration":{"capabilityVersion":codec.QUALIFICATION_CAPTURE_CAPABILITY,
+                "modelCapabilityVersion":model.capability_version,"objectSupportStructureWeight":1},
+            "programBindings":{str(i):{"path":p,"sha256":"a"*64} for i,p in enumerate(auth.QUALIFICATION_CAPTURE_SOURCES)}}
+        context = auth.Context(reader, PACKAGE, {}, plan)
+        calls = qualifier.Calls()
+        calls.counts = {kind+suffix:17*(5 if kind=="generator" else 1)
+            for kind in calls.LIMITS for suffix in ("Attempted","Completed")}
+        return component, context, model, train, calls
+
+    def admitted(self):
+        component, context, model, train, calls = self.fixture()
+        stack = self.enterContext(ExitStack())
+        route = SimpleNamespace(model_capability=model.capability_version,execution_policy=DATA)
+        stack.enter_context(patch.object(auth,"execution_route",return_value=route))
+        stack.enter_context(patch.object(auth,"read_json",return_value={"candidate":codec.QUALIFICATION_CAPTURE_CAPABILITY}))
+        policy_check = stack.enter_context(patch.object(auth,"verify_qualification_capture_policy"))
+        constructor = stack.enter_context(patch.object(component,"Parameter0ProbeCapture",return_value=object()))
+        return context, model, train, calls, policy_check, constructor
+
+    def test_new_route_selects_own_suite_and_keeps_old_suite_for_other_routes(self):
+        self.assertIs(route_wiring_test_case(codec.QUALIFICATION_CAPTURE_CAPABILITY), type(self))
+        for cap in (auth.CAPABILITY,codec.SAME_CALL_CAPABILITY,codec.RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY,"unknown"):
+            self.assertIs(route_wiring_test_case(cap),SameCallRouteTests)
+        self.assertIs(completion_admission_test_case(codec.QUALIFICATION_CAPTURE_CAPABILITY).__bases__[0],RegisteredInterfaceAdmissionTests)
+
+    def test_actual_new_contract_reads_cpu_evidence_and_all_four_source_bytes(self):
+        route = auth.execution_route(codec.QUALIFICATION_CAPTURE_CAPABILITY)
+        reader = auth.Reader(ROOT)
+        policy = auth.read_json(reader,route.execution_policy)
+        contract = auth.verify_qualification_capture_policy(reader,policy)
+        self.assertEqual(contract["sampleOrdinal"],17)
+        self.assertEqual(contract["sequenceSamples"],48)
+        self.assertIs(contract["qualificationGranted"],False)
+        roles = auth.required_program_roles(codec.QUALIFICATION_CAPTURE_CAPABILITY)
+        self.assertEqual(tuple(roles[k] for k in ("qualificationCapture","qualificationGateAuth","qualificationObserver","qualificationReference")),auth.QUALIFICATION_CAPTURE_SOURCES)
+        self.assertTrue(set(("sameCallCapture","sameCallStorage","sameCallBridge","sameCallProfile")).isdisjoint(roles))
+        for cap in (auth.CAPABILITY,codec.SAME_CALL_CAPABILITY,codec.RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY):
+            with self.subTest(cap=cap),self.assertRaisesRegex(ValueError,"legacy capture activation"):
+                auth.verify_qualification_capture_policy(reader,{"candidate":cap,"qualificationFailureCapture":contract})
+        reader.unchanged()
+
+    def test_only_exact_ordinal17_after_seventeen_successes_constructs_capture(self):
+        context,model,train,calls,policy_check,constructor = self.admitted()
+        resource = lambda: None
+        actual = qualifier.capture_for_sample(context,model,resource,train,17,calls,17)
+        self.assertIs(actual,constructor.return_value)
+        constructor.assert_called_once_with(model,resource,sample=train[17],ordinal=17)
+        policy_check.assert_called_once();context.reader.unchanged.assert_called_once()
+        self.assertEqual(calls.counts["generatorCompleted"],85)
+
+    def test_other_samples_and_old_capabilities_never_construct_capture(self):
+        context,model,train,calls,policy_check,constructor = self.admitted()
+        for index in (0,16,18,47):
+            self.assertIsNone(qualifier.capture_for_sample(context,model,lambda:None,train,index,calls,17))
+        for cap in (auth.CAPABILITY,codec.SAME_CALL_CAPABILITY,codec.RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY):
+            context.plan["capabilityVersion"] = cap
+            self.assertIsNone(qualifier.capture_for_sample(context,model,lambda:None,train,17,calls,17))
+        constructor.assert_not_called();policy_check.assert_not_called()
+
+    def test_wrong_sample_prefix_counts_model_and_source_identity_fail_before_capture(self):
+        mutations = (
+            lambda c,m,t,k:t[17].update(sampleId="wrong"),lambda c,m,t,k:t[17].update(split="validation"),
+            lambda c,m,t,k:t.pop(),lambda c,m,t,k:k.counts.update(generatorCompleted=84),
+            lambda c,m,t,k:k.counts.update(forwardAttempted=18),
+            lambda c,m,t,k:setattr(m,"capability_version","wrong_model"),
+            lambda c,m,t,k:c.plan["configuration"].update(modelCapabilityVersion="wrong_model"),
+            lambda c,m,t,k:c.plan["programBindings"].pop("0"),
+            lambda c,m,t,k:c.plan["programBindings"].update(duplicate=dict(c.plan["programBindings"]["0"])))
+        for change in mutations:
+            with self.subTest(change=change):
+                context,model,train,calls,_,constructor = self.admitted()
+                change(context,model,train,calls)
+                with self.assertRaises(ValueError):qualifier.capture_for_sample(context,model,lambda:None,train,17,calls,17)
+                constructor.assert_not_called()
+        context,model,train,calls,_,constructor = self.admitted()
+        for index,completed in ((True,17),(48,17),(17,16),(17,18)):
+            with self.subTest(index=index,completed=completed),self.assertRaises(ValueError):
+                qualifier.capture_for_sample(context,model,lambda:None,train,index,calls,completed)
+        with self.assertRaisesRegex(ValueError,"authenticated qualifier Context"):
+            qualifier.capture_for_sample(SimpleNamespace(plan=context.plan),model,lambda:None,train,17,calls,17)
+        constructor.assert_not_called()
+
+    def test_actual_policy_failure_remains_primary_and_prevents_capture(self):
+        context,model,train,calls,policy_check,constructor = self.admitted()
+        error = ValueError("synthetic bound policy refusal")
+        policy_check.side_effect = error
+        with self.assertRaises(ValueError) as caught:qualifier.capture_for_sample(context,model,lambda:None,train,17,calls,17)
+        self.assertIs(caught.exception,error);constructor.assert_not_called()
+
+    def test_new_training_route_keeps_original_weight1_callbacks_without_old_bridge(self):
+        _,context,model,train,_ = self.fixture()
+        sink,source = object(),object()
+        with patch.object(worker,"observed_pair",return_value="original-pair") as observed:
+            callbacks = worker.training_loop_callbacks(context,train,model,profile=profile,plan_binding=PLAN,
+                execution_binding=PACKAGE,preview=None,capture_sink=sink,context_for_sample=source)
+            self.assertIs(callbacks["capture_sink"],sink);self.assertIs(callbacks["context_for_sample"],source)
+            self.assertEqual(callbacks["pair_runner"]("argument"),"original-pair")
+            self.assertEqual(observed.call_args.kwargs["support_structure_weight"],1)
+            self.assertNotIn("same_call_context",observed.call_args.kwargs)
+
+
+class TrainingCaptureRouteTests(unittest.TestCase):
+    """Current production callback selection; no model execution or old bridges."""
+    capability = codec.TRAINING_CAPTURE_CAPABILITY
+    def fixture(self):
+        from ai_painter.complete_world import parameter0_training_same_call_bridge_v1 as same_call
+        train = [{"sampleId":"synthetic-training-capture-"+str(i), "split":"train"} for i in range(48)]
+        train[8]["sampleId"] = "ai-cold-start-v7-v7-capacity-slot-154-tropical-forest-glade-v2"
+        plan = {"capabilityVersion":self.capability, "trainSplit":DATA,
+            "configuration":{"capabilityVersion":self.capability,
+                "modelCapabilityVersion":"stage4_mvp256_dry_factorized_ecology_decode2_rgb_output_weight_precision_v1",
+                "objectSupportStructureWeight":1,"seed":20260929}, "runId":RUN,"packageId":"synthetic-training-capture-package","outputRoot":OUTPUT,
+            "modelBinding":{"path":OUTPUT+"/model-identity.json","sha256":"f"*64},"programBindings":PROGRAMS}
+        reader = SimpleNamespace(mapping=object(),json=lambda binding:{"split":"train","sampleIds":[s["sampleId"] for s in train]})
+        context=auth.Context(reader,PACKAGE,{},plan);model=SimpleNamespace(named_parameters=lambda:[])
+        arguments=dict(profile=profile,plan_binding=PLAN,execution_binding=PACKAGE,
+            preview=SimpleNamespace(observe=lambda *args:None),capture_sink=object(),context_for_sample=object())
+        return same_call,context,train,model,arguments
+
+    def admitted(self):
+        component,context,train,model,arguments=self.fixture()
+        scope=self.enterContext(ExitStack())
+        live=scope.enter_context(patch.object(auth,"verify_live_context"))
+        scope.enter_context(patch.object(component.TrainingSameCallBridge,"_authenticate_bindings"))
+        scope.enter_context(patch.object(component.TrainingSameCallBridge,"_sample_identity",side_effect=lambda value:dict(value)))
+        callbacks=worker.training_loop_callbacks(context,train,model,**arguments)
+        live.assert_called_once_with(context,expected_phase="training")
+        return component,context,train,model,arguments,callbacks
+
+    def test_new_route_owns_exact_four_roles_and_cpu_wiring_suite(self):
+        self.assertIs(route_wiring_test_case(self.capability),type(self))
+        with patch.object(codec,"execution_values",return_value={"completion":True,"same_call_capture":True,
+                "policy":{"path":"data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v13.json"}}):
+            roles=auth.required_program_roles(self.capability)
+        self.assertEqual([roles[key] for key in ("sameCallCapture","sameCallStorage","sameCallBridge","sameCallProfile")],list(auth.TRAINING_CAPTURE_SOURCES))
+        self.assertFalse(any("parameter90_training_same_call" in value or "qualification_parameter0" in value for value in roles.values()))
+        self.assertFalse(any(key in roles for key in ("qualificationCapture","qualificationGateAuth","qualificationObserver","qualificationReference")))
+        self.assertIs(route_wiring_test_case(codec.QUALIFICATION_CAPTURE_CAPABILITY),QualificationSequenceRouteTests)
+        self.assertIs(route_wiring_test_case(codec.SAME_CALL_CAPABILITY),SameCallRouteTests)
+
+    def test_actual_new_worker_constructs_one_bridge_for_all_three_callbacks(self):
+        component,context,train,model,arguments,callbacks=self.admitted()
+        self.assertEqual(set(callbacks),{"pair_runner","capture_sink","context_for_sample"})
+        bridge=callbacks["pair_runner"].__self__
+        self.assertIs(type(bridge),component.TrainingSameCallBridge)
+        self.assertIs(bridge.context,context);self.assertIs(bridge.model,model)
+        self.assertEqual(bridge.train,tuple(train));self.assertIs(bridge.preview,arguments["preview"])
+        self.assertIs(callbacks["capture_sink"].__self__,bridge)
+        self.assertIs(callbacks["context_for_sample"].__self__,bridge)
+
+    def test_old_rgb_and_qualification_caps_never_construct_training_capture(self):
+        component,context,train,model,arguments=self.fixture()
+        for capability in (codec.RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY,codec.QUALIFICATION_CAPTURE_CAPABILITY):
+            context.plan["capabilityVersion"]=capability;context.plan["configuration"]["capabilityVersion"]=capability
+            with patch.object(component,"TrainingSameCallBridge",side_effect=AssertionError("old route must not construct new bridge")), \
+                    patch.object(worker,"observed_pair",return_value="original") as observed:
+                callbacks=worker.training_loop_callbacks(context,train,model,**arguments)
+                self.assertIs(callbacks["capture_sink"],arguments["capture_sink"])
+                self.assertEqual(callbacks["pair_runner"]("argument"),"original")
+                self.assertEqual(observed.call_args.kwargs["support_structure_weight"],1)
+
+    def test_real_bridge_rejects_wrong_context_train_sequence_and_preserves_admission_error(self):
+        component,context,train,model,arguments,_=self.admitted()
+        with self.assertRaisesRegex(ValueError,"authentic execution context"):
+            worker.training_loop_callbacks(SimpleNamespace(plan=context.plan),train,model,**arguments)
+        with self.assertRaisesRegex(ValueError,"exact48 unique train"):
+            worker.training_loop_callbacks(context,train[:-1],model,**arguments)
+        with self.assertRaisesRegex(ValueError,"actual train sequence"):
+            worker.training_loop_callbacks(context,list(reversed(train)),model,**arguments)
+        original=ValueError("original admission refusal")
+        with patch.object(auth,"verify_live_context",side_effect=original):
+            with self.assertRaises(ValueError) as caught:worker.training_loop_callbacks(context,train,model,**arguments)
+        self.assertIs(caught.exception,original)
+
+    def test_actual_bridge_installs_according_to_versioned_call_scope(self):
+        component,context,train,model,arguments,callbacks=self.admitted()
+        bridge=callbacks["pair_runner"].__self__;bridge.graph=[];bridge.source_bindings=[]
+        if self.capability == codec.TRAINING_CAPTURE_V6_CAPABILITY:
+            import random
+            indices=list(range(48));random.Random(20260930).shuffle(indices)
+            def observer(*args,**kwargs):
+                return SimpleNamespace(_closed=True,packet=None,
+                    outcome={"status":"successful_g_released_without_capture"},model=None,module=None,
+                    resource=None,_bound_resource=None,_resource_failure=None,_handles=(),_graph=(),_buffers=(),
+                    _sources=(),_adjoints={},_gradients={},_descriptors={},_input=None,_input_ref=None,_output_ref=None)
+            with patch.object(component.capture,"Parameter0TrainingSameCallCapture",side_effect=observer) as capture:
+                for g in range(25):
+                    bridge.same_call_context(model,train[indices[g]],{"generator":g,"discriminator":g+1},lambda:None)
+                    identity=capture.call_args.kwargs["identity"]
+                    self.assertEqual(identity["trainIndex"],indices[g])
+                    self.assertEqual(identity["optimizerSteps"],{"generator":g,"discriminator":g+1})
+                self.assertEqual(capture.call_count,25)
+                with self.assertRaisesRegex(ValueError,"gap or repeated"):
+                    bridge.same_call_context(model,train[indices[24]],{"generator":24,"discriminator":25},lambda:None)
+            return
+        with patch.object(component.capture,"Parameter0TrainingSameCallCapture",return_value=object()) as capture:
+            for generator in (0,13,15):
+                self.assertIsNone(bridge.same_call_context(model,train[8],{"generator":generator,"discriminator":generator+1},lambda:None))
+            capture.assert_not_called()
+            for sample,counts in ((train[7],{"generator":14,"discriminator":15}),
+                                  (train[8],{"generator":14,"discriminator":14})):
+                with self.assertRaises(ValueError):bridge.same_call_context(model,sample,counts,lambda:None)
+            self.assertIs(bridge.same_call_context(model,train[8],{"generator":14,"discriminator":15},lambda:None),capture.return_value)
+            capture.assert_called_once();identity=capture.call_args.kwargs["identity"]
+            self.assertEqual((identity["epoch"],identity["zeroBasedEpochPosition"],identity["trainIndex"]),(1,14,8))
+            self.assertEqual(identity["optimizerSteps"],{"generator":14,"discriminator":15})
+            self.assertEqual(identity["sampleId"],train[8]["sampleId"])
+            with self.assertRaisesRegex(ValueError,"already consumed"):
+                bridge.same_call_context(model,train[8],{"generator":14,"discriminator":15},lambda:None)
+
+
+class TrainingCaptureV2RouteTests(TrainingCaptureRouteTests):
+    capability = codec.TRAINING_CAPTURE_V2_CAPABILITY
+
+
+class TrainingCaptureV3RouteTests(TrainingCaptureRouteTests):
+    capability = codec.TRAINING_CAPTURE_V3_CAPABILITY
+
+
+class TrainingCaptureV4RouteTests(TrainingCaptureRouteTests):
+    capability = codec.TRAINING_CAPTURE_V4_CAPABILITY
+
+
+class TrainingCaptureV5RouteTests(TrainingCaptureRouteTests):
+    capability = codec.TRAINING_CAPTURE_V5_CAPABILITY
+
+
+class TrainingCaptureV6RouteTests(TrainingCaptureRouteTests):
+    capability = codec.TRAINING_CAPTURE_V6_CAPABILITY
+
+
+class CanonicalVerificationTests(unittest.TestCase):
+    """Synthetic metadata, retained private files and mocked Node; no model calls."""
+    capability = codec.TRAINING_CAPTURE_V3_CAPABILITY
+    evidence_task = "TRAINING-SAME-CALL-CAPTURE-025-CPU"
+
+    def fixture(self, *, capability=None, activate=True):
+        from ai_painter.complete_world import object_appearance_regime_input_cpu as seasonal
+        capability=capability or self.capability
+        canonical=auth.canonical_verification_identity(capability if capability in auth.CANONICAL_CAPABILITIES else self.capability)
+        route=codec.execution_values(capability if capability in auth.CANONICAL_CAPABILITIES else self.capability)
+        prefix=os.environ.get("TD_TRAIN_ENTRY_CPU_OUTPUT_ROOT",
+            ".runtime/ai-painter/controller-repair-reviews/canonical-initialization-repair-025-20261024/canonical-design/tests")
+        logical=prefix+"/canonical-"+uuid.uuid4().hex
+        reader=auth.Reader(ROOT);reader.path(logical).mkdir(parents=True)
+        def store(name,value):
+            raw=json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(",",":"),allow_nan=False).encode()
+            path=logical+"/"+name;reader.path(path).write_bytes(raw)
+            return {"path":path,"sha256":hashlib.sha256(raw).hexdigest()}
+        climate={"sourceId":"synthetic-climate","role":"regional_climate_and_monsoon_context","license":"synthetic",
+            "attribution":"synthetic","acquisitionStatus":"synthetic","visualTrainingTargetEligible":False}
+        registry_source=store("source-registry.json",{"sources":[climate]})
+        regional=store("regional-profile.json",{"synthetic":True})
+        env={"season":"dry_season","weather":"dry","lighting":"day","groundMoisture":"dry"}
+        snapshot=store("season.json",{"schemaVersion":"natural-home-visual-snapshot-v1",
+            "status":"provisional_owner_approved_profile_baseline","usage":{"originalImageCoverageBaseline":True},
+            "isFinal":False,"snapshotId":"synthetic-season","environment":env})
+        payload={"sourceProvenance":{"seasonSnapshotPath":snapshot["path"],"seasonSnapshotSha256":snapshot["sha256"],
+            "worldProfilePath":regional["path"],"worldProfileSha256":regional["sha256"],
+            "sourceRegistryPath":registry_source["path"],"sourceRegistrySha256":registry_source["sha256"],"sources":[climate]}}
+        expected=hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+        region={**payload,"packageSha256":expected};region_binding=store("region.json",region)
+        ecology={"season":"dry_season","snapshotId":"synthetic-season"}
+        task=store("task.json",{"sourceBindings":{"realEarthRegionSourcePackagePath":region_binding["path"],
+            "realEarthRegionSourcePackageSha256":expected,"seasonSnapshotPath":snapshot["path"],"seasonSnapshotSha256":snapshot["sha256"],
+            "regionalProfilePath":regional["path"],"regionalProfileSha256":regional["sha256"]},
+            "directorPlan":{"singleMapEcologyPlan":ecology,"singleMapMaterialPlan":env}})
+        condition=store("condition.json",{"sourceBindings":{"taskPackagePath":task["path"]},
+            "categoricalConditions":{"ecologyPlan":ecology,"materialPlan":env}})
+        record={"conditionPack":condition,"taskPackage":task,"regionSourcePackage":dict(region_binding,taskBoundCanonicalPackageSha256=expected),
+            "seasonSnapshot":snapshot,"regionalProfile":regional,"sourceRegistry":registry_source}
+        reader._source_snapshot_bindings={b["path"]:{key:b[key] for key in ("path","sha256")} for b in record.values()}
+        closure=store("data-closure.json",{"bindings":list(reader._source_snapshot_bindings.values())})
+        node=reader.path(logical+"/synthetic-node.exe");node.write_bytes(b'synthetic-node-binary-not-executed')
+        node_identity={"absolutePath":str(node),"sha256":hashlib.sha256(node.read_bytes()).hexdigest()}
+        policy=store("execution-policy.json",{"canonicalVerification":deepcopy(canonical)})
+        package=store("package.json",{"synthetic":True})
+        plan={"capabilityVersion":capability,"runId":route["run_prefix"]+"fixture-"+uuid.uuid4().hex,
+            "packageId":route["package_prefix"]+"fixture-"+uuid.uuid4().hex,"outputRoot":logical,
+            "dataClosure":closure,"programBindings":{"canonicalRegionProgram":deepcopy(canonical["canonicalProgram"])},
+            "runtimeIdentity":{"node":node_identity},"executionPolicy":policy}
+        reader._source_snapshot_scope={key:deepcopy(plan[key]) for key in ("runId","packageId","dataClosure","capabilityVersion")}
+        context=auth.Context(reader,package,{"synthetic":True},plan)
+        identity_fields={key:plan[key] for key in ("runId","packageId","capabilityVersion")}
+        identity_fields.update(processId=12345,processStartIdentity="synthetic:12345")
+        lock=store("execution-lock.json",{"schemaVersion":"ai-painter-current-active-execution-lock-v1",**identity_fields})
+        heartbeat=store("heartbeat.json",{"schemaVersion":"ai-painter-current-active-execution-heartbeat-v1",**identity_fields,
+            "executionState":"executing","ttlSeconds":120,"heartbeatAtUtc":datetime.now(timezone.utc).isoformat()})
+        registry=store("private-current.json",{"registryRevision":1,"executionState":"executing",**identity_fields,
+            "activeExecution":{"executionState":"executing",**identity_fields,"programLineage":plan["programBindings"],
+                "lock":lock,"heartbeat":{"path":heartbeat["path"],"ttlSeconds":120}}})
+        original_snapshot=reader.snapshot
+        def snapshot_reader(path):
+            selected=registry if path==auth.REGISTRY else heartbeat if path==heartbeat["path"] else \
+                canonical["canonicalProgram"] if path==auth.CANONICAL_REGION_PROGRAM else None
+            return (reader.read(selected),dict(selected)) if selected is not None else original_snapshot(path)
+        self.enterContext(patch.object(reader,"snapshot",side_effect=snapshot_reader))
+        self.enterContext(patch.object(auth.shutil,"which",return_value=str(node)))
+        self.enterContext(patch.object(auth,"execution_route",side_effect=lambda cap:SimpleNamespace(capability=cap)))
+        self.enterContext(patch.object(auth,"load_execution_package",return_value=context))
+        self.enterContext(patch.object(auth,"process_identity",return_value=identity_fields["processStartIdentity"]))
+        invoke=self.enterContext(patch.object(seasonal,"_canonical_node",return_value=SimpleNamespace(stdout=expected)))
+        if activate:auth.verify_live_context(context)
+        self.addCleanup(auth._CANONICAL_STATES.pop,reader,None)
+        return SimpleNamespace(reader=reader,context=context,record=record,region=region,expected=expected,
+            seasonal=seasonal,node=node,invoke=invoke,store=store,logical=logical,prefix=prefix,policy=policy,canonical=canonical)
+
+    def observation_scope(self,f):
+        """Synthetic writer scope only; native accounting and inherited MAX stay intact."""
+        self.assertEqual(f.context.plan["outputRoot"],f.logical)
+        self.assertTrue(f.logical.startswith(f.prefix+"/canonical-"))
+        f.reader.path(f.logical).relative_to(f.reader.path(f.prefix))
+        return patch.dict(os.environ,{"DETAIL_WEIGHT_OUTPUT_ROOTS":json.dumps([f.logical])})
+
+    def verify(self,f):
+        return f.seasonal.bound_regime(f.reader,f.record)
+
+    def test_success_reuses_digest_but_rechecks_all_six_raw_sources_and_program(self):
+        f=self.fixture()
+        with patch.object(f.reader,"read",wraps=f.reader.read) as reads:
+            self.verify(f);reads.reset_mock();self.verify(f)
+            observed=[call.args[0]["path"] for call in reads.call_args_list]
+            self.assertTrue(all(binding["path"] in observed for binding in f.record.values()))
+            self.assertIn(auth.CANONICAL_REGION_PROGRAM,observed)
+        self.assertEqual(f.invoke.call_count,1)
+        self.assertEqual(f.invoke.call_args.kwargs["executable"],str(f.node))
+        snapshot=auth.canonical_observation(f.context)
+        self.assertEqual(snapshot["counters"],{"calls":2,"hits":1,"misses":1,"nodeCalls":1,"failures":0})
+        self.assertIsNone(snapshot["lastOperation"]["nodeHashSeconds"])
+        self.assertIsNone(snapshot["lastOperation"]["sampleId"])
+        self.assertLessEqual(snapshot["cacheBytes"],65536)
+
+    def test_unauthenticated_and_forged_activation_do_not_enable_cache(self):
+        f=self.fixture(activate=False);f.reader.canonical_cache_enabled=True
+        f.reader._canonical_cache={"passed":True}
+        with self.assertRaisesRegex(ValueError,"completed live authentication"):
+            auth._arm_canonical_cache(f.context,proof=True)
+        self.verify(f);self.verify(f)
+        self.assertEqual(f.invoke.call_count,2);self.assertNotIn(f.reader,auth._CANONICAL_STATES)
+
+    def test_old_v1_v2_and_qualification_keep_uncached_algorithm(self):
+        for cap in (codec.TRAINING_CAPTURE_CAPABILITY,codec.TRAINING_CAPTURE_V2_CAPABILITY,codec.QUALIFICATION_CAPTURE_CAPABILITY):
+            with self.subTest(capability=cap):
+                f=self.fixture(capability=cap);self.verify(f);self.verify(f)
+                self.assertEqual(f.invoke.call_count,2);self.assertNotIn(f.reader,auth._CANONICAL_STATES)
+                self.assertIsNone(auth.canonical_observation(f.context))
+
+    def test_new_reader_never_inherits_cached_result(self):
+        f=self.fixture();self.verify(f)
+        second=auth.Reader(ROOT)
+        second._source_snapshot_scope=deepcopy(f.reader._source_snapshot_scope)
+        second._source_snapshot_bindings=deepcopy(f.reader._source_snapshot_bindings)
+        self.assertIsNone(second._verified_canonical_region(f.record,f.region,f.canonical["canonicalProgram"],f.expected))
+
+    def test_new_authenticated_run_has_empty_independent_cache(self):
+        first=self.fixture();self.verify(first)
+        second=self.fixture()
+        self.assertNotEqual(first.context.plan["runId"],second.context.plan["runId"])
+        self.assertEqual(auth.canonical_observation(second.context)["cacheEntries"],0)
+        self.verify(second)
+        self.assertEqual(first.invoke.call_count,1);self.assertEqual(second.invoke.call_count,1)
+        self.assertIsNot(auth._CANONICAL_STATES[first.reader],auth._CANONICAL_STATES[second.reader])
+
+    def test_cross_run_and_package_scope_changes_rejected(self):
+        for field in ("runId","packageId"):
+            f=self.fixture();self.verify(f)
+            f.context.plan[field]+="-different"
+            with self.assertRaisesRegex(ValueError,"same Run source scope"):self.verify(f)
+            self.assertEqual(f.invoke.call_count,1)
+
+    def test_failed_live_reauthentication_disables_existing_cache(self):
+        f=self.fixture();self.verify(f)
+        original=ValueError("synthetic package rejection")
+        with patch.object(auth,"load_execution_package",side_effect=original):
+            with self.assertRaises(ValueError) as caught:auth.verify_live_context(f.context)
+        self.assertIs(caught.exception,original)
+        with self.assertRaisesRegex(ValueError,"authentication incomplete"):self.verify(f)
+        self.assertEqual(f.invoke.call_count,1)
+
+    def test_each_metadata_tamper_fails_before_cached_digest(self):
+        for key in auth._CANONICAL_RECORD_KEYS:
+            with self.subTest(source=key):
+                f=self.fixture();self.verify(f)
+                target=f.reader.path(f.record[key]["path"]);target.write_bytes(target.read_bytes()+b' ')
+                with self.assertRaises(ValueError):self.verify(f)
+                self.assertEqual(f.invoke.call_count,1)
+
+    def test_actual_region_object_and_unbound_record_cannot_seed_cache(self):
+        f=self.fixture()
+        with self.assertRaisesRegex(ValueError,"actual bytes"):
+            f.reader._verified_canonical_region(f.record,{**f.region,"changed":True},f.canonical["canonicalProgram"],f.expected)
+        wrong=deepcopy(f.record);wrong["regionSourcePackage"]["sha256"]="0"*64
+        with self.assertRaisesRegex(ValueError,"outside verified data closure"):
+            f.reader._verified_canonical_region(wrong,f.region,f.canonical["canonicalProgram"],f.expected)
+        f.invoke.assert_not_called()
+
+    def test_program_bytes_and_binding_tamper_rejected_on_hit(self):
+        f=self.fixture();self.verify(f);original=f.reader.snapshot
+        def changed(path):
+            raw,binding=original(path)
+            return (raw+b' ',binding) if path==auth.CANONICAL_REGION_PROGRAM else (raw,binding)
+        with patch.object(f.reader,"snapshot",side_effect=changed):
+            with self.assertRaisesRegex(ValueError,"program changed"):self.verify(f)
+        self.assertEqual(f.invoke.call_count,1)
+
+    def test_node_path_identity_change_rejected_on_hit(self):
+        f=self.fixture();self.verify(f)
+        with patch.object(auth.shutil,"which",return_value=str(f.node)+"-other"):
+            with self.assertRaisesRegex(ValueError,"resolution changed"):self.verify(f)
+        self.assertEqual(f.invoke.call_count,1)
+
+    def test_node_bytes_rehashed_before_miss(self):
+        f=self.fixture();f.node.write_bytes(b'changed-node-binary')
+        stamp=auth._CANONICAL_STATES[f.reader]["nodeStamp"]
+        original=auth._canonical_node_stamp
+        with patch.object(auth,"_canonical_node_stamp",side_effect=lambda expected,rehash=False: original(expected,rehash=True) if rehash else stamp):
+            with self.assertRaisesRegex(ValueError,"actual Node bytes differ"):self.verify(f)
+        f.invoke.assert_not_called()
+
+    def test_failure_and_timeout_never_cache_and_preserve_first_error(self):
+        for first in (subprocess.TimeoutExpired(["synthetic-node"],10),RuntimeError("synthetic node failure")):
+            with self.subTest(error=type(first).__name__):
+                f=self.fixture();f.invoke.side_effect=first
+                with self.assertRaises(type(first)) as caught:self.verify(f)
+                self.assertIs(caught.exception,first)
+                snap=auth.canonical_observation(f.context)
+                self.assertEqual(snap["cacheEntries"],0);self.assertEqual(snap["counters"]["nodeCalls"],1)
+                self.assertEqual(snap["firstError"]["error"]["type"],type(first).__name__)
+                f.invoke.side_effect=ValueError("second synthetic failure")
+                with self.assertRaises(ValueError):self.verify(f)
+                self.assertEqual(auth.canonical_observation(f.context)["firstError"],snap["firstError"])
+
+    def test_wrong_digest_is_not_cached(self):
+        f=self.fixture();f.invoke.return_value=SimpleNamespace(stdout="0"*64)
+        with self.assertRaisesRegex(ValueError,"recomputed canonical identity differs"):self.verify(f)
+        self.assertEqual(auth.canonical_observation(f.context)["cacheEntries"],0)
+
+    def test_successful_reauthentication_keeps_same_scope_cache(self):
+        f=self.fixture();self.verify(f);auth.verify_live_context(f.context);self.verify(f)
+        self.assertEqual(f.invoke.call_count,1)
+
+    def test_cache_capacity_and_actual_utf8_bytes_are_bounded(self):
+        f=self.fixture()
+        for index in range(80):
+            region={**f.region,"syntheticNonce":index};binding=f.store("region-"+str(index)+".json",region)
+            record=deepcopy(f.record);record["regionSourcePackage"]=dict(binding,taskBoundCanonicalPackageSha256=f.expected)
+            f.reader._source_snapshot_bindings[binding["path"]]=binding
+            f.reader._verified_canonical_region(record,region,f.canonical["canonicalProgram"],f.expected)
+        state=auth._CANONICAL_STATES[f.reader]
+        self.assertLessEqual(len(state["entries"]),64)
+        self.assertLessEqual(state["bytes"],65536)
+        self.assertEqual(state["bytes"],sum(len(k.encode())+len(v.encode()) for k,v in state["entries"].items()))
+        self.assertEqual(f.invoke.call_count,80)
+
+    def test_realistic_length_56_records_then_48_train_hits_and_fifo_limit64(self):
+        f=self.fixture();memory={};records=[];original=f.reader.read
+        for index in range(65):
+            payload={key:value for key,value in f.region.items() if key!="packageSha256"}
+            payload["syntheticUniqueRegion"]=index
+            expected=hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+            region={**payload,"packageSha256":expected}
+            raw=json.dumps(region,sort_keys=True,separators=(",",":")).encode()
+            path=f.logical+"/earth-geospatial-v7-slot-condition-v7-capacity-slot-"+str(index)+"-2026-07-31T14-45-28-337Z/complete-map-condition-task/real-earth-region-source-package.json"
+            self.assertGreaterEqual(len(path),195)
+            bound={"path":path,"sha256":hashlib.sha256(raw).hexdigest()}
+            memory[path]=raw;f.reader._source_snapshot_bindings[path]=bound
+            record=deepcopy(f.record);record["regionSourcePackage"]=dict(bound,taskBoundCanonicalPackageSha256=expected)
+            records.append((record,region,expected))
+        def read_metadata(binding,maximum=auth.MAX_CAPTURE):
+            if binding["path"] not in memory:return original(binding,maximum)
+            raw=memory[binding["path"]]
+            self.assertEqual(hashlib.sha256(raw).hexdigest(),binding["sha256"])
+            self.assertLessEqual(len(raw),maximum)
+            return raw
+        f.invoke.side_effect=lambda region,*args,**kwargs:SimpleNamespace(stdout=region["packageSha256"])
+        def validate(index):
+            record,region,expected=records[index]
+            return f.reader._verified_canonical_region(record,region,f.canonical["canonicalProgram"],expected)
+        with patch.object(f.reader,"read",side_effect=read_metadata):
+            for index in range(56):validate(index)
+            self.assertEqual(f.invoke.call_count,56)
+            for index in range(48):validate(index)
+            self.assertEqual(f.invoke.call_count,56)
+            state=auth._CANONICAL_STATES[f.reader]
+            self.assertEqual((len(state["entries"]),state["bytes"]),(56,56*128))
+            self.assertTrue(all(len(key)==64 and len(value)==64 for key,value in state["entries"].items()))
+            for index in range(56,65):validate(index)
+            self.assertEqual((len(state["entries"]),state["bytes"]),(64,8192))
+            validate(0)  # The oldest entry was deterministically evicted.
+            self.assertEqual(f.invoke.call_count,66)
+            validate(64);self.assertEqual(f.invoke.call_count,66)
+
+    def test_compact_key_does_not_remove_data_runtime_or_program_scope_checks(self):
+        for name in ("dataClosure","runtimeIdentity","canonicalRegionProgram","root"):
+            f=self.fixture();self.verify(f)
+            if name=="dataClosure":f.context.plan[name]["sha256"]="0"*64
+            elif name=="runtimeIdentity":f.context.plan[name]["node"]["sha256"]="0"*64
+            elif name=="canonicalRegionProgram":f.context.plan["programBindings"][name]["sha256"]="0"*64
+            else:f.reader.root=ROOT/"different-root"
+            with self.assertRaises(ValueError):
+                f.reader._verified_canonical_region(f.record,f.region,f.canonical["canonicalProgram"],f.expected)
+            self.assertEqual(f.invoke.call_count,1)
+        f=self.fixture();self.verify(f)
+        with self.assertRaisesRegex(ValueError,"recomputed canonical identity differs"):
+            f.reader._verified_canonical_region(f.record,f.region,f.canonical["canonicalProgram"],"0"*64)
+        self.assertEqual(f.invoke.call_count,2)
+
+    def test_policy_exactness_and_current_program_role_required(self):
+        for mutation in ("policy","role"):
+            f=self.fixture(activate=False)
+            if mutation=="policy":
+                bad=deepcopy(f.canonical);bad["subprocessTimeoutSeconds"]=11
+                f.context.plan["executionPolicy"]=f.store("bad-policy.json",{"canonicalVerification":bad})
+            else:f.context.plan["programBindings"]["canonicalRegionProgram"]["sha256"]="0"*64
+            with self.assertRaises(ValueError):auth.verify_live_context(f.context)
+            self.assertNotIn(f.reader,auth._CANONICAL_STATES)
+
+    def test_current_policy_core_support_and_invalid_mapping_rejected(self):
+        reader=auth.Reader(ROOT);values=codec.execution_values(self.capability)
+        policy=auth.read_json(reader,values["policy"])
+        preview={key:policy["trainingPreviewPolicy"][key] for key in ("path","sha256")}
+        configuration=codec.expected_configuration(preview,self.capability)
+        self.assertIs(auth.validate_execution_policy(policy,configuration),policy)
+        contract=policy["trainingFailureCapture"]
+        core,path,task=auth.training_capture_identity(self.capability)
+        self.assertEqual(contract["cpuEvidence"]["path"],path)
+        self.assertEqual(task,self.evidence_task)
+        self.assertEqual({key:contract[key] for key in core},core)
+        if self.capability == codec.TRAINING_CAPTURE_V6_CAPABILITY:
+            self.assertEqual(core["schemaVersion"], "parameter0-training-call-coverage-v1")
+            self.assertEqual(core["maximumObservedGCalls"], 1152)
+            self.assertEqual(core["firstGeneratorCount"], 0)
+            self.assertEqual(core["lastGeneratorCount"], 1151)
+            self.assertTrue(core["previousSuccessReleasedBeforeNextD"])
+            self.assertNotIn("sampleId", core)
+        else:
+            self.assertEqual({k:v for k,v in core.items() if k!="capabilityVersion"},
+                {k:v for k,v in auth.TRAINING_CAPTURE_CORE.items() if k!="capabilityVersion"})
+        self.assertEqual(policy["canonicalVerification"],auth.canonical_verification_identity(self.capability))
+        for cap in ("unknown",None,"stage4_mvp256_dry_decode2_rgb_output_training_capture_v99"):
+            with self.assertRaisesRegex(ValueError,"unknown training capture"):auth.training_capture_identity(cap)
+        self.assertEqual(auth.required_program_roles(self.capability)["canonicalRegionProgram"],auth.CANONICAL_REGION_PROGRAM)
+        self.assertNotIn("canonicalRegionProgram",auth.required_program_roles(codec.TRAINING_CAPTURE_V2_CAPABILITY))
+        if self.capability in (codec.TRAINING_CAPTURE_V3_CAPABILITY,codec.TRAINING_CAPTURE_V4_CAPABILITY,codec.TRAINING_CAPTURE_V5_CAPABILITY):
+            # Frozen V3/V4/V5 policies cannot qualify changed coverage component bytes.
+            mismatched=[source for source in contract["componentSources"]
+                if hashlib.sha256(reader.path(source["path"]).read_bytes()).hexdigest()!=source["sha256"]]
+            self.assertTrue(mismatched)
+            with patch.object(reader,"read",wraps=reader.read) as reads:
+                with self.assertRaisesRegex(ValueError,"binding SHA differs"):
+                    auth.verify_training_capture_policy(reader,policy)
+            self.assertEqual(reads.call_args.args[0],{key:mismatched[0][key] for key in ("path","sha256")})
+            return
+        self.assertIs(auth.verify_training_capture_policy(reader,policy),contract)
+        for which in ("core","path","evidence"):
+            bad=deepcopy(policy)
+            if which=="core":bad["trainingFailureCapture"]["maximumObservedGCalls"]=2
+            elif which=="path":bad["trainingFailureCapture"]["cpuEvidence"]["path"]=auth.training_capture_identity(codec.TRAINING_CAPTURE_V2_CAPABILITY)[1]
+            if which=="evidence":
+                evidence=auth.read_json(reader,contract["cpuEvidence"]);evidence["taskId"]="TRAINING-SAME-CALL-CAPTURE-024-CPU"
+                with patch.object(auth,"read_json",return_value=evidence),self.assertRaisesRegex(ValueError,"CPU evidence"):
+                    auth.verify_training_capture_policy(reader,bad)
+            else:
+                with self.assertRaises(ValueError):auth.verify_training_capture_policy(reader,bad)
+
+    def test_cross_version_canonical_activation_is_rejected(self):
+        for other in auth.CANONICAL_CAPABILITIES:
+            if other==self.capability:continue
+            f=self.fixture(activate=False)
+            other_core=auth.canonical_verification_identity(other)
+            self.assertNotEqual(f.canonical["activation"],other_core["activation"])
+            f.context.plan["executionPolicy"]=f.store("cross-version-policy.json",{"canonicalVerification":deepcopy(other_core)})
+            with self.subTest(other=other),self.assertRaises(ValueError):auth.verify_live_context(f.context)
+            self.assertNotIn(f.reader,auth._CANONICAL_STATES)
+        for cap in (codec.TRAINING_CAPTURE_CAPABILITY,codec.TRAINING_CAPTURE_V2_CAPABILITY,"unknown"):
+            with self.assertRaises(ValueError):auth.canonical_verification_identity(cap)
+
+    def test_cpu_canonical_and_route_dispatch_are_exact(self):
+        self.assertIs(canonical_verification_test_case(self.capability),type(self))
+        expected={codec.TRAINING_CAPTURE_V3_CAPABILITY:TrainingCaptureV3RouteTests,
+            codec.TRAINING_CAPTURE_V4_CAPABILITY:TrainingCaptureV4RouteTests,
+            codec.TRAINING_CAPTURE_V5_CAPABILITY:TrainingCaptureV5RouteTests,
+            codec.TRAINING_CAPTURE_V6_CAPABILITY:TrainingCaptureV6RouteTests}[self.capability]
+        self.assertIs(route_wiring_test_case(self.capability),expected)
+        with self.assertRaises(ValueError):canonical_verification_test_case("unknown")
+
+    def test_original_node_function_and_timeout_remain_exact(self):
+        from ai_painter.complete_world import object_appearance_regime_input_cpu as seasonal
+        with patch.object(seasonal.subprocess,"run",return_value=SimpleNamespace(stdout="digest")) as call:
+            seasonal._canonical_node({},ROOT,auth.CANONICAL_REGION_PROGRAM,executable="C:/exact/node.exe")
+        self.assertEqual(call.call_args.args[0][0],"C:/exact/node.exe")
+        self.assertIn("canonicalSha256(payload)",call.call_args.args[0][3])
+        self.assertEqual(call.call_args.kwargs["timeout"],10)
+        self.assertTrue(call.call_args.kwargs["check"])
+
+    def test_observation_commits_bounded_aggregate_and_rejects_tampered_previous(self):
+        f=self.fixture();self.verify(f)
+        with self.observation_scope(f):
+            first=worker.canonical_initialization_observation(f.context,"initialization_started")
+            self.verify(f)
+            second=worker.canonical_initialization_observation(f.context,"training_loop_pending",first)
+            value=json.loads(f.reader.read(second));self.assertEqual(value["counters"]["hits"],1)
+            self.assertLessEqual(len(f.reader.read(second)),32768)
+            with f.reader.path(second["path"]).open("ab") as stream:stream.write(b' ')
+            with self.assertRaisesRegex(ValueError,"binding SHA differs"):
+                worker.canonical_initialization_observation(f.context,"completed",second)
+
+    def test_observation_write_failure_cannot_replace_original_error(self):
+        f=self.fixture();first=RuntimeError("actual original synthetic failure")
+        with self.observation_scope(f),patch.object(worker.capture,"directory_bytes",side_effect=OSError("secondary write refused")) as injected:
+            result=worker.canonical_initialization_observation(f.context,"failed_closed",error=first)
+        injected.assert_called_once()
+        self.assertIsNone(result);self.assertEqual(str(first),"actual original synthetic failure")
+        self.assertIn("secondary write refused",first.secondary_canonical_observation_error)
+
+    def test_observation_oversize_and_terminal_reserve_rejected_without_write(self):
+        f=self.fixture()
+        with self.observation_scope(f),patch.object(auth,"canonical_observation",return_value={"large":"x"*32768}) as oversized:
+            with self.assertRaisesRegex(ValueError,"32768"):worker.canonical_initialization_observation(f.context,"completed")
+        oversized.assert_called_once()
+        with self.observation_scope(f),patch.object(worker.capture,"directory_bytes",return_value=worker.capture.MAX_EXECUTION-65536) as full:
+            with self.assertRaisesRegex(ValueError,"terminal reserve"):worker.canonical_initialization_observation(f.context,"completed")
+        full.assert_called_once()
+        self.assertFalse(f.reader.path(f.logical+"/canonical-initialization-observation.json").exists())
+
+    def test_staging_replace_failure_preserves_primary_and_original_committed_bytes(self):
+        f=self.fixture()
+        with self.observation_scope(f):
+            first=worker.canonical_initialization_observation(f.context,"initialization_started")
+            original=f.reader.read(first);failure=ValueError("primary remains")
+            with patch.object(worker.os,"replace",side_effect=PermissionError("staging publication refused")) as injected:
+                retained=worker.canonical_initialization_observation(f.context,"failed_closed",first,error=failure)
+            injected.assert_called_once()
+            staged=f.reader.path(first["path"]+".staged").read_bytes()
+            self.assertLessEqual(len(staged),32768);self.assertLessEqual(len(original),32768)
+            occupied=worker.capture.directory_bytes(f.reader.path(f.logical))
+            self.assertGreaterEqual(occupied,len(staged)+len(original))
+            tighter=min(int(os.environ.get("DETAIL_WEIGHT_OUTPUT_MAX",worker.capture.MAX_EXECUTION)),occupied+65536)
+            with patch.dict(os.environ,{"DETAIL_WEIGHT_OUTPUT_MAX":str(tighter)}):
+                with self.assertRaisesRegex(ValueError,"terminal reserve"):
+                    worker.canonical_initialization_observation(f.context,"completed",first)
+        self.assertEqual(retained,first);self.assertEqual(f.reader.read(first),original)
+        self.assertTrue(f.reader.path(first["path"]+".staged").exists())
+        self.assertEqual(str(failure),"primary remains")
+
+    def test_successful_replace_followed_by_verification_failure_does_not_return_stale_binding(self):
+        f=self.fixture()
+        with self.observation_scope(f):first=worker.canonical_initialization_observation(f.context,"initialization_started")
+        failure=RuntimeError("original first error");original=type(f.reader.mapping).binding
+        rejected=[]
+        def post_replace_refused(mapping,bound,**kwargs):
+            if bound["path"]==first["path"] and bound["sha256"]!=first["sha256"]:
+                rejected.append(dict(bound))
+                raise OSError("new observation post-write verification refused")
+            return original(mapping,bound,**kwargs)
+        with self.observation_scope(f),patch.object(type(f.reader.mapping),"binding",autospec=True,side_effect=post_replace_refused):
+            result=worker.canonical_initialization_observation(f.context,"failed_closed",first,error=failure)
+        self.assertEqual(len(rejected),1)
+        self.assertIsNone(result);self.assertEqual(str(failure),"original first error")
+        self.assertIn("prior binding unavailable",failure.secondary_canonical_observation_error)
+        self.assertNotEqual(hashlib.sha256(f.reader.path(first["path"]).read_bytes()).hexdigest(),first["sha256"])
+
+    def test_corrupted_previous_observation_does_not_escape_as_terminal_binding(self):
+        f=self.fixture()
+        with self.observation_scope(f):
+            first=worker.canonical_initialization_observation(f.context,"initialization_started")
+            with f.reader.path(first["path"]).open("ab") as stream:stream.write(b'changed')
+            failure=ValueError("primary error unchanged")
+            result=worker.canonical_initialization_observation(f.context,"failed_closed",first,error=failure)
+        self.assertIsNone(result);self.assertEqual(str(failure),"primary error unchanged")
+        self.assertIn("prior binding unavailable",failure.secondary_canonical_observation_error)
+
+    def test_observation_scope_accepts_standalone_and_managed_roots_and_restores_environment(self):
+        for managed in (False,True):
+            with self.subTest(managed=managed),patch.dict(os.environ):
+                f=self.fixture()
+                outer=[f.prefix,f.prefix+"/synthetic-native-guard"]
+                if managed:
+                    os.environ["DETAIL_WEIGHT_OUTPUT_ROOTS"]=json.dumps(outer)
+                else:
+                    os.environ.pop("DETAIL_WEIGHT_OUTPUT_ROOTS",None)
+                before=dict(os.environ)
+                with self.observation_scope(f):
+                    self.assertEqual(json.loads(os.environ["DETAIL_WEIGHT_OUTPUT_ROOTS"]),[f.logical])
+                    self.assertEqual(os.environ.get("DETAIL_WEIGHT_OUTPUT_MAX"),before.get("DETAIL_WEIGHT_OUTPUT_MAX"))
+                    bound=worker.canonical_initialization_observation(f.context,"completed")
+                    self.assertEqual(bound["path"],f.logical+"/canonical-initialization-observation.json")
+                    self.assertEqual(json.loads(f.reader.read(bound))["status"],"completed")
+                self.assertEqual(dict(os.environ),before)
+
+    def test_observation_scope_restores_nested_and_exceptional_environment_without_raising_max(self):
+        f=self.fixture();other=self.fixture()
+        inherited=os.environ.get("DETAIL_WEIGHT_OUTPUT_MAX")
+        limited=inherited if inherited is not None and int(inherited)<70000 else "00070000"
+        with patch.dict(os.environ,{"DETAIL_WEIGHT_OUTPUT_ROOTS":json.dumps([f.prefix,f.prefix+"/guard"]),
+                "DETAIL_WEIGHT_OUTPUT_MAX":limited}):
+            before=dict(os.environ);failure=RuntimeError("synthetic scope failure")
+            with self.assertRaisesRegex(RuntimeError,"synthetic scope failure"):
+                with self.observation_scope(f):
+                    outer=dict(os.environ)
+                    with self.observation_scope(other):
+                        self.assertEqual(json.loads(os.environ["DETAIL_WEIGHT_OUTPUT_ROOTS"]),[other.logical])
+                        self.assertEqual(os.environ["DETAIL_WEIGHT_OUTPUT_MAX"],limited)
+                    self.assertEqual(dict(os.environ),outer)
+                    with self.assertRaisesRegex(RuntimeError,"synthetic scope failure"):
+                        with self.observation_scope(other):raise failure
+                    self.assertEqual(dict(os.environ),outer)
+                    raise failure
+            self.assertEqual(dict(os.environ),before)
+
+    def test_observation_wrong_roots_remain_rejected_before_write(self):
+        f=self.fixture()
+        with self.observation_scope(f),patch.dict(os.environ,{"DETAIL_WEIGHT_OUTPUT_ROOTS":json.dumps([f.prefix])}), \
+                patch.object(worker.capture,"directory_bytes",wraps=worker.capture.directory_bytes) as measured:
+            with self.assertRaisesRegex(ValueError,"canonical observation accounting roots differ"):
+                worker.canonical_initialization_observation(f.context,"completed")
+        measured.assert_not_called()
+        self.assertFalse(f.reader.path(f.logical+"/canonical-initialization-observation.json").exists())
+        self.assertFalse(f.reader.path(f.logical+"/canonical-initialization-observation.json.staged").exists())
+
+    def test_observation_scope_keeps_inherited_low_max_and_primary_error(self):
+        f=self.fixture();primary=RuntimeError("original synthetic initialization failure")
+        inherited=os.environ.get("DETAIL_WEIGHT_OUTPUT_MAX")
+        limited=inherited if inherited is not None and int(inherited)<65536 else "65536"
+        with patch.dict(os.environ,{"DETAIL_WEIGHT_OUTPUT_MAX":limited}):
+            before=dict(os.environ)
+            with self.observation_scope(f):
+                self.assertEqual(os.environ["DETAIL_WEIGHT_OUTPUT_MAX"],limited)
+                result=worker.canonical_initialization_observation(f.context,"failed_closed",error=primary)
+            self.assertEqual(dict(os.environ),before)
+        self.assertIsNone(result);self.assertEqual(str(primary),"original synthetic initialization failure")
+        self.assertIn("terminal reserve",primary.secondary_canonical_observation_error)
+        self.assertFalse(f.reader.path(f.logical+"/canonical-initialization-observation.json").exists())
+
+
+class CanonicalVerificationV4Tests(CanonicalVerificationTests):
+    capability = codec.TRAINING_CAPTURE_V4_CAPABILITY
+    evidence_task = "TRAINING-SAME-CALL-CAPTURE-026-CPU"
+
+
+class CanonicalVerificationV5Tests(CanonicalVerificationTests):
+    capability = codec.TRAINING_CAPTURE_V5_CAPABILITY
+    evidence_task = "TRAINING-SAME-CALL-CAPTURE-027-CPU"
+
+
+class CanonicalVerificationV6Tests(CanonicalVerificationTests):
+    capability = codec.TRAINING_CAPTURE_V6_CAPABILITY
+    evidence_task = "TRAINING-SAME-CALL-CAPTURE-031-CPU"
 
 
 class SameCallRouteTests(unittest.TestCase):

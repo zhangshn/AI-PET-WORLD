@@ -24,7 +24,12 @@ export function registeredTrainingInterfaces(root=process.cwd()){
   for(const [seen,value]of [[selections,d.candidateSelection],[capabilities,parsed.capability],[roots,parsed.root]]){
    assert.ok(!seen.has(value),'duplicate training interface identity');seen.add(value);
   }
-  return {...SAME_CALL_PROFILE,CAPABILITY:parsed.capability,EXECUTION_PROFILE:parsed.profile,OUTPUT_ROOT:policy.outputRoot,
+  const rgbOutput=[RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY,QUALIFICATION_CAPTURE_CAPABILITY,...TRAINING_CAPTURE_CAPABILITIES].includes(parsed.capability);
+  const decode2=rgbOutput||parsed.capability===DECODE2_SUPPORT_WEIGHT1_CAPABILITY;
+  return {...SAME_CALL_PROFILE,CAPABILITY:parsed.capability,MODEL_CAPABILITY:parsed.model,
+   ARCHITECTURE:decode2?ARCHITECTURE+'_decode2_entry_weight_fp64_v1'+(rgbOutput?'_final_rgb_output_weight_fp64_v1':''):ARCHITECTURE,
+   NUMERIC_RULE:decode2?NUMERIC_RULE+'|decode2_entry_conv0_fp32_native_forward_native_input_bias_vjp_full_mask_original_device_fp64_unfold_matmul_weight_once_fp32_v1'+(rgbOutput?'|final_rgb_output_conv4_fp32_native_forward_native_input_vjp_full_mask_original_device_fp64_weight_and_bias_reduce_once_fp32_v1':''):NUMERIC_RULE,
+   EXECUTION_PROFILE:parsed.profile,OUTPUT_ROOT:policy.outputRoot,
    SPECIFICATION:{path:policy.formalSpecification.path,sha256:policy.formalSpecification.sha256},
    EXECUTION_POLICY:{...row.executionPolicy},previewPath:parsed.previewPolicy.path,progressPolicy:parsed.progressPolicy,
    candidateSelection:d.candidateSelection,runPrefix:d.runPrefix,packagePrefix:d.packagePrefix,
@@ -111,6 +116,16 @@ export function validateModelIdentity(modelIdentity){
  return modelIdentity;
 }
 export const SUPPORT_WEIGHT1_CAPABILITY='stage4_mvp256_dry_decode1_support_structure_weight1_v1';
+export const DECODE2_SUPPORT_WEIGHT1_CAPABILITY='stage4_mvp256_dry_decode2_support_structure_weight1_v1';
+export const RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY='stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1';
+export const QUALIFICATION_CAPTURE_CAPABILITY='stage4_mvp256_dry_decode2_rgb_output_qualification_capture_v1';
+export const TRAINING_CAPTURE_CAPABILITY='stage4_mvp256_dry_decode2_rgb_output_training_capture_v1';
+export const TRAINING_CAPTURE_V2_CAPABILITY='stage4_mvp256_dry_decode2_rgb_output_training_capture_v2';
+export const TRAINING_CAPTURE_V3_CAPABILITY='stage4_mvp256_dry_decode2_rgb_output_training_capture_v3';
+export const TRAINING_CAPTURE_V4_CAPABILITY='stage4_mvp256_dry_decode2_rgb_output_training_capture_v4';
+export const TRAINING_CAPTURE_V5_CAPABILITY='stage4_mvp256_dry_decode2_rgb_output_training_capture_v5';
+export const TRAINING_CAPTURE_V6_CAPABILITY='stage4_mvp256_dry_decode2_rgb_output_training_capture_v6';
+export const TRAINING_CAPTURE_CAPABILITIES=Object.freeze([TRAINING_CAPTURE_CAPABILITY,TRAINING_CAPTURE_V2_CAPABILITY,TRAINING_CAPTURE_V3_CAPABILITY,TRAINING_CAPTURE_V4_CAPABILITY,TRAINING_CAPTURE_V5_CAPABILITY,TRAINING_CAPTURE_V6_CAPABILITY]);
 export const HEARTBEAT_SECONDS=120;
 export function binding(value){
  assert.deepEqual(Object.keys(value??{}).sort(),['path','sha256']);assert.match(value.sha256,/^[a-f0-9]{64}$/u);
@@ -139,7 +154,7 @@ export function deriveConfiguration(candidate,{capabilityVersion=CAPABILITY,trai
  binding(trainingPreviewPolicy);assert.equal(trainingPreviewPolicy.path,route.previewPath);
  Object.assign(result,{formalSpecification:SPECIFICATION,executionPolicy:EXECUTION_POLICY,trainingPreviewPolicy:{...trainingPreviewPolicy},gpuAdmissionSeconds:gpuAdmissionSeconds(capabilityVersion),
   jointLearningRule:{...JOINT_LEARNING_RULE},progressPublicationPolicy:{...(route.progressPolicy??PROGRESS_PUBLICATION_POLICY)}});
- if(capabilityVersion===SUPPORT_WEIGHT1_CAPABILITY){
+ if([SUPPORT_WEIGHT1_CAPABILITY,DECODE2_SUPPORT_WEIGHT1_CAPABILITY,RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY,QUALIFICATION_CAPTURE_CAPABILITY,...TRAINING_CAPTURE_CAPABILITIES].includes(capabilityVersion)){
   assert.equal(route.interfacePolicy.objectSupportStructureWeight,1,'registered support weight1 policy required');result.objectSupportStructureWeight=1;
  }else assert.equal(Object.hasOwn(route.interfacePolicy??{},'objectSupportStructureWeight'),false,'legacy policy cannot activate support weight1');
  executionRoute(capabilityVersion);
@@ -169,7 +184,7 @@ export function validate(input){
  {binding(plan.trainingPreviewPolicy);assert.equal(plan.trainingPreviewPolicy.path,route.previewPath);assert.deepEqual(plan.trainingPreviewPolicy,plan.configuration.trainingPreviewPolicy);assert.deepEqual(plan.executionPolicy,route.EXECUTION_POLICY);assert.deepEqual(plan.configuration.executionPolicy,route.EXECUTION_POLICY);}
  assert.deepEqual(plan.configuration.jointLearningRule,JOINT_LEARNING_RULE);assert.deepEqual(plan.configuration.progressPublicationPolicy,route.progressPolicy??PROGRESS_PUBLICATION_POLICY);
  assert.equal(Object.hasOwn(plan.configuration,'sourceCandidate'),false);assert.equal(plan.configuration.sourceAssetsUse,'data_review_and_base_schedule_only_not_execution_qualification');
- if(plan.capabilityVersion===SUPPORT_WEIGHT1_CAPABILITY)assert.equal(plan.configuration.objectSupportStructureWeight,1);
+ if([SUPPORT_WEIGHT1_CAPABILITY,DECODE2_SUPPORT_WEIGHT1_CAPABILITY,RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY,QUALIFICATION_CAPTURE_CAPABILITY,...TRAINING_CAPTURE_CAPABILITIES].includes(plan.capabilityVersion))assert.equal(plan.configuration.objectSupportStructureWeight,1);
  else assert.equal(Object.hasOwn(plan.configuration,'objectSupportStructureWeight'),false,'legacy configuration cannot activate weight1');
  assert.deepEqual(plan.configuration.integrationPolicy,INTEGRATION_POLICY);assert.deepEqual(plan.configuration.lossDefinition,LOSS);assert.deepEqual(plan.configuration.gradientDefinition,GRADIENT);assert.equal(plan.configuration.modelCapabilityVersion,MODEL_CAPABILITY);
  assert.deepEqual(plan.configuration.dataUse,{train:48,validation:8,challenge:4,regression:4,weightUpdatesFrom:['train'],checkpointSelectionFrom:['validation'],challengeAndRegressionContentRead:false,sourceImageOrSplitMutation:false});

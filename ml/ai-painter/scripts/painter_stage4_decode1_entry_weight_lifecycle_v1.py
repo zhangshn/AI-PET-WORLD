@@ -6,6 +6,10 @@ backend. This module cannot grant execution or model qualification on its own.
 from copy import deepcopy
 import hashlib
 import random
+import json
+import math
+import re
+from datetime import datetime, timezone
 import torch
 
 import painter_stage4_v24_dry_single_world_checkpoint_worker as shared
@@ -18,6 +22,111 @@ CAPABILITY = checkpoint.CAPABILITY
 TERMINAL_SCHEMA = "object-support-structure-quality-lifecycle-terminal-v1"
 EXECUTION_QUALIFIED = False
 require = checkpoint.require
+
+SCHEMA = "ai-painter-successful-pair-learning-observations-v1"
+MAX_RECORD_BYTES = 32768
+INTERVAL = 12
+
+
+def _number(value):
+    return type(value) in (int, float) and math.isfinite(value) and abs(value) < 1e100
+
+
+def existing_values(result):
+    """Only Python scalars already returned by the real pair; never tensor.item()."""
+    if type(result) is not dict:
+        return {}, "pair_result_not_recorded"
+    values = {key: result[key] for key in ("generatorLoss", "discriminatorLoss") if _number(result.get(key))}
+    facts = result.get("fiveGradientFacts")
+    if type(facts) is dict:
+        scalars = facts.get("scalarValues", {})
+        if type(scalars) is dict and len(scalars) <= 8:
+            for key, value in scalars.items():
+                if type(key) is str and re.fullmatch(r"[A-Za-z0-9_]{1,80}", key) and _number(value):
+                    values["generatorComponent." + key] = value
+        gradient = facts.get("generatorGradientFacts", {})
+        if type(gradient) is dict:
+            for key in ("tensorCount", "nonzeroTensorCount"):
+                if _number(gradient.get(key)):
+                    values["generatorGradient." + key] = gradient[key]
+            heads = gradient.get("headCandidateL2", {})
+            if type(heads) is dict and len(heads) <= 4:
+                for key, value in heads.items():
+                    if type(key) is str and re.fullmatch(r"[A-Za-z0-9_]{1,80}", key) and _number(value):
+                        values["generatorGradient.headCandidateL2." + key] = value
+    return values, None if all(key in values for key in ("generatorLoss", "discriminatorLoss")) else "existing_scalar_results_incomplete"
+
+
+def _accumulate(stats, values):
+    for key, value in values.items():
+        row = stats.setdefault(key, {"count": 0, "mean": 0., "minimum": value, "maximum": value})
+        row["count"] += 1
+        row["mean"] += (value - row["mean"]) / row["count"]
+        row["minimum"], row["maximum"] = min(row["minimum"], value), max(row["maximum"], value)
+
+
+class LearningObservations:
+    def __init__(self, *, run_id, write_record, clock=None):
+        self.run_id, self.write_record = run_id, write_record
+        self.clock = clock or (lambda: datetime.now(timezone.utc).isoformat())
+        self.count = self.missing = 0
+        self.current_epoch = {}
+        self.epochs, self.artifacts = [], []
+        self.recording_error = None
+        self.gradient_finite_counts = {"true": 0, "false": 0, "unknown": 0}
+        self.closed = False
+
+    def observe(self, position, counts, ledger, result):
+        if self.closed:
+            raise ValueError("learning observer already closed")
+        g, d = counts.get("generator"), counts.get("discriminator")
+        if (type(g) is not int or type(d) is not int or g != d or g != self.count + 1 or g > 1152
+                or ledger != {"sampleId": position["sampleId"], "generator": 1, "discriminator": 1}
+                or position["epoch"] != (g - 1) // 48 + 1 or position["zeroBasedEpochPosition"] != (g - 1) % 48):
+            raise ValueError("learning observation requires a confirmed sequential dual update")
+        self.count = g
+        values, missing_reason = existing_values(result)
+        facts = result.get("fiveGradientFacts", {}) if type(result) is dict else {}
+        gradient = facts.get("generatorGradientFacts", {}) if type(facts) is dict else {}
+        finite = gradient.get("allFinite") if type(gradient) is dict else None
+        finite = finite if type(finite) is bool else None
+        self.gradient_finite_counts["unknown" if finite is None else str(finite).lower()] += 1
+        self.missing += missing_reason is not None
+        _accumulate(self.current_epoch, values)
+        epoch_end = g % 48 == 0
+        summary = None
+        if epoch_end:
+            summary = {"epoch": position["epoch"], "successfulPairs": 48, "values": deepcopy(self.current_epoch)}
+            self.epochs.append(summary)
+            self.current_epoch = {}
+        if (g - 1) % 48 != 0 and g % INTERVAL != 0:
+            return
+        record = {"schemaVersion": SCHEMA, "runId": self.run_id, "recordedAtUtc": self.clock(),
+                  "position": dict(position), "optimizerSteps": dict(counts), "values": values,
+                  "existingGeneratorGradientAllFinite": finite,
+                  "missingReason": missing_reason, "epochSummary": summary,
+                  "measurementScope": "pre_update_objectives_for_successfully_committed_pair_not_post_update_rescore",
+                  "additionalForwards": 0, "additionalBackwardCalls": 0, "fullGradientsSaved": False}
+        raw = json.dumps(record, ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode()
+        if len(raw) > MAX_RECORD_BYTES:
+            self.recording_error = {"errorType": "observation_size_limit"}
+        elif self.recording_error is None:
+            try:
+                self.artifacts.append(self.write_record(len(self.artifacts) + 1, record))
+            except Exception as error:
+                self.recording_error = {"errorType": type(error).__name__, "reason": "learning_record_write_failed"}
+
+    def finish(self):
+        self.closed = True
+        return {"schemaVersion": SCHEMA, "runId": self.run_id,
+                "status": "recorded" if self.recording_error is None and not self.missing else "partial",
+                "successfulPairCount": self.count, "missingResultCount": self.missing,
+                "recordIntervalUpdates": INTERVAL, "maximumUpdateCount": 1152,
+                "records": deepcopy(self.artifacts), "completedEpochs": deepcopy(self.epochs),
+                "partialEpochValues": deepcopy(self.current_epoch), "recordingError": self.recording_error,
+                "existingGeneratorGradientAllFiniteCounts": dict(self.gradient_finite_counts),
+                "additionalForwards": 0, "additionalBackwardCalls": 0, "fullGradientsSaved": False,
+                "qualificationGranted": False, "validationScoreComparableToTrainingLoss": False}
 
 
 def profile_components(capability_version=CAPABILITY):
@@ -63,7 +172,8 @@ def validation_epoch(model, samples, order, *, epoch, capability_version=CAPABIL
 def training_loop(*, model, critic, train, validation, order, configuration, package_binding,
         plan, plan_binding, resource, checkpoint_sink, progress_sink, capture_sink=None,
         context_for_sample=None, pair_runner=None, validation_runner=None, checkpoint_encoder=None,
-        checkpoint_reloader=None, network_factory=None, optimizer_factory=None, observation_sink=None):
+        checkpoint_reloader=None, network_factory=None, optimizer_factory=None, observation_sink=None,
+        learning_sink=None):
     """Single fixed schedule, actual ledgers and new strict checkpoint identity.
 
     Injected dependencies support synthetic CPU tests, not qualification. No old
@@ -87,7 +197,9 @@ def training_loop(*, model, critic, train, validation, order, configuration, pac
     validation_runner = validation_runner or (lambda model,samples,order,*,epoch: validation_epoch(model,samples,order,epoch=epoch,capability_version=capability_version))
     checkpoint_encoder = checkpoint_encoder or codec.encode
     checkpoint_reloader = checkpoint_reloader or codec.reload
-    network_factory = network_factory or profile.fresh_networks
+    model_arguments = ({} if configuration["modelCapabilityVersion"] == profile.MODEL_CAPABILITY
+                       else {"model_capability": configuration["modelCapabilityVersion"]})
+    network_factory = network_factory or (lambda order: profile.fresh_networks(order, **model_arguments))
     optimizer_factory = optimizer_factory or torch.optim.AdamW
     counts = {"generator": 0, "discriminator": 0}
     records, observations, selected = [], [], None
@@ -106,9 +218,11 @@ def training_loop(*, model, critic, train, validation, order, configuration, pac
                     "trainIndex": index, "sampleId": current["sampleId"]}
                 resource()
                 ledger = {"sampleId": current["sampleId"], "generator": 0, "discriminator": 0}
-                pair_runner(model, critic, current, order, go, do, counts, ledger, resource, None, update_limit=1152)
+                pair_result = pair_runner(model, critic, current, order, go, do, counts, ledger, resource, None, update_limit=1152)
                 require(ledger == {"sampleId": current["sampleId"], "generator": 1, "discriminator": 1},
                     "support pair actual ledger differs")
+                if learning_sink is not None:
+                    learning_sink(deepcopy(position), dict(counts), dict(ledger), pair_result)
                 progress_sink(epoch, dict(counts), deepcopy(selected), completed_epochs=completed_epochs)
             require(counts == {"generator": epoch*48, "discriminator": epoch*48}, "support epoch actual counts differ")
             completed_epochs = epoch
@@ -120,7 +234,7 @@ def training_loop(*, model, critic, train, validation, order, configuration, pac
                 require(codec._same_json(metrics, expected), "support midpoint rows/metrics differ")
                 observation = {"epoch": 12, "validation": deepcopy(rows), "metrics": deepcopy(metrics),
                     "checkpointSelectionEligible": False, "weightUpdates": 0, "capabilityVersion": capability_version,
-                    "modelCapabilityVersion": codec.MODEL_CAPABILITY, "runId": plan["runId"], "packageId": plan["packageId"],
+                    "modelCapabilityVersion": configuration["modelCapabilityVersion"], "runId": plan["runId"], "packageId": plan["packageId"],
                     "executionPackage": deepcopy(package_binding), "planBinding": deepcopy(plan_binding),
                     "modelBinding": deepcopy(plan["modelBinding"]), "datasetManifest": deepcopy(plan["datasetManifest"]),
                     "configurationSha256": codec.configuration_digest(configuration), "optimizerSteps": dict(counts)}
@@ -163,7 +277,7 @@ def training_loop(*, model, critic, train, validation, order, configuration, pac
             program_bindings=plan["programBindings"], plan_binding=plan_binding)
         resource()
         return {"schema": TERMINAL_SCHEMA, "status": "training_completed_review_pending",
-            "capabilityVersion": capability_version, "modelCapabilityVersion": codec.MODEL_CAPABILITY,
+            "capabilityVersion": capability_version, "modelCapabilityVersion": configuration["modelCapabilityVersion"],
             "executionPackage": package_binding, "runId": plan["runId"], "packageId": plan["packageId"],
             "executionState": "completed", "completedEpochs": completed_epochs, "optimizerSteps": dict(counts),
             "optimizerStepsGenerator": counts["generator"], "optimizerStepsDiscriminator": counts["discriminator"],

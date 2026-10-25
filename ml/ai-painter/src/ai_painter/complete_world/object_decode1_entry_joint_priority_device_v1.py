@@ -143,7 +143,7 @@ def compute_generator_candidate_gradients(*, model, critic, sample, actual_total
         owned = {i for indexes in groups.values() for i in indexes}
         require(all(result[i] is actual[i] for i in range(108) if i not in owned)
             and result[season] is actual[season] and result[ecology] is actual[ecology], "nonhead actual gradient identity changed")
-        facts.update(candidateId=CAPABILITY, modelCapabilityVersion=MODEL_CAPABILITY, updateRuleId=UPDATE_RULE_ID,
+        facts.update(candidateId=CAPABILITY, modelCapabilityVersion=model.capability_version, updateRuleId=UPDATE_RULE_ID,
             arithmeticCarrierCapabilityVersion=parent.CAPABILITY, carrierAllParameterNamesShapesBytesVerified=True,
             carrierQualificationInherited=False, jointCpuAlgorithmUnchanged=True, actualTotalProvenanceVerified=True,
             autogradGradCalls=5, independentFullParameterGradientTensorCounts=[108] * 5,

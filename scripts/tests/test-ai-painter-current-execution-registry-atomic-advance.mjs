@@ -1,12 +1,12 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { appendFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { appendFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { DatabaseSync } from "node:sqlite"
 import test from "node:test"
-import { verifyTrainingKernelInputs, verifyKernelInterruptionHost, loadRecoveryProfile } from '../lib/ai-painter-owned-worker-reboot-recovery-v1.mjs'
+import { verifyTrainingKernelInputs, verifyQualificationKernelInputs, verifyKernelInterruptionHost, loadRecoveryProfile } from '../lib/ai-painter-owned-worker-reboot-recovery-v1.mjs'
 import {
   CURRENT_EXECUTION_REGISTRY_PATH,
   CURRENT_EXECUTION_REGISTRY_ROOT,
@@ -414,13 +414,19 @@ test('registered interruption rejects invalid policy, namespace and budget witho
   }))
 })
 
-async function createKernelInterruptionFixture(root, advance, registeredRoute = false) {
+async function createKernelInterruptionFixture(root, advance, registeredRoute = false, qualification = false) {
   const selector = 'd1-fixture-v1', suffix = '00000000-0000-4000-8000-000000000001'
   if (registeredRoute) advance = { ...advance, runId: selector + '-' + suffix,
     packageId: selector + '-package-' + suffix, capabilityVersion: 'stage4_fixture_registered_v1' }
   const runId = advance.runId, output = (registeredRoute ? '.runtime/ai-painter/registered-training-' + selector + '-executions/'
     : '.runtime/ai-painter/ecology-decode1-weight-quality-executions/') + runId
   const active = await createActiveExecution(root, { ...advance, executionState: 'executing' })
+  if (qualification) {
+    const p = 'ml/ai-painter/scripts/qualify_stage4_decode1_entry_weight_quality_gpu_v1.py'
+    await writeText(root, p, 'private nonexecuted qualifier source')
+    active.programLineage.gpuQualifier = { path: p, sha256: await sha256File(root, p) }
+    active.programLineage.nativeRunner = active.programLineage.runner
+  }
   const heartbeat = JSON.parse(await readFile(absolute(root, active.heartbeat.path)))
   heartbeat.ttlSeconds = 120
   const lock = JSON.parse(await readFile(absolute(root, active.lock.path)))
@@ -428,7 +434,7 @@ async function createKernelInterruptionFixture(root, advance, registeredRoute = 
   await writeJson(root, output + '/heartbeat.json', heartbeat)
   active.lock = { path: output + '/execution-lock.json', sha256: await sha256File(root, output + '/execution-lock.json') }
   active.heartbeat = { path: output + '/heartbeat.json', ttlSeconds: 120 }
-  const registered = await advanceCurrentExecutionRegistry({ ...advance, executionState: 'executing', activity: 'training', queueStatus: 'running', nextMachineAction: null, activeExecution: active, _testHooks: hooks() })
+  const registered = await advanceCurrentExecutionRegistry({ ...advance, executionState: 'executing', activity: qualification ? 'diagnostic_gpu_qualification_pending' : 'training', queueStatus: 'running', nextMachineAction: null, activeExecution: active, _testHooks: hooks() })
   await writeFile(absolute(root, output + '/heartbeat.json'), Buffer.alloc(449))
   const bind = async p => ({ path: p, sha256: await sha256File(root, p) })
   const oldStart = new Date(Date.now() - 300000).toISOString()
@@ -453,6 +459,7 @@ async function createKernelInterruptionFixture(root, advance, registeredRoute = 
   await writeJson(root, native + '/started.json', { ...guard, ownerPid: 909,
     commandBinding: Buffer.from(JSON.stringify({ guard, guardSha256: guardBinding.sha256, scope: root, nativeBuild: build })).toString('base64') })
   const plan = { schema: 'ecology-decode1-weight-quality-plan-v1', ...advance, runId, outputRoot: output, programBindings: active.programLineage }
+  if (qualification) plan.runtimeIdentity = { python: { absolutePath: guard.executable, sha256: guard.executableSha256 } }
   let policyBinding = null
   if (registeredRoute) {
     const fakeBinding = path => ({ path, sha256: 'a'.repeat(64) })
@@ -509,8 +516,86 @@ async function createKernelInterruptionFixture(root, advance, registeredRoute = 
   const options = { ...baseExpiredRecoveryOptions(root, registered, evidence, recoveryHooks('dead')),
     kernelInterruptionProfile: await bind(profilePath) }
   options._testHooks.queryKernelInterruptionHost = () => ({ ...host, ObservedUtc: new Date().toISOString() })
+  if (qualification) {
+    profile.schema = 'ai-painter-owned-worker-reboot-recovery-profile-v4'
+    profile.failureCase = 'qualification_kernel_interruption_v1'
+    for (const key of ['trainingConsumed', 'progress']) {
+      await rm(absolute(root, profile[key].path))
+      delete profile[key]
+    }
+    await writeJson(root, output + '/gpu-consumed.json', { attempt: 1, automaticRetries: 0, capabilityVersion: advance.capabilityVersion, executionPackage })
+    profile.gpuConsumed = await bind(output + '/gpu-consumed.json')
+    await writeJson(root, output + '/cpu-acceptance.json', { status: 'passed', programBindings: plan.programBindings })
+    profile.cpuAcceptance = await bind(output + '/cpu-acceptance.json')
+    await mkdir(absolute(root, output + '/owned-qualification-' + guard.identity), { recursive: true })
+    profile.missingReceiptPath = output + '/owned-qualification-' + guard.identity + '/release-receipt.json'
+    await writeJson(root, active.heartbeat.path, { ...lock, schemaVersion: 'ai-painter-current-active-execution-heartbeat-v1', executionState: 'executing', ttlSeconds: 120, heartbeatAtUtc: new Date(Date.parse(oldStart) + 1000).toISOString() })
+    profile.heartbeat = await bind(active.heartbeat.path)
+    guard.commandSha256 = createHash('sha256').update(JSON.stringify(['-B', absolute(root, active.programLineage.gpuQualifier.path), '--package', executionPackage.path, '--sha256', executionPackage.sha256])).digest('hex')
+    await writeJson(root, profile.guard.path, guard); profile.guard = await bind(profile.guard.path)
+    const started = { ...guard, ownerPid: 909, commandBinding: (await readJson(root, profile.started.path)).commandBinding }
+    const command = JSON.parse(Buffer.from(started.commandBinding, 'base64'))
+    command.guard = guard; command.guardSha256 = profile.guard.sha256
+    command.executionTiming = { phase: 'qualification', mode: 'registered_qualification_completion', runId, packageId: advance.packageId, policy: policyBinding }
+    started.commandBinding = Buffer.from(JSON.stringify(command)).toString('base64')
+    await writeJson(root, profile.started.path, started); profile.started = await bind(profile.started.path)
+    for (const b of profile.programBindings) {
+      await writeText(root, b.path, 'private fixture source qualification_kernel_interruption_v1')
+      b.sha256 = await sha256File(root, b.path)
+    }
+    await writeJson(root, profilePath, profile)
+    options.kernelInterruptionProfile = await bind(profilePath)
+    Object.assign(terminal, { schemaVersion: 'ai-painter-qualification-system-interruption-terminal-v1', status: 'qualification_system_interrupted', profileSha256: options.kernelInterruptionProfile.sha256 })
+    await writeJson(root, evidence.terminalPath, terminal)
+  }
   return { root, profile, profilePath, options, host, priorHost, oldStart, output, sourcePath }
 }
+
+test('qualification interruption atomically closes exact Run without publishing a training terminal', async () => withFixture(async ({ root, advance }) => {
+  const f = await createKernelInterruptionFixture(root, advance, true, true)
+  const before = await readFile(absolute(root, f.profile.heartbeat.path))
+  const old = await readJson(root, CURRENT_EXECUTION_REGISTRY_PATH)
+  const historical = verifyQualificationKernelInputs(root, f.profile)
+  assert.equal(historical.progress, null)
+  verifyKernelInterruptionHost(historical, f.host)
+  const result = await recoverExpiredActiveExecutionToFailedClosed(f.options)
+  assert.equal(result.ok, true)
+  assert.equal(result.currentTaskTerminal.status, 'qualification_system_interrupted')
+  assert.equal(result.registry.activeExecution, null)
+  assert.deepEqual(result.registry.latestTrainingTerminal, old.latestTrainingTerminal)
+  assert.equal(result.registry.registryRevision, old.registryRevision + 1)
+  assert.ok((await readFile(absolute(root, f.profile.heartbeat.path))).equals(before))
+  assert.equal((await readCurrentExecutionRegistry(root)).ok, true)
+}))
+
+test('qualification missing-terminal branch rejects contradictions before registry publication', async context => {
+  const cases = [
+    ...['gpu-gate.json', 'gpu-acceptance.json', 'training-consumed.json', 'progress.json', 'worker-terminal.json', 'execution-failure.json', 'finalization.json', 'worker-execution-timing.json'].map(n => [n, f => writeText(f.root, f.output + '/' + n, '{}')]),
+    ['native observation', f => writeText(f.root, f.profile.missingObservationPath, '{}')],
+    ['release receipt', f => writeText(f.root, f.profile.missingReceiptPath, '{}')],
+    ['wrong receipt path', f => { f.profile.missingReceiptPath = f.output + '/other.json' }],
+    ['source tamper', f => writeText(f.root, f.sourcePath, 'changed')],
+    ['same kernel', f => { f.host.OsBootUtc = f.priorHost.OsBootUtc; f.host.BootEventUtc = f.host.OsBootUtc }],
+    ['other machine', f => { f.host.MachineIdentitySha256 = 'd'.repeat(64) }],
+    ['incomplete process query', f => { f.host.ProcessQueryComplete = false }],
+    ['new boot before heartbeat', f => { f.host.OsBootUtc = f.oldStart; f.host.BootEventUtc = f.oldStart }],
+    ['active worker', f => { f.host.Processes = [{ Pid: 909, Name: 'python.exe', ExecutablePath: 'C:/python.exe', CommandLine: 'python ai-painter-training.py', CreationUtc: f.host.OsBootUtc }] }],
+    ['CPU not passed', async f => { const c = await readJson(f.root, f.profile.cpuAcceptance.path); c.status = 'failed'; await writeJson(f.root, f.profile.cpuAcceptance.path, c); f.profile.cpuAcceptance.sha256 = await sha256File(f.root, f.profile.cpuAcceptance.path) }],
+    ['GPU replay', async f => { const c = await readJson(f.root, f.profile.gpuConsumed.path); c.attempt = 2; await writeJson(f.root, f.profile.gpuConsumed.path, c); f.profile.gpuConsumed.sha256 = await sha256File(f.root, f.profile.gpuConsumed.path) }],
+    ['wrong command phase', async f => { const s = await readJson(f.root, f.profile.started.path), c = JSON.parse(Buffer.from(s.commandBinding, 'base64')); c.executionTiming.phase = 'training'; s.commandBinding = Buffer.from(JSON.stringify(c)).toString('base64'); await writeJson(f.root, f.profile.started.path, s); f.profile.started.sha256 = await sha256File(f.root, f.profile.started.path) }],
+    ['wrong command Run', async f => { const s = await readJson(f.root, f.profile.started.path), c = JSON.parse(Buffer.from(s.commandBinding, 'base64')); c.executionTiming.runId = 'other'; s.commandBinding = Buffer.from(JSON.stringify(c)).toString('base64'); await writeJson(f.root, f.profile.started.path, s); f.profile.started.sha256 = await sha256File(f.root, f.profile.started.path) }],
+    ['wrong consumed package', async f => { const c = await readJson(f.root, f.profile.gpuConsumed.path); c.executionPackage.sha256 = 'd'.repeat(64); await writeJson(f.root, f.profile.gpuConsumed.path, c); f.profile.gpuConsumed.sha256 = await sha256File(f.root, f.profile.gpuConsumed.path) }],
+    ['zero heartbeat forbidden', async f => { await writeFile(absolute(f.root, f.profile.heartbeat.path), Buffer.alloc(449)); f.profile.heartbeat.sha256 = await sha256File(f.root, f.profile.heartbeat.path) }],
+  ]
+  for (const [name, change] of cases) await context.test(name, async () => withFixture(async ({ root, advance }) => {
+    const f = await createKernelInterruptionFixture(root, advance, true, true)
+    const original = await readFile(absolute(root, CURRENT_EXECUTION_REGISTRY_PATH))
+    await change(f); await writeJson(root, f.profilePath, f.profile)
+    f.options.kernelInterruptionProfile.sha256 = await sha256File(root, f.profilePath)
+    await assert.rejects(recoverExpiredActiveExecutionToFailedClosed(f.options))
+    assert.ok((await readFile(absolute(root, CURRENT_EXECUTION_REGISTRY_PATH))).equals(original))
+  }))
+})
 
 test("expired active recovery rejects live, unexpired, cross-identity and untrusted evidence", async (context) => {
   const cases = [
@@ -789,7 +874,10 @@ test("power loss after SQLite commit recovers while current.json remains the fin
     )
     assert.equal(sqliteTransactionStatus(root, prepared.transactionId), "committed")
     const interrupted = await readCurrentExecutionRegistry(root)
-    assert.equal(interrupted.registrySha256, before.registrySha256)
+    assert.equal(interrupted.ok, false)
+    assert.equal(interrupted.status, "unknown_or_stale")
+    assert.equal(interrupted.errorCode, "registry_current_behind_committed_revision")
+    assert.equal(await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH), before.registrySha256)
 
     const recovered = await recoverPreparedCurrentExecutionRegistryAdvance({
       projectRoot: root,
@@ -1043,6 +1131,286 @@ test("retired dependency-input manifests are rejected before registry preparatio
     assert.equal((await registryEvents(root)).length, 1)
   })
 })
+
+test("publication024 retries only current transient rename with one temporary file", async () => withFixture(async ({ root, advance }) => {
+  const seen = [], original = Object.assign(new Error("original EPERM fixture"), { code: "EPERM", errno: -4048, syscall: "rename" })
+  const result = await advanceCurrentExecutionRegistry({ ...advance, _testHooks: { ...hooks(),
+    renameCurrent: async (source, destination, attempt) => {
+      seen.push(source)
+      assert.equal(destination, absolute(root, CURRENT_EXECUTION_REGISTRY_PATH))
+      if (attempt < 3) throw original
+      await rename(source, destination)
+    },
+  } })
+  assert.equal(result.ok, true)
+  assert.equal(new Set(seen).size, 1)
+  assert.equal(result.publicationDiagnostics.attempts.length, 3)
+  assert.equal(result.publicationDiagnostics.attempts[0].message, original.message)
+  assert.equal(await exists(root, writerClaimPath()), false)
+}))
+
+test("publication024 permanent rename preserves first system error and claim", async () => withFixture(async ({ root, advance }) => {
+  const original = Object.assign(new Error("first EPERM"), { code: "EPERM", errno: -4048, syscall: "rename", path: "source", dest: "target" })
+  let calls = 0
+  await assert.rejects(advanceCurrentExecutionRegistry({ ...advance, _testHooks: { ...hooks(), renameCurrent: async () => {
+    calls++
+    if (calls === 1) throw original
+    throw Object.assign(new Error("later EPERM"), { code: "EPERM" })
+  } } }), error => {
+    assert.equal(error, original)
+    assert.equal(error.errno, -4048)
+    assert.equal(error.path, "source")
+    assert.equal(error.publicationDiagnostics.attempts.length, 3)
+    assert.equal(error.publicationDiagnostics.status, "failed_closed")
+    return true
+  })
+  assert.equal(calls, 3)
+  assert.equal((await readJson(root, CURRENT_EXECUTION_REGISTRY_PATH)).registryRevision, 1)
+  assert.equal((await readCurrentExecutionRegistry(root)).status, "unknown_or_stale")
+  assert.equal(await exists(root, writerClaimPath()), true)
+}))
+
+test("publication024 retries recheck immutable identities and preserve first error", async context => {
+  for (const [name, mutate, expected] of [
+    ["claim", async (root) => { const value = await readJson(root, writerClaimPath()); value.processStartIdentity += "-changed"; await writeJson(root, writerClaimPath(), value) }, /registry_writer_claim_changed/],
+    ["current", async root => { const value = await readJson(root, CURRENT_EXECUTION_REGISTRY_PATH); value.runId += "-changed"; await writeJson(root, CURRENT_EXECUTION_REGISTRY_PATH, value) }, /registry_previous_current_changed/],
+    ["staged", async root => { const claim = await readJson(root, writerClaimPath()); const pending = await readJson(root, transactionRootFor(claim.transactionId) + "/transaction.pending.json"); await writeText(root, pending.currentStaged.path, "{}") }, /registry_staged_current_hash_mismatch/],
+    ["temporary", async (_root, temporary) => { await writeFile(temporary, "{}") }, /registry_publication_temporary_hash_changed/],
+  ]) await context.test(name, async () => withFixture(async ({ root, advance }) => {
+    const original = Object.assign(new Error("original rename refused"), { code: "EPERM" })
+    let count = 0
+    await assert.rejects(advanceCurrentExecutionRegistry({ ...advance, _testHooks: { ...hooks(), renameCurrent: async source => {
+      count++
+      await mutate(root, source)
+      throw original
+    } } }), error => {
+      assert.equal(error, original)
+      assert.match(error.publicationDiagnostics.secondaryError.message, expected)
+      return true
+    })
+    assert.equal(count, 1)
+  }))
+})
+
+test("publication024 deadline is absolute and never grants another rename", async () => withFixture(async ({ root, advance }) => {
+  const prepared = await prepareCurrentExecutionRegistryAdvance({ ...advance, _testHooks: hooks() })
+  const original = Object.assign(new Error("original at deadline"), { code: "EPERM" })
+  const deadlineUnixMs = Date.now() + 5000
+  let calls = 0
+  await assert.rejects(finalizePreparedCurrentExecutionRegistryAdvance({ projectRoot: root, transactionId: prepared.transactionId,
+    deadlineUnixMs, _testHooks: { ...hooks(), renameCurrent: async () => {
+      calls++
+      await new Promise(resolve => setTimeout(resolve, Math.max(0, deadlineUnixMs - Date.now() + 1)))
+      throw original
+    } },
+  }), error => {
+    assert.equal(error, original)
+    assert.equal(error.publicationDiagnostics.secondaryError.message, "registry_deadline_exhausted")
+    return true
+  })
+  assert.equal(calls, 1)
+}))
+
+test("publication024 event ahead of current fails closed even before SQLite commit", async () => withFixture(async ({ root, advance }) => {
+  const prepared = await prepareCurrentExecutionRegistryAdvance({ ...advance, _testHooks: hooks() })
+  await assert.rejects(finalizePreparedCurrentExecutionRegistryAdvance({ projectRoot: root, transactionId: prepared.transactionId,
+    _testHooks: hooks({ failAt: "after_registry_event_committed" }) }), /injected_after_registry_event_committed/)
+  const observed = await readCurrentExecutionRegistry(root)
+  assert.equal(observed.ok, false)
+  assert.equal(observed.errorCode, "registry_current_behind_published_event")
+  assert.equal(observed.registry, null)
+}))
+
+test("publication024 resource failure after rename error preserves primary without another attempt", async () => withFixture(async ({ root, advance }) => {
+  const prepared = await prepareCurrentExecutionRegistryAdvance({ ...advance, _testHooks: hooks() })
+  const original = Object.assign(new Error("rename first"), { code: "EPERM" })
+  let calls = 0, checks = 0
+  await assert.rejects(finalizePreparedCurrentExecutionRegistryAdvance({ projectRoot: root, transactionId: prepared.transactionId,
+    beforeAtomicWrite: (logical, bytes) => {
+      if (logical === CURRENT_EXECUTION_REGISTRY_PATH && bytes === 0 && ++checks === 2) throw new Error("resource guard exhausted")
+    },
+    _testHooks: { ...hooks(), renameCurrent: async () => { calls++; throw original } },
+  }), error => {
+    assert.equal(error, original)
+    assert.equal(error.publicationDiagnostics.secondaryError.message, "resource guard exhausted")
+    return true
+  })
+  assert.equal(calls, 1)
+}))
+
+test("publication024 expired recovery observes caller absolute deadline before any registry operation", async () => {
+  await assert.rejects(recoverExpiredActiveExecutionToFailedClosed({ projectRoot: "unused-private-fixture",
+    deadlineUnixMs: Date.now() - 1 }), /registry_deadline_exhausted/)
+})
+
+test("publication024 public mutation APIs reject invalid resource guards before any IO", async () => {
+  const options = { projectRoot: "unused-private-fixture", beforeAtomicWrite: true }
+  await assert.rejects(advanceCurrentExecutionRegistry(options), /registry_atomic_write_guard_invalid/)
+  await assert.rejects(recoverPreparedCurrentExecutionRegistryAdvance(options), /registry_atomic_write_guard_invalid/)
+  await assert.rejects(recoverExpiredActiveExecutionToFailedClosed(options), /registry_atomic_write_guard_invalid/)
+})
+
+test("publication024 advance forwards its caller resource guard to current publication", async () => withFixture(async ({ root, advance }) => {
+  const before = await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH)
+  const exhausted = new Error("caller resource budget exhausted")
+  let checks = 0
+  await assert.rejects(advanceCurrentExecutionRegistry({ ...advance, _testHooks: hooks(),
+    beforeAtomicWrite: (logical, bytes) => {
+      assert.ok(Number.isSafeInteger(bytes) && bytes >= 0)
+      if (logical === CURRENT_EXECUTION_REGISTRY_PATH) { checks++; throw exhausted }
+    },
+  }), error => error === exhausted)
+  assert.equal(checks, 1)
+  assert.equal(await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH), before)
+  assert.equal(await exists(root, writerClaimPath()), true)
+  assert.equal((await readCurrentExecutionRegistry(root)).status, "unknown_or_stale")
+}))
+
+test("publication024 both recovery APIs forward resource guards without replay", async () => withFixture(async ({ root, advance }) => {
+  const f = await committedDeadActiveFixture(root, advance)
+  const originalCurrent = await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH)
+  const exhausted = new Error("recovery resource budget exhausted")
+  let checks = 0
+  const beforeAtomicWrite = logical => {
+    if (logical === CURRENT_EXECUTION_REGISTRY_PATH) { checks++; throw exhausted }
+  }
+  await assert.rejects(recoverPreparedCurrentExecutionRegistryAdvance({ ...f.options, beforeAtomicWrite }), error => error === exhausted)
+  assert.equal(checks, 1)
+  assert.equal(await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH), originalCurrent)
+  assert.equal(await exists(root, writerClaimPath()), true)
+  const historical = await recoverPreparedCurrentExecutionRegistryAdvance(f.options)
+  assert.equal(historical.publicationRecovered, true)
+  assert.equal(historical.trainingContinuationAllowed, false)
+  const evidence = await createExpiredActiveRecoveryEvidence(root, f.registry)
+  await assert.rejects(recoverExpiredActiveExecutionToFailedClosed({ ...baseExpiredRecoveryOptions(root,
+    { registry: f.registry, registrySha256: f.pending.currentSha256 }, evidence, recoveryHooks("dead")),
+    historicalSourceManifest: f.options.historicalSourceManifest, beforeAtomicWrite }), error => error === exhausted)
+  assert.equal(checks, 2)
+  assert.equal(await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH), f.pending.currentSha256)
+  assert.equal(await exists(root, writerClaimPath()), true)
+  assert.equal((await readCurrentExecutionRegistry(root)).status, "unknown_or_stale")
+}))
+
+async function committedDeadActiveFixture(root, advance, { sourceCount = 1, sourceBytes = null } = {}) {
+  const activeExecution = await createActiveExecution(root, { ...advance, executionState: "executing" })
+  for (let index = 0; index < sourceCount; index++) {
+    const role = index === 0 ? "runner" : `runner${index}`
+    const logical = index === 0 ? activeExecution.programLineage.runner.path : `.runtime/fixture/program-${index}.mjs`
+    if (sourceBytes !== null || index !== 0) await writeText(root, logical, Buffer.alloc(sourceBytes ?? 0, 32))
+    activeExecution.programLineage[role] = { path: logical, sha256: await sha256File(root, logical) }
+  }
+  const ownerHooks = { ...hooks(), currentProcessIdentity: TEST_ACTIVE_PROCESS_START_IDENTITY }
+  const prepared = await prepareCurrentExecutionRegistryAdvance({ ...advance, executionState: "executing", queueStatus: "running",
+    nextMachineAction: null, activeExecution, _testHooks: ownerHooks })
+  await assert.rejects(finalizePreparedCurrentExecutionRegistryAdvance({ projectRoot: root, transactionId: prepared.transactionId,
+    _testHooks: { ...ownerHooks, ...hooks({ failAt: "before_current_publish" }), currentProcessIdentity: TEST_ACTIVE_PROCESS_START_IDENTITY } }), /injected_before_current_publish/)
+  const pending = await readJson(root, transactionRootFor(prepared.transactionId) + "/transaction.pending.json")
+  const registry = await readJson(root, pending.currentStaged.path)
+  const source = activeExecution.programLineage.runner
+  const sources = []
+  for (const [role, binding] of Object.entries(activeExecution.programLineage)) {
+    const snapshotPath = `.runtime/ai-painter/controller-repair-reviews/fixture/baseline/${role}.mjs`
+    await writeText(root, snapshotPath, await readFileAt(root, binding.path))
+    sources.push({ ...binding, snapshot: { path: snapshotPath, sha256: binding.sha256 } })
+  }
+  const manifestPath = ".runtime/ai-painter/controller-repair-reviews/fixture/historical-sources.json"
+  const manifest = { schemaVersion: "ai-painter-registry-historical-sources-v1", transactionId: prepared.transactionId,
+    registryRevision: registry.registryRevision, currentSha256: pending.currentSha256, capabilityVersion: registry.capabilityVersion,
+    packageId: registry.packageId, runId: registry.runId, sources }
+  await writeJson(root, manifestPath, manifest)
+  await expireActiveHeartbeat(root, activeExecution)
+  await writeText(root, source.path, "repaired source bytes")
+  return { registry, activeExecution, manifest, manifestPath, pending, source, prepared,
+    options: { projectRoot: root, transactionId: prepared.transactionId,
+      historicalSourceManifest: { path: manifestPath, sha256: await sha256File(root, manifestPath) },
+      _testHooks: { ...recoveryHooks("dead"), probeClaimProcess: () => ({ status: "dead" }) } } }
+}
+
+test("publication024 dead committed active publishes history without continuation then fail closes", async () => withFixture(async ({ root, advance }) => {
+  const f = await committedDeadActiveFixture(root, advance)
+  const historical = await recoverPreparedCurrentExecutionRegistryAdvance(f.options)
+  assert.equal(historical.ok, false)
+  assert.equal(historical.status, "unknown_or_stale")
+  assert.equal(historical.publicationRecovered, true)
+  assert.equal(historical.trainingContinuationAllowed, false)
+  assert.equal(historical.recoveredRegistrySha256, f.pending.currentSha256)
+  assert.equal(await exists(root, writerClaimPath()), false)
+  assert.equal((await readCurrentExecutionRegistry(root)).ok, false)
+  const evidence = await createExpiredActiveRecoveryEvidence(root, f.registry)
+  const result = await recoverExpiredActiveExecutionToFailedClosed({ ...baseExpiredRecoveryOptions(root,
+    { registry: f.registry, registrySha256: f.pending.currentSha256 }, evidence, recoveryHooks("dead")),
+    historicalSourceManifest: f.options.historicalSourceManifest })
+  assert.equal(result.ok, true)
+  assert.equal(result.registry.registryRevision, 3)
+  assert.equal(result.registry.activeExecution, null)
+  assert.equal(result.registry.executionState, "failed_closed")
+  assert.deepEqual(result.registry.latestTrainingTerminal, f.registry.latestTrainingTerminal)
+}))
+
+test("publication024 historical recovery rejects untrusted source and liveness", async context => {
+  for (const [name, mutate] of [
+    ["live writer", f => { f.options._testHooks.probeClaimProcess = () => ({ status: "active" }) }],
+    ["indeterminate writer", f => { f.options._testHooks.probeClaimProcess = () => ({ status: "indeterminate" }) }],
+    ["live active", f => { f.options._testHooks.probeActiveExecutionProcess = () => ({ status: "active", identity: TEST_ACTIVE_PROCESS_START_IDENTITY }) }],
+    ["unexpired heartbeat", async (f, root) => { const h = await readJson(root, f.activeExecution.heartbeat.path); h.heartbeatAtUtc = new Date().toISOString(); await writeJson(root, f.activeExecution.heartbeat.path, h) }],
+    ["wrong run", f => { f.manifest.runId += "wrong" }],
+    ["missing source", f => { f.manifest.sources = [] }],
+    ["duplicate source", f => { f.manifest.sources.push(f.manifest.sources[0]) }],
+    ["snapshot tampering", async (f, root) => { await writeText(root, f.manifest.sources[0].snapshot.path, "wrong") }],
+    ["snapshot file bound", async (f, root) => { await writeFile(absolute(root, f.manifest.sources[0].snapshot.path), Buffer.alloc(1024 * 1024 + 1)) }],
+  ]) await context.test(name, async () => withFixture(async ({ root, advance }) => {
+    const f = await committedDeadActiveFixture(root, advance)
+    const before = await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH)
+    await mutate(f, root)
+    await writeJson(root, f.manifestPath, f.manifest)
+    f.options.historicalSourceManifest.sha256 = await sha256File(root, f.manifestPath)
+    await assert.rejects(recoverPreparedCurrentExecutionRegistryAdvance(f.options))
+    assert.equal(await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH), before)
+    assert.equal(await exists(root, writerClaimPath()), true)
+  }))
+})
+
+test("publication024 historical source limits accept exact caps and reject overages", async context => {
+  for (const [name, dimensions, error] of [
+    ["exact 256 files", { sourceCount: 256 }, null],
+    ["257 files", { sourceCount: 257 }, /registry_historical_source_count_mismatch/],
+    ["exact 16 MiB", { sourceCount: 16, sourceBytes: 1024 * 1024 }, null],
+    ["over 16 MiB", { sourceCount: 17, sourceBytes: 1024 * 1024 }, /registry_historical_total_size_exceeded/],
+  ]) await context.test(name, async () => withFixture(async ({ root, advance }) => {
+    const f = await committedDeadActiveFixture(root, advance, dimensions)
+    if (error) await assert.rejects(recoverPreparedCurrentExecutionRegistryAdvance(f.options), error)
+    else assert.equal((await recoverPreparedCurrentExecutionRegistryAdvance(f.options)).publicationRecovered, true)
+  }))
+})
+
+test("publication024 active source mutation between retries aborts without replacing original", async () => withFixture(async ({ root, advance }) => {
+  const activeExecution = await createActiveExecution(root, { ...advance, executionState: "executing" })
+  const original = Object.assign(new Error("original source test rename"), { code: "EPERM" })
+  let attempts = 0
+  await assert.rejects(advanceCurrentExecutionRegistry({ ...advance, executionState: "executing", queueStatus: "running", nextMachineAction: null,
+    activeExecution, _testHooks: { ...hooks(), renameCurrent: async () => {
+      attempts++
+      await writeText(root, activeExecution.programLineage.runner.path, "source changed")
+      throw original
+    } },
+  }), error => {
+    assert.equal(error, original)
+    assert.match(error.publicationDiagnostics.secondaryError.message, /registry_active_execution_program_runner_hash_mismatch/)
+    return true
+  })
+  assert.equal(attempts, 1)
+}))
+
+test("publication024 ordinary live active recovery retains existing live-byte verification", async () => withFixture(async ({ root, advance }) => {
+  const activeExecution = await createActiveExecution(root, { ...advance, executionState: "executing" })
+  const prepared = await prepareCurrentExecutionRegistryAdvance({ ...advance, executionState: "executing", queueStatus: "running",
+    nextMachineAction: null, activeExecution, _testHooks: hooks() })
+  const result = await recoverPreparedCurrentExecutionRegistryAdvance({ projectRoot: root, transactionId: prepared.transactionId,
+    _testHooks: hooks({ probe: "dead" }) })
+  assert.equal(result.ok, true)
+  assert.equal(result.publicationRecovered, undefined)
+  assert.deepEqual(result.registry.activeExecution, activeExecution)
+}))
 
 async function withFixture(callback) {
   const root = await mkdtemp(path.join(os.tmpdir(), "ai-painter-registry-atomic-"))

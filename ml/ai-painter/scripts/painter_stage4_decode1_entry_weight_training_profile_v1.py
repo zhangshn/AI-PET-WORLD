@@ -22,6 +22,9 @@ CAPABILITY = "stage4_mvp256_dry_decode1_entry_weight_quality24_v1"
 EXECUTION_QUALIFIED = False
 UPDATE_LIMIT = 1152
 SUPPORT_WEIGHT1_CAPABILITY = "stage4_mvp256_dry_decode1_support_structure_weight1_v1"
+DECODE2_SUPPORT_WEIGHT1_CAPABILITY = "stage4_mvp256_dry_decode2_support_structure_weight1_v1"
+RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY = "stage4_mvp256_dry_decode2_rgb_output_support_structure_weight1_v1"
+QUALIFICATION_CAPTURE_CAPABILITY = "stage4_mvp256_dry_decode2_rgb_output_qualification_capture_v1"
 prepare_metadata = inherited.prepare_metadata
 bind_sample_ecology = inherited.bind_sample_ecology
 validate_sample_ecology = inherited.validate_sample_ecology
@@ -32,14 +35,18 @@ _critic_state = inherited._critic_state
 _update_discriminator = inherited.core.v21.update_network
 
 
-def fresh_networks(order):
+def fresh_networks(order, *, model_capability=MODEL_CAPABILITY):
     from ai_painter.complete_world import object_ecology_decode1_entry_weight_precision_v1 as identity
     from ai_painter.complete_world.native_rgb_conditional_texture_cpu import build_conditional_texture_discriminator
     require(torch.get_num_threads() <= 2 and inherited.core.TRAINING["initializationSeed"] == 20260929,
         "fixed CPU threads/seed required")
     with torch.device("cpu"), torch.random.fork_rng(devices=[]):
         torch.random.default_generator.manual_seed(20260929)
-        model = identity.build_fresh_object_ecology_decode1_entry_weight_precision(condition_channel_order=order)
+        require(model_capability in (identity.CAPABILITY, identity.DECODE2_CAPABILITY, identity.RGB_OUTPUT_CAPABILITY), "unknown numeric model identity")
+        factory = (identity.build_fresh_object_ecology_decode2_output_weight_precision
+                   if model_capability == identity.RGB_OUTPUT_CAPABILITY else identity.build_fresh_object_ecology_decode2_entry_weight_precision
+                   if model_capability == identity.DECODE2_CAPABILITY else identity.build_fresh_object_ecology_decode1_entry_weight_precision)
+        model = factory(condition_channel_order=order)
         critic = build_conditional_texture_discriminator()
     bind_parameters(model)
     return model, critic
@@ -70,7 +77,8 @@ def sample_forward(model, sample, return_evidence=False):
 
 def execution_support_structure_weight(configuration):
     require(type(configuration) is dict, "authenticated training configuration required")
-    if configuration.get("capabilityVersion") == SUPPORT_WEIGHT1_CAPABILITY:
+    if configuration.get("capabilityVersion") in (SUPPORT_WEIGHT1_CAPABILITY, DECODE2_SUPPORT_WEIGHT1_CAPABILITY,
+                                                  RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY, QUALIFICATION_CAPTURE_CAPABILITY):
         require(type(configuration.get("objectSupportStructureWeight")) is int
             and configuration["objectSupportStructureWeight"] == 1,
             "registered support weight1 configuration required")
@@ -287,7 +295,7 @@ def zero_update_probe(model, critic, sample, order, resource, forward=None, *, e
                     if bool(bound["conditions"][list(order).index(key)].count_nonzero()):
                         require(any(raw[3][i] is not None and bool(raw[3][i].count_nonzero()) for i in indexes)
                             and facts["generatorGradientFacts"]["headCandidateL2"][key] > 0, "applicable head unreachable: " + key)
-                result = {"passed": True, "capabilityVersion": api.CAPABILITY, "modelCapabilityVersion": api.MODEL_CAPABILITY,
+                result = {"passed": True, "capabilityVersion": api.CAPABILITY, "modelCapabilityVersion": model.capability_version,
                     "optimizerCreated": False, "optimizerUpdates": 0, "loss": float(total.detach()),
                     "discriminatorLoss": float(d_loss.detach()), "fiveGradientFacts": facts,
                     "seasonalSliceL2": norms[0], "ecologySliceL2": norms[1], "objectCount": evidence["objectCount"],

@@ -165,7 +165,9 @@ class ActualProfileInterfaceTests(unittest.TestCase):
     def test_actual_factory_and_metadata_interfaces_without_forward_or_archive(self):
         # Read only bound JSON metadata. Exercise the real profile/factory,
         # including dependency binding, instead of substituting a toy factory.
-        manifest_path = ROOT / worker.restore.SOURCE_ROOT / "gradient-failure/manifest.json"
+        policy = {"schemaVersion": worker.restore.CURRENT_SCHEMA}
+        self.enterContext(patch.object(worker, "CURRENT_POLICY", policy))
+        manifest_path = ROOT / worker.restore.CURRENT_ROOT / "gradient-failure/manifest.json"
         self.assertLess(manifest_path.stat().st_size, 2 * 1024**2)
         manifest = json.loads(manifest_path.read_text(encoding="utf8"))
         programs = manifest["context"]["programBindings"]
@@ -188,7 +190,7 @@ class ActualProfileInterfaceTests(unittest.TestCase):
              patch.object(torch.cuda, "init", side_effect=AssertionError("CUDA forbidden")), \
              patch.object(worker.capture, "safe_load_bytes", side_effect=AssertionError("archive forbidden")), \
              worker.restore._preserve_current_rng():
-            model, critic = worker.restore._fresh_networks(ROOT, order, verified)
+            model, critic = worker.restore._fresh_networks(ROOT, order, verified, policy=policy)
             self.assertIs(identity.validate_model_identity(model), model)
             worker.capture.validate_graph(tuple(model.named_parameters(remove_duplicate=False)), manifest["graph"])
             observer = worker.Parameter90Observer(model)
@@ -200,7 +202,7 @@ class ActualProfileInterfaceTests(unittest.TestCase):
         self.assertFalse(torch.cuda.is_initialized())
         stale = dict(verified); stale[str(ROOT / worker.restore.PROFILE_PATH)] = "0"*64
         with self.assertRaisesRegex(ValueError, "exact original decode1-entry"):
-            worker.restore._fresh_networks(ROOT, order, stale)
+            worker.restore._fresh_networks(ROOT, order, stale, policy=policy)
 
 
 class DiagnosticDigestTests(unittest.TestCase):
@@ -276,15 +278,48 @@ class DiagnosticDigestTests(unittest.TestCase):
 class PhaseTests(unittest.TestCase):
     def tearDown(self): self.assertFalse(torch.cuda.is_initialized())
 
-    def run_fixture(self, case="target"):
+    def run_fixture(self, case="target", *, current=False):
         g, d, sample, profile, calls = fixture(case)
-        with patch.object(worker, "_profile", return_value=profile), \
+        if current:
+            sample["sampleId"] = worker.restore.CURRENT_SAMPLE
+            original = profile._generator_candidate
+            def weighted(*args, support_structure_weight):
+                self.assertEqual(support_structure_weight, 1.0)
+                return original(*args)
+            profile._generator_candidate = weighted
+        with patch.object(worker, "CURRENT_POLICY", {"schemaVersion": worker.restore.CURRENT_SCHEMA} if current else None), \
+             patch.object(worker, "COORDINATES", ((1,7,0,0),) if current else worker.COORDINATES), \
+             patch.object(worker, "_profile", return_value=profile), \
              patch.object(worker, "Parameter90Observer", MicroObserver), \
              patch.object(worker.gate_module, "bind_parameters", side_effect=lambda m: (tuple(m.parameters()), {}, 106, 107)), \
              patch.object(worker.gate_module, "_validate_model_and_parameters", side_effect=lambda m, p: (tuple(p), {})), \
              patch.object(torch.optim, "AdamW", side_effect=AssertionError("optimizer forbidden")):
             phase = worker.run_observed_g_phase(g, d, sample, g.condition_channel_order, resource=lambda: None)
         return phase, g, d, sample, calls
+
+    def test_current_decode2_weight1_route_captures_actual_new_coordinate(self):
+        phase, _, _, _, calls = self.run_fixture(current=True)
+        self.assertEqual(phase["status"], "diagnostic_target_gate_observed", phase)
+        self.assertEqual(phase["originalGateFailure"]["selectedCoordinates"], [[1,7,0,0]])
+        self.assertEqual(calls, dict(forward=1, autograd=5))
+        with patch.object(worker, "CURRENT_POLICY", {"schemaVersion": worker.restore.CURRENT_SCHEMA}):
+            result = worker.finish_target_contrast(phase, preserve=lambda *args: {"saved":True}, resource=lambda:None)
+        self.assertEqual(result["status"], "diagnostic_target_evidence_complete")
+        self.assertEqual(result["contrast"]["coordinates"], [[1,7,0,0]])
+
+    def test_current_policy_binds_exact_failure_model_weight_and_coordinate(self):
+        policy=policy_fixture();route=worker.restore.source_route({"schemaVersion":worker.restore.CURRENT_SCHEMA})
+        policy.update(schemaVersion=worker.restore.CURRENT_SCHEMA,modelCapabilityVersion=route["model_capability"],objectSupportStructureWeight=1)
+        policy["scope"].update(failureRunId=route["run"],failureSampleId=route["sample"])
+        policy["sourceEvidence"]=[dict(path=route["root"]+name,sha256=sha) for name,sha in route["hashes"].items()]
+        policy["sourceTensorArchive"]=dict(path=route["root"]+"gradient-failure/tensors.pt",sha256=route["archive_sha"],bytes=route["archive_bytes"])
+        policy["target"].update(coordinates=route["coordinates"],captureInputChannel=7,captureOutputChannel=1)
+        worker.restore.validate_source_policy(policy)
+        for key,value in [("modelCapabilityVersion","old-model"),("objectSupportStructureWeight",.1)]:
+            bad=deepcopy(policy);bad[key]=value
+            with self.assertRaises(ValueError):worker.restore.validate_source_policy(bad)
+        bad=deepcopy(policy);bad["target"]["coordinates"]=[[0,1,0,0]]
+        with self.assertRaises(ValueError):worker.restore.validate_source_policy(bad)
 
     def test_real_gate_origin_authenticated_and_failure_saved_before_math(self):
         phase, g, d, sample, calls = self.run_fixture()
@@ -502,7 +537,9 @@ class EnvelopeAndSampleTests(unittest.TestCase):
                              "shape": [1, 768, 1024], "statistics": {"minimum": 0}})
             return dict(sampleId=identity["sampleId"], split="train", objectInstanceTable=[], image=torch.ones(3, 192, 256),
                 conditions=torch.ones(23, 192, 256)), deepcopy(identity)
-        profile = worker._profile()
+        with patch.object(worker, "CURRENT_POLICY", {"schemaVersion": worker.restore.CURRENT_SCHEMA}):
+            profile = worker._profile()
+        self.enterContext(patch.object(worker, "_profile", return_value=profile))
         cpu = profile.inherited.core.cpu
         # Replace only the leaf dataset/raster I/O with private JSON/tensors.
         # Profile dispatch, derive/bound_regime, seasonal/ecological binding and

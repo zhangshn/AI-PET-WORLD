@@ -1,14 +1,14 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-09-22 13:11:21 +08:00
+更新时间：2026-10-22 09:10:45 +08:00
 
 状态：long-term-architecture-reference
 
-文档版本：`AI-PET-WORLD-ARCHITECTURE-1.10`
+文档版本：`AI-PET-WORLD-ARCHITECTURE-1.11`
 
-生效日期：`2026-09-22`
+生效日期：`2026-10-22`
 
-替代版本：`AI-PET-WORLD-ARCHITECTURE-1.9`
+替代版本：`AI-PET-WORLD-ARCHITECTURE-1.10`
 
 文档状态：`active_normative_target`
 
@@ -349,6 +349,94 @@ flowchart TD
   R -->|"通过"| Q["/world 玩家主世界"]
   R -->|"否决"| P
 ```
+
+### 2.1 全业务线与子系统导航
+
+本图梳理现行文档已经定义的业务责任及关系，不新增业务、模型、人格算法或执行权限，也不是全部功能已实现的证明。设计状态与实现／验收状态分离：节点表示已有规范职责，实际完成范围只查[唯一模块计划表](game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md)及对应机器证据，缺失保持未知。八字后备链、现实动物、房屋／社区等既有后续范围不倒置为当前自然地图训练前置条件。
+
+人格子系统当前图示以紫微斗数资料、排盘解释及可追溯映射为主；紫微解释与人格／行为映射分开，已有八字后备边界仍以业务规格第2.1节为准，本次不建设该链。五维性格为后续退役方向，不作为本次图示的人格架构，也不声称已删除或已完成替代迁移；不改动现有数据、算法或无关的控制台五维字段合同。
+
+```mermaid
+flowchart LR
+  subgraph UserBusiness["用户与人格业务"]
+    U["用户申请AI管家"] --> Mode["现实自我或平行世界映射模式"]
+    Mode --> Birth["合法出生输入与精度边界"]
+    Birth --> Ziwei["紫微排盘与结构化命盘"]
+    Dictionary["紫微资料字典及算法来源"] --> Ziwei
+    Ziwei --> Analysis["星宫关系及动态盘证据解释"]
+    Dictionary --> Analysis
+    Analysis --> Mapping["人格映射及独立初始外貌档案"]
+    Mapping --> Actor["管家人格及动机偏好"]
+    Memory["角色记忆与长期目标"] --> Decision["感知与自主决策"]
+    Actor --> Decision
+  end
+  subgraph WorldBusiness["类地球世界与有规律生长"]
+    Earth["合格现实地区来源及自然参数"] --> Facts["WorldFacts与区域空间连接"]
+    Tick["世界时间与持久运行规则"] --> Ecology["地形气候水文生态与生命周期"]
+    Facts --> Ecology
+    Ecology --> Facts
+    Facts --> Expansion["RegionGraph及规则约束区域扩展"]
+    Expansion --> Facts
+    Decision --> Action["人物行动及交互结果"]
+    Facts --> Decision
+    Action --> Facts
+    Action --> Memory
+    Facts --> Visual["VisualFactManifest及完整地图结构条件"]
+  end
+  subgraph Learning["本地绘图能力建设"]
+    Originals["原图来源许可及结构事实"] --> Dataset["版本化数据与train及验证用途隔离"]
+    Dataset --> Preparation["本地准备与同包资源准入"]
+    Preparation --> Training["Painter训练及学习记录"]
+    Training --> Checkpoint["Checkpoint重载与固定验证"]
+    Checkpoint --> ModelReview["机器审核及能力裁决"]
+    ModelReview --> Capability["合格不可变能力版本"]
+    ModelReview --> Failure["失败证据与有界后继规划"]
+  end
+  subgraph Production["世界视觉生产与运行发布"]
+    Visual --> Task["World Director与完整视觉任务包"]
+    Capability --> Painter["本地Painter正式视觉推理"]
+    Task --> Painter
+    Painter --> Candidate["当前事实对应RGB候选"]
+    Candidate --> Review["视觉语义及完整地图机器审核"]
+    Review --> Approved["ApprovedFrame及结构运行层合成"]
+    Review --> Failure
+    Approved --> RuntimeFrame["RuntimeFrame身份及发布门"]
+    RuntimeFrame --> World["玩家世界展示与持续运行"]
+    World --> Facts
+  end
+  subgraph Operations["本地编排与运维支撑"]
+    LocalAI["本地AI确定流程及分工迁移"] --> Preparation
+    LocalAI --> Task
+    Failure --> LocalAI
+    Events["真实事件及执行登记"] --> Console["控制台只读状态与证据查询"]
+    Training --> Events
+    ModelReview --> Events
+    RuntimeFrame --> Events
+    Events --> Storage["分层文件存储与本地SQLite索引"]
+    Storage --> Backup["声明范围备份与独立恢复验证"]
+    Events --> Work["按功能与执行窗口工作台账"]
+    Docs["权威文档与唯一模块计划"] --> LocalAI
+    Docs --> Work
+    Work --> Management["本地数据管理工作台"]
+    Backup --> Management
+    Docs --> Management
+    Code["经预览的精确代码变更"] --> Git["独立Git提交与推送结果"]
+    Git --> Management
+  end
+```
+
+图中资格节点均须取得各自真实证据：模型审核通过不等于Runtime发布，训练结束不等于画质合格，备份复制结束不等于独立恢复通过。图的页面只读，不承担运行调度、授权或业务状态数据库职责。
+
+| 视图与责任 | 既有详细定义 |
+|---|---|
+| 用户、人格、正向／反向模式及后备边界 | [业务规格第2.1节](BUSINESS_SPEC.md#21-核心业务一ai-管家人格与角色自主)及[紫微入口](ziwei/README.md) |
+| 紫微资料分层、读盘与解释 | [资料架构](ziwei/DATA_DICTIONARY_ARCHITECTURE.md)、[分析流程](ziwei/DATA_DICTIONARY_ANALYSIS_FLOW.md)、[算法合同](ziwei/ALGORITHM_CONTRACTS.md) |
+| 世界事实、区域扩展及Runtime | 本文第1、3.2、4及后续Runtime相关章节；具体能力范围以对应规格和唯一计划为准 |
+| 绘图数据、训练、审核及能力版本 | [Painter主体](game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md)、[数据与来源](game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md)、[审核存储](game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md) |
+| 本地流程与外部执行职能迁移 | [能力迁移架构](LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md)；未迁移能力不得伪装为已自主 |
+| 控制台、备份、工作台账及Git边界 | [控制台架构](ai-console/AI_CONSOLE_ARCHITECTURE_SPEC.md)、[本地管理模块](LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md)及[目录结构](DIRECTORY_STRUCTURE.md) |
+
+业务全景是一张入口总图，系统、子系统、数据、时序与流程视图按各自原文单独查阅；所有子图同样保留来源、版本、适用范围和未知实现状态。不从一张总图反向推定未定义算法、所有模块已接通或当前MVP已经闭环。
 
 ## 3. 技术架构图
 

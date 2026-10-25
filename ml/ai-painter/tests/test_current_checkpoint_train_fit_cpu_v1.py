@@ -4,11 +4,13 @@ import ast
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+import sys
 
 SOURCE = Path(__file__).absolute().parents[1] / "scripts/check_current_checkpoint_train_fit_cpu_v1.py"
 spec = importlib.util.spec_from_file_location("fit_diagnostic_test_module", SOURCE)
 fit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fit)
+sys.path.insert(0, str(SOURCE.parent))
 
 
 class MetadataTests(unittest.TestCase):
@@ -78,6 +80,45 @@ class MetadataTests(unittest.TestCase):
     def test_no_applicable_observation_is_not_success(self):
         rows = [{"sampleId": "a", "fullRgbMae": .1, "objectCorrelations": dict.fromkeys(fit.ROLES, None)}]
         self.assertIsNone(fit.summarize(rows)["perRole"]["object_tree"]["mean"])
+
+
+class ComparisonTests(unittest.TestCase):
+    def test_exact_four_batches_and_disjoint_validation(self):
+        from current_checkpoint_fit_comparison_cpu_v1 import batch_members
+        train, validation = [str(i) for i in range(48)], ["v" + str(i) for i in range(8)]
+        pairs = [batch_members(train, validation, i) for i in range(4)]
+        self.assertEqual(sum([ids for _, ids in pairs], []), train + validation)
+        self.assertEqual([split for split, _ in pairs], ["train"] * 3 + ["validation"])
+        with self.assertRaises(ValueError):
+            batch_members(train, train[:8], 3)
+        with self.assertRaises(ValueError):
+            batch_members(train, validation, 4)
+
+    def test_history_cannot_be_caller_forged_or_cross_root(self):
+        from decode1_entry_weight_fit_history_v1 import FitHistory, validated_history
+        history = FitHistory(str(SOURCE.parents[3]), (), ())
+        with self.assertRaises(ValueError):
+            validated_history(history, SOURCE.parents[3])
+        with self.assertRaises(ValueError):
+            validated_history(object(), SOURCE.parents[3])
+
+    def test_ast_equivalence_rejects_changed_forward(self):
+        from decode1_entry_weight_fit_history_v1 import function_ast
+        self.assertEqual(function_ast("def f(x): return x + 1", "f"), function_ast("def f(x):\n return x+1", "f"))
+        self.assertNotEqual(function_ast("def f(x): return x + 1", "f"), function_ast("def f(x): return x + 2", "f"))
+
+    def test_region_metrics_known_identity_and_na(self):
+        import torch
+        from current_checkpoint_fit_metrics_v1 import region_metrics
+        torch.set_num_threads(2)
+        rgb = torch.tensor([[[0., .5, 1.]]] * 3)
+        value = region_metrics(rgb, rgb, torch.ones((1, 3), dtype=torch.bool))
+        self.assertEqual(value["rgbMae"], 0.)
+        self.assertAlmostEqual(value["correlation"], 1., places=6)
+        value = region_metrics(rgb, torch.zeros_like(rgb), torch.ones((1, 3), dtype=torch.bool))
+        self.assertIsNone(value["correlation"])
+        self.assertEqual(value["naReason"], "constant_reference_region")
+        self.assertEqual(region_metrics(rgb, rgb, torch.zeros((1, 3), dtype=torch.bool))["naReason"], "empty_region")
 
 
 if __name__ == "__main__":

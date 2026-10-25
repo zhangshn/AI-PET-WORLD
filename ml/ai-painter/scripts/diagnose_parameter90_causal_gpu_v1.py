@@ -43,6 +43,7 @@ TARGET_ERROR = "actual four-term total gradient identity differs at parameter 90
 require = capture.require
 GPU_POLICY_PATH = "data/ai-painter/system-governance/ai-painter-parameter90-causal-gpu-policy-v1.json"
 GPU_POLICY = None
+CURRENT_POLICY = None
 _PHASE_PROOFS = weakref.WeakKeyDictionary()
 RESOURCE_LIMITS = dict(maxWallSeconds=180, threads=2, maxGpuMemoryFraction=.7, maximumTemperatureC=85,
     minimumFreeVramMiB=2048, minimumFreeDiskMiB=2048, maxOutputBytes=134217728,
@@ -56,9 +57,10 @@ class _PhaseProof:
 
 
 def _profile():
+    profile_sha = restore.source_route(CURRENT_POLICY)["profile_sha"]
     logical = "ml/ai-painter/scripts/painter_stage4_decode1_entry_weight_training_profile_v1.py"
     path = ROOT / logical
-    require(not path.is_symlink() and capture.digest(path.read_bytes()) == PROFILE_SHA, "original profile source changed")
+    require(not path.is_symlink() and capture.digest(path.read_bytes()) == profile_sha, "original profile source changed")
     old = list(sys.path)
     try:
         sys.path.insert(0, str(path.parent))
@@ -153,11 +155,12 @@ def _authenticate_gate(error, observation):
             and _diagnostic_tensor_sha(local["expected"]) == _diagnostic_tensor_sha(expected), "gate comparison not confirmed")
     close = torch.isclose(values[0], expected, atol=1e-6, rtol=1e-5)
     require(not bool(close.all()), "original target gate did not fail")
-    selected_mask = [not bool(close[point]) for point in COORDINATES]
+    coordinates = tuple(tuple(c) for c in restore.source_route(CURRENT_POLICY)["coordinates"])
+    selected_mask = [not bool(close[point]) for point in coordinates]
     return {"type": "ValueError", "message": str(error), "sourceSha256": GATE_SHA,
             "sourcePath": str(source), "helperSourcePath": HELPER_PATH, "helperSourceSha256": HELPER_SHA,
             "gateLine": target.tb_lineno, "raiseLine": frames[-1].tb_lineno,
-            "selectedCoordinates": [list(point) for point in COORDINATES],
+            "selectedCoordinates": [list(point) for point in coordinates],
             "selectedCoordinateFailureMask": selected_mask, "selectedCoordinatesReproduced": all(selected_mask),
             "meaning": "same_call_original_gate_not_historical_replay"}
 
@@ -194,7 +197,7 @@ def _state_unchanged(network, before):
 
 
 def _sample_state(sample):
-    require(sample.get("sampleId") == restore.SAMPLE_ID and sample.get("split") == "train", "exact failure train sample required")
+    require(sample.get("sampleId") == restore.source_route(CURRENT_POLICY)["sample"] and sample.get("split") == "train", "exact failure train sample required")
     rows = []
     for key in ("image", "conditions", "appearance_regime", "ecology_regime"):
         value = sample.get(key)
@@ -252,7 +255,9 @@ def run_observed_g_phase(model, critic, sample, order, *, resource):
         frozen_d = _network_state(critic)
         bound = profile._bound_device(model, sample)
         bound_before = _sample_state(bound)
-        observer = Parameter90Observer(model, resource=resource)
+        route = restore.source_route(CURRENT_POLICY)
+        observer = (Parameter90Observer(model, resource=resource, coordinates=tuple(tuple(c) for c in route["coordinates"]))
+                    if route["current"] else Parameter90Observer(model, resource=resource))
         def event(stage, label, raw):
             resource()
             observer(stage, label, raw)
@@ -266,7 +271,10 @@ def run_observed_g_phase(model, critic, sample, order, *, resource):
                 prediction = profile.sample_forward(model, bound)
                 resource()
                 with profile.observe_generator_gradients(event):
-                    profile._generator_candidate(model, critic, bound, order, prediction)
+                    if route["current"]:
+                        profile._generator_candidate(model, critic, bound, order, prediction, support_structure_weight=route["structure_weight"])
+                    else:
+                        profile._generator_candidate(model, critic, bound, order, prediction)
                 resource()
         except BaseException as failure:
             error = failure
@@ -349,8 +357,10 @@ def finish_target_contrast(phase, *, preserve, resource):
     def counted(stage, label):
         key = "localFp64WeightVjpAttempts" if stage == "attempt" else "localFp64WeightVjp"
         phase["counts"][key] = phase["counts"].get(key, 0) + 1
+    route = restore.source_route(CURRENT_POLICY)
     report = decompose_target_gradients(observation["input_tensor"], observation["adjoints"],
-        observation["native_gradients"], convolution=observation["convolution"], resource=resource, on_reference=counted)
+        observation["native_gradients"], convolution=observation["convolution"], resource=resource, on_reference=counted,
+        **({"coordinates": tuple(tuple(c) for c in route["coordinates"])} if route["current"] else {}))
     resource()
     return dict(status="diagnostic_target_evidence_complete", originalGateFailure=phase["originalGateFailure"],
         preservation=preservation, counts=dict(phase["counts"]),
@@ -372,12 +382,14 @@ def _json(raw):
 
 def validate_request(request, policy, *, cpu, now=None):
     now = time.time() if now is None else now
+    route = restore.source_route(policy)
+    expected_policy = GPU_POLICY_PATH.replace("-v1.json", "-v2.json") if route["current"] else GPU_POLICY_PATH
     binding = request.get("policy", {})
     require(request.get("schemaVersion") == "parameter90-causal-gpu-request-v1"
-            and binding.get("path") == GPU_POLICY_PATH and type(binding.get("sha256")) is str
+            and binding.get("path") == expected_policy and type(binding.get("sha256")) is str
             and re.fullmatch("[0-9a-f]{64}", binding["sha256"]), "exact new request/policy binding required")
     if GPU_POLICY is not None: require(binding == GPU_POLICY, "invocation policy differs")
-    require(policy.get("schemaVersion") == "ai-painter-parameter90-causal-gpu-policy-v1"
+    require(policy.get("schemaVersion") in (restore.CURRENT_SCHEMA, "ai-painter-parameter90-causal-gpu-policy-v1")
             and policy.get("status") == "registered_one_shot_zero_update_diagnostic_not_training",
             "registered parameter90 policy required")
     restore.validate_source_policy(policy)
@@ -386,9 +398,10 @@ def validate_request(request, policy, *, cpu, now=None):
     canonical_program_binding(request.get("programBindings"))
     formal = policy.get("formalSpecification", {})
     require(formal.get("path") == "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md"
-            and formal.get("version") == "AI-PAINTER-SPEC-1.101"
+            and formal.get("version") == ("AI-PAINTER-SPEC-1.118" if route["current"] else "AI-PAINTER-SPEC-1.101")
             and re.fullmatch("[0-9a-f]{64}", formal.get("sha256", "")), "versioned formal binding required")
-    require(policy["outputRoot"] == ".runtime/ai-painter/parameter90-causal-gpu-diagnostics-v1", "exact new output namespace required")
+    require(policy["outputRoot"] == (".runtime/ai-painter/parameter90-causal-gpu-diagnostics-v2" if route["current"]
+            else ".runtime/ai-painter/parameter90-causal-gpu-diagnostics-v1"), "exact new output namespace required")
     require(policy["attemptClaimPath"] == policy["outputRoot"] + "/attempt-v1.json"
             and policy["resources"]["attempts"] == 1 and policy["resources"]["automaticRetries"] == 0, "single attempt required")
     require(request.get("mode") == ("cpu_preflight" if cpu else "gpu_diagnostic"), "phase mode differs")
@@ -505,7 +518,7 @@ def load_failure_sample(mapping, manifest, *, resource, programs):
     cpu = profile.inherited.core.cpu
     context = manifest["context"]
     identity = context["sampleIdentity"]
-    require(identity["sampleId"] == restore.SAMPLE_ID and identity["split"] == "train", "exact train sample required")
+    require(identity["sampleId"] == restore.source_route(CURRENT_POLICY)["sample"] and identity["split"] == "train", "exact train sample required")
     canonical = canonical_program_binding(programs)
     reader = _SingleSampleReader(mapping, context["programBindings"], resource)
     reader.allow(canonical)
@@ -652,10 +665,11 @@ def main():
     args = parser.parse_args()
     mapping = capture.RuntimeMap.current(ROOT)
     request = _json(mapping.binding({"path": args.request, "sha256": args.request_sha256}))
-    global GPU_POLICY
+    global GPU_POLICY, CURRENT_POLICY
     GPU_POLICY = restore._binding(request["policy"])
     policy = _json(mapping.binding(GPU_POLICY))
     validate_request(request, policy, cpu=args.cpu_preflight)
+    CURRENT_POLICY = policy
     formal = policy["formalSpecification"]
     mapping.binding({k: formal[k] for k in ("path", "sha256")})
     mapping.binding(policy["designBinding"])
@@ -739,7 +753,7 @@ def main():
         result = dict(schemaVersion="parameter90-causal-worker-result-v1", status=status, runId=request["runId"],
             policy=GPU_POLICY, counts=counts, sourceStateTiming="after_exception", statePreparation=state,
             cpuComponentTests=components, cpuAffinity=affinity, metadataNodeInterpreter=node_identity,
-            sampleId=restore.SAMPLE_ID, sourceReceipts=dict(reader.observed), artifacts=capture_bindings, contrast=summary,
+            sampleId=restore.source_route(CURRENT_POLICY)["sample"], sourceReceipts=dict(reader.observed), artifacts=capture_bindings, contrast=summary,
             historicalReplayAllowed=False, trainingAllowed=False, stage4Qualified=False, rootCauseProven=False,
             checkpointWritten=False, cudaCallCountingScope="explicit_initialization_and_memory_query_not_kernel_count")
         binding = writer.json("cpu-worker-result.json" if args.cpu_preflight else "worker-result.json", result)

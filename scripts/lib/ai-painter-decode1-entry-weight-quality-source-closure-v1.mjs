@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import {createRequire,builtinModules} from 'node:module';
 import {spawnSync} from 'node:child_process';
 import assert from 'node:assert/strict';
-import {executionRoute} from './ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
+import {executionRoute,QUALIFICATION_CAPTURE_CAPABILITY,TRAINING_CAPTURE_CAPABILITY,TRAINING_CAPTURE_V3_CAPABILITY,TRAINING_CAPTURE_V4_CAPABILITY,TRAINING_CAPTURE_V5_CAPABILITY,TRAINING_CAPTURE_V6_CAPABILITY,TRAINING_CAPTURE_CAPABILITIES} from './ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
 import {parse} from '@babel/parser';
 const builtins = new Set([...builtinModules, ...builtinModules.map(v => 'node:' + v)]);
 const digest = raw => crypto.createHash('sha256').update(raw).digest('hex');
@@ -77,6 +77,42 @@ function collectActualExecutionSources({root, required, dynamicPaths=[], python,
       sha256:'6363c4065b9dbec4376594d56664d6c0ecfdb395df61879f9045b2e75cb9e153',excludeScopes:['_joint_program_limit'],
       reason:'This decode1 route rejects above256 before capture; the other JOINT route alone can enter the historical260 exception.'}
   }:finalRgbDeferredSurfaces;
+  const qualificationCapture=capabilityVersion===QUALIFICATION_CAPTURE_CAPABILITY;
+  const trainingCapture=TRAINING_CAPTURE_CAPABILITIES.includes(capabilityVersion);
+  // The CPU request dispatches exactly one route wiring suite. Component-suite
+  // runs retain the old bridge tests; they are not an entry in a prepared Run.
+  const routeDeferredSurfaces={...deferredSurfaces,
+    ...([TRAINING_CAPTURE_V3_CAPABILITY,TRAINING_CAPTURE_V4_CAPABILITY,TRAINING_CAPTURE_V5_CAPABILITY,TRAINING_CAPTURE_V6_CAPABILITY].includes(capabilityVersion)?{
+      'ml/ai-painter/tests/test_training_preview_observer_cpu_v2.py':{
+        sha256:'254ad56aeb2657e22347678a3f2025fbd024e65206e2f9518d4961f4d2233298',
+        excludeImports:[{scope:'TrainingPreviewObserverCpuTests.test_same_capture_and_failure_bytes_as_frozen_v1_algorithm',
+          module:'ai_painter.complete_world',level:0,names:['training_preview_observer_v1']}],
+        reason:'Only v3/v4/v5/v6: cpu_request selects AdmissionTests, CurrentRegisteredInterfaceAdmissionTests, the exact TrainingCaptureV3RouteTests/TrainingCaptureV4RouteTests/TrainingCaptureV5RouteTests/TrainingCaptureV6RouteTests and CanonicalVerificationTests/CanonicalVerificationV4Tests/CanonicalVerificationV5Tests/CanonicalVerificationV6Tests, then the fixed Node entry regression. It never dispatches the independent preview observer component suite. Keep this bound test source, every module-level import and every other deferred import. The unchanged full component suite still verifies the historical v1 comparison outside the prepared Run.'}
+    }:{}),
+    'ml/ai-painter/tests/test_decode1_entry_weight_quality_adapters_cpu_v1.py':{
+      sha256:'e868ea837a333fc84fe48685eeee2b36df311f83f4795e70e7071d9f0fd7881f',
+      excludeImports:[...(qualificationCapture||trainingCapture?[
+        {scope:'SameCallRouteTests.fixture',module:'ai_painter.complete_world',level:0,names:['parameter90_training_same_call_bridge_v1']},
+        {scope:'SameCallRouteTests.test_real_three_callbacks_preserve_pair_first_error_and_secondary_admission',module:'ai_painter.complete_world',level:0,names:['parameter90_training_same_call_storage_v1']}
+      ]:[]),...(!qualificationCapture?[{scope:'QualificationSequenceRouteTests.fixture',module:'qualification_parameter0_capture_v1',level:0,names:['target_selected','SAMPLE_ID']}]:[]),
+      ...(!trainingCapture?[{scope:'TrainingCaptureRouteTests.fixture',module:'ai_painter.complete_world',level:0,names:['parameter0_training_same_call_bridge_v1']}]:[])],
+      reason:'cpu_request selects TrainingCaptureRouteTests or its exact V2/V3/V4/V5/V6 subclass for the six fixed training-capture capabilities, QualificationSequenceRouteTests for the fixed qualification-capture capability, or SameCallRouteTests for every other route. Exclude only fixture imports in unselected classes. AdmissionTests, selected registered tests, exact v3/v4/v5/v6 canonical verification tests, Node regression, every module-level import and no-request component_suite behavior remain.'},
+    'ml/ai-painter/scripts/painter_stage4_decode1_entry_weight_quality_worker_v1.py':{
+      sha256:'8b4329bfccea85b823eaba306872c4a7264fd41daf6a4036b1f1c677d3b45b79',
+      excludeImports:[...(qualificationCapture||trainingCapture?[
+        {scope:'training_loop_callbacks',module:'ai_painter.complete_world.parameter90_training_same_call_bridge_v1',level:0,names:['TrainingSameCallBridge']}]:[]),
+        ...(!trainingCapture?[
+        {scope:'training_loop_callbacks',module:'ai_painter.complete_world.parameter0_training_same_call_bridge_v1',level:0,names:['TrainingSameCallBridge']},
+        {scope:'verify_capture_terminal',module:'ai_painter.complete_world.parameter0_training_same_call_storage_v1',level:0,names:['verify_same_call_failure']}]:[])],
+      reason:'Each training bridge import is guarded by membership in the six fixed training-capture capabilities. The new storage terminal verifier is also guarded by the same fixed capability set. Other route selections cannot enter those exact bodies; qualification capture never uses the old training bridge. Keep all module-level imports and selected live bridge/storage imports.'},
+    ...(!qualificationCapture?{
+      'ml/ai-painter/scripts/qualify_stage4_decode1_entry_weight_quality_gpu_v1.py':{
+        sha256:'0269452696d0b7ea3f5f426d2e11cc2f537102c9d1e80807fdafe1dcf56c42ea',
+        excludeImports:[
+          {scope:'invoke_original_probe',module:'qualification_parameter0_capture_v1',level:0,names:['invoke_probe']},
+          {scope:'capture_for_sample',module:'qualification_parameter0_capture_v1',level:0,names:['Parameter0ProbeCapture','target_selected']}],
+        reason:'capture_for_sample returns None before imports for every capability except the exact qualification-capture route, including the new training-capture route. Its only production caller passes that result to invoke_original_probe, whose None branch directly calls the original probe. The route-selected CPU suite never calls the qualification-only fixture.'}
+    }:{})};
   const deferredImportEvidence=[],includedLateImports=[];lastSourceCollectionReport=null;
   const logical = name => {
     assert.equal(typeof name, 'string');
@@ -93,6 +129,9 @@ function collectActualExecutionSources({root, required, dynamicPaths=[], python,
   };
   for(const [role,name] of Object.entries(required))add(name,role,'required:'+role);
   for(const name of dynamicPaths)add(name,null,'registered-dynamic');
+  if([TRAINING_CAPTURE_V3_CAPABILITY,TRAINING_CAPTURE_V4_CAPABILITY,TRAINING_CAPTURE_V5_CAPABILITY,TRAINING_CAPTURE_V6_CAPABILITY].includes(capabilityVersion)){
+    add('scripts/lib/real-earth-region-governance.mjs','canonicalRegionProgram','registered-dynamic:canonicalSha256');
+  }
   const exists = name => fs.existsSync(path.join(root,name));
   const addPython = (module, from, level=0) => {
     let prefixes=pythonRoots;
@@ -144,7 +183,7 @@ function collectActualExecutionSources({root, required, dynamicPaths=[], python,
       assert.ok(raw.length<=1048576,'execution source file ceiling');seen.set(name,binding);
       collectedBytes+=raw.length;assert.ok(collectedBytes<=16777216,'complete execution source byte ceiling');
       if(name.endsWith('.py')){
-        const deferredSurface=deferredSurfaces[name]??null;
+        const deferredSurface=routeDeferredSurfaces[name]??null;
         if(deferredSurface)assert.equal(digest(raw),deferredSurface.sha256,'reviewed late import source changed: '+name);
         pythonBatch.push({path:name,source:raw.toString('utf8'),deferredSurface});continue;
       }
@@ -158,7 +197,7 @@ function collectActualExecutionSources({root, required, dynamicPaths=[], python,
       assert.equal(parsed.status,0,'read-only Python AST parse failed: '+String(parsed.stderr).slice(0,2048));
       for(const row of JSON.parse(parsed.stdout)){
         if(row.excludedLateImports.length)deferredImportEvidence.push({path:row.path,
-          registration:deferredSurfaces[row.path],excludedLateImports:row.excludedLateImports});
+          registration:routeDeferredSurfaces[row.path],excludedLateImports:row.excludedLateImports});
         for(const item of row.imports){
           if(item.scope)includedLateImports.push({path:row.path,...item});
           addPython(item.module,row.path,item.level);

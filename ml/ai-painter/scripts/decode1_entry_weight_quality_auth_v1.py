@@ -237,7 +237,7 @@ class ExecutionRoute:
 
 def execution_route(capability_version=CAPABILITY):
     values=checkpoint.execution_values(capability_version)
-    return ExecutionRoute(capability_version, MODEL_CAPABILITY,
+    return ExecutionRoute(capability_version, checkpoint.model_capability(capability_version),
         values.get("profile") or ("completion_decode1_entry_weight_quality24_same_call_v1" if values.get("same_call_capture") else "completion_decode1_entry_weight_quality24_v2" if values.get("qualification_completion") else "completion_decode1_entry_weight_quality24_v1" if values["completion"] else PROFILE),
         values["root_prefix"],values["specification"],values["policy"])
 
@@ -259,6 +259,11 @@ def profile_components(capability_version=CAPABILITY):
     require(profile.CAPABILITY == CAPABILITY and profile.MODEL_CAPABILITY == MODEL_CAPABILITY,
         "exact new training profile/model required")
     return profile
+
+
+def model_arguments(capability_version=CAPABILITY):
+    model = execution_route(capability_version).model_capability
+    return {} if model == MODEL_CAPABILITY else {"model_capability": model}
 
 def decode_source_json(raw):
     """Strict bounded decoder for existing immutable data, never control records."""
@@ -480,6 +485,12 @@ def _snapshot_heartbeat(reader, logical, scope, expected=None, *, review_history
                     error.heartbeat_read = evidence
                 except BaseException:
                     pass  # Evidence attachment never replaces the primary failure.
+                try:
+                    record = json.dumps(evidence, ensure_ascii=True, separators=(",", ":")) + "\n"
+                    if len(record.encode("utf8")) < 16384:
+                        _heartbeat_log(record)
+                except BaseException:
+                    pass  # Failure logging is best-effort; preserve the original exception.
                 raise
             _heartbeat_pause(min(.010, max(0, .100 - elapsed)))
 
@@ -641,6 +652,7 @@ class _ReviewHistory:
 
 
 _VERIFIED_REVIEW_HISTORIES=weakref.WeakSet()
+_VERIFIED_FIT_HISTORIES=weakref.WeakSet()
 
 
 def _review_alias_shape(plan,original,preservation):
@@ -702,12 +714,18 @@ def verified_review_history(root,plan_binding):
 
 
 class Reader:
-    def __init__(self, root, *, review_history=None):
+    def __init__(self, root, *, review_history=None, fit_history=None):
         self.root = Path(root).absolute()
         require(review_history is None or type(review_history) is _ReviewHistory
             and review_history in _VERIFIED_REVIEW_HISTORIES
             and review_history.root==str(self.root),"verified same-root recovery history required")
         self._review_history=review_history
+        require(review_history is None or fit_history is None, "distinct history contexts cannot mix")
+        self._fit_history = None
+        if fit_history is not None:
+            require(fit_history in _VERIFIED_FIT_HISTORIES
+                and fit_history.root == str(self.root), "verified same-root FIT006 history required")
+            self._fit_history = fit_history
         self.mapping = RuntimeMap.current(self.root)
         self.observed = {}
         self._source_snapshot_scope = None
@@ -723,8 +741,9 @@ class Reader:
         if binding["path"].endswith(".json"):
             maximum = min(maximum, SOURCE_JSON_MAX)
         effective=binding
-        if self._review_history is not None:
-            match=next((row for row in self._review_history.aliases if row[:2]==(binding["path"],binding["sha256"])),None)
+        history = self._review_history or self._fit_history
+        if history is not None:
+            match=next((row for row in history.aliases if row[:2]==(binding["path"],binding["sha256"])),None)
             if match is not None:effective={"path":match[2],"sha256":match[1]}
         path = self.path(effective["path"])
         before = path.lstat()
@@ -780,6 +799,9 @@ class Reader:
         for logical, sha in tuple(self.observed.items()):
             self.read({"path": logical, "sha256": sha})
 
+    def _verified_canonical_region(self, record, region, module_binding, expected):
+        return _verified_canonical_region(self, record, region, module_binding, expected)
+
 
 def read_json(reader, binding):
     value = decode(reader.read(exact_binding(binding), CONTROL_JSON_MAX))
@@ -829,6 +851,186 @@ def runtime_identity(root):
     return result
 
 
+CANONICAL_VERIFICATION = {
+    "schemaVersion":"canonical-region-verification-v1",
+    "activation":"authenticated_live_v3_reader_run_package_only",
+    "cacheScope":"reader_process_run_package", "maximumCacheEntries":64, "maximumCacheBytes":65536,
+    "cacheSuccessfulDigestsOnly":True, "revalidateSourceBytesEveryCall":True,
+    "canonicalProgram":{"path":CANONICAL_REGION_PROGRAM,"sha256":"c4ae942c1f44a60fad1650f02c9dccb0f780472638693e7146fbbe9a2dc85af1"},
+    "nodeIdentity":"verified_runtimeIdentity_node", "subprocessTimeoutSeconds":10,
+    "observationFile":"canonical-initialization-observation.json", "maximumObservationBytes":32768,
+    "terminalReserveBytes":65536}
+CANONICAL_VERIFICATION_V4 = {**deepcopy(CANONICAL_VERIFICATION), "activation":"authenticated_live_v4_reader_run_package_only"}
+CANONICAL_VERIFICATION_V5 = {**deepcopy(CANONICAL_VERIFICATION), "activation":"authenticated_live_v5_reader_run_package_only"}
+CANONICAL_VERIFICATION_V6 = {**deepcopy(CANONICAL_VERIFICATION), "activation":"authenticated_live_v6_reader_run_package_only"}
+CANONICAL_CAPABILITIES = (checkpoint.TRAINING_CAPTURE_V3_CAPABILITY, checkpoint.TRAINING_CAPTURE_V4_CAPABILITY, checkpoint.TRAINING_CAPTURE_V5_CAPABILITY, checkpoint.TRAINING_CAPTURE_V6_CAPABILITY)
+
+def canonical_verification_identity(capability):
+    identities = {checkpoint.TRAINING_CAPTURE_V3_CAPABILITY:CANONICAL_VERIFICATION,
+        checkpoint.TRAINING_CAPTURE_V4_CAPABILITY:CANONICAL_VERIFICATION_V4,
+        checkpoint.TRAINING_CAPTURE_V5_CAPABILITY:CANONICAL_VERIFICATION_V5,
+        checkpoint.TRAINING_CAPTURE_V6_CAPABILITY:CANONICAL_VERIFICATION_V6}
+    require(capability in identities, "unknown canonical verification identity")
+    return identities[capability]
+
+_CANONICAL_STATES = weakref.WeakKeyDictionary()
+_CANONICAL_ACTIVATION_PROOF = object()
+_CANONICAL_RECORD_KEYS = ("conditionPack","taskPackage","regionSourcePackage","seasonSnapshot","regionalProfile","sourceRegistry")
+
+
+def _canonical_scope(reader, plan, package_binding):
+    contract = canonical_verification_identity(plan["capabilityVersion"])
+    expected = {"runId":plan["runId"],"packageId":plan["packageId"],"dataClosure":exact_binding(plan["dataClosure"]),
+        "capabilityVersion":plan["capabilityVersion"]}
+    require(type(reader) is Reader and plan["capabilityVersion"] in CANONICAL_CAPABILITIES
+        and same_json(reader._source_snapshot_scope, expected), "canonical cache requires verified same Run source scope")
+    program = exact_binding(plan["programBindings"].get("canonicalRegionProgram"))
+    require(same_json(program,contract["canonicalProgram"]), "current canonical program identity differs")
+    return {"protocol":contract["schemaVersion"],"root":str(reader.root),**expected,
+        "executionPackage":exact_binding(package_binding),"canonicalProgram":program,"node":deepcopy(plan["runtimeIdentity"]["node"])}
+
+
+def _canonical_node_stamp(expected, *, rehash=False):
+    from ai_painter.complete_world.object_support_structure_failure_capture_v1 import _plain
+    require(type(expected) is dict and set(expected)=={"absolutePath","sha256"}, "bound Node identity required")
+    target=Path(expected["absolutePath"])
+    require(target.is_absolute() and shutil.which("node") is not None
+        and Path(shutil.which("node")).absolute()==target, "Node executable resolution changed")
+    _plain(target);before=target.stat()
+    require(target.resolve(strict=True)==target, "Node executable redirect")
+    if rehash:
+        hasher=hashlib.sha256()
+        with target.open("rb") as stream:
+            handle=os.fstat(stream.fileno())
+            require(_file_identity(handle,include_ctime=False)==_file_identity(before,include_ctime=False), "Node handle identity differs")
+            for chunk in iter(lambda:stream.read(1048576),b""):hasher.update(chunk)
+            require(_file_identity(os.fstat(stream.fileno()))==_file_identity(handle), "Node changed while hashing")
+        require(hasher.hexdigest()==expected["sha256"], "actual Node bytes differ")
+    _plain(target);require(_file_identity(target.stat())==_file_identity(before), "Node identity changed")
+    return _file_identity(before)
+
+
+def _arm_canonical_cache(context, *, proof=None):
+    # Called only at the successful end of live authentication, never by a public flag.
+    require(proof is _CANONICAL_ACTIVATION_PROOF, "canonical activation requires completed live authentication")
+    if context.plan["capabilityVersion"] not in CANONICAL_CAPABILITIES:return
+    reader=context.reader;scope=_canonical_scope(reader,context.plan,context.package_binding)
+    policy=read_json(reader,context.plan["executionPolicy"])
+    require(same_json(policy.get("canonicalVerification"),canonical_verification_identity(context.plan["capabilityVersion"])), "canonical verification policy differs")
+    _raw,program=reader.snapshot(CANONICAL_REGION_PROGRAM)
+    require(same_json(program,scope["canonicalProgram"]), "current and frozen canonical program differ")
+    stamp=_canonical_node_stamp(scope["node"],rehash=True)
+    state=_CANONICAL_STATES.get(reader)
+    if state is None:
+        state={"scope":deepcopy(scope),"plan":context.plan,"packageBinding":deepcopy(context.package_binding),
+            "nodeStamp":stamp,"entries":{},"bytes":0,"calls":0,"hits":0,"misses":0,"nodeCalls":0,
+            "failures":0,"elapsedSeconds":0.0,"nodeElapsedSeconds":0.0,"firstError":None,"lastOperation":None,
+            "activationAtUtc":datetime.now(timezone.utc).isoformat(),"active":False}
+        _CANONICAL_STATES[reader]=state
+    require(same_json(state["scope"],scope) and state["nodeStamp"]==stamp, "canonical cache scope/runtime changed")
+    state["active"]=True
+
+
+def _canonical_error(error):
+    text=str(error).encode("utf-8")[:2048].decode("utf-8",errors="ignore")
+    return {"type":type(error).__name__,"message":text,"messageSha256":hashlib.sha256(str(error).encode("utf-8")).hexdigest()}
+
+
+def _verified_canonical_region(reader, record, region, module_binding, expected):
+    state=_CANONICAL_STATES.get(reader) if type(reader) is Reader else None
+    if state is None:return None  # All legacy and unauthenticated readers keep the original algorithm.
+    require(state["active"], "canonical cache live authentication incomplete")
+    started=time.monotonic();state["calls"]+=1
+    operation={"ordinal":state["calls"],"sampleId":None,"recordBindings":{},"status":"started",
+        "cacheHit":False,"nodeStarted":False,"nodeElapsedSeconds":None,
+        "nodeStartupSeconds":None,"nodeInputSeconds":None,"nodeImportSeconds":None,"nodeHashSeconds":None,"nodeExitSeconds":None}
+    primary=None
+    try:
+        scope=_canonical_scope(reader,state["plan"],state["packageBinding"])
+        require(same_json(scope,state["scope"]), "canonical scope mutated")
+        require(_canonical_node_stamp(scope["node"])==state["nodeStamp"], "Node identity changed since live authentication")
+        operation["recordBindings"]={key:exact_binding({name:record[key][name] for name in ("path","sha256")})
+            for key in _CANONICAL_RECORD_KEYS}
+        require(all(same_json(reader._source_snapshot_bindings.get(item["path"]),item)
+            for item in operation["recordBindings"].values()),"canonical record outside verified data closure")
+        # The original six JSON reads have already run. Independently bind the actual
+        # region bytes used by the cached computation; supplied objects cannot seed it.
+        region_binding=operation["recordBindings"]["regionSourcePackage"]
+        raw=reader.read(region_binding,SOURCE_JSON_MAX)
+        require(same_json(decode_source_json(raw),region), "canonical region object differs from actual bytes")
+        program_raw,actual_program=reader.snapshot(CANONICAL_REGION_PROGRAM)
+        require(same_json(actual_program,module_binding) and same_json(actual_program,scope["canonicalProgram"])
+            and hashlib.sha256(program_raw).hexdigest()==actual_program["sha256"], "canonical program changed before lookup")
+        key_material=json.dumps({"scope":scope,"region":region_binding,"actualRegionSha256":hashlib.sha256(raw).hexdigest(),
+            "expected":expected},ensure_ascii=False,sort_keys=True,separators=(",",":"),allow_nan=False)
+        # Only the cache lookup key is compacted; region canonical verification
+        # still executes the original bound JS function on every miss.
+        key=hashlib.sha256(key_material.encode("utf-8")).hexdigest()
+        cached=state["entries"].get(key)
+        if cached is not None:
+            require(cached==expected,"cached canonical digest differs")
+            operation["cacheHit"]=True;state["hits"]+=1
+            operation["status"]="verified_cached_digest"
+            return cached
+        state["misses"]+=1
+        require(_canonical_node_stamp(scope["node"],rehash=True)==state["nodeStamp"], "Node changed before invocation")
+        from ai_painter.complete_world.object_appearance_regime_input_cpu import _canonical_node
+        node_started=time.monotonic();operation["nodeStarted"]=True;state["nodeCalls"]+=1
+        node_error=None
+        try:
+            result=_canonical_node(region,reader.root,CANONICAL_REGION_PROGRAM,executable=scope["node"]["absolutePath"])
+        except BaseException as error:
+            node_error=error
+            raise
+        finally:
+            elapsed=time.monotonic()-node_started
+            if math.isfinite(elapsed) and elapsed>=0:
+                operation["nodeElapsedSeconds"]=elapsed;state["nodeElapsedSeconds"]+=elapsed
+            elif node_error is None:raise ValueError("canonical Node monotonic clock regressed")
+        require(result.stdout==expected,"region recomputed canonical identity differs")
+        require(_canonical_node_stamp(scope["node"])==state["nodeStamp"], "Node changed during invocation")
+        after_raw,after_binding=reader.snapshot(CANONICAL_REGION_PROGRAM)
+        require(same_json(after_binding,actual_program) and after_raw==program_raw,"canonical program changed during invocation")
+        require(reader.read(region_binding,SOURCE_JSON_MAX)==raw,"canonical region changed during invocation")
+        size=len(key.encode("utf-8"))+len(result.stdout.encode("utf-8"))
+        if size<=CANONICAL_VERIFICATION["maximumCacheBytes"]:
+            while state["entries"] and (len(state["entries"])>=CANONICAL_VERIFICATION["maximumCacheEntries"]
+                    or state["bytes"]+size>CANONICAL_VERIFICATION["maximumCacheBytes"]):
+                old=next(iter(state["entries"]));value=state["entries"].pop(old)
+                state["bytes"]-=len(old.encode("utf-8"))+len(value.encode("utf-8"))
+            state["entries"][key]=result.stdout;state["bytes"]+=size
+        operation["status"]="verified_new_digest"
+        return result.stdout
+    except BaseException as error:
+        primary=error;state["failures"]+=1;operation["status"]="failed_closed"
+        operation["error"]=_canonical_error(error)
+        if state["firstError"] is None:state["firstError"]=deepcopy(operation)
+        raise
+    finally:
+        elapsed=time.monotonic()-started
+        if math.isfinite(elapsed) and elapsed>=0:
+            operation["elapsedSeconds"]=elapsed;state["elapsedSeconds"]+=elapsed
+            state["lastOperation"]=operation
+        elif primary is None:
+            raise ValueError("canonical observation monotonic clock regressed")
+
+
+def canonical_observation(context):
+    if context.plan["capabilityVersion"] not in CANONICAL_CAPABILITIES:return None
+    require(type(context) is Context and type(context.reader) is Reader,"canonical observation requires exact Context/Reader")
+    state=_CANONICAL_STATES.get(context.reader)
+    require(state is not None and same_json(state["scope"],_canonical_scope(context.reader,context.plan,context.package_binding)),
+        "canonical observation has no authenticated scope")
+    return {"schemaVersion":"canonical-region-observation-v1","scope":deepcopy(state["scope"]),
+        "activationAtUtc":state["activationAtUtc"],"active":state["active"],
+        "counters":{key:state[key] for key in ("calls","hits","misses","nodeCalls","failures")},
+        "elapsedSeconds":state["elapsedSeconds"],"nodeElapsedSeconds":state["nodeElapsedSeconds"],
+        "cacheEntries":len(state["entries"]),"cacheBytes":state["bytes"],"cacheByteScope":"utf8_keys_plus_digest_values_not_process_rss",
+        "firstError":deepcopy(state["firstError"]),"lastOperation":deepcopy(state["lastOperation"]),
+        "operationElapsedScope":"after_original_six_json_reads_including_cache_verification_and_node_when_missed",
+        "nodeSubphaseTiming":"unobserved_null_no_cross_process_clock_inference"}
+
+
 def configuration(reader, *, capability_version=CAPABILITY):
     return derive_configuration(reader,capability_version=capability_version)
 
@@ -849,6 +1051,106 @@ def training_diagnostic(reader, capability_version=CAPABILITY):
 
 
 
+QUALIFICATION_CAPTURE_SOURCES = (
+    "ml/ai-painter/scripts/qualification_parameter0_capture_v1.py",
+    "ml/ai-painter/scripts/qualification_gradient_gate_authentication_cpu_v1.py",
+    "ml/ai-painter/src/ai_painter/complete_world/parameter40_qualification_observation_v1.py",
+    "ml/ai-painter/src/ai_painter/complete_world/parameter40_qualification_reference_v1.py",
+)
+TRAINING_CAPTURE_SOURCES = (
+    "ml/ai-painter/src/ai_painter/complete_world/parameter0_training_same_call_capture_v1.py",
+    "ml/ai-painter/src/ai_painter/complete_world/parameter0_training_same_call_storage_v1.py",
+    "ml/ai-painter/src/ai_painter/complete_world/parameter0_training_same_call_bridge_v1.py",
+    "ml/ai-painter/scripts/painter_stage4_decode2_rgb_output_training_same_call_profile_v1.py",
+)
+QUALIFICATION_CAPTURE_CORE = {'schemaVersion': 'qualification-parameter0-sequence-capture-v1', 'capabilityVersion': 'stage4_mvp256_dry_decode2_rgb_output_qualification_capture_v1', 'phase': 'qualification', 'sampleId': 'ai-cold-start-v7-v7-capacity-slot-163-tropical-forest-glade-v2', 'sampleOrdinal': 17, 'split': 'train', 'target': {'index': 0, 'name': 'core.core.terrain.base_stem.layers.0.weight', 'shape': [48, 31, 3, 3], 'spatial': [192, 256]}, 'sequenceSamples': 48, 'sameGeneratorAndDiscriminatorInstances': True, 'originalOrderAndSeedKept': True, 'originalGateAndToleranceKept': True, 'originalFailureFirst': True, 'additionalForwardCalls': 0, 'additionalAutogradCalls': 0, 'additionalOptimizerUpdates': 0, 'maximumCaptureAndWorkspaceBytes': 67108864, 'maximumAggregateSidecarBytes': 2097152, 'terminalReserveBytes': 65536, 'rawTargetGradientSets': 5, 'finiteReferenceCoordinates': 1, 'nonfiniteSumReferenceCalls': 0, 'otherSampleCaptureAllowed': False, 'qualificationGranted': False, 'activation': 'authenticated_new_package_only', 'failureAction': 'preserve_primary_and_close_no_retry', 'completeSequenceAction': 'original_same_package_training_only_after_all48_and_state_checks'}
+
+
+def verify_qualification_capture_policy(reader, policy):
+    if policy.get("candidate") != checkpoint.QUALIFICATION_CAPTURE_CAPABILITY:
+        require("qualificationFailureCapture" not in policy, "legacy capture activation refused")
+        return None
+    contract = policy.get("qualificationFailureCapture")
+    require(type(contract) is dict and set(contract) == set(QUALIFICATION_CAPTURE_CORE) | {"componentSources", "cpuEvidence"}
+            and same_json({key:contract[key] for key in QUALIFICATION_CAPTURE_CORE}, QUALIFICATION_CAPTURE_CORE),
+            "exact qualification capture contract required")
+    sources = contract["componentSources"]
+    require(type(sources) is list and len(sources) == len(QUALIFICATION_CAPTURE_SOURCES), "capture source closure required")
+    for logical, source in zip(QUALIFICATION_CAPTURE_SOURCES, sources):
+        bound = exact_binding(source)
+        require(bound["path"] == logical, "capture source role changed")
+        reader.read(bound, PROGRAM_MAX)
+    evidence = read_json(reader, exact_binding(contract["cpuEvidence"]))
+    require(evidence.get("status") == "cpu_component_passed_not_admitted"
+        and evidence.get("taskId") == "QUALIFICATION-SEQUENCE-CAPTURE-019-CPU"
+        and evidence.get("qualificationGranted") is False
+        and same_json(evidence.get("sourceBindings"), sources), "capture CPU evidence/source identity differs")
+    tests = evidence.get("tests", {})
+    require(tests.get("passed") is True and type(tests.get("testsRun")) is int and tests["testsRun"] > 0
+        and tests.get("cudaInitialized") is False
+        and all(type(tests.get(key)) is int and tests[key] == 0
+                for key in ("modelCalls", "autogradCalls", "optimizerUpdates")), "capture synthetic CPU evidence incomplete")
+    return contract
+
+
+TRAINING_CAPTURE_CORE = json.loads("{\"schemaVersion\":\"parameter0-training-same-call-capture-v1\",\"capabilityVersion\":\"stage4_mvp256_dry_decode2_rgb_output_training_capture_v1\",\"phase\":\"training\",\"activation\":\"authenticated_new_package_exact_g_call_only\",\"sampleId\":\"ai-cold-start-v7-v7-capacity-slot-154-tropical-forest-glade-v2\",\"split\":\"train\",\"epoch\":1,\"zeroBasedEpochPosition\":14,\"trainIndex\":8,\"optimizerSteps\":{\"generator\":14,\"discriminator\":15},\"maximumObservedGCalls\":1,\"target\":{\"index\":0,\"name\":\"core.core.terrain.base_stem.layers.0.weight\",\"shape\":[48,31,3,3],\"spatial\":[192,256],\"coordinate\":[1,13,0,0],\"inputChannel\":13,\"outputChannel\":1,\"operator\":\"torch.nn.Conv2d\",\"stride\":[1,1],\"padding\":[1,1],\"dilation\":[1,1],\"groups\":1,\"paddingMode\":\"zeros\"},\"gradientLabels\":[\"actualTotal\",\"structuredObjective\",\"wholeFrameFidelity\",\"objectCoreRgb\",\"objectSupportStructure\"],\"sameGeneratorAndDiscriminatorInstances\":true,\"originalGateAndToleranceKept\":true,\"originalFailureFirst\":true,\"rawTargetGradientSets\":5,\"weightWitness\":true,\"additionalForwardCalls\":0,\"additionalAutogradCalls\":0,\"additionalOptimizerUpdates\":0,\"localReferenceCalls\":0,\"maximumCaptureAndWorkspaceBytes\":67108864,\"maximumAggregateSidecarBytes\":2097152,\"terminalReserveBytes\":65536,\"aggregateIncludesStagingAndManifests\":true,\"originalFailureMaximumBytes\":67108864,\"executionMaximumBytes\":134217728,\"nonTargetSampleCaptureAllowed\":false,\"otherParameterFailureDoesNotCreatePacket\":true,\"fixedCoordinateNotViolatingAction\":\"retain_authenticated_target0_fixed_projection_mark_not_violating_no_reference\",\"nonfiniteAction\":\"preserve_original_failure_and_classify_capture_availability_no_reference\",\"successAction\":\"release_all_hooks_and_graph_references_before_original_generator_commit\",\"failureAction\":\"preserve_primary_and_close_no_retry\",\"qualificationGranted\":false}")
+
+
+TRAINING_CAPTURE_V2_CORE = {**TRAINING_CAPTURE_CORE, "capabilityVersion": checkpoint.TRAINING_CAPTURE_V2_CAPABILITY}
+TRAINING_CAPTURE_V3_CORE = {**TRAINING_CAPTURE_CORE, "capabilityVersion": checkpoint.TRAINING_CAPTURE_V3_CAPABILITY}
+TRAINING_CAPTURE_V4_CORE = {**TRAINING_CAPTURE_CORE, "capabilityVersion": checkpoint.TRAINING_CAPTURE_V4_CAPABILITY}
+
+TRAINING_CAPTURE_V5_CORE = {**TRAINING_CAPTURE_CORE, "capabilityVersion": checkpoint.TRAINING_CAPTURE_V5_CAPABILITY}
+
+TRAINING_CAPTURE_V6_CORE = json.loads("{\"schemaVersion\":\"parameter0-training-call-coverage-v1\",\"capabilityVersion\":\"stage4_mvp256_dry_decode2_rgb_output_training_capture_v6\",\"phase\":\"training\",\"activation\":\"authenticated_new_package_sequential_g_calls_only\",\"split\":\"train\",\"maximumObservedGCalls\":1152,\"target\":{\"index\":0,\"name\":\"core.core.terrain.base_stem.layers.0.weight\",\"shape\":[48,31,3,3],\"spatial\":[192,256],\"coordinate\":[1,13,0,0],\"inputChannel\":13,\"outputChannel\":1,\"operator\":\"torch.nn.Conv2d\",\"stride\":[1,1],\"padding\":[1,1],\"dilation\":[1,1],\"groups\":1,\"paddingMode\":\"zeros\"},\"gradientLabels\":[\"actualTotal\",\"structuredObjective\",\"wholeFrameFidelity\",\"objectCoreRgb\",\"objectSupportStructure\"],\"sameGeneratorAndDiscriminatorInstances\":true,\"originalGateAndToleranceKept\":true,\"originalFailureFirst\":true,\"rawTargetGradientSets\":5,\"weightWitness\":true,\"additionalForwardCalls\":0,\"additionalAutogradCalls\":0,\"additionalOptimizerUpdates\":0,\"localReferenceCalls\":0,\"maximumCaptureAndWorkspaceBytes\":67108864,\"maximumAggregateSidecarBytes\":2097152,\"terminalReserveBytes\":65536,\"aggregateIncludesStagingAndManifests\":true,\"originalFailureMaximumBytes\":67108864,\"executionMaximumBytes\":134217728,\"nonTargetSampleCaptureAllowed\":true,\"otherParameterFailureDoesNotCreatePacket\":true,\"fixedCoordinateNotViolatingAction\":\"retain_authenticated_target0_fixed_projection_mark_not_violating_no_reference\",\"nonfiniteAction\":\"preserve_original_failure_and_classify_capture_availability_no_reference\",\"successAction\":\"release_all_hooks_graph_references_and_current_copies_before_original_generator_commit\",\"failureAction\":\"preserve_primary_and_close_coverage_instance_no_retry\",\"qualificationGranted\":false,\"sampleScope\":\"all48_bound_train_samples_in_original_epoch_schedule\",\"epochCount\":24,\"firstGeneratorCount\":0,\"lastGeneratorCount\":1151,\"maximumLiveObservationContexts\":1,\"sequenceRule\":\"pre_D_G_equals_D_equals_observed_calls_then_pre_G_D_equals_G_plus_one\",\"previousSuccessReleasedBeforeNextD\":true,\"concurrentPairAllowed\":false,\"successfulTensorHistoryRetained\":false,\"storageIdentityRule\":\"recompute_epoch_position_train_index_from_seed_and_actual_G_D_counts\"}")
+
+def training_capture_identity(capability):
+    identities = {
+        checkpoint.TRAINING_CAPTURE_CAPABILITY: (TRAINING_CAPTURE_CORE, ".runtime/ai-painter/controller-repair-reviews/parameter0-training-same-call-023-20261024/cpu-component-acceptance.json", "TRAINING-SAME-CALL-CAPTURE-023-CPU"),
+        checkpoint.TRAINING_CAPTURE_V2_CAPABILITY: (TRAINING_CAPTURE_V2_CORE, ".runtime/ai-painter/controller-repair-reviews/registry-publication-repair-024-20261024/cpu-component-acceptance.json", "TRAINING-SAME-CALL-CAPTURE-024-CPU"),
+        checkpoint.TRAINING_CAPTURE_V3_CAPABILITY: (TRAINING_CAPTURE_V3_CORE, ".runtime/ai-painter/controller-repair-reviews/canonical-initialization-repair-025-20261024/cpu-component-acceptance.json", "TRAINING-SAME-CALL-CAPTURE-025-CPU"),
+        checkpoint.TRAINING_CAPTURE_V4_CAPABILITY: (TRAINING_CAPTURE_V4_CORE, ".runtime/ai-painter/controller-repair-reviews/canonical-fixture-isolation-repair-026-20261024/cpu-component-acceptance.json", "TRAINING-SAME-CALL-CAPTURE-026-CPU"),
+        checkpoint.TRAINING_CAPTURE_V5_CAPABILITY: (TRAINING_CAPTURE_V5_CORE, ".runtime/ai-painter/controller-repair-reviews/backend-observation-compatibility-repair-027-20261024/cpu-component-acceptance.json", "TRAINING-SAME-CALL-CAPTURE-027-CPU"),
+        checkpoint.TRAINING_CAPTURE_V6_CAPABILITY: (TRAINING_CAPTURE_V6_CORE, ".runtime/ai-painter/controller-repair-reviews/failure-call-adoption-031-20261025/cpu-component-acceptance.json", "TRAINING-SAME-CALL-CAPTURE-031-CPU")}
+    require(capability in identities, "unknown training capture identity")
+    return identities[capability]
+
+
+def verify_training_capture_policy(reader, policy):
+    if policy.get("candidate") not in checkpoint.TRAINING_CAPTURE_CAPABILITIES:
+        require("trainingFailureCapture" not in policy, "legacy training capture activation refused")
+        return None
+    require("sameCallCapture" not in policy and "qualificationFailureCapture" not in policy,
+        "training capture cannot activate historical observers")
+    expected_core, evidence_path, evidence_task = training_capture_identity(policy.get("candidate"))
+    contract = policy.get("trainingFailureCapture")
+    require(type(contract) is dict and set(contract) == set(expected_core) | {"componentSources", "cpuEvidence"}
+        and same_json({key:contract[key] for key in expected_core}, expected_core),
+        "exact training capture contract required")
+    sources = contract["componentSources"]
+    require(type(sources) is list and len(sources) == len(TRAINING_CAPTURE_SOURCES), "training capture source closure required")
+    for logical, source in zip(TRAINING_CAPTURE_SOURCES, sources):
+        bound = exact_binding(source)
+        require(bound["path"] == logical, "training capture source role changed")
+        reader.read(bound, PROGRAM_MAX)
+    evidence_binding = exact_binding(contract["cpuEvidence"])
+    require(evidence_binding["path"] == evidence_path,
+        "current training component evidence path required")
+    evidence = read_json(reader, evidence_binding)
+    require(evidence.get("status") == "cpu_component_passed_not_admitted"
+        and evidence.get("taskId") == evidence_task
+        and evidence.get("qualificationGranted") is False
+        and same_json(evidence.get("sourceBindings"), sources), "training capture CPU evidence/source identity differs")
+    tests = evidence.get("tests", {})
+    require(tests.get("passed") is True and type(tests.get("testsRun")) is int and tests["testsRun"] > 0
+        and tests.get("cudaInitialized") is False
+        and all(type(tests.get(key)) is int and tests[key] == 0
+            for key in ("realModelCalls", "realAutogradCalls", "realOptimizerUpdates"))
+        and type(tests.get("syntheticOperations")) is str and 0 < len(tests["syntheticOperations"]) <= 4096,
+        "training synthetic CPU evidence incomplete")
+    return contract
+
+
 def authority_inputs(policy):
     values=checkpoint.execution_values(policy.get("candidate",CAPABILITY))
     required = [values["specification"], values["policy"], candidate_binding(policy.get("candidate",CAPABILITY)), checkpoint.INTEGRATION,
@@ -862,6 +1164,14 @@ def authority_inputs(policy):
     for key in ("policy", "normativeBytes"):
         required.append(policy["qualificationOnlyPredecessor"][key])
     required.append(policy["resourceFailureRecord"]["componentEvidence"])
+    if policy.get("candidate") in (checkpoint.DECODE2_SUPPORT_WEIGHT1_CAPABILITY, checkpoint.RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY, checkpoint.QUALIFICATION_CAPTURE_CAPABILITY, *checkpoint.TRAINING_CAPTURE_CAPABILITIES):
+        required.append(policy["numericRepairCpuEvidence"])
+    if policy.get("candidate") == checkpoint.QUALIFICATION_CAPTURE_CAPABILITY:
+        required.extend(policy["qualificationFailureCapture"]["componentSources"])
+        required.append(policy["qualificationFailureCapture"]["cpuEvidence"])
+    if policy.get("candidate") in checkpoint.TRAINING_CAPTURE_CAPABILITIES:
+        required.extend(policy["trainingFailureCapture"]["componentSources"])
+        required.append(policy["trainingFailureCapture"]["cpuEvidence"])
     return [{key: row[key] for key in ("path", "sha256")} for row in required]
 
 def derive_configuration(reader, *, capability_version=CAPABILITY):
@@ -881,7 +1191,7 @@ def derive_configuration(reader, *, capability_version=CAPABILITY):
         "preview v6 registration changed")
     preview_policy = decode(raw)
     scope = preview_policy.get("scope", {})
-    require(scope.get("capabilityVersion") == route.capability and scope.get("modelCapabilityVersion") == MODEL_CAPABILITY
+    require(scope.get("capabilityVersion") == route.capability and scope.get("modelCapabilityVersion") == route.model_capability
         and scope.get("outputRootPrefix") == route.root_prefix, "preview route candidate scope differs")
     for key, role in (("component", "previewComponent"), ("storage", "previewStorage"),
             ("tests", "previewTests"), ("storageTests", "previewStorageTests")):
@@ -890,7 +1200,9 @@ def derive_configuration(reader, *, capability_version=CAPABILITY):
             "preview v6 actual source registration required: " + key)
         reader.read(source, PROGRAM_MAX)
     result = checkpoint.expected_configuration(preview,capability_version)
-    checkpoint.validate_execution_policy(policy, result)
+    validate_execution_policy(policy, result)
+    verify_qualification_capture_policy(reader, policy)
+    verify_training_capture_policy(reader, policy)
     verify_progress_publication_policy(reader, policy)
     for binding in authority_inputs(policy):
         reader.read(binding)
@@ -900,6 +1212,19 @@ def derive_configuration(reader, *, capability_version=CAPABILITY):
         and accepted.get("candidate") == MODEL_CAPABILITY
         and terminal.get("status") == "cpu_candidate_verified_inactive",
         "accepted target48 CPU evidence differs")
+    if route.capability in (checkpoint.DECODE2_SUPPORT_WEIGHT1_CAPABILITY, checkpoint.RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY, checkpoint.QUALIFICATION_CAPTURE_CAPABILITY, *checkpoint.TRAINING_CAPTURE_CAPABILITIES):
+        rgb_output = route.capability in (checkpoint.RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY, checkpoint.QUALIFICATION_CAPTURE_CAPABILITY, *checkpoint.TRAINING_CAPTURE_CAPABILITIES)
+        numeric = read_json(reader, policy["numericRepairCpuEvidence"])
+        require(numeric.get("schemaVersion") == ("parameter90-numeric-repair-component-cpu-v1" if rgb_output else "parameter40-numeric-repair-component-cpu-v1")
+            and numeric.get("status") == "component_passed_not_admitted" and numeric.get("exitCode") == 0
+            and numeric.get("modelCapability") == route.model_capability
+            and (type(numeric.get("summary", {}).get("testsRun")) is int and numeric["summary"]["testsRun"] > 0 if rgb_output
+                 else numeric.get("summary", {}).get("testsRun") == 18)
+            and numeric["summary"].get("passed") is True and numeric["summary"].get("cudaInitialized") is False
+            and numeric["summary"].get("optimizerConstruction") == numeric["summary"].get("optimizerUpdates") == 0,
+            "candidate own numeric CPU component evidence required")
+        for source in numeric["programBindings"]:
+            reader.read(exact_binding(source), PROGRAM_MAX)
     joint = read_json(reader, policy["jointRuleCpuEvidence"]["acceptance"])
     require(joint.get("status") == "cpu_affinity_startup_repair_closed_real_cpu_verified_inactive"
         and joint.get("realExecution",{}).get("status") == "real_cpu_verified_inactive",
@@ -984,6 +1309,7 @@ def progress_publication_arguments(reader, plan):
 
 
 def verify_programs(reader,programs,*,capability_version=CAPABILITY):
+    require(reader._fit_history is None, "FIT006 history cannot authenticate an execution")
     validate_program_count(programs, capability_version)
     # Keep shared engine roles, omit only historical-only role requirements.
     required=required_program_roles(capability_version)
@@ -1020,22 +1346,35 @@ def required_program_roles(capability_version=CAPABILITY):
             progressPublication="ml/ai-painter/src/ai_painter/complete_world/bounded_progress_publication_cpu_v2.py",
             nativeOwnerBuilder="scripts/lib/ai-painter-decode1-entry-completion-native-owner-v1.mjs",
             nativeOwnerSource="scripts/windows/ai-painter-owned-worker-owner-stream-completion-v1.cs")
-    if values.get("same_call_capture"):
+    if values.get("same_call_capture") and capability_version not in (checkpoint.QUALIFICATION_CAPTURE_CAPABILITY, *checkpoint.TRAINING_CAPTURE_CAPABILITIES):
         roles.update(sameCallCapture="ml/ai-painter/src/ai_painter/complete_world/parameter90_training_same_call_capture_v1.py",
             sameCallStorage="ml/ai-painter/src/ai_painter/complete_world/parameter90_training_same_call_storage_v1.py",
             sameCallBridge="ml/ai-painter/src/ai_painter/complete_world/parameter90_training_same_call_bridge_v1.py",
             sameCallProfile="ml/ai-painter/scripts/painter_stage4_decode1_entry_same_call_training_profile_v1.py")
+    if capability_version == checkpoint.QUALIFICATION_CAPTURE_CAPABILITY:
+        roles.update(zip(("qualificationCapture", "qualificationGateAuth", "qualificationObserver", "qualificationReference"),
+                         QUALIFICATION_CAPTURE_SOURCES))
+    if capability_version in checkpoint.TRAINING_CAPTURE_CAPABILITIES:
+        roles.update(zip(("sameCallCapture", "sameCallStorage", "sameCallBridge", "sameCallProfile"),
+                         TRAINING_CAPTURE_SOURCES))
+    if capability_version in CANONICAL_CAPABILITIES:
+        roles["canonicalRegionProgram"] = CANONICAL_REGION_PROGRAM
     return roles
 
 def validate_execution_policy(policy, configuration):
-    return checkpoint.validate_execution_policy(policy, configuration)
+    result = checkpoint.validate_execution_policy(policy, configuration)
+    if policy.get("candidate") in CANONICAL_CAPABILITIES:
+        require(same_json(policy.get("canonicalVerification"), canonical_verification_identity(policy["candidate"])), "canonical verification policy differs")
+    else:
+        require("canonicalVerification" not in policy, "legacy canonical verification activation refused")
+    return result
 
 def derive_model_metadata(reader, dataset_binding, *, capability_version=CAPABILITY):
     route=execution_route(capability_version)
     profile=profile_components(route.capability)
-    _,_,_,ARCHITECTURE,NUMERIC_RULE=checkpoint.components()
+    _,_,_,ARCHITECTURE,NUMERIC_RULE=checkpoint.components(route.capability)
     manifest = read_json(reader, dataset_binding)
-    model, critic = profile.fresh_networks(manifest["identityPayload"]["channelOrder"])
+    model, critic = profile.fresh_networks(manifest["identityPayload"]["channelOrder"], **model_arguments(route.capability))
     graph = [{"name": name, "shape": list(value.shape), "elements": value.numel(), "dtype": str(value.dtype)}
              for name, value in model.named_parameters()]
     require(len(graph) == 108 and sum(row["elements"] for row in graph) == 2242687, "new actual108 graph differs")
@@ -1044,7 +1383,8 @@ def derive_model_metadata(reader, dataset_binding, *, capability_version=CAPABIL
     require(graph[48] == {"name": "core.core.terrain.decode_1.layers.0.weight", "shape": [48,144,3,3],
         "elements": 62208, "dtype": "torch.float32"}, "actual target48 graph differs")
     require(graph[88] == {"name":"core.core.final_rgb_decoder.base.layers.2.weight","shape":[48,48,3,3],"elements":20736,"dtype":"torch.float32"}, "actual target88 graph differs")
-    return {"capabilityVersion": route.capability, "modelCapabilityVersion": profile.MODEL_CAPABILITY,
+    require(model.capability_version == route.model_capability, "recomputed numeric model identity differs")
+    return {"capabilityVersion": route.capability, "modelCapabilityVersion": route.model_capability,
         "architecture": ARCHITECTURE, "numericRule": NUMERIC_RULE, "graph": graph,
         "initialState": {"generator": profile.inherited.core.cpu.state_hash(model), "discriminator": profile.inherited.core.cpu.state_hash(critic)}}
 
@@ -1059,8 +1399,8 @@ def verify_model(reader, plan, *, recompute=True):
 
 class _ClosureMetadataReader(Reader):
     """Only fixed task-bound metadata while recomputing the actual closure."""
-    def __init__(self, root, diagnostic_binding, *, review_history=None):
-        super().__init__(root,review_history=review_history)
+    def __init__(self, root, diagnostic_binding, *, review_history=None, fit_history=None):
+        super().__init__(root,review_history=review_history,fit_history=fit_history)
         diagnostic = self.json(diagnostic_binding)
         input_bindings = {b["path"]: exact_binding(b) for b in diagnostic["inputBindings"]}
         self._metadata_bindings = {}
@@ -1086,13 +1426,14 @@ class _ClosureMetadataReader(Reader):
         return raw, dict(binding)
 
 
-def derive_data_closure(root, capability_version=CAPABILITY, *, review_history=None):
+def derive_data_closure(root, capability_version=CAPABILITY, *, review_history=None, fit_history=None):
     from diagnose_stage4_mvp256_dry_appearance_regime_gradient_cpu import DIAGNOSTIC, CONDITION
     import painter_stage4_decode1_entry_weight_training_profile_v1 as profile
     require(review_history is None or capability_version==_REVIEW_CAPABILITY,"historical closure outside source-correction route")
-    selector = Reader(root,review_history=review_history)
+    require(fit_history is None or capability_version==_REVIEW_CAPABILITY,"FIT006 closure outside source-correction route")
+    selector = Reader(root,review_history=review_history,fit_history=fit_history)
     diagnostic_binding = training_diagnostic(selector, capability_version)
-    reader = _ClosureMetadataReader(root, diagnostic_binding,review_history=review_history)
+    reader = _ClosureMetadataReader(root, diagnostic_binding,review_history=review_history,fit_history=fit_history)
     for logical, digest in selector.observed.items():
         reader.read({"path": logical, "sha256": digest})
     if diagnostic_binding != DIAGNOSTIC:
@@ -1142,7 +1483,8 @@ def verify_data_closure(reader, plan, *, recompute=True):
     bindings = closure.get("bindings")
     require(type(bindings) is list and 1 <= len(bindings) <= 8192 and len({b["path"] for b in bindings}) == len(bindings), "data closure members differ")
     if recompute:
-        require(same_json(closure, derive_data_closure(reader.root, route.capability,review_history=reader._review_history)), "actual source/data closure differs")
+        require(same_json(closure, derive_data_closure(reader.root, route.capability,review_history=reader._review_history,
+            fit_history=reader._fit_history)), "actual source/data closure differs")
     for b in bindings:
         reader.read(b)
     for split in ("train", "validation"):
@@ -1205,6 +1547,7 @@ class Context:
 
 
 def load_execution_package(reader, binding, *, recompute_model=True):
+    require(reader._fit_history is None, "FIT006 history cannot load an execution package")
     require(reader._review_history is None or independent_plan_path(reader._review_history.plan_path),
         "CPU metadata history cannot authenticate an execution package")
     package = read_json(reader, binding)
@@ -1242,6 +1585,8 @@ def load_execution_package(reader, binding, *, recompute_model=True):
 
 def verify_live_context(context, *, expected_phase="training"):
     reader, plan = context.reader, context.plan
+    retained=_CANONICAL_STATES.get(reader) if type(reader) is Reader else None
+    if retained is not None:retained["active"]=False
     other = load_execution_package(reader, context.package_binding, recompute_model=False)
     require(same_json(other.plan, plan) and same_json(other.package, context.package), "live package/context changed")
     raw, registry_binding = reader.snapshot(REGISTRY)
@@ -1280,6 +1625,7 @@ def verify_live_context(context, *, expected_phase="training"):
     require(stamp.tzinfo is not None and -300 <= (datetime.now(timezone.utc) - stamp).total_seconds() < 120,
             "live heartbeat stale/future")
     require(reader.mapping.binding(registry_binding) == raw and process_identity(pid) == creation, "registry/process changed")
+    _arm_canonical_cache(context,proof=_CANONICAL_ACTIVATION_PROOF)
     return {"status": "live_identity_authenticated_not_qualified", "executionPhase": phase, **identity}
 
 
@@ -1295,6 +1641,28 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def read_published_source_input(reader, binding, dataset_binding):
+    """Read one publication-time document as history, never as current policy.
+
+    The dataset and historical document are exact immutable identities. All
+    executable verifier sources and every other input retain the normal reader.
+    The frozen path is recorded in the new data closure rather than substituting
+    old document bytes for the current policy at its live logical path.
+    """
+    dataset = {"path": "data/world-samples/ai-assisted-cold-start-dataset-packages/"
+        "stage4-src64-4c32aee371b5fcaaa36b316199c7e7560892af7c0a5b908cfd6a6d44b4f0e6f7/manifest.json",
+        "sha256": "499daf40061da91ce1e367ee5c4e3493491b5e5c1701806d8c4246502e73cd23"}
+    original = {"path": "docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md",
+        "sha256": "48d9b177df5936bdd3898e6743f703a97a2f5f490ec0ba22d748601aa1493909"}
+    identity = ({key: binding.get(key) for key in ("path", "sha256")}
+                if type(binding) is dict else None)
+    if (dataset_binding == dataset and identity == original
+            and reader._review_history is None and reader._fit_history is None):
+        return reader.read({"path": "data/ai-painter/system-governance/document-baselines/"
+            "review-storage-1.25-48d9b177.txt", "sha256": original["sha256"]})
+    return reader.read(binding)
+
+
 def build_diagnostic(reader, parent_binding, dataset_binding, acceptance_binding):
     parent = reader.json(parent_binding)
     manifest = reader.json(dataset_binding)
@@ -1307,8 +1675,10 @@ def build_diagnostic(reader, parent_binding, dataset_binding, acceptance_binding
     acceptance = reader.json(acceptance_binding)
     require(acceptance.get("publishedManifest") == dataset_binding
         and acceptance.get("sourceReview") == payload["sourceReview"], "actual publication receipt differs")
-    for binding in payload["verifierPrograms"] + payload["verification"]["inputBindings"]:
+    for binding in payload["verifierPrograms"]:
         reader.read(binding)
+    for binding in payload["verification"]["inputBindings"]:
+        read_published_source_input(reader, binding, dataset_binding)
     artifacts = {"source-index.json": manifest["sourceIndex"], **{
         f"splits/{split}.json": binding for split, binding in manifest["splits"].items()}}
     for name, binding in artifacts.items():

@@ -1,6 +1,7 @@
 // Genuine private native CPU calls for full-v2 acceptance. This module never
 // grants production/model qualification and never acquires the project guard.
 import fs from'node:fs';import path from'node:path';import crypto from'node:crypto';import assert from'node:assert/strict';import{spawn,execFileSync}from'node:child_process';import{pathToFileURL}from'node:url';
+import{observeAffinity}from'./local-control-full-v2-004-observer.mjs';
 const root=process.cwd(),sha=b=>crypto.createHash('sha256').update(b).digest('hex'),mod=p=>import(pathToFileURL(path.join(root,p)).href);
 const owner=await mod('scripts/lib/ai-painter-owned-worker-native-v1.mjs'),stop=await mod('scripts/lib/ai-painter-owned-stop-native-control-v1.mjs'),registry=await mod('src/server/ai-painter-current-execution-registry.mjs');
 const live=new WeakSet(),retained=new Map();let streamDebit=0,helperDebit=0;
@@ -35,7 +36,7 @@ export async function call(request,phase,context=null){
  assert(proof&&proof.ownerPid===child.pid&&proof.bindingBase64===command.bindingBase64&&proof.assignedBeforeResume===true&&proof.killOnJobClose===true&&proof.activeProcessesAfterCleanup===0&&proof.cleanupError===null&&proof.observationError===null);assert.equal(proof.stdoutBytes,Buffer.concat(decoded.stdout).length);assert.equal(proof.stderrBytes,Buffer.concat(decoded.stderr).length);
  // Affinity is observational metadata, not an R-frame field or cleanup grant.
  // Empty-Job authority above still comes solely from this retained live call.
- const observation=JSON.parse(fs.readFileSync(command.observationPath));assert.equal(observation.ownerPid,child.pid);assert.equal(observation.bindingBase64,command.bindingBase64);assert.equal(observation.ownerAffinityMask,'3');
+ const observation=JSON.parse(fs.readFileSync(command.observationPath));observeAffinity(proof,observation);
  assert.equal(fs.readFileSync(guardPath,'utf8'),guardBytes);fs.unlinkSync(guardPath);
  const receipt={schema:'full-v2-004-real-private-native-cpu-receipt',phase,callIdentity:id,proof,nativeBuild:command.nativeBuild,observationAffinityMask:observation.ownerAffinityMask,ownerClosed:closed,privateGuardReleased:true,cleanupConfirmed:true,nativeOwnerStarted:true,modelForwardCalls:0,productionQualification:false,reasonDelivered,stop:control?.inspect()??null,streamBytes:{stdout:proof.stdoutBytes,stderr:proof.stderrBytes},allWireStreamBytes:streamDebit,helperOutputBytes:helperDebit,budget:{taskDeadlineUnixMs:c.deadlineUnixMs,maximumBytes:8388608,terminalReserveBytes:65536,diskBytes:directoryBytes(root),cpuAffinity:'3',automaticRetries:0}};
  live.add(receipt);const receiptBinding=put(logical+'/receipt.json',receipt);retained.set(receiptBinding.path+':'+receiptBinding.sha256,receipt);const result={ownedReceipt:receipt,receiptBinding,stdout:Buffer.concat(decoded.stdout).toString('utf8'),stderr:Buffer.concat(decoded.stderr).toString('utf8')};
