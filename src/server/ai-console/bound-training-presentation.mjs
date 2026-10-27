@@ -2,6 +2,10 @@ import path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
 import { bytes as readSafeBytes } from './training-history-safe-bytes.mjs';
 import {readBoundTrainingInterface} from './training-preview-history-v1.mjs';
+import {OBSERVATION_CONTRACT, OBSERVATION_PROGRESS, OBSERVATION_SCOPE, observationContract, observationCounts,
+  observationClock, sameBinding, publicObservationTiming} from './training-observation-contract.mjs';
+import {readObservationRecord,readInterruptedObservation} from './training-observation-history.mjs';
+import {readLegacySingleMapPresentation} from './single-map-training-history.mjs';
 
 const PACKAGE_SCHEMA = 'ai-painter-learning-capacity-experiment-package-v1';
 const DRY_PACKAGE = /^ai-painter-stage4-mvp256-dry-v\d+(?:-v\d+)?-execution-package-v1$/u;
@@ -111,24 +115,36 @@ async function currentMetrics(root, registry, pkg, binding, plan, observedNow) {
     const progressRead = await readSafeBytes(root, logical, 65536);
     const value = JSON.parse(progressRead.value.toString('utf8'));
     identity(value, registry, 'training_progress_identity_conflict');
-    const schema = pkg.schemaVersion === OBSERVATION_SCHEMA ? 'ai-painter-current-training-progress-v1'
+    const common = pkg.interfaceContract?.schemaVersion === OBSERVATION_CONTRACT;
+    const schema = common ? OBSERVATION_PROGRESS : pkg.schemaVersion === OBSERVATION_SCHEMA ? 'ai-painter-current-training-progress-v1'
       : pkg.schemaVersion.replace('-execution-package-', '-progress-');
     need(value.schemaVersion === schema, 'training_progress_schema_unsupported');
     need(['executing','validating','completed','failed_closed','checkpoint_selected_review_pending'].includes(value.executionState),
       'training_progress_phase_unsupported');
-    const epochs = count(value.completedEpochs), epoch = count(value.actualEpoch);
-    const g = count(value.optimizerStepsGenerator), d = count(value.optimizerStepsDiscriminator);
-    need(epochs !== null && epoch !== null && g !== null && d !== null
+    const epochs = common ? null : count(value.completedEpochs), epoch = common ? null : count(value.actualEpoch);
+    const g = count(common ? value.optimizerSteps?.generator : value.optimizerStepsGenerator);
+    const d = count(common ? value.optimizerSteps?.discriminator : value.optimizerStepsDiscriminator);
+    if (common) {
+      need(value.processId === active.processId && value.processStartIdentity === active.processStartIdentity,
+        'training_progress_process_conflict');
+      observationCounts(value.optimizerSteps, observationContract(pkg, registry.runId));
+      need(sameBinding(value.executionPackage, binding), 'training_progress_package_conflict');
+      observationClock(value.workerTiming, OBSERVATION_SCOPE, {partial:true});
+      need(['loading','zero_update_gpu','training','checkpoint'].includes(value.phase),'training_progress_operation_phase_unsupported');
+    }
+    need(g !== null && d !== null && (common || epochs !== null && epoch !== null
       && epochs <= epoch && epoch <= plan.epochs && g <= plan.generatorOptimizerSteps
-      && d <= plan.discriminatorOptimizerSteps, 'training_progress_plan_limit_conflict');
+      && d <= plan.discriminatorOptimizerSteps), 'training_progress_plan_limit_conflict');
     const now = observedNow ?? Date.now();
     recent(heartbeat.heartbeatAtUtc, now, 15000, 'training_progress_heartbeat_stale_or_future');
     recent(value.updatedAtUtc, now, 120000, 'training_progress_stale_or_future');
     return {...absent(null), availability:'available', processId:active.processId,
       processStartIdentity:active.processStartIdentity,
-      phase:value.executionState === 'checkpoint_selected_review_pending' ? 'completed' : value.executionState,
+      phase:common ? value.phase==='checkpoint'?'validating':value.phase==='training'&&(g>0||d>0)?'executing':'preparing'
+        :value.executionState === 'checkpoint_selected_review_pending' ? 'completed' : value.executionState,
       epoch, optimizationStep:g, discriminatorOptimizerSteps:d, reportedAtUtc:value.updatedAtUtc,
-      heartbeatAtUtc:heartbeat.heartbeatAtUtc, sourcePath:logical, sourceSha256:progressRead.sha256};
+      heartbeatAtUtc:heartbeat.heartbeatAtUtc, sourcePath:logical, sourceSha256:progressRead.sha256,
+      ...(common ? {workerExecutionTiming:publicObservationTiming({workerTiming:value.workerTiming}, {path:logical,sha256:progressRead.sha256})} : {})};
   } catch (error) { return absent(error.message ?? 'training_progress_unavailable'); }
 }
 
@@ -248,10 +264,38 @@ export async function readBoundTrainingPresentation(projectRoot, registry, capsu
   try {
     if (!runId || !record(capsule) || !Array.isArray(capsule.evidence)) return empty(runId, 'training_package_not_bound');
     const managed = await executionPackage(projectRoot, registry, capsule, terminal);
+    const legacySingle=await readLegacySingleMapPresentation({pkg:managed.value,packageBinding:managed,registry,terminal,
+      readJson:async b=>(await json(projectRoot,b)).value});
+    if(legacySingle)return legacySingle;
+    if (managed.value?.interfaceContract?.schemaVersion === OBSERVATION_CONTRACT) {
+      const pkg = managed.value, c = observationContract(pkg, runId);
+      need(pkg.outputRoot === path.posix.dirname(managed.path), 'training_package_output_root_conflict');
+      const plan = {epochs:null, generatorOptimizerSteps:c.optimizerStepCeiling.generator,
+        discriminatorOptimizerSteps:c.optimizerStepCeiling.discriminator};
+      const current = await currentMetrics(projectRoot, registry, pkg, managed, plan, options.observedNow);
+      let final = null, interrupted = null, observationGap = null;
+      if (!registry.activeExecution && terminal?.executionPackage) {
+        need(sameBinding(terminal.executionPackage, managed), 'training_observation_package_conflict');
+        const readJson=async b=>(await json(projectRoot,b,512*1024)).value;
+        try { final = (await readObservationRecord({pkg,packageBinding:managed,runId,terminal,readJson})).value; }
+        catch {
+          observationGap='training_observation_evidence_unavailable';
+          try { interrupted=await readInterruptedObservation({pkg,packageBinding:managed,runId,terminal,readJson}); } catch { /* Remain unknown. */ }
+        }
+      }
+      return {availability:'available',reasonCode:observationGap,runId,scope:'protocol_observed_training',observationContractVersion:2,
+        resolution:{width:c.resolution[0],height:c.resolution[1]},targetEpochs:null,
+        targetOptimizerSteps:plan.generatorOptimizerSteps,targetDiscriminatorOptimizerSteps:plan.discriminatorOptimizerSteps,
+        completedEpochs:null,actualOptimizerSteps:final?{generator:final.optimizerSteps.generator,critic:final.optimizerSteps.discriminator}:null,errorCode:terminal?.errorCode??null,
+        packagePath:managed.path,packageSha256:managed.sha256,currentMetrics:current,
+        workerExecutionTiming:final?publicObservationTiming(final,terminal.trainingObservation):interrupted?.workerExecutionTiming??current.workerExecutionTiming??null};
+    }
     if (managed.value?.schemaVersion === AUTONOMOUS_SCHEMA)
       return await readAutonomousPresentation(projectRoot, registry, managed, terminal, options);
     if (DRY_PACKAGE.test(managed.value?.schemaVersion) || managed.value?.schemaVersion === OBSERVATION_SCHEMA)
       return await readManagedPresentation(projectRoot, registry, managed, terminal, options);
+    if (record(managed.value)&&Object.hasOwn(managed.value,'interfaceContract'))
+      return empty(runId,'training_observation_contract_unsupported');
     const bindings = capsule.evidence.filter(b => record(b) && typeof b.path === 'string'
       && b.path.replaceAll('\\', '/').endsWith('/package.json'));
     if (bindings.length !== 1) return empty(runId, 'training_package_binding_unavailable');

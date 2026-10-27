@@ -5,6 +5,7 @@ import { useAiConsoleCurrentExecution } from "./ai-console-current-execution-sto
 import { useAiConsoleLiveObservability } from "./ai-console-live-observability"
 import { mapTrainingSummary } from "./ai-console-training-summary-model"
 import { formatTrainingTime } from "./ai-console-training-time"
+import { LegacyExperimentTiming } from "./ai-console-experiment-time"
 import styles from "./ai-console-training-summary.module.css"
 
 function beijingTime(value: string | null) {
@@ -44,11 +45,12 @@ export function TrainingSummaryView({ summary }: { summary: ReturnType<typeof ma
     </div>}
     <p>本摘要不提供实时训练图预览：{summary.latestFailed && !summary.activeRunId ? "最近失败 Run 的图像生成状态未记录或无法核验，不能据此断言未生成。" : "当前图像生成状态未上报，不能推断已经生成或未生成。"}已保存且核验的图像请到<Link href="/ai-console/training/runs" prefetch={false}>训练历史与图像证据</Link>查看。</p>
     <div className={styles.terminal}><h4>最近结束的训练（不是当前执行）</h4><p>{summary.latestStatus}</p>
-      <WorkerTimingFacts timing={summary.latestTiming} />
+      {summary.latestExperimentTiming ? <LegacyExperimentTiming value={summary.latestExperimentTiming} compact={false} /> : <WorkerTimingFacts timing={summary.latestTiming} />}
       {summary.latestFailed && <p>失败原因：{summary.terminalErrorCode ?? "未记录或无法核验；请查看该 Run 的历史详情与已绑定终态证据。"}</p>}
       {summary.latestFailed && summary.latestRunId && <p>失败 Run：<code>{summary.latestRunId}</code> · <Link href="/ai-console/training/runs" prefetch={false}>在训练历史中查询详情与证据</Link></p>}
       {(summary.terminalEpochs !== null || summary.terminalGeneratorSteps !== null || summary.terminalCriticSteps !== null) && <p>终态完成 epoch：{summary.terminalEpochs ?? "未知"}；实际优化步 G：{summary.terminalGeneratorSteps ?? "未知"} / D：{summary.terminalCriticSteps ?? "未知"}</p>}
     </div>
+    <p><Link href="/local-backup/work?moduleId=ai-painter">查看训练审核、诊断报告与对比图</Link></p>
     <p className={styles.boundary}>本轮进度不是 Stage4 晋级；实验结束不等于正式合格。资源图与 GPU 占用只说明资源情况。</p>
     <details><summary>技术身份、SHA、PID 与 Loss</summary><dl className={styles.technical}>
       <div><dt>活动 Run</dt><dd>{summary.activeRunId ?? "未核验／无活动"}</dd></div>

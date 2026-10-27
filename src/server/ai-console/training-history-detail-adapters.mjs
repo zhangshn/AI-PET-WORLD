@@ -5,6 +5,8 @@ import { isDeepStrictEqual } from 'node:util'
 import { bytes as readPreviewBytes, HistoryError } from './training-history-safe-bytes.mjs'
 import { readCurrentExecutionRegistry, CURRENT_EXECUTION_REGISTRY_PATH } from '../ai-painter-current-execution-registry.mjs'
 import { readBoundTrainingPresentation } from './bound-training-presentation.mjs'
+import { adaptSingleMapTraining } from './single-map-training-history.mjs'
+import { adaptObservationHistory } from './training-observation-history.mjs'
 
 const COMPLETION_PROTOCOLS = new Map([
   ['stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1', {
@@ -132,6 +134,9 @@ export async function readBoundIndependentTrainingReview({ terminal, terminalBin
 // followed. Failure here cannot replace that parent's counters or first error.
 /** @param {(Awaited<ReturnType<typeof readCurrentExecutionRegistry>> & {presentation: Awaited<ReturnType<typeof readBoundTrainingPresentation>>}) | null} [current] */
 export async function readCompletionTrainingObservation(root, terminal, current = null) {
+  // The common protocol has already been verified by the shared presentation
+  // reader. Do not overwrite it with the legacy execution-policy timing adapter.
+  if (current?.presentation?.observationContractVersion === 2) return null
   let protocol = COMPLETION_PROTOCOLS.get(terminal?.capabilityVersion)
   if (!protocol && !terminal?.executionPackage) return null
   const object = value => value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -457,6 +462,7 @@ function experimentEnvelopeV1(request, result, requireFact, failedClosed = false
 }
 export async function adaptLegacyTrainingDetail(options) {
   const detail = await adaptLegacyTrainingDetailCore(options)
+  if (detail.record.detailCoverage?.adapter === 'training_observation_v1') return detail
   const { runId, terminal, readJson, makeArtifact } = options
   const root = process.env.AI_CONSOLE_HISTORY_ROOT || process.cwd()
   const completion = await readCompletionTrainingObservation(root, terminal)
@@ -639,6 +645,15 @@ async function adaptLegacyTrainingDetailCore({ runId, terminal, record, base, ca
   const request = await readJson(packageBinding)
   requireFact((request.experimentIdentity ?? request.identity ?? request.runId) === runId, 'history_package_run_conflict')
   record.artifacts.push(makeArtifact('request', packageBinding))
+  if (Object.hasOwn(request,'interfaceContract')) {
+    // A declared new observation protocol cannot fall back to a legacy adapter
+    // on corruption or an unknown version.
+    return adaptObservationHistory({ runId, request, packageBinding, terminal, record, base,
+      readJson, readEvidenceJson, makeArtifact, checkpointMetadata })
+  }
+  if (request.schemaVersion === 'single-map-checkpoint-fit-package-v1' && layout[2] === 'learning_capacity') {
+    return adaptSingleMapTraining({ runId, request, terminal, record, base, readJson, makeArtifact, checkpointMetadata, requireFact })
+  }
   if (!layout[1] && !LEARNING_PACKAGES.has(request.schemaVersion)) {
     missing('samples', 'metrics', 'checkpoints')
     record.detailCoverage = { ...record.detailCoverage, supported: false, reason: 'package_schema_not_adapted' }

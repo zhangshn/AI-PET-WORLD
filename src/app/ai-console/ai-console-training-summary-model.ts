@@ -1,6 +1,7 @@
 import type { AiPainterCurrentExecutionSnapshot } from "@/server/ai-console/ai-painter-current-execution-projection"
 import type { AiConsoleLiveSnapshot } from "./ai-console-live-observability"
 import { mapWorkerTiming, type WorkerExecutionTiming } from "./ai-console-training-time"
+import type { ExperimentTiming } from "./ai-console-experiment-time"
 
 export type CurrentTrainingMetrics = {
   availability: "available" | "unavailable"
@@ -8,7 +9,7 @@ export type CurrentTrainingMetrics = {
   runId: string | null
   processId: number | null
   processStartIdentity: string | null
-  phase: "executing" | "validating" | "completed" | "failed_closed" | null
+  phase: "preparing" | "executing" | "validating" | "completed" | "failed_closed" | null
   epoch: number | null
   optimizationStep: number | null
   discriminatorOptimizerSteps: number | null
@@ -43,6 +44,7 @@ export type TrainingPresentation = {
   packageSha256: string | null
   currentMetrics?: CurrentTrainingMetrics | null
   workerExecutionTiming?: WorkerExecutionTiming | null
+  experimentTiming?: ExperimentTiming | null
 }
 
 export type CurrentSummarySnapshot = Omit<AiPainterCurrentExecutionSnapshot, "trainingPresentation"> & { trainingPresentation?: TrainingPresentation | null }
@@ -140,7 +142,7 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
       || (task?.packageId != null && task.packageId !== active?.packageId)
       || (task?.capabilityVersion != null && task.capabilityVersion !== active?.capabilityVersion)) {
       metricReasonCode = "training_bound_progress_identity_mismatch"
-    } else if (!["executing", "validating", "completed", "failed_closed"].includes(bound.phase ?? "")) {
+    } else if (!["preparing", "executing", "validating", "completed", "failed_closed"].includes(bound.phase ?? "")) {
       metricReasonCode = "training_bound_progress_phase_invalid"
     } else if (!fresh(bound.reportedAtUtc, now, 120_000)) {
       metricReasonCode = "training_bound_progress_stale_or_future"
@@ -168,7 +170,8 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
   const metrics = matched ? hasBoundMetrics ? bound : telemetry : null
   const metricPhase = matched ? hasBoundMetrics ? bound?.phase : phase : null
   const training = matched && active?.executionState === "executing" && metricPhase === "executing"
-  const lastKnown = matched && !training && !["preflight", "package_materialized"].includes(phase)
+  const preparing = matched && metricPhase === "preparing"
+  const lastKnown = matched && !training && !preparing && !["preflight", "package_materialized"].includes(phase)
   const metricSource = matched ? hasBoundMetrics ? "current_registry_bound_progress_v1" : "matched_training_telemetry_v1" : null
   // A verified registry authenticates stage evidence, not training. In particular
   // dispatch activity can remain pending while a fresh worker progress supersedes it.
@@ -214,12 +217,13 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
       reason = "当前任务阶段来自已核验登记；无活动执行，不代表训练仍在运行"
     }
   } else if (activeRunId) {
-    const progressStatus = metricPhase === "validating" ? "验证中（非训练）"
+    const progressStatus = metricPhase === "preparing" ? "加载／零更新检查中（尚未开始训练）" : metricPhase === "validating" ? "验证中（非训练）"
       : metricPhase === "completed" ? "训练已完成（非训练）"
         : metricPhase === "failed_closed" ? "训练已失败关闭（非训练）" : null
     status = readOnly ? "只读诊断中（非训练）" : training ? "正在训练（身份与进度已匹配）"
       : metricPhase === "failed_closed" ? progressStatus! : registeredStage ?? progressStatus ?? "执行已登记，训练状态待核验"
-    reason = training ? hasBoundMetrics ? "仅显示匹配 Run、PID、进程启动身份的绑定进度；进度有效期 120 秒，心跳有效期 15 秒"
+    reason = preparing ? "已核验的worker仍在加载或零更新检查；尚未报告权重更新，不以进程存活冒充训练开始"
+      :training ? hasBoundMetrics ? "仅显示匹配 Run、PID、进程启动身份的绑定进度；进度有效期 120 秒，心跳有效期 15 秒"
       : "仅显示匹配 Run、PID 且新鲜的训练遥测"
       : lastKnown ? "优化训练已停止；最后核验的计数单独保留，验证或审核不计作训练"
         : "当前训练指标未核验，不以 GPU 占用推断训练"
@@ -243,8 +247,8 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
       || metricPhase === "failed_closed" || currentFailure ? "warning" : "neutral",
     activeRunId, processId: pid,
     epoch: training ? count(metrics?.epoch) : null,
-    optimizerStep: training ? count(metrics?.optimizationStep) : null,
-    discriminatorOptimizerSteps: training && hasBoundMetrics ? count(bound?.discriminatorOptimizerSteps) : null,
+    optimizerStep: training || preparing ? count(metrics?.optimizationStep) : null,
+    discriminatorOptimizerSteps: (training || preparing) && hasBoundMetrics ? count(bound?.discriminatorOptimizerSteps) : null,
     targetEpochs: count(presentation?.targetEpochs), targetOptimizerSteps: count(presentation?.targetOptimizerSteps),
     targetDiscriminatorOptimizerSteps: count(presentation?.targetDiscriminatorOptimizerSteps),
     resolution: width && height ? `${width} × ${height}` : "未知（绑定包未提供）",
@@ -268,6 +272,7 @@ export function mapTrainingSummary(current: CurrentSummaryReadState, live: LiveR
     latestFailed, terminalErrorCode,
     activeTiming: mapWorkerTiming(activeRunId && presentation?.runId === activeRunId ? presentation.workerExecutionTiming : null),
     latestTiming: mapWorkerTiming(latest?.runId && presentation?.runId === latest.runId ? presentation.workerExecutionTiming : null),
+    latestExperimentTiming: latest?.runId && presentation?.runId === latest.runId ? presentation.experimentTiming ?? null : null,
     terminalEpochs: !active && presentation ? count(presentation.completedEpochs) : null,
     terminalGeneratorSteps: !active && presentation ? count(presentation.actualOptimizerSteps?.generator) : null,
     terminalCriticSteps: !active && presentation ? count(presentation.actualOptimizerSteps?.critic) : null,

@@ -116,7 +116,7 @@ test('backup records require a saved bound terminal; missing source stays unavai
   const ref=f.write('.runtime/local-backup/runs/private-case/terminal.json',{schemaVersion:'local_backup_run_terminal_v1',backupId:'private-case',state:'failed',failureCode:'fixture_disk_missing',startedAtUtc:null,finishedAtUtc:null,elapsedMs:null})
   const r=await ctx.recordBackupRun({backupId:'private-case',sha256:ref.sha256});assert.equal(r.recorded,true,JSON.stringify(r));assert.equal(rows(ctx)[0].executionResult,'failed');assert.equal(rows(ctx)[0].originalEventAtUtc,null);assert.equal(rows(ctx)[0].acceptanceStatus,'unknown')
 })
-function registry(f,{uncommitted=false,workerOverride={},preview=null,reviewOverride={},core=null}={}) {
+function registry(f,{uncommitted=false,workerOverride={},preview=null,reviewOverride={},core=null,headOverride={}}={}) {
   const pkg=f.write('.runtime/ai-painter/fixture/package.json',{schemaVersion:'ai-painter-autonomous-closed-loop-package-v1',packageIdentity:'PKG-001'})
   const executionPackage={path:pkg.logicalPath,sha256:pkg.sha256}
   const worker={schema:'object-support-structure-quality-worker-terminal-v1',status:'training_completed_review_pending',executionState:'completed',runId:'RUN-001',packageId:'PKG-001',executionPackage,recordedAtUtc:'2026-10-21T19:01:00.123456+00:00',...workerOverride}
@@ -125,14 +125,47 @@ function registry(f,{uncommitted=false,workerOverride={},preview=null,reviewOver
   const review={schema:'object-support-structure-review-failure-v1',status:'review_execution_failed_closed',runId:'RUN-001',packageId:'PKG-001',executionPackage,workerTerminal:{path:t.logicalPath,sha256:t.sha256},...reviewOverride}
   if(core){const ref=f.write('.runtime/ai-painter/fixture/core.json',{schema:'object-support-structure-machine-audit-core-v1',runId:'RUN-001',packageId:'PKG-001',executionPackage,...core});review.core={path:ref.logicalPath,sha256:ref.sha256}}
   const failure=f.write('.runtime/ai-painter/fixture/review.json',review)
-  const head={schemaVersion:'ai-painter-current-execution-registry-v1',writerIdentity:'local_ai_capability_lifecycle_orchestrator',registryRevision:1,transactionId:'tx-001',runId:'RUN-001',eventSequence:1,latestTrainingTerminal:{path:t.logicalPath,sha256:t.sha256,runId:'RUN-001'},terminalEvidence:{path:failure.logicalPath,sha256:failure.sha256}}
+  const head={schemaVersion:'ai-painter-current-execution-registry-v1',writerIdentity:'local_ai_capability_lifecycle_orchestrator',registryRevision:1,transactionId:'tx-001',runId:'RUN-001',taskId:'RUN-001',eventSequence:1,latestTrainingTerminal:{path:t.logicalPath,sha256:t.sha256,runId:'RUN-001'},terminalEvidence:{path:failure.logicalPath,sha256:failure.sha256}}
+  Object.assign(head,headOverride)
   const current=f.write(REG+'/transactions/tx-001/current.staged.json',head)
   f.write(REG+'/transactions/tx-001/transaction.json',{schemaVersion:'ai-painter-current-execution-registry-transaction-v1',status:'committed',transactionId:'tx-001',currentSha256:current.sha256,registryRevision:1,eventSequence:1})
   f.write(REG+'/current.json',head)
-  f.write(REG+'/events.jsonl',{schemaVersion:'ai-painter-current-execution-registry-event-v1',registryRevision:1,eventSequence:1,transactionId:'tx-001',currentSha256:current.sha256,runId:'RUN-001'})
-  const db=new DatabaseSync(path.join(f.root,REG,'registry.sqlite'));try{db.exec('CREATE TABLE registry_revisions(registry_revision INTEGER,event_sequence INTEGER,transaction_id TEXT,current_sha256 TEXT,run_id TEXT); CREATE TABLE registry_transactions(transaction_id TEXT,status TEXT,current_sha256 TEXT)');db.prepare('INSERT INTO registry_revisions VALUES(?,?,?,?,?)').run(1,1,'tx-001',current.sha256,'RUN-001');db.prepare('INSERT INTO registry_transactions VALUES(?,?,?)').run('tx-001',uncommitted?'prepared':'committed',current.sha256)}finally{db.close()}
+  f.write(REG+'/events.jsonl',{schemaVersion:'ai-painter-current-execution-registry-event-v1',registryRevision:1,eventSequence:1,transactionId:'tx-001',currentSha256:current.sha256,runId:'RUN-001',taskId:head.taskId})
+  const db=new DatabaseSync(path.join(f.root,REG,'registry.sqlite'));try{db.exec('CREATE TABLE registry_revisions(registry_revision INTEGER,event_sequence INTEGER,transaction_id TEXT,current_sha256 TEXT,run_id TEXT,task_id TEXT); CREATE TABLE registry_transactions(transaction_id TEXT,status TEXT,current_sha256 TEXT)');db.prepare('INSERT INTO registry_revisions VALUES(?,?,?,?,?,?)').run(1,1,'tx-001',current.sha256,'RUN-001',head.taskId);db.prepare('INSERT INTO registry_transactions VALUES(?,?,?)').run('tx-001',uncommitted?'prepared':'committed',current.sha256)}finally{db.close()}
   return {head,reader:async()=>({ok:true,status:'verified',registry:head})}
 }
+function singleMapRegistry(f,{corrupt=false}={}) {
+  const prefix='.runtime/ai-painter/learning-capacity-experiments/RUN-001'
+  const ref=(name,value)=>{const b=f.write(prefix+'/'+name,value);return {path:b.logicalPath,sha256:b.sha256}}
+  const pkg=ref('package.json',{schemaVersion:'single-map-checkpoint-fit-package-v1',experimentIdentity:'RUN-001',outputRoot:prefix,
+    qualificationGranted:false,selectedSampleId:'sample',sampleIdentity:{sampleId:'sample',split:'train'},training:{pairs:200},
+    optimizerInitialization:'fresh_AdamW_no_parent_moments_available'})
+  const result=ref('result.json',{experimentIdentity:'RUN-001',status:'experiment_executed_not_visual_qualified',formalQualificationGranted:false,
+    optimizerSteps:{generator:200,discriminator:200},checkpointReloadExact:true,elapsedSeconds:863.171})
+  const capsule=ref('capsule.json',{schemaVersion:'ai-painter-local-task-capsule-v1',taskId:'RUN-001',integrity:{status:'verified'},evidence:[{...pkg,kind:'experiment_0',sha256Verified:true}]})
+  if(corrupt)result.sha256='0'.repeat(64)
+  return registry(f,{workerOverride:{schema:null,schemaVersion:'ai-painter-learning-capacity-experiment-terminal-v1',
+    experimentIdentity:'RUN-001',status:'experiment_completed_not_formal_qualified',executionState:'completed',result,
+    formalTrainingQualified:false,checkpointPromotable:false,worldEntryAllowed:false,actualFinalOptimizerSteps:{generator:200,discriminator:200}},
+    headOverride:{taskId:'RUN-001',taskCapsule:capsule,terminalEvidence:null}})
+}
+test('single-map terminal enters durable work ledger and precise history replay is idempotent',async()=>{
+  const f=fixture(),r=singleMapRegistry(f),ctx=f.make({readRegistry:r.reader})
+  const first=await ctx.observeCommittedRegistry();assert.equal(first.recorded,true,JSON.stringify(first))
+  assert.equal(rows(ctx).length,1)
+  const row=rows(ctx)[0];assert.equal(row.runId,'RUN-001');assert.equal(row.executionResult,'succeeded')
+  assert.equal(row.acceptanceStatus,'unknown');assert.equal(row.originalEventAtUtc,'2026-10-21T19:01:00.123456+00:00')
+  assert(row.workReport.results.some(s=>s.includes('G更新 200')))
+  assert(row.workReport.results.some(s=>s.includes('863.171')))
+  const reopened=f.make({readRegistry:r.reader});const replay=await reopened.observeCommittedRegistry({replayRevisions:[1]})
+  assert.equal(replay.recorded,true,JSON.stringify(replay));assert.equal(rows(reopened).length,1)
+  assert.equal(reopened.getState('ai-painter-registry-v1').cursor,1)
+  await assert.rejects(reopened.observeCommittedRegistry({replayRevisions:[0]}),/work_replay_revision_invalid/)
+})
+test('single-map result digest mismatch never creates a successful work event',async()=>{
+  const f=fixture(),r=singleMapRegistry(f,{corrupt:true}),ctx=f.make({readRegistry:r.reader})
+  assert.equal((await ctx.observeCommittedRegistry()).recorded,false);assert.equal(rows(ctx).length,0)
+})
 test('committed registry produces training and failed-review separately, replay/reopen is idempotent',async()=>{
   const f=fixture(),r=registry(f),ctx=f.make({readRegistry:r.reader})
   const first=await ctx.observeCommittedRegistry();assert.equal(first.recorded,true,JSON.stringify(first));assert.equal(rows(ctx).length,2)
@@ -264,4 +297,30 @@ test('malformed or prototype-named audit codes remain unmapped without exposing 
  assert.equal((await ctx.observeCommittedRegistry()).recorded,true)
  const text=JSON.stringify(rows(ctx).find(e=>e.taskId==='review-RUN-001').workReport)
  assert.equal(text.split('问题码未映射').length-1,3);assert(!text.includes('native code'));assert(!text.includes('never-display-code'))
+})
+
+
+test('bounded mixed package ingestion preserves full evidence while rejecting wrong schema, digest and oversize',async()=>{
+ const run='RUN-001',prefix='.runtime/ai-painter/learning-capacity-experiments/'+run
+ const producer={path:'ml/ai-painter/fixture.py',sha256:'a'.repeat(64)}
+ const value={schemaVersion:'mixed-train-rehearsal-package-v1',experimentIdentity:run,outputRoot:prefix,selectedSampleIds:Array.from({length:48},(_,i)=>'sample-'+i),training:{pairs:448},qualificationGranted:false,padding:'x'.repeat(1200000),programs:[producer],interfaceContract:{schemaVersion:'ai-painter-training-interface-contract-v2',purpose:'observation_only',producerVersion:'training-observation-recorder-v1',producer,recordFile:'training-observation.json',progressFile:'progress.json',resolution:[256,192],optimizerStepCeiling:{generator:448,discriminator:448},samples:[{sampleId:'sample-0',split:'train',image:{path:'data/private.png',sha256:'a'.repeat(64)}}],artifactPlan:[{role:'checkpoint',optimizerStep:448}]}}
+ for(const [name,body,file,digest,expected] of [
+  ['valid',value,prefix+'/package.json',null,true],
+  ['wrong-schema',{...value,schemaVersion:'unknown'},prefix+'/package.json',null,false],
+  ['too-large',{...value,padding:'x'.repeat(4*1024*1024)},prefix+'/package.json',null,false],
+  ['wrong-digest',value,prefix+'/package.json','0'.repeat(64),false],
+  ['unrelated',value,'.runtime/ai-painter/controller-repair-reviews/private/result.json',null,false],
+  ['wrong-run',{...value,experimentIdentity:'other'},prefix+'/package.json',null,false]]){
+  const f=fixture(),b=f.write(file,body),executionPackage={path:b.logicalPath,sha256:digest??b.sha256}
+  const r=registry(f,{workerOverride:{schema:null,schemaVersion:'ai-painter-learning-capacity-experiment-terminal-v1',executionPackage,status:'experiment_failed_closed',executionState:'failed_closed',formalTrainingQualified:false,checkpointPromotable:false,worldEntryAllowed:false},headOverride:{terminalEvidence:null}})
+  const ctx=f.make({readRegistry:r.reader}),result=await ctx.observeCommittedRegistry()
+  assert.equal(result.recorded,expected,name+': '+JSON.stringify(result))
+  if(expected){
+   assert.equal(rows(ctx).length,1)
+   const evidence=rows(ctx)[0].evidenceReferences.find(e=>e.sha256===b.sha256)
+   assert(evidence.logicalPath.includes('/evidence/program/'))
+   assert.equal(hash(fs.readFileSync(path.join(f.root,evidence.logicalPath))),b.sha256)
+   assert.equal((await f.make({readRegistry:r.reader}).observeCommittedRegistry()).recorded,true)
+  }else assert.equal(rows(ctx).length,0)
+ }
 })

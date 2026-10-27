@@ -1,20 +1,26 @@
 # 本地项目数据总汇、备份与工作台账规格
 
-更新时间：2026-10-22 09:10:45 +08:00
+更新时间：2026-10-27 04:19:04 +08:00
 
 状态：active-local-backup-module-specification
 
-文档版本：`LOCAL-BACKUP-WORK-LEDGER-1.6`
+文档版本：`LOCAL-BACKUP-WORK-LEDGER-1.9`
 
-替代版本：`LOCAL-BACKUP-WORK-LEDGER-1.5`
+替代版本：`LOCAL-BACKUP-WORK-LEDGER-1.8`
 
-生效日期：`2026-10-22`
+生效日期：`2026-10-26`
 
 文档状态：`active_normative_target`
 
 程序符合状态：`program_adoption_pending`
 
 治理依据：[执行治理](../AGENTS.md)、[主体职责与权威顺序](DOCUMENT_AUTHORITY_INDEX.md#gov-owner-001owner不进入本地ai正常运行状态机)（`GOV-OWNER-001`）。
+
+1.6原始字节保留于[1.6快照](../data/ai-painter/system-governance/document-baselines/local-backup-work-ledger-1.6-3154dead.txt)，仅供历史证据复核，不回写旧记录。
+
+1.7原始字节保留于[1.7快照](../data/ai-painter/system-governance/document-baselines/local-backup-work-ledger-1.7-ea50e2d1.txt)，仅供历史证据复核。
+
+1.8原始字节保留于[1.8快照](../data/ai-painter/system-governance/document-baselines/local-backup-work-ledger-1.8-04473131.txt)，旧事件与原训练证据不改写。
 
 ## 1. 目标与范围
 
@@ -158,6 +164,33 @@ Codex使用固定本地记录入口提交工作结果，不要求用户复制聊
 
 沿用现有事件存储和只读查询接口，增加报告字段及窗口归类所需的兼容投影；旧记录不强制补写，新记录不能静默丢弃详细栏目。单次写入仍遵守既有64KiB上限，内容过长时按同一任务拆分成有序关联记录，分页能完整查阅，不截断后冒称完整日报。提交与重放保持幂等，晚到记录保留真实工作日期及接收时间。未接入或尚未提交的窗口明确列出覆盖缺口，不能显示成当天没有工作。初始接入可补录当前明确委托任务已有的真实交付，来源标为外部窗口追记，不编造更早日期的完整历史。
 
+### LB-WORK-006 已登记图文证据的网页查看
+
+工作详情为已登记的AI Painter诊断JSON提供图文证据入口，训练控制台链接到AI Painter工作记录。`/local-backup/work/[eventId]/evidence/[evidenceIndex]`保留事件来源、原始摘要、分析与完整JSON；有支持的数据时展示已绑定对比图和逐对象数值。该投影不改变模型资格或把Codex自报转成机器验收。
+
+只读接口为`GET /api/local-backup/work-events/[eventId]/evidence/[evidenceIndex]`及其`/images/[imageIndex]`。请求只接受精确事件和数组序号，不接受路径或任意URL；沿台账已登记引用读取`.runtime/ai-painter/controller-repair-reviews/`内JSON。JSON最多1MiB，图像最多16项、每项8MiB及1600万像素，PNG单边最多8192像素；子制品必须来自已核验JSON的明确SHA绑定且位于同一目录。结果表仅投影绑定result中至多64个对象的已存在数值，不重算训练指标。
+
+服务端复用现有回环读取认证，核验真实热层、路径分量、普通文件、无嵌套链接／硬链接、限额、读取前后身份及SHA；缺失、篡改、越界和超限明确失败。GET不扫描目录、不写台账、不触发训练或审核。不执行源HTML或脚本；文字按转义文本展示，PNG逐次重新核验，完整JSON可展开。未支持旧格式仍展示原始JSON，不猜测图像身份。训练终态和既有报告不可因展示接入而改写。
+
+### LB-WORK-005 训练终态公共接口与交付水位
+
+训练观测数据的唯一机器格式由[TRAIN-OBS-001](ai-console/AI_CONSOLE_DATA_DICTIONARY_AND_API_CONTRACT.md#3223-train-obs-001-公共训练观测合同)定义，本模块不维护第二套候选名称或制品解析表。接入沿已经提交的当前登记、事务、SQLite修订、事件、同Run原终态、执行包、原结果及公共观测记录的真实SHA链；不以模型、实验名或聊天窗口确定生产者。旧格式仅走明确的历史兼容，不为新路线赋权。
+
+| 字段／机制 | 定义与约束 |
+|---|---|
+| 原始业务终态与观测缺口 | 原训练成功／失败分别入账；观测缺失、坏摘要、计划制品缺失和采集次错独立写入详细报告，不将原成功改成模型失败，也不写成制品完整 |
+| 原始时间／接收时间 | `originalEventAtUtc`保留原终态记录时间，`receivedAtUtc`为台账实际接收；工作日按前者归属。worker起止及单调耗时只来自核验的worker记录；仅开始记录的结束／耗时保持null |
+| 幂等身份 | 以原终态路径和实际SHA形成稳定事件身份，沿用任务与Run去重；先事务提交事件，再推进来源水位。进程重启、重复通知、晚到及写后崩溃不重复执行原业务或重复统计 |
+| `cursor / historyThroughRevision` | 从既有历史边界连续验证至该修订；缺失快照、事务、SQLite行或对应事件时停止推进，记录具体修订及原因，不跳过缺口宣称历史完整 |
+| `liveStartRevision / liveCursor / liveThroughRevision` | 首次有界接入时持久保存实时起点，独立处理此后的连续实时区间；旧历史缺档不阻断新的合法终态。首次事件写入失败不能丢失这个起点 |
+| `latestConfirmedRevision` | 单独表示最近独立核验并交付的头修订；某个更早live修订受阻时不能用它冒充连续水位 |
+| `exactReplayRevisions` | 只复核明确指定的有界修订，同样核验事件、事务、Run与SHA；成功重放不填补中间历史，也不重新训练、审核或恢复权重 |
+| 覆盖与失败 | 保留历史缺口、实时阻断、重放阻断、backlog及未支持Schema，覆盖未核验仍为不完整；不以空列表宣称当天没有工作 |
+
+原训练文件保持独立，网页和台账暂不可用不导致训练终止、重训或新的业务提交。自动消费仍是既有Node运行时的固定登记目录文件订阅与启动有界补齐；通知乱序、正在读取时到达的新提交及分批补齐不丢失。读取API不启动订阅、不推进水位、不补证据。观测程序升级必须核对实际常驻进程的实现版本与源码采用，不能将独立CLI入账、热更新网页或测试夹具当作常驻订阅已采用；旧订阅被替换时先处置该订阅，避免重复监听。
+
+新生产路线的完整接入验收须包含：真实终态可查、起止及范围一致、图片及指标对应、安全日志、原始与接收时间、程序事件幂等，以及不同路线公共协议复用；CPU夹具、既有真实历史、常驻采用和后继真实生产各自标记通过／失败／未验证。Codex交付仍通过既有固定外部记录入口另记，保留实际窗口身份，不冒称本地AI自主完成。不新增调度器、定时任务、API家族或第二总计划。
+
 ## 6. API与数据目录
 
 | 接口 | 语义 |
@@ -245,3 +278,7 @@ Git入口只作用于服务端核验的固定项目工作区、已配置远端�
 固定接口为`POST /api/local-backup/git/preview`、`POST /api/local-backup/git/publish`及`GET /api/local-backup/git/operations/[operationId]`。预览请求只包含已发现候选的精确文件选择，发布请求只包含预览身份、预期修订、幂等键及有界提交说明；既有body、认证、错误码和分页边界继续适用。尚未接入时明确返回503。实现限于本模块`git-*`服务与存储、固定API、页面区域及直接测试，不增加CI平台、常驻服务或新智能体。
 
 私有本地bare仓库验收须覆盖精确选中、字面路径、新文件、删除及重命名、未选改动保留、暂存不空拒绝、预览过期、HEAD／index并发、锁冲突、提交后树内容漂移禁止推送、非快进拒绝、提交成功而推送失败或未知、幂等与秘密拒绝。不得以隔离测试通过宣称已真实推送；生产仓库HEAD、index及远端在该验收中保持。
+
+### 训练包内部归集容量
+
+工作生产者内部读取48图实验包时，已登记SHA绑定的`learning-capacity-experiments/<run>/package.json`及对应内容寻址的`work-recording/evidence/program/<sha>.json`快照允许最多4MiB。超过通用1MiB的记录必须是`mixed-train-rehearsal-package-v1`，绑定自身run／outputRoot、48个唯一训练样本、448对更新声明及未授予资格状态；文件路径、普通文件、摘要和读取前后身份核验全部保留。此处只定义已有大型训练包的归集容量，不改变审核合格门槛、训练资源合同、64KiB事件写入上限或面向页面的1MiB JSON展示上限。其他文件、未知schema、错误摘要和超过4MiB的包均失败并保留覆盖缺口。不得因旧历史缺项而隐藏较新已核验终态。

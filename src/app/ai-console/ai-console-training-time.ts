@@ -1,6 +1,7 @@
 // Presentation only: elapsed time is read from the worker's monotonic clock,
 // never reconstructed from UTC, registration, file dates, or heartbeats.
 export const WORKER_TIMING_SCOPE = 'worker_training_execute_including_authentication_data_model_checkpoint_validation_and_final_progress_before_terminal_publication'
+export const OBSERVATION_TIMING_SCOPE = 'worker_data_model_loading_updates_checkpoint_validation_before_result_publication'
 
 export type WorkerExecutionTiming = {
   availability: 'available' | 'unavailable'
@@ -54,7 +55,8 @@ export function mapWorkerTiming(value: unknown) {
   const timing = value && typeof value === 'object' && !Array.isArray(value) ? value as Partial<WorkerExecutionTiming> : null
   const trusted = timing?.availability === 'available' && timing.reasonCode == null && typeof timing.sourcePath === 'string' && !!timing.sourcePath
     && typeof timing.sourceSha256 === 'string' && /^[a-f0-9]{64}$/u.test(timing.sourceSha256)
-  const supported = trusted && timing.scope === WORKER_TIMING_SCOPE
+  const common = trusted && timing.scope === OBSERVATION_TIMING_SCOPE
+  const supported = trusted && (timing.scope === WORKER_TIMING_SCOPE || common)
   const started = supported && timing.status === 'started'
   const terminal = supported && ['completed', 'failed_closed'].includes(timing.status ?? '')
   const end = terminal ? timestamp(timing.endedAtUtc) : null
@@ -64,8 +66,9 @@ export function mapWorkerTiming(value: unknown) {
     available: supported,
     startedAt: supported ? formatTrainingTime(timing.startedAtUtc) : '未记录／未知（无可用计时证据）',
     endedAt: started ? '尚未记录结束；最终结束时间未知' : terminal ? reversed ? '未知（起止顺序异常）' : formatTrainingTime(timing.endedAtUtc) : '未记录／未知（无可用计时证据）',
-    elapsed: started ? '最终耗时未知（仅有开始记录）' : terminal && end !== null && !reversed ? formatTrainingElapsed(timing.elapsedSeconds) : '最终耗时未知（无完整终态计时证据）',
-    scope: supported ? '训练 worker：含认证、数据与模型加载、训练、Checkpoint、验证及最终进度；不含此前CPU准备、GPU准入及后续终态发布／审核。不是纯GPU训练耗时。' : '训练 worker；具体计时范围未核验',
+    elapsed: started ? '最终耗时未知（仅有开始记录）' : terminal && end !== null && (!reversed || common) ? formatTrainingElapsed(timing.elapsedSeconds) : '最终耗时未知（无完整终态计时证据）',
+    scope: common ? '实验 worker：从数据与模型加载前，到更新、Checkpoint与重载验证结束；不含此前CPU准备、后续结果发布、控制器收尾或独立审核。不是纯GPU训练耗时。'
+      : supported ? '训练 worker：含认证、数据与模型加载、训练、Checkpoint、验证及最终进度；不含此前CPU准备、GPU准入及后续终态发布／审核。不是纯GPU训练耗时。' : '训练 worker；具体计时范围未核验',
     state: supported ? started ? '仅记录开始，不代表当前仍在运行' : timing.status === 'completed' ? 'worker已结束；审核与发布资格另列' : timing.status === 'failed_closed' ? 'worker失败关闭；停止原因见绑定证据' : '计时状态未知' : '计时未记录或无法核验',
     reasonCode: timing?.reasonCode ?? (trusted && !supported ? 'worker_timing_scope_unsupported' : !trusted && timing?.availability === 'available' ? 'worker_timing_source_invalid' : null),
     sourcePath: trusted ? timing.sourcePath : null,

@@ -1,0 +1,568 @@
+# AI控制台数据字典与API合同
+
+更新时间：2026-10-19 19:56:46 +08:00
+
+状态：active-normative-target
+
+文档版本：`AI-CONSOLE-DATA-API-1.27`
+
+Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
+
+## 1. 文档职责
+
+本文定义AI控制台统一字段语义、连接状态、只读页面查询合同、错误语义和未来业务投影接入要求。
+
+1.25及1.26原始字节分别保留于[1.25快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.25-ba06d31d.txt)和[1.26快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.26-bbf615ce.txt)，仅供对应历史复核；当前接口以本版合同为准，不回退历史规范建立执行资格。
+
+训练接口接入遵循AI Painter主体规格15.4节：既有四类当前／历史／详情／制品GET与响应Schema保持，新增候选不新增API。新协议从同Run不可变包、计划及执行策略的`interfaceContract`读取，不从当前入口表重选历史身份；服务端只解释支持的协议及实现，不能信任任意Schema字符串。旧协议保留显式历史兼容表，不能据其授予新路线资格。进度、预览和计时共同验证候选、模型、输出根及策略绑定，不分别维护新候选名称名单。缺失、未知、冲突和过期分别投影；未登记图片不因磁盘存在而自动取得展示资格，GET不补证据或触发训练。
+
+## 2. 字段条目标准
+
+每个字段条目必须定义：
+
+| 字段 | 含义 |
+|---|---|
+| `canonicalName` | API、数据库和证据使用的唯一英文名 |
+| `displayNameZh` | 中文显示名 |
+| `dataType` | 稳定机器类型 |
+| `role` | 身份、关系、状态、时间、完整性、度量或属性 |
+| `nullable` | 是否允许为空 |
+| `sourceOfTruth` | 权威来源 |
+| `writerIdentity` | 允许写入器 |
+| `updateSemantics` | 不可变、追加、单调修订或可替换投影 |
+| `introducedIn` | 首次出现的Schema版本 |
+
+页面不得重新发明同义字段或将显示文案当作机器字段。
+
+产品合同身份与运行事实身份必须使用不同字段。例如`releaseGateId`不得写入`datasetReleaseIdentity`，`qualityGateId`不得写入`qualityReportId`，`evidenceTypeId`不得写入`evidenceId`，`transactionGateId`不得写入`transactionId`，`policyRuleId`不得写入`policyBoundaryReportId`；后者尚无机器登记时必须为`null`并列入`unavailableFields`，或在只查询正式记录的视图返回`not_connected`。
+
+## 3. 页面查询合同API
+
+### 3.1 平台目录
+
+```http
+GET /api/ai-console/catalog
+```
+
+返回能力域、四个Framework、十个模块、52个工作页和目录完整性。
+
+### 3.2 二级工作页
+
+```http
+GET /api/ai-console/workspaces/{moduleSlug}/{workspaceSlug}?view={workArea}
+```
+
+成功载荷必须包含：
+
+```text
+schemaVersion
+contractStatus
+dataStatus
+sourceIdentity
+workspaceIdentity
+selectedView
+queryContract
+result
+```
+
+### 3.2.1 V20毫秒精度实时观察快照
+
+```http
+GET /api/ai-console/observability/live
+```
+
+返回Schema固定为`ai_console_live_observability_v2`，包含：
+
+```text
+observedAtUtc
+sampleSequence
+sampleStartedAtUtc
+sampleCompletedAtUtc
+sampleDurationMs
+timestampPrecision=milliseconds
+refreshIntervalMs=250
+channelTimings.cpu/memory/disk/gpu/trainingProcesses/trainingTelemetry
+sourceIdentity
+trustStatus=direct_observation
+resources
+gpu.adapters
+trainingProcesses.records
+trainingTelemetry.latest
+host
+reasonCodes
+```
+
+该接口无缓存、无写入且不接受路径、命令或Run参数。`observedAtUtc`是`sampleCompletedAtUtc`的兼容别名；所有时间采用ISO 8601 UTC毫秒精度。`sampleSequence`在同一`queryServiceProcessId`生命周期内严格单调，服务重启后以新的进程身份重新计数。`sampleDurationMs`使用单调高精度时钟计算，`channelTimings`逐项给出真实采样时间和通道耗时，页面必须据此计算年龄，不能把缓存通道表现为新采样。250毫秒是客户端目标刷新间隔，不是操作系统或设备计数器每1毫秒更新的承诺。CPU、内存、磁盘来自Node本机采样；NVIDIA GPU、显存、温度、功耗来自固定`nvidia-smi`只读参数；训练特征进程来自固定本机进程只读探针。进程命令只返回脚本摘要，不返回完整参数。Run、Epoch、Loss等训练语义只读取第5.14节新平台训练遥测登记。
+
+### 3.2.2 AI Painter当前执行受信投影
+
+```http
+GET /api/ai-console/observability/current-execution
+```
+
+响应Schema固定为`ai_console_ai_painter_current_execution_projection_v1`。接口不接受路径、Run、来源或历史选择参数。任意非空查询参数集合（含未知、空值、重复或编码后的参数名）均在读取当前证据前返回HTTP 400及`{ok:false,dataStatus:unknown_or_stale,reasonCode:current_execution_parameters_invalid}`，不静默忽略参数后返回当前身份。无参数查询保持原200／503响应、来源核验和无缓存语义，返回：
+
+```text
+ok
+dataStatus
+reasonCode
+sourceIdentity=ai-painter-current-execution
+sourcePath=.runtime/ai-painter/current-execution-registry/current.json
+sourceSha256
+integrityStatus
+registryRevision
+eventSequence
+recordedAtUtc
+recordedAtAsiaShanghai
+currentProjectTask
+activeExecution
+latestTrainingTerminal
+selectedHistoricalRun
+machineReview
+trainingPresentation
+```
+
+`currentProjectTask`、`activeExecution`、`latestTrainingTerminal`和`selectedHistoricalRun`不得互相替代。`machineReview`只允许来自当前登记显式绑定的不可变时间线，必须重新计算文件SHA-256并验证Run、目标节点数、通过数、失败数和逐节点身份。任何路径越界、摘要、修订、计数或身份冲突使`ok=false`、`dataStatus=unknown_or_stale`；禁止扫描其他AI Painter目录寻找替代记录。
+
+#### 3.2.2.1 当前训练易读摘要扩展
+
+`trainingPresentation`是同一当前执行GET的可空、只读兼容扩展，不改变当前执行Schema或建立新后台。旧学习实验只读取已核验当前任务胶囊中唯一显式绑定的`package.json`，重新计算SHA并检查包Schema、证据扩展版本及Run身份；受管执行包按第3.2.2.2节读取，不以文件名相同推导兼容。复用既有安全证据读器，真实路径限项目内对应namespace，唯一项目外例外是既有登记的`F:/ai-pet-world/.runtime`→`D:/AI-PET-WORLD-DATA/hot/runtime`迁移，不能扩大到整个D盘或允许其他符号链接越界。包最多2MiB，读取使用有界文件句柄，不扫描目录、不读取大结果、不回退历史包。未绑定／不支持／越界／篡改时摘要`availability=unavailable`并给出`reasonCode`，不伪造字段；当前主登记的错误仍按原合同整体失败关闭。
+
+摘要字段为`availability`、`reasonCode`、`runId`、`scope`、`resolution={width,height}|null`、`targetEpochs`、`targetOptimizerSteps`、`completedEpochs`、`actualOptimizerSteps={generator,critic}|null`、`errorCode`、`packagePath`和`packageSha256`。总轮数／总优化步／分辨率只来自包内冻结计划，未知保持null；不能用数组长度或页面固定常数猜测。结束后的实际优化数只来自同Run受验证终态，完成轮数与失败码仅在终态实际记录时显示，超过计划上限属于冲突。活动时终态实际数不投影为当前数。
+
+旧学习实验的当前epoch、batch、优化步、Loss及ETA来自既有新鲜训练遥测，必须当前登记受验证、active Run与受管PID同时匹配、遥测connected且采样不超过15秒；受管执行包按第3.2.2.2节读取真实本轮进度。历史选择、资源占用、最近结束和旧遥测不能取代活动身份。摘要与历史详情选择相互独立，前端复用单一当前执行轮询，获取失败立即标注过期，即使保留最后快照也不继续显示正常运行。本轮进度不是Stage4进度；终态实验完成不授予正式资格。API只读，不启动训练、不生成预览或写入证据。
+
+#### 3.2.2.2 受管训练统一观察与版本接入
+
+受管训练观察仍只经当前执行桥接器，不建立第二个当前登记、后台或写入器，不将读取的进度补写为SQLite遥测。首页、全局摘要和AP-03训练总览消费同一`trainingPresentation.currentMetrics`，旧SQLite遥测作为明确标注的原始观察保留；两者不得混合成同一Run的伪造记录。
+
+1. 兼容包族为`ai-painter-stage4-mvp256-dry-vN[-vN]-execution-package-v1`：数字能力代号不是接口版本；该族只适配已经具有相同字段和语义的受管干世界协议。正式新观察接口使用稳定`ai-painter-current-training-package-v1`及`ai-painter-current-training-progress-v1`，包需显式提供`resolution`、`trainingPlan`、`outputRoot`和`observation.progressPath`。非此协议的新模型不得仅凭匹配名称宣称兼容。兼容测试必须包含不同能力代号与不同计划上限，页面不能写死能力名称、轮数或分辨率。
+2. 包只能从当前已验证胶囊唯一直接包绑定，或当前已验证终态的`executionPackage`／`trainingTerminal`显式SHA链取得，最多三层、每份2MiB；逐层复核Run及真实字节SHA，不遍历任意JSON关系。干世界包的分辨率只从其显式绑定的`sourceDataCandidate.scope.resolution`读取，冻结`trainingPlan`与`resourceBudget`上限必须一致。包、当前登记和活动执行的Run、packageId、capabilityVersion必须一致；outputRoot必须等于绑定执行包所在逻辑目录。
+   标准容器`ai-painter-autonomous-closed-loop-package-v1`按以下只读适配规则处理：先核验容器绑定SHA、packageIdentity及能力身份，再从其显式`inputEvidence`取得当前观察协议规定的唯一冻结计划并核验SHA、Run、包及能力身份。同一outputRoot可以合法包含模型身份、CPU资格、数据闭环等其他绑定元数据，不能把这些元数据的数量当成计划数量；不得扫描目录寻找计划。
+
+   | 计划Schema | 固定计划路径，相对于outputRoot | executionMode | configuration.schema |
+   |---|---|---|---|
+   | `ecology-regime-managed-plan-v1` | `ecology-plan.json` | `managed-training` | `ecology-regime-managed-configuration-v1` |
+   | `ecology-regime-failure-capture-plan-v1` | `failure-capture-plan.json` | `bounded-failure-capture` | `ecology-regime-failure-capture-configuration-v1` |
+   | `ecology-regime-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-regime-quality-configuration-v1` |
+   | `ecology-decode1-weight-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-decode1-weight-quality-configuration-v1` |
+   | `ecology-terrain-detail-weight-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-terrain-detail-weight-quality-configuration-v1` |
+   | `ecology-terrain-detail-weight-quality-plan-v1` | `quality-plan.json` | `bounded-quality-training` | `ecology-terrain-detail-weight-quality-configuration-v2` |
+
+   必须在容器的已签发输入绑定中取得上表规定的计划路径，逐项核对路径、真实字节SHA及对应Schema、executionMode和configuration.schema；无匹配、重复绑定、同时绑定多个观察计划或语义不符均不可用。文件名仅定位已登记协议的显式绑定，不证明兼容，也不按Run、能力名称或版本数字选取特例。分辨率、优化上限及Checkpoint选择统一来自`configuration.scope.resolution`、`configuration.executionCeiling`和`configuration.checkpointSelection`；未知协议必须先完成语义适配及接入验收，不能凭字段相似或名称后缀接入。故障捕获也是实际权重更新，其进度可观察，但完成不代表质量训练、Checkpoint选择、模型资格或Stage晋级。
+
+   只读取该outputRoot下固定`package.json`观察快照，要求稳定观察Schema、同Run／包／能力身份、精确容器路径及SHA回指，并逐项核对冻结分辨率、训练计划、资源上限、Checkpoint选择及固定进度路径；不扫描目录或回退旧版本。此快照每次按有界真实字节重新计算摘要，但不是上游签发的不可变证据；公开`packagePath`／`packageSha256`仍表示已核验标准容器，观察文件所在目录才是进度读取根。观察字段或资格布尔值不授予训练、发布或Stage资格；容器、计划、快照或进度冲突必须返回具体原因。
+3. 当前进度只读取该outputRoot下固定`progress.json`，最多64KiB。它是可替换的机器快照，不是不可变证据：每次读取计算真实字节SHA并返回`sourcePath`、`sourceSha256`、原始`reportedAtUtc`及`sourceIdentity=current_registry_bound_progress_v1`，不伪称历史签发摘要。当前登记正式验证器仍核对真实进程出生身份、程序血缘、执行锁、事务和心跳；观察器再核对同目录锁、心跳及进度的Run／包／能力，锁与心跳的受管PID／出生身份，以及冻结预算。源进度不需要伪造为每秒更新；进度最长120秒、心跳最长15秒有效，未来时间、未知阶段、身份冲突、负数或超过上限均不可用，不以资源或旧遥测填补。
+4. `currentMetrics`字段固定为availability、reasonCode、runId、processId、processStartIdentity、phase、epoch、optimizationStep、discriminatorOptimizerSteps、reportedAtUtc、heartbeatAtUtc、sourcePath、sourceSha256、progressTtlSeconds=120、sourceIdentity；可空度量loss、learningRate、batchIndex、batchCount、throughputSamplesPerSecond、estimatedCompletionAtUtc及checkpointIdentity只有原协议真实上报且已适配时才能填写，当前干世界协议未记录它们，保持null。G与D分别显示，不能把任一方计数改称两者总数。包新增targetDiscriminatorOptimizerSteps，完成轮数与最终G／D只读同Run的真实不可变worker终态或失败终态，不以已过时间推测完成。
+5. 执行阶段与显示阶段分层：最新真实进度为executing时可显示训练；validating、completed、failed_closed均不得显示仍训练；checkpoint_selected_review_pending只映射完成训练、待审核，不授予正式资格。未知／缺失／陈旧进度显示原因。摘要缺口与当前登记完整性分别返回；投影读取期间当前指针变更则整份当前查询失败关闭，下次自动轮询恢复，不拼接两个修订。
+6. 新能力接入验收必须证明受管实际运行→当前接口→首页／全局摘要／AP-03一致、结束后非活动、失败保留、未上报不猜测、断线恢复、旧协议兼容、越界／错绑／SHA冲突拒绝及GET无写入。每种已登记计划协议均须覆盖同目录多份合法元数据、重复／冲突计划、不同能力身份与不同上限；不得以接口200或主登记connected替代训练摘要及currentMetrics可用。真实活动计数递增与浏览器显示分别验证，未验证部分不能声明交付完成。不修改活动训练绑定的源码／合同；若观察文件被该执行冻结，改动等待终态或使用已有不在绑定集内的只读投影边界。训练不依赖控制台、浏览器或Codex在线。
+
+本例外只扩展当前执行GET及其共享只读投影；`observability/live`、资源采样和SQLite训练遥测写入边界不变。历史图片及日志仍从history API按真实制品身份和SHA读取，不生成逐步作画动画，不承诺未保存的图可见。
+
+### 3.2.3 V22训练历史与精确制品查询
+
+历史投影复用`workspaces/training/runs`、`workspaces/training/checkpoints`及`workspaces/archive/training`，Schema保持原页面封套并采用`sourceIdentity=ai-painter-training-history`。V23按第3.2.4节扩展为独立历史观察，保留本节当前登记来源的验证规则，不替换当前执行或训练遥测来源。
+
+```http
+GET /api/ai-console/training/history?cursor={opaqueCursor}&limit={1..50}
+GET /api/ai-console/training/history/{runId}
+GET /api/ai-console/training/history/{runId}/artifacts/{artifactId}
+```
+
+- 历史列表Schema为`ai_console_training_history_v1`，详情为`ai_console_training_run_detail_v1`；包含`dataStatus`、`sourceRevision`、`observedAtUtc`、`records`或`record`、`reasonCode`、`unavailableFields`、`provenance`。列表另含`nextCursor`、`coverage`、`refreshIntervalMs=2000`；`total`仅在完整核验覆盖范围后填写，否则为null。默认页长20，最大50。游标绑定源修订与位置，非法游标拒绝，修订冲突不得混页。
+- 来源由正式读取器验证固定当前登记，再沿`supersedes`/事务与固定SQLite修订、事件精确核对历史快照SHA、事务提交状态及Run身份；只使用已提交修订，不扫描训练目录。历史链断裂返回`unknown_or_stale`及具体范围，不跳过冲突寻找旧成功；明确未支持的证据Schema使用`partial`并保留可证身份，不能省略后宣称完整历史。单次遍历最多2048个修订，超限明确返回覆盖限制。
+- Run记录保留`runId`、`taskId`、`runKind`、`terminalStatus`、`sourceRevision`、原始开始/完成时间与证据引用；缺失时间不使用目录mtime代替。原图/输出/条件/Checkpoint和指标按受验证请求、结果、终态显式关联；样本、split、实验臂、种子、分辨率与优化步来源可追溯。观察数据不产生训练选择或正式资格。
+- 详情在原Schema内增加可选`record.events`与`record.eventCoverage`，属于只读向后兼容字段。`events`按`eventSequence`升序，每项为`eventSequence`、`registryRevision`、`transactionId`、`taskId`、`runId`、`action`、`recordedAtUtc`、`currentSha256`及`evidenceReferences`；只能来自已通过同一事务/SQLite/快照核验且事件自身`runId`等于所选Run的登记事件，不从携带的`latestTrainingTerminal`反推事件归属。`eventCoverage`包含`scope=verified_registry_events_only`、`complete`、`gap`，完整性不得超过已核验历史链；这不是逐优化步日志完整性的声明。事件时间保留原始UTC，可另作明确标注的北京时间呈现；缺失结束时间时可显示“登记时间”，不得将其填入`finishedAtUtc`。旧Schema的终态和登记事件仍可查询；只有受验证绑定明确且对应Schema已适配时才展开图像/指标，不按文件名猜测制品。
+- `runId`必须与已核验历史记录精确匹配；`artifactId`是由Run、制品角色、逻辑路径与绑定SHA确定的64位身份，不接受任意路径或来源参数。浏览器选中历史只修改页面状态，不写当前登记中的历史选择字段。制品请求复核父证据及实际字节，拒绝路径越界、符号链接逃逸和内容变化；项目已登记数据挂载须验证逻辑根与解析后根，不以整个磁盘为允许根。
+- 图片仅支持经签名头及摘要验证的PNG/JPEG，单文件上限16MiB；JSON证据读取上限8MiB，文本展示上限64KiB并标记截断。Checkpoint仅返回绑定元数据、长度与核验状态，不下载/反序列化权重，不将尚未重算的摘要标成实际字节已验证。读取限额失败使用明确原因码，禁止默默丢弃记录。
+- 所有接口仅允许回环访问，复用Host/转发Host校验，采用`Cache-Control: no-store`与`X-Content-Type-Options: nosniff`；JSON及图片返回确定的Content-Type。非法身份/参数400、不存在404、证据或游标冲突409、字节超限413、源不可读503；错误不返回正常空表。GET不创建库、写文件、启动进程或调用旧API。
+- 历史2秒刷新不得驱动每次全量权重/图片读取。可复用同修订的内存元数据计算，但须重新确认当前源身份并显示真实核验/观察时间；制品每次返回前核对父绑定与实际字节。客户端有请求超时、取消、单请求在途、断线/陈旧显示及自动恢复；不更改现有当前执行1秒与资源250毫秒合同。
+
+本节是受验证机器证据的只读桥接例外，不改变第5节各新平台写入器的`new_ai_console_only`边界，不允许导入旧页面状态、重写资格或将历史指标注入当前训练遥测。
+
+无水单世界有界执行的历史详情按协议字段适配`ai-painter-mvp256-dry-vN[-vN]-training-lifecycle-v1`及其显式绑定的执行包／worker终态，而非逐模型新增页面或接口。包、终态、检查点指标及图片必须同Run／package／能力身份并复核SHA；按worker明确记录的sample、split、epoch及图片用途关联，不能按文件名配图。审核只沿该Run的任务终态绑定且验证训练终态回指后读取；训练完成、审核失败和未取得展示资格分别呈现。每种指标与图像保留实际观察范围；缺少逐Batch日志、条件图片或独立挑战证据时逐项记为未记录，不由检查点汇总冒充完整训练日志。固定读取限额、图片字节核验、分页和Checkpoint仅元数据沿用3.2.4；GPU失败且没有worker终态时仍保留可核验终态／配置与缺口，不伪造产图。
+
+### 3.2.4 V23独立历史观察与完整内容查询
+
+#### 受管训练诊断预览
+
+预览继续沿本节既有历史详情、分页和制品接口返回，不新增训练Run专用API。采用主体规格第15.2及17.1节登记的预览v2至v9政策：终态`trainingPreviewManifest`绑定`training-preview-diagnostic-manifest-v1`，`entries`至多24项，每项包含`record`和`image`路径／SHA绑定；活动进度可通过同Run受信`latestTrainingPreview`绑定单项。两种来源独立核验，不扫描目录发现预览，不把历史或资源占用当作当前训练身份。
+
+版本兼容仅接受`ai-painter-training-preview-observation-policy-v2.json`、`ai-painter-training-preview-observation-policy-v3.json`、`ai-painter-training-preview-observation-policy-v4.json`、`ai-painter-training-preview-observation-policy-v5.json`、`ai-painter-training-preview-observation-policy-v6.json`、`ai-painter-training-preview-observation-policy-v7.json`、`ai-painter-training-preview-observation-policy-v8.json`或`ai-painter-training-preview-observation-policy-v9.json`与各自对应Schema。各政策均位于`data/ai-painter/system-governance/`；v3及v4仅增加各自政策限定的新能力身份和输出根，v4对应联合优先候选；v5仅对应原联合优先候选260项源码核验兼容及其真实存储源码版本。v6对应decode_1入口精度24轮候选，v7对应主体1.98登记的同模型完成量训练身份及其版本感知生产／存储源码，v8对应主体1.99登记的GPU准入及训练均按完成量结束的执行身份，v9对应主体1.105登记的参数90同次取证执行身份；v6至v9源码上限均为256项，不继承v5例外。v9仍使用原预览记录、清单、捕获时点和未审核用途，独立绑定其能力、模型、政策及输出根，不改变数量、字节、新鲜度或读取权限。各版本不将旧资格带入新候选。读取器从同一计划与配置的精确政策绑定定位包输入，要求唯一匹配并重算字节，不扫描所有政策或放开任意路径。保留旧v2至v8查询，未知版本、跨版本替换及路径／Schema／语义冲突拒绝；不改变轮询、分页或图像用途。1.24原字节见[历史规范快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.24-f0e3d58c.txt)，1.23原字节见[历史规范快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.23-d581e573.txt)，1.22及此前版本原字节亦保留。
+
+记录采用`training-preview-diagnostic-record-v1`，绑定Run／package／能力／模型、政策／计划／执行包／数据清单、配置／程序摘要、train样本、原图／条件／世界事实、worldId／tick、Epoch／实际G与D步数／前向序号，以及`after_discriminator_update_before_generator_update`捕获时点。模型绑定只表示已核验身份元数据，不是当步权重快照。读取端须与既有包、计划、样本用途及真实文件字节交叉验证；未知格式、错误用途、路径／SHA冲突或跨Run记录不得成为可查看图片。
+
+核验通过的图片使用现有`role=image`、`evidenceKind=training_diagnostic_preview`和明确的未审核用途标签。`purpose=not_reviewed_diagnostic_only`，`formalOutput`、`checkpointSelectionEligible`、`qualificationEvidence`、`runtimePublicationEligible`均为false；即使外部数据带有`passed=true`也不得显示审核通过。预览不进入Checkpoint选优、正式审核结果、发布或Runtime链。
+
+仅在PNG和对应身份记录均已原子提交、重新读取核验后发布绑定。尚未捕获、捕获失败、已有文件但未提交、哈希冲突及来源未登记分别返回真实缺口；不得统一称为未训练或未保存。一个预览条目失败不能抹去原训练首错、终态、计数或其他合格图像。预览可见不改变整体历史覆盖声明；2秒轮询、分页、历史选择及既有安全限额保持。旧1.17原字节见[历史规范快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.17-1ccaca00.txt)，不作现行执行回退。
+
+#### 完成量训练与实际耗时
+
+下表主体1.99及1.105对应的执行版本，仅在同Run受信政策和配置明确绑定`gpuAdmissionWallMode=completion`及`gpuAdmissionSeconds=null`时解释为按固定48份完成GPU准入。它不是训练状态、GPU资格或训练耗时；沿用实际样本／计算计数、准入计时及同调用回执，不从空时限、心跳或显卡占用推导完成。旧版本仍按其原准入截止解释；有限启动、异常保护和停止清理时限保持，不新增接口或显示承诺。
+
+仅同Run受信政策和配置明确声明`trainingWallMode=completion`、`maxWallSeconds=null`，且属于下表已登记的完成量能力时，才可解释为“按24轮完成，不设训练总时限”。普通缺失值、旧能力的null或调用方标记仍是未知／冲突，不改变旧8400秒路线，也不以资源占用推断训练。轮数、优化步、分辨率、新鲜度与资格继续使用原独立字段，不预填预计完成时间。
+
+完成量观察的版本对应关系如下；每项仍须核验同Run政策、配置及真实字节绑定，不能仅按能力名称或本表授予资格：
+
+| 主体登记版本 | 能力身份 | 执行政策版本 | 预览政策版本 | 按完成量执行的范围 |
+|---|---|---|---|---|
+| 1.98 | `stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v1` | `ai-painter-decode1-entry-weight-quality-execution-policy-v2` | v7 | 24轮训练；GPU准入仍为原有限预算 |
+| 1.99 | `stage4_mvp256_dry_decode1_entry_weight_quality24_completion_v2` | `ai-painter-decode1-entry-weight-quality-execution-policy-v3` | v8 | 固定48份GPU准入及24轮训练 |
+| 1.105 | `stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1` | `ai-painter-decode1-entry-weight-quality-execution-policy-v4` | v9 | 固定48份GPU准入及24轮训练 |
+
+以上版本复用当前执行GET、历史详情及制品查询接口。接口Schema、字段语义和安全边界不因新Run或新能力身份改变；能力登记、实际进度发布、完成量读取与预览读取分别按其已登记政策验证对应身份。旧版本不因新版本接入而取得额外能力或重新解释历史终态。
+
+该新能力的可选`workerExecutionTiming`是同Run受信终态或活动进度中的`{path,sha256}`绑定，经既有详情／JSON制品接口读取`decode1-entry-worker-execution-timing-v1`记录；不根据目录或固定文件存在补造绑定。记录的能力、Run、package及`executionPackage`必须与父证据一致，JSON上限32KiB。`startedAtUtc`、`endedAtUtc`保留实际UTC；`elapsedSeconds`来自该worker单调时钟，不能用UTC差值、最后心跳或mtime代替。仅开始记录时结束和最终耗时均为null，不能记为0或完成；已捕获失败保留其真实停止原因，缺少最终记录则明确最终耗时未知。
+
+worker计时范围包含原认证、数据加载、模型准备、训练、Checkpoint及验证，不冒称纯优化器循环。受管阶段另含构建、传输及清理，整次生命周期再包含CPU准备、GPU准入和审核；不同范围不得混用。计时证据缺失或冲突不能抹掉可核验的原训练计数、首错、其他制品或终态，计时本身不授予任何模型或发布资格。旧运行不补写新字段，不新增API、后台或轮询机制。
+
+#### 通用历史查询规则
+
+本节扩展历史发现和查询范围，不放宽当前执行选择、证据校验、资源观察或正式发布门。规范已生效不等于程序已全量接入。
+
+1. 历史来源分为`registry`、`storage_catalog`、`archive_manifest`、`runtime_manifest`、`generated_result`。第3.2.3节的连续登记链仍严格校验；其断链只影响该来源的覆盖及事件证明，不得隐藏其他来源独立可核验的记录。不得伪造跨缺口连续事件，也不得将独立历史记录作为当前身份降级值。
+2. 复用既有存储catalog的只读分页查询作发现线索；其目录推导的run_id、mtime和历史SHA不能直接证明Run身份、业务时间或今日完整性。独立后台发现器补充已登记热层`.runtime/ai-painter/`及冷层`cold/runs/`的清单/终态/索引元数据，显式绑定的项目数据制品按需读取，不全盘搜索其他用户文件。逻辑根、物理根和迁移映射必须验证；拒绝越界链接。清单内部身份、原始证据及版本适配共同建立关联，不从目录名猜业务含义。
+3. 派生观察索引固定为`.runtime/ai-console/training/history-index-v1.sqlite`，与现有存储catalog、当前登记和新平台资格库分离。唯一后台写入器保存来源、原始路径/摘要、身份提取规则、文件状态、覆盖水位、失败原因及单调`indexRevision`，原子发布可查询批次；中断可幂等续接。不得写回原始训练证据或改变任何资格。GET只读，不初始化索引、启动扫描或修改水位；后台每批最多2000项、5秒，单实例、不重叠，资源预算耗尽明确保留未完成覆盖。新目录元数据发现目标30秒，内容核验有积压时显示真实延迟；不得宣称2秒轮询等于全部文件2秒内完成核验。
+4. 原有API族继续使用。列表新增`indexRevision`与`coverage.sources`，每来源返回范围、水位、最后发现/核验时间、是否完整和缺口；`total`表示本查询已核验范围的总数，覆盖未完成时仍为null，另可返回明确标注的已发现数量。分页游标绑定来源快照组合，不以当前registry修订替代独立索引修订。同一可信Run仅在身份与绑定一致时合并；冲突保留各来源及原因，不能任取最新。
+5. 记录新增稳定`recordId`及`identityStatus`。有明确Run身份时保持原runId查询兼容；无身份或身份冲突时用保留前缀`source-`加服务端计算的64位来源身份查询，不将该值写成runId。详情路由中的身份只从已索引记录精确解析。发现但未核验、未知Schema的证据仍可列出来源和缺口，不能冒充可信训练记录或静默消失。
+6. 详情按显式绑定提供原图、条件、输出图、逐轮/逐样本指标、训练日志、审核报告、配置和Checkpoint元数据。原登记事件、历史程序日志和训练步骤分开标注来源与完整性。每项分别使用`available`、`not_recorded`、`missing`、`unsupported_schema`、`over_limit`、`hash_conflict`或`unreadable`，一项不可用不抹去其他项。元数据、内容摘要已重算及正式资格是三个独立状态。
+7. 保留8MiB普通JSON完整读取、16MiB图片及64KiB文本单页限制；完整查看通过服务端有界解析与分页派生投影实现，不静默截断后冒充完整。详情可选`section=artifacts|metrics|events|logs`、`cursor`、`limit`(默认20、上限50)；每页绑定recordId、来源摘要和索引修订。对已核验登记胶囊绑定的`ai-painter-learning-capacity-experiment-package-v1`且`evidenceContractVersion=1`，其同Run／同experimentType、同版本规范结果超过8MiB时，可使用专用只读内存派生：来源最多16MiB，按64KiB块流式重新核验真实路径、文件长度、读取稳定性和完整SHA；首次解析及派生限5秒，受控字段投影最多8MiB，不投影重复旧`rows`指标平面或无关顶层字段。后续精确来源绑定可复用已解析投影，但每次仍复核来源完整字节SHA；并发同绑定仅一个解析在途，缓存最多32条／16MiB序列化投影，不写文件、SQLite、来源证据或资格。`detailCoverage.largeResultProjection`明确返回源／派生摘要、长度、预算、缓存命中、受控字段范围及原始大JSON不可预览；图像／指标继续按原身份和观察计划校验，不从名称推断。大源原文仍不经普通制品接口下载，页面不得创建空链接。源／投影超限或解析预算耗尽返回明确partial限额状态，身份、SHA或路径冲突失败关闭，不回退旧缓存、不将局部可查等同历史全量完整。普通JSON、旧格式、未知版本及未登记来源不能借此扩大读取权限。原始证据仅允许受支持的训练证据格式、受控JSON字段或纯文本日志预览，屏蔽凭据/环境秘密；未知格式显示安全元数据和识别缺口，不提供任意文件代理。Checkpoint保持仅元数据、无下载和反序列化。
+8. 复用回环访问、身份校验、no-store、nosniff、路径与摘要检查。图片按需加载与分页，索引摘要不替代发送前真实字节核验。制品页按输出、其他图像、原图、Checkpoint、其他证据稳定分组，同组保持原顺序；游标绑定实际排序后的制品身份，排序变化时拒绝旧游标，不静默混页。大结果内存派生同时最多2个不同绑定在途，同绑定合并；繁忙返回503／`history_large_projection_busy`，不得无限累积来源缓冲。列表/详情2秒刷新保持单请求在途、取消、超时、断线状态和选中记录稳定；索引停止时显示陈旧水位，当前执行1秒和资源250毫秒链路不依赖历史索引器。
+9. 验收必须覆盖：登记断链下独立历史仍可查；旧训练清单的指标/原图/输出/审核/CP关联；未知Schema及逐项缺失；新增证据无需重启自动出现；大内容分页无丢失/混页；重复Run冲突；缓存源变化、摘要篡改、路径逃逸、敏感内容拒绝；断线恢复及当前态/资源功能不退化。覆盖未核验完不得宣告“磁盘全部历史已接入”。
+
+受管画质训练历史采用以下明确版本映射；固定计划路径均为`quality-plan.json`，`executionMode`均为`bounded-quality-training`：
+
+| worker终态Schema | review终态Schema | 计划Schema | configuration.schema |
+|---|---|---|---|
+| `ecology-regime-quality-worker-terminal-v1` | `ecology-regime-quality-review-terminal-v1` | `ecology-regime-quality-plan-v1` | `ecology-regime-quality-configuration-v1` |
+| `ecology-decode1-weight-quality-worker-terminal-v1` | `ecology-decode1-weight-quality-review-terminal-v1` | `ecology-decode1-weight-quality-plan-v1` | `ecology-decode1-weight-quality-configuration-v1` |
+| `ecology-terrain-detail-weight-quality-worker-terminal-v1` | `ecology-terrain-detail-weight-quality-review-terminal-v1` | `ecology-terrain-detail-weight-quality-plan-v1` | `ecology-terrain-detail-weight-quality-configuration-v1` |
+| `ecology-terrain-detail-weight-quality-worker-terminal-v1` | `ecology-terrain-detail-weight-quality-review-terminal-v1` | `ecology-terrain-detail-weight-quality-plan-v1` | `ecology-terrain-detail-weight-quality-configuration-v2` |
+| `object-support-structure-quality-worker-terminal-v1` | `object-support-structure-quality-review-terminal-v1` | `object-support-structure-quality-plan-v1` | `object-support-structure-quality-configuration-v1` |
+
+前两套协议的审核输入为`ecology-regime-native-review-input-v1`；terrain-detail协议的审核输入为`ecology-terrain-detail-weight-quality-native-review-input-v1`；object-support协议的审核输入为`object-support-structure-quality-native-review-input-v1`。共享计划或终态Schema不允许混用不同配置版本、Checkpoint或执行证据。审核报告须显式绑定当前选定Checkpoint对应的全部验证输出；`validationImages`逐项记录`sampleId`、`split=validation`、`epoch`、`optimizerStep`、`purpose=prediction`及图片路径和SHA，顺序与冻结验证清单一致。详情读取器逐项核对Run、包、Checkpoint、计划上限及产物绑定，不根据文件名、目录新旧或单张主题图推断其余图片。原图或条件图没有显式绑定时保持未连接，不用预测图冒充。历史图片展示不增加模型前向调用，不授予训练或发布资格；原有受管协议继续兼容。24轮配置的第12轮观察不是最终Checkpoint、活动训练图像或额外发布资格，不能替代第24轮真实制品。
+
+失败呈现沿用既有详情字段与制品接口，不新增查询来源或接口：`completedEpochs`与`targetEpochs`表示已完整完成轮数和计划轮数；G／D实际更新分别读取终态的计数，不能假定相等，也不能从轮数反推。仅对已绑定终态中完整匹配的受支持错误格式生成有界中文摘要及参数索引；索引本身不证明模块名称，名称须另有已核验模型图绑定。未知错误、任意对象、路径或疑似敏感文本保持安全降级，不直接渲染原文。故障摘要不是根因判定。
+
+故障附件继续采用`artifacts`及其`evidenceKind`：`gradientFailureManifest`显示为故障清单，`gradientFailurePrimary`显示为首错记录，按原绑定的SHA和既有JSON制品接口读取。没有对实际内容及完整性进行核验前，只能称已绑定，不能称完整现场已认证；二进制张量档案不作为PNG或可下载Checkpoint展示。无图像绑定表示没有已登记可查看的图像，不得从空列表推断磁盘文件不存在、未执行训练或训练已通过。失败记录时间与登记时间使用各自字段，均不得静默填入缺失的完成时间。以上呈现修正不改变2秒刷新、分页、历史选中身份、安全限额或正式资格。
+
+1.16原始字节保留于[`历史API规范快照`](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.16-d14a5a1c.txt)，只供对应历史复核，不作为当前接口回退来源。
+
+### 3.3 本地控制会话
+
+固定命令行控制入口与控制台复用现有操作者会话认证、CSRF和停止合同。其直接Node调用登记在现有`ai-painter-current-entrypoint-registry-v1.json`的`localControlEntrypoints`中，唯一入口身份为`ai-painter-local-control-v1`，仅开放`start/status/stop`和已登记的画质能力及阶段适配器。调用方不能指定任意执行文件、模块或Shell命令。此登记不改变`currentEntrypoints`中的本地自主执行入口，也不要求添加npm别名；生产认证缺失时人工变更请求拒绝，只读查询和本地程序依合同自主运行不受其审批。私有CPU验收可使用明确标记的进程内测试凭据，不能写入生产配置或据此声明生产认证已采用。
+
+```http
+GET /api/ai-console/control/session
+```
+
+只允许回环地址调用。成功响应返回服务端确定的`actorIdentity=local_console_operator`、`role=operator`、CSRF令牌、过期时间和允许命令类型，同时设置作用域为`/api/ai-console/control`的HttpOnly、SameSite=Strict短时Cookie。客户端提交的角色或操作员身份不参与授权。
+
+### 3.4 安全控制命令
+
+```http
+GET /api/ai-console/control/commands
+GET /api/ai-console/control/commands?commandId={64位小写十六进制命令身份}
+POST /api/ai-console/control/commands
+```
+
+控制GET同样只允许回环地址；服务端必须共同验证请求URL、`Host`和存在时的`X-Forwarded-Host`。无`commandId`的GET只返回执行器状态、边界和当前主登记修订；带精确身份的GET只读取并复核对应回执，成功时同时返回`integrityStatus=verified`、固定`receiptLogicalPath`和`receipt`。服务端不提供目录枚举、最近回执或任意路径查询。POST当前只接受下列字段，拒绝额外字段：
+
+```text
+commandType=verify_primary_registry
+targetType=primary_registry
+targetId=ai_console_primary_registry
+expectedRegistryRevision
+idempotencyKey
+reasonText
+```
+
+POST必须同时通过回环地址、同源、服务端签名会话与`x-ai-console-csrf`校验。命令只读取并重新验证`data/ai-console/registry/primary-registry-v1.json`；结果回执使用固定Schema `ai_console_control_command_receipt_v1`，按确定性`commandId`写入`.runtime/ai-console/control/command-receipts/{commandId}.json`，写入采用仅创建语义并保存`receiptSha256`。新建文件必须立即通过同一严格读取器重新校验后才能返回成功；重复幂等身份返回同一回执。
+
+V5后的成功命令响应还必须返回`eventLedgerStatus=connected`、固定`eventLedgerLogicalPath`和`eventBinding`。`eventBinding`至少包含事件身份、事件序号、状态目标、事务身份和事件摘要。V4以前已有回执的精确GET允许`eventBinding=null`，不得为补齐而扫描历史回执。
+
+V6后的成功命令响应还必须返回`transactionStoreStatus=connected`、固定`transactionStoreLogicalPath`和`transactionBinding`。`transactionBinding`至少包含事务身份、事务序号、提交状态、恢复状态和事务记录摘要。V6以前事件的精确GET允许`transactionBinding=null`，不得为补齐而扫描旧事件。
+
+V7后的成功命令响应还必须返回`evidenceIndexStatus=connected`、固定`evidenceIndexLogicalPath`、`evidenceRegistration`和本批`evidenceRecordSet`。精确GET只返回与命令身份相同的登记批次；V7以前命令允许`evidenceRegistration=null`，不得为补齐而扫描回执目录或旧平台内容。
+
+## 4. 连接状态语义
+
+| 字段 | 值 | 含义 |
+|---|---|---|
+| `contractStatus` | `ready` | 页面身份、视图和字段合同合法 |
+| `contractStatus` | `rejected` | 请求身份或视图不属于正式目录 |
+| `dataStatus` | `connected` | 当前工作页的登记适配器已返回完整受信投影 |
+| `dataStatus` | `partial` | 只返回能够直接证明的字段，其余字段显式列入`unavailableFields` |
+| `dataStatus` | `not_connected` | 权威业务投影服务尚未接入 |
+| `dataStatus` | `unknown_or_stale` | 来源、修订、身份或时效不能共同证明当前事实 |
+
+`contractStatus=ready`不得被解释为训练、任务、审核或资源运行正常。
+
+接入数据的`result`必须增加`unavailableFields`和`provenance`。`provenance`至少包含`sourceIdentity`、`writerIdentity`、`observedAtUtc`、`sourceRevision`、`evidenceReferences`和`trustStatus`。瞬时本机资源与当前查询进程允许使用`trustStatus=direct_observation`；此时必须明确探测器身份和采样时间，不得冒充持久登记或不可变历史证据。
+
+## 5. 空值与结果合同
+
+权威数据未接入时：
+
+```json
+{
+  "records": null,
+  "total": null,
+  "nextCursor": null,
+  "reasonCode": "authoritative_projection_service_not_connected"
+}
+```
+
+禁止返回`records: []`、`total: 0`、`success`或`idle`冒充真实空结果。
+
+通过固定新平台主登记的Schema、登记身份、修订、写入器、完整工作页集合和SHA-256校验后，`records: []`与`total: 0`可以表达“来源已连接且当前确实没有登记记录”。此时必须同时返回`dataStatus=connected`、`trustStatus=verified_registry`、正式`sourceIdentity`和`sourceRevision`；缺少任一证明仍按`not_connected`或`unknown_or_stale`处理。
+
+### 5.1 新平台主登记
+
+AP-03、AP-04和AP-09的基础记录使用固定登记身份`ai_console_primary_registry`，Schema为`ai_console_primary_registry_v1`，逻辑路径为`data/ai-console/registry/primary-registry-v1.json`。登记只包含新AI控制台的15个工作页记录集，`sourceBoundary`固定为`new_ai_console_only`。V13后AP-03模型结构与训练计划的在线权威投影由第5.10节独立训练设计登记覆盖；V14后AP-04审核合同、审核结果与失败分类由第5.11节审核裁决登记覆盖；V15后AP-02发布活动状态与AP-06候选/Frame由第5.12节运行发布登记覆盖。基础主登记不得据此取得写入、训练或审核执行权。页面字段之外的键、必填字段缺失、机器类型错误或摘要冲突均必须失败关闭。
+
+### 5.2 新平台控制事件账本
+
+控制事件Schema固定为`ai_console_control_event_v1`，机器Schema位于`data/ai-console/schemas/ai-console-control-event-ledger-v1.schema.json`。主表固定为`.runtime/ai-console/control/control-event-ledger-v1.jsonl`，Head固定为`.runtime/ai-console/control/control-event-ledger-head-v1.json`，登记身份固定为`ai_console_control_event_ledger`，写入器固定为`ai_console_control_event_ledger_writer_v1`，来源边界固定为`new_ai_console_only`。
+
+每条事件必须包含`eventId`、`eventSequence`、`previousEventSha256`、`commandId`、`executionId`、`sourceState`、`targetState`、`transactionId`、`occurredAtUtc`、`evidencePath`、`evidenceSha256`和`eventSha256`。`eventId`与`transactionId`从命令身份和版本化域分隔串确定性计算；`eventSha256`覆盖除自身外的完整事件。Head的修订和事件数必须相等，并绑定最后事件身份与摘要。
+
+### 5.3 新平台控制提交事务
+
+事务库固定为`.runtime/ai-console/control/control-transactions-v1.sqlite`，Schema为`ai_console_control_transaction_registry_v1`，登记身份为`ai_console_control_transaction_registry`，写入器为`ai_console_control_transaction_writer_v1`，来源边界为`new_ai_console_only`。机器记录Schema位于`data/ai-console/schemas/ai-console-control-transaction-registry-v1.schema.json`。
+
+每条事务包含`transactionId`、`transactionSequence`、`commandId`、`eventId`、`commitSurfaceSet`、`commitStatus`、`recoveryStatus`、`receiptPath`、`receiptSha256`、`eventSequence`、`eventSha256`、`eventLedgerRevision`、`committedAtUtc`、`previousTransactionSha256`和`transactionRecordSha256`。四个固定提交表面为`command_receipt`、`control_event`、`event_ledger_head`和`sqlite_transaction_registry`。事务序号与注册表修订单调递增，事务摘要覆盖除自身外的完整记录。
+
+### 5.4 新平台正式证据索引
+
+证据索引固定为`.runtime/ai-console/evidence/formal-evidence-index-v1.sqlite`，Schema为`ai_console_formal_evidence_index_v1`，登记身份为`ai_console_formal_evidence_index`，写入器为`ai_console_formal_evidence_index_writer_v1`，来源边界为`new_ai_console_only`。机器记录Schema位于`data/ai-console/schemas/ai-console-formal-evidence-index-v1.schema.json`。
+
+每个登记批次必须绑定唯一`registrationId`、索引修订、控制事务及序号、命令身份、首末证据序号、批次证据链头、前序登记摘要和登记摘要。每批恰好包含`command_receipt`、`control_event_ledger`、`control_event_ledger_head`、`control_transaction_registry`四条记录。
+
+每条正式证据记录包含`evidenceId`、`evidenceSequence`、`registrationId`、`evidenceType`、`logicalPath`、`mediaType`、`contentByteLength`、`contentSha256`、`sourceRevision`、`sourceBindingSha256`、`transactionId`、`commandId`、`registeredAtUtc`、`storageMode`、`integrityStatus`、`previousEvidenceRecordSha256`和`evidenceRecordSha256`。`evidenceId`由类型、逻辑路径和内容摘要确定性计算；原始字节以`embedded_immutable_blob`保存在同一SQLite事务中。首次登记冻结`firstEligibleTransactionSequence`，更早事务不得补录。
+
+### 5.5 精确证据详情与跨表面对账
+
+`GET /api/ai-console/evidence/artifacts/{evidenceId}`只接受64位小写十六进制身份，并必须通过回环URL、`Host`和存在时的`X-Forwarded-Host`检查。响应Schema固定为`ai_console_formal_evidence_artifact_detail_v1`，机器Schema位于`data/ai-console/schemas/ai-console-formal-evidence-artifact-detail-v1.schema.json`。成功响应包含`integrityStatus=verified`、`lookupMode=exact_evidence_identity`、完整证据记录和`contentInspection`。
+
+`contentInspection.inspectionMode`只允许`verified_utf8_preview`或`binary_metadata_only`。JSON和JSONL文本检查上限为65536字节，必须返回`previewByteLength`与`previewTruncated`；SQLite不得返回页面文本或可执行内容。所有响应设置`Cache-Control: no-store`和`X-Content-Type-Options: nosniff`。
+
+事务对账记录在原事务字段外增加`registrationId`、`indexRevision`、`reconciliationScope`、四类`*EvidenceId`、`fileConsistencyStatus`、`eventConsistencyStatus`、`sqliteConsistencyStatus`、`indexConsistencyStatus`、`crossSurfaceStatus`、`evidenceRecordCount`、`registrationRecordSha256`和`checkedAtUtc`。五项一致性状态只允许`verified`或内部冲突裁决；冲突时整个API返回`unknown_or_stale`，不得把`conflict`记录当成正常行。
+
+### 5.6 新平台终态任务胶囊
+
+任务胶囊库固定为`.runtime/ai-console/evidence/task-capsule-index-v1.sqlite`，Store Schema为`ai_console_task_capsule_store_v1`，记录Schema为`ai_console_task_capsule_v1`，登记身份为`ai_console_task_capsule_store`，写入器为`ai_console_task_capsule_writer_v1`，来源边界为`new_ai_console_only`。机器记录Schema位于`data/ai-console/schemas/ai-console-task-capsule-v1.schema.json`。
+
+| 字段组 | 固定字段 | 规则 |
+|---|---|---|
+| 胶囊身份 | `capsuleId`、`capsuleSequence`、`contentSha256`、`capsuleRecordSha256`、`previousCapsuleRecordSha256` | 内容摘要派生胶囊身份；序号单调且记录形成哈希链 |
+| 任务目标 | `taskId`、`taskGoal`、`taskGoalSha256` | `taskId`为64位身份；目标去首尾空白且摘要必须重算一致 |
+| 能力与输入 | `capabilityDomain`、`capabilityVersionId`、`inputEvidenceSetId`、`inputEvidenceCount` | 能力域使用五类平台枚举；证据身份排序、唯一且由集合派生ID |
+| 执行与结果 | `executionId`、`executionSummary`、`executionSummarySha256`、`terminalEventId`、`resultEvidenceSetId`、`resultEvidenceCount` | 执行和终态事件使用固定身份；结果证据集按同一规范派生 |
+| 终态边界 | `terminalStatus`、`policyBoundaryReportId`、`startedAtUtc`、`terminalAtUtc` | 终态只允许`succeeded`、`failed_closed`、`cancelled`、`blocked_policy_boundary`；仅政策阻断终态允许且必须绑定报告身份 |
+| 来源与登记 | `sourceTaskRegistryIdentity`、`sourceTaskRegistryRevision`、`registeredAtUtc`、`integrityStatus` | 来源固定为`ai_console_task_registry`；修订大于等于1；读回验证通过才显示`verified` |
+
+写入器不接受路径、SQL、目录或客户端自报的胶囊/证据集摘要。同一`taskId`和相同规范化内容幂等返回原胶囊；同一任务的不同内容返回`ai_console_task_capsule_task_identity_conflict`。没有未来平台终态任务时，受验证空库合法返回`connected`、`records=[]`、`total=0`和`sourceRevision=0`。
+
+### 5.7 新平台政策边界正式报告
+
+政策边界报告库固定为`.runtime/ai-console/evidence/policy-boundary-report-index-v1.sqlite`，Store Schema为`ai_console_policy_boundary_report_store_v1`，记录Schema为`ai_console_policy_boundary_report_v1`，登记身份为`ai_console_policy_boundary_report_store`，写入器为`ai_console_policy_boundary_report_writer_v1`，来源固定为`ai_console_policy_boundary_engine`，来源边界为`new_ai_console_only`。机器记录Schema位于`data/ai-console/schemas/ai-console-policy-boundary-report-v1.schema.json`。
+
+| 字段组 | 固定字段 | 规则 |
+|---|---|---|
+| 报告身份 | `policyBoundaryReportId`、`reportSequence`、`contentSha256`、`policyBoundaryReportRecordSha256`、`previousPolicyBoundaryReportSha256` | 内容摘要派生报告身份；序号单调且记录形成哈希链 |
+| 阻断事实 | `boundaryEventId`、`boundaryCategory`、`prohibitedAction`、`failureCode`、`terminalStatus`、`occurredAtUtc` | 边界类别只允许六类固定枚举；终态固定为`blocked_policy_boundary` |
+| 影响绑定 | `affectedScope`、`affectedTaskId`、`affectedExecutionId` | 影响范围必填；任务和执行身份可空，非空时必须为64位身份 |
+| 发现与保持 | `detectionEvidenceSetId`、`detectionEvidenceCount`、`preservedStateEvidenceSetId`、`preservedStateEvidenceCount` | 两类证据输入必须排序、唯一且至少一条；集合身份由写入器派生 |
+| 处置要求 | `preservationRequirement`、`safeAlternativeRequirement` | 必须同时说明保存什么正式状态和允许的安全替代路线 |
+| 来源与登记 | `sourcePolicyEngineIdentity`、`sourcePolicyRevision`、`registeredAtUtc`、`integrityStatus` | 来源固定、修订大于等于1；完整读回通过才显示`verified` |
+
+同一`boundaryEventId`和相同规范化内容幂等返回原报告；同一事件的不同内容返回`ai_console_policy_boundary_event_identity_conflict`。正式报告与六类产品规则目录分层：规则目录中的`policyBoundaryReportId`必须保持`null`，只有实际阻断才写正式索引。当前无真实阻断时，受验证空库合法返回`connected`、`records=[]`、`total=0`和`sourceRevision=0`。
+
+### 5.8 新平台任务登记、事件与命令回执
+
+任务登记库固定为`.runtime/ai-console/tasks/task-registry-v1.sqlite`，Store Schema为`ai_console_task_registry_store_v1`，登记身份为`ai_console_task_registry`，写入器为`ai_console_task_registry_writer_v1`，安全执行器为`ai_console_task_registry_executor_v1`，来源边界为`new_ai_console_only`。任务记录Schema位于`data/ai-console/schemas/ai-console-task-registry-v1.schema.json`。
+
+| 记录 | 固定字段 | 规则 |
+|---|---|---|
+| 元数据 | `storeRevision`、`registryRevision`、`taskCount`、`commandCount`、`eventCount`、两类Head摘要、`metadataSha256` | 每个已保存命令增加Store修订；只有成功任务变更增加登记修订与事件数 |
+| 任务当前状态 | `taskId`、`taskSequence`、`queueItemId`、`taskGoal`、`capabilityDomain`、`priority`、`lifecycleStatus`、`taskRevision`、`taskRecordSha256` | 当前只允许`queued`和`cancelled`；任务身份由不可变创建BLOB派生；每次成功变更建立前序状态摘要 |
+| 任务事件 | `taskEventId`、`eventSequence`、`commandId`、`taskId`、`eventType`、来源/目标状态、来源/目标优先级、两端任务摘要、`eventRecordSha256` | 只保存登记、优先级调整和取消三类成功事件；全局单调且形成哈希链 |
+| 命令回执 | `commandId`、`commandSequence`、`commandType`、`expectedRegistryRevision`、`resultingRegistryRevision`、`inputSha256`、终态、失败码、事件身份、`commandReceiptSha256` | 成功与拒绝均保存；回执形成独立哈希链；拒绝不改变任务事实 |
+
+任务命令API固定为`/api/ai-console/control/tasks`。GET只接受回环读取；POST复用HttpOnly操作员会话、同源和CSRF检查，正文上限8192字节。命令仅允许`create_registered_task`、`set_queued_task_priority`和`cancel_unstarted_task`。优先级为1至9；后两种命令只允许目标处于`queued`。相同命令幂等身份和相同内容返回原回执，不同内容返回`ai_console_task_command_idempotency_conflict`。
+
+### 5.9 新平台能力候选、资格、发布与命令回执
+
+能力生命周期库固定为`.runtime/ai-console/capabilities/capability-lifecycle-v1.sqlite`，Store Schema为`ai_console_capability_lifecycle_store_v1`，登记身份为`ai_console_capability_lifecycle_registry`，写入器为`ai_console_capability_lifecycle_writer_v1`，安全执行器为`ai_console_capability_lifecycle_executor_v1`，来源边界为`new_ai_console_only`。记录Schema位于`data/ai-console/schemas/ai-console-capability-lifecycle-v1.schema.json`。
+
+| 记录 | 固定字段 | 规则 |
+|---|---|---|
+| 元数据 | `storeRevision`、`registryRevision`、四类实体数量、`commandCount`、`eventCount`、两类Head摘要、`metadataSha256` | 每个已保存命令增加Store修订；只有成功生命周期变更增加登记修订与事件数 |
+| 候选当前状态 | `capabilityVersionId`、`candidateSequence`、`capabilityDomain`、父版本、模型、数据发布、训练范式、`qualificationStage`、`candidateStatus`、`candidateRevision`、`candidateRecordSha256` | 候选身份由不可变创建内容派生；每次成功资格或发布登记建立前序候选状态摘要 |
+| 资格结果 | `qualificationResultId`、`qualificationGateId`、`gateOrder`、`qualificationStatus`、`evidenceRequirement`、`evidenceSha256`、`failureTerminal`、`qualificationRecordSha256` | 六级门禁顺序固定；每候选每门禁只能登记一次；失败后候选终结且证据必须保留 |
+| 能力发布 | `capabilityReleaseIdentity`、`capabilityVersionId`、模型/数据/条件身份、`qualificationSetSha256`、`releaseStatus`、前序/回退身份、`releaseRecordSha256` | 只允许六级全部通过后登记；发布状态固定`registered_inactive`，不得解释为已激活Runtime能力 |
+| 迁移评估 | `migrationAssessmentId`、`capabilityDomain`、当前/目标成熟度、外部依赖、机器验收、回退身份、`assessmentRecordSha256` | 当前只提供只读正式表；V12不开放人工写入或等级裁决 |
+| 生命周期事件与命令回执 | 命令身份、事件身份、目标身份、来源/目标候选摘要、结果终态、失败码和双哈希链 | 成功与拒绝均保存回执；拒绝不改变能力事实，也不增加登记修订 |
+
+能力命令API固定为`/api/ai-console/control/capabilities`。GET只接受回环读取；POST复用HttpOnly操作员会话、同源和CSRF检查，正文上限12288字节。命令仅允许`register_capability_candidate`、`record_capability_qualification`和`register_qualified_capability_release`。资格证据必须是64位SHA-256；资格不得跳级或重写；发布要求完整资格集合。相同命令幂等身份和相同内容返回原回执，不同内容返回`ai_console_capability_command_idempotency_conflict`。
+
+### 5.10 新平台模型结构、训练计划与命令回执
+
+训练设计库固定为`.runtime/ai-console/training/training-design-registry-v1.sqlite`，Store Schema为`ai_console_training_design_store_v1`，登记身份为`ai_console_training_design_registry`，写入器为`ai_console_training_design_writer_v1`，安全执行器为`ai_console_training_design_executor_v1`，来源边界为`new_ai_console_only`。记录Schema位于`data/ai-console/schemas/ai-console-training-design-v1.schema.json`。
+
+| 记录 | 固定字段 | 规则 |
+|---|---|---|
+| 元数据 | `storeRevision`、`registryRevision`、模型/计划/命令/事件数量、两类Head摘要、`metadataSha256` | 每个已保存命令增加Store修订；只有成功设计登记增加登记修订与事件数 |
+| 模型结构 | `modelStructureId`、`modelSequence`、`capabilityDomain`、`modelFamily`、架构/源码摘要、输入/输出Schema、`parameterCount`、`modelStructureStatus`、`modelStructureRecordSha256` | 内容寻址且不可变；状态固定`registered`；相同创建内容不得登记第二条 |
+| 训练计划 | `trainingPlanId`、`planSequence`、`capabilityDomain`、模型结构及其记录摘要、数据/Split身份、种子、分辨率、Epoch预算、父终态规则、优化器摘要、资源档案、`planStatus`、`trainingPlanRecordSha256` | 必须绑定同能力域已登记模型；状态固定`registered_inactive`；不创建Run或调度项 |
+| 设计事件与命令回执 | 命令/事件/目标身份、预期/结果修订、输入摘要、终态、失败码和双哈希链 | 成功与拒绝均保存回执；拒绝不改变设计事实，也不增加登记修订 |
+
+训练设计命令API固定为`/api/ai-console/control/training`。GET只接受回环读取；POST复用HttpOnly操作员会话、同源和CSRF检查，正文上限12288字节。命令仅允许`register_model_structure`和`register_training_plan`。模型必须绑定架构与源码SHA-256、输入输出Schema和正整数参数量；计划必须绑定已登记模型、数据/Split、种子、`宽x高`分辨率、Epoch预算、父终态规则、优化器SHA-256和资源档案。相同幂等身份不同内容失败关闭。
+
+### 5.11 新平台审核合同、机器观测终态与命令回执
+
+审核裁决库固定为`.runtime/ai-console/reviews/review-adjudication-registry-v1.sqlite`，Store Schema为`ai_console_review_adjudication_store_v1`，登记身份为`ai_console_review_adjudication_registry`，写入器为`ai_console_review_adjudication_writer_v1`，安全执行器为`ai_console_review_adjudication_executor_v1`，来源边界为`new_ai_console_only`。记录Schema位于`data/ai-console/schemas/ai-console-review-adjudication-v1.schema.json`。
+
+| 记录 | 固定字段 | 规则 |
+|---|---|---|
+| 元数据 | `storeRevision`、`registryRevision`、合同/结果/命令/事件数量、两类Head摘要、`metadataSha256` | 每个已保存命令增加Store修订；只有成功登记增加登记修订与事件数 |
+| 审核合同 | `reviewContractId`、`contractSequence`、`capabilityDomain`、审核器身份/版本、指标定义、阈值方向/值/单位、证据要求、失败码、前序合同、`contractStatus`、`reviewContractRecordSha256` | 内容寻址且冻结；状态固定`registered_frozen`；前序合同必须为同能力域同指标 |
+| 机器审核结果 | `reviewResultId`、`resultSequence`、`reviewRunId`、验证输入、合同及摘要、审核节点、审核器、指标观测、阈值快照、`reviewStatus`、失败码、影响范围、证据类型/摘要、结果终态、`reviewResultRecordSha256` | 服务端按冻结合同计算唯一终态；同一运行与合同只能登记一次；通过时失败码为空，失败时使用合同失败码 |
+| 裁决事件与命令回执 | 命令/事件/目标身份、预期/结果修订、输入摘要、终态、失败码和双哈希链 | 成功与拒绝均保存回执；拒绝不改变合同或审核结果事实 |
+
+审核裁决命令API固定为`/api/ai-console/control/reviews`。GET只接受回环读取；POST复用HttpOnly操作员会话、同源和CSRF检查，正文上限12288字节。命令仅允许`register_review_contract`和`register_machine_review_observation`。观测命令不包含`reviewStatus`、结果终态或失败码；服务端必须重新读取冻结合同、验证审核器身份并以`greater_or_equal`或`less_or_equal`计算唯一结果。相同幂等身份不同内容、缺失合同、审核器冲突、重复裁决或修订冲突均失败关闭。
+
+### 5.12 新平台能力激活、RuntimeFrame候选与正式发布
+
+运行发布库固定为`.runtime/ai-console/runtime/runtime-release-registry-v1.sqlite`，Store Schema为`ai_console_runtime_release_registry_store_v1`，登记身份为`ai_console_runtime_release_registry`，写入器为`ai_console_runtime_release_registry_writer_v1`，安全执行器为`ai_console_runtime_release_executor_v1`，来源边界为`new_ai_console_only`。记录Schema位于`data/ai-console/schemas/ai-console-runtime-release-registry-v1.schema.json`。
+
+| 记录 | 固定字段 | 规则 |
+|---|---|---|
+| 元数据 | `storeRevision`、`registryRevision`、激活/候选/发布/命令/事件数量、两类Head摘要、`metadataSha256` | 每个已保存命令增加Store修订；只有成功登记增加登记修订与事件数 |
+| 能力激活 | `activationId`、`activationSequence`、能力域、V12发布身份/记录摘要、能力版本、资格集合摘要、条件Schema、`previousActivationId`、`activationStatus`、`activationRecordSha256` | 只能绑定V12真实发布；前序激活按能力域维护；当前状态由每能力域最新激活派生 |
+| RuntimeFrame候选 | `runtimeFrameCandidateIdentity`、`candidateSequence`、激活身份/摘要、能力域/发布、世界/tick、WorldFacts、条件包、视觉制品、图像/清单摘要、`candidateStatus`、`candidateRecordSha256` | 只能绑定当前激活；状态固定`registered_for_review`；命令只登记既有制品，不生成内容 |
+| 正式Frame发布 | `publishIdentity`、`publicationSequence`、`runtimeFrameIdentity`、候选及摘要、激活/能力/世界/tick、V14审核结果及摘要/合同、`previousRuntimeFrameIdentity`、`runtimeFrameStatus`、`publicationRecordSha256` | V14结果必须通过且验证输入等于候选；前序Frame按世界维护；状态固定`registered_formal_unconsumed`，不得据此写入世界 |
+| 运行发布事件与命令回执 | 命令/事件/目标身份、预期/结果修订、输入摘要、终态、失败码和双哈希链 | 成功与拒绝均保存回执；拒绝不改变激活、候选或Frame事实 |
+
+运行发布命令API固定为`/api/ai-console/control/runtime`。GET只接受回环读取，并联合返回V12合格发布、V14审核结果与V15登记摘要；POST复用HttpOnly操作员会话、同源和CSRF检查，正文上限12288字节。命令仅允许`activate_qualified_release`、`register_runtime_frame_candidate`和`publish_reviewed_runtime_frame`。客户端不得提交激活状态、候选状态、审核结论或正式Frame状态；缺失外部绑定、非当前激活、未通过/错配审核、前序冲突、世界/tick重复、修订或幂等冲突均失败关闭。
+
+### 5.13 新平台世界控制状态、事件与命令回执
+
+世界控制库固定为`.runtime/ai-console/runtime/world-control-registry-v1.sqlite`，Store Schema为`ai_console_world_control_registry_store_v1`，登记身份为`ai_console_world_control_registry`，写入器为`ai_console_world_control_registry_writer_v1`，安全执行器为`ai_console_world_control_executor_v1`，来源边界为`new_ai_console_only`。记录Schema位于`data/ai-console/schemas/ai-console-world-control-registry-v1.schema.json`。
+
+| 记录 | 固定字段 | 规则 |
+|---|---|---|
+| 元数据 | `storeRevision`、`registryRevision`、世界/状态/命令/事件数量、事件/回执Head、`metadataSha256` | 每个保存的命令增加Store修订；只有成功状态转换增加登记修订、状态和事件 |
+| 世界控制状态修订 | `worldStateRevisionId`、`stateSequence`、`worldId`、`worldRevision`、活动Frame/发布/摘要/tick、`consumptionStatus`、`publishControlStatus`、`visualUpdateStatus`、转换/来源/回退关系、`worldStateRecordSha256` | 逐世界追加，不覆盖；活动Frame必须绑定V15受验证正式发布；创建内容BLOB和公开记录摘要必须一致 |
+| 世界控制事件 | `worldControlEventId`、`eventSequence`、命令/世界身份、来源/目标状态修订、目标世界修订/摘要、前序事件摘要、`eventRecordSha256` | 每个成功状态修订恰好一个事件；全局单调并形成哈希链 |
+| 命令回执 | 命令序号/类型、全局和世界预期/结果修订、目标、输入摘要、终态、失败码、事件、前序回执摘要和`commandReceiptSha256` | 成功与拒绝均保存；拒绝不改变世界控制事实；相同幂等身份不同内容失败关闭 |
+
+世界控制命令API固定为`/api/ai-console/control/world`。GET只接受回环读取，返回V16当前世界状态和V15正式发布摘要，不初始化或修改库。POST复用HttpOnly操作员会话、同源和CSRF检查，正文上限12288字节，只允许`consume_registered_runtime_frame`、`pause_frame_publish`、`resume_frame_publish`、`rollback_runtime_frame`和`freeze_visual_updates`。消费必须绑定状态为`registered_formal_unconsumed`的V15发布，符合同世界前序Frame链且tick前进；回退必须处于暂停发布状态并指向同世界祖先正式Frame。API不接受客户端状态、摘要、角色、写入器、旧Runtime身份或任意路径。
+
+### 5.14 V20本机精确实时观察与V17训练遥测
+
+资源快照使用`ai_console_local_observability_probe_v1`，`trustStatus=direct_observation`。关键资源字段固定为：
+
+| 字段 | 类型/单位 | 空值规则 | 来源 |
+|---|---|---|---|
+| `cpuUtilization` | number / percent | CPU采样窗口无有效差值时为null | Node OS采样 |
+| `memoryUtilization` | number / percent | 总内存不可用时为null | Node OS采样 |
+| `gpuUtilization` | number / percent | GPU探针不可用时为null | 固定`nvidia-smi`只读探针 |
+| `vramUtilization` | number / percent | 显存总量不可用时为null | 固定`nvidia-smi`只读探针 |
+| `gpuTemperatureCelsius` | number / celsius | 设备不支持时为null | 固定`nvidia-smi`只读探针 |
+| `gpuPowerDrawWatts` | number / watt | 设备不支持时为null | 固定`nvidia-smi`只读探针 |
+| `diskUtilization` | number / percent | 文件系统容量不可用时为null | Node文件系统采样 |
+| `detectedTrainingProcessCount` | integer | 进程探针失败时不得显示0，改为partial | 固定进程只读探针 |
+
+训练遥测库固定为`.runtime/ai-console/observability/training-telemetry-v1.sqlite`，Schema为`ai_console_training_telemetry_v1`，内部写入器为`ai_console_training_telemetry_writer_v1`。它是新平台训练服务的追加式观察登记，不是浏览器控制入口。每条记录固定包含：
+
+```text
+sampleId / sampleSequence
+runId / executionId / processId
+trainingStage / epoch / batchIndex / batchCount / optimizationStep
+loss / learningRate / throughputSamplesPerSecond
+estimatedCompletionAtUtc / checkpointIdentity
+heartbeatAtUtc / reportedAtUtc / reporterIdentity
+schemaVersion / recordSha256
+```
+
+训练遥测心跳15秒内有效时返回`connected`；库不存在或空时返回`not_connected`；Schema、SQLite或记录摘要冲突及心跳过期返回`unknown_or_stale`。GPU占用、进程存在和脚本名称均不得替代上述字段。浏览器最多保存600个实时点到当前`sessionStorage`形成会话曲线，目标间隔为250毫秒；页面必须标注该曲线不是不可变机器证据，并显示服务端完成时间、接收年龄、往返耗时和慢通道年龄。
+
+## 6. 错误合同
+
+| HTTP状态 | `errorCode` | 场景 |
+|---|---|---|
+| 400 | `invalid_workspace_identity` | 路由身份格式非法 |
+| 400 | `view_not_in_workspace_contract` | 视图不属于当前工作页 |
+| 400 | `current_execution_parameters_invalid`（`reasonCode`） | 当前执行查询包含参数，读取证据前拒绝；不将请求误解释为历史Run选择 |
+| 404 | `workspace_not_found` | 模块或工作页不存在 |
+| 500 | `catalog_integrity_failure` | 静态目录完整性失败 |
+| 400 | `control_command_*_invalid` / `control_command_*_not_allowed` | 控制命令身份、JSON、字段、类型、目标、修订、幂等键或原因不合法 |
+| 401 | `local_operator_session_required` / `local_operator_session_invalid` / `local_operator_session_expired` | 缺少、无效或过期的本地操作员会话 |
+| 403 | `local_control_loopback_required` / `local_control_same_origin_required` / `local_operator_csrf_invalid` | 回环、同源或CSRF校验失败 |
+| 409 | `expected_registry_revision_conflict` / `control_command_receipt_integrity_failure` | 预期修订冲突或已有回执完整性失败 |
+| 413 | `control_command_body_too_large` | 控制命令请求体超过4096字节 |
+| 503 | 主登记读取器原因码 | 主登记完整性无法证明，安全命令失败关闭 |
+| 400 | `formal_evidence_identity_invalid` | 精确证据身份格式非法 |
+| 404 | `ai_console_formal_evidence_artifact_not_found` | 正式证据身份不存在 |
+| 409 | 正式证据索引完整性原因码 | 证据记录、嵌入字节或公开投影绑定冲突 |
+| 400/409 | `capability_command_*` / `ai_console_capability_*` | 能力命令字段、身份、修订、资格顺序、候选终态、发布血缘或幂等关系不合法 |
+| 400/409 | `training_design_command_*` / `ai_console_training_*` | 训练设计字段、内容身份、模型依赖、能力域、修订、重复登记或幂等关系不合法 |
+| 400/409 | `review_adjudication_command_*` / `ai_console_review_*` | 审核合同或机器观测字段、审核器身份、合同血缘、唯一终态、修订或幂等关系不合法 |
+| 400/409 | `runtime_release_command_*` / `ai_console_runtime_*` / `ai_console_capability_activation_*` | 运行发布字段、V12/V14绑定、当前激活、审核资格、前序Frame、世界/tick、修订或幂等关系不合法 |
+| 400/409 | `world_control_command_*` / `ai_console_world_control_*` | 世界控制字段、V15正式发布、前序血缘、全局/世界修订、暂停/冻结状态、合法回退或幂等关系不合法 |
+| 503 | `ai_console_live_observability_probe_failed` | V20统一实时快照无法形成；不得返回旧平台或缓存历史作为替代 |
+
+所有错误均保持只读且无副作用。
+
+## 7. 隔离规则
+
+1. `/api/ai-console/`不得导入或调用`/api/ai-painter/`。
+2. 不得读取已退役`/ai-painter-progress/`页面内容、页面状态、页面私有接口或历史页面资料；旧网址的永久重定向不构成数据来源。
+3. 不得通过目录扫描和修改时间推测当前Run、Checkpoint或任务。
+4. 后续业务投影必须验证登记修订、来源身份、写入器和不可变证据。
+5. 控制服务不得接受客户端角色、任意文件路径、任意执行器身份或未登记命令类型。
+6. 当前控制服务不得启动训练、审核、Checkpoint、Runtime、外部进程或Shell，也不得读写旧平台目录。
+7. 任务胶囊写入器只接受新平台任务登记终态输入；不得把Codex任务、旧训练任务、目录发现记录或聊天内容转换为本地平台任务胶囊。
+8. 政策边界报告写入器只接受固定新平台政策引擎的实际阻断；不得把规则目录、演示数据、聊天判断或旧平台报告转换为正式报告。
+9. 任务登记写入器只接受新平台任务服务显式输入；不得扫描目录、读取旧页面、导入外部执行记录或把聊天内容自动转换为任务。执行器未接入前不得产生活动执行身份、进程、心跳或Run身份。
+10. 能力生命周期写入器只接受新平台能力命令服务显式输入；不得扫描或导入旧训练、审核、Checkpoint、发布与Runtime记录。V12登记发布固定为非活动状态，不能据此启动或替换任何运行能力。
+11. 训练设计写入器只接受新平台训练设计命令服务显式输入；不得扫描、导入或读取旧训练配置、Run、Checkpoint、Stage、审核与Runtime记录。V13计划固定为非活动状态，不能据此创建运行身份或启动训练。
+12. 审核裁决写入器只接受新平台审核命令服务显式输入；不得扫描、导入或读取旧验证、审核、训练、Checkpoint、Runtime与证据目录。V14只能登记冻结合同和观测终态，不能据此启动验证、运行审核或改写历史结论。
+13. 运行发布写入器只接受新平台运行发布命令服务显式输入，并从V12与V14固定登记按完整身份重新验证来源。不得扫描、导入或读取旧能力发布、候选、RuntimeFrame、训练、审核和世界目录；V15不得生成图像、启动任何运行或消费Frame。
+14. 世界控制写入器只接受新平台世界控制命令服务显式输入，并从V15固定登记重新验证正式发布摘要与血缘。不得导入、读取或写入旧World Runtime、`data/world-runtime`、WorldFacts、训练、验证、审核、Checkpoint、Stage或旧页面；“消费”仅表示新平台V16登记状态，不等于游戏世界已消费。
+15. 实时观察服务只允许固定只读探针和新平台训练遥测登记；不得接受页面命令、任意进程过滤条件、任意可执行文件、旧页面响应、旧训练目录或Stage4证据路径。
+16. 实时GET不得创建训练遥测库。只有新平台内部训练遥测写入器可以创建和追加记录；浏览器、AP-03和AP-08均无写入能力。
+
+## 8. API验收
+
+1. 目录接口返回10模块和52工作页。
+2. 52个工作页接口均验证默认业务视图。
+3. 非法视图返回400，未知页面返回404。
+4. 响应中没有退役页面路径或旧页面API引用；当前执行接口仅允许返回固定当前登记逻辑路径及其显式绑定证据路径。
+5. GET请求不写文件、不修改数据库、不启动或停止进程。
+6. `partial`记录中的未知字段必须为`null`并列入`unavailableFields`，不得使用0替代未知值；字段字典的`nullable=false`约束在字段可用时生效，不能把传输层不可用伪装成合法业务空值。
+7. 控制会话和命令接口分别验证回环、同源、Cookie、CSRF、严格字段、目标修订和请求体上限；无权限请求失败关闭。
+8. 主登记核验成功返回`registry_verified`和登记证据SHA-256；预期修订冲突返回`registry_revision_conflict`；重复幂等身份返回相同`commandId`与回执SHA-256。
+9. 现有回执通过文件名、命令身份、固定目标、状态组合和`receiptSha256`确定性检查；干净工作区允许尚无回执。
+10. 精确回执GET成功时返回`integrityStatus=verified`和固定逻辑路径；不存在返回404，非法身份返回400，完整性冲突返回409，所有失败均不得降级为目录扫描。
+11. 控制事件账本逐行校验Schema、序号、哈希链、确定性身份、回执路径与摘要，再与Head修订和链头核对；AP-07事件页只投影通过校验的记录。
+12. 控制事务读取必须通过SQLite`integrity_check`、固定表和字段集合、元数据摘要、注册表修订、事务哈希链、回执及事件精确绑定；AP-07“控制提交事务”只投影全部检查通过的记录。
+13. 正式证据读取必须通过SQLite`integrity_check`、固定表和字段集合、元数据摘要、登记批次链、证据记录链、嵌入BLOB长度与内容摘要、来源绑定和首次合格事务边界；AP-07“正式证据记录”只投影全部检查通过的记录。
+14. 精确证据详情必须按完整身份读取固定索引行并重新验证BLOB；文本上限、截断状态、二进制隔离、`nosniff`和回环Host边界全部生效。
+15. 证据对账必须把回执证据、事件账本证据、事件Head证据和事务库证据与同一控制事务逐项联合；五项一致性全部为`verified`才返回受信记录。
+16. 任务胶囊读取必须通过SQLite完整性、固定表与列、元数据摘要、记录数量、胶囊序号、内容BLOB、任务/执行/终态身份、输入与结果证据集、终态政策关系和记录哈希链；临时动态测试必须证明幂等、冲突关闭和旧来源拒绝。
+17. 政策边界报告读取必须通过SQLite完整性、固定表与列、元数据摘要、记录数量、报告序号、内容BLOB、事件身份、两类证据集、六类边界、阻断终态和报告哈希链；临时动态测试必须证明幂等、冲突关闭、外部来源拒绝和终态拒绝。
+18. 任务登记读取必须通过SQLite完整性、固定表与列、元数据摘要、创建BLOB、任务状态链、任务事件链和命令回执链；临时动态测试必须证明任务登记、幂等重放、优先级、取消、修订冲突、终态冲突和外部身份拒绝。
+19. 能力生命周期读取必须通过SQLite完整性、固定表集、元数据摘要、候选当前状态、六级资格链、发布链、生命周期事件链和命令回执链；临时动态测试必须证明候选登记、幂等重放、门禁顺序、资格终态、完整资格发布、重复发布、血缘冲突和外部身份拒绝。
+20. 训练设计读取必须通过SQLite完整性、固定表列、元数据摘要、创建BLOB、模型/计划内容身份、模型—计划能力域关系、设计事件链和命令回执链；临时动态测试必须证明模型登记、计划登记、幂等重放、重复内容、缺失模型、跨域依赖、修订冲突和外部身份拒绝。
+21. 审核裁决读取必须通过SQLite完整性、固定表列、元数据摘要、创建BLOB、合同内容身份与血缘、结果阈值快照、单运行单合同唯一性、裁决事件链和命令回执链；临时动态测试必须证明合同登记、服务端通过/失败计算、幂等重放、缺失合同、审核器冲突、重复裁决、修订冲突和外部身份拒绝。
+22. 运行发布读取必须通过SQLite完整性、固定表列、元数据摘要、创建BLOB、能力激活、Frame候选、正式发布、V12/V14外部摘要、事件链与回执链；正式状态固定为未消费，动态测试必须证明审核失败关闭与幂等。
+23. 世界控制读取必须通过SQLite完整性、固定表列、元数据摘要、创建BLOB、逐世界状态修订、V15发布摘要/血缘、事件链和回执链；动态测试必须证明首帧/后续消费、幂等、未暂停回退失败关闭、暂停后祖先回退、恢复与冻结。正式空库必须返回`connected · 0`，AP-06及API源码不得包含旧World Runtime读取依赖。
+24. V20实时快照必须在GPU可用机器返回真实GPU身份、利用率、显存、温度和功耗，并以250毫秒目标间隔、`no-store`、直接观察来源、单调序号、毫秒起止时间、采样耗时和逐通道采样时间返回。
+25. 全局状态条、AP-08和AP-03必须共享客户端单例快照；切换视图不得创建第二套业务状态或读取旧内容。
+26. 无训练遥测登记时该通道显示未上报；有登记时必须复核SQLite、固定列集、Schema、sampleSequence、sampleId、recordSha256和心跳时效。当前摘要及AP-03还可按3.2.2.2独立核验当前登记绑定进度，但不得回填遥测库或改写原通道状态；未产生字段仍未知。
+27. 当前执行接口必须重新验证正式当前登记及其事务、事件、SQLite和证据绑定；返回的登记修订、任务、Run和机器审核计数必须与AP-01当前/活动、AP-03训练总览及AP-04当前/结果/证据一致。
+28. AP-03当前指标必须满足3.2.2.1的活动Run遥测匹配或3.2.2.2的绑定进度核验；首层与总览共用映射，缺失字段保持未知。GPU占用、进程探针、最近训练终态和历史Run均不能作为替代。
+29. 旧控制台根路径、已知子路径和任意深层子路径必须308永久重定向到`/ai-console`；重定向不得读取查询参数、证据、训练状态或旧API。

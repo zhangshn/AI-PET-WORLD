@@ -3,9 +3,10 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { startHistoryPolling } from './ai-console-history-poll'
 import { AiConsoleTrainingSummary } from './ai-console-training-summary'
 import { formatTrainingTime, mapWorkerTiming, type WorkerExecutionTiming } from './ai-console-training-time'
+import { LegacyExperimentTiming, ImageExecutionTiming, ControllerExecutionTiming, type ExperimentTiming } from './ai-console-experiment-time'
 import styles from './ai-console-training-history.module.css'
 
-type Artifact = { artifactId: string; role: string; url: string | null; evidenceKind?: string; sampleId?: string; split?: string; arm?: string; seed?: number; inferenceMode?: string; sourceLabel?: string; epoch?: number | null; passed?: boolean; issueCodes?: string[]; logicalPath: string; sha256: string; byteLength?: number; optimizerSteps?: unknown; verificationStatus: string; previewStatus?: string }
+type Artifact = { artifactId: string; role: string; url: string | null; evidenceKind?: string; sampleId?: string; split?: string; arm?: string; seed?: number; inferenceMode?: string; sourceLabel?: string; epoch?: number | null; passed?: boolean; issueCodes?: string[]; logicalPath: string; sha256: string; byteLength?: number; optimizerSteps?: unknown; verificationStatus: string; previewStatus?: string; imageTiming?: unknown }
 type RegistryEvent = { eventSequence: number; registryRevision: number; transactionId: string; taskId: string; runId: string; action: string | null; recordedAtUtc: string | null; currentSha256: string; evidenceReferences: string[] }
 type Run = { runId: string; recordId?: string; runKind: string; terminalStatus: string; sourceRevision: number; startedAtUtc?: string | null; finishedAtUtc: string | null; workerExecutionTiming?: WorkerExecutionTiming | null; recordedAtUtc?: string | null; registeredAtUtc?: string | null; independentReviewStatus?: string; independentReviewIssueCodes?: string[]; reviewStatusSource?: string; optimizerSteps?: unknown; completedEpochs?: unknown; targetEpochs?: unknown; trainingPlan?: unknown; detailCoverage?: unknown; resolution?: unknown; qualification?: unknown; failureSummary?: unknown; artifacts?: Artifact[]; metrics?: unknown[]; checkpoints?: Artifact[]; events?: RegistryEvent[]; eventCoverage?: { scope: string; complete: boolean; gap: unknown } }
 type Listing = { schemaVersion: string; dataStatus: string; reasonCode: string | null; sourceRevision: number; indexRevision?: number | null; observedAtUtc: string; records: Run[]; nextCursor: string | null; total: number | null; coverage: unknown }
@@ -15,6 +16,7 @@ type SectionPage = { schemaVersion: string; dataStatus: string; reasonCode: stri
 const sectionLabels: Record<Section, string> = { artifacts: '图像与证据', metrics: '指标与观测', events: '登记事件', logs: '历史程序日志' }
 const kindLabels: Record<string, string> = { decoder_binding_ab: '解码器绑定对照实验', timestep_ab: '时间步对照实验', rgb_head_adaptation: 'RGB输出分支适配实验', learning_capacity: '学习能力实验', interrupted_experiment: '已中断实验', registered_experiment: '已登记实验', bounded_endpoint_ab_experiment: '端点对照实验' }
 function kindLabel(run: Run) {
+  if (run.runKind === 'single_map_checkpoint_fit') return '固定单图续训实验'
   if (run.runKind === 'spatial_affine_controlled_smoke') return '空间仿射受控训练'
   if (run.runKind === 'independent_materialization') return '独立证据（未纳入已核验登记区间）'
   if (run.runKind === 'dry_single_world_bounded_training') return '单世界有界训练'
@@ -50,6 +52,8 @@ function reasonLabel(reason: string | null) {
 }
 function timeLabel(value: string | null | undefined) { return formatTrainingTime(value) }
 function RunTiming({ run, compact = false, stale = false }: { run: Run; compact?: boolean; stale?: boolean }) {
+  const experiment = (run as Run & { experimentTiming?: ExperimentTiming | null }).experimentTiming
+  if (experiment) return <LegacyExperimentTiming value={experiment} compact={compact} />
   const timing = mapWorkerTiming(run.workerExecutionTiming)
   const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value)
   const coverage = object(run.detailCoverage) ? run.detailCoverage : null
@@ -96,6 +100,7 @@ function RunTiming({ run, compact = false, stale = false }: { run: Run; compact?
     <p>计时范围：{hasWorker ? timing.scope : '原始运行记录；具体阶段范围未记录，不能作为纯GPU训练耗时。'}</p>
     {hasWorker && <><p>{timing.state}</p><details><summary>计时来源、原始UTC与诊断代码</summary><pre>{readableJson({ reasonCode: timing.reasonCode, timing: timing.raw })}</pre></details>
       {(run.startedAtUtc || run.finishedAtUtc) && <p>原始运行记录（与worker范围分开）：开始 {timeLabel(run.startedAtUtc)}；结束 {timeLabel(run.finishedAtUtc)}。</p>}</>}
+    <ControllerExecutionTiming value={(run as Run & {controllerExecutionTiming?:unknown}).controllerExecutionTiming} />
     <p>最近登记时间：{timeLabel(run.registeredAtUtc ?? run.recordedAtUtc)}（仅登记事件，不代替开始或结束）。</p>
   </section>
 }
@@ -189,7 +194,7 @@ function EvidenceImage({ item }: { item: Artifact }) {
   return <figure><figcaption>{diagnostic ? '未审核训练预览，非Checkpoint／正式输出' : item.role === 'original' ? item.split === 'train' ? '训练原图' : '验证参考原图' : item.role === 'image' ? `材料化报告登记图像${item.sourceLabel ? ` · ${item.sourceLabel}` : '（逐图用途未记录）'}` : item.sourceLabel ? `本地模型实验图 · ${item.sourceLabel}` : '本地AI候选输出'} · {item.sampleId} {item.arm} {item.epoch != null ? `第 ${item.epoch} 轮` : ''} {item.seed !== undefined ? `种子 ${item.seed}` : item.inferenceMode === 'deterministic_condition_to_complete_rgb' ? '确定性推理' : ''}{diagnostic && <><br />训练前向的已保存诊断图，不是故障发生时画面，不证明画质合格或当步权重可恢复。</>}{verdict ? <><br /><strong>{verdict}</strong>{item.issueCodes?.length ? ` · ${item.issueCodes.join('、')}` : ''}</> : null}<br />{item.logicalPath.split('/').pop()}</figcaption>
     {failed || !item.url ? <p role="alert">{!item.url ? '受信图片入口未提供。' : '图片读取失败或摘要冲突；不能解释为未保存。'}{item.url && <button onClick={() => setFailed(false)}>重试图片</button>}</p> : <a href={item.url} target="_blank" rel="noreferrer"><img src={item.url} alt={`${item.role} ${item.sampleId ?? ''}`} loading="lazy" onError={() => setFailed(true)} /></a>}
     {diagnostic && <p>D更新后、G更新前捕获 · {formatOptimizerSteps(item.optimizerSteps)}；这些是捕获时计数，不是当前实时进度。</p>}
-    <small>图像自身开始／结束／生成耗时：未记录（无自身区间，不采用任务耗时）。<br />绑定SHA：{item.sha256}；图片响应前重新核验字节。</small></figure>
+    <small><ImageExecutionTiming value={item.imageTiming} /><br />绑定SHA：{item.sha256}；图片响应前重新核验字节。</small></figure>
 }
 function TrainingPreviewCoverage({ coverage, stale }: { coverage: unknown; stale?: boolean }) {
   if (stale) return <p role="status">训练诊断预览：详情未取得或已过期，登记状态待重新核验；不能据此判定未登记或未保存。不参与Checkpoint选择、机器资格或世界发布。</p>

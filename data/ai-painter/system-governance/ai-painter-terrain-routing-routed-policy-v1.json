@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "terrain-routing-comparison-policy-v1",
+  "purpose": "train_only_learning_capacity_no_generalization_claim",
+  "sampleIds": [
+    "ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v3",
+    "mvp64-slot164-objects-v5-20261020"
+  ],
+  "sourceRunId": "d1-src-v1-850c25f8-8181-446e-99da-3dae2dbb21a8",
+  "initialization": "exact_completed_two_map_v2_weights_fresh_original_AdamW",
+  "parentExperiment": {
+    "package": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/two-map149-164-v2-ce5771642998e8b625f4/package.json",
+      "sha256": "6b5dafe7603a76559e2e259c04ee3911ffd52e7b5b021629063d194d033cbc85"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/two-map149-164-v2-ce5771642998e8b625f4/terminal.json",
+      "sha256": "28aef957b9fd9987e73d5507a26edc35e720a5856d0fdff19c2105c6ac244e3e"
+    },
+    "result": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/two-map149-164-v2-ce5771642998e8b625f4/result.json",
+      "sha256": "a6fee85e118a8d37d292521ebdb94c710777fd86b65633c418f6fb21b2de7f00"
+    },
+    "checkpoint": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/two-map149-164-v2-ce5771642998e8b625f4/checkpoint-final.pt",
+      "sha256": "4ac628ed6305a30db295986fa73b21547d0fcc4de9e30419ca52ca2643f206fc"
+    },
+    "prediction": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/two-map149-164-v2-ce5771642998e8b625f4/prediction-164-200.png",
+      "sha256": "09090db1deb89a00d5625c6390dabd4ba974422f977ede6f0addb29b687331ad"
+    }
+  },
+  "training": {
+    "pairs": 100,
+    "visitsPerSample": 50,
+    "order": "alternating_declared_sample_order",
+    "seed": 20260929,
+    "supportStructureWeight": 0.1,
+    "checkpointSelection": "final_step_only",
+    "observations": [
+      0,
+      25,
+      50,
+      75,
+      100
+    ]
+  },
+  "resources": {
+    "maxWallSeconds": 900,
+    "cudaMemoryFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumTemperatureC": 85,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2,
+    "automaticRetries": 0
+  },
+  "assessment": {
+    "purpose": "Simultaneous full-RGB fitting of two existing train maps; not proof of complete object alignment or generalization.",
+    "sample149": {
+      "observedTreeInstances": [
+        29,
+        30
+      ],
+      "unresolvedRockInstances": [
+        39,
+        43
+      ],
+      "notes": "Visible tree/ground-anchor relationship inspected; no full canopy segmentation. Rock cores on ground beside visible rocks remain ambiguous."
+    },
+    "sample164": {
+      "rockInstances": [
+        36,
+        38,
+        51
+      ],
+      "treeInstances": [
+        1,
+        9,
+        40
+      ],
+      "unresolvedInstances": [
+        2,
+        15,
+        20,
+        41
+      ]
+    },
+    "wholeMapSemanticQualification": false,
+    "alignmentConcernsResolved": false
+  },
+  "modelArchitectureChanged": false,
+  "lossChanged": false,
+  "gradientThresholdChanged": false,
+  "sourceImagesOrConditionsChanged": false,
+  "validationContentAllowed": false,
+  "checkpointPromotable": false,
+  "runtimePublicationAllowed": false,
+  "automaticResumeAllowed": false,
+  "parentExecutionPermissionInherited": false,
+  "arm": "routed",
+  "backwardRoutingChanged": true,
+  "candidateId": "object_support_terrain_gradient_device_v1",
+  "comparisonPurpose": "same_parent_same_seed_equal_100_pairs_only_support_terrain_derivative_differs",
+  "cpuCandidateEvidence": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/terrain-gradient-routing-046-20261026/controller-assessment.json",
+    "sha256": "a4f7348776e91fd8c56ba8921b058f243ba5cddc647a1d8d14333901644f7145"
+  }
+}

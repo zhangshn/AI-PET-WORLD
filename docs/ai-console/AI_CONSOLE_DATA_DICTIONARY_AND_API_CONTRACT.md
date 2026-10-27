@@ -1,10 +1,14 @@
 # AI控制台数据字典与API合同
 
-更新时间：2026-10-19 19:56:46 +08:00
+更新时间：2026-10-26 15:26:19 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-DATA-API-1.27`
+文档版本：`AI-CONSOLE-DATA-API-1.28`
+
+替代版本：`AI-CONSOLE-DATA-API-1.27`
+
+治理依据：[执行治理](../../AGENTS.md)、[主体职责与权威顺序](../DOCUMENT_AUTHORITY_INDEX.md#gov-owner-001owner不进入本地ai正常运行状态机)（`GOV-OWNER-001`）。
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
@@ -13,6 +17,8 @@ Codex等外部执行智能体不得超出当前用户任务范围；本地程序
 本文定义AI控制台统一字段语义、连接状态、只读页面查询合同、错误语义和未来业务投影接入要求。
 
 1.25及1.26原始字节分别保留于[1.25快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.25-ba06d31d.txt)和[1.26快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.26-bbf615ce.txt)，仅供对应历史复核；当前接口以本版合同为准，不回退历史规范建立执行资格。
+
+1.27原始字节保留于[1.27快照](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.27-d43d4143.txt)，冻结运行仍按原字节复核。
 
 训练接口接入遵循AI Painter主体规格15.4节：既有四类当前／历史／详情／制品GET与响应Schema保持，新增候选不新增API。新协议从同Run不可变包、计划及执行策略的`interfaceContract`读取，不从当前入口表重选历史身份；服务端只解释支持的协议及实现，不能信任任意Schema字符串。旧协议保留显式历史兼容表，不能据其授予新路线资格。进度、预览和计时共同验证候选、模型、输出根及策略绑定，不分别维护新候选名称名单。缺失、未知、冲突和过期分别投影；未登记图片不因磁盘存在而自动取得展示资格，GET不补证据或触发训练。
 
@@ -158,6 +164,49 @@ trainingPresentation
 6. 新能力接入验收必须证明受管实际运行→当前接口→首页／全局摘要／AP-03一致、结束后非活动、失败保留、未上报不猜测、断线恢复、旧协议兼容、越界／错绑／SHA冲突拒绝及GET无写入。每种已登记计划协议均须覆盖同目录多份合法元数据、重复／冲突计划、不同能力身份与不同上限；不得以接口200或主登记connected替代训练摘要及currentMetrics可用。真实活动计数递增与浏览器显示分别验证，未验证部分不能声明交付完成。不修改活动训练绑定的源码／合同；若观察文件被该执行冻结，改动等待终态或使用已有不在绑定集内的只读投影边界。训练不依赖控制台、浏览器或Codex在线。
 
 本例外只扩展当前执行GET及其共享只读投影；`observability/live`、资源采样和SQLite训练遥测写入边界不变。历史图片及日志仍从history API按真实制品身份和SHA读取，不生成逐步作画动画，不承诺未保存的图可见。
+
+#### 3.2.2.3 TRAIN-OBS-001 公共训练观测合同
+
+本条定义生产者到当前执行、历史列表、详情、制品及工作台账的共同观测协议。既有GET、响应Schema和第3.2.2.2节受管协议继续有效，不增加HTTP写入口、第二后台或候选名称名单。新实验的训练算法及执行资格仍由原机器政策定义；观测合同不调整数据、Loss、审核、资源或发布权威。
+
+**合同声明与身份链。** 唯一声明字段仍为不可变执行包中的`interfaceContract`。观测v2使用`schemaVersion=ai-painter-training-interface-contract-v2`及`purpose=observation_only`，是同一接口合同的版本演进，不与v1执行政策建立并列权威；v1按原政策读取器解释。不能以字段优先级静默合并两个合同。新记录由`training-observation-recorder-v1`生成，公共消费者按受支持协议解释，不按实验、模型或候选名称适配；任意包Schema字符串本身不产生兼容性或执行权限。已声明合同但版本未知、值为空或结构损坏时不得回退成旧格式。
+
+| 生产字段 | 类型及空值 | 唯一来源与语义 |
+|---|---|---|
+| `interfaceContract.schemaVersion / purpose / producerVersion` | 固定协议字符串，不为空 | 执行包生产者在冻结前声明；公共消费者核验支持版本 |
+| `interfaceContract.producer` | `{path,sha256}`，不为空 | 实际记录器实现的冻结摘要；必须出现在同包`programs`中；不能以格式正确的摘要代替实际执行端源码核验 |
+| `recordFile / progressFile` | 固定相对文件名，不为空 | 分别为`training-observation.json`、`progress.json`；归属本包已登记`outputRoot`，不接受任意路径模板 |
+| `resolution` | `[width,height]`，不为空 | 原训练计划的冻结输出尺寸；公共协议只验证整数范围，不改变模型输出目标 |
+| `samples` | 1—128个样本，不为空 | 每项`sampleId`唯一，保留真实`split`、原图及可空条件包的SHA绑定；不因显示而改变split用途 |
+| `optimizerStepCeiling` | `{generator,discriminator}`，不为空 | 复制原路线的分别上限，不以公共协议通用限额增大原预算；不得由轮数反推实际步数 |
+| `artifactPlan` | 1—2303个有界计划项，不为空 | 角色、样本、split、优化步及`measurementScope`的明确组合；禁止重复、错样本或超过冻结上限 |
+| 终态`executionPackage / trainingObservation / result` | SHA绑定；缺失有独立缺口 | 已提交登记／任务胶囊核验同Run包，再核验原终态、原结果与观测记录的相互绑定；同义绑定冲突必须拒绝 |
+
+`trainingObservation`的记录Schema为`ai-painter-training-observation-v1`，由worker记录器写入，包含`runId`、`executionPackage`、`producerVersion`、`recordedAtUtc`、`executionState`、分别记录的`optimizerSteps`、`qualificationGranted=false`、`workerTiming`、`artifacts`及最多8项固定次错码`secondaryErrors`。包、原终态、原结果和观测的身份、计数或状态冲突不能靠选择一个字段消除。正常终态与观测完整度分别呈现，`connected`只表示这份观察读取成功，不表示训练、画质或发布资格通过。
+
+**时间字段与范围。** 时间由对应本地程序实际测量并保留原始UTC；`elapsedSeconds`只来自该程序单调时钟，列表、详情和当前摘要使用同一核验结果。时间字段为`startedAtUtc`、可空`endedAtUtc`、可空`elapsedSeconds`、`status`及固定`scope`；缺失、仅开始、失败结束和完整结束分开，不以登记时间、mtime、心跳、UTC差值或另一进程的耗时替代。
+
+| 计时范围 | 固定`scope` | 起止及显示规则 |
+|---|---|---|
+| worker | `worker_data_model_loading_updates_checkpoint_validation_before_result_publication` | 从数据与模型加载前，到原有同进程检查、更新、Checkpoint及重载验证处理结束，结果发布前；含该区间内原定零更新检查，不是纯GPU耗时 |
+| 控制器 | `controller_after_cpu_preparation_before_terminal_registration` | CPU准备完成后至控制器终态登记前，保留于原终态`controllerExecutionTiming`；可与worker重叠，不相加为总耗时 |
+| 单张预测图 | `prediction_forward_cpu_transfer_png_encoding_and_publication` | 原计划预测前向、CPU传输、PNG编码与保存；每张图自己的区间，不使用整轮耗时 |
+
+当前可替换进度Schema为`ai-painter-training-observation-progress-v1`，保留同Run／包／能力身份、执行包回指、`updatedAtUtc`、阶段、分别的真实G／D计数及仅开始的worker时钟。步数型实验的epoch保持null，不把步数改称轮数。当前读取仍执行正式登记、进程创建身份、锁和心跳核验，使用120秒进度及15秒心跳期限，过期不借用历史或SQLite。没有额外前向、反向、优化步或新遥测写入器。
+
+公共v2进度的`phase`区分`loading`、`zero_update_gpu`、`training`和`checkpoint`；它不等于表示进程活动的`executionState`。共同投影把加载及零更新阶段标为`currentMetrics.phase=preparing`，界面显示尚未开始训练；`training`且存在实际更新时才显示优化训练，Checkpoint处理显示验证。真实0步可展示为0，但不得从PID、GPU占用或执行状态`executing`推断权重已经更新。原v1阶段语义保持。
+
+公共记录器建立后、数据加载前即尝试发布0步`loading`快照，调用方不必另行补一次启动上报。快照必须携带正式登记的`processId`与`processStartIdentity`，消费者逐项核对活动登记、锁、心跳及进度；字段缺失或不一致不认作当前训练。首次上报的文件占用等采集错误作为有限`secondaryErrors`保留，不替代原训练错误。此接线修订只作用于重新计算源码身份的新包；已结束旧包保持原字节和原采集缺口，不补造旧进度。
+
+控制器确认终止后可把最后进度按实际字节SHA登记为`lastWorkerProgress`；它只证明最后一次成功上报的计数、worker开始及明确绑定的已存图片。突发中断没有worker最终记录时，worker结束和最终耗时保持null；控制器自己的结束不能替代。已有但未绑定的文件不能靠扫描补入。旧单图结果中已记录的`result.elapsedSeconds`只能作为`experimentTiming`单独投影，其起止保持未知，不改写旧证据或冒充完整worker计时。
+
+**制品、指标与日志。** 观测制品项使用`role`、`binding={path,sha256}`、`optimizerStep`及适用的`sampleId / split / measurementScope / resolution / imageTiming`。支持预测图、诊断拼图、指标、Checkpoint元数据和安全程序事件；原图与条件来自冻结样本。预测和拼图用途分别保留，不以文件名猜关系。图片响应前重新核对字节SHA、PNG签名和该图冻结尺寸。Checkpoint只展示绑定与文件元数据，查询不反序列化或下载权重，也不把元数据核对称为权重字节复核。
+
+指标只公开有界、有限数值／布尔值、null及受支持的缺失原因；空指标、未记录或异常对象必须形成缺口，不能返回完整观察。保持训练分项Loss与评估误差的各自`measurementScope`，不混为同一评分。程序日志只公开固定事件码、阶段、计数、原始时间和证据来源；不透传stderr、任意异常文本、环境、凭据或整份JSON。原始首错留在原证据，公开结果和终态制品使用受控字段预览。原图、结果、指标或日志的缺失／坏SHA只影响对应观察项，不能抹掉已提交终态、登记事件和其他可核验内容。
+
+**限额与提交。** 包至多2MiB，公共观测记录与原结果各至多512KiB，当前进度及安全程序事件各至多64KiB，单份指标至多32KiB；同次公共详情JSON读取合计至多8MiB。观测制品至多2304项，公共安全事件至多512项；现有分页默认20、最大50和图片16MiB上限不变。原训练资源上限仍是更早生效的约束，观测限额不扩大它。图片／指标先完整保存再登记绑定，观测记录先封存，原结果和终态随后绑定，最终由原事务登记器发布；当前进度单写者同目录替换，发布失败保留最后成功快照。采集及台账次错独立记录，不冒充模型数值首错、不主动中止已合法运行的训练，也不触发重训；原资源、身份和数值检查继续按原合同停止。
+
+**接入验收。** CPU验收须用至少两种不同路线名称沿同一公共协议覆盖启动、完成、失败、中断、未知协议、空／坏记录、跨Run、坏SHA、丢块、空指标及敏感字段拒绝；同时验证列表／详情／当前摘要一致、完整分页、图片实际响应、URL刷新与固定链接、GET无写入。自动工作事件另按[LB-WORK-005](../LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md#lb-work-005-训练终态公共接口与交付水位)验证原始时间、接收时间、重启、重复、历史缺口与实时交付。CPU夹具、真实历史兼容、常驻源码采用和后继真实训练的完整生产交付分别给出证据；不得以组件通过或旧Run的图片可查替代新生产路线验收。
 
 ### 3.2.3 V22训练历史与精确制品查询
 

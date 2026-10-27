@@ -15,6 +15,9 @@ import {
 } from "./projection-contract"
 
 type JsonRecord = Record<string, unknown>
+type BoundTrainingPresentation = Awaited<ReturnType<typeof readBoundTrainingPresentation>>
+type CompletionObservation = NonNullable<Awaited<ReturnType<typeof readCompletionTrainingObservation>>>
+type TrainingPresentation = BoundTrainingPresentation | (Omit<BoundTrainingPresentation, keyof CompletionObservation> & CompletionObservation)
 
 export type AiPainterMachineReviewNode = {
   epoch: number
@@ -86,7 +89,7 @@ export type AiPainterCurrentExecutionSnapshot = {
   } | null
   selectedHistoricalRun: JsonRecord | null
   machineReview: AiPainterMachineReviewSummary
-  trainingPresentation: Awaited<ReturnType<typeof readBoundTrainingPresentation>> | null
+  trainingPresentation: TrainingPresentation | null
   recordedAtUtc: string | null
   recordedAtAsiaShanghai: string | null
   observedAtUtc: string

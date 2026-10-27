@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "single149-terrain-ecology-fit-policy-v2",
+  "sampleId": "ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v3",
+  "modelCapability": "stage4_mvp256_dry_terrain_ecology_stem_decoder_precision_v1",
+  "parentExperiment": {
+    "package": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/package.json",
+      "sha256": "41bf35d3f30a2ee4e6286041ed859a3e83a82c05ccb8b0461de6271cc6455291"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/terminal.json",
+      "sha256": "8c576f90fe4d67fa276968edd0ecdac0d038abdc0ef5fa3aab22bd254bc8cf4d"
+    },
+    "result": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/result.json",
+      "sha256": "c315800abf1bdda2f10a9b960a64069f3fa9d841b5cef8d07d0b73d06f7d5622"
+    },
+    "checkpoint": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/checkpoint-final.pt",
+      "sha256": "20c83c99b029d983a2bd15a9774d372abbd9c8bbf5f20626e90aaa4d276d8aef"
+    },
+    "prediction": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/prediction-149-448.png",
+      "sha256": "c4bb12fbf3c01219211d43b73e3094a1cdc60eb11e243a9c40c11afe6f38dd46"
+    }
+  },
+  "diagnostics": {
+    "allSamples": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/terrain-ecology-all-samples-079-20261027/result.json",
+      "sha256": "95f75c70b39a9553ae0c849bbc08e485e91c42b48bc05c75480ef497adf229bf"
+    },
+    "control": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/terrain-ecology-post-analysis-078-20261027/result.json",
+      "sha256": "eed7f2f0af8866f7698a8207e827564d3f8924a97ecdbc2a158bfe3893cb8ec4"
+    },
+    "headFit": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/fixed-feature-object-fit-081-20261027/result.json",
+      "sha256": "97e97710f08be94e494ad80e671aceca5909725c34d89ab4610d12291c7e24ce"
+    }
+  },
+  "training": {
+    "pairs": 200,
+    "seed": 20260929,
+    "supportStructureWeight": 0.1,
+    "checkpointSelection": "final_step_only",
+    "observations": [
+      0,
+      25,
+      50,
+      100,
+      150,
+      200
+    ]
+  },
+  "resources": {
+    "maxWallSeconds": 1800,
+    "cudaMemoryFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumTemperatureC": 85,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2,
+    "automaticRetries": 0
+  },
+  "initialization": "exact_completed_terrain_ecology_generator_and_critic_fresh_original_AdamW",
+  "zeroUpdateAdmission": "selected_train149_original_five_gradient_gate_before_any_update",
+  "modelArchitectureChanged": false,
+  "lossChanged": false,
+  "gradientThresholdChanged": false,
+  "sourceImagesOrConditionsChanged": false,
+  "validationContentAllowed": false,
+  "checkpointPromotable": false,
+  "runtimePublicationAllowed": false,
+  "automaticResumeAllowed": false,
+  "parentExecutionPermissionInherited": false,
+  "failedAttempt": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/single149-terrain-ecology-v1-e22938bce48bf94fd25a/terminal.json",
+    "sha256": "fed36216697f4bbc307a0d4f0a177759f95525b5f54991569f54b8094ad2ca5f"
+  },
+  "sourceClosureProof": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/single149-full-fit-082-20261027/source-diagnostic/result.json",
+    "sha256": "363e183b6567173a1033a1ec2ed0891cf6e201169e4bad0aceb92c2e2e992fea"
+  }
+}

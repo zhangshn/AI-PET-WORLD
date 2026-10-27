@@ -18,6 +18,9 @@ from ai_painter.complete_world.final_rgb_base_weight_reduction_precision_v1 impo
 from ai_painter.complete_world.decode1_entry_weight_reduction_precision_v1 import (
     Decode1EntryWeightReductionConv, Decode2EntryWeightReductionConv,
     NUMERIC_RULE as WEIGHT_RULE, DECODE2_NUMERIC_RULE)
+from ai_painter.complete_world.stem_weight_reduction_precision_v1 import StemWeightReductionConv, NUMERIC_RULE as STEM_WEIGHT_RULE
+from ai_painter.complete_world.stem_inner_weight_reduction_precision_v1 import StemInnerWeightReductionConv, NUMERIC_RULE as STEM_INNER_WEIGHT_RULE
+from ai_painter.complete_world.decode2_inner_weight_reduction_precision_v1 import Decode2InnerWeightReductionConv, NUMERIC_RULE as DECODE2_INNER_WEIGHT_RULE
 from ai_painter.complete_world.stage4_semantic_transport_v2 import FORMAL_CONDITION_CHANNEL_ORDER
 
 CAPABILITY = "stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1"
@@ -36,12 +39,29 @@ RGB_OUTPUT_RULE = DECODE2_RULE + "|" + OUTPUT_NUMERIC_RULE
 RGB_OUTPUT_TARGET = "core.core.final_rgb_decoder.base.layers.4"
 
 
-def identity_bytes(kind, decode2=False, rgb_output=False):
+STEM_CAPABILITY = "stage4_mvp256_dry_factorized_ecology_stem_weight_precision_v1"
+STEM_ARCHITECTURE = ARCHITECTURE + "_stem_weight_fp64_v1"
+STEM_RULE = NUMERIC_RULE + "|" + STEM_WEIGHT_RULE
+STEM_TARGET = "core.core.terrain.base_stem.layers.0"
+STEM_PAIR_CAPABILITY = "stage4_mvp256_dry_factorized_ecology_stem_pair_weight_precision_v1"
+STEM_PAIR_ARCHITECTURE = STEM_ARCHITECTURE + "_stem_inner_weight_fp64_v1"
+STEM_PAIR_RULE = STEM_RULE + "|" + STEM_INNER_WEIGHT_RULE
+STEM_INNER_TARGET = "core.core.terrain.base_stem.layers.3"
+STEM_DECODER_CAPABILITY = "stage4_mvp256_dry_factorized_ecology_stem_pair_decode2_inner_weight_precision_v1"
+STEM_DECODER_ARCHITECTURE = STEM_PAIR_ARCHITECTURE + "_decode2_inner_weight_fp64_v1"
+STEM_DECODER_RULE = STEM_PAIR_RULE + "|" + DECODE2_INNER_WEIGHT_RULE
+DECODE2_INNER_TARGET = "core.core.terrain.decode_2.layers.3"
+
+
+def identity_bytes(kind, decode2=False, rgb_output=False, stem=False, stem_inner=False, decode2_inner=False):
     require(kind in ("regime", "numeric", "ecology"), "unknown decode1 entry identity kind")
     require(not rgb_output or decode2, "RGB output successor requires decode2 parent")
-    text = "|".join((kind, RGB_OUTPUT_CAPABILITY if rgb_output else DECODE2_CAPABILITY if decode2 else CAPABILITY,
-        RGB_OUTPUT_ARCHITECTURE if rgb_output else DECODE2_ARCHITECTURE if decode2 else ARCHITECTURE,
-        RGB_OUTPUT_RULE if rgb_output else DECODE2_RULE if decode2 else NUMERIC_RULE, *SEASONS, *ECOLOGIES))
+    require(not decode2_inner or stem_inner, "decode2 inner requires stem pair identity")
+    require(not stem_inner or stem, "stem inner requires stem pair identity")
+    require(not stem or not (decode2 or rgb_output), "stem candidate requires original decode1 parent")
+    text = "|".join((kind, STEM_DECODER_CAPABILITY if decode2_inner else STEM_PAIR_CAPABILITY if stem_inner else STEM_CAPABILITY if stem else RGB_OUTPUT_CAPABILITY if rgb_output else DECODE2_CAPABILITY if decode2 else CAPABILITY,
+        STEM_DECODER_ARCHITECTURE if decode2_inner else STEM_PAIR_ARCHITECTURE if stem_inner else STEM_ARCHITECTURE if stem else RGB_OUTPUT_ARCHITECTURE if rgb_output else DECODE2_ARCHITECTURE if decode2 else ARCHITECTURE,
+        STEM_DECODER_RULE if decode2_inner else STEM_PAIR_RULE if stem_inner else STEM_RULE if stem else RGB_OUTPUT_RULE if rgb_output else DECODE2_RULE if decode2 else NUMERIC_RULE, *SEASONS, *ECOLOGIES))
     return torch.tensor(list(hashlib.sha256(text.encode()).digest()), dtype=torch.uint8, device="cpu")
 
 
@@ -67,11 +87,14 @@ def _fresh_prototype(order):
 
 
 @lru_cache(maxsize=6)
-def _reference(order, decode2=False, rgb_output=False):
+def _reference(order, decode2=False, rgb_output=False, stem=False, stem_inner=False, decode2_inner=False):
     fresh = _fresh_prototype(order)
     graph = tuple((name, tuple(value.shape), value.dtype) for name, value in fresh.named_parameters(remove_duplicate=False))
-    modules = tuple((name, (Decode2OutputWeightPrecisionEcologyRenderer if rgb_output else Decode2EntryWeightPrecisionEcologyRenderer if decode2 else Decode1EntryWeightPrecisionEcologyRenderer)
+    modules = tuple((name, (StemDecoderWeightPrecisionEcologyRenderer if decode2_inner else StemPairWeightPrecisionEcologyRenderer if stem_inner else StemWeightPrecisionEcologyRenderer if stem else Decode2OutputWeightPrecisionEcologyRenderer if rgb_output else Decode2EntryWeightPrecisionEcologyRenderer if decode2 else Decode1EntryWeightPrecisionEcologyRenderer)
                     if not name else Decode1EntryWeightReductionConv if name == TARGET
+                    else Decode2InnerWeightReductionConv if decode2_inner and name == DECODE2_INNER_TARGET
+                    else StemInnerWeightReductionConv if stem_inner and name == STEM_INNER_TARGET
+                    else StemWeightReductionConv if stem and name == STEM_TARGET
                     else Decode2EntryWeightReductionConv if decode2 and name == DECODE2_TARGET
                     else FinalRgbOutputWeightReductionConv if rgb_output and name == RGB_OUTPUT_TARGET else cls, config)
                     for name, cls, config in base._module_graph(fresh))
@@ -132,7 +155,10 @@ class Decode1EntryWeightPrecisionEcologyRenderer(nn.Module):
         for name, kind in (("regime_identity", "regime"), ("numeric_identity", "numeric"), ("ecology_identity", "ecology")):
             require(torch.equal(state_dict[name], identity_bytes(kind,
                     type(self) in (Decode2EntryWeightPrecisionEcologyRenderer, Decode2OutputWeightPrecisionEcologyRenderer),
-                    type(self) is Decode2OutputWeightPrecisionEcologyRenderer)),
+                    type(self) is Decode2OutputWeightPrecisionEcologyRenderer,
+                    type(self) in (StemWeightPrecisionEcologyRenderer, StemPairWeightPrecisionEcologyRenderer, StemDecoderWeightPrecisionEcologyRenderer),
+                    type(self) in (StemPairWeightPrecisionEcologyRenderer, StemDecoderWeightPrecisionEcologyRenderer),
+                    type(self) is StemDecoderWeightPrecisionEcologyRenderer)),
                     "entry old/wrong identity state rejected")
         verified = {key: value.detach().clone() for key, value in state_dict.items()}
         saved = {key: value.detach().clone() for key, value in expected.items()}
@@ -200,18 +226,60 @@ class Decode2OutputWeightPrecisionEcologyRenderer(Decode2EntryWeightPrecisionEco
             self._buffers[name] = identity_bytes(kind, True, True)
 
 
+class StemWeightPrecisionEcologyRenderer(Decode1EntryWeightPrecisionEcologyRenderer):
+    """Only parameter0 reduction precision differs from the original D1 graph."""
+    capability_version = STEM_CAPABILITY
+    architecture_id = STEM_ARCHITECTURE
+    numeric_rule = STEM_RULE
+
+    def __init__(self, fresh):
+        super().__init__(fresh)
+        self.core = _fork_target(self.core, ("core", "terrain", "base_stem", "layers", "0"), StemWeightReductionConv)
+        for name, kind in (("regime_identity", "regime"), ("numeric_identity", "numeric"), ("ecology_identity", "ecology")):
+            self._buffers[name] = identity_bytes(kind, stem=True)
+
+
+class StemPairWeightPrecisionEcologyRenderer(StemWeightPrecisionEcologyRenderer):
+    """Only parameter0 and parameter4 weight reductions differ from original D1."""
+    capability_version = STEM_PAIR_CAPABILITY
+    architecture_id = STEM_PAIR_ARCHITECTURE
+    numeric_rule = STEM_PAIR_RULE
+
+    def __init__(self, fresh):
+        super().__init__(fresh)
+        self.core = _fork_target(self.core, ("core", "terrain", "base_stem", "layers", "3"), StemInnerWeightReductionConv)
+        for name, kind in (("regime_identity", "regime"), ("numeric_identity", "numeric"), ("ecology_identity", "ecology")):
+            self._buffers[name] = identity_bytes(kind, stem=True, stem_inner=True)
+
+
+class StemDecoderWeightPrecisionEcologyRenderer(StemPairWeightPrecisionEcologyRenderer):
+    """Explicit parameter0,4,44 numeric identity; original FP32 forward graph."""
+    capability_version = STEM_DECODER_CAPABILITY
+    architecture_id = STEM_DECODER_ARCHITECTURE
+    numeric_rule = STEM_DECODER_RULE
+
+    def __init__(self, fresh):
+        super().__init__(fresh)
+        self.core = _fork_target(self.core, ("core", "terrain", "decode_2", "layers", "3"), Decode2InnerWeightReductionConv)
+        for name, kind in (("regime_identity", "regime"), ("numeric_identity", "numeric"), ("ecology_identity", "ecology")):
+            self._buffers[name] = identity_bytes(kind, stem=True, stem_inner=True, decode2_inner=True)
+
+
 def validate_model_identity(model):
+    decode2_inner = type(model) is StemDecoderWeightPrecisionEcologyRenderer
+    stem_inner = decode2_inner or type(model) is StemPairWeightPrecisionEcologyRenderer
+    stem = stem_inner or type(model) is StemWeightPrecisionEcologyRenderer
     rgb_output = type(model) is Decode2OutputWeightPrecisionEcologyRenderer
     decode2 = rgb_output or type(model) is Decode2EntryWeightPrecisionEcologyRenderer
     require(type(model) in (Decode1EntryWeightPrecisionEcologyRenderer, Decode2EntryWeightPrecisionEcologyRenderer,
-                            Decode2OutputWeightPrecisionEcologyRenderer)
-        and model.capability_version == (RGB_OUTPUT_CAPABILITY if rgb_output else DECODE2_CAPABILITY if decode2 else CAPABILITY)
-        and model.architecture_id == (RGB_OUTPUT_ARCHITECTURE if rgb_output else DECODE2_ARCHITECTURE if decode2 else ARCHITECTURE)
-        and model.numeric_rule == (RGB_OUTPUT_RULE if rgb_output else DECODE2_RULE if decode2 else NUMERIC_RULE)
+                            Decode2OutputWeightPrecisionEcologyRenderer, StemWeightPrecisionEcologyRenderer, StemPairWeightPrecisionEcologyRenderer, StemDecoderWeightPrecisionEcologyRenderer)
+        and model.capability_version == (STEM_DECODER_CAPABILITY if decode2_inner else STEM_PAIR_CAPABILITY if stem_inner else STEM_CAPABILITY if stem else RGB_OUTPUT_CAPABILITY if rgb_output else DECODE2_CAPABILITY if decode2 else CAPABILITY)
+        and model.architecture_id == (STEM_DECODER_ARCHITECTURE if decode2_inner else STEM_PAIR_ARCHITECTURE if stem_inner else STEM_ARCHITECTURE if stem else RGB_OUTPUT_ARCHITECTURE if rgb_output else DECODE2_ARCHITECTURE if decode2 else ARCHITECTURE)
+        and model.numeric_rule == (STEM_DECODER_RULE if decode2_inner else STEM_PAIR_RULE if stem_inner else STEM_RULE if stem else RGB_OUTPUT_RULE if rgb_output else DECODE2_RULE if decode2 else NUMERIC_RULE)
         and model.execution_qualified is False and model.parent_checkpoint_loaded is False,
         "decode1 entry exact inactive renderer identity differs")
     require(torch.get_num_threads() <= 2, "decode1 entry CPU threads exceeded")
-    graph, modules, forward, support, aggregation = _reference(tuple(model.condition_channel_order), decode2, rgb_output)
+    graph, modules, forward, support, aggregation = _reference(tuple(model.condition_channel_order), decode2, rgb_output, stem, stem_inner, decode2_inner)
     named, parameters = tuple(model.named_parameters(remove_duplicate=False)), tuple(model.parameters())
     require(tuple((name, tuple(value.shape), value.dtype) for name, value in named) == graph
         and len(named) == len(parameters) == 108 and sum(value.numel() for value in parameters) == 2242687
@@ -234,6 +302,15 @@ def validate_model_identity(model):
     require(named[90][0] == RGB_OUTPUT_TARGET + ".weight" and tuple(named[90][1].shape) == (3,48,1,1)
         and sum(type(module) is FinalRgbOutputWeightReductionConv for module in model.modules()) == int(rgb_output),
         "RGB output exact target/config differs")
+    require(named[0][0] == STEM_TARGET + ".weight" and tuple(named[0][1].shape) == (48,31,3,3)
+        and sum(type(module) is StemWeightReductionConv for module in model.modules()) == int(stem),
+        "stem exact target/config differs")
+    require(named[4][0] == STEM_INNER_TARGET + ".weight" and tuple(named[4][1].shape) == (48,48,3,3)
+        and sum(type(module) is StemInnerWeightReductionConv for module in model.modules()) == int(stem_inner),
+        "stem inner exact target/config differs")
+    require(named[44][0] == DECODE2_INNER_TARGET + ".weight" and tuple(named[44][1].shape) == (96,96,3,3)
+        and sum(type(module) is Decode2InnerWeightReductionConv for module in model.modules()) == int(decode2_inner),
+        "decode2 inner exact target/config differs")
     require(model._parent_forward is forward and model.support_ownership_rule == support and model.object_aggregation_rule == aggregation,
             "decode1 entry inherited pure forward/ownership differs")
     require(tuple(name for name, _ in model.named_buffers()) == ("regime_identity", "numeric_identity", "ecology_identity"),
@@ -241,7 +318,7 @@ def validate_model_identity(model):
     for name, kind in (("regime_identity", "regime"), ("numeric_identity", "numeric"), ("ecology_identity", "ecology")):
         value = getattr(model, name)
         require(type(value) is torch.Tensor and value.device == parameters[0].device and value.dtype == torch.uint8
-            and value.shape == (32,) and torch.equal(value.detach().cpu(), identity_bytes(kind, decode2, rgb_output)), "decode1 entry identity buffer differs")
+            and value.shape == (32,) and torch.equal(value.detach().cpu(), identity_bytes(kind, decode2, rgb_output, stem, stem_inner, decode2_inner)), "decode1 entry identity buffer differs")
     return model
 
 
@@ -280,3 +357,50 @@ def seasonal_parameter(model):
 def ecological_parameter(model):
     validate_model_identity(model)
     return model.get_submodule(ecology.TARGET).ecology_branch.weight
+
+
+def build_fresh_object_ecology_stem_weight_precision(*, condition_channel_order=FORMAL_CONDITION_CHANNEL_ORDER):
+    require(torch.get_num_threads() <= 2, "stem CPU construction threads exceeded")
+    with torch.device("cpu"), torch.random.fork_rng(devices=[]):
+        torch.random.default_generator.manual_seed(INITIALIZATION_SEED)
+        fresh = deepcopy(_fresh_prototype(tuple(condition_channel_order)))
+        model = StemWeightPrecisionEcologyRenderer(fresh)
+    return validate_model_identity(model)
+
+
+def build_fresh_object_ecology_stem_pair_weight_precision(*, condition_channel_order=FORMAL_CONDITION_CHANNEL_ORDER):
+    require(torch.get_num_threads() <= 2, "stem pair CPU construction threads exceeded")
+    with torch.device("cpu"), torch.random.fork_rng(devices=[]):
+        torch.random.default_generator.manual_seed(INITIALIZATION_SEED)
+        fresh = deepcopy(_fresh_prototype(tuple(condition_channel_order)))
+        model = StemPairWeightPrecisionEcologyRenderer(fresh)
+    return validate_model_identity(model)
+
+
+def build_fresh_object_ecology_stem_decoder_weight_precision(*, condition_channel_order=FORMAL_CONDITION_CHANNEL_ORDER):
+    require(torch.get_num_threads() <= 2, "stem decoder CPU construction threads exceeded")
+    with torch.device("cpu"), torch.random.fork_rng(devices=[]):
+        torch.random.default_generator.manual_seed(INITIALIZATION_SEED)
+        fresh = deepcopy(_fresh_prototype(tuple(condition_channel_order)))
+        model = StemDecoderWeightPrecisionEcologyRenderer(fresh)
+    return validate_model_identity(model)
+
+
+def migrate_original_d1_parameters_to_stem(model, *, stem_inner=False, decode2_inner=False):
+    """Explicit numeric-identity migration; no training/release qualification inherited."""
+    validate_model_identity(model)
+    require(type(model) is Decode1EntryWeightPrecisionEcologyRenderer and next(model.parameters()).device.type == "cpu",
+            "migration requires original D1 CPU source")
+    require(not decode2_inner or stem_inner, "decoder migration requires stem pair")
+    factory = build_fresh_object_ecology_stem_decoder_weight_precision if decode2_inner else build_fresh_object_ecology_stem_pair_weight_precision if stem_inner else build_fresh_object_ecology_stem_weight_precision
+    successor = factory(condition_channel_order=model.condition_channel_order)
+    target_state = {name: value.detach().clone() for name, value in successor.state_dict().items()}
+    source_state = {name: value.detach().clone() for name, value in model.state_dict().items()}
+    for name, value in model.named_parameters():
+        require(name in target_state and target_state[name].shape == value.shape, "migration parameter graph differs")
+        target_state[name] = value.detach().clone()
+    successor.load_state_dict(target_state, strict=True)
+    require(all(torch.equal(value.detach(), dict(successor.named_parameters())[name].detach())
+                for name, value in model.named_parameters()), "migration parameter bytes differ")
+    require(all(torch.equal(value, model.state_dict()[name]) for name, value in source_state.items()), "migration changed source")
+    return successor

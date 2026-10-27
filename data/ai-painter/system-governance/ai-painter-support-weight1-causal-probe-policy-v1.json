@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "support-weight1-causal-probe-policy-v1",
+  "sourceTrainingPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-mixed-train-support-weight1-policy-v1.json",
+    "sha256": "2e56d03251d1ad93dfe879a9b1fe231dfbf935c763ac33ca5920af03331c59cf"
+  },
+  "sourceFailureTerminal": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-support-weight1-v1-bcf0a72c16d2cd6d797a/terminal.json",
+    "sha256": "6759eb5df5bf29202b1d529e5c6869ce3fabbd956a425d04406cd0135808285f"
+  },
+  "sourceFailureTensors": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-support-weight1-v1-bcf0a72c16d2cd6d797a/gradient-failure-tensors.pt",
+    "sha256": "5e83da537e24d49fb2f320d0d026ad67243fc0e0ff5cb142db8bbee0184b6d54"
+  },
+  "sourceAnalysis": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/support-weight1-failure-058-20261027/result.json",
+    "sha256": "7f1bfa0a1c6e37662e0e62137796f4a149b80be59e55e7d473811ec68411e378"
+  },
+  "sampleId": "ai-cold-start-v7-v7-capacity-slot-157-grassland-forest-transition-v2",
+  "initialization": "completed_common_parent_weights_verified_equal_to_zero_update_failure",
+  "coordinate": [
+    13,
+    11,
+    0,
+    0
+  ],
+  "counts": {
+    "generatorForwards": 1,
+    "generatorAutograd": 5,
+    "discriminatorAutograd": 1,
+    "optimizerUpdates": 0
+  },
+  "resources": {
+    "maxWallSeconds": 180,
+    "cudaMemoryFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumTemperatureC": 85,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2,
+    "automaticRetries": 0
+  },
+  "trainingAllowed": false,
+  "historicalReplayClaimed": false,
+  "formalQualificationGranted": false,
+  "preparationMaxWallSeconds": 300
+}

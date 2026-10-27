@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "two-map-checkpoint-fit-policy-v2",
+  "purpose": "train_only_learning_capacity_no_generalization_claim",
+  "sampleIds": [
+    "ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v3",
+    "mvp64-slot164-objects-v5-20261020"
+  ],
+  "sourceRunId": "d1-src-v1-850c25f8-8181-446e-99da-3dae2dbb21a8",
+  "initialization": "exact_completed_single_map_v2_generator_and_critic_weights_fresh_original_AdamW",
+  "parentExperiment": {
+    "package": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single-map164-v2-deafc24a577b1aafb5fa/package.json",
+      "sha256": "079989a0375582bca129ac068890f29def24dcbf38eaeed034468a569c183adb"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single-map164-v2-deafc24a577b1aafb5fa/terminal.json",
+      "sha256": "fd748b60c5e0725d61cc628b1cf900589fba381ddd76629310709167f895d802"
+    },
+    "result": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single-map164-v2-deafc24a577b1aafb5fa/result.json",
+      "sha256": "67c2f53b773384a935884ad9ebdd2dcde369457c3ad3531dedc8ace47a41e820"
+    },
+    "checkpoint": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single-map164-v2-deafc24a577b1aafb5fa/checkpoint-final.pt",
+      "sha256": "896c76c2689f11013b27ac9bf89f54d0c2052dd6837d3e65139c4de538343d4e"
+    },
+    "prediction": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single-map164-v2-deafc24a577b1aafb5fa/prediction-200.png",
+      "sha256": "326ad9874354f377bd450dbf62c5eb076be8a5132a53e3f22c790903d127328f"
+    }
+  },
+  "training": {
+    "pairs": 200,
+    "visitsPerSample": 100,
+    "order": "alternating_declared_sample_order",
+    "seed": 20260929,
+    "supportStructureWeight": 0.1,
+    "checkpointSelection": "final_step_only",
+    "observations": [
+      0,
+      25,
+      50,
+      100,
+      150,
+      200
+    ]
+  },
+  "resources": {
+    "maxWallSeconds": 1800,
+    "cudaMemoryFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumTemperatureC": 85,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2,
+    "automaticRetries": 0
+  },
+  "assessment": {
+    "purpose": "Simultaneous full-RGB fitting of two existing train maps; not proof of complete object alignment or generalization.",
+    "sample149": {
+      "observedTreeInstances": [
+        29,
+        30
+      ],
+      "unresolvedRockInstances": [
+        39,
+        43
+      ],
+      "notes": "Visible tree/ground-anchor relationship inspected; no full canopy segmentation. Rock cores on ground beside visible rocks remain ambiguous."
+    },
+    "sample164": {
+      "rockInstances": [
+        36,
+        38,
+        51
+      ],
+      "treeInstances": [
+        1,
+        9,
+        40
+      ],
+      "unresolvedInstances": [
+        2,
+        15,
+        20,
+        41
+      ]
+    },
+    "wholeMapSemanticQualification": false,
+    "alignmentConcernsResolved": false
+  },
+  "modelArchitectureChanged": false,
+  "lossChanged": false,
+  "gradientThresholdChanged": false,
+  "sourceImagesOrConditionsChanged": false,
+  "validationContentAllowed": false,
+  "checkpointPromotable": false,
+  "runtimePublicationAllowed": false,
+  "automaticResumeAllowed": false,
+  "parentExecutionPermissionInherited": false,
+  "predecessorAttempt": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/two-map149-164-v1-228ffd2bbc86d1ec26af/terminal.json",
+    "sha256": "708744c4088bfc510dbcd9f287fc8e10db387ba8a7f62de0e4184d13c43afd41"
+  },
+  "successorReason": "Independent new attempt after user cleared competing GPU use; old resource failure retained; no resource threshold or model change."
+}

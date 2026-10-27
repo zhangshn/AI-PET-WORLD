@@ -14,7 +14,8 @@ import painter_stage4_object_support_structure_training_profile_cpu_v1 as cpu_re
 from ai_painter.complete_world.native_rgb_object_support_structure_device_v1 import (
     train_object_support_structure_candidate_objective)
 from ai_painter.complete_world.object_decode1_entry_joint_priority_device_v1 import (
-    MODEL_CAPABILITY, COMPONENTS_IN_ORDER, bind_parameters, compute_generator_candidate_gradients,
+    MODEL_CAPABILITY, COMPONENTS_IN_ORDER, bind_parameters as original_bind_parameters,
+    compute_generator_candidate_gradients as original_compute_generator_candidate_gradients,
     observe_generator_gradients, require)
 from ai_painter.complete_world.object_head_core_priority_update_v24 import commit_generator_step
 
@@ -35,15 +36,36 @@ _critic_state = inherited._critic_state
 _update_discriminator = inherited.core.v21.update_network
 
 
+def bind_parameters(model):
+    from ai_painter.complete_world import terrain_ecology_conditioned_v1 as terrain
+    if type(model) is terrain.TerrainEcologyConditionedRenderer:
+        from ai_painter.complete_world.terrain_ecology_joint_priority_device_v1 import bind_parameters as bind
+        return bind(model)
+    return original_bind_parameters(model)
+
+
+def compute_generator_candidate_gradients(**kwargs):
+    from ai_painter.complete_world import terrain_ecology_conditioned_v1 as terrain
+    if type(kwargs['model']) is terrain.TerrainEcologyConditionedRenderer:
+        from ai_painter.complete_world.terrain_ecology_joint_priority_device_v1 import compute_generator_candidate_gradients as compute
+        return compute(**kwargs)
+    return original_compute_generator_candidate_gradients(**kwargs)
+
+
 def fresh_networks(order, *, model_capability=MODEL_CAPABILITY):
     from ai_painter.complete_world import object_ecology_decode1_entry_weight_precision_v1 as identity
+    from ai_painter.complete_world import terrain_ecology_conditioned_v1 as terrain
     from ai_painter.complete_world.native_rgb_conditional_texture_cpu import build_conditional_texture_discriminator
     require(torch.get_num_threads() <= 2 and inherited.core.TRAINING["initializationSeed"] == 20260929,
         "fixed CPU threads/seed required")
     with torch.device("cpu"), torch.random.fork_rng(devices=[]):
         torch.random.default_generator.manual_seed(20260929)
-        require(model_capability in (identity.CAPABILITY, identity.DECODE2_CAPABILITY, identity.RGB_OUTPUT_CAPABILITY), "unknown numeric model identity")
-        factory = (identity.build_fresh_object_ecology_decode2_output_weight_precision
+        require(model_capability in (identity.CAPABILITY, identity.DECODE2_CAPABILITY, identity.RGB_OUTPUT_CAPABILITY, identity.STEM_CAPABILITY, identity.STEM_PAIR_CAPABILITY, identity.STEM_DECODER_CAPABILITY, terrain.CAPABILITY), "unknown numeric model identity")
+        factory = (terrain.build_fresh_terrain_ecology_conditioned if model_capability == terrain.CAPABILITY
+            else identity.build_fresh_object_ecology_stem_decoder_weight_precision if model_capability == identity.STEM_DECODER_CAPABILITY
+            else identity.build_fresh_object_ecology_stem_pair_weight_precision if model_capability == identity.STEM_PAIR_CAPABILITY
+            else identity.build_fresh_object_ecology_stem_weight_precision if model_capability == identity.STEM_CAPABILITY
+                   else identity.build_fresh_object_ecology_decode2_output_weight_precision
                    if model_capability == identity.RGB_OUTPUT_CAPABILITY else identity.build_fresh_object_ecology_decode2_entry_weight_precision
                    if model_capability == identity.DECODE2_CAPABILITY else identity.build_fresh_object_ecology_decode1_entry_weight_precision)
         model = factory(condition_channel_order=order)
@@ -108,9 +130,14 @@ def _generator_candidate(model, critic, sample, order, prediction, *, support_st
 
 
 def _component_profile(components):
-    require(components is None or components is sys.modules[__name__],
-        "exact decode1 entry training profile required")
-    return sys.modules[__name__]
+    if components is None or components is sys.modules[__name__]:
+        return sys.modules[__name__]
+    import painter_stage4_support_terrain_gradient_training_profile_v1 as routed
+    if components is routed:
+        return routed
+    import painter_stage4_rock_background_training_profile_v1 as background
+    require(components is background, "exact registered background component required")
+    return background
 
 def perform_pair(model, critic, sample, order, generator_optimizer, critic_optimizer,
         counts, ledger_row, resource, forward, after_update=lambda name, loss: None, *, update_limit=UPDATE_LIMIT,
@@ -291,6 +318,15 @@ def zero_update_probe(model, critic, sample, order, resource, forward=None, *, e
                     require(row[active] > 0 and all(row[i] == 0 for i in range(size) if i != active), key + " slice unreachable")
                     require(candidate[index] is value, key + " actual gradient identity changed")
                     norms.append(row)
+                terrain_norms = None
+                from ai_painter.complete_world import terrain_ecology_conditioned_v1 as terrain
+                if type(model) is terrain.TerrainEcologyConditionedRenderer:
+                    value = raw[0][108]; active = int(sample['ecology_regime'].argmax())
+                    require(value is not None and value.shape == (48, 7), 'terrain ecology gradient missing')
+                    terrain_norms = [float(value[:, i].norm()) for i in range(7)]
+                    require(terrain_norms[active] > 0 and all(terrain_norms[i] == 0 for i in range(7) if i != active),
+                            'terrain ecology active category unreachable or inactive category changed')
+                    require(candidate[108] is value, 'terrain ecology actual gradient identity changed')
                 for key, indexes in groups.items():
                     if bool(bound["conditions"][list(order).index(key)].count_nonzero()):
                         require(any(raw[3][i] is not None and bool(raw[3][i].count_nonzero()) for i in indexes)
@@ -301,6 +337,7 @@ def zero_update_probe(model, critic, sample, order, resource, forward=None, *, e
                     "seasonalSliceL2": norms[0], "ecologySliceL2": norms[1], "objectCount": evidence["objectCount"],
                     "callCounts": dict(calls), "cudaRngChecked": device.type == "cuda",
                     "gpuQualificationGranted": False, "trainingGranted": False}
+                if terrain_norms is not None: result['terrainEcologySliceL2'] = terrain_norms
                 resource()
             except BaseException as error:
                 primary = error; raise

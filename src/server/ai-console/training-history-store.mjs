@@ -6,6 +6,9 @@ import { readCurrentExecutionRegistry, CURRENT_EXECUTION_REGISTRY_ROOT as REG } 
 import { adaptLegacyTrainingDetail, legacyRunKind, DRY_RECOVERY_CANDIDATE_SCHEMA, readDryRecoveryCandidate, readCompletionTrainingObservation } from './training-history-detail-adapters.mjs'
 import { readBoundLargeExperimentProjection } from './training-history-large-result-projection.mjs'
 import { HistoryError, requireFact, safePath, bytes } from './training-history-safe-bytes.mjs'
+import { OBSERVATION_CONTRACT, publicObservationTiming, publicControllerTiming, sameBinding } from './training-observation-contract.mjs'
+import { readObservationRecord, readInterruptedObservation, legacySingleMapElapsed } from './training-observation-history.mjs'
+import {publicObservationArtifact} from './training-observation-public-fields.mjs'
 export { HistoryError, safePath, bytes } from './training-history-safe-bytes.mjs'
 
 const JSON_LIMIT = 8 * 1024 * 1024
@@ -115,7 +118,8 @@ async function traverse(root, current) {
       // after it ceases to be current and the last worker pointer is unchanged.
       // These sources never advance latestTrainingTerminal or discover files.
       const candidates = [{ binding: snapshot.latestTrainingTerminal, owned: false }]
-      if (newestOwnTerminal && ['training_pending', 'qualification_pending', 'failed_closed'].includes(snapshot.terminalEvidence.status)) {
+      if (newestOwnTerminal && ['training_pending', 'qualification_pending', 'failed_closed',
+        'experiment_completed_not_formal_qualified','experiment_failed_closed'].includes(snapshot.terminalEvidence.status)) {
         candidates.unshift({ binding: { ...snapshot.terminalEvidence, runId: snapshot.runId }, owned: true })
       }
       for (const { binding, owned } of candidates) {
@@ -124,6 +128,22 @@ async function traverse(root, current) {
         const terminal = (await json(root, binding)).value
         requireFact((terminal.runId ?? terminal.experimentIdentity) === binding.runId && terminal.status === binding.status, 'history_terminal_identity_conflict')
         if (owned) {
+          const observedExperiment=terminal.schemaVersion==='ai-painter-learning-capacity-experiment-terminal-v1'
+            &&['experiment_completed_not_formal_qualified','experiment_failed_closed'].includes(terminal.status)
+          if(observedExperiment) {
+            // A failed admission/launcher need not have performed an update and
+            // must not advance latestTrainingTerminal. Its own committed task
+            // terminal still belongs in history; never borrow the prior Run.
+            if(!terminal.executionPackage)continue // Explicit legacy compatibility remains below.
+            const pkg=(await json(root,terminal.executionPackage,{maximumBytes:2*1024*1024})).value
+            if(!Object.hasOwn(pkg,'interfaceContract'))continue
+            requireFact(terminal.runId===snapshot.runId&&terminal.experimentIdentity===snapshot.runId
+              &&['formalTrainingQualified','formalStageAdvanced','checkpointPromotable','worldEntryAllowed'].every(k=>terminal[k]===false)
+              &&terminal.executionState===(terminal.status==='experiment_failed_closed'?'failed_closed':'completed')
+              &&(pkg.runId??pkg.experimentIdentity)===snapshot.runId&&typeof pkg.outputRoot==='string'
+              &&pkg.outputRoot.startsWith('.runtime/ai-painter/')&&pkg.outputRoot===path.posix.dirname(terminal.executionPackage.path)
+              &&binding.path.startsWith(pkg.outputRoot+'/'),'history_observation_terminal_identity_conflict')
+          } else {
           const dispatch = ['training_pending', 'qualification_pending'].includes(terminal.status)
           const failure = terminal.status === 'failed_closed' && terminal.executionState === 'failed_closed'
             && !terminal.schema && !terminal.schemaVersion
@@ -140,6 +160,7 @@ async function traverse(root, current) {
             && pkg.packageIdentity === terminal.packageId && pkg.capabilityVersion === terminal.capabilityVersion
             && typeof pkg.outputRoot === 'string' && pkg.outputRoot.startsWith('.runtime/ai-painter/')
             && binding.path.startsWith(`${pkg.outputRoot}/`), 'history_execution_package_identity_conflict')
+          }
         }
         records.set(binding.runId, {
           runId: binding.runId, taskId: snapshot.runId === binding.runId ? snapshot.taskId : null,
@@ -215,7 +236,7 @@ export async function listTrainingHistory({ root = historyRoot(), cursor = null,
   const next = offset + limit
   const page = await Promise.all(combined.slice(offset, next).map(async record => ({ ...record,
     ...(await verifiedListReviewSummary(root, record, index.sources)),
-    ...(await verifiedListWorkerTiming(root, record)) })))
+    ...(await verifiedListWorkerTiming(root, record, history.runCapsules.get(record.runId))) })))
   return { ...envelope(history), dataStatus: history.coverageGap || indexIncomplete ? 'partial' : 'connected', reasonCode: history.coverageGap?.reasonCode ?? index.reasonCode ?? (independentConflicts.size ? 'history_independent_run_conflict' : independentRecords.length ? 'history_independent_only_records' : indexIncomplete ? 'history_index_coverage_incomplete' : null), schemaVersion: 'ai_console_training_history_v1', records: page, total: history.coverageGap || indexIncomplete ? null : combined.length, nextCursor: next < combined.length ? Buffer.from(JSON.stringify({ sha256: cursorIdentity, offset: next })).toString('base64url') : null, refreshIntervalMs: 2000,
     indexRevision: index.indexRevision,
     coverage: { scope: 'registered_training_terminals_and_dispatches', revisionsVerified: history.revisionsVerified, verifiedRecordCount: history.records.length,
@@ -231,7 +252,7 @@ export async function listTrainingHistory({ root = historyRoot(), cursor = null,
             logicalPath: source.logicalPath, reasonCode: source.reasonCode })) } },
       detailSupport: 'registry_and_explicit_parent_bound_independent_evidence; overall_index_coverage_may_be_incomplete' } }
 }
-async function verifiedListWorkerTiming(root, record) {
+async function verifiedListWorkerTiming(root, record, capsuleBinding = null) {
   if (!record.terminalBinding) return null
   try {
     // Enrich only this bounded page, not the entire registry traversal. Reuse
@@ -241,6 +262,39 @@ async function verifiedListWorkerTiming(root, record) {
     requireFact((terminal.runId ?? terminal.experimentIdentity) === record.runId
       && (record.terminalStatus === 'independent_evidence_only' || terminal.status === record.terminalStatus),
     'history_terminal_identity_conflict')
+    if (terminal.schemaVersion === 'ai-painter-learning-capacity-experiment-terminal-v1') {
+      let packageBinding = terminal.executionPackage
+      if (capsuleBinding) {
+        const capsule = (await json(root,capsuleBinding,{maximumBytes:128*1024})).value
+        requireFact(capsule.schemaVersion === 'ai-painter-local-task-capsule-v1'
+          && capsule.taskId === capsuleBinding.taskId && capsule.integrity?.status === 'verified'
+          && Array.isArray(capsule.evidence) && capsule.evidence.length <= 128, 'history_capsule_schema_conflict')
+        const packages = capsule.evidence.filter(b=>b.kind==='experiment_0'&&b.sha256Verified===true)
+        requireFact(packages.length===1,'history_package_binding_conflict')
+        if(packageBinding)requireFact(sameBinding(packageBinding,packages[0]),'history_package_binding_conflict')
+        packageBinding=packages[0]
+      }
+      if (packageBinding) {
+        const pkg=(await json(root,packageBinding,{maximumBytes:2*1024*1024})).value
+        requireFact((pkg.experimentIdentity??pkg.runId)===record.runId,'history_package_run_conflict')
+        if (pkg.interfaceContract?.schemaVersion === OBSERVATION_CONTRACT) {
+          const interrupted=await readInterruptedObservation({pkg,packageBinding,runId:record.runId,terminal,
+            readJson:async b=>(await json(root,b,{maximumBytes:65536})).value})
+          if(interrupted) return {workerExecutionTiming:interrupted.workerExecutionTiming,
+            controllerExecutionTiming:publicControllerTiming(terminal,record.terminalBinding)}
+          const {value}=await readObservationRecord({pkg,packageBinding,runId:record.runId,terminal,
+            readJson:async b=>(await json(root,b,{maximumBytes:512*1024})).value})
+          return {workerExecutionTiming:publicObservationTiming(value,terminal.trainingObservation),
+            controllerExecutionTiming:publicControllerTiming(terminal,record.terminalBinding)}
+        }
+        if (Object.hasOwn(pkg,'interfaceContract')) throw new HistoryError('training_observation_contract_unsupported')
+        if (pkg.schemaVersion==='single-map-checkpoint-fit-package-v1'&&terminal.result) {
+          const result=(await json(root,terminal.result,{maximumBytes:512*1024})).value
+          requireFact(result.experimentIdentity===record.runId&&terminal.result.path.startsWith(pkg.outputRoot+'/'), 'history_result_run_conflict')
+          return {experimentTiming:legacySingleMapElapsed(result,terminal.result)}
+        }
+      }
+    }
     const observation = await readCompletionTrainingObservation(root, terminal)
     return observation ? { workerExecutionTiming: observation.workerExecutionTiming,
       ...(observation.workerExecutionTiming.availability !== 'available'
@@ -532,7 +586,7 @@ export async function readTrainingRun(runId, { root = historyRoot(), previewArti
   if (!endpointSchemas) {
     const detail = await adaptLegacyTrainingDetail({ runId, terminal, record, base, capsuleBinding: history.runCapsules.get(runId), taskTerminalBinding: history.runTaskTerminals.get(runId),
       previewReadOptions: { metadataOnly: previewArtifactId === null, artifactId: previewArtifactId },
-      readJson: async binding => (await json(root, binding)).value,
+      readJson: async (binding, maximumBytes = JSON_LIMIT) => (await json(root, binding, {maximumBytes})).value,
       readEvidenceJson: (binding, maximumBytes) => json(root, binding, { cacheParsed: true, maximumBytes }),
       readLargeResultProjection: (binding, request) => readBoundLargeExperimentProjection(root, binding, request),
       makeArtifact: (role, binding, metadata) => artifact(runId, role, binding, metadata),
@@ -592,7 +646,7 @@ export async function readTrainingRunSection(runId, { root = historyRoot(), sect
   const rows = section === 'artifacts' ? [...(detail.record.artifacts ?? [])].sort((a, b) =>
     (artifactOrder[a.role] ?? 4) - (artifactOrder[b.role] ?? 4))
     : section === 'metrics' ? detail.record.metrics ?? []
-      : section === 'events' ? detail.record.events ?? [] : []
+      : section === 'events' ? detail.record.events ?? [] : detail.record.logs ?? []
   const sourceIdentity = hash(JSON.stringify([runId, section, detail.sourceRevision,
     detail.record.terminalBinding?.sha256 ?? null, detail.record.detailCoverage?.indexRevision ?? null,
     (section === 'artifacts' ? rows : detail.record.artifacts)?.map(item => item.artifactId) ?? [], rows.length]))
@@ -608,10 +662,11 @@ export async function readTrainingRunSection(runId, { root = historyRoot(), sect
     requireFact(decoded.sourceIdentity === sourceIdentity, 'history_cursor_revision_conflict')
     offset = decoded.offset
   }
-  const unavailable = section === 'logs' || (section === 'metrics' && detail.unavailableFields?.includes('metrics') && rows.length === 0)
+  const logsMissing = section === 'logs' && detail.record.logs == null
+  const unavailable = logsMissing || (section === 'metrics' && detail.unavailableFields?.includes('metrics') && rows.length === 0)
   const nextOffset = offset + limit
   return { schemaVersion: 'ai_console_training_run_detail_v1', dataStatus: unavailable || detail.dataStatus !== 'connected' ? 'partial' : 'connected',
-    reasonCode: section === 'logs' ? 'history_logs_not_indexed' : unavailable ? detail.reasonCode ?? 'history_section_not_recorded' : detail.reasonCode,
+    reasonCode: logsMissing ? 'history_logs_not_indexed' : unavailable ? detail.reasonCode ?? 'history_section_not_recorded' : detail.reasonCode,
     sourceRevision: detail.sourceRevision, indexRevision: detail.record.detailCoverage?.indexRevision ?? null,
     observedAtUtc: detail.observedAtUtc, record: { runId, terminalStatus: detail.record.terminalStatus },
     section, items: rows.slice(offset, nextOffset), knownItemCount: rows.length,
@@ -637,6 +692,10 @@ export async function readTrainingArtifact(runId, artifactId, options = {}) {
     const png = read.value.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
     const jpeg = read.value[0] === 255 && read.value[1] === 216 && read.value[2] === 255
     requireFact(png || jpeg, 'history_image_signature_invalid')
+    if(item.role==='output'&&detail.record.detailCoverage?.adapter==='training_observation_v1') {
+      requireFact(png&&read.value.length>=24&&Array.isArray(item.resolution)
+        &&read.value.readUInt32BE(16)===item.resolution[0]&&read.value.readUInt32BE(20)===item.resolution[1], 'training_observation_image_dimensions_conflict')
+    }
     return { bytes: read.value, contentType: png ? 'image/png' : 'image/jpeg' }
   }
   if (item.evidenceKind === 'workerExecutionTiming') {
@@ -646,6 +705,13 @@ export async function readTrainingArtifact(runId, artifactId, options = {}) {
     preview.executionPackage = { path: timing.executionPackage.path, sha256: timing.executionPackage.sha256 }
     return { json: { ...item, verificationStatus: 'bytes_verified', byteLength: read.value.length,
       previewStatus: 'controlled_worker_timing_fields_only', truncated: false, text: JSON.stringify(preview, null, 2) } }
+  }
+  if(detail.record.detailCoverage?.adapter==='training_observation_v1') {
+    const value=item.role==='condition'?{}:JSON.parse(read.value.toString('utf8'))
+    const preview=Buffer.from(JSON.stringify(publicObservationArtifact(item.role,value),null,2))
+    return {json:{...item,verificationStatus:'bytes_verified',byteLength:read.value.length,
+      previewStatus:'controlled_training_observation_fields_only',truncated:preview.length>65536,
+      text:preview.subarray(0,65536).toString('utf8')}}
   }
   if (item.evidenceKind === 'dry_recovery_candidate_manifest') {
     const manifest = JSON.parse(read.value.toString('utf8'))

@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "single-map-checkpoint-fit-policy-v2",
+  "purpose": "train_only_learning_capacity_no_generalization_claim",
+  "sampleId": "mvp64-slot164-objects-v5-20261020",
+  "sourceRunId": "d1-src-v1-850c25f8-8181-446e-99da-3dae2dbb21a8",
+  "checkpointSha256": "275886bb27c2ba1942c768f4cbb1bb7fc2c49024509d8b06e2ed6a5f832d49d4",
+  "initialization": "exact_completed_single_map_v1_generator_and_critic_weights_fresh_original_AdamW",
+  "training": {
+    "pairs": 200,
+    "seed": 20260929,
+    "supportStructureWeight": 0.1,
+    "checkpointSelection": "final_step_only",
+    "observations": [
+      0,
+      25,
+      50,
+      100,
+      150,
+      200
+    ]
+  },
+  "resources": {
+    "maxWallSeconds": 1800,
+    "cudaMemoryFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumTemperatureC": 85,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2,
+    "automaticRetries": 0
+  },
+  "assessment": {
+    "rockInstances": [
+      36,
+      38,
+      51
+    ],
+    "treeInstances": [
+      1,
+      9,
+      40
+    ],
+    "unresolvedInstances": [
+      2,
+      15,
+      20,
+      41
+    ],
+    "wholeMapSemanticQualification": false,
+    "meaning": "Full unchanged RGB target; named clear objects are diagnostic observations, unresolved correspondence is retained, no masked-loss substitution."
+  },
+  "modelArchitectureChanged": false,
+  "lossChanged": false,
+  "gradientThresholdChanged": false,
+  "sourceImagesOrConditionsChanged": false,
+  "validationContentAllowed": false,
+  "checkpointPromotable": false,
+  "runtimePublicationAllowed": false,
+  "automaticResumeAllowed": false,
+  "parentExecutionPermissionInherited": false,
+  "parentExperiment": {
+    "package": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single-map164-v1-891acf6750df23c35dba/package.json",
+      "sha256": "6f4c8a8f6893c0115ef26e8f06b2c0c82498e4219e81dc141f5ac074e5749c37"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single-map164-v1-891acf6750df23c35dba/terminal.json",
+      "sha256": "e49f73bf82c15884bf025de46f26ffc689d7caa905fae45ae61bdad9028f592b"
+    },
+    "result": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single-map164-v1-891acf6750df23c35dba/result.json",
+      "sha256": "97228ce782e26b205106b9187e7d26c4e2d31397a5df868da5663249aee54366"
+    },
+    "checkpoint": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single-map164-v1-891acf6750df23c35dba/checkpoint-final.pt",
+      "sha256": "75133e471900ece0dd0de70ba973d2dfa93f957265d93d1c4763983d6392ba4b"
+    },
+    "prediction": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single-map164-v1-891acf6750df23c35dba/prediction-200.png",
+      "sha256": "7814048f09638e6575fc6ab34c8f9496448f7b97f12247aadd3403e8a3c216cb"
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "ai-painter-two-map-post-review-policy-v1",
+  "purpose": "independent_readonly_post_training_review_no_release",
+  "sourceSelection": "current_registry_latest_successful_single149_fit_terminal",
+  "automaticPostReview": true,
+  "trainSampleIds": [
+    "ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v3",
+    "mvp64-slot164-objects-v5-20261020"
+  ],
+  "validationSelection": "all_eight_fixed_source_plan_validation_ids_in_order",
+  "numericReview": {
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+    "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"
+  },
+  "detailReview": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json",
+    "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"
+  },
+  "resources": {
+    "maxWallSeconds": 300,
+    "cpuThreads": 2,
+    "generatorForwards": 10,
+    "maxOutputMiB": 24,
+    "minimumFreeDiskMiB": 2048,
+    "automaticRetries": 0
+  },
+  "gpuAllowed": false,
+  "optimizerUpdates": 0,
+  "sourceMutationAllowed": false,
+  "trainingAllowed": false,
+  "automaticNextTraining": false,
+  "formalQualificationGranted": false,
+  "checkpointPromotable": false,
+  "runtimePublicationAllowed": false,
+  "sourceKind": "single149-fit",
+  "evaluationNote": "149 is the only updated train sample; 164 is a retained train sample; the eight validation samples remain update-free development checks."
+}

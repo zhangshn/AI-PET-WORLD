@@ -8,6 +8,10 @@ import { createWorkLedger, workTimestamp, validateWorkReport } from './work-ledg
 import { hash, need, fields, identity, ModuleError } from './contracts.mjs'
 import { readCurrentExecutionRegistry } from '../ai-painter-current-execution-registry.mjs'
 import { trainingTerminalKind, describeTrainingTerminal } from './training-work-report.mjs'
+import { readSingleMapWorkEvidence } from './single-map-work-evidence.mjs'
+import { createRegistryWorkConsumer } from './work-registry-consumer.mjs'
+import { readTrainingWorkObservation } from './training-work-observation.mjs'
+import { readTwoMapPostReviewWorkEvidence } from './two-map-post-review-work-evidence.mjs'
 
 const PLAN='docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md'
 const SPEC='docs/LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md'
@@ -18,13 +22,16 @@ export const CODEX_REPORTERS=Object.freeze([
   Object.freeze({id:'codex-migration',name:'能力迁移｜本地连续执行',threadId:'01a094ed-39ee-7e60-a949-d726cdda7e09'}),
   Object.freeze({id:'codex-training',name:'训练｜256×192质量改进',threadId:'01a094ed-39ee-7e60-a949-d7183f57a7ce'}),
   Object.freeze({id:'codex-console',name:'控制台｜状态、图像与证据',threadId:'01a07f58-6ad4-77f2-be64-5e470aee4dea'}),
+  Object.freeze({id:'codex-training-interfaces',name:'训练接口｜记录与控制台闭环',threadId:'01a06c76-0c98-7e62-a132-d8035ccbdab0'}),
   Object.freeze({id:'codex-backup',name:'存储备份｜同步、手动备份与查询',threadId:'01a15f92-889e-7772-a395-e8b9e7fe4b5a'})
 ])
-const MAX_JSON=1024*1024, MAX_BATCH=32
+const MAX_JSON=1024*1024
+const MAX_MIXED_PACKAGE_JSON=4*1024*1024
 const knownReason=e=>/^[a-z][a-z0-9_]{0,159}$/.test(e?.message??'')?e.message:/^[A-Z][A-Z0-9_]{0,63}$/.test(e?.code??'')?'work_recording_'+e.code.toLowerCase():'work_recording_unavailable'
 const absent=file=>{try{fs.lstatSync(file);return false}catch(e){if(e.code==='ENOENT')return true;throw e}}
 const same=(a,b)=>path.resolve(a).toLowerCase()===path.resolve(b).toLowerCase()
 const contextKey=Symbol.for('ai-pet-world.local-work-recording.context.v1')
+const implementationVersion='bounded-mixed-package-068-v1'
 function fixtureScope(root) {
   const real=fs.realpathSync(root)
   need(same(path.dirname(real),fs.realpathSync(os.tmpdir()))&&/^local-backup-work-[A-Za-z0-9]+$/.test(path.basename(real)),'work_fixture_scope_required',409)
@@ -54,12 +61,26 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
   }
   function read(logical,expected=null,max=MAX_JSON) {
     const file=physical(logical),before=fs.lstatSync(file)
-    need(before.isFile()&&before.size<=max,'work_evidence_limit',409)
+    const mixedSource=/^\.runtime\/ai-painter\/learning-capacity-experiments\/[A-Za-z0-9-]+\/package\.json$/.test(logical)
+    const programSnapshot=/^\.runtime\/local-backup\/work-recording\/evidence\/program\/[a-f0-9]{64}\.json$/.test(logical)
+    const extended=max===MAX_JSON&&/^[a-f0-9]{64}$/.test(expected??'')&&(mixedSource||programSnapshot)
+    const ceiling=extended?MAX_MIXED_PACKAGE_JSON:max
+    need(before.isFile()&&before.size<=ceiling,'work_evidence_limit',409)
     const bytes=fs.readFileSync(file),after=fs.lstatSync(file),sha256=hash(bytes)
     need(before.ino===after.ino&&before.dev===after.dev&&before.size===after.size&&before.mtimeMs===after.mtimeMs,'work_evidence_changed',409)
     if(expected!==null)need(sha256===expected,'work_evidence_sha_conflict',409)
     let value
     try{value=JSON.parse(bytes.toString('utf8'))}catch{throw new ModuleError('work_evidence_json_invalid',409)}
+    if(bytes.length>max){
+      need(extended&&value.schemaVersion==='mixed-train-rehearsal-package-v1'
+        &&Array.isArray(value.selectedSampleIds)&&value.selectedSampleIds.length===48
+        &&new Set(value.selectedSampleIds).size===48
+        &&value.training?.pairs===448&&value.qualificationGranted===false
+        &&typeof value.experimentIdentity==='string'
+        &&value.outputRoot==='.runtime/ai-painter/learning-capacity-experiments/'+value.experimentIdentity
+        &&(programSnapshot||logical===value.outputRoot+'/package.json'),'work_large_package_identity_invalid',409)
+      if(programSnapshot)need(path.basename(logical)===expected+'.json','work_snapshot_digest_name_conflict',409)
+    }
     return {logicalPath:logical,sha256,bytes,value}
   }
   function ensureDirectory(directory) {
@@ -105,7 +126,7 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
     const relative=typeof error?.path==='string'?path.relative(runtime,error.path):null
     const diagnostic={errorName:typeof error?.name==='string'?error.name.slice(0,80):null,errorCode:typeof error?.code==='string'?error.code.slice(0,80):null,logicalPath:relative&&!relative.startsWith('..')&&!path.isAbsolute(relative)?'.runtime/'+relative.replaceAll('\\','/'):null}
     try{put(path.join(stateRoot,'failures',sourceId+'-'+randomUUID()+'.json'),{schemaVersion:'local_work_recording_failure_v1',sourceId,reasonCode,diagnostic,recordedAtUtc:new Date().toISOString(),businessRetried:false})}catch{/* Original business outcome never depends on this secondary receipt. */}
-    try{saveState(sourceId,{status:'stale',reasonCode,coverage:{complete:false}})}catch{/* An unavailable store remains unavailable, never fake an empty day. */}
+    try{saveState(sourceId,{status:'stale',reasonCode,coverage:{...getState(sourceId).coverage,complete:false}})}catch{/* An unavailable store remains unavailable, never fake an empty day. */}
     return {recorded:false,replayed:false,eventIds:[],reasonCode}
   }
   function planReference(moduleId) {
@@ -187,6 +208,62 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
     if(!binding?.path||!binding.sha256)return null
     need(binding.path.startsWith('.runtime/ai-painter/'),'work_terminal_scope_invalid',409)
     const original=read(binding.path,binding.sha256),v=original.value,schema=v.schema??v.schemaVersion
+    const postReview=readTwoMapPostReviewWorkEvidence({terminal:v,read})
+    if(postReview) {
+      const eventId='program-post-review-v1-'+hash([binding.path,binding.sha256])
+      if(ledger.find(eventId))return {recorded:true,replayed:true,eventIds:[eventId]}
+      const input=baseEvent(eventId,'ai-painter','review-'+v.runId,v.runId,'execution_finished',postReview.executionResult)
+      Object.assign(input,{title:'本地训练后视觉审核（执行与画质分别记录）',originalEventAtUtc:v.recordedAtUtc,
+        originalStartedAtUtc:v.startedAtUtc??null,originalFinishedAtUtc:v.recordedAtUtc,
+        monotonicElapsedMs:Number.isFinite(v.elapsedSeconds)?v.elapsedSeconds*1000:null,
+        reasonCode:v.visualOutcome==='failed'?'visual_review_failed':postReview.executionResult==='failed'?'review_execution_failed':null,
+        sourceReference:{kind:'review_terminal',originId:v.runId,revision:null},
+        evidenceReferences:[original,postReview.pkg,postReview.source,...(postReview.report?[postReview.report]:[])].map(r=>snapshot(r,'program'))})
+      input.workReport={title:input.title,objective:'读取已完成训练的权重，独立检查两张固定训练图和八张验证图。',reason:'训练完成不代表画质通过；后继只读审核独立留档。',
+        actions:['核验来源绑定并执行有界只读推理和视觉组件审核。'],changes:[],
+        checks:[{command:'本地训练后视觉审核',status:postReview.executionResult==='succeeded'?'passed':'failed',description:'表示审核执行状态；画质结论另列。'}],
+        results:['来源训练Run：'+v.sourceRunId,'画质分项结论：'+v.visualOutcome,'失败样本数：'+(postReview.failedSamples??'未知'),'未授予正式资格，未启动下一轮训练。'],
+        issues:postReview.issueCodes,nextSteps:['按真实失败项核对对象范围及跨图表现；没有自动重训。'],planComparison:'模块2的训练后只读审核；原训练终态保持。'}
+      return appendSource(producers.registry,input)
+    }
+    const observed=readTrainingWorkObservation({terminal:v,registry:snapshotValue,read})
+    if(observed) {
+      const runId=v.runId;identity(runId)
+      const eventId='program-observation-v1-'+hash([binding.path,binding.sha256])
+      if(ledger.find(eventId))return {recorded:true,replayed:true,eventIds:[eventId]}
+      const kind={type:'training',result:observed.completed?'succeeded':'failed'}
+      const input=baseEvent(eventId,'ai-painter','training-'+runId,runId,'execution_finished',kind.result)
+      const timing=observed.value?.workerTiming??observed.interruptedTiming
+      Object.assign(input,{title:'本地训练执行结果（资格另列）',originalEventAtUtc:v.recordedAtUtc??null,
+        originalStartedAtUtc:timing?.startedAtUtc??null,originalFinishedAtUtc:timing?.endedAtUtc??null,
+        monotonicElapsedMs:Number.isFinite(timing?.elapsedSeconds)?timing.elapsedSeconds*1000:null,
+        completedText:'按统一观测合同接收本地终态；模型资格与观测完整度分别记录。',
+        reasonCode:observed.gap??(observed.completed?null:v.status),sourceReference:{kind:'training_terminal',originId:runId,revision:null},
+        evidenceReferences:[original,observed.pkg,...(observed.observation?[observed.observation]:[])].map(r=>snapshot(r,'program'))})
+      input.workReport=describeTrainingTerminal({input,terminal:{...v,optimizerSteps:observed.value?.optimizerSteps},kind,
+        supplementGaps:observed.gap?[observed.gap]:[]})
+      input.workReport.results.push('计时范围：'+(timing?.scope??'未记录；不推算'),
+        '观测制品登记数：'+(observed.value?.artifacts.length??'未知')+'；工作事件不代替逐图片字节核验或模型审核。')
+      return appendSource(producers.registry,input)
+    }
+    const single=readSingleMapWorkEvidence({terminal:v,binding,registry:snapshotValue,read,need})
+    if(single) {
+      const runId=v.runId;identity(runId)
+      const eventId='program-single-map-v1-'+hash([binding.path,binding.sha256])
+      if(ledger.find(eventId))return {recorded:true,replayed:true,eventIds:[eventId]}
+      const kind={type:'training',result:single.completed?'succeeded':'failed'}
+      const input=baseEvent(eventId,'ai-painter','training-'+runId,runId,'execution_finished',kind.result)
+      Object.assign(input,{title:single.completed?'单图训练执行完成（未授予画质资格）':'单图训练失败关闭',
+        originalEventAtUtc:v.recordedAtUtc,originalFinishedAtUtc:v.recordedAtUtc,
+        // The worker monotonic interval is not the controller start/end interval.
+        monotonicElapsedMs:null,completedText:'固定训练样本的实验结果已保存；训练输出和逐步指标可在控制台训练历史按Run查看。',
+        reasonCode:single.completed?null:v.status,sourceReference:{kind:'training_terminal',originId:runId,revision:null},
+        evidenceReferences:[original,single.capsule,single.pkg,single.result].map(r=>snapshot(r,'program'))})
+      input.workReport=describeTrainingTerminal({input,terminal:{...v,optimizerSteps:single.steps,checkpointReloadVerified:single.checkpointReloadExact},kind})
+      input.workReport.results.push('实验worker原始单调耗时：'+single.elapsedSeconds+'秒；不冒充控制器全程耗时。',
+        '优化器初始化原记录：'+single.optimizerInitialization+'；只表示固定训练样本拟合，不证明验证集迁移。')
+      return appendSource(producers.registry,input)
+    }
     const kind=trainingTerminalKind(v)
     if(!kind)return {unsupported:true,schema:schema??'unknown'}
     const {type,result,title}=kind
@@ -252,46 +329,13 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
     read(REG+'/current.json',original.sha256)
     return {ok:true,status:'verified',registry:head,activityStatus:'unknown_or_stale',activityReasonCode:activityReason}
   }
-  async function observeCommittedRegistry({limit=MAX_BATCH}={}) {
-    need(Number.isSafeInteger(limit)&&limit>0&&limit<=MAX_BATCH,'work_batch_limit')
-    const id='ai-painter-registry-v1',began=Date.now(),eventIds=[];let unsupported=0,observedCoverage=null
-    try {
-      let current=await (testReader??(()=>readCurrentExecutionRegistry(projectRoot)))()
-      if(current?.ok!==true)current=readDurableHead(current?.errorCode)
-      need(current?.ok===true&&current.status==='verified'&&current.registry,'work_registry_unverified',409)
-      const head=current.registry,state=getState(id),published=head.registryRevision
-      observedCoverage={complete:false,publishedRevision:published,historyThroughRevision:state.cursor??0,liveThroughRevision:state.liveCursor??null,currentActivityStatus:current.activityStatus??'verified',currentActivityReasonCode:current.activityReasonCode??null,scope:'verified_committed_registry_and_explicit_terminals_only'}
-      const consume=snap=>{
-        for(const binding of [snap.latestTrainingTerminal,snap.terminalEvidence]) {
-          if(Date.now()-began>8000)throw new ModuleError('work_observation_time_limit',409)
-          const r=terminalEvent(binding,snap)
-          if(r?.unsupported)unsupported++;else if(r)eventIds.push(...r.eventIds)
-        }
-      }
-      consume(head)
-      const database=new DatabaseSync(physical(REG+'/registry.sqlite'),{readOnly:true})
-      let historyCursor=state.cursor??0,liveCursor=state.liveCursor??published,processed=0
-      try {
-        const readRows=(from,max)=>database.prepare('SELECT r.*,t.status AS transaction_status,t.current_sha256 AS transaction_sha FROM registry_revisions r JOIN registry_transactions t ON t.transaction_id=r.transaction_id WHERE r.registry_revision>? AND r.registry_revision<=? ORDER BY r.registry_revision LIMIT ?').all(from,published,max)
-        const consumeRows=rows=>{let cursor=null
-          for(const row of rows) {
-            need(row.transaction_status==='committed','work_registry_transaction_uncommitted',409);identity(row.transaction_id)
-            const tx=read(REG+'/transactions/'+row.transaction_id+'/transaction.json').value
-            need(tx.schemaVersion==='ai-painter-current-execution-registry-transaction-v1'&&tx.status==='committed'&&tx.transactionId===row.transaction_id&&tx.currentSha256===row.current_sha256&&row.transaction_sha===row.current_sha256&&tx.registryRevision===row.registry_revision&&tx.eventSequence===row.event_sequence,'work_registry_transaction_conflict',409)
-            const snap=read(REG+'/transactions/'+row.transaction_id+'/current.staged.json',row.current_sha256).value
-            need(snap.registryRevision===row.registry_revision&&snap.transactionId===row.transaction_id&&snap.runId===row.run_id&&snap.eventSequence===row.event_sequence&&snap.schemaVersion==='ai-painter-current-execution-registry-v1','work_registry_snapshot_conflict',409)
-            consume(snap);cursor=row.registry_revision;processed++
-          }return cursor}
-        if(liveCursor<published){const cursor=consumeRows(readRows(liveCursor,limit));if(cursor!==null)liveCursor=cursor}
-        if(processed<limit){const cursor=consumeRows(readRows(historyCursor,limit-processed));if(cursor!==null)historyCursor=cursor}
-      }finally{database.close()}
-      // Source events have already committed. A crash before this checkpoint only replays IDs.
-      const coverage={complete:false,publishedRevision:published,historyThroughRevision:historyCursor,liveThroughRevision:liveCursor,unsupportedSchemasObserved:unsupported,currentActivityStatus:current.activityStatus??'verified',currentActivityReasonCode:current.activityReasonCode??null,
-        historyBacklog:Math.max(0,published-historyCursor),liveBacklog:Math.max(0,published-liveCursor),scope:'verified_committed_registry_and_explicit_terminals_only'}
-      saveState(id,{status:'partial',reasonCode:unsupported?'work_terminal_schemas_not_connected':'work_history_coverage_partial',cursor:historyCursor,liveCursor,coverage,lastSuccessAtUtc:new Date().toISOString()})
-      return {recorded:true,eventIds:[...new Set(eventIds)],processed,coverage}
-    }catch(error){const result=failure(id,error);if(observedCoverage)try{saveState(id,{status:'stale',reasonCode:result.reasonCode,coverage:{...observedCoverage,knownCommittedEventIds:[...new Set(eventIds)],historyCoverageStatus:'incomplete_source_evidence'}})}catch{/* The original bounded failure receipt remains. */}return {...result,eventIds:[...new Set(eventIds)]}}
-  }
+  const observeCommittedRegistry=createRegistryWorkConsumer({
+    readHead:async()=>{
+      const current=await (testReader??(()=>readCurrentExecutionRegistry(projectRoot)))()
+      return current?.ok===true?current:readDurableHead(current?.errorCode)
+    },
+    physical,read,terminalEvent,getState,saveState,failure
+  })
   async function recordGitOperation(input) {
     const id='git-operations-v1'
     try {
@@ -359,13 +403,13 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
       return {recorded:true,replayed:r.replayed,eventIds:[r.event.eventId]}
     }catch(error){return failure(id,error)}
   }
-  return {projectRoot,runtime,moduleRoot,stateRoot,ledger,ledgerForStore:queryStore=>createWorkLedger(queryStore,allProducers,{readCoverage}),readCoverage,getState,saveState,failure,observeCommittedRegistry,recordGitOperation,recordBackupRun,recordCodex,planReference}
+  return {implementationVersion,projectRoot,runtime,moduleRoot,stateRoot,ledger,ledgerForStore:queryStore=>createWorkLedger(queryStore,allProducers,{readCoverage}),readCoverage,getState,saveState,failure,observeCommittedRegistry,recordGitOperation,recordBackupRun,recordCodex,planReference}
 }
 export function createWorkProducers({projectRoot=process.cwd(),store}={}) {return buildContext(projectRoot,store,null,false)}
 export function createWorkProducersForIsolatedTests({projectRoot,store,readRegistry}={}) {return buildContext(fixtureScope(projectRoot),store,readRegistry,true)}
 export function getWorkRecordingContext() {
   const scope=globalThis
-  if(!scope[contextKey])scope[contextKey]=createWorkProducers()
+  if(scope[contextKey]?.implementationVersion!==implementationVersion)scope[contextKey]=createWorkProducers()
   return scope[contextKey]
 }
 export async function recordGitOperation(operationBinding) {

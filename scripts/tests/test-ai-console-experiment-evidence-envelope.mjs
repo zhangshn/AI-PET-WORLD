@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { createRequire } from 'node:module'
+import { readFileSync } from 'node:fs'
+import { trainingTime } from './helpers/training-time-cpu.mjs'
 import ts from 'typescript'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -72,7 +74,7 @@ test('canonical v1 projects 3x48 explicit observations and four bound endpoint i
   assert.equal(detail.record.detailCoverage.evidenceContractVersion, 1)
 })
 
-test('actual existing UI rejects the old object child but renders canonical numeric G while preserving real D', async () => {
+test('actual existing UI renders both numeric legacy G and structured G/D without losing real D', async () => {
   const { input, result } = fixture()
   result.optimizerSteps.discriminator = 2048 // Do not invent D by copying G.
   const detail = await adaptLegacyTrainingDetail(input)
@@ -90,7 +92,9 @@ test('actual existing UI rejects the old object child but renders canonical nume
     const seeds = [listing, selectedDetail, runId, null, null, '2026-09-28T00:00:00Z', null, 'artifacts', null, sectionPage, null]
     let position = 0
     const exports = {}, realRequire = createRequire(import.meta.url)
-    const require = name => name === 'react' ? { ...React, useState(initial) {
+    const require = name => name === './ai-console-training-time' ? trainingTime
+      : name === './ai-console-experiment-time' ? loadExperimentTiming(require)
+      : name === 'react' ? { ...React, useState(initial) {
       const value = position < seeds.length ? seeds[position] : initial; position++
       return React.useState(value)
     } } : name === './ai-console-training-summary' ? { AiConsoleTrainingSummary: () => null }
@@ -98,10 +102,17 @@ test('actual existing UI rejects the old object child but renders canonical nume
     new Function('require', 'exports', compiled)(require, exports)
     return renderToStaticMarkup(React.createElement(exports.AiConsoleTrainingHistory))
   }
-  assert.throws(() => render(result.optimizerSteps), /Objects are not valid as a React child/)
+  const structured=render(result.optimizerSteps)
+  assert.ok(structured.includes('2304')&&structured.includes('2048'))
   const html = render(detail.record.optimizerSteps)
   assert.ok(html.includes('真实优化步：2304'))
 })
+
+function loadExperimentTiming(require) {
+  const source=readFileSync(new URL('../../src/app/ai-console/ai-console-experiment-time.tsx',import.meta.url),'utf8')
+  const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText
+  const exports={};new Function('require','exports',compiled)(require,exports);return exports
+}
 
 test('missing canonical G/D counts stay unavailable, never substituted from plan or terminal', async () => {
   const { input, result } = fixture()

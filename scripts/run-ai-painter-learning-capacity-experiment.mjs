@@ -7,10 +7,20 @@ import { createHash } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { readCurrentExecutionRegistry, advanceCurrentExecutionRegistry } from "../src/server/ai-painter-current-execution-registry.mjs";
+import { observationContract, CONTROLLER_SCOPE } from "../src/server/ai-console/training-observation-contract.mjs";
+import { twoMapCheckpointPolicy, twoMapCheckpointSuccessorPolicy, twoMapWorker, twoMapTests, twoMapExperimentSucceeded } from "./lib/ai-painter-two-map-experiment-v1.mjs";
+import { consumedSingle149Policy, single149Policy, single149Worker, single149Tests, single149Succeeded } from "./lib/ai-painter-single149-terrain-ecology-fit-v1.mjs";
+
+import { routingPolicies, routingWorker, routingTests, routingSucceeded, runTerrainRoutingComparison } from "./lib/ai-painter-terrain-routing-comparison-v1.mjs";
+import { consumedBackgroundPolicy, backgroundPolicy, backgroundWorker, backgroundTests, backgroundSucceeded } from "./lib/ai-painter-rock-background-probe-v1.mjs";
+import { rehearsalPolicy, supportWeight1Policy, stemPolicies, stemPairPolicies, stemDecoderPolicies, terrainEcologyPolicy, rehearsalWorker, rehearsalTests, rehearsalSucceeded } from "./lib/ai-painter-mixed-train-rehearsal-v1.mjs";
+import { causalProbePolicy, target44CausalProbePolicy, causalProbeWorker, causalProbeTests, causalProbeSucceeded } from "./lib/ai-painter-support-weight1-causal-probe-v1.mjs";
 
 const root = process.cwd();
 const python = path.join(root, "ml/ai-painter/.venv/Scripts/python.exe");
 const defaultWorker = "ml/ai-painter/scripts/painter_learning_capacity_experiment.py";
+export const singleMapCheckpointPolicy = "data/ai-painter/system-governance/ai-painter-single-map-checkpoint-fit-policy-v1.json";
+export const singleMapCheckpointSuccessorPolicy = "data/ai-painter/system-governance/ai-painter-single-map-checkpoint-fit-policy-v2.json";
 const reconstructionPolicy = "data/ai-painter/system-governance/ai-painter-decoder-reconstruction-experiment-policy-v1.json";
 const v11TrainOnlyPolicy = "data/ai-painter/system-governance/stage4-mvp-v11-train-only-capacity-probe-v1.json";
 const consumedV21TrainOnlyPolicy = "data/ai-painter/system-governance/stage4-mvp-v21-train-only-capacity-probe-v1.json";
@@ -893,6 +903,18 @@ function stopOwnedWorker(child) {
 
 async function main() {
   const mode = process.argv[2];
+  if (mode === "review-completed") {
+    assert.equal(process.argv.length, 3, "review-completed accepts only the registered exact post-review policy");
+    const { runTwoMapPostReview } = await import("./lib/ai-painter-two-map-post-review-v1.mjs");
+    const { deliverPostReviewRecords, reviewThenDeliver } = await import("./lib/ai-painter-post-review-delivery-v1.mjs");
+    await reviewThenDeliver(() => runTwoMapPostReview({ projectRoot: root }),
+      () => deliverPostReviewRecords({ projectRoot: root }),
+      delivery => console.log(JSON.stringify({ postReviewWorkDelivery: delivery })));
+    return;
+  }
+  if (mode === "run-stem-decoder-comparison") { assert.equal(process.argv.length,3); const {runStemDecoderComparison}=await import("./lib/ai-painter-stem-pair-comparison-v1.mjs"); await runStemDecoderComparison(root); return; }
+  if (mode === "run-stem-pair-comparison") { assert.equal(process.argv.length,3); const {runStemPairComparison}=await import("./lib/ai-painter-stem-pair-comparison-v1.mjs"); await runStemPairComparison(root); return; }
+  if (mode === "run-routing-comparison") { await runTerrainRoutingComparison(root); return; }
   assert(["prepare", "run"].includes(mode), "usage: node scripts/run-ai-painter-learning-capacity-experiment.mjs prepare|run [--policy path]");
   const policy = process.argv[3] === "--policy" && process.argv.length === 5 ? process.argv[4] : null;
   assert(process.argv.length === 3 || policy !== null, "invalid experiment arguments");
@@ -904,7 +926,19 @@ async function main() {
   assert(policy !== v24CriticModeObjectHeadCorePriorityPolicy, "V24 critic-mode v3 checker binding failed closed; use only a future independently accepted v4 policy");
   assert(policy !== v24CheckerBoundObjectHeadCorePriorityPolicy, "V24 checker-bound v4 was consumed and failed closed; use only the resource-bound v5 policy");
   const policyArgs = policy === null ? [] : ["--policy", policy];
+  assert(policy !== consumedBackgroundPolicy, "background v1 failed closed before optimization; use independently bound v2");
+  assert(policy !== twoMapCheckpointPolicy, "two-map v1 already failed closed; use independently bound v2 after resource clearing");
   const reconstruction = policy === reconstructionPolicy;
+  const single149 = policy === single149Policy;
+  assert(policy !== consumedSingle149Policy, "single149 v1 failed closed before updates; use only independently bound source-closure v2");
+  const singleMap = single149 || policy === singleMapCheckpointPolicy || policy === singleMapCheckpointSuccessorPolicy;
+  const twoMap = policy === twoMapCheckpointSuccessorPolicy;
+  const routing = routingPolicies.includes(policy);
+  const background = policy === backgroundPolicy;
+  assert(![rehearsalPolicy,supportWeight1Policy,...Object.values(stemPolicies),...Object.values(stemPairPolicies),...Object.values(stemDecoderPolicies)].includes(policy), "old mixed arms consumed; independently bound terrain ecology candidate required");
+  const rehearsal = policy === terrainEcologyPolicy;
+  assert(policy!==causalProbePolicy,"consumed target0 diagnostic is evidence only");
+  const causalProbe = policy === target44CausalProbePolicy;
   const v11TrainOnly = policy === v11TrainOnlyPolicy;
   const v21TrainOnly = policy === v21TrainOnlyPolicy;
   const readonlyTrainFit = policy === v21AllTrainFitPolicy;
@@ -915,8 +949,15 @@ async function main() {
   const v24IeeeObjectHeadCorePriority = policy === v24IeeeObjectHeadCorePriorityPolicy;
   const v24CriticModeObjectHeadCorePriority = policy === v24ResourceBoundObjectHeadCorePriorityPolicy;
   const fullTrainExposure = policy === v21FullTrainExposurePolicy || wholeFrameFidelity || objectCoreFidelity || v23CompleteSupportPartition || v24ObjectHeadCorePriority || v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority;
-  const taskKind = readonlyTrainFit ? "readonly_train_fit_diagnostic" : "bounded_train_only_learning_capacity_experiment";
+  const taskKind = causalProbe ? "readonly_zero_update_causal_diagnostic" : readonlyTrainFit ? "readonly_train_fit_diagnostic" : "bounded_train_only_learning_capacity_experiment";
   const taskGoal = readonlyTrainFit ? "48 train originals, frozen epoch-24 forward only; no weight updates or qualification"
+    : causalProbe ? "One new zero-update GPU call on train157; parameter44 local evidence; no training or qualification"
+    : rehearsal ? "Original 48 train maps plus declared anchor rehearsal;448 pairs; no formal release"
+    : background ? "Two verified train rocks: explicit auxiliary background hypothesis;100 pairs; no formal release"
+    : routing ? "Equal-budget object-support terrain-gradient comparison arm;100 pairs; no formal release"
+    : twoMap ? "Two train maps149/164; one shared completed-model continuation;200 total pairs,100 per map; no formal release"
+    : single149 ? "One train map149; completed ecology model continuation; own zero-update gate,200 pairs and automatic ten-image review; no formal release"
+    : singleMap ? "One train map164; exact policy-bound completed G/D weights with fresh original AdamW; at most200 pairs; no formal release"
     : v24CriticModeObjectHeadCorePriority ? "48 train originals, fresh V23 renderer with V24 resource-bound critic-mode object-head core-priority v5 policy, maximum 48 epochs; no formal release"
     : v24IeeeObjectHeadCorePriority ? "48 train originals, fresh V23 renderer with V24 IEEE-FP32 object-head core-priority v2 update, maximum 48 epochs; no formal release"
     : v24ObjectHeadCorePriority ? "48 train originals, fresh V23 renderer with V24 object-head core-priority update, maximum 48 epochs; no formal release"
@@ -926,7 +967,8 @@ async function main() {
     : fullTrainExposure ? "48 train originals, fresh V21, maximum 48 epochs; no generalization or formal release"
     : reconstruction ? "256x192 decoder-only train reconstruction; encoder frozen; no Denoiser or formal qualification"
     : "256x192 real training and checkpoint reload experiment; no formal qualification or publication";
-  const worker = readonlyTrainFit ? "ml/ai-painter/scripts/diagnose_stage4_mvp_v21_all_train_fit_readonly.py"
+  const worker = causalProbe ? causalProbeWorker : rehearsal ? rehearsalWorker : background ? backgroundWorker : routing ? routingWorker : twoMap ? twoMapWorker : single149 ? single149Worker : singleMap ? "ml/ai-painter/scripts/painter_single_map_checkpoint_fit_v1.py"
+    : readonlyTrainFit ? "ml/ai-painter/scripts/diagnose_stage4_mvp_v21_all_train_fit_readonly.py"
     : (v24ObjectHeadCorePriority || v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority) ? "ml/ai-painter/scripts/painter_stage4_v24_object_head_core_priority_probe.py"
     : v23CompleteSupportPartition ? "ml/ai-painter/scripts/painter_stage4_v23_complete_support_partition_probe.py"
     : objectCoreFidelity ? "ml/ai-painter/scripts/painter_stage4_v21_object_core_fidelity_probe.py"
@@ -935,7 +977,8 @@ async function main() {
     : v21TrainOnly ? "ml/ai-painter/scripts/painter_stage4_v21_train_only_capacity_probe.py"
     : v11TrainOnly ? "ml/ai-painter/scripts/painter_stage4_v11_train_only_capacity_probe.py"
     : reconstruction ? "ml/ai-painter/scripts/painter_decoder_reconstruction_experiment.py" : defaultWorker;
-  const testPattern = readonlyTrainFit ? "test_diagnose_stage4_mvp_v21_all_train_fit_readonly.py"
+  const testPattern = causalProbe ? causalProbeTests : rehearsal ? rehearsalTests : background ? backgroundTests : routing ? routingTests : twoMap ? twoMapTests : single149 ? single149Tests : singleMap ? "test_single_map_checkpoint_fit_v1.py"
+    : readonlyTrainFit ? "test_diagnose_stage4_mvp_v21_all_train_fit_readonly.py"
     : (v24ObjectHeadCorePriority || v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority) ? "test_stage4_v24_object_head_core_priority_probe.py"
     : v23CompleteSupportPartition ? "test_stage4_v23_complete_support_partition_probe.py"
     : objectCoreFidelity ? "test_stage4_v21_object_core_fidelity_probe.py"
@@ -955,14 +998,36 @@ async function main() {
     ...((v24ObjectHeadCorePriority || v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority) ? ["scripts/tests/test-ai-painter-v24-core-priority-controller.mjs"] : []),
     ...((v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority) ? ["scripts/tests/test-ai-painter-v24-ieee-core-priority-controller.mjs"] : []),
     ...(v24CriticModeObjectHeadCorePriority ? ["scripts/tests/test-ai-painter-v24-critic-mode-controller.mjs"] : []),
-    ...(wholeFrameFidelity ? ["scripts/tests/test-ai-painter-whole-frame-fidelity-controller.mjs"] : [])], {
+    ...(wholeFrameFidelity ? ["scripts/tests/test-ai-painter-whole-frame-fidelity-controller.mjs"] : []),
+    ...((singleMap || twoMap || routing || background || rehearsal) ? ["scripts/tests/test-training-observation-contract.mjs"] : []),
+    ...(twoMap ? ["scripts/tests/test-ai-painter-two-map-experiment.mjs"] : []),
+    ...(single149 ? ["scripts/tests/test-ai-painter-single149-terrain-ecology-fit.mjs","scripts/tests/test-ai-painter-two-map-post-review.mjs"] : []),
+    ...(routing ? ["scripts/tests/test-ai-painter-terrain-routing-comparison.mjs"] : []),
+    ...(background ? ["scripts/tests/test-ai-painter-rock-background-probe.mjs"] : []),
+    ...(rehearsal ? ["scripts/tests/test-ai-painter-mixed-train-rehearsal.mjs","scripts/tests/test-ai-painter-stem-pair-comparison.mjs"] : []),
+    ...(causalProbe ? ["scripts/tests/test-ai-painter-support-weight1-causal-probe.mjs"] : [])], {
     cwd: root, env, encoding: "utf8", windowsHide: true, timeout: 20000, maxBuffer: 2 ** 20,
   });
   assert(!controllerTests.error && controllerTests.status === 0, `controller behavior tests failed: ${controllerTests.error?.message ?? ""}\n${controllerTests.stdout}\n${controllerTests.stderr}`);
   const cpu = runCpu(["-m", "unittest", "discover", "-s", "ml/ai-painter/tests", "-p", testPattern, "-v"]);
-  const packageBinding = JSON.parse(runCpu([worker, "prepare", ...policyArgs]).stdout.trim());
+  if (routing) {
+    const candidateCpu = runCpu(["-m", "unittest", "discover", "-s", "ml/ai-painter/tests", "-p", "test_object_support_terrain_gradient_device_v1.py", "-v"]);
+    cpu.stdout += candidateCpu.stdout; cpu.stderr += candidateCpu.stderr;
+  }
+  if (background || rehearsal) {
+    const candidateCpu = runCpu(["-m", "unittest", "discover", "-s", "ml/ai-painter/tests", "-p", "test_isolated_rock_background_proxy_v1.py", "-v"]);
+    cpu.stdout += candidateCpu.stdout; cpu.stderr += candidateCpu.stderr;
+  }
+  if (rehearsal) {
+    for (const test of ["test_stem_weight_reduction_precision_v1.py","test_stem_model_identity_v1.py","test_stem_inner_weight_reduction_precision_v1.py","test_stem_pair_model_identity_v1.py","test_decode2_inner_weight_reduction_precision_v1.py","test_stem_decoder_model_identity_v1.py"]) {
+      const candidateCpu = runCpu(["-m", "unittest", "discover", "-s", "ml/ai-painter/tests", "-p", test, "-v"]);
+      cpu.stdout += candidateCpu.stdout; cpu.stderr += candidateCpu.stderr;
+    }
+  }
+  const packageBinding = JSON.parse(runCpu([worker, "prepare", ...policyArgs], rehearsal || causalProbe ? 300000 : 120000).stdout.trim());
   const pkg = read(packageBinding.path);
   assert.equal(bind(packageBinding.path).sha256, packageBinding.sha256);
+  if (pkg.interfaceContract) observationContract(pkg,pkg.experimentIdentity);
   if (fullTrainExposure) assert(exposureProgressPublicationValid(pkg), "frozen progress publication rule differs");
   if (wholeFrameFidelity || objectCoreFidelity || v23CompleteSupportPartition || v24ObjectHeadCorePriority || v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority) assert.deepEqual(pkg.inputs.heartbeatPublicationRule, heartbeatPublicationRule,
     "frozen heartbeat publication rule differs");
@@ -973,7 +1038,11 @@ async function main() {
   console.log(JSON.stringify({ status: "experiment_prepared_not_gpu_started", package: packageBinding, cpu: bind(cpuPath) }));
   if (mode === "prepare") return;
   assert(!fs.existsSync(path.join(root, directory, "controller-started.json")), "experiment already consumed; no automatic restart");
-  write(`${directory}/controller-started.json`, { recordedAtUtc: new Date().toISOString(), previousRegistry: { revision: previous.registry.registryRevision, sha256: previous.registrySha256 }, package: packageBinding });
+  const controllerStartedAtUtc = new Date().toISOString(), controllerStartedMono = process.hrtime.bigint();
+  const controllerTiming = state => ({scope:CONTROLLER_SCOPE,
+    status:state, startedAtUtc:controllerStartedAtUtc, endedAtUtc:new Date().toISOString(),
+    elapsedSeconds:Number(process.hrtime.bigint()-controllerStartedMono)/1e9});
+  write(`${directory}/controller-started.json`, { recordedAtUtc: controllerStartedAtUtc, previousRegistry: { revision: previous.registry.registryRevision, sha256: previous.registrySha256 }, package: packageBinding });
   const runId = pkg.experimentIdentity;
   const identity = { capabilityVersion: runId, packageId: runId, runId, processId: process.pid, processStartIdentity: processIdentity() };
   const lockPath = `${directory}/execution-lock.json`;
@@ -982,6 +1051,7 @@ async function main() {
   const heartbeat = () => write(heartbeatPath, { schemaVersion: "ai-painter-current-active-execution-heartbeat-v1", ...identity, executionState: "executing", heartbeatAtUtc: new Date().toISOString(), ttlSeconds: 120 }, true);
   heartbeat();
   let registered = false;
+  let postReviewEligible = false;
   let child = null;
   let heartbeatFailure = null;
   let telemetryTimer = null;
@@ -1055,6 +1125,12 @@ async function main() {
     const observedTermination = observedExperimentTermination(result,
       !result && fs.existsSync(path.join(root, stoppedProgressPath)) ? read(stoppedProgressPath) : null, runId);
     const success = readonlyTrainFit ? readonlyTrainFitSucceeded(result, pkg, code, timedOut)
+      : causalProbe ? causalProbeSucceeded(result, pkg, code, timedOut)
+      : single149 ? single149Succeeded(result, pkg, code, timedOut)
+      : rehearsal ? rehearsalSucceeded(result, pkg, code, timedOut)
+      : background ? backgroundSucceeded(result, pkg, code, timedOut)
+      : routing ? routingSucceeded(result, pkg, code, timedOut)
+      : twoMap ? twoMapExperimentSucceeded(result, pkg, code, timedOut)
       : fullTrainExposure ? fullTrainExposureSucceeded(result, pkg, code, timedOut)
       : code === 0 && !timedOut && result?.status === "experiment_executed_not_visual_qualified" && result?.checkpointReloadExact === true;
     if (success) for (const artifact of result.artifacts) assert.equal(bind(artifact.path).sha256, artifact.sha256, "experiment output hash changed");
@@ -1062,6 +1138,10 @@ async function main() {
     write(terminalPath, { schemaVersion: "ai-painter-learning-capacity-experiment-terminal-v1", status: success ? readonlyTrainFit ? "readonly_train_fit_diagnostic_completed_no_qualification" : "experiment_completed_not_formal_qualified" : "experiment_failed_closed",
       executionState: success ? "completed" : "failed_closed", experimentIdentity: runId, runId, recordedAtUtc: new Date().toISOString(), exitCode: code, timedOut,
       result: result ? bind(resultPath) : null, ...observedTermination,
+      executionPackage:packageBinding, packageId:runId, capabilityVersion:runId, trainingObservation:result?.trainingObservation ?? null,
+      lastWorkerProgress:!result&&fs.existsSync(path.join(root,stoppedProgressPath))?bind(stoppedProgressPath):null,
+      observationSecondaryErrors:result?.observationSecondaryErrors ?? [],
+      controllerExecutionTiming:controllerTiming(success ? "completed" : "failed_closed"),
       completedEpochs: fullTrainExposure && Number.isSafeInteger(result?.completedEpochs) && result.completedEpochs >= 0 ? result.completedEpochs : null,
       errorCode: typeof result?.error === "string" ? result.error : null,
       formalTrainingQualified: false, formalStageAdvanced: false, checkpointPromotable: false, worldEntryAllowed: false });
@@ -1077,6 +1157,7 @@ async function main() {
       expectedPreviousRegistryRevision: current.registry.registryRevision, expectedPreviousRegistrySha256: current.registrySha256 });
     assert(done.ok, `experiment terminal registry commit failed: ${done.errorCode ?? "unknown"}`);
     console.log(JSON.stringify({ status: read(terminalPath).status, terminal: bind(terminalPath), registryRevision: done.registry.registryRevision }));
+    postReviewEligible = (twoMap || rehearsal || single149) && success;
     if (!success) process.exitCode = 1;
   } catch (error) {
     if (ownedWorkerIsRunning(child)) {
@@ -1096,6 +1177,7 @@ async function main() {
     }
     const errorPath = `${directory}/controller-failure.json`;
     let interruptedProgress = null;
+    let interruptedProgressBinding = null;
     let progressReadError = null;
     try {
       const progressPath = `${directory}/progress.json`;
@@ -1103,10 +1185,17 @@ async function main() {
         const value = read(progressPath);
         assert.equal(value.experimentIdentity, runId, "interrupted progress identity mismatch");
         interruptedProgress = value;
+        interruptedProgressBinding = bind(progressPath);
       }
     } catch (progressError) { progressReadError = progressError.message; }
-    if (!fs.existsSync(path.join(root, errorPath))) write(errorPath, { status: "experiment_controller_failed_closed", executionState: "failed_closed", registered,
-      experimentIdentity: runId, runId, gpuStarted: interruptedProgress?.gpuStarted ?? null,
+    const commonObservation = pkg.interfaceContract?.schemaVersion === "ai-painter-training-interface-contract-v2";
+    if (!fs.existsSync(path.join(root, errorPath))) write(errorPath, { status: commonObservation ? "experiment_failed_closed" : "experiment_controller_failed_closed", executionState: "failed_closed", registered,
+      ...(commonObservation ? {schemaVersion:"ai-painter-learning-capacity-experiment-terminal-v1",
+        formalTrainingQualified:false,formalStageAdvanced:false,checkpointPromotable:false,worldEntryAllowed:false} : {}),
+      experimentIdentity: runId, runId, packageId:runId, capabilityVersion:runId, executionPackage:packageBinding,
+      controllerExecutionTiming:controllerTiming("failed_closed"),
+      lastWorkerProgress:interruptedProgressBinding,
+      gpuStarted: interruptedProgress?.gpuStarted ?? null,
       trainingStarted: interruptedProgress?.trainingStarted ?? null,
       lastConfirmedOptimizerSteps: interruptedProgress?.optimizerSteps ?? null, actualFinalOptimizerSteps: null,
       progressReadError, error: error.stack, heartbeatPublication: error.heartbeatPublication ?? null,
@@ -1121,12 +1210,21 @@ async function main() {
           runId, lifecycleStage: "isolated_implementation", executionState: "failed_closed", activity: "experiment_controller_failed_closed",
           taskCapsulePath: failureCapsule, terminalEvidencePath: errorPath, activeExecution: null,
           latestTrainingTerminal: !readonlyTrainFit && interruptedProgress?.trainingStarted === true
-            ? { runId, ...bind(errorPath), status: "experiment_controller_failed_closed", evidence: { manifest: bind(errorPath) } } : null,
+            ? { runId, ...bind(errorPath), status: read(errorPath).status, evidence: { manifest: bind(errorPath) } } : null,
           expectedPreviousRegistryRevision: current.registry.registryRevision, expectedPreviousRegistrySha256: current.registrySha256 });
       }
     }
     throw error;
   } finally { clearInterval(timer); telemetryClosed = true; if (telemetryTimer) clearInterval(telemetryTimer); }
+  // A distinct read-only execution follows a successful training terminal.
+  // Its failure must never rewrite the already committed training result.
+  if (postReviewEligible) {
+    const { runTwoMapPostReview } = await import("./lib/ai-painter-two-map-post-review-v1.mjs");
+    const { deliverPostReviewRecords, reviewThenDeliver } = await import("./lib/ai-painter-post-review-delivery-v1.mjs");
+    await reviewThenDeliver(() => runTwoMapPostReview({ projectRoot: root }),
+      () => deliverPostReviewRecords({ projectRoot: root }),
+      delivery => console.log(JSON.stringify({ postReviewWorkDelivery: delivery })));
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {

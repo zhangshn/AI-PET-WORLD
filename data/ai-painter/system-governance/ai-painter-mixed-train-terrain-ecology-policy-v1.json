@@ -1,0 +1,220 @@
+{
+  "schemaVersion": "mixed-train-rehearsal-policy-v1",
+  "purpose": "train_only_learning_capacity_no_generalization_claim",
+  "sampleIds": [
+    "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+    "ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v4",
+    "ai-cold-start-v7-v7-capacity-slot-148-grassland-forest-transition-v3",
+    "ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v3",
+    "ai-cold-start-v7-v7-capacity-slot-150-tropical-forest-glade-v3",
+    "ai-cold-start-v7-v7-capacity-slot-151-tropical-forest-glade-v2",
+    "ai-cold-start-v7-v7-capacity-slot-152-tropical-forest-glade-v2",
+    "ai-cold-start-v7-v7-capacity-slot-153-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-154-tropical-forest-glade-v2",
+    "ai-cold-start-v7-v7-capacity-slot-155-grassland-forest-transition-v2",
+    "ai-cold-start-v7-v7-capacity-slot-156-seasonal-evergreen-semi-evergreen-forest-v2",
+    "ai-cold-start-v7-v7-capacity-slot-157-grassland-forest-transition-v2",
+    "ai-cold-start-v7-v7-capacity-slot-158-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-159-dry-dipterocarp-woodland-v2",
+    "ai-cold-start-v7-v7-capacity-slot-160-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-161-grassland-forest-transition-v2",
+    "ai-cold-start-v7-v7-capacity-slot-162-grassland-forest-transition-v2",
+    "ai-cold-start-v7-v7-capacity-slot-163-tropical-forest-glade-v2",
+    "mvp64-slot164-objects-v5-20261020",
+    "ai-cold-start-v7-v7-capacity-slot-165-seasonal-evergreen-semi-evergreen-forest-v2",
+    "ai-cold-start-v7-v7-capacity-slot-166-seasonal-evergreen-semi-evergreen-forest-v2",
+    "ai-cold-start-v7-v7-capacity-slot-167-tropical-forest-glade-v2",
+    "ai-cold-start-v7-v7-capacity-slot-168-dry-dipterocarp-woodland-v3",
+    "ai-cold-start-v7-v7-capacity-slot-169-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-170-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-171-grassland-forest-transition-v2",
+    "ai-cold-start-v7-v7-capacity-slot-172-seasonal-evergreen-semi-evergreen-forest-v2",
+    "ai-cold-start-v7-v7-capacity-slot-173-grassland-forest-transition-v2",
+    "ai-cold-start-v7-v7-capacity-slot-174-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-175-dry-dipterocarp-woodland-v2",
+    "ai-cold-start-v7-v7-capacity-slot-176-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-177-dry-dipterocarp-woodland-v2",
+    "ai-cold-start-v7-v7-capacity-slot-178-forested-low-mountain-v3",
+    "ai-cold-start-v7-v7-capacity-slot-179-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-180-seasonal-evergreen-semi-evergreen-forest-v2",
+    "ai-cold-start-v7-v7-capacity-slot-181-dry-dipterocarp-woodland-v2",
+    "ai-cold-start-v7-v7-capacity-slot-182-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-183-bamboo-grove-v2",
+    "ai-cold-start-v7-v7-capacity-slot-184-seasonal-evergreen-semi-evergreen-forest-v3",
+    "ai-cold-start-v7-v7-capacity-slot-185-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-186-grassland-forest-transition-v2",
+    "ai-cold-start-v7-v7-capacity-slot-187-grassland-forest-transition-v2",
+    "ai-cold-start-v7-v7-capacity-slot-188-grassland-forest-transition-v3",
+    "ai-cold-start-v7-v7-capacity-slot-190-wet-season-drainage-hollow-v7",
+    "ai-cold-start-v7-v7-capacity-slot-191-forested-low-mountain-v2",
+    "ai-cold-start-v7-v7-capacity-slot-192-forested-low-mountain-v3",
+    "ai-cold-start-v7-v7-capacity-slot-193-tropical-forest-glade-v2",
+    "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
+  ],
+  "sourceRunId": "d1-src-v1-850c25f8-8181-446e-99da-3dae2dbb21a8",
+  "initialization": "exact_completed_rock_background_v2_weights_fresh_original_AdamW",
+  "parentExperiment": {
+    "package": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/rock-background-v2-66deba97930c3e7e9781/package.json",
+      "sha256": "c02f4cf57d8330bff1d9aacf0cfe52d1f0ae2c06b78127e8958748101495bccb"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/rock-background-v2-66deba97930c3e7e9781/terminal.json",
+      "sha256": "76235a09016faf42a8ead165c583a4f0d55643035b4cd0be59488148dac987bc"
+    },
+    "result": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/rock-background-v2-66deba97930c3e7e9781/result.json",
+      "sha256": "9b7ea3d0653c262c897d81289ec8ce7375f3c1fe1cc3211a1abd46c73428c61b"
+    },
+    "checkpoint": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/rock-background-v2-66deba97930c3e7e9781/checkpoint-final.pt",
+      "sha256": "5ae5dcaa7ad1611f12fb6f55342f1a1465b2a638d8ea36ed7988310cecda3eb9"
+    },
+    "prediction": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/rock-background-v2-66deba97930c3e7e9781/prediction-164-100.png",
+      "sha256": "38bf6e799c999ccadcab3abd93fba520a003058dd4363ece888b4ba79a848d23"
+    }
+  },
+  "training": {
+    "pairs": 448,
+    "passes": 8,
+    "cycleLength": 56,
+    "anchorVisits": 72,
+    "otherSampleVisits": 8,
+    "order": "original_train_order_with_anchor_after_each_six_then_repeat_eight_times",
+    "seed": 20260929,
+    "supportStructureWeight": 0.1,
+    "checkpointSelection": "final_step_only",
+    "observations": [
+      0,
+      56,
+      112,
+      224,
+      336,
+      448
+    ]
+  },
+  "resources": {
+    "maxWallSeconds": 3600,
+    "cudaMemoryFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumTemperatureC": 85,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2,
+    "automaticRetries": 0
+  },
+  "assessment": {
+    "purpose": "Simultaneous full-RGB fitting of two existing train maps; not proof of complete object alignment or generalization.",
+    "sample149": {
+      "observedTreeInstances": [
+        29,
+        30
+      ],
+      "unresolvedRockInstances": [
+        39,
+        43
+      ],
+      "notes": "Visible tree/ground-anchor relationship inspected; no full canopy segmentation. Rock cores on ground beside visible rocks remain ambiguous."
+    },
+    "sample164": {
+      "rockInstances": [
+        36,
+        38,
+        51
+      ],
+      "treeInstances": [
+        1,
+        9,
+        40
+      ],
+      "unresolvedInstances": [
+        2,
+        15,
+        20,
+        41
+      ]
+    },
+    "wholeMapSemanticQualification": false,
+    "alignmentConcernsResolved": false
+  },
+  "modelArchitectureChanged": true,
+  "lossChanged": false,
+  "gradientThresholdChanged": false,
+  "sourceImagesOrConditionsChanged": false,
+  "validationContentAllowed": false,
+  "checkpointPromotable": false,
+  "runtimePublicationAllowed": false,
+  "automaticResumeAllowed": false,
+  "parentExecutionPermissionInherited": false,
+  "arm": "terrain-ecology",
+  "backwardRoutingChanged": false,
+  "candidateId": "stage4_stem_decoder_baseline_candidate_v1",
+  "backgroundAuxiliaryChanged": true,
+  "headFitEvidence": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/object-expression-049-20261027/head-fit/result.json",
+    "sha256": "78f88b838d68b20dd67e38155b236a0af33de7c8e2aab6283ba296fe6242a4a4"
+  },
+  "backgroundHypothesis": {
+    "sampleId": "mvp64-slot164-objects-v5-20261020",
+    "objects": [
+      36,
+      38
+    ],
+    "support": "existing disjoint fully owned raw rock support",
+    "ring": "two-pixel exterior ring excluding all object support",
+    "target": "per-channel median original train RGB",
+    "weight": 1,
+    "knownCounterfactualGroundTruth": false
+  },
+  "observedSampleIds": [
+    "ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v3",
+    "mvp64-slot164-objects-v5-20261020"
+  ],
+  "anchorSampleId": "mvp64-slot164-objects-v5-20261020",
+  "trainingSelectionChanged": true,
+  "predecessorReview": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/rock-background-review-051-20261027/result.json",
+    "sha256": "6c3b3c6c455cc042e45f690bc9c5e270f36e9fcf5a26b51e17078af245dc018a"
+  },
+  "historicalTwoSampleCpuEvidence": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/rock-background-050-20261027/cpu-result.json",
+    "sha256": "e4c17ea888a24e5f8a6c5a26d62034b00036b3740d3c46487b9922983507eda7"
+  },
+  "preparationMaxWallSeconds": 300,
+  "numericOperatorsChanged": true,
+  "modelCapability": "stage4_mvp256_dry_terrain_ecology_stem_decoder_precision_v1",
+  "parameterMigration": "exact_original_D1_parameters_plus_zero_48x7_terrain_ecology_new_identity",
+  "comparisonScope": "terrain_ecology_addition_against_completed_stem_decoder_baseline",
+  "cpuComparison": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/terrain-ecology-candidate-076-20261027/cpu-result.json",
+    "sha256": "561a53e9fe0493b5d4fbdd1625d1e98b41b4ad5c1614512785cd597780c8fe4e"
+  },
+  "terrainEcologyConditionAdded": true,
+  "equalBudgetBaseline": {
+    "package": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-stem-decoder-baseline-v1-a0e2c794ca3aef826b68/package.json",
+      "sha256": "a6c84b3e23f6176c573f60534f85ca44401e1a1bb694b6656405ec5c25d70137"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-stem-decoder-baseline-v1-a0e2c794ca3aef826b68/terminal.json",
+      "sha256": "321c3a3dff0c30240ee263e5ba6dfc6d8ed33ec0a3e57c49de300002aece400f"
+    },
+    "result": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-stem-decoder-baseline-v1-a0e2c794ca3aef826b68/result.json",
+      "sha256": "3793f9d06285315ee430fe4a7d3c412297bed9d52a6d12ec6010d867ba13f96e"
+    }
+  },
+  "completedComparisonReview": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/stem-decoder-comparison-073-20261027/comparison-final.json",
+    "sha256": "ec2ac23979035b7083a6e43c3949ae2484a1e6b959053434409133c8c3131e38"
+  },
+  "completedObjectControl": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/object-control-comparison-074-20261027/attempt-2/result.json",
+    "sha256": "665067b193d2f478acd85566c2dfe572391160b7a9a890862fd98e59fdbc8823"
+  },
+  "terrainCategoryAudit": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/terrain-regime-data-075-20261027/result.json",
+    "sha256": "3e7d6f085461ac9069507bd6188a51f5cc9b496b81ad39652b499034ea92f72d"
+  }
+}

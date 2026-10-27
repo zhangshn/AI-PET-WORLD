@@ -5,7 +5,7 @@ import { createRequire } from 'node:module'
 import ts from 'typescript'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { trainingTime } from './helpers/training-time-cpu.mjs'
+import { trainingTime, experimentTime } from './helpers/training-time-cpu.mjs'
 import { createHash } from 'node:crypto'
 
 const source = readFileSync(new URL('../../src/app/ai-console/ai-console-training-summary-model.ts', import.meta.url), 'utf8')
@@ -373,10 +373,10 @@ test('default clock without explicit now accepts actual fresh timestamps', () =>
   assert.equal(summary.registryFresh, true); assert.equal(summary.training, true); assert.equal(summary.epoch, 4)
 })
 const viewSource = readFileSync(new URL('../../src/app/ai-console/ai-console-training-summary.tsx', import.meta.url), 'utf8')
-const viewFragment = `const formatTrainingTime = require('./ai-console-training-time').formatTrainingTime; const styles = {}; const Link = ({prefetch, ...props}) => require('react').createElement('a', props);\n${viewSource.slice(viewSource.indexOf('function beijingTime'), viewSource.indexOf('export function AiConsoleTrainingSummary'))}`
+const viewFragment = `const formatTrainingTime = require('./ai-console-training-time').formatTrainingTime; const LegacyExperimentTiming = require('./ai-console-experiment-time').LegacyExperimentTiming; const styles = {}; const Link = ({prefetch, ...props}) => require('react').createElement('a', props);\n${viewSource.slice(viewSource.indexOf('function beijingTime'), viewSource.indexOf('export function AiConsoleTrainingSummary'))}`
 const viewCompiled = ts.transpileModule(viewFragment, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText
 const view = {}; const nativeRequire = createRequire(import.meta.url)
-new Function('require', 'exports', viewCompiled)(name => name === './ai-console-training-time' ? trainingTime : nativeRequire(name), view)
+new Function('require', 'exports', viewCompiled)(name => name === './ai-console-training-time' ? trainingTime : name === './ai-console-experiment-time' ? experimentTime : nativeRequire(name), view)
 test('summary is renderable, identities folded, ETA unknown, no invented image or qualification', () => {
   const html = renderToStaticMarkup(React.createElement(view.TrainingSummaryView, { summary: map(fixture()) }))
   assert.match(html, /4 \/ 60/); assert.match(html, /101 \/ 3000/); assert.match(html, /320 × 192/)
