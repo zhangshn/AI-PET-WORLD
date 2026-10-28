@@ -26,7 +26,9 @@ for (const name of ["world-runtime-store", "world-runtime-production-store", "wo
 }
 
 function fixture(t, kind) {
-  const privateRoot = fs.mkdtempSync(path.join(os.tmpdir(), "world-runtime-store-consistency-"))
+  const fixtureParent = process.env.WORLD_RUNTIME_TEST_OUTPUT_ROOT ?? os.tmpdir()
+  fs.mkdirSync(fixtureParent, { recursive: true })
+  const privateRoot = fs.mkdtempSync(path.join(fixtureParent, "world-runtime-store-consistency-"))
   const root = path.join(privateRoot, "data", "world-runtime")
   const recordPath = path.join(root, "owner-fixture", "world-fixture.json")
   const latestPath = path.join(root, "latest-world.json")
@@ -42,7 +44,7 @@ function fixture(t, kind) {
     assert.ok(relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative)), `fixture escaped: ${target}`)
   }
   const guarded = {}
-  for (const name of ["mkdir", "open", "readFile", "rename", "rm", "readdir", "lstat", "realpath"]) {
+  for (const name of ["mkdir", "open", "readFile", "rename", "rm", "readdir", "lstat", "realpath", "stat"]) {
     guarded[name] = async (...args) => {
       assertPrivate(args[0])
       if (name === "rename") assertPrivate(args[1])
@@ -89,7 +91,7 @@ function fixture(t, kind) {
   t.after(() => {
     assertPrivate(privateRoot)
     assert.ok(path.basename(privateRoot).startsWith("world-runtime-store-consistency-"))
-    if (retained) {
+    if (retained || process.env.WORLD_RUNTIME_TEST_RETAIN === "1") {
       t.diagnostic(`retained private recovery evidence: ${privateRoot}`)
       return
     }

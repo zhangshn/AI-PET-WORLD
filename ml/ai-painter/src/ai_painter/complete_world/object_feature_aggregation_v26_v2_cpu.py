@@ -10,6 +10,7 @@ from contextlib import contextmanager
 
 import torch
 from torch import nn
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 from ai_painter.complete_world.native_rgb_structured_object_cpu_v17 import (
     OBJECT_DEPENDENT_GROUND_CHANNELS, OBJECT_FEATURE_CHANNELS, OBJECT_ROLES,
@@ -48,8 +49,9 @@ Restore both flags even if entry partially changes them and then raises.
         backend.use_deterministic_algorithms(before[0], warn_only=before[1])
 
 
-def assemble_object_features(reference, indices, features, supports, selection):
+def assemble_object_features(reference, indices, features, supports, selection, *, geometry=None):
     """Keep the original ordered sum/count, clamp and canvas mapping exactly."""
+    height, width, _ = spatial_geometry(geometry)
     if (not isinstance(reference, torch.Tensor) or not reference.is_floating_point()
             or len(indices) != len(features) or len(indices) != len(supports)
             or not isinstance(selection, (list, tuple))
@@ -70,17 +72,17 @@ def assemble_object_features(reference, indices, features, supports, selection):
     # Both FP32 sums use the installed deterministic index_add implementation.
     with deterministic_index_add_backend():
         summed = reference.new_zeros(
-            (OBJECT_FEATURE_CHANNELS, 192 * 256), dtype=torch.float32).index_add(
+            (OBJECT_FEATURE_CHANNELS, height * width), dtype=torch.float32).index_add(
             1, selected_indices,
             torch.cat([features[i] for i in selection], dim=1) if selection
             else reference.new_zeros((OBJECT_FEATURE_CHANNELS, 0), dtype=torch.float32))
         count = reference.new_zeros(
-            (1, 192 * 256), dtype=torch.float32).index_add(
+            (1, height * width), dtype=torch.float32).index_add(
             1, selected_indices,
             torch.cat([supports[i] for i in selection], dim=1) if selection
             else reference.new_zeros((1, 0), dtype=torch.float32))
     return (summed / count.clamp_min(1)).reshape(
-        1, OBJECT_FEATURE_CHANNELS, 192, 256), count.reshape(1, 1, 192, 256)
+        1, OBJECT_FEATURE_CHANNELS, height, width), count.reshape(1, 1, height, width)
 
 
 class DeterministicObjectAssemblyRenderer(nn.Module):
@@ -104,9 +106,11 @@ A structural regression checks that all other forward statements stay equal.
     def forward(self, conditions, instance_table, *, return_evidence=False):
         order = self.condition_channel_order
         blank_indices = tuple(order.index(name) for name in OBJECT_DEPENDENT_GROUND_CHANNELS)
-        if not isinstance(conditions, torch.Tensor) or conditions.shape != (1, 23, 192, 256):
+        geometry = getattr(self, "native_stage_geometry", None)
+        height, width, patch_size = spatial_geometry(geometry)
+        if not isinstance(conditions, torch.Tensor) or conditions.shape != (1, 23, height, width):
             raise ValueError("structured object renderer requires one 256x192 condition")
-        views = validate_bound_object_views(conditions[0], instance_table, order)
+        views = validate_bound_object_views(conditions[0], instance_table, order, geometry=geometry)
         for role in TERRAIN_ROLES:
             values = conditions[:, order.index(role)]
             if not bool(((values == 0) | (values == 1)).all()):
@@ -117,17 +121,17 @@ A structural regression checks that all other forward statements stay equal.
         indices, features, supports = [], [], []
         if views:
             patches = torch.stack([
-                _crop(terrain_features[0], view.top, view.left, PATCH_SIZE)[0]
+                _crop(terrain_features[0], view.top, view.left, patch_size)[0]
                 for view in views
             ])
             subject_features = self.appearance(views, patches)
             for index, view in enumerate(views):
-                y0, y1 = max(0, view.top), min(192, view.top + PATCH_SIZE)
-                x0, x1 = max(0, view.left), min(256, view.left + PATCH_SIZE)
+                y0, y1 = max(0, view.top), min(height, view.top + patch_size)
+                x0, x1 = max(0, view.left), min(width, view.left + patch_size)
                 dy, dx = y0 - view.top, x0 - view.left
                 ys = torch.arange(y0, y1, device=conditions.device)
                 xs = torch.arange(x0, x1, device=conditions.device)
-                indices.append((ys[:, None] * 256 + xs[None, :]).reshape(-1))
+                indices.append((ys[:, None] * width + xs[None, :]).reshape(-1))
                 features.append(subject_features[index, :, dy:dy + y1-y0,
                                                  dx:dx + x1-x0].reshape(
                     OBJECT_FEATURE_CHANNELS, -1).float())
@@ -135,7 +139,7 @@ A structural regression checks that all other forward statements stay equal.
                                                   dx:dx + x1-x0].reshape(1, -1).float())
 
         def assemble(selection):
-            return assemble_object_features(terrain_features, indices, features, supports, selection)
+            return assemble_object_features(terrain_features, indices, features, supports, selection, geometry=geometry)
 
         all_object_features, footprint_count = assemble(list(range(len(views))))
         footprint_mask = conditions[:, order.index("object_footprints"):

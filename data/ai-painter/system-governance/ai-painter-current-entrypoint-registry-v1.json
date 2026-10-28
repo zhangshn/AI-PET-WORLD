@@ -252,6 +252,11 @@
       "packageScript": "check:ai-painter-stage4-core",
       "entryFile": "scripts/check-ai-painter-stage4-core.mjs",
       "role": "stage4_model_lifecycle_documentation_core_regression"
+    },
+    {
+      "packageScript": "run:ai-painter-replay-retention-review-recovery",
+      "entryFile": "scripts/run-ai-painter-replay-retention-review-recovery-v1.mjs",
+      "role": "exact_failed_zero_forward_review_recovery_cpu_only_no_training_or_qualification"
     }
   ],
   "localControlEntrypoints": [

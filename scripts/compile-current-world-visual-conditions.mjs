@@ -1,21 +1,80 @@
+import { pathToFileURL } from "node:url"
 import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import sharp from "sharp"
+import { buildWorldVisualFactManifestFromNaturalFacts } from "./build-current-world-visual-fact-manifest.mjs"
+import { buildInitialNaturalWorldVisualTask } from "./build-current-world-visual-generation-task-package.mjs"
+import { naturalWorldDigest } from "./lib/real-earth-region-governance.mjs"
 
+/** Typed byte verification of the freshly compiled natural candidate only. */
+export async function verifyNaturalWorldConditionPackage({ manifestBinding, expected }) {
+  const root = process.cwd(), manifestPath = path.resolve(root, manifestBinding.path), directory = fs.realpathSync(path.dirname(manifestPath))
+  const inputReads = [], sha = b => crypto.createHash("sha256").update(b).digest("hex")
+  const read = p => {
+    const real = fs.realpathSync(p), relative = path.relative(directory, real)
+    if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) throw new Error("natural condition file escaped candidate directory")
+    const bytes = fs.readFileSync(p)
+    inputReads.push({ path: path.relative(root, p).replace(/\\/g, "/"), fileSha256: sha(bytes), bytes: bytes.length })
+    return bytes
+  }
+  const manifestBytes = read(manifestPath)
+  if (sha(manifestBytes) !== manifestBinding.sha256) throw new Error("natural condition manifest file hash mismatch")
+  const manifest = JSON.parse(manifestBytes.toString("utf8")), packPath = path.resolve(root, manifest.conditionPackPath)
+  const pack = JSON.parse(read(packPath).toString("utf8"))
+  if (manifest.schemaVersion !== "complete-world-visual-condition-manifest-v1" || pack.schemaVersion !== "complete-world-visual-condition-pack-v1" ||
+    pack.compilerVersion !== "visual-condition-compiler-v1") throw new Error("natural condition schema mismatch")
+  if (pack.scope !== "natural_world_runtime_v1" || manifest.scope !== pack.scope ||
+    pack.datasetBindingPurpose !== "model_training_knowledge_only" || pack.newWorldIsDatasetSample !== false) throw new Error("unsupported natural condition scope or dataset use")
+  for (const k of ["worldId", "regionId", "tick", "factHash", "sourceFactReleaseIdentity"]) {
+    if (pack[k] !== expected[k] || manifest[k] !== expected[k]) throw new Error("natural condition expected identity mismatch:" + k)
+  }
+  const canonical = structuredClone(pack); delete canonical.conditionPackSha256; delete canonical.identityBindings.conditionPackageSha256
+  if (sha(Buffer.from(JSON.stringify(canonical))) !== pack.conditionPackSha256 || manifest.conditionPackSha256 !== pack.conditionPackSha256 ||
+    pack.identityBindings.conditionPackageSha256 !== pack.conditionPackSha256) throw new Error("natural condition canonical hash mismatch")
+  if (naturalWorldDigest(manifest.identityBindings) !== naturalWorldDigest(pack.identityBindings) ||
+    path.resolve(root, pack.identityBindings.conditionPackagePath) !== packPath || manifest.conditionPackId !== pack.conditionPackId) throw new Error("natural condition binding mismatch")
+  const contractPath = path.resolve(root, pack.identityBindings.conditionContractPath), contractBytes = fs.readFileSync(contractPath)
+  if (sha(contractBytes) !== pack.identityBindings.conditionContractSha256) throw new Error("natural tensor contract hash mismatch")
+  inputReads.push({ path: pack.identityBindings.conditionContractPath, fileSha256: sha(contractBytes), bytes: contractBytes.length })
+  const contract = JSON.parse(contractBytes.toString("utf8"))
+  if (contract.schemaVersion !== "ai-painter-complete-map-condition-contract-v1" || contract.status !== "active_current_machine_condition_contract" ||
+    pack.identityBindings.conditionContractIdentity !== contract.conditionContractIdentity) throw new Error("natural tensor contract binding mismatch")
+  if (pack.channels.length !== 23 || JSON.stringify(pack.channels.map(c => c.id)) !== JSON.stringify(contract.tensorContract.channelOrder)) throw new Error("natural condition channel order mismatch")
+  const channelBindings = []
+  for (const c of pack.channels) {
+    if (c.dtype !== "uint8" || JSON.stringify(c.shape) !== "[1,768,1024]" || JSON.stringify(c.valueRange) !== "[0,255]") throw new Error("natural condition tensor type mismatch")
+    const bytes = read(path.resolve(root, c.path))
+    if (sha(bytes) !== c.sha256) throw new Error("natural condition channel hash mismatch:" + c.id)
+    const metadata = await sharp(bytes).metadata()
+    if (metadata.width !== 1024 || metadata.height !== 768 || metadata.depth !== "uchar" || metadata.channels !== 1 || metadata.space !== "b-w") throw new Error("natural condition PNG type mismatch")
+    const decoded = await sharp(bytes).greyscale().raw().toBuffer()
+    if (decoded.length !== 1024 * 768) throw new Error("natural condition decoded tensor shape mismatch")
+    channelBindings.push({ path: c.path, sha256: c.sha256, bytes: bytes.length, id: c.id })
+  }
+  return { pack, manifest, channelBindings, inputReads }
+}
+
+export async function compileCurrentWorldVisualConditions(options = {}) {
 const ROOT = process.cwd()
+const compilerInputReads = []
+const readInput = p => {
+  const bytes = fs.readFileSync(p)
+  compilerInputReads.push({ path: projectPath(p), fileSha256: sha256(bytes), bytes: bytes.length })
+  return bytes
+}
 const CONDITION_CONTRACT_PATH = "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json"
-const conditionContractBytes = fs.readFileSync(resolveProjectPath(CONDITION_CONTRACT_PATH))
+const conditionContractBytes = readInput(resolveProjectPath(CONDITION_CONTRACT_PATH))
 const conditionContract = JSON.parse(conditionContractBytes.toString("utf8"))
 const conditionContractSha256 = sha256(conditionContractBytes)
-const explicitTaskPath = argumentValue("--task")
-const explicitManifestPath = argumentValue("--task-manifest")
+const explicitTaskPath = options.taskPath ?? argumentValue("--task")
+const explicitManifestPath = options.taskManifestPath ?? argumentValue("--task-manifest")
 assert(explicitManifestPath, "--task-manifest is required; legacy latest task fallback is forbidden")
 const taskManifestPath = resolveProjectPath(explicitManifestPath)
-const taskManifestBytes = fs.readFileSync(taskManifestPath)
+const taskManifestBytes = readInput(taskManifestPath)
 const taskManifest = JSON.parse(taskManifestBytes.toString("utf8"))
 const taskPath = resolveProjectPath(explicitTaskPath ?? taskManifest.taskPath)
-const taskBytes = fs.readFileSync(taskPath)
+const taskBytes = readInput(taskPath)
 const task = JSON.parse(taskBytes.toString("utf8"))
 const taskDir = path.dirname(taskPath)
 const outputDir = path.join(taskDir, "compiled-conditions")
@@ -23,6 +82,11 @@ const channelDir = path.join(outputDir, "channels")
 const manifestPath = path.join(outputDir, "manifest.json")
 const conditionPackPath = path.join(outputDir, "condition-pack.json")
 const timestamp = new Date().toISOString()
+const natural = task.conditionScope === "natural_world_runtime_v1"
+assert(task.conditionScope === undefined || natural, "unsupported condition scope")
+assert(task.scope !== "natural_world_runtime_v1" || natural, "natural condition scope missing")
+assert(task.scope === undefined || natural, "unsupported task scope")
+assert(taskManifest.scope === undefined || natural && taskManifest.scope === task.scope, "unsupported task manifest scope")
 
 assert(conditionContract.schemaVersion === "ai-painter-complete-map-condition-contract-v1", "unsupported current condition contract schema")
 assert(conditionContract.status === "active_current_machine_condition_contract", "current condition contract is not active")
@@ -48,8 +112,10 @@ delete taskCanonical.taskSha256
 assert(sha256(Buffer.from(JSON.stringify(taskCanonical))) === task.taskSha256, "task package canonical SHA-256 mismatch")
 
 const visualFactPath = resolveProjectPath(task.sourceBindings.visualFactManifestPath)
-const visualFactBytes = fs.readFileSync(visualFactPath)
+const visualFactBytes = readInput(visualFactPath)
 const visualFacts = JSON.parse(visualFactBytes.toString("utf8"))
+assert(natural || !(task.sourceBindings.sourceFactReleaseBinding || task.sourceFactReleaseIdentity ||
+  visualFacts.scope === "natural_world_runtime_v1" || visualFacts.sourceFactReleaseIdentity), "natural source requires explicit condition scope")
 assert(visualFacts.manifestId === task.sourceBindings.visualFactManifestId, "visual fact manifest identity mismatch")
 assert(visualFacts.worldId === task.worldId && visualFacts.tick === task.tick, "visual fact world identity mismatch")
 assert(visualFacts.regionId === task.regionId, "visual fact region identity mismatch")
@@ -63,6 +129,26 @@ assert(
   sha256(Buffer.from(JSON.stringify(visualFactCanonical))) === task.sourceBindings.visualFactManifestSha256,
   "visual fact manifest canonical hash mismatch",
 )
+if (natural) {
+  assert(task.scope === "natural_world_runtime_v1" && taskManifest.scope === task.scope && visualFacts.scope === task.scope,
+    "natural condition scope mismatch")
+  assert(task.datasetBindingPurpose === "model_training_knowledge_only" && task.newWorldIsDatasetSample === false,
+    "natural world cannot inherit dataset sample qualification")
+  const sourceFactReleaseBinding = task.sourceBindings.sourceFactReleaseBinding
+  assert(sourceFactReleaseBinding && naturalWorldDigest(sourceFactReleaseBinding) === naturalWorldDigest(taskManifest.sourceFactReleaseBinding), "natural source release missing or mismatched")
+  const rebuiltFacts = await buildWorldVisualFactManifestFromNaturalFacts({ sourceFactReleaseBinding })
+  assert(naturalWorldDigest(rebuiltFacts.manifest) === naturalWorldDigest(visualFacts), "natural visual fact replay mismatch")
+  const rebuiltTask = await buildInitialNaturalWorldVisualTask({ sourceFactReleaseBinding,
+    visualFactManifestBinding: { path: projectPath(visualFactPath), sha256: sha256(visualFactBytes) },
+    directorPath: taskManifest.directorPath, taskPath: projectPath(taskPath) })
+  const director = JSON.parse(readInput(resolveProjectPath(taskManifest.directorPath)).toString("utf8"))
+  assert(naturalWorldDigest(rebuiltTask.task) === naturalWorldDigest(task) &&
+    naturalWorldDigest(rebuiltTask.director) === naturalWorldDigest(director) &&
+    naturalWorldDigest(rebuiltTask.manifest) === naturalWorldDigest(taskManifest), "natural director or task replay mismatch")
+  assert(task.sourceBindings.runtimeFramePath === null && task.sourceBindings.runtimeFrameId === null,
+    "natural bootstrap cannot depend on a RuntimeFrame")
+  compilerInputReads.push(...rebuiltFacts.inputReads, ...rebuiltTask.inputReads)
+}
 
 const width = task.outputSize.width
 const height = task.outputSize.height
@@ -190,6 +276,8 @@ const unavailableChannels = [
 ]
 
 const conditionPack = {
+  ...(natural ? { scope: "natural_world_runtime_v1", datasetBindingPurpose: "model_training_knowledge_only", newWorldIsDatasetSample: false,
+    sourceFactReleaseBinding: task.sourceBindings.sourceFactReleaseBinding, sourceFactReleaseIdentity: task.sourceFactReleaseIdentity } : {}),
   schemaVersion: "complete-world-visual-condition-pack-v1",
   compilerVersion: "visual-condition-compiler-v1",
   conditionPackId: `visual-conditions-${task.taskId}`,
@@ -284,8 +372,8 @@ const conditionPack = {
   bootstrapInferenceGate: task.bootstrapInferenceGate,
 }
 
-assert(sha256(fs.readFileSync(taskPath)) === sha256(taskBytes), "task package changed during condition compilation")
-assert(sha256(fs.readFileSync(visualFactPath)) === sha256(visualFactBytes), "VisualFactManifest changed during condition compilation")
+assert(sha256(readInput(taskPath)) === sha256(taskBytes), "task package changed during condition compilation")
+assert(sha256(readInput(visualFactPath)) === sha256(visualFactBytes), "VisualFactManifest changed during condition compilation")
 const packCanonical = JSON.parse(JSON.stringify(conditionPack))
 delete packCanonical.conditionPackSha256
 delete packCanonical.identityBindings.conditionPackageSha256
@@ -294,6 +382,8 @@ conditionPack.identityBindings.conditionPackageSha256 = conditionPack.conditionP
 writeJson(conditionPackPath, conditionPack)
 
 const manifest = {
+  ...(natural ? { scope: "natural_world_runtime_v1", datasetBindingPurpose: "model_training_knowledge_only", newWorldIsDatasetSample: false,
+    sourceFactReleaseBinding: task.sourceBindings.sourceFactReleaseBinding, sourceFactReleaseIdentity: task.sourceFactReleaseIdentity } : {}),
   schemaVersion: "complete-world-visual-condition-manifest-v1",
   compilerVersion: conditionPack.compilerVersion,
   conditionPackId: conditionPack.conditionPackId,
@@ -329,7 +419,8 @@ const manifest = {
 }
 writeJson(manifestPath, manifest)
 
-console.log(JSON.stringify({ ...manifest, manifestPath: projectPath(manifestPath) }, null, 2))
+if (!options.quiet) console.log(JSON.stringify({ ...manifest, manifestPath: projectPath(manifestPath) }, null, 2))
+return { ...manifest, manifestPath: projectPath(manifestPath), manifestFileSha256: sha256(readInput(manifestPath)), inputReads: compilerInputReads }
 
 async function writeChannel({ id, pixels, kind, semantics, derivation, sourceRefs }) {
   const filePath = path.join(channelDir, `${id}.png`)
@@ -572,4 +663,9 @@ function formatShanghai(isoTimestamp) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
+}
+
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  await compileCurrentWorldVisualConditions()
 }

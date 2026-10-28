@@ -43,7 +43,76 @@ import {
   buildCompleteMapStructuralIdentities,
   buildIndependentTrainingRegionConnectivity,
   buildRealEarthRegionSourcePackage,
+  qualifyNaturalWorldSources,
+  naturalWorldDigest,
+  readNaturalWorldBinding,
 } from "./lib/real-earth-region-governance.mjs";
+
+export const NATURAL_WORLD_PRODUCER_FILES = Object.freeze([
+  "scripts/build-earth-geospatial-complete-map-conditions.mjs", "scripts/lib/real-earth-region-governance.mjs",
+  "scripts/build-current-world-visual-fact-manifest.mjs", "scripts/build-current-world-visual-generation-task-package.mjs",
+  "scripts/compile-current-world-visual-conditions.mjs", "src/world/runtime/natural-world-bootstrap.ts",
+  "scripts/lib/anonymous-route-naturalness.mjs", "scripts/lib/anonymous-water-naturalness.mjs",
+  "scripts/lib/measurement-driven-anonymous-topology.mjs", "scripts/lib/measurement-derived-coarse-hydrology.mjs",
+  "scripts/lib/world-visual-dictionary-contract.mjs",
+  "src/world/runtime/world-runtime-record-validation.ts", "src/world/runtime/world-runtime-store-adapter.ts",
+  "src/world/runtime/world-runtime-store.ts", "src/world/runtime/world-runtime-production-store.ts", "src/world/runtime/runtime-path-security.ts",
+]);
+export function naturalWorldFactsEnvelope(proposal) {
+  assertNatural(proposal?.schemaVersion === "natural-world-generated-facts-v1" && proposal.scope === "natural_world_runtime_v1", "natural facts scope unsupported");
+  return { schemaVersion: "natural-world-facts-snapshot-v1", worldId: proposal.identity.worldId,
+    regionId: proposal.identity.regionId, tick: proposal.tick,
+    payload: Object.fromEntries(["terrainRegions", "objectFootprints", "walkableRegions", "collisionRegions"].map(k => [k, structuredClone(proposal.geometry[k])])) };
+}
+/** Replaying exact current source and generation, rather than trusting release flags. */
+export async function verifyNaturalWorldFactRelease({ root = process.cwd(), binding }) {
+  assertNatural(fs.realpathSync(root) === fs.realpathSync(process.cwd()), "natural producer requires declared project cwd");
+  const inputReads = [];
+  const read = b => JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(readNaturalWorldBinding(root, b, inputReads)));
+  const release = read(binding);
+  assertNatural(release.schemaVersion === "natural-world-source-fact-release-v1" && release.scope === "natural_world_runtime_v1", "unknown natural fact release scope");
+  assertNatural(Array.isArray(release.producerBindings) && release.producerBindings.length === NATURAL_WORLD_PRODUCER_FILES.length, "natural producer bindings incomplete");
+  for (let i = 0; i < NATURAL_WORLD_PRODUCER_FILES.length; i++) {
+    assertNatural(release.producerBindings[i].path === NATURAL_WORLD_PRODUCER_FILES[i], "natural producer binding identity mismatch");
+    readNaturalWorldBinding(root, release.producerBindings[i], inputReads);
+  }
+  const stored = read(release.generatedFactsBinding);
+  const sourcePackage = read(release.sourcePackageBinding);
+  const proposal = await buildEarthGeospatialCompleteMapConditions({ naturalWorldInput: release.creationInput });
+  assertNatural(naturalWorldDigest(stored) === naturalWorldDigest(proposal) && naturalWorldDigest(sourcePackage) === naturalWorldDigest(proposal.sourcePackage), "natural fact release replay mismatch");
+  const factsEnvelope = naturalWorldFactsEnvelope(proposal);
+  assertNatural(release.factHash === naturalWorldDigest(factsEnvelope) && release.worldId === proposal.identity.worldId &&
+    release.regionId === proposal.identity.regionId && release.ownerId === proposal.identity.ownerId && release.tick === 0 &&
+    release.sourcePackageIdentity === proposal.sourcePackageIdentity, "natural fact release identity mismatch");
+  const { sourceFactReleaseIdentity, ...payload } = release;
+  assertNatural(sourceFactReleaseIdentity === `natural-source-facts-${naturalWorldDigest(payload)}`, "natural source fact release digest mismatch");
+  return { release, proposal, factsEnvelope, inputReads: [...inputReads, ...proposal.sourceInputReads] };
+}
+
+export function createNaturalWorldRandom(initialU32, saved = null) {
+  assertNatural(Number.isInteger(initialU32) && initialU32 >= 0 && initialU32 <= 0xffffffff, "RNG initial state invalid");
+  let currentU32 = initialU32, drawCount = 0;
+  if (saved !== null) {
+    assertNatural(saved.status === "captured" && saved.algorithmId === "mulberry32" && saved.algorithmVersion === "u32-v1", "RNG algorithm unsupported");
+    const state = saved.state;
+    assertNatural(state && state.initialU32 === initialU32 && Number.isSafeInteger(state.drawCount) && state.drawCount >= 0 &&
+      Number.isInteger(state.currentU32) && state.currentU32 >= 0 && state.currentU32 <= 0xffffffff &&
+      Number((BigInt(initialU32) + BigInt(state.drawCount) * 0x6d2b79f5n) & 0xffffffffn) === state.currentU32, "RNG continuation state invalid");
+    ({ currentU32, drawCount } = state);
+  }
+  return {
+    next() {
+      assertNatural(drawCount < Number.MAX_SAFE_INTEGER, "RNG counter exhausted");
+      currentU32 = (currentU32 + 0x6d2b79f5) >>> 0; drawCount++;
+      let value = currentU32;
+      value = Math.imul(value ^ (value >>> 15), value | 1);
+      value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+      return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+    },
+    snapshot() { return { status: "captured", algorithmId: "mulberry32", algorithmVersion: "u32-v1", state: { initialU32, currentU32, drawCount } }; },
+  };
+}
+function assertNatural(value, message) { if (!value) throw new Error(message); }
 
 // Importing the geometry implementation must not execute the historical CLI.
 export function replacementPathOriginWithinContract(point, side, canvas, contract) {
@@ -63,10 +132,12 @@ export function replacementPathOriginWithinContract(point, side, canvas, contrac
 
 // A replacement input produces an unpublished CPU proposal only; it never
 // enters the legacy event, latest-pointer, task or compilation branches below.
-export async function buildEarthGeospatialCompleteMapConditions({ replacementGeometryInput = null } = {}) {
+export async function buildEarthGeospatialCompleteMapConditions({ replacementGeometryInput = null, naturalWorldInput = null } = {}) {
 const ROOT = process.cwd();
-const V7_SLOT_ID = replacementGeometryInput?.slotContext?.assignment?.slotId ?? valueFor("--v7-slot-id");
-const V7_SLOT_CONTEXT = replacementGeometryInput?.slotContext ?? (V7_SLOT_ID
+assertNatural(!(replacementGeometryInput && naturalWorldInput), "ambiguous generation mode");
+const naturalSources = naturalWorldInput ? qualifyNaturalWorldSources({ root: ROOT, input: naturalWorldInput }) : null;
+const V7_SLOT_ID = naturalSources ? null : replacementGeometryInput?.slotContext?.assignment?.slotId ?? valueFor("--v7-slot-id");
+const V7_SLOT_CONTEXT = naturalSources ?? replacementGeometryInput?.slotContext ?? (V7_SLOT_ID
   ? loadV7SlotContext(V7_SLOT_ID)
   : null);
 assert(
@@ -121,9 +192,9 @@ const EXPECTED_V7_SLOT_SEED_REVISION =
     : V7_SLOT_ID && AUTHORIZED_WATER_SEED_REVISION_SLOTS.has(V7_SLOT_ID)
       ? `owner-directed-${V7_SLOT_ID}-seed-revision-1-20260727`
       : null;
-const V7_SLOT_SEED_REVISION = replacementGeometryInput ? (replacementGeometryInput.waterProjection
+const V7_SLOT_SEED_REVISION = naturalSources ? null : replacementGeometryInput ? (replacementGeometryInput.waterProjection
   ? "measurement-replacement-geometry-proposal-v2" : "measurement-replacement-geometry-proposal-v1") : valueFor("--v7-slot-seed-revision");
-const V7_SLOT_COMPOSITION_REVISION = replacementGeometryInput ? (replacementGeometryInput.waterProjection
+const V7_SLOT_COMPOSITION_REVISION = naturalSources ? "measurement-derived-complete-world-proposal-v1" : replacementGeometryInput ? (replacementGeometryInput.waterProjection
   ? "measurement-derived-complete-world-proposal-v2" : "measurement-derived-complete-world-proposal-v1") : valueFor(
   "--v7-slot-composition-revision",
 );
@@ -146,7 +217,7 @@ const EXPECTED_V7_SLOT_COMPOSITION_REVISIONS =
         THAILAND_REBUILD64_CROSS_MODAL_RGB_COLLAPSE_PREVENTION_REVISION,
       ]
     : [];
-const V7_SLOT_SEED_PREFLIGHT_AUTHORIZATION_ID = valueFor(
+const V7_SLOT_SEED_PREFLIGHT_AUTHORIZATION_ID = naturalSources ? null : valueFor(
   "--v7-slot-seed-preflight-authorization-id",
 );
 const AUTHORIZED_SLOT_123_SEED_PREFLIGHT_ID =
@@ -178,7 +249,7 @@ if (V7_SLOT_SEED_REVISION && !replacementGeometryInput) {
     "V7 slot seed revision is not authorized for this slot",
   );
 }
-if (V7_SLOT_COMPOSITION_REVISION && !replacementGeometryInput) {
+if (V7_SLOT_COMPOSITION_REVISION && !replacementGeometryInput && !naturalSources) {
   assert(
     EXPECTED_V7_SLOT_COMPOSITION_REVISIONS.includes(
       V7_SLOT_COMPOSITION_REVISION,
@@ -247,8 +318,41 @@ const WATER_NATURALNESS_LATEST_PATH = path.join(
   "latest.json",
 );
 
-const createdAtUtc = new Date().toISOString();
+const createdAtUtc = naturalWorldInput?.createdAtUtc ?? new Date().toISOString();
 const createdAtAsiaShanghai = formatShanghai(createdAtUtc);
+if (naturalSources) {
+  const input = structuredClone(naturalWorldInput);
+  const identity = Object.fromEntries(["ownerId", "playerId", "worldId", "worldSeed", "worldProfileId", "regionId"].map(k => [k, input[k]]));
+  const seedHex = naturalWorldDigest({ identity, sourcePackageIdentity: naturalSources.sourcePackageIdentity, ruleVersion: "natural-world-bootstrap-v1" });
+  const random = createNaturalWorldRandom(Number.parseInt(seedHex.slice(0, 8), 16));
+  const initialRandomState = random.snapshot();
+  const worldFacts = { measuredNaturalFacts: {
+    relief: naturalSources.assignment.metrics.elevationMetres,
+    landCoverAfterHumanRemoval: { classHistogram: naturalSources.newSourcePackage.measurement.classHistogram },
+    climate: naturalSources.climateFacts,
+  } };
+  const connectivity = buildIndependentTrainingRegionConnectivity({ naturalWorldScope: true, slotId: null,
+    assignment: naturalSources.assignment, worldProfileId: input.worldProfileId, sourcePackage: naturalSources.newSourcePackage,
+    width: WIDTH, height: HEIGHT, hasWater: landscapeRequiresVisibleWater(naturalSources.assignment.regionalLandscapeType),
+    anonymousCompositionArchitectureRevision: V7_SLOT_COMPOSITION_REVISION, regionIdentity: input.regionId });
+  const geometry = buildV7SlotGameGeometry({ conditionId: `natural-${seedHex.slice(0, 24)}`, random: () => random.next(), seedHex,
+    worldFacts, connectivityBlueprint: connectivity, slotContext: naturalSources,
+    routeNaturalnessProfile: naturalSources.routeNaturalnessProfile, waterNaturalnessProfile: null });
+  assert(geometry.routeNaturalnessAudit?.passed === true && geometry.terrainRegions.length > 0 && geometry.walkableRegions.length > 0 &&
+    geometry.objectFootprints.length > 0 && geometry.collisionRegions.length > 0, "natural geometry production failed");
+  return { schemaVersion: "natural-world-generated-facts-v1", scope: "natural_world_runtime_v1", status: "unpublished_natural_world_candidate",
+    creationInput: input, identity, tick: 0, stateVersion: 0, ruleVersion: "natural-world-bootstrap-v1", seedHex,
+    measuredNaturalFacts: worldFacts.measuredNaturalFacts, geometry, connectivity,
+    regionalLandscapeType: naturalSources.assignment.regionalLandscapeType,
+    environment: { climate: naturalSources.climateFacts, seasonScenario: naturalSources.contract.state.seasonScenario,
+      weather: { status: "unknown", reason: "climatology_is_not_current_weather" },
+      lighting: { status: "unknown", reason: "no_current_light_observation_or_simulation_clock" },
+      localTime: { status: "unknown", reason: "no_simulation_clock_initialized" }, wind: { status: "unknown", reason: "climatology_is_not_current_wind" } },
+    initialRandomState, randomState: random.snapshot(), sourcePackage: naturalSources.newSourcePackage,
+    knowledgeDatasetBinding: naturalSources.knowledgeDatasetBinding,
+    sourcePackageIdentity: naturalSources.sourcePackageIdentity, sourceInputReads: naturalSources.inputReads,
+    outputBoundary: { rgbCreated: false, frameCreated: false, modelExecuted: false, worldEntryEligible: false } };
+}
 if (replacementGeometryInput) {
   const input = replacementGeometryInput;
   assert(input.schemaVersion === "ai-painter-replacement-geometry-input-v1", "unsupported replacement geometry input");
@@ -3916,9 +4020,8 @@ function buildFullWorldDynamicReadinessContract({
   return {
     contractVersion:
       "complete-rectangular-world-and-future-dynamic-readiness-v2",
-    appliesToAllThailandRebuild64Slots: true,
-    staticRgbRole:
-      "local_model_positive_target_and_future_game_world_visual_baseline",
+    ...(naturalSources ? { scope: "natural_world_runtime_v1", staticRgbRole: "no_rgb_generated_candidate_structure_only" }
+      : { appliesToAllThailandRebuild64Slots: true, staticRgbRole: "local_model_positive_target_and_future_game_world_visual_baseline" }),
     frameCoverage: {
       width: WIDTH,
       height: HEIGHT,
@@ -3934,7 +4037,7 @@ function buildFullWorldDynamicReadinessContract({
     },
     boundaryConnectivity: {
       pathBoundarySide: pathConnection.boundarySide,
-      pathBoundaryPosition: structuredClone(pathConnection.boundaryPosition),
+      pathBoundaryPosition: structuredClone(naturalSources ? pathConnection.point : pathConnection.boundaryPosition),
       routeMustVisiblyTouchContractSide: true,
       horizontalOrVerticalMirrorAllowed: false,
       uncontractedVisualEntranceAllowed: false,
@@ -3951,7 +4054,7 @@ function buildFullWorldDynamicReadinessContract({
       currentMilestoneRemainsStatic: true,
     },
     uniqueness: {
-      compareAll64ThemeArchitectureAndInstanceDetail: true,
+      ...(naturalSources ? { freshGenerationRequired: true, trainingSampleMembership: false } : { compareAll64ThemeArchitectureAndInstanceDetail: true }),
       compareRouteHydrologyEcologicalPartitionsBoundaryAndObjectClusters: true,
       copyMirrorRotateOrSharedMacroTemplateAllowed: false,
     },
@@ -5073,7 +5176,7 @@ function polygonBoundingBox(polygon) {
 function objectCountFromFacts(worldFacts) {
   const histogram =
     worldFacts.measuredNaturalFacts.landCoverAfterHumanRemoval.classHistogram;
-  const treeRatio = Number(histogram["10"] ?? 0) / (WIDTH * HEIGHT);
+  const treeRatio = Number(histogram["10"] ?? 0) / (naturalSources ? Object.values(histogram).reduce((sum, n) => sum + Number(n), 0) : WIDTH * HEIGHT);
   return Math.max(34, Math.min(52, Math.round(34 + treeRatio * 18)));
 }
 

@@ -12,11 +12,15 @@ import { readSingleMapWorkEvidence } from './single-map-work-evidence.mjs'
 import { createRegistryWorkConsumer } from './work-registry-consumer.mjs'
 import { readTrainingWorkObservation } from './training-work-observation.mjs'
 import { readTwoMapPostReviewWorkEvidence } from './two-map-post-review-work-evidence.mjs'
+import { validateReplayRetentionFitPackage, readReplayRetentionWorkEvidence } from './replay-retention-work-evidence.mjs'
+import {createMvpAcceptanceVerifier} from './mvp-acceptance-verifier.mjs'
+import {createMvpAcceptanceConsumer,MVP_CONSUMER_VERSION} from './mvp-acceptance-consumer.mjs'
+import {MVP_PRODUCER,MVP_SOURCE,MVP_INDEX} from './mvp-acceptance-contracts.mjs'
 
 const PLAN='docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md'
 const SPEC='docs/LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md'
 const REG='.runtime/ai-painter/current-execution-registry'
-const SOURCES=['ai-painter-registry-v1','git-operations-v1','backup-runs-v1','codex-records-v1','training-history-index-v1']
+const SOURCES=['ai-painter-registry-v1','git-operations-v1','backup-runs-v1','codex-records-v1','training-history-index-v1',MVP_SOURCE]
 export const CODEX_REPORTERS=Object.freeze([
   Object.freeze({id:'codex-controller',name:'总控|文档、调度与验收2',threadId:'01a16ccd-a67b-7ae0-b614-a0415398ae0b'}),
   Object.freeze({id:'codex-migration',name:'能力迁移｜本地连续执行',threadId:'01a094ed-39ee-7e60-a949-d726cdda7e09'}),
@@ -31,7 +35,7 @@ const knownReason=e=>/^[a-z][a-z0-9_]{0,159}$/.test(e?.message??'')?e.message:/^
 const absent=file=>{try{fs.lstatSync(file);return false}catch(e){if(e.code==='ENOENT')return true;throw e}}
 const same=(a,b)=>path.resolve(a).toLowerCase()===path.resolve(b).toLowerCase()
 const contextKey=Symbol.for('ai-pet-world.local-work-recording.context.v1')
-const implementationVersion='bounded-mixed-package-068-v1'
+const implementationVersion='mvp-acceptance-ledger-136-v1'
 function fixtureScope(root) {
   const real=fs.realpathSync(root)
   need(same(path.dirname(real),fs.realpathSync(os.tmpdir()))&&/^local-backup-work-[A-Za-z0-9]+$/.test(path.basename(real)),'work_fixture_scope_required',409)
@@ -55,7 +59,7 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
     for(const part of parts) {
       cursor=path.join(cursor,part)
       const s=fs.lstatSync(cursor)
-      need(!s.isSymbolicLink()&&(s.isDirectory()||(s.isFile()&&s.nlink===1)),'work_evidence_boundary',409)
+      need(!s.isSymbolicLink()&&same(fs.realpathSync(cursor),cursor)&&(s.isDirectory()||(s.isFile()&&s.nlink===1)),'work_evidence_boundary',409)
     }
     return cursor
   }
@@ -72,13 +76,18 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
     let value
     try{value=JSON.parse(bytes.toString('utf8'))}catch{throw new ModuleError('work_evidence_json_invalid',409)}
     if(bytes.length>max){
-      need(extended&&value.schemaVersion==='mixed-train-rehearsal-package-v1'
+      const legacyMixed=value.schemaVersion==='mixed-train-rehearsal-package-v1'
         &&Array.isArray(value.selectedSampleIds)&&value.selectedSampleIds.length===48
         &&new Set(value.selectedSampleIds).size===48
         &&value.training?.pairs===448&&value.qualificationGranted===false
         &&typeof value.experimentIdentity==='string'
         &&value.outputRoot==='.runtime/ai-painter/learning-capacity-experiments/'+value.experimentIdentity
-        &&(programSnapshot||logical===value.outputRoot+'/package.json'),'work_large_package_identity_invalid',409)
+        &&(programSnapshot||logical===value.outputRoot+'/package.json')
+      let replayMixed=false
+      if(value.schemaVersion==='replay-retention-fit-package-v1'&&['mixed','balanced','balanced-boundary'].includes(value.arm)&&(programSnapshot||logical===value.outputRoot+'/package.json')){
+        try{validateReplayRetentionFitPackage(value,read);replayMixed=true}catch{/* Exact versioned exception must fail closed. */}
+      }
+      need(extended&&(legacyMixed||replayMixed),'work_large_package_identity_invalid',409)
       if(programSnapshot)need(path.basename(logical)===expected+'.json','work_snapshot_digest_name_conflict',409)
     }
     return {logicalPath:logical,sha256,bytes,value}
@@ -153,7 +162,9 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
   const producer=(id,sourceCategory,reporter)=>Object.freeze({id,sourceCategory,reporter,canAccept:false,allowUnresolvedPlan:true,verifyEvidence,verifyPlan})
   const producers={registry:producer('ai-painter-work-v1','local_program',{id:'local-ai-painter',name:'本地训练与审核程序',threadId:null}),git:producer('local-git-work-v1','local_program',{id:'local-git-service',name:'本地 Git 操作程序',threadId:null}),backup:producer('local-backup-work-v1','local_program',{id:'local-backup-service',name:'本地备份程序',threadId:null})}
   const codexProducers=Object.fromEntries(CODEX_REPORTERS.map(r=>[r.id,producer('codex-work-'+r.id,'codex',r)]))
-  const allProducers=[...Object.values(producers),...Object.values(codexProducers)]
+  const mvpVerifier=createMvpAcceptanceVerifier({read,projectRoot})
+  const mvpProducer=Object.freeze({...producer(MVP_PRODUCER,'local_program',{id:'local-mvp-verifier',name:'本地验收证据验证程序',threadId:null}),canAccept:true,verifyAcceptanceFact:mvpVerifier.verifyStored})
+  const allProducers=[...Object.values(producers),...Object.values(codexProducers),mvpProducer]
   function readCoverage({date=null}={}) {
     const sources=SOURCES.map(id=>{try{return getState(id)}catch(e){return {sourceId:id,status:'stale',reasonCode:knownReason(e),coverage:{complete:false}}}})
     const reportDate=date??new Date(Date.now()+28800000).toISOString().slice(0,10)
@@ -208,6 +219,26 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
     if(!binding?.path||!binding.sha256)return null
     need(binding.path.startsWith('.runtime/ai-painter/'),'work_terminal_scope_invalid',409)
     const original=read(binding.path,binding.sha256),v=original.value,schema=v.schema??v.schemaVersion
+    const replay=readReplayRetentionWorkEvidence({terminal:v,read})
+    if(replay) {
+      const eventId='program-replay-retention-review-v1-'+hash([binding.path,binding.sha256])
+      if(ledger.find(eventId))return {recorded:true,replayed:true,eventIds:[eventId]}
+      const input=baseEvent(eventId,'ai-painter','review-'+v.runId,v.runId,'execution_finished',replay.executionResult)
+      Object.assign(input,{title:'本地56样本对照审核（执行、绝对审核与相对保持分列）',originalEventAtUtc:v.recordedAtUtc??null,
+        originalStartedAtUtc:replay.clock.startedAtUtc,originalFinishedAtUtc:replay.clock.finishedAtUtc,
+        monotonicElapsedMs:replay.clock.elapsedSeconds===null?null:replay.clock.elapsedSeconds*1000,
+        reasonCode:replay.executionResult==='failed'?'replay_retention_review_execution_failed':replay.absoluteOutcome==='failed'?'replay_retention_absolute_failed':null,
+        sourceReference:{kind:'review_terminal',originId:v.runId,revision:null},
+        evidenceReferences:[original,replay.pkg,replay.source,...(replay.report?[replay.report]:[]),...(replay.inference?[replay.inference]:[])].map(r=>snapshot(r,'program'))})
+      input.workReport={title:input.title,objective:'记录48份train及8份已暴露开发验证的同父权重对照审核，不授予正式资格。',reason:'执行成功、原有绝对审核失败及相对保持是三个结论，必须独立留档。',
+        actions:['只读核验当前终态、执行包、来源、冻结政策、分片观察及112份逐图审计的显式SHA链。','事件仅引用有界summary与manifest；不把56图数据复制进工作正文，不重新推理。'],changes:[],
+        checks:[{command:'既有本地56样本审核终态读取',status:replay.executionResult==='succeeded'?'passed':'failed',description:'仅表示原审核执行结果与记录链；不等于绝对画质、保留能力或正式资格通过。'},{command:null,status:'not_run',description:'台账未执行GPU、模型前向、训练、像素重审或旧报告数值复算。'}],
+        results:['来源训练Run：'+v.sourceRunId+'；arm：'+replay.arm,'执行结果：'+replay.executionResult,'绝对审核：'+replay.absoluteOutcome,'相对保持／建议：'+replay.relativeOutcome,
+          '候选绝对失败样本数：'+(replay.failedSamples??'未知'),'计时范围：'+(replay.clock.scope??'原失败未保存单调范围，保持未知')],
+        issues:['旧079／086浮点数值未由ledger重新审核；仅沿冻结policy引用及本次worker、观察与审计记录核对来源。','相对改善不覆盖原绝对失败；模型资格、Stage4及Runtime均未授予。',...(replay.executionResult==='failed'?['原审核执行失败，绝对与相对结论保持unknown；不补造缺失观察或计时。']:[])],
+        nextSteps:['按已保存结论由本地流程或总控另记下一步；此记录不启动新训练、恢复或发布。'],planComparison:'唯一模块计划2的091诊断审核事实；不改变阈值、原失败、数据用途或授权范围。'}
+      return appendSource(producers.registry,input)
+    }
     const postReview=readTwoMapPostReviewWorkEvidence({terminal:v,read})
     if(postReview) {
       const eventId='program-post-review-v1-'+hash([binding.path,binding.sha256])
@@ -403,7 +434,15 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
       return {recorded:true,replayed:r.replayed,eventIds:[r.event.eventId]}
     }catch(error){return failure(id,error)}
   }
-  return {implementationVersion,projectRoot,runtime,moduleRoot,stateRoot,ledger,ledgerForStore:queryStore=>createWorkLedger(queryStore,allProducers,{readCoverage}),readCoverage,getState,saveState,failure,observeCommittedRegistry,recordGitOperation,recordBackupRun,recordCodex,planReference}
+  const mvpConsumer=createMvpAcceptanceConsumer({verifier:mvpVerifier,ledger,snapshot,read,getState,saveState,
+    put:(logical,value)=>{need(logical===MVP_INDEX,'mvp_index_path_invalid',409);put(path.join(runtime,logical.slice(9)),value)},
+    appendFact:fact=>{
+      const input=baseEvent('mvp-'+fact.factId,'local-backup','mvp-'+fact.checkpointId.replace(':','-'),null,'progress_report','unknown')
+      Object.assign(input,{acceptanceFact:fact,reporter:mvpProducer.reporter,originalEventAtUtc:fact.origin.originalEventAtUtc,evidenceReferences:[fact.evidence],planReference:planReference('local-backup'),title:'受限外部组件证据核验 · '+fact.checkpointId})
+      input.workReport={title:input.title,objective:'按LB-PROGRESS-003核验明确的历史外部独立报告，形成对应组件检查点的兼容事实。',reason:'外部来源、工作执行与机器完整验收分开；该验证不运行模型或重做原业务。',actions:['核对固定路径、实际不可变摘要、适配语义及适用检查点。','原事务追加事实后再物化48项派生索引和独立水位。'],changes:[],checks:[{command:null,status:'passed',description:'冻结报告实际字节及组件适用范围核对；不是原任务机器验收或完整MVP通过。'}],results:['原来源Codex外部独立报告，原核验者 '+fact.origin.verifierId,'组件兼容结果 '+fact.outcome+'；机器验证和验收仍unknown。'],issues:['未注册生产验收协议的检查点保持未验证。'],nextSteps:['后继生产协议须提供自身适用真实证据；本记录不启动研发或训练。'],planComparison:'唯一计划模块9/LB-PROGRESS-003；48项分母不变。'}
+      return ledger.appendProduced(mvpProducer,input)
+    }})
+  return {implementationVersion,projectRoot,runtime,moduleRoot,stateRoot,ledger,ledgerForStore:queryStore=>createWorkLedger(queryStore,allProducers,{readCoverage}),readCoverage,getState,saveState,failure,observeCommittedRegistry,recordGitOperation,recordBackupRun,recordCodex,planReference,readMvpAcceptance:mvpConsumer.query,consumeMvpAcceptance:mvpConsumer.consume,mvpImplementationIdentity:{version:MVP_CONSUMER_VERSION,sha256:mvpVerifier.implementationSha256,files:mvpVerifier.implementationManifest}}
 }
 export function createWorkProducers({projectRoot=process.cwd(),store}={}) {return buildContext(projectRoot,store,null,false)}
 export function createWorkProducersForIsolatedTests({projectRoot,store,readRegistry}={}) {return buildContext(fixtureScope(projectRoot),store,readRegistry,true)}

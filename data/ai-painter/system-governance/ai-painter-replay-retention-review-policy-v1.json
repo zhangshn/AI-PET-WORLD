@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "ai-painter-replay-retention-review-policy-v1",
+  "purpose": "preregistered_relative_diagnostic_and_unchanged_absolute_audits_no_qualification",
+  "sourceSelection": "current_registry_latest_completed_replay_retention_terminal",
+  "automaticPostReview": true,
+  "targetSampleId": "ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v3",
+  "modelCapability": "stage4_mvp256_dry_terrain_ecology_stem_decoder_precision_v1",
+  "parentExperiment": {
+    "package": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/package.json",
+      "sha256": "41bf35d3f30a2ee4e6286041ed859a3e83a82c05ccb8b0461de6271cc6455291"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/terminal.json",
+      "sha256": "8c576f90fe4d67fa276968edd0ecdac0d038abdc0ef5fa3aab22bd254bc8cf4d"
+    },
+    "result": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/result.json",
+      "sha256": "c315800abf1bdda2f10a9b960a64069f3fa9d841b5cef8d07d0b73d06f7d5622"
+    },
+    "checkpoint": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/checkpoint-final.pt",
+      "sha256": "20c83c99b029d983a2bd15a9774d372abbd9c8bbf5f20626e90aaa4d276d8aef"
+    }
+  },
+  "single149Experiment": {
+    "package": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single149-terrain-ecology-v2-d373a23d4655c3d13e39/package.json",
+      "sha256": "003fc5864a38e718dc696194a4f177581b2c68c2f06c100324878146623118bb"
+    },
+    "terminal": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single149-terrain-ecology-v2-d373a23d4655c3d13e39/terminal.json",
+      "sha256": "a3d6794cb9f6ce82d11c223986f3337c9bef7280aa80142005bb17928c4df87e"
+    },
+    "result": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single149-terrain-ecology-v2-d373a23d4655c3d13e39/result.json",
+      "sha256": "bb23736d94518841c40bb91206958ed898936ab0e1f3f50cd9bcdbb60046e2ad"
+    },
+    "checkpoint": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/single149-terrain-ecology-v2-d373a23d4655c3d13e39/checkpoint-final.pt",
+      "sha256": "333dafd7fee7b66d9dbaac074873fcd40f9a8a84df57315d77c4bd35660e9f3a"
+    }
+  },
+  "parentEvaluation": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/terrain-ecology-all-samples-079-20261027/result.json",
+    "sha256": "95f75c70b39a9553ae0c849bbc08e485e91c42b48bc05c75480ef497adf229bf"
+  },
+  "single149Evaluation": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/single149-all-retention-086-20261027/result.json",
+    "sha256": "59929a700522a0719d493f86be6757a2aca23d22ab8ea3935b3cc1295320b1e4"
+  },
+  "numericReview": {
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json",
+    "sha256": "ed76d3d5798b3dd6a8da0a1072e83b7376cd33e2dfd3314db51921f7ce9903df"
+  },
+  "detailReview": {
+    "path": "data/ai-painter/system-governance/stage4-mvp-256-detail-sufficiency-review-v1-contract.json",
+    "sha256": "3fc675218fbd290454fce4f178bdd9a0253754e96d407ec19cba993af044c3ee"
+  },
+  "absolutePrograms": [
+    {
+      "path": "scripts/lib/ai-assisted-condition-alignment.mjs",
+      "sha256": "c01ea4efba9835e488e42c7ed44d2aef434ee3db21b06e84e70379722bcc145e"
+    },
+    {
+      "path": "scripts/lib/ai-assisted-style-fingerprint.mjs",
+      "sha256": "924f7db154c15c84df1b9e50b40dd57cc20c22d1b9b0ce72741bfd8835888d15"
+    },
+    {
+      "path": "scripts/lib/ai-painter-mvp-detail-sufficiency-v1.mjs",
+      "sha256": "453deeb345e308a03a174a73fbeaf1bf996f493754d5fd1acb5a4b93cde86aff"
+    },
+    {
+      "path": "scripts/lib/ai-painter-stage4-v2-machine-review-execution-v1.mjs",
+      "sha256": "7e0332c4320f714383e0c3f6031e36db9972d6e19dedb8cfc0dd52b0069e016a"
+    }
+  ],
+  "relativeRetention": {
+    "comparisonEpsilon": 0.000001,
+    "targetFullRgbMaeMinimumReduction": 0.002,
+    "maximumPerImageMaeIncrease": 0.002,
+    "maximumCorrelationDrop": 0.01,
+    "maximumGroupMeanFullRgbMaeIncrease": 0.0005,
+    "regionKinds": [
+      "core",
+      "support"
+    ],
+    "metricRoles": [
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation"
+    ],
+    "quantiles": [
+      0.5,
+      0.9,
+      0.95
+    ],
+    "worstCount": 8,
+    "missingOrNonfinite": "unknown_never_pass",
+    "emptyRegion": "not_applicable",
+    "scope": "preregistered_diagnostic_only_not_formal_quality_threshold"
+  },
+  "adoptionRule": "deny_any_new_absolute_issue_or_relative_regression",
+  "resources": {
+    "maxWallSeconds": 900,
+    "workerMaxWallSeconds": 600,
+    "cpuThreads": 2,
+    "generatorForwards": 56,
+    "maxOutputMiB": 128,
+    "maximumImageAudits": 112,
+    "minimumFreeDiskMiB": 2048,
+    "maximumStreamMiB": 8,
+    "terminalReserveBytes": 65536,
+    "automaticRetries": 0
+  },
+  "gpuAllowed": false,
+  "optimizerUpdates": 0,
+  "sourceMutationAllowed": false,
+  "trainingAllowed": false,
+  "automaticNextTraining": false,
+  "formalQualificationGranted": false,
+  "checkpointPromotable": false,
+  "runtimePublicationAllowed": false
+}

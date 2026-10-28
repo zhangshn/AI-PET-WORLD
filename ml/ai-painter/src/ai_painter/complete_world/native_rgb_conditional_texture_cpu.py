@@ -18,6 +18,7 @@ from ai_painter.complete_world.native_rgb_local_texture_objective_v12 import (
     local_target_texture_moments_loss,
 )
 from ai_painter.training.discriminator import build_patch_discriminator
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 
 COARSE_SCALE = 4
@@ -36,14 +37,15 @@ def build_conditional_texture_discriminator():
     return build_patch_discriminator(condition_channels=23, base=24)
 
 
-def _bound_tensors(sample, predicted, *, split):
+def _bound_tensors(sample, predicted, *, split, geometry=None):
+    height, width, _ = spatial_geometry(geometry)
     if sample.get("split") != split:
         raise ValueError(f"conditional texture objective requires {split} split")
     conditions, target = sample.get("conditions"), sample.get("image")
-    if (not isinstance(conditions, torch.Tensor) or conditions.shape != (23, 192, 256)
-            or not isinstance(target, torch.Tensor) or target.shape != (3, 192, 256)
+    if (not isinstance(conditions, torch.Tensor) or conditions.shape != (23, height, width)
+            or not isinstance(target, torch.Tensor) or target.shape != (3, height, width)
             or not isinstance(predicted, torch.Tensor)
-            or predicted.shape != (1, 3, 192, 256)):
+            or predicted.shape != (1, 3, height, width)):
         raise ValueError("conditional texture objective requires complete bound tensors")
     if not all(bool(torch.isfinite(tensor).all()) for tensor in
                (conditions, target, predicted)):
@@ -55,8 +57,9 @@ def _bound_tensors(sample, predicted, *, split):
             target[None].to(device=predicted.device, dtype=predicted.dtype))
 
 
-def highpass_rgb(rgb):
-    if rgb.ndim != 4 or rgb.shape[1:] != (3, 192, 256):
+def highpass_rgb(rgb, *, geometry=None):
+    height, width, _ = spatial_geometry(geometry)
+    if rgb.ndim != 4 or rgb.shape[1:] != (3, height, width):
         raise ValueError("conditional texture highpass requires 256x192 RGB")
     local_mean = functional.avg_pool2d(
         rgb.float(), HIGHPASS_WINDOW, stride=1,
@@ -65,8 +68,12 @@ def highpass_rgb(rgb):
     return rgb.float() - local_mean
 
 
-def fact_region_coarse_rgb_loss(predicted, target, conditions, channel_order):
+def fact_region_coarse_rgb_loss(predicted, target, conditions, channel_order, *, geometry=None):
     """Preserve declared water, path, shoreline and footprint positions."""
+    height, width, _ = spatial_geometry(geometry)
+    if geometry is not None and (predicted.shape != (1, 3, height, width)
+            or target.shape != predicted.shape or conditions.shape != (1, 23, height, width)):
+        raise ValueError("fact region geometry differs")
     if (len(channel_order) != 23 or len(set(channel_order)) != 23
             or any(identity not in channel_order for identity in FACT_REGION_CHANNELS)):
         raise ValueError("fact region channel order is invalid")
@@ -87,13 +94,13 @@ def fact_region_coarse_rgb_loss(predicted, target, conditions, channel_order):
     return torch.stack(terms).mean() if terms else predicted.sum() * 0
 
 
-def discriminator_train_objective(discriminator, predicted, sample):
+def discriminator_train_objective(discriminator, predicted, sample, *, geometry=None):
     """Real/fake highpass from train only; fake is detached from the renderer."""
-    conditions, target = _bound_tensors(sample, predicted, split="train")
+    conditions, target = _bound_tensors(sample, predicted, split="train", geometry=geometry)
     if not all(parameter.requires_grad for parameter in discriminator.parameters()):
         raise ValueError("discriminator step requires trainable critic parameters")
-    real = discriminator(torch.cat((conditions.float(), highpass_rgb(target)), dim=1))
-    fake = discriminator(torch.cat((conditions.float(), highpass_rgb(predicted.detach())), dim=1))
+    real = discriminator(torch.cat((conditions.float(), highpass_rgb(target, geometry=geometry)), dim=1))
+    fake = discriminator(torch.cat((conditions.float(), highpass_rgb(predicted.detach(), geometry=geometry)), dim=1))
     loss = (functional.binary_cross_entropy_with_logits(real, torch.full_like(real, 0.9))
             + functional.binary_cross_entropy_with_logits(fake, torch.zeros_like(fake))) / 2
     if not bool(torch.isfinite(loss)):
@@ -102,23 +109,23 @@ def discriminator_train_objective(discriminator, predicted, sample):
 
 
 def generator_train_objective(discriminator, predicted, sample, instance_table,
-                              channel_order):
+                              channel_order, *, geometry=None):
     """Preserve coarse facts and object color; adversarial signal targets texture."""
-    conditions, target = _bound_tensors(sample, predicted, split="train")
+    conditions, target = _bound_tensors(sample, predicted, split="train", geometry=geometry)
     if any(parameter.requires_grad for parameter in discriminator.parameters()):
         raise ValueError("generator step requires frozen critic parameters")
     _, instance = train_original_instance_objective(
-        predicted, sample, instance_table, channel_order,
+        predicted, sample, instance_table, channel_order, geometry=geometry,
     )
     coarse = functional.l1_loss(
         functional.avg_pool2d(predicted.float(), COARSE_SCALE),
         functional.avg_pool2d(target.float(), COARSE_SCALE),
     )
-    texture = local_target_texture_moments_loss(predicted, target)
+    texture = local_target_texture_moments_loss(predicted, target, geometry=geometry)
     fact_regions = fact_region_coarse_rgb_loss(
-        predicted, target, conditions, channel_order,
+        predicted, target, conditions, channel_order, geometry=geometry,
     )
-    fake = discriminator(torch.cat((conditions.float(), highpass_rgb(predicted)), dim=1))
+    fake = discriminator(torch.cat((conditions.float(), highpass_rgb(predicted, geometry=geometry)), dim=1))
     adversarial = functional.binary_cross_entropy_with_logits(fake, torch.ones_like(fake))
     total = (coarse + instance["instanceSupportRgbMae"].float()
              + FACT_REGION_WEIGHT * fact_regions
@@ -132,23 +139,23 @@ def generator_train_objective(discriminator, predicted, sample, instance_table,
                    "objectCount": instance["instanceCount"], "total": total}
 
 
-def validation_candidate_score(predicted, sample, instance_table, channel_order):
+def validation_candidate_score(predicted, sample, instance_table, channel_order, *, geometry=None):
     """Validation selects a Checkpoint; it never trains either network."""
     with torch.no_grad():
-        _, target = _bound_tensors(sample, predicted, split="validation")
+        _, target = _bound_tensors(sample, predicted, split="validation", geometry=geometry)
         _, instance = validation_instance_object_score(
-            predicted, sample, instance_table, channel_order,
+            predicted, sample, instance_table, channel_order, geometry=geometry,
         )
         coarse = functional.l1_loss(
             functional.avg_pool2d(predicted.float(), COARSE_SCALE),
             functional.avg_pool2d(target.float(), COARSE_SCALE),
         )
-        texture = local_target_texture_moments_loss(predicted, target)
+        texture = local_target_texture_moments_loss(predicted, target, geometry=geometry)
         conditions = sample["conditions"][None].to(
             device=predicted.device, dtype=predicted.dtype,
         )
         fact_regions = fact_region_coarse_rgb_loss(
-            predicted, target, conditions, channel_order,
+            predicted, target, conditions, channel_order, geometry=geometry,
         )
         score = (coarse + instance["instanceSupportRgbMae"].float()
                  + FACT_REGION_WEIGHT * fact_regions + TEXTURE_WEIGHT * texture)

@@ -7,6 +7,7 @@ This module never supplies target RGB to the renderer at inference time.
 """
 
 from __future__ import annotations
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 from ai_painter.complete_world.native_rgb_object_context_renderer import (
     full_frame_object_context_objective,
@@ -19,7 +20,7 @@ NORMALIZATION_FLOOR = 1e-5
 TEXTURE_WEIGHT = 0.1
 
 
-def local_target_texture_moments_loss(predicted, target):
+def local_target_texture_moments_loss(predicted, target, *, geometry=None):
     """Match nine spatial maps of highpass energy and neighbor correlation.
 
     Each of three scales contributes an energy, horizontal autocorrelation,
@@ -29,9 +30,10 @@ def local_target_texture_moments_loss(predicted, target):
     """
     import torch
     from torch.nn import functional as functional
+    height, width, _ = spatial_geometry(geometry)
 
     if (predicted.shape != target.shape or predicted.ndim != 4
-            or predicted.shape[1:] != (3, 192, 256)
+            or predicted.shape[1:] != (3, height, width)
             or not bool(torch.isfinite(predicted).all() and torch.isfinite(target).all())
             or not bool(((predicted >= 0) & (predicted <= 1)).all())
             or not bool(((target >= 0) & (target <= 1)).all())):

@@ -987,7 +987,8 @@
     "write:live-world-p11-auto-visual-review": "node scripts/block-retired-live-world-command.mjs write:live-world-p11-auto-visual-review",
     "check:live-world-p11-auto-visual-review": "node scripts/block-retired-live-world-command.mjs check:live-world-p11-auto-visual-review",
     "write:live-world-p12-p17-closure": "node scripts/block-retired-live-world-command.mjs write:live-world-p12-p17-closure",
-    "check:live-world-p12-p17-closure": "node scripts/block-retired-live-world-command.mjs check:live-world-p12-p17-closure"
+    "check:live-world-p12-p17-closure": "node scripts/block-retired-live-world-command.mjs check:live-world-p12-p17-closure",
+    "run:ai-painter-replay-retention-review-recovery": "node scripts/run-ai-painter-replay-retention-review-recovery-v1.mjs"
   },
   "dependencies": {
     "mermaid": "12.2.0",

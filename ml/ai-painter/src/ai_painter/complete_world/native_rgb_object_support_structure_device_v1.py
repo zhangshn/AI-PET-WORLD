@@ -1,6 +1,7 @@
 """Device adapter for the frozen support objective; no execution qualification."""
 from collections.abc import Mapping
 import torch
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 from ai_painter.complete_world import native_rgb_object_support_structure_candidate_cpu_v1 as frozen
 from ai_painter.complete_world.native_rgb_object_core_fidelity_candidate_cpu import train_object_core_fidelity_candidate_objective
 from ai_painter.complete_world.stage4_semantic_transport_v2 import FORMAL_CONDITION_CHANNEL_ORDER
@@ -14,15 +15,16 @@ def require(ok, message):
     if not ok: raise ValueError(message)
 
 
-def _bound(predicted, sample, channel_order):
+def _bound(predicted, sample, channel_order, *, geometry=None):
+    height, width, _ = spatial_geometry(geometry)
     require(isinstance(predicted, torch.Tensor) and predicted.device.type in ("cpu", "cuda"), "CPU/CUDA prediction required")
     require(isinstance(sample, Mapping) and sample.get("split") == "train", "support structure requires train split")
     require(torch.get_num_threads() <= 2 and not torch.is_autocast_enabled("cpu")
         and not torch.is_autocast_enabled("cuda"), "CPU<=2/no autocast required")
     require(not isinstance(channel_order, (str, bytes)) and tuple(channel_order) == FORMAL_CONDITION_CHANNEL_ORDER,
         "support structure formal channel order differs")
-    for value, shape in ((predicted, (1, 3, 192, 256)), (sample.get("image"), (3, 192, 256)),
-            (sample.get("conditions"), (23, 192, 256))):
+    for value, shape in ((predicted, (1, 3, height, width)), (sample.get("image"), (3, height, width)),
+            (sample.get("conditions"), (23, height, width))):
         require(isinstance(value, torch.Tensor) and tuple(value.shape) == shape and value.dtype == torch.float32
             and value.layout == torch.strided and (value.device.type == "cpu" or value.device == predicted.device),
             "complete FP32 tensors on CPU or prediction device required")
@@ -33,15 +35,15 @@ def _bound(predicted, sample, channel_order):
 
 
 def train_original_object_support_structure(predicted, sample, instance_table, channel_order,
-        *, support_structure_weight=frozen.OBJECT_SUPPORT_STRUCTURE_WEIGHT):
+        *, support_structure_weight=frozen.OBJECT_SUPPORT_STRUCTURE_WEIGHT, geometry=None):
     support_structure_weight = frozen._support_structure_weight(support_structure_weight)
     require(isinstance(predicted, torch.Tensor) and predicted.device.type in ("cpu", "cuda"), "CPU/CUDA prediction required")
     if predicted.device.type == "cpu":
         return frozen.train_original_object_support_structure(predicted, sample, instance_table, channel_order,
-            support_structure_weight=support_structure_weight)
-    bound, order = _bound(predicted, sample, channel_order)
+            support_structure_weight=support_structure_weight, geometry=geometry)
+    bound, order = _bound(predicted, sample, channel_order, geometry=geometry)
     # Only detached authoritative CPU facts define masks, exactly as in the frozen CPU definition.
-    masks = frozen._visible_support(sample["conditions"].detach().cpu(), instance_table, order)
+    masks = frozen._visible_support(sample["conditions"].detach().cpu(), instance_table, order, geometry=geometry)
     weights = predicted.new_tensor(frozen.LUMA_WEIGHTS)[:, None, None]
     candidate_luma = (predicted[0] * weights).sum(0)
     reference_luma = (bound["image"] * weights).sum(0)
@@ -77,19 +79,19 @@ def train_original_object_support_structure(predicted, sample, instance_table, c
 
 
 def train_object_support_structure_candidate_objective(critic, predicted, sample, instance_table, channel_order,
-        *, support_structure_weight=frozen.OBJECT_SUPPORT_STRUCTURE_WEIGHT):
+        *, support_structure_weight=frozen.OBJECT_SUPPORT_STRUCTURE_WEIGHT, geometry=None):
     support_structure_weight = frozen._support_structure_weight(support_structure_weight)
     require(isinstance(predicted, torch.Tensor) and predicted.device.type in ("cpu", "cuda"), "CPU/CUDA prediction required")
     if predicted.device.type == "cpu":
         return frozen.train_object_support_structure_candidate_objective(critic, predicted, sample, instance_table, channel_order,
-            support_structure_weight=support_structure_weight)
-    bound, order = _bound(predicted, sample, channel_order)
+            support_structure_weight=support_structure_weight, geometry=geometry)
+    bound, order = _bound(predicted, sample, channel_order, geometry=geometry)
     require(isinstance(critic, torch.nn.Module) and all(v.device == predicted.device
         and (not v.is_floating_point() or v.dtype == torch.float32) for v in (*critic.parameters(), *critic.buffers())),
         "critic must share prediction device/FP32")
     weighted, parts = train_original_object_support_structure(predicted, bound, instance_table, order,
-        support_structure_weight=support_structure_weight)
-    inherited_total, inherited_parts = train_object_core_fidelity_candidate_objective(critic, predicted, bound, instance_table, order)
+        support_structure_weight=support_structure_weight, geometry=geometry)
+    inherited_total, inherited_parts = train_object_core_fidelity_candidate_objective(critic, predicted, bound, instance_table, order, geometry=geometry)
     total = inherited_total.float() + weighted
     require(bool(torch.isfinite(total.detach())), "nonfinite support structure candidate total")
     return total, {**inherited_parts, **parts, "objectCoreFidelityUnchangedTotal": inherited_total,

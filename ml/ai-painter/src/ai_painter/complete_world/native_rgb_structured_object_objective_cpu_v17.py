@@ -8,6 +8,7 @@ content are not accepted as optimization targets. This grants no GPU access.
 """
 
 import torch
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 from ai_painter.complete_world.native_rgb_conditional_texture_cpu import (
     generator_train_objective, validation_candidate_score,
@@ -21,15 +22,16 @@ SPATIAL_WEIGHT = 0.1
 LUMA_WEIGHTS = (0.2126, 0.7152, 0.0722)
 
 
-def original_object_class_spatial_loss(predicted, sample, channel_order, *, split):
+def original_object_class_spatial_loss(predicted, sample, channel_order, *, split, geometry=None):
     """Differentiable class-wise centered luma alignment at the 256x192 train scale."""
+    height, width, _ = spatial_geometry(geometry)
     if sample.get("split") != split or split not in ("train", "validation"):
         raise ValueError(f"structured object objective requires {split} split")
     conditions, target = sample.get("conditions"), sample.get("image")
-    if (not isinstance(predicted, torch.Tensor) or predicted.shape != (1, 3, 192, 256)
-            or not isinstance(target, torch.Tensor) or target.shape != (3, 192, 256)
+    if (not isinstance(predicted, torch.Tensor) or predicted.shape != (1, 3, height, width)
+            or not isinstance(target, torch.Tensor) or target.shape != (3, height, width)
             or not isinstance(conditions, torch.Tensor)
-            or conditions.shape != (23, 192, 256)):
+            or conditions.shape != (23, height, width)):
         raise ValueError("structured object objective requires complete bound RGB and conditions")
     if (len(channel_order) != 23 or len(set(channel_order)) != 23
             or any(channel not in channel_order for channel in OBJECT_CHANNELS)):
@@ -70,14 +72,14 @@ def original_object_class_spatial_loss(predicted, sample, channel_order, *, spli
 
 
 def train_structured_object_objective(discriminator, predicted, sample,
-                                      instance_table, channel_order):
+                                      instance_table, channel_order, *, geometry=None):
     """V16 landscape/texture objective plus train-original object structure."""
     if sample.get("split") != "train":
         raise ValueError("structured object training requires train split")
     base, parts = generator_train_objective(
-        discriminator, predicted, sample, instance_table, channel_order)
+        discriminator, predicted, sample, instance_table, channel_order, geometry=geometry)
     spatial, correlations = original_object_class_spatial_loss(
-        predicted, sample, channel_order, split="train")
+        predicted, sample, channel_order, split="train", geometry=geometry)
     total = base.float() + SPATIAL_WEIGHT * spatial
     if not bool(torch.isfinite(total)):
         raise ValueError("non-finite structured object generator objective")
@@ -87,15 +89,15 @@ def train_structured_object_objective(discriminator, predicted, sample,
 
 
 def validation_structured_object_score(predicted, sample,
-                                        instance_table, channel_order):
+                                        instance_table, channel_order, *, geometry=None):
     """Validation may rank Checkpoints; it never creates optimizer gradients."""
     with torch.no_grad():
         if sample.get("split") != "validation":
             raise ValueError("structured object selection requires validation split")
         base, parts = validation_candidate_score(
-            predicted, sample, instance_table, channel_order)
+            predicted, sample, instance_table, channel_order, geometry=geometry)
         spatial, correlations = original_object_class_spatial_loss(
-            predicted, sample, channel_order, split="validation")
+            predicted, sample, channel_order, split="validation", geometry=geometry)
         total = base.float() + SPATIAL_WEIGHT * spatial
         if not bool(torch.isfinite(total)):
             raise ValueError("non-finite structured object validation score")

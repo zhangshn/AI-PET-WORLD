@@ -1,5 +1,6 @@
 """NS-001: native FP32 decode1 convolution, only weight reduction uses FP64."""
 import torch
+from ai_painter.complete_world.bounded_finite_validation_v1 import bounded_all_finite
 from torch import nn
 from torch.nn import functional as F
 from ai_painter.complete_world.object_appearance_regime_input_cpu import require
@@ -12,7 +13,7 @@ def _validate(features, weight, bias):
     require(all(type(value) is torch.Tensor or type(value) is nn.Parameter for value in values), "decode1 tensors required")
     require(features.device.type in ("cpu", "cuda") and all(value.device == features.device
         and value.dtype == torch.float32 and value.layout == torch.strided and value.is_contiguous()
-        and bool(torch.isfinite(value.detach()).all()) for value in values), "decode1 FP32/device/layout/finite differs")
+        and bounded_all_finite(value.detach()) for value in values), "decode1 FP32/device/layout/finite differs")
     require(len({value.untyped_storage().data_ptr() for value in values}) == 3, "decode1 storage alias prohibited")
     require(features.ndim == 4 and tuple(features.shape[:2]) == (1, 48) and all(size > 0 for size in features.shape[2:])
         and tuple(weight.shape) == (48, 48, 3, 3) and tuple(bias.shape) == (48,), "decode1 shape differs")

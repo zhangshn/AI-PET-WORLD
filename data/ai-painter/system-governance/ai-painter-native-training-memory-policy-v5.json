@@ -1,0 +1,367 @@
+{
+  "schemaVersion": "native-training-memory-policy-v5",
+  "status": "implementation_target_not_execution_qualification",
+  "capability": "terrain_ecology_native_recomputed_stage_v1",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "7bed53f95e17bfe26e2a92463dbf58284455bed7d7591a68840f01104805f506",
+    "version": "AI-PAINTER-SPEC-1.158"
+  },
+  "priorSpecificationBytes": {
+    "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.157-748be7fe.txt",
+    "sha256": "748be7fe6cc9b7a23eec69f842277e359ebab567022b5594ef85f2bb511de01c"
+  },
+  "parameters": {
+    "groups": 109,
+    "elements": 2243023,
+    "namesShapesOrderAndInitialBytesUnchanged": true
+  },
+  "newBoundedTargets": [
+    {
+      "parameterIndex": 4,
+      "module": "core.core.terrain.base_stem.layers.3",
+      "parameterName": "core.core.terrain.base_stem.layers.3.weight",
+      "inputChannels": 48,
+      "outputChannels": 48,
+      "kernel": [
+        3,
+        3
+      ],
+      "padding": 1,
+      "stride": 1,
+      "groups": 1,
+      "batch": 1
+    },
+    {
+      "parameterIndex": 52,
+      "module": "core.core.terrain.decode_1.layers.3",
+      "parameterName": "core.core.terrain.decode_1.layers.3.weight",
+      "inputChannels": 48,
+      "outputChannels": 48,
+      "kernel": [
+        3,
+        3
+      ],
+      "padding": 1,
+      "stride": 1,
+      "groups": 1,
+      "batch": 1
+    },
+    {
+      "parameterIndex": 56,
+      "module": "core.core.terrain.full_resolution_detail.layers.0",
+      "parameterName": "core.core.terrain.full_resolution_detail.layers.0.weight",
+      "inputChannels": 68,
+      "outputChannels": 48,
+      "kernel": [
+        3,
+        3
+      ],
+      "padding": 1,
+      "stride": 1,
+      "groups": 1,
+      "batch": 1
+    },
+    {
+      "parameterIndex": 60,
+      "module": "core.core.terrain.full_resolution_detail.layers.3",
+      "parameterName": "core.core.terrain.full_resolution_detail.layers.3.weight",
+      "inputChannels": 48,
+      "outputChannels": 48,
+      "kernel": [
+        3,
+        3
+      ],
+      "padding": 1,
+      "stride": 1,
+      "groups": 1,
+      "batch": 1
+    },
+    {
+      "parameterIndex": 88,
+      "module": "core.core.final_rgb_decoder.base.layers.2",
+      "parameterName": "core.core.final_rgb_decoder.base.layers.2.weight",
+      "inputChannels": 48,
+      "outputChannels": 48,
+      "kernel": [
+        3,
+        3
+      ],
+      "padding": 1,
+      "stride": 1,
+      "groups": 1,
+      "batch": 1
+    }
+  ],
+  "existingTarget48Unchanged": false,
+  "boundedAlgorithm": {
+    "inputChannelBlock": 16,
+    "kernelOrder": "row-major",
+    "channelOrder": "ascending",
+    "spatialReduction": "single full H*W FP64 matmul per kernel/channel group",
+    "finalCast": "all weight entries once to FP32",
+    "device": "original tensor device",
+    "nativeBackwardMask": "Original complete mask for registered five targets; target48 has the separately registered required-gradient-only exception.",
+    "finiteChecks": "original complete predicate and rejection semantics preserved; registered aggregate checks use bounded views"
+  },
+  "recomputation": {
+    "use_reentrant": false,
+    "preserve_rng_state": true,
+    "determinism_check": "default",
+    "early_stop": false,
+    "enabled": "training and grad enabled",
+    "terrainSegments": [
+      "base_stem",
+      "down_1",
+      "down_2",
+      "bottleneck",
+      "decode_3",
+      "decode_2",
+      "decode_1",
+      "full_resolution_detail",
+      "responsibility_heads"
+    ],
+    "appearance": "complete original V18 PositionRegularizedAppearance body: base(coordinate_free_views(views, order), terrain_patches); preserve real terrain patches, no V26 zeros_like ablation",
+    "decoder": "complete original TerrainOnlyDecoder body",
+    "fourResidualHeads": "unchanged",
+    "includePoolingInterpolationConcatenationWithinSegments": true,
+    "captureContextsOnly": [
+      "seasonal._REGIME",
+      "ecology._ECOLOGY",
+      "terrain_ecology_projection._TERRAIN_PROJECTION"
+    ],
+    "restoreContextOnEveryCallAndException": true,
+    "physicalRecomputationsSeparatelyCounted": true
+  },
+  "operatorInterface": {
+    "module": "ai_painter.complete_world.native_training_bounded_weight_vjp_v1",
+    "builder": "build_native_training_bounded_weight_conv(source, *, target)",
+    "targetArgument": "exact registered module path",
+    "class": "NativeTrainingBoundedWeightConv",
+    "constants": [
+      "NUMERIC_RULE",
+      "REGISTERED_TARGETS"
+    ],
+    "parameterNames": "weight/bias unchanged",
+    "metadata": "bound_target exact module path"
+  },
+  "modelInterface": {
+    "builder": "build_fresh_terrain_ecology_native_recomputed_stage(*, geometry, condition_channel_order)",
+    "validator": "validate_model_identity(model)"
+  },
+  "qualificationsGranted": [],
+  "replacesPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-native-training-memory-policy-v4.json",
+    "sha256": "d9e749cef1a52ff3e10259269fcdc13bf6c9e98cf7af7892e7ce2dd96ced0095",
+    "reason": "Register target48 required-gradient-only native backward; unchanged full-spatial bounded weight reduction and all gates."
+  },
+  "finiteValidation": {
+    "module": "ai_painter.complete_world.bounded_finite_validation_v1",
+    "function": "bounded_all_finite(value) -> bool",
+    "maxBlockElements": 4194304,
+    "supported": "exact Tensor/Parameter; dense strided CPU/CUDA FP32/FP64",
+    "algorithm": "detach and narrow views; original isfinite(block).all(); complete logical coverage for True",
+    "preserve": [
+      "original caller short-circuit validation order and error messages",
+      "input data/grad/version/RNG/thread/device",
+      "original predicate for previously accepted unsupported Tensor subclasses"
+    ],
+    "integrationSitesBeforeChange": [
+      {
+        "file": "ml/ai-painter/src/ai_painter/complete_world/decode1_entry_weight_reduction_precision_v1.py",
+        "sha256": "6ee5c8b74411c0bd210dae5a1d0df43e5251e89d16f54fac97c4ac1b32b73585",
+        "lines": [
+          21
+        ],
+        "tier": "required_numeric",
+        "scope": "_validate only; current101 uses this validator for144ch input. Old full-unfold forward/backward in this file is not current target48."
+      },
+      {
+        "file": "ml/ai-painter/src/ai_painter/complete_world/decode1_entry_bounded_weight_vjp_v1.py",
+        "sha256": "86f9e3e24f691a8edb997c9ab382d1cf651e44976dfc4765979214eae7ba030c",
+        "lines": [
+          49,
+          61,
+          74
+        ],
+        "tier": "required_numeric",
+        "scope": "Actual101 forward result, grad_output and requested input/weight/bias gradients; large input-gradient can144ch."
+      },
+      {
+        "file": "ml/ai-painter/src/ai_painter/complete_world/native_training_bounded_weight_vjp_v1.py",
+        "sha256": "20b8cc77a0a7f7e97c7e565495999c9a03399f8701d5e9528432addb63df8d76",
+        "lines": [
+          112,
+          126,
+          140
+        ],
+        "tier": "required_numeric",
+        "scope": "Actual111 five targets4/52/56/60/88; forward/result and backward adjoint/requested gradients. Parameter-only config finite78 stays unchanged."
+      },
+      {
+        "file": "ml/ai-painter/src/ai_painter/complete_world/stem_weight_reduction_precision_v1.py",
+        "sha256": "18d97a57dca80b16f72fece96b12b3beea7167b0ef6c4226760671221e0480ea",
+        "lines": [
+          15,
+          31,
+          41,
+          55
+        ],
+        "tier": "required_numeric",
+        "scope": "Actual31->48 stem via NativeStageTerrainEcologyStem; original native forward and backward stay."
+      },
+      {
+        "file": "ml/ai-painter/src/ai_painter/complete_world/stem_inner_weight_reduction_precision_v1.py",
+        "sha256": "987d638dfb9e3d4235caf2272b4bb6609064dabcaccdd494c05a8d86ddf9a3e3",
+        "lines": [
+          15
+        ],
+        "tier": "required_numeric",
+        "scope": "Only _validate borrowed by111 target4. Old StemInner forward31/back41,55 not current operator."
+      },
+      {
+        "file": "ml/ai-painter/src/ai_painter/complete_world/decode2_inner_weight_reduction_precision_v1.py",
+        "sha256": "46e9447234c5995bd5e25e4236f1f6ce4f9f16c67c03be2867091b5d511ca611",
+        "lines": [
+          15,
+          31,
+          41,
+          55
+        ],
+        "tier": "required_numeric",
+        "scope": "Actual96ch decode2 inner forward/backward; not192ch entry precision family."
+      },
+      {
+        "file": "ml/ai-painter/src/ai_painter/complete_world/decode1_weight_reduction_precision_v1.py",
+        "sha256": "500b1485a87beb208856c76638e1ee4c733931456cd9769ca25805114d1a38ec",
+        "lines": [
+          15
+        ],
+        "tier": "required_numeric",
+        "scope": "Only _validate borrowed by111 targets52/60/88; old full-unfold forward/backward replaced, do not modify unused math."
+      },
+      {
+        "file": "ml/ai-painter/src/ai_painter/complete_world/detail_weight_reduction_precision.py",
+        "sha256": "cbe9d9bf00d4bf5c8a1a217d0cbd59e2bd05a2233cbc1b6ee9c1f0bb2c196608",
+        "lines": [
+          16
+        ],
+        "tier": "required_numeric",
+        "scope": "Only _validate borrowed by111 target56(68->48); old detail forward/backward not current."
+      },
+      {
+        "file": "ml/ai-painter/src/ai_painter/complete_world/rgb_bias_reduction_precision.py",
+        "sha256": "842aefc1a4f278535e97a57b52f1d52026156181be72b5ea0c1b4ddc86dcc008",
+        "lines": [
+          19,
+          35,
+          44,
+          55
+        ],
+        "tier": "required_numeric",
+        "scope": "Actual finalRGB PrecisionFinalRGBConv CUDA path,48ch features/input-gradient and3ch RGB; CPU-only delegate is outside this GPU minimum."
+      },
+      {
+        "file": "ml/ai-painter/src/ai_painter/complete_world/terrain_ecology_projection_v1.py",
+        "sha256": "9bb34dcda8b9b1073ca0741e8088e314e1ebfdab19662db000f45cfa56ecc28a",
+        "lines": [
+          97,
+          110
+        ],
+        "tier": "required_numeric",
+        "scope": "Actual NativeStageTerrainEcologyProjection expanded output/adjoint48ch. Old256-only projection40/49 and tiny336-element result116 are excluded."
+      }
+    ],
+    "legacy": "Shared callers change only under newly bound source identity; preserve old immutable evidence and reject stale source packages.",
+    "qualification": "Standalone CPU proof does not qualify integrated model, GPU, training, quality or Runtime."
+  },
+  "originalThresholdsUnchanged": true,
+  "defaultRouteActivationUnchanged": true,
+  "remainingFullUnfoldReplacements": {
+    "targets": [
+      {
+        "parameterIndex": 0,
+        "module": "core.core.terrain.base_stem.layers.0",
+        "inputChannels": 31,
+        "outputChannels": 48,
+        "kernel": [
+          3,
+          3
+        ],
+        "stride": 1,
+        "padding": 1,
+        "groups": 1,
+        "batch": 1,
+        "sourceBefore": {
+          "path": "ml/ai-painter/src/ai_painter/complete_world/stem_weight_reduction_precision_v1.py",
+          "sha256": "9236ae31e3422bff06e6046b879519e91f84efb0f0aae27fe60c31bc17912d10"
+        },
+        "nativeStage2FullUnfoldBytes": 1755316224,
+        "evidenceKind": "current_path_static_payload_not_measured_backward_failure"
+      },
+      {
+        "parameterIndex": 44,
+        "module": "core.core.terrain.decode_2.layers.3",
+        "inputChannels": 96,
+        "outputChannels": 96,
+        "kernel": [
+          3,
+          3
+        ],
+        "stride": 1,
+        "padding": 1,
+        "groups": 1,
+        "batch": 1,
+        "sourceBefore": {
+          "path": "ml/ai-painter/src/ai_painter/complete_world/decode2_inner_weight_reduction_precision_v1.py",
+          "sha256": "2af5a1c1fb603aebfde550f6b72afc1147c8a217fef31bc2dadf0ca95e11efb8"
+        },
+        "nativeStage2FullUnfoldBytes": 1358954496,
+        "evidenceKind": "measured126_im2col_growth"
+      }
+    ],
+    "helperModule": "ai_painter.complete_world.remaining_native_weight_vjp_v1",
+    "function": "bounded_remaining_weight_gradient(features, grad_output, *, target)",
+    "targetArgument": "exact registered module path",
+    "inputChannelBlock": 16,
+    "kernelOrder": "row-major",
+    "channelOrder": "ascending",
+    "spatialReduction": "single full H*W FP64 matmul per kernel/channel block",
+    "finalCast": "all weights once to FP32",
+    "nativeBackwardMask": "unchanged complete original mask",
+    "identity": "Explicit new numeric-rule identifiers propagate into freshly generated identity buffers and source closure; no old qualification or checkpoint compatibility asserted.",
+    "legacyScope": "Shared original operator classes are affected only under new current source identity; preserve immutable old source evidence and reject stale hash-bound packages."
+  },
+  "existingTarget48BoundedWeightAlgorithmUnchanged": true,
+  "requiredGradientOnlyNativeBackward": {
+    "parameterIndex": 48,
+    "parameterName": "core.core.terrain.decode_1.layers.0.weight",
+    "sourceBefore": {
+      "path": "ml/ai-painter/src/ai_painter/complete_world/decode1_entry_bounded_weight_vjp_v1.py",
+      "sha256": "573a1d9ca7929d55c56c992b6e8ddd89be9593d12a794a8f05ff6c933c4a0af0"
+    },
+    "inputChannels": 144,
+    "outputChannels": 48,
+    "kernel": [
+      3,
+      3
+    ],
+    "batch": 1,
+    "stride": 1,
+    "padding": 1,
+    "groups": 1,
+    "externalRequestedMask": "unchanged",
+    "nativeMask": "(requested[0], False, requested[2])",
+    "weightResult": "existing bounded full-spatial FP64 helper when requested[1]; final once FP32",
+    "preserve": [
+      "FP32 forward",
+      "native requested input and bias gradients",
+      "original validations and error order",
+      "None for unrequested outputs",
+      "109 parameter names/order/shapes/initial bytes",
+      "resource/gradient/audit thresholds",
+      "cache intervention order and predicate"
+    ],
+    "qualification": "New numeric/source identities; CPU masks and complete same-candidate GPU five-gradient gate required. No old qualification inherited."
+  }
+}

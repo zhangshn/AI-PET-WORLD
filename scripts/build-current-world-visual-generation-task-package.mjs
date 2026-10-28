@@ -1,6 +1,9 @@
+import { pathToFileURL } from "node:url"
 import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
+import { verifyNaturalWorldFactRelease } from "./build-earth-geospatial-complete-map-conditions.mjs"
+import { naturalWorldDigest, readNaturalWorldBinding } from "./lib/real-earth-region-governance.mjs"
 import {
   REQUIRED_DIRECTOR_OUTPUT_FIELDS,
   REQUIRED_TASK_PACKAGE_FIELDS,
@@ -8,6 +11,78 @@ import {
   loadWorldVisualDictionaryContract,
 } from "./lib/world-visual-dictionary-contract.mjs"
 
+export async function buildInitialNaturalWorldVisualTask({ sourceFactReleaseBinding, visualFactManifestBinding, directorPath, taskPath }) {
+  const verified = await verifyNaturalWorldFactRelease({ binding: sourceFactReleaseBinding })
+  const reads = [...verified.inputReads]
+  const facts = JSON.parse(readNaturalWorldBinding(process.cwd(), visualFactManifestBinding, reads).toString("utf8"))
+  const { proposal, release, factsEnvelope } = verified
+  const { manifestSha256, ...factsCanonical } = facts
+  const digest = v => crypto.createHash("sha256").update(JSON.stringify(v)).digest("hex")
+  if (digest(factsCanonical) !== manifestSha256 || facts.factHash !== release.factHash || facts.worldId !== proposal.identity.worldId ||
+    facts.regionId !== proposal.identity.regionId || facts.tick !== 0 || facts.scope !== "natural_world_runtime_v1" ||
+    facts.sourceFactReleaseIdentity !== release.sourceFactReleaseIdentity || !facts.passed) throw new Error("natural visual facts identity mismatch")
+  const dictionaryPath = "data/world-visual-data-dictionary/mvp-natural-home-v0.3.json"
+  const dictionaryBytes = fs.readFileSync(path.resolve(dictionaryPath))
+  reads.push({ path: dictionaryPath, fileSha256: crypto.createHash("sha256").update(dictionaryBytes).digest("hex"), bytes: dictionaryBytes.length })
+  const dictionary = JSON.parse(dictionaryBytes.toString("utf8"))
+  if (dictionary.dictionaryVersionId !== facts.dictionaryVersionId) throw new Error("natural dictionary identity mismatch")
+  const g = factsEnvelope.payload
+  const forbiddenContent = ["player", "butler", "building", "animal", "preset_home_site", "activity_center", "construction_clearing", "debug_preview"]
+  const taskId = `natural-world-task-${proposal.identity.worldId}-${release.factHash.slice(0, 16)}`
+  const materialRecipes = [...new Set(g.terrainRegions.map(r => r.kind))].map(kind => ({ materialId: kind, sourceFactIds: g.terrainRegions.filter(r => r.kind === kind).map(r => r.sourceId), role: "natural_terrain_surface" }))
+  const scopePlan = { activeGoal: "single_complete_map_visual", outputSize: { width: 1024, height: 768 }, noPresetHomeSite: true, actorsReserved: true }
+  const compositionPlan = { readOrder: ["natural_passage", "measured_landscape_mosaic", "natural_boundary", "objects"], focalHierarchy: ["complete_natural_region"], noPresetActivityCenter: true }
+  const ecologyPlan = { regionalLandscapeType: proposal.regionalLandscapeType, environment: proposal.environment,
+    ecologicalZones: proposal.geometry.ecologicalZones, measuredSourceIdentity: proposal.sourcePackageIdentity }
+  const terrainPlan = { sourceFactIds: g.terrainRegions.map(r => r.sourceId), waterRequired: proposal.geometry.hasWater }
+  const renderPlan = { layers: ["terrain", "transitions", "objects"], structureBeforeTexture: true, authoritativeGeometryChanged: false }
+  const director = { schemaVersion: "world-visual-director-output-v1", scope: "natural_world_runtime_v1",
+    directorRunId: `director-${taskId}`, createdAt: proposal.creationInput.createdAtUtc, dictionaryVersionId: facts.dictionaryVersionId,
+    worldId: facts.worldId, ownerId: facts.ownerId, regionId: facts.regionId, tick: 0, factHash: release.factHash,
+    sourceFactIds: facts.visualFactIds, sourceFactReleaseBinding, sourceFactReleaseIdentity: release.sourceFactReleaseIdentity,
+    singleMapScopePlan: scopePlan, sceneIntent: { sceneType: "first_natural_world", mainStory: "A fresh anonymous natural region derived from the bound Thailand measurements.",
+      mustShow: [...new Set(g.terrainRegions.map(r => r.kind))], mustNotShow: forbiddenContent },
+    compositionPlan, terrainPlan, assetPlan: { objects: g.objectFootprints.map(o => ({ objectId: o.objectId, kind: o.kind, footprint: o.footprint })) },
+    motionPlan: { runtimeMotionNotInitialized: true }, drawingProcessPlan: { order: ["facts", "structure", "material", "grounding", "review"] },
+    artDirectionPlan: { style: "high_resolution_pixel_art", camera: "top_down", weather: "unknown" }, materialRecipePlan: materialRecipes,
+    singleMapEcologyPlan: ecologyPlan, singleMapMaterialPlan: materialRecipes, compositionRecipePlan: compositionPlan,
+    singleMapCompositionPlan: compositionPlan, renderLayerRecipePlan: renderPlan,
+    qualityRubricPlan: { semanticAndVisualReviewRequiredBeforeFrame: true }, singleMapAcceptancePlan: { frameQualified: false },
+    fixPlanInput: { failures: [] }, generationTaskDraft: { taskId, geometryFactHash: release.factHash },
+    safety: { generatesRgb: false, worldEntry: false } }
+  const task = { schemaVersion: "runtime-frame-generation-task-v1", scope: "natural_world_runtime_v1", conditionScope: "natural_world_runtime_v1",
+    taskId, createdAt: proposal.creationInput.createdAtUtc, dictionaryVersionId: facts.dictionaryVersionId,
+    worldId: facts.worldId, ownerId: facts.ownerId, regionId: facts.regionId, tick: 0, factHash: release.factHash,
+    worldProfileId: proposal.identity.worldProfileId, earthParameterSnapshotId: proposal.sourcePackageIdentity,
+    datasetReleaseIdentity: proposal.knowledgeDatasetBinding.identity, datasetBindingPurpose: "model_training_knowledge_only", newWorldIsDatasetSample: false,
+    knowledgeDatasetBinding: proposal.knowledgeDatasetBinding, sourceFactReleaseIdentity: release.sourceFactReleaseIdentity,
+    outputSize: { width: 1024, height: 768, frameScope: "complete_runtime_frame" }, singleMapScope: scopePlan,
+    sourceFactIds: facts.visualFactIds, directorPlan: director, mapGrammar: { connectivity: proposal.connectivity, noPresetHomeSite: true },
+    spatialLayers: structuredClone(g), ecologyState: ecologyPlan, singleMapEcologyFields: ecologyPlan,
+    gameplayContract: { actorsAndInteractionReserved: true }, visualStyle: director.artDirectionPlan,
+    drawingProcess: director.drawingProcessPlan, artDirection: director.artDirectionPlan, materialRecipes, singleMapMaterialFields: materialRecipes,
+    compositionRecipe: compositionPlan, singleMapCompositionFields: compositionPlan, renderLayerRecipe: renderPlan,
+    qualityRubric: director.qualityRubricPlan, singleMapAcceptance: director.singleMapAcceptancePlan,
+    allowedEntities: [...new Set(g.objectFootprints.map(o => o.kind))], forbiddenContent, previousFailures: [],
+    storageContract: { immutableSidecars: true, originalNaturalStoreCasRequired: true },
+    status: "natural_world_conditions_candidate", inferenceGate: { canRunCompleteVisualInference: false, reasons: ["model_and_runtime_frame_not_qualified"] },
+    bootstrapInferenceGate: { canGenerateRgb: false },
+    sourceBindings: { visualFactManifestPath: visualFactManifestBinding.path, visualFactManifestId: facts.manifestId,
+      visualFactManifestSha256: facts.manifestSha256, visualFactManifestFileSha256: visualFactManifestBinding.sha256,
+      sourceFactReleaseBinding, directorOutputPath: directorPath, directorOutputSha256: digest(director),
+      dictionaryPath, datasetPackagePath: null, datasetPackageId: null, runtimeFramePath: null, runtimeFrameId: null,
+      structureId: `natural-structure-${naturalWorldDigest(g)}` } }
+  if (!REQUIRED_DIRECTOR_OUTPUT_FIELDS.every(k => Object.hasOwn(director, k)) || !REQUIRED_TASK_PACKAGE_FIELDS.every(k => Object.hasOwn(task, k))) throw new Error("natural task required field missing")
+  task.taskSha256 = digest(task)
+  const manifest = { schemaVersion: "world-visual-generation-task-manifest-v1", scope: task.scope, taskId,
+    taskSha256: task.taskSha256, dictionaryVersionId: task.dictionaryVersionId, worldId: task.worldId, ownerId: task.ownerId,
+    regionId: task.regionId, tick: 0, factHash: release.factHash, datasetReleaseIdentity: task.datasetReleaseIdentity,
+    sourceFactReleaseIdentity: release.sourceFactReleaseIdentity, sourceFactReleaseBinding, taskPath, directorPath,
+    directorSha256: digest(director), runtimeFramePath: null, runtimeFrameId: null }
+  return { task, director, manifest, inputReads: reads }
+}
+
+export function buildLegacyWorldVisualGenerationTaskPackage() {
 const ROOT = process.cwd()
 const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "world-visual-generation-task-packages")
 const timestamp = new Date().toISOString()
@@ -679,4 +754,9 @@ function formatShanghai(iso) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
+}
+
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  buildLegacyWorldVisualGenerationTaskPackage()
 }

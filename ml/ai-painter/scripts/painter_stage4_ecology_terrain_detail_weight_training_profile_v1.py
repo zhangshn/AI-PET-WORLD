@@ -102,8 +102,13 @@ def _generator_candidate(model, critic, sample, order, prediction):
     return total, candidate, facts
 
 
-def _d_objective(critic, prediction, sample, device):
+def _d_objective(critic, prediction, sample, device, *, geometry=None):
     with (torch.autocast("cuda", dtype=torch.bfloat16) if device.type == "cuda" else nullcontext()):
+        if geometry is not None:
+            from ai_painter.complete_world.native_stage_geometry_v1 import validate_geometry
+            from ai_painter.complete_world.native_rgb_conditional_texture_cpu import discriminator_train_objective
+            validate_geometry(geometry)
+            return discriminator_train_objective(critic, prediction.detach(), sample, geometry=geometry)
         return core.gpu.detached_discriminator_objective(critic, prediction.detach(), sample)
 
 

@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "natural-world-bootstrap-contract-v2",
+  "status": "active_implementation_target_not_runtime_qualification",
+  "scope": "natural_world_first_generation",
+  "producerInputVersion": "natural-world-bootstrap-input-v1",
+  "identityFields": [
+    "ownerId",
+    "playerId",
+    "worldId",
+    "worldSeed",
+    "worldProfileId",
+    "regionId"
+  ],
+  "sourceSelection": {
+    "candidateId": "sakaerat-measurement-window-r05-c01-v3",
+    "measurementFingerprint": "9284ba55cf0c31447df410ca0c2b8ebc0e29043124cc36b8f8ef593232663615",
+    "historicalSourcePackageUse": "locator and immutable provenance only; never runtime identity or geometry input",
+    "newClimateAcquisition": {
+      "receiptPath": "data/world-samples/earth-geospatial/regions/sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1/sources/nasa-power-climatology-acquisition-20261028-v1/receipt.json",
+      "receiptSha256": "5d3ae32dc15097b77fadf760df042b74479cdd560bf40684567123f813da28e5",
+      "responsePath": "data/world-samples/earth-geospatial/regions/sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1/sources/nasa-power-climatology-acquisition-20261028-v1/response.json",
+      "responseSha256": "0ef4eed29d3831328361516b1c734d0a9d1f79bc2289ac006dc5d52b2dbce48a",
+      "period": "25-year Meteorological and Solar Monthly & Annual Climatologies (January 2001 - December 2025)",
+      "noHistoricalBackfill": true
+    },
+    "sourcePackageLocator": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-31T14-45-28-337Z/complete-map-condition-task/real-earth-region-source-package.json",
+      "artifactSha256": "882ae603cbf2478506b6a5e33ef9ee9502dbd06e04a7d84509a69b6598c06b4f",
+      "embeddedCanonicalSha256": "9e49e6186fde1e5090ebe5a1629b58f6a0e799a189205e52e597768b13319580"
+    },
+    "measurementCandidatePool": {
+      "path": ".runtime/ai-painter/earth-geospatial-v7-mvp-window-plans/earth-geospatial-v7-mvp-window-plan-2026-07-28T20-07-38-419Z/candidate-windows.json",
+      "sha256": "74913e2256c9454e4af185854e57018a976de87b27ef9982fe659348a4a73d0a"
+    },
+    "naturalizationParent": {
+      "path": ".runtime/ai-painter/earth-geospatial-naturalized-world-fact-runs/earth-geospatial-naturalized-world-facts-2026-07-28T20-07-32-194Z/naturalized-world-facts.json",
+      "sha256": "f62c62cd7fdf5a8c8ac124501a9c06ef32ebfe4b9bae9e83db114700a9046463"
+    }
+  },
+  "sourceChecks": [
+    "actual artifact file SHA and original canonical package SHA kept distinct",
+    "each required source role has real licensed attributed input and actual acquisition evidence",
+    "new NASA acquisition is distinct2001-2025 version; recompute climate-derived facts, never relabel2001-2020 history",
+    "fresh world geometry from measurement statistics and explicit new seed, no old blueprint/task/23channel/RGB geometry reuse",
+    "all actual input reads recorded",
+    "No Codex report, chat, or controller-repair design document is a production runtime input or qualification authority."
+  ],
+  "state": {
+    "recordVersion": "natural-world-runtime-save-v1",
+    "factsVersion": "natural-world-facts-snapshot-v1",
+    "stateVersion": "natural-world-state-snapshot-v1",
+    "weather": "unknown with reason; no observed post_rain/daytime/wind inference from climatology",
+    "seasonScenario": {
+      "kind": "initial_simulation_scenario",
+      "season": "wet_season",
+      "basis": "explicit first-region monsoon scenario; not observed present weather"
+    },
+    "rng": "actual mulberry32 initial and final u32 plus drawCount; serialize actual consumed state and prove continuation",
+    "emptyResourcesAndCursor": "allowed only if no resources or runtime events actually created"
+  },
+  "hashOrder": [
+    "source evidence",
+    "fresh facts geometry connection and RNG",
+    "097 facts envelope canonical hash",
+    "visual manifest and director",
+    "explicit task and manifest",
+    "original23 channels",
+    "append sidecar file hashes to save",
+    "097 create CAS",
+    "independent process restore"
+  ],
+  "conditionScope": {
+    "scopeId": "natural_world_runtime_v1",
+    "tensorContractPath": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+    "tensorSemanticsUnchanged": true,
+    "datasetBindingPurpose": "model_training_knowledge_only",
+    "newWorldIsDatasetSample": false,
+    "sourcePackCompatibilityWrapperInherited": false,
+    "sourceFactReleaseBindingRecomputed": true,
+    "unknownScopeConsumersMustReject": true,
+    "noRegistryActivationInComponentTest": true
+  },
+  "publication": {
+    "frameGeneration": false,
+    "modelExecution": false,
+    "modelQualification": false,
+    "worldEntry": false,
+    "sourceQualification": "program recomputed exact source inputs; no caller passed flags",
+    "writes": "immutable explicit sidecars then original Runtime Store CAS; no global latest"
+  },
+  "limits": {
+    "cpu": 2,
+    "implementationSeconds": 4500,
+    "outputBytes": 134217728,
+    "gpuCalls": 0,
+    "networkCallsByWorker": 0,
+    "automaticRetries": 0
+  },
+  "datasetKnowledgeBinding": {
+    "path": "data/ai-painter/system-governance/ai-painter-stage4-v2-mvp64-dataset-release-v1.json",
+    "sha256": "cd6b7e3fe70549788159237a86f1ab7144ee39db6cc011abaac43b6e5e15affc",
+    "identity": "ai-painter-stage4-v2-mvp64-fc8807d3501380ea3b9c43a895e711d94e40e14df97d805c52361d8a05a9fb16",
+    "purpose": "model_training_knowledge_only"
+  }
+}

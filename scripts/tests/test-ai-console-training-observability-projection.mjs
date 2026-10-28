@@ -14,7 +14,8 @@ function compile(relative, dependencies = {}) {
   return exports
 }
 // The shared mapper has no runtime imports, including no React or server probes.
-const model = compile('../../src/app/ai-console/ai-console-training-summary-model.ts')
+const time = compile('../../src/app/ai-console/ai-console-training-time.ts')
+const model = compile('../../src/app/ai-console/ai-console-training-summary-model.ts', { './ai-console-training-time': time })
 const contract = compile('../../src/server/ai-console/projection-contract.ts')
 function fixture(bound = true) {
   const now = Date.now(), time = new Date(now).toISOString()

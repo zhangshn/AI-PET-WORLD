@@ -1,0 +1,159 @@
+{
+  "schemaVersion": "road-attribution-zero-update-policy-v1",
+  "taskId": "ROAD-ATTRIBUTION-094",
+  "modelCapability": "stage4_mvp256_dry_terrain_ecology_stem_decoder_precision_v1",
+  "contexts": {
+    "parent077": {
+      "package": {
+        "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/package.json",
+        "sha256": "41bf35d3f30a2ee4e6286041ed859a3e83a82c05ccb8b0461de6271cc6455291"
+      },
+      "terminal": {
+        "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/terminal.json",
+        "sha256": "8c576f90fe4d67fa276968edd0ecdac0d038abdc0ef5fa3aab22bd254bc8cf4d"
+      },
+      "result": {
+        "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/result.json",
+        "sha256": "c315800abf1bdda2f10a9b960a64069f3fa9d841b5cef8d07d0b73d06f7d5622"
+      },
+      "checkpoint": {
+        "path": ".runtime/ai-painter/learning-capacity-experiments/mixed-train-terrain-ecology-v1-2b8a12c543a07576de72/checkpoint-final.pt",
+        "sha256": "20c83c99b029d983a2bd15a9774d372abbd9c8bbf5f20626e90aaa4d276d8aef"
+      }
+    },
+    "D093": {
+      "package": {
+        "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-balanced-v1-956e9be20834b962b865/package.json",
+        "sha256": "7c1cdc172f9c5f74f423c55c00e6658664939f0ea4ab024b6bb8d98fb4b851a9"
+      },
+      "terminal": {
+        "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-balanced-v1-956e9be20834b962b865/terminal.json",
+        "sha256": "ae50f9804f3c242b49375cb561b49640219eea7e0d809f6aae04eca957d07208"
+      },
+      "result": {
+        "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-balanced-v1-956e9be20834b962b865/result.json",
+        "sha256": "4ed1f4f80fda92483d954816edb744258a25e78191d623e9017c5486d555ce45"
+      },
+      "checkpoint": {
+        "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-balanced-v1-956e9be20834b962b865/checkpoint-final.pt",
+        "sha256": "ac6a7f755cddc2fc29871502bf654e7b3ae2a88383ffc1bfdd4b7f816190217c"
+      }
+    }
+  },
+  "cases": [
+    {
+      "caseIndex": 1,
+      "checkpointRole": "parent077",
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+      "slot": 146
+    },
+    {
+      "caseIndex": 2,
+      "checkpointRole": "parent077",
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v4",
+      "slot": 147
+    },
+    {
+      "caseIndex": 3,
+      "checkpointRole": "parent077",
+      "sampleId": "mvp64-slot164-objects-v5-20261020",
+      "slot": 164
+    },
+    {
+      "caseIndex": 4,
+      "checkpointRole": "parent077",
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-192-forested-low-mountain-v3",
+      "slot": 192
+    },
+    {
+      "caseIndex": 5,
+      "checkpointRole": "D093",
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3",
+      "slot": 146
+    },
+    {
+      "caseIndex": 6,
+      "checkpointRole": "D093",
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v4",
+      "slot": 147
+    },
+    {
+      "caseIndex": 7,
+      "checkpointRole": "D093",
+      "sampleId": "mvp64-slot164-objects-v5-20261020",
+      "slot": 164
+    },
+    {
+      "caseIndex": 8,
+      "checkpointRole": "D093",
+      "sampleId": "ai-cold-start-v7-v7-capacity-slot-192-forested-low-mountain-v3",
+      "slot": 192
+    }
+  ],
+  "sourceDesign": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/road-attribution-094-20261027/design/road-attribution-executable-design-v3.json",
+    "sha256": "457dbee4ac0fd8767dc446b8efc61cb9837fb72abe5dd85ab885825fdc1a8e1f"
+  },
+  "sourceCases": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/road-attribution-094-20261027/design/fixed-inputs-and-cases-v1.json",
+    "sha256": "f97e009928f590090386e277a6e04c7d00d47ea2a9cf608301cee00f3f0e788d"
+  },
+  "historicalSourceBaseline": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/road-attribution-094-20261027/historical-source-baseline.json",
+    "sha256": "3eaac8ec6c43304bdf650f9a231779c4a14a34d59f17dda7224e86decaa2d5ea"
+  },
+  "supportStructureWeight": 0.1,
+  "seed": 20260929,
+  "measurements": [
+    "existing_path_fact_rgb",
+    "boundary_path_rgb",
+    "original_background_auxiliary"
+  ],
+  "boundaryMeasurement": {
+    "projectionWidth": 1024,
+    "projectionHeight": 768,
+    "predictionWidth": 256,
+    "predictionHeight": 192,
+    "kernel": "nearest_repeat_interleave_4",
+    "bandPixels": 6,
+    "expectedRoadThreshold": "original_channel_first_component_gt_0",
+    "reference": "original_1024_rgb_no_preaveraging",
+    "nativeCoverageSummary": "sum_4x4_integer_0_to_16"
+  },
+  "counts": {
+    "cases": 8,
+    "generatorForwards": 8,
+    "criticForwards": 24,
+    "originalGeneratorVjps": 40,
+    "diagnosticGeneratorVjps": 24,
+    "discriminatorVjps": 8,
+    "allAutogradGradCalls": 72,
+    "optimizerCreations": 0,
+    "optimizerUpdates": 0,
+    "backwardCalls": 0
+  },
+  "preparationMaxWallSeconds": 300,
+  "controllerMaxWallSeconds": 900,
+  "resources": {
+    "maxWallSeconds": 600,
+    "cudaMemoryFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumTemperatureC": 85,
+    "minimumFreeDiskMiB": 2048,
+    "maxOutputMiB": 128,
+    "cpuThreads": 2,
+    "automaticRetries": 0
+  },
+  "preparationModelLoads": 0,
+  "preparationModelForwards": 0,
+  "trainingAllowed": false,
+  "checkpointCreationAllowed": false,
+  "formalQualificationGranted": false,
+  "runtimePublicationAllowed": false,
+  "historicalReplayClaimed": false,
+  "automaticResumeAllowed": false,
+  "lossChanged": false,
+  "gradientThresholdChanged": false,
+  "sourceImagesOrConditionsChanged": false,
+  "validationContentAllowed": false
+}

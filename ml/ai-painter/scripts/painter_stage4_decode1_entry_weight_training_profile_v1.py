@@ -36,7 +36,49 @@ _critic_state = inherited._critic_state
 _update_discriminator = inherited.core.v21.update_network
 
 
+RECOMPUTED_MODEL_CAPABILITY = 'terrain_ecology_native_recomputed_stage_v1'
+
+
+def _recomputed_identity(model):
+    # Keep the old route independent of the new component until explicitly chosen.
+    if getattr(model, 'capability_version', None) != RECOMPUTED_MODEL_CAPABILITY:
+        return None
+    from ai_painter.complete_world import terrain_ecology_native_recomputed_stage_v1 as native
+    native.validate_model_identity(model)
+    return native
+
+
+def _record_native_execution(action):
+    from functools import wraps
+    from copy import deepcopy
+    @wraps(action)
+    def recorded(model, *args, **kwargs):
+        native = _recomputed_identity(model)
+        if native is None:
+            return action(model, *args, **kwargs)
+        with native.execution_call_scope(model) as calls:
+            try:
+                result = action(model, *args, **kwargs)
+            except BaseException as error:
+                error.native_execution_calls = deepcopy(calls)
+                failure = kwargs.get('failure_evidence')
+                if isinstance(failure, dict):
+                    failure['nativeExecutionCalls'] = deepcopy(calls)
+                raise
+            require(type(result) is dict, 'native profile execution facts required')
+            result['nativeExecutionCalls'] = deepcopy(calls)
+            return result
+    return recorded
+
+
 def bind_parameters(model):
+    from ai_painter.complete_world import terrain_ecology_native_bounded_stage_v1 as native
+    if type(model) is native.NativeBoundedStageTerrainEcologyRenderer:
+        from ai_painter.complete_world.terrain_ecology_native_joint_priority_device_v1 import bind_parameters as bind
+        return bind(model)
+    if _recomputed_identity(model) is not None:
+        from ai_painter.complete_world.terrain_ecology_native_joint_priority_device_v1 import bind_parameters as bind
+        return bind(model)
     from ai_painter.complete_world import terrain_ecology_conditioned_v1 as terrain
     if type(model) is terrain.TerrainEcologyConditionedRenderer:
         from ai_painter.complete_world.terrain_ecology_joint_priority_device_v1 import bind_parameters as bind
@@ -45,6 +87,13 @@ def bind_parameters(model):
 
 
 def compute_generator_candidate_gradients(**kwargs):
+    from ai_painter.complete_world import terrain_ecology_native_bounded_stage_v1 as native
+    if type(kwargs['model']) is native.NativeBoundedStageTerrainEcologyRenderer:
+        from ai_painter.complete_world.terrain_ecology_native_joint_priority_device_v1 import compute_generator_candidate_gradients as compute
+        return compute(**kwargs)
+    if _recomputed_identity(kwargs['model']) is not None:
+        from ai_painter.complete_world.terrain_ecology_native_joint_priority_device_v1 import compute_generator_candidate_gradients as compute
+        return compute(**kwargs)
     from ai_painter.complete_world import terrain_ecology_conditioned_v1 as terrain
     if type(kwargs['model']) is terrain.TerrainEcologyConditionedRenderer:
         from ai_painter.complete_world.terrain_ecology_joint_priority_device_v1 import compute_generator_candidate_gradients as compute
@@ -52,23 +101,44 @@ def compute_generator_candidate_gradients(**kwargs):
     return original_compute_generator_candidate_gradients(**kwargs)
 
 
-def fresh_networks(order, *, model_capability=MODEL_CAPABILITY):
+def _geometry_kwargs(model):
+    from ai_painter.complete_world import terrain_ecology_native_bounded_stage_v1 as native
+    if type(model) is native.NativeBoundedStageTerrainEcologyRenderer:
+        native.validate_model_identity(model)
+        return {'geometry': model.native_stage_geometry}
+    if _recomputed_identity(model) is not None:
+        return {'geometry': model.native_stage_geometry}
+    return {}
+
+
+def fresh_networks(order, *, model_capability=MODEL_CAPABILITY, geometry=None):
     from ai_painter.complete_world import object_ecology_decode1_entry_weight_precision_v1 as identity
     from ai_painter.complete_world import terrain_ecology_conditioned_v1 as terrain
+    from ai_painter.complete_world import terrain_ecology_native_bounded_stage_v1 as native
+    from ai_painter.complete_world.native_stage_geometry_v1 import validate_geometry
     from ai_painter.complete_world.native_rgb_conditional_texture_cpu import build_conditional_texture_discriminator
     require(torch.get_num_threads() <= 2 and inherited.core.TRAINING["initializationSeed"] == 20260929,
         "fixed CPU threads/seed required")
+    recomputed = None
+    if model_capability == RECOMPUTED_MODEL_CAPABILITY:
+        from ai_painter.complete_world import terrain_ecology_native_recomputed_stage_v1 as recomputed
+    if model_capability == native.CAPABILITY or recomputed is not None:
+        validate_geometry(geometry)
+    else:
+        require(geometry is None, 'legacy factory does not accept native geometry')
     with torch.device("cpu"), torch.random.fork_rng(devices=[]):
         torch.random.default_generator.manual_seed(20260929)
-        require(model_capability in (identity.CAPABILITY, identity.DECODE2_CAPABILITY, identity.RGB_OUTPUT_CAPABILITY, identity.STEM_CAPABILITY, identity.STEM_PAIR_CAPABILITY, identity.STEM_DECODER_CAPABILITY, terrain.CAPABILITY), "unknown numeric model identity")
-        factory = (terrain.build_fresh_terrain_ecology_conditioned if model_capability == terrain.CAPABILITY
+        require(model_capability in (RECOMPUTED_MODEL_CAPABILITY, native.CAPABILITY, identity.CAPABILITY, identity.DECODE2_CAPABILITY, identity.RGB_OUTPUT_CAPABILITY, identity.STEM_CAPABILITY, identity.STEM_PAIR_CAPABILITY, identity.STEM_DECODER_CAPABILITY, terrain.CAPABILITY), "unknown numeric model identity")
+        factory = (recomputed.build_fresh_terrain_ecology_native_recomputed_stage if recomputed is not None
+            else native.build_fresh_terrain_ecology_native_bounded_stage if model_capability == native.CAPABILITY
+            else terrain.build_fresh_terrain_ecology_conditioned if model_capability == terrain.CAPABILITY
             else identity.build_fresh_object_ecology_stem_decoder_weight_precision if model_capability == identity.STEM_DECODER_CAPABILITY
             else identity.build_fresh_object_ecology_stem_pair_weight_precision if model_capability == identity.STEM_PAIR_CAPABILITY
             else identity.build_fresh_object_ecology_stem_weight_precision if model_capability == identity.STEM_CAPABILITY
                    else identity.build_fresh_object_ecology_decode2_output_weight_precision
                    if model_capability == identity.RGB_OUTPUT_CAPABILITY else identity.build_fresh_object_ecology_decode2_entry_weight_precision
                    if model_capability == identity.DECODE2_CAPABILITY else identity.build_fresh_object_ecology_decode1_entry_weight_precision)
-        model = factory(condition_channel_order=order)
+        model = factory(condition_channel_order=order, **({'geometry': geometry} if model_capability == native.CAPABILITY or recomputed is not None else {}))
         critic = build_conditional_texture_discriminator()
     bind_parameters(model)
     return model, critic
@@ -81,7 +151,12 @@ def _bound_device(model, sample):
     require(parameters and parameters[0].device.type in ("cpu", "cuda"), "CPU/CUDA model required")
     device = parameters[0].device
     with generator_fp32_scope(device): bind_parameters(model)
-    for key, shape in (("image", (3, 192, 256)), ("conditions", (23, 192, 256))):
+    geometry = _geometry_kwargs(model).get('geometry')
+    height, width = (192, 256) if geometry is None else geometry.spatial_shape
+    if 'native_stage_geometry' in sample:
+        require(geometry is not None and type(sample['native_stage_geometry']) is type(geometry)
+            and sample['native_stage_geometry'] == geometry, 'sample/model native geometry differs')
+    for key, shape in (("image", (3, height, width)), ("conditions", (23, height, width))):
         value = sample.get(key)
         require(isinstance(value, torch.Tensor) and value.shape == shape and value.dtype == torch.float32
             and (value.device.type == "cpu" or value.device == device) and not value.requires_grad
@@ -117,9 +192,12 @@ def _validate_support_structure_weight(value):
 
 def _generator_candidate(model, critic, sample, order, prediction, *, support_structure_weight=0.1):
     weight = _validate_support_structure_weight(support_structure_weight)
+    geometry = _geometry_kwargs(model)
+    require(not geometry or weight == 0.1, 'native family requires original support weight0.1')
     require(sample.get("split") == "train" and tuple(order) == tuple(model.condition_channel_order), "train/order differs")
     with generator_fp32_scope(next(model.parameters()).device):
         total, parts = train_object_support_structure_candidate_objective(critic, prediction, sample, sample["objectInstanceTable"], order,
+            **geometry,
             **({"support_structure_weight": weight} if weight == 1.0 else {}))
         candidate, facts = compute_generator_candidate_gradients(model=model, critic=critic, sample=sample,
             actual_total=total, structured_objective=parts["v21UnchangedTotal"],
@@ -139,6 +217,7 @@ def _component_profile(components):
     require(components is background, "exact registered background component required")
     return background
 
+@_record_native_execution
 def perform_pair(model, critic, sample, order, generator_optimizer, critic_optimizer,
         counts, ledger_row, resource, forward, after_update=lambda name, loss: None, *, update_limit=UPDATE_LIMIT,
         prediction_observer=None, components=None, support_structure_weight=0.1):
@@ -157,7 +236,7 @@ def perform_pair(model, critic, sample, order, generator_optimizer, critic_optim
         _phase(critic, True)
         with torch.no_grad(), generator_fp32_scope(device):
             detached = api.sample_forward(model, bound)
-        d_loss, _ = _d_objective(critic, detached, bound, device)
+        d_loss, _ = _d_objective(critic, detached, bound, device, **_geometry_kwargs(model))
         before = counts["discriminator"]
         try:
             _update_discriminator(critic_optimizer, d_loss, critic, bound, "discriminator", counts, update_limit, resource)
@@ -264,6 +343,7 @@ def _failure_summary(error, failure_evidence, raw, calls, labels):
         except BaseException: pass
 
 
+@_record_native_execution
 def zero_update_probe(model, critic, sample, order, resource, forward=None, *, event=None, failure_evidence=None,
         components=None, support_structure_weight=0.1):
     """One shared G forward, five G VJPs and one D VJP; no optimizer step."""
@@ -295,7 +375,7 @@ def zero_update_probe(model, critic, sample, order, resource, forward=None, *, e
                 calls["generatorForwardCompleted"] += 1
                 emit("complete", "forward")
                 _phase(critic, True)
-                d_loss, _ = _d_objective(critic, prediction, bound, device)
+                d_loss, _ = _d_objective(critic, prediction, bound, device, **_geometry_kwargs(model))
                 emit("attempt", "discriminator")
                 d_gradients = torch.autograd.grad(d_loss, tuple(critic.parameters()), create_graph=False, allow_unused=True)
                 calls["discriminatorAutograd"] += 1
@@ -320,7 +400,7 @@ def zero_update_probe(model, critic, sample, order, resource, forward=None, *, e
                     norms.append(row)
                 terrain_norms = None
                 from ai_painter.complete_world import terrain_ecology_conditioned_v1 as terrain
-                if type(model) is terrain.TerrainEcologyConditionedRenderer:
+                if type(model) is terrain.TerrainEcologyConditionedRenderer or _geometry_kwargs(model):
                     value = raw[0][108]; active = int(sample['ecology_regime'].argmax())
                     require(value is not None and value.shape == (48, 7), 'terrain ecology gradient missing')
                     terrain_norms = [float(value[:, i].norm()) for i in range(7)]

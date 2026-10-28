@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "native-stage-geometry-policy-v1",
+  "status": "implementation_target_not_execution_qualification",
+  "stages": [
+    {
+      "stage": 0,
+      "width": 256,
+      "height": 192,
+      "scale": 1,
+      "patchSize": 32,
+      "supportRadii": {
+        "tree": 8,
+        "rock": 4,
+        "vegetation": 6
+      },
+      "backgroundRingRadius": 2,
+      "nativeCoordinateStep": 4.0,
+      "nativeHalfPixelTolerance": 2.0
+    },
+    {
+      "stage": 1,
+      "width": 512,
+      "height": 384,
+      "scale": 2,
+      "patchSize": 64,
+      "supportRadii": {
+        "tree": 16,
+        "rock": 8,
+        "vegetation": 12
+      },
+      "backgroundRingRadius": 4,
+      "nativeCoordinateStep": 2.0,
+      "nativeHalfPixelTolerance": 1.0
+    },
+    {
+      "stage": 2,
+      "width": 1024,
+      "height": 768,
+      "scale": 4,
+      "patchSize": 128,
+      "supportRadii": {
+        "tree": 32,
+        "rock": 16,
+        "vegetation": 24
+      },
+      "backgroundRingRadius": 8,
+      "nativeCoordinateStep": 1.0,
+      "nativeHalfPixelTolerance": 0.5
+    }
+  ],
+  "parameterGroups": 109,
+  "parameterElements": 2243023,
+  "oldBehaviorMustRemainEquivalent": true,
+  "gradientThresholdChangesAllowed": false,
+  "precisionOperatorChangesAllowed": false,
+  "runtimePublicationAllowed": false,
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "093a83c140a647996ae2acf704a1ab9da3be157802a8220823e0b01f6cf11e03"
+  }
+}

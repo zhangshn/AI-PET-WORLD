@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { gunzipSync } from "node:zlib";
+import { buildAnonymousRouteNaturalnessProfile } from "./anonymous-route-naturalness.mjs";
 
 const REQUIRED_SOURCE_ROLES = new Set([
   "terrain_elevation_measurement",
@@ -298,13 +300,14 @@ export function buildIndependentTrainingRegionConnectivity({
   hasWater,
   anonymousCompositionArchitectureRevision = null,
   regionIdentity = null,
+  naturalWorldScope = false,
 }) {
   assert(
-    /^v7-capacity-slot-\d{3}$/.test(slotId ?? ""),
+    naturalWorldScope || /^v7-capacity-slot-\d{3}$/.test(slotId ?? ""),
     "independent connectivity requires a V7 capacity slot",
   );
   assert(
-    sourcePackage?.schemaVersion ===
+    naturalWorldScope ? sourcePackage?.scope === "natural_world_runtime_v1" && sourcePackage.identity?.countryOrTerritory === "Thailand" : sourcePackage?.schemaVersion ===
       "real-earth-region-source-package-v1" &&
       sourcePackage.scope?.currentMvpRegionScope ===
         "thailand_sakaerat_wang_nam_khiao_only" &&
@@ -367,14 +370,14 @@ export function buildIndependentTrainingRegionConnectivity({
     width,
     height,
   );
-  assert(regionIdentity === null || (typeof regionIdentity === "string" &&
+  assert(naturalWorldScope ? typeof regionIdentity === "string" && regionIdentity.length > 0 && !regionIdentity.startsWith("training-") : regionIdentity === null || (typeof regionIdentity === "string" &&
     /^(?:training-world:thailand-mvp:replacement-[a-f0-9]{64}|training-hydrology-proposal:[a-f0-9]{64}:sakaerat-measurement-window-r\d{2}-c\d{2}-v3)$/.test(regionIdentity)),
     "replacement region identity must be a content-bound training proposal");
   const regionId = regionIdentity ?? `training-world:thailand-mvp:${slotId}`;
   const neighborRegionId =
-    `training-world:thailand-mvp:adjacent-${pathSide}-${instanceDigest.slice(0, 8)}`;
+    naturalWorldScope ? `${regionId}:adjacent-${pathSide}-${instanceDigest.slice(0, 8)}` : `training-world:thailand-mvp:adjacent-${pathSide}-${instanceDigest.slice(0, 8)}`;
   const blueprintId =
-    `thailand-mvp-${slotId}-independent-region-connectivity-${instanceDigest.slice(0, 12)}`;
+    naturalWorldScope ? `natural-connectivity-${naturalWorldDigest({ regionId, instanceDigest })}` : `thailand-mvp-${slotId}-independent-region-connectivity-${instanceDigest.slice(0, 12)}`;
   const pathPortId = `${regionId}:port:path-${pathSide}`;
   const pairedPathPortId =
     `${neighborRegionId}:port:path-${oppositeSide(pathSide)}`;
@@ -534,7 +537,7 @@ export function buildIndependentTrainingRegionConnectivity({
   const payload = {
     schemaVersion: "regional-connectivity-instance-v1",
     blueprintId,
-    status: "independent_training_region_connectivity_ready",
+    status: naturalWorldScope ? "natural_region_connectivity_candidate" : "independent_training_region_connectivity_ready",
     connectivityContractId: "natural-home-large-world-connectivity-v1",
     worldProfileId,
     realEarthRegionId: sourcePackage.identity.realEarthRegionId,
@@ -937,6 +940,189 @@ export function canonicalSha256(value) {
     .createHash("sha256")
     .update(JSON.stringify(sortKeys(value)))
     .digest("hex");
+}
+
+export const NATURAL_BOOTSTRAP_CONTRACT = Object.freeze({
+  path: "data/ai-painter/system-governance/ai-painter-natural-world-bootstrap-contract-v2.json",
+  sha256: "ec419bcd0adf167fdfed2004a44a6d6ae300e18829e547423708b12681887206",
+});
+export function naturalWorldDigest(value) {
+  const encode = item => Array.isArray(item) ? `[${item.map(encode).join(",")}]`
+    : item && typeof item === "object" ? `{${Object.keys(item).sort().map(k => `${JSON.stringify(k)}:${encode(item[k])}`).join(",")}}`
+      : JSON.stringify(item);
+  return crypto.createHash("sha256").update(encode(value), "utf8").digest("hex");
+}
+/** Actual bounded local bytes, with an audit of every domain input read. */
+export function readNaturalWorldBinding(root, binding, receipts = []) {
+  assert(binding && typeof binding.path === "string" && /^[a-f0-9]{64}$/.test(binding.sha256 ?? ""), "natural source binding missing");
+  assert(!path.isAbsolute(binding.path) && !binding.path.includes("\\") && !binding.path.includes(":") &&
+    binding.path.split("/").every(p => p && !["..", ".", "latest", "latest.json"].includes(p)), "natural source path invalid");
+  assert(!/(?:^|\/)(?:world-fact-blueprint|task-package|task-manifest|visual-fact-manifest|slot-world-facts|condition-pack|director-output)\.json$|\/compiled-conditions\/|\.(?:png|jpg|jpeg|webp)$/i.test(binding.path), "historical geometry or RGB input forbidden");
+  assert(!binding.path.includes("/design/"), "external agent design is not a runtime source");
+  const absolute = path.resolve(root, binding.path), realRoot = fs.realpathSync(root), real = fs.realpathSync(absolute);
+  const physical = path.relative(realRoot, real);
+  // The project's .runtime is an intentional external-data junction.
+  const runtime = fs.realpathSync(path.join(root, ".runtime")), runtimeRelative = path.relative(runtime, real);
+  assert((physical && !physical.startsWith("..") && !path.isAbsolute(physical)) ||
+    (binding.path.startsWith(".runtime/") && runtimeRelative && !runtimeRelative.startsWith("..") && !path.isAbsolute(runtimeRelative)), "natural source physical escape");
+  const bytes = fs.readFileSync(absolute);
+  const actual = crypto.createHash("sha256").update(bytes).digest("hex");
+  receipts.push({ path: binding.path, fileSha256: actual, expectedFileSha256: binding.sha256, bytes: bytes.length });
+  assert(actual === binding.sha256, `natural source SHA mismatch:${binding.path}`);
+  return bytes;
+}
+export function validateNaturalWorldCreationInput(input) {
+  assert(input && Object.getPrototypeOf(input) === Object.prototype, "natural creation input missing");
+  for (const key of Reflect.ownKeys(input)) {
+    const descriptor = Object.getOwnPropertyDescriptor(input, key);
+    assert(typeof key === "string" && descriptor.enumerable && Object.hasOwn(descriptor, "value"), "natural creation fields must be plain JSON data");
+  }
+  const fields = ["schemaVersion", "ownerId", "playerId", "worldId", "worldSeed", "worldProfileId", "regionId", "createdAtUtc"];
+  assert(Object.keys(input).length === fields.length && fields.every(k => Object.hasOwn(input, k)), "natural creation fields invalid");
+  assert(input.schemaVersion === "natural-world-bootstrap-input-v1", "natural creation schema invalid");
+  for (const field of fields.slice(1)) assert(typeof input[field] === "string" && input[field].trim().length > 0, `natural creation ${field} missing`);
+  for (const field of ["ownerId", "worldId"]) assert(/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(input[field]) && !/[. ]$/.test(input[field]), "natural identity path invalid");
+  assert(!input.worldId.startsWith("training-") && !input.regionId.startsWith("training-"), "training identity forbidden");
+  assert(Number.isFinite(Date.parse(input.createdAtUtc)), "natural creation timestamp invalid");
+}
+/** No caller flags or historical passed fields grant source qualification. */
+export function qualifyNaturalWorldSources({ root = process.cwd(), input }) {
+  validateNaturalWorldCreationInput(input);
+  const inputReads = [];
+  try {
+  const bytes = b => readNaturalWorldBinding(root, b, inputReads);
+  const json = b => JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes(b)));
+  const contract = json(NATURAL_BOOTSTRAP_CONTRACT);
+  assert(contract.schemaVersion === "natural-world-bootstrap-contract-v2" && contract.conditionScope.scopeId === "natural_world_runtime_v1", "natural contract invalid");
+  const knowledge = contract.datasetKnowledgeBinding;
+  const knowledgeRelease = json({ path: knowledge.path, sha256: knowledge.sha256 });
+  assert(knowledgeRelease.datasetReleaseIdentity === knowledge.identity && knowledgeRelease.status === "verified_dataset_release" &&
+    knowledgeRelease.releaseScope.permittedPurpose === "stage4_v2_training_input_identity_only", "natural dataset knowledge identity invalid");
+  const locator = contract.sourceSelection.sourcePackageLocator;
+  const oldPackage = json({ path: locator.path, sha256: locator.artifactSha256 });
+  const { packageSha256, ...oldPayload } = oldPackage;
+  assert(canonicalSha256(oldPayload) === packageSha256 && packageSha256 === locator.embeddedCanonicalSha256, "source package canonical identity invalid");
+  assert(input.worldProfileId === "mainland-southeast-asia-tropical-monsoon-natural-home-v1", "natural world profile outside first-region contract");
+  const provenance = oldPackage.sourceProvenance;
+  const bound = key => json({ path: provenance[`${key}Path`], sha256: provenance[`${key}Sha256`] });
+  const registry = bound("sourceRegistry"), regionContract = bound("regionContract"), factualReference = bound("factualReference"), worldProfile = bound("worldProfile");
+  const pool = json(contract.sourceSelection.measurementCandidatePool);
+  const matches = pool.candidates.filter(c => c.candidateId === contract.sourceSelection.candidateId);
+  assert(matches.length === 1, "natural measurement window missing or ambiguous");
+  const candidate = matches[0];
+  assert(candidate.fingerprints.direct === contract.sourceSelection.measurementFingerprint, "natural measurement fingerprint mismatch");
+  assertBoundsInside(candidate.measurementBounds, regionContract.observationArea.bounds);
+  const parentBinding = contract.sourceSelection.naturalizationParent;
+  const parent = json(parentBinding);
+  const derivations = Object.fromEntries(parent.sourceEvidence.map(b => [b.role, json(b)]));
+  const measurement = derivations.measurement_window, soil = derivations.soil_and_natural_hydrology, removal = derivations.engineered_feature_removal;
+  assert(removal.evidenceContract.finalWorldGeometryMustBeReconstructed === true &&
+    removal.evidenceContract.prohibitedUses.includes("final_world_fact_geometry"), "natural removal evidence invalid");
+  const sources = [];
+  for (const source of provenance.sources) {
+    if (source.role === "regional_climate_and_monsoon_context") continue;
+    const registered = registry.sources.find(s => s.sourceId === source.sourceId);
+    assert(registered && registered.role === source.role && registered.license === source.license && registered.attribution === source.attribution, "source license or attribution mismatch");
+    assert(source.license && source.attribution && Number.isFinite(Date.parse(source.acquiredAtUtc)) && source.visualTrainingTargetEligible === false, "source license acquisition boundary missing");
+    assert(source.rawObjects.length > 0, "natural source role has no raw objects");
+    if (["terrain_elevation_measurement", "land_cover_and_human_footprint_screening"].includes(source.role)) {
+      const acquisition = measurement.sourceAcquisitions.find(a => a.sourceId === source.sourceId);
+      assert(acquisition?.acquiredAtUtc === source.acquiredAtUtc && acquisition.sha256 === source.rawObjects[0].sha256,
+        "measurement acquisition evidence mismatch");
+    } else if (source.role === "soil_property_context") {
+      assert(soil.createdAtUtc === source.acquiredAtUtc && soil.soil.sourceId === source.sourceId &&
+        soil.soil.license === source.license && soil.soil.attribution === source.attribution && source.rawObjects.every(raw =>
+          soil.soil.measurements.some(m => m.sourcePath === raw.path && m.sourceSha256 === raw.sha256)), "soil acquisition evidence mismatch");
+    } else if (source.role === "engineered_feature_removal_evidence") {
+      assert(removal.source.sourceId === source.sourceId && removal.source.acquiredAtUtc === source.acquiredAtUtc &&
+        removal.source.license === source.license && removal.source.attribution === source.attribution &&
+        removal.source.rawResponseSha256 === source.rawObjects[0].sha256, "OSM acquisition evidence mismatch");
+    }
+    for (const raw of source.rawObjects) bytes(raw);
+    sources.push(structuredClone(source));
+  }
+  const climateBinding = contract.sourceSelection.newClimateAcquisition;
+  const receipt = json({ path: climateBinding.receiptPath, sha256: climateBinding.receiptSha256 });
+  const climateBytes = bytes({ path: climateBinding.responsePath, sha256: climateBinding.responseSha256 });
+  const climate = JSON.parse(climateBytes.toString("utf8"));
+  assert(receipt.httpStatus === 200 && receipt.responseSha256 === climateBinding.responseSha256 &&
+    receipt.responsePath === climateBinding.responsePath && receipt.responseBytes === climateBytes.length &&
+    Number.isFinite(Date.parse(receipt.acquiredAtUtc)) && Number.isFinite(Date.parse(receipt.startedAtUtc)) && Date.parse(receipt.acquiredAtUtc) >= Date.parse(receipt.startedAtUtc) &&
+    new URL(receipt.requestUrl).hostname === "power.larc.nasa.gov" && receipt.requestParameters.longitude === "101.895" &&
+    receipt.requestParameters.latitude === "14.5078" && receipt.role === "regional_climate_and_monsoon_context", "new NASA acquisition evidence invalid");
+  assert(climate.header.range === climateBinding.period && receipt.dataPeriod === climate.header.range &&
+    climate.header.api.version === "v2.10.1" && receipt.apiVersion.version === climate.header.api.version &&
+    Math.abs(climate.geometry.coordinates[0] - 101.895) < 0.001 && Math.abs(climate.geometry.coordinates[1] - 14.5078) < 0.001,
+  "new NASA period API or point mismatch");
+  const parameterNames = ["PRECTOTCORR", "RH2M", "T2M", "WS2M"];
+  const monthly = {};
+  for (const name of parameterNames) {
+    const values = climate.properties.parameter[name];
+    assert(values && Object.keys(values).length === 13 && Object.values(values).every(v => Number.isFinite(v) && v !== climate.header.fill_value), "NASA climate values missing");
+    assert(climate.parameters[name]?.units, "NASA climate units missing");
+    monthly[name] = { units: climate.parameters[name].units, values: structuredClone(values) };
+  }
+  assert(receipt.license === "NASA publicly available data; project attribution required" && receipt.attribution === "NASA POWER Project, NASA Langley Research Center", "NASA license attribution invalid");
+  sources.push({ sourceId: receipt.sourceId, role: receipt.role, provider: "NASA POWER", product: `Climatology ${climate.header.api.version} ${climate.header.range}`,
+    license: receipt.license, attribution: receipt.attribution, acquiredAtUtc: receipt.acquiredAtUtc,
+    acquisitionEvidence: { path: climateBinding.receiptPath, sha256: climateBinding.receiptSha256 },
+    rawObjects: [{ path: climateBinding.responsePath, sha256: climateBinding.responseSha256 }], visualTrainingTargetEligible: false });
+  assert([...REQUIRED_SOURCE_ROLES].every(role => sources.filter(s => s.role === role).length === 1), "required natural source role missing");
+  const unpack = (p, h, count, size = 1) => {
+    const raw = gunzipSync(bytes({ path: p, sha256: h }), { maxOutputLength: count * size });
+    assert(raw.length === count * size, "measurement decoded size invalid");
+    return size === 4 ? Array.from({ length: count }, (_, i) => raw.readFloatLE(i * 4)) : [...raw];
+  };
+  const elevation = unpack(measurement.rasterWindows.elevation.outputPath, measurement.rasterWindows.elevation.outputSha256, 1024 * 768, 4);
+  const naturalization = parent.naturalizationFacts;
+  const cover = unpack(naturalization.reconstructedNaturalLandCoverPath, naturalization.reconstructedNaturalLandCoverSha256, 1024 * 768);
+  const human = unpack(naturalization.combinedHumanRemovalMaskPath, naturalization.combinedHumanRemovalMaskSha256, 1024 * 768);
+  const hydro = soil.naturalHydrology;
+  const slope = unpack(hydro.slopePath, hydro.slopeSha256, 256 * 192, 4);
+  const drainage = unpack(hydro.drainageLikelihoodPath, hydro.drainageLikelihoodSha256, 256 * 192);
+  const window = candidate.sourcePixelWindow, { left, top, width, height } = window;
+  const extract = (data, w, l, t, rr, bb) => { const out = []; for (let y = t; y < bb; y++) for (let x = l; x < rr; x++) out.push(data[y * w + x]); return out; };
+  const values = extract(elevation, 1024, left, top, left + width, top + height);
+  const stats = data => { let minimum = Infinity, maximum = -Infinity, sum = 0; for (const v of data) { assert(Number.isFinite(v), "measurement nonfinite"); minimum = Math.min(minimum, v); maximum = Math.max(maximum, v); sum += v; } return { minimum, maximum, mean: sum / data.length, count: data.length }; };
+  const global = stats(elevation), selected = stats(values);
+  const cells = [];
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 16; x++) {
+    const yy = Math.min(top + height - 1, Math.floor(top + (y + 0.5) / 12 * height));
+    const xx = Math.min(left + width - 1, Math.floor(left + (x + 0.5) / 16 * width));
+    cells.push(`${Math.round(elevation[yy * 1024 + xx] / 5)}:${cover[yy * 1024 + xx]}:${drainage[Math.floor(yy / 4) * 256 + Math.floor(xx / 4)] > 0 ? 1 : 0}`);
+  }
+  assert(crypto.createHash("sha256").update(cells.join("|")).digest("hex") === candidate.fingerprints.direct, "measurement fingerprint replay mismatch");
+  const covers = extract(cover, 1024, left, top, left + width, top + height), hist = {};
+  for (const v of covers) { assert(![40, 50].includes(v), "human class remains in reconstructed facts"); hist[v] = (hist[v] ?? 0) + 1; }
+  const nonzero = data => data.filter(v => v !== 0).length / data.length;
+  const hl = Math.round(candidate.column * 256 / 11), hr = Math.round((candidate.column + 1) * 256 / 11), ht = Math.round(candidate.row * 192 / 11), hb = Math.round((candidate.row + 1) * 192 / 11);
+  const metrics = { elevationMetres: selected, relativeElevation: (selected.mean - global.minimum) / Math.max(1, global.maximum - global.minimum),
+    relativeRelief: (selected.maximum - selected.minimum) / Math.max(1, global.maximum - global.minimum), normalizedSlope: stats(extract(slope, 256, hl, ht, hr, hb)),
+    drainageLikelihoodRatio: nonzero(extract(drainage, 256, hl, ht, hr, hb)), reconstructedLandCoverRatio: { treeCover: (hist[10] ?? 0) / covers.length,
+      shrubland: (hist[20] ?? 0) / covers.length, grassland: (hist[30] ?? 0) / covers.length, bareOrSparse: (hist[60] ?? 0) / covers.length },
+    humanRemovalRatio: nonzero(extract(human, 1024, left, top, left + width, top + height)) };
+  const rounded = v => typeof v === "number" ? Number(v.toFixed(8)) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, rounded(x)])) : v;
+  assert(naturalWorldDigest(rounded(metrics)) === naturalWorldDigest(candidate.metrics), "measurement statistics replay mismatch");
+  const assignment = { ...candidate, measurementWindowId: candidate.candidateId, metrics: rounded(metrics), monsoonSeason: contract.state.seasonScenario.season };
+  const landscape = deriveThailandMvpLandscapeFromWindowFacts({ assignment, factualReference });
+  assignment.regionalLandscapeType = landscape.regionalLandscapeType ?? landscape.landscapeType;
+  Object.assign(assignment, landscape);
+  assert(assignment.regionalLandscapeType === "forested-low-mountain", "selected natural landscape changed");
+  const rawOsm = json({ path: removal.source.rawResponsePath, sha256: removal.source.rawResponseSha256 });
+  const routeNaturalnessProfile = buildAnonymousRouteNaturalnessProfile({ rawOsm, source: { ...removal.source, profileId: "natural-world-measured-route-profile-v1" },
+    createdAtUtc: input.createdAtUtc, createdAtAsiaShanghai: input.createdAtUtc });
+  const climateFacts = { sourceId: receipt.sourceId, acquisition: { path: climateBinding.receiptPath, sha256: climateBinding.receiptSha256 },
+    period: climate.header.range, apiVersion: climate.header.api.version, point: climate.geometry.coordinates, parameters: monthly, currentWeatherObservation: false };
+  const newSourcePackage = { schemaVersion: "real-earth-region-source-package-v1", scope: "natural_world_runtime_v1", identity: { ...oldPackage.identity, observationPeriod: climate.header.range },
+    sources, derivationEvidence: parent.sourceEvidence, measurement: { candidateId: candidate.candidateId, bounds: candidate.measurementBounds,
+      fingerprint: candidate.fingerprints.direct, metrics: rounded(metrics), classHistogram: hist }, climateFacts,
+    historicalPackageLocator: { path: locator.path, fileSha256: locator.artifactSha256, packageSha256 },
+    acquisitionVersionChanged: true, licenseAndAttributionRetained: true, contractBinding: NATURAL_BOOTSTRAP_CONTRACT };
+  const sourcePackageIdentity = `natural-source-${naturalWorldDigest(newSourcePackage)}`;
+  return { newSourcePackage: { ...newSourcePackage, packageId: sourcePackageIdentity }, sourcePackageIdentity, assignment,
+    worldProfile, factualReference, climateFacts, routeNaturalnessProfile, inputReads, contract,
+    knowledgeDatasetBinding: { path: knowledge.path, sha256: knowledge.sha256, identity: knowledge.identity, purpose: "model_training_knowledge_only" } };
+  } catch (error) { error.inputReads = inputReads; throw error; }
 }
 
 function sortKeys(value) {

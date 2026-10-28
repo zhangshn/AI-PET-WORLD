@@ -4,6 +4,7 @@ import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { readCurrentExecutionRegistry, CURRENT_EXECUTION_REGISTRY_ROOT as REG } from '../ai-painter-current-execution-registry.mjs'
 import { adaptLegacyTrainingDetail, legacyRunKind, DRY_RECOVERY_CANDIDATE_SCHEMA, readDryRecoveryCandidate, readCompletionTrainingObservation } from './training-history-detail-adapters.mjs'
+import { isReadonlyPostReviewTerminal, readReadonlyPostReviewEnvelope, publicReadonlyReviewArtifact } from './readonly-post-review-history.mjs'
 import { readBoundLargeExperimentProjection } from './training-history-large-result-projection.mjs'
 import { HistoryError, requireFact, safePath, bytes } from './training-history-safe-bytes.mjs'
 import { OBSERVATION_CONTRACT, publicObservationTiming, publicControllerTiming, sameBinding } from './training-observation-contract.mjs'
@@ -119,7 +120,11 @@ async function traverse(root, current) {
       // These sources never advance latestTrainingTerminal or discover files.
       const candidates = [{ binding: snapshot.latestTrainingTerminal, owned: false }]
       if (newestOwnTerminal && ['training_pending', 'qualification_pending', 'failed_closed',
-        'experiment_completed_not_formal_qualified','experiment_failed_closed'].includes(snapshot.terminalEvidence.status)) {
+        'experiment_completed_not_formal_qualified','experiment_failed_closed',
+        'post_training_visual_review_failed','post_training_component_checks_passed_not_qualified',
+        'post_training_review_execution_failed','replay_retention_review_evidence_unknown',
+        'replay_retention_review_completed_absolute_failed','replay_retention_review_completed_not_qualified',
+        'replay_retention_review_execution_failed'].includes(snapshot.terminalEvidence.status)) {
         candidates.unshift({ binding: { ...snapshot.terminalEvidence, runId: snapshot.runId }, owned: true })
       }
       for (const { binding, owned } of candidates) {
@@ -130,7 +135,10 @@ async function traverse(root, current) {
         if (owned) {
           const observedExperiment=terminal.schemaVersion==='ai-painter-learning-capacity-experiment-terminal-v1'
             &&['experiment_completed_not_formal_qualified','experiment_failed_closed'].includes(terminal.status)
-          if(observedExperiment) {
+          if(isReadonlyPostReviewTerminal(terminal)) {
+            await readReadonlyPostReviewEnvelope({ terminal, runId: snapshot.runId,
+              readJson: async (b, maximumBytes) => (await json(root,b,{maximumBytes})).value })
+          } else if(observedExperiment) {
             // A failed admission/launcher need not have performed an update and
             // must not advance latestTrainingTerminal. Its own committed task
             // terminal still belongs in history; never borrow the prior Run.
@@ -692,7 +700,8 @@ export async function readTrainingArtifact(runId, artifactId, options = {}) {
     const png = read.value.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
     const jpeg = read.value[0] === 255 && read.value[1] === 216 && read.value[2] === 255
     requireFact(png || jpeg, 'history_image_signature_invalid')
-    if(item.role==='output'&&detail.record.detailCoverage?.adapter==='training_observation_v1') {
+    if(item.role==='output'&&detail.record.detailCoverage?.adapter==='training_observation_v1'
+      ||detail.record.detailCoverage?.adapter==='readonly_post_review_v1'&&item.resolution!==undefined) {
       requireFact(png&&read.value.length>=24&&Array.isArray(item.resolution)
         &&read.value.readUInt32BE(16)===item.resolution[0]&&read.value.readUInt32BE(20)===item.resolution[1], 'training_observation_image_dimensions_conflict')
     }
@@ -712,6 +721,12 @@ export async function readTrainingArtifact(runId, artifactId, options = {}) {
     return {json:{...item,verificationStatus:'bytes_verified',byteLength:read.value.length,
       previewStatus:'controlled_training_observation_fields_only',truncated:preview.length>65536,
       text:preview.subarray(0,65536).toString('utf8')}}
+  }
+  if(detail.record.detailCoverage?.adapter==='readonly_post_review_v1') {
+    const value=item.role==='condition'?{}:JSON.parse(read.value.toString('utf8'))
+    const preview=Buffer.from(JSON.stringify(publicReadonlyReviewArtifact(value),null,2))
+    return {json:{...item,verificationStatus:'bytes_verified',byteLength:read.value.length,
+      previewStatus:'controlled_readonly_review_fields_only',truncated:false,text:preview.toString('utf8')}}
   }
   if (item.evidenceKind === 'dry_recovery_candidate_manifest') {
     const manifest = JSON.parse(read.value.toString('utf8'))

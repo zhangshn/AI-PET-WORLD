@@ -5,6 +5,7 @@ reduces the spatial adjoint in FP64 before one conversion to FP32.
 """
 from contextvars import ContextVar
 import torch
+from ai_painter.complete_world.bounded_finite_validation_v1 import bounded_all_finite
 from torch import nn
 from ai_painter.complete_world.object_ecology_regime_input_cpu import require, validate_ecology
 from ai_painter.complete_world import object_ecology_regime_conditioned as ecology
@@ -82,3 +83,77 @@ class TerrainEcologyStem(nn.Module):
         result=stem_weight_reduction_precision(features,self.weight,self.bias)
         require(result.shape==(1,48,192,256),'terrain ecology native geometry differs')
         return result+projection(ecology._ECOLOGY.get())
+
+
+class _NativeStageTerrainEcologyProjection(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, weight, code, geometry):
+        from ai_painter.complete_world.native_stage_geometry_v1 import validate_geometry
+        validate_geometry(geometry)
+        _validate(weight, code)
+        ctx.save_for_backward(weight, code)
+        ctx.geometry = geometry
+        result = (weight @ code).reshape(1, 48, 1, 1).expand(
+            1, 48, geometry.height, geometry.width).contiguous()
+        require(bounded_all_finite(result), 'projection nonfinite forward')
+        return result
+
+    @staticmethod
+    def backward(ctx, gradient):
+        from ai_painter.complete_world.native_stage_geometry_v1 import validate_geometry
+        require(not torch.is_grad_enabled(), 'projection higher-order derivatives prohibited')
+        geometry = validate_geometry(ctx.geometry)
+        weight, code = ctx.saved_tensors
+        _validate(weight, code)
+        require(type(gradient) is torch.Tensor
+                and gradient.shape == (1, 48, geometry.height, geometry.width)
+                and gradient.device == weight.device and gradient.dtype == torch.float32
+                and gradient.layout == torch.strided and bounded_all_finite(gradient.detach()),
+                'projection adjoint differs')
+        result = None
+        if ctx.needs_input_grad[0]:
+            spatial = gradient.to(torch.float64).sum(dim=(0, 2, 3))
+            result = (spatial[:, None] * code.to(torch.float64)[None, :]).to(torch.float32)
+            require(result.shape == weight.shape and bool(torch.isfinite(result).all()),
+                    'projection nonfinite weight VJP')
+        return result, None, None
+
+
+class NativeStageTerrainEcologyProjection(nn.Module):
+    def __init__(self, geometry):
+        from ai_painter.complete_world.native_stage_geometry_v1 import validate_geometry
+        super().__init__()
+        self.native_stage_geometry = validate_geometry(geometry)
+        self.in_features, self.out_features = 7, 48
+        self.weight = nn.Parameter(torch.zeros((48, 7), device='cpu', dtype=torch.float32))
+
+    def forward(self, code):
+        validate_ecology(code)
+        return _NativeStageTerrainEcologyProjection.apply(
+            self.weight, code.to(self.weight.device), self.native_stage_geometry)
+
+
+class NativeStageTerrainEcologyStem(nn.Module):
+    def __init__(self, original, geometry):
+        from ai_painter.complete_world.native_stage_geometry_v1 import validate_geometry
+        super().__init__()
+        require(type(original) is TerrainEcologyStem and original.weight.device.type == 'cpu',
+                'native stage requires original terrain ecology stem')
+        self.native_stage_geometry = validate_geometry(geometry)
+        self.weight, self.bias = original.weight, original.bias
+        for name in ('in_channels', 'out_channels', 'kernel_size', 'stride', 'padding',
+                     'dilation', 'groups', 'padding_mode'):
+            setattr(self, name, getattr(original, name))
+        self.training = original.training
+
+    def forward(self, features):
+        projection = _TERRAIN_PROJECTION.get()
+        require(type(projection) is NativeStageTerrainEcologyProjection
+                and projection.native_stage_geometry == self.native_stage_geometry
+                and projection.weight.device == features.device,
+                'missing exact native stage terrain ecology context')
+        result = stem_weight_reduction_precision(features, self.weight, self.bias)
+        geometry = self.native_stage_geometry
+        require(result.shape == (1, 48, geometry.height, geometry.width),
+                'native stage terrain ecology geometry differs')
+        return result + projection(ecology._ECOLOGY.get())

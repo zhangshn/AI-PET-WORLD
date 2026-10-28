@@ -1,11 +1,11 @@
-﻿/**
+/**
  * Local runtime-only file store for the live world runtime.
  *
  * Server-side adapter implementation. Formal runtime code should import
  * world-runtime-store-adapter instead of depending on this implementation.
  */
 
-import { mkdir, open, readFile, rename, rm, readdir } from "node:fs/promises"
+import { mkdir, open, readFile, rename, rm, readdir, stat } from "node:fs/promises"
 import { existsSync } from "node:fs"
 import { createHash, randomUUID } from "node:crypto"
 import { hostname } from "node:os"
@@ -13,6 +13,8 @@ import path from "node:path"
 
 import type {
   WorldRuntimeSaveRecord,
+  NaturalWorldRuntimeSaveRecord, NaturalWorldRuntimeReadInput, NaturalWorldRuntimeReadResult,
+  NaturalWorldRuntimeWriteInput, NaturalWorldRuntimeWriteResult,
   WorldRuntimeStoreAdapter,
   WorldRuntimeStoreReadResult,
   WorldRuntimeStoreWriteResult,
@@ -22,6 +24,17 @@ import {
   assertRuntimePathSegment,
 } from "./runtime-path-security"
 import { isWorldRuntimeSaveRecord } from "./world-runtime-record-validation"
+import {
+  NATURAL_WORLD_MAX_BYTES, decodeNaturalWorldRuntimeRecord, assertNaturalWorldReadInput,
+  assertNaturalWorldReadMatch, snapshotNaturalWorldWrite, naturalWorldCasConflict,
+  validateNaturalWorldTransactionJournal, assertNaturalWorldTransactionRecord,
+} from "./world-runtime-record-validation"
+type LegacyReadInput = { filePath?: string; ownerId?: string; worldId?: string }
+type LegacyWriteInput = { record: WorldRuntimeSaveRecord; filePath?: string; expectedTick?: number }
+type StoredRecord = WorldRuntimeSaveRecord | NaturalWorldRuntimeSaveRecord
+type InternalReadResult = Omit<WorldRuntimeStoreReadResult, "record"> & { record: StoredRecord | null; fileSha256?: string }
+type InternalWriteInput = { record: StoredRecord; filePath?: string; expectedTick?: number; expectedStateVersion?: number; expectedFileSha256?: string | null }
+
 
 const RUNTIME_DIR = path.join(
   process.cwd(),
@@ -32,6 +45,8 @@ const LATEST_WORLD_FILE = "latest-world.json"
 
 export const localFileRuntimeStore: WorldRuntimeStoreAdapter = {
   kind: "local_file_runtime_store",
+  readNatural: (input) => readNaturalWorldRuntimeSaveRecord(input),
+  writeNatural: (input) => writeNaturalWorldRuntimeSaveRecord(input),
   read: (input) => readLocalFileWorldRuntimeSaveRecord(input),
   write: (input) => writeLocalFileWorldRuntimeSaveRecord(input),
   getDefaultSavePath: () => getDefaultLocalFileWorldRuntimeSavePath(),
@@ -59,9 +74,9 @@ function getDefaultLocalFileWorldRuntimeSavePath(): string {
   return path.join(RUNTIME_DIR, LATEST_WORLD_FILE)
 }
 
-async function readLocalFileWorldRuntimeSaveRecord(
-  input?: { filePath?: string; ownerId?: string; worldId?: string }
-): Promise<WorldRuntimeStoreReadResult> {
+function readLocalFileWorldRuntimeSaveRecord(input?: LegacyReadInput): Promise<WorldRuntimeStoreReadResult>
+function readLocalFileWorldRuntimeSaveRecord(input: NaturalWorldRuntimeReadInput, natural: true): Promise<NaturalWorldRuntimeReadResult>
+async function readLocalFileWorldRuntimeSaveRecord(input?: LegacyReadInput & Partial<NaturalWorldRuntimeReadInput>, natural = false): Promise<InternalReadResult> {
   const resolvedFilePath = input?.filePath
     ? await assertRuntimePath(input.filePath, RUNTIME_DIR)
     : input?.ownerId && input?.worldId
@@ -83,7 +98,7 @@ async function readLocalFileWorldRuntimeSaveRecord(
 
   try {
     const transactionPath = `${resolvedFilePath}.transaction.json`
-    const transaction = await readTransactionJournal(transactionPath)
+    const transaction = natural ? null : await readTransactionJournal(transactionPath)
     if (transaction?.state === "prepared") {
       return {
         status: "invalid",
@@ -94,10 +109,14 @@ async function readLocalFileWorldRuntimeSaveRecord(
         tags: ["world_runtime_store_read", "invalid", "runtime_transaction_incomplete"],
       }
     }
-    const raw = await readFile(resolvedFilePath, "utf8")
-    const parsed = JSON.parse(raw) as Partial<WorldRuntimeSaveRecord>
+    const naturalFile = natural ? await readNaturalTransactionRecord(resolvedFilePath, input as NaturalWorldRuntimeReadInput) : null
+    if (natural && !naturalFile) return {
+      status: "empty", record: null, path: resolvedFilePath, message: "No runtime save record found.",
+      warnings: [], tags: ["world_runtime_store_read", "empty"],
+    }
+    const parsed = naturalFile ? naturalFile.record : JSON.parse(await readFile(resolvedFilePath, "utf8")) as WorldRuntimeSaveRecord
 
-    if (!isWorldRuntimeSaveRecord(parsed)) {
+    if (!natural && !isWorldRuntimeSaveRecord(parsed)) {
       return {
         status: "invalid",
         record: null,
@@ -118,7 +137,9 @@ async function readLocalFileWorldRuntimeSaveRecord(
       }
     }
 
+    if (naturalFile) assertNaturalWorldReadMatch(naturalFile.record, input as NaturalWorldRuntimeReadInput, naturalFile.fileSha256)
     return {
+      ...(naturalFile ? { fileSha256: naturalFile.fileSha256 } : {}),
       status: "found",
       record: parsed,
       path: resolvedFilePath,
@@ -139,7 +160,7 @@ async function readLocalFileWorldRuntimeSaveRecord(
     }
 
     return {
-      status: "failed",
+      status: natural ? "invalid" : "failed",
       record: null,
       path: resolvedFilePath,
       message: "Runtime save record could not be read.",
@@ -166,11 +187,9 @@ async function resolveWorldRuntimeSavePathByWorldId(worldId: string): Promise<st
   return matches[0] ? assertRuntimePath(matches[0], RUNTIME_DIR) : null
 }
 
-async function writeLocalFileWorldRuntimeSaveRecord(input: {
-  record: WorldRuntimeSaveRecord
-  filePath?: string
-  expectedTick?: number
-}): Promise<WorldRuntimeStoreWriteResult> {
+function writeLocalFileWorldRuntimeSaveRecord(input: LegacyWriteInput): Promise<WorldRuntimeStoreWriteResult>
+function writeLocalFileWorldRuntimeSaveRecord(input: NaturalWorldRuntimeWriteInput & { record: NaturalWorldRuntimeSaveRecord }, natural: true): Promise<NaturalWorldRuntimeWriteResult>
+async function writeLocalFileWorldRuntimeSaveRecord(input: InternalWriteInput, natural = false): Promise<NaturalWorldRuntimeWriteResult> {
   const filePath = await assertRuntimePath(
     input.filePath ?? getWorldRuntimeSavePath(input.record),
     RUNTIME_DIR,
@@ -181,7 +200,8 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: {
   let recordReplaced = false
 
   try {
-    if (!isWorldRuntimeSaveRecord(input.record)) throw new Error("runtime record schema invalid")
+    if (natural) decodeNaturalWorldRuntimeRecord(Buffer.from(`${JSON.stringify(input.record, null, 2)}\n`, "utf8"))
+    else if (!isWorldRuntimeSaveRecord(input.record)) throw new Error("runtime record schema invalid")
     await mkdir(path.dirname(filePath), { recursive: true })
     try {
       lock = await open(lockPath, "wx")
@@ -209,9 +229,16 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: {
       throw error
     }
     const transactionPath = `${filePath}.transaction.json`
-    const transaction = await readTransactionJournal(transactionPath)
+    const transaction = natural ? null : await readTransactionJournal(transactionPath)
     if (transaction?.state === "prepared") throw new Error("runtime_transaction_incomplete")
-    const existing = await readExistingRuntimeRecord(filePath)
+    const naturalCurrent = natural ? await readNaturalTransactionRecord(filePath, input.record) : null
+    const existing = natural ? naturalCurrent?.record ?? null : await readExistingRuntimeRecord(filePath)
+    if (natural) {
+      const conflict = naturalWorldCasConflict(naturalCurrent?.record ?? null, input.record as NaturalWorldRuntimeSaveRecord,
+        input as NaturalWorldRuntimeWriteInput, naturalCurrent?.fileSha256 ?? null)
+      if (conflict) return { ok: false, code: "conflict", path: filePath, message: conflict,
+        warnings: [conflict], tags: ["world_runtime_store_write", "failed", "natural_world_cas_rejected"] }
+    }
     if (input.expectedTick !== undefined) {
       if ((existing?.tick ?? -1) !== input.expectedTick) {
         return {
@@ -225,27 +252,31 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: {
       }
     }
     await writeTransactionJournal(transactionPath, {
+      ...(natural ? { recordKind: "natural_world", stateVersion: (input.record as NaturalWorldRuntimeSaveRecord).stateVersion,
+        recordContentSha256: (input.record as NaturalWorldRuntimeSaveRecord).recordContentSha256 } : {}),
       schemaVersion: "world-runtime-transaction-v1",
       state: "prepared",
       recordPath: filePath,
-      latestPath: input.filePath ? null : getDefaultLocalFileWorldRuntimeSavePath(),
+      latestPath: natural || input.filePath ? null : getDefaultLocalFileWorldRuntimeSavePath(),
       worldId: input.record.worldId,
       tick: input.record.tick,
       createdAtUtc: new Date().toISOString(),
     })
     await writeJsonAtomic(filePath, input.record)
     recordReplaced = true
-    if (!input.filePath) {
+    if (!natural && !input.filePath) {
       await writeLatestWorldRuntimeIndex({
-        record: input.record,
+        record: input.record as WorldRuntimeSaveRecord,
         filePath,
       })
     }
     await writeTransactionJournal(transactionPath, {
+      ...(natural ? { recordKind: "natural_world", stateVersion: (input.record as NaturalWorldRuntimeSaveRecord).stateVersion,
+        recordContentSha256: (input.record as NaturalWorldRuntimeSaveRecord).recordContentSha256 } : {}),
       schemaVersion: "world-runtime-transaction-v1",
       state: "committed",
       recordPath: filePath,
-      latestPath: input.filePath ? null : getDefaultLocalFileWorldRuntimeSavePath(),
+      latestPath: natural || input.filePath ? null : getDefaultLocalFileWorldRuntimeSavePath(),
       worldId: input.record.worldId,
       tick: input.record.tick,
       committedAtUtc: new Date().toISOString(),
@@ -253,6 +284,7 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: {
     await rm(transactionPath, { force: true })
 
     return {
+      ...(natural ? naturalWriteReceipt(input.record as NaturalWorldRuntimeSaveRecord) : {}),
       ok: true,
       path: filePath,
       message: "Runtime save record written.",
@@ -322,7 +354,7 @@ async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> 
   await rename(tempPath, filePath)
 }
 
-function getWorldRuntimeSavePath(record: WorldRuntimeSaveRecord): string {
+function getWorldRuntimeSavePath(record: Pick<WorldRuntimeSaveRecord, "ownerId" | "worldId">): string {
   return path.join(RUNTIME_DIR, record.ownerId, `${record.worldId}.json`)
 }
 
@@ -394,4 +426,55 @@ function sha256Json(value: unknown): string {
 
 function isNodeFileError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error
+}
+
+export async function readNaturalWorldRuntimeSaveRecord(input: NaturalWorldRuntimeReadInput): Promise<NaturalWorldRuntimeReadResult> {
+  try {
+    assertNaturalWorldReadInput(input)
+    const fixed = structuredClone(input)
+    assertRuntimePathSegment(fixed.ownerId, "ownerId"); assertRuntimePathSegment(fixed.worldId, "worldId")
+    return await readLocalFileWorldRuntimeSaveRecord(fixed, true)
+  } catch (error) { return naturalReadFailure(error) }
+}
+export async function writeNaturalWorldRuntimeSaveRecord(input: NaturalWorldRuntimeWriteInput): Promise<NaturalWorldRuntimeWriteResult> {
+  try {
+    const fixed = snapshotNaturalWorldWrite(input)
+    assertRuntimePathSegment(fixed.record.ownerId, "ownerId"); assertRuntimePathSegment(fixed.record.worldId, "worldId")
+    return await writeLocalFileWorldRuntimeSaveRecord(fixed, true)
+  } catch (error) { return naturalWriteFailure(error) }
+}
+
+async function readNaturalFile(filePath: string) {
+  if ((await stat(filePath)).size > NATURAL_WORLD_MAX_BYTES) throw new Error("natural_world_invalid:size")
+  return decodeNaturalWorldRuntimeRecord(await readFile(filePath))
+}
+async function readExistingNaturalFile(filePath: string) {
+  try { return await readNaturalFile(filePath) }
+  catch (error) { if (isNodeFileError(error) && error.code === "ENOENT") return null; throw error }
+}
+async function readNaturalTransactionRecord(filePath: string, identity: { ownerId: string; worldId: string }) {
+  let rawJournal: Buffer | null = null
+  const journalPath = `${filePath}.transaction.json`
+  try {
+    await assertRuntimePath(journalPath, RUNTIME_DIR)
+    if ((await stat(journalPath)).size > NATURAL_WORLD_MAX_BYTES) throw new Error("natural_world_invalid:transaction_size")
+    rawJournal = await readFile(journalPath)
+  } catch (error) { if (!(isNodeFileError(error) && error.code === "ENOENT")) throw error }
+  const journal = rawJournal === null ? null : validateNaturalWorldTransactionJournal(
+    JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(rawJournal)), filePath, identity.worldId)
+  const current = await readExistingNaturalFile(filePath)
+  if (journal) assertNaturalWorldTransactionRecord(journal, current?.record ?? null, identity)
+  return current
+}
+function naturalWriteReceipt(record: NaturalWorldRuntimeSaveRecord) {
+  return { fileSha256: sha256Json(record), recordContentSha256: record.recordContentSha256,
+    tick: record.tick, stateVersion: record.stateVersion }
+}
+function naturalReadFailure(error: unknown): NaturalWorldRuntimeReadResult {
+  return { status: "invalid", record: null, path: "", message: "Natural world read rejected.",
+    warnings: [error instanceof Error ? error.message : String(error)], tags: ["natural_world_read", "failed"] }
+}
+function naturalWriteFailure(error: unknown): NaturalWorldRuntimeWriteResult {
+  return { ok: false, code: "persistence_error", path: "", message: "Natural world was not written.",
+    warnings: [error instanceof Error ? error.message : String(error)], tags: ["natural_world_write", "old_save_preserved"] }
 }

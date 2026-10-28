@@ -1,5 +1,6 @@
 """Target 48 only: native convolution with an original-device FP64 weight VJP."""
 import torch
+from ai_painter.complete_world.bounded_finite_validation_v1 import bounded_all_finite
 from torch import nn
 from torch.nn import functional as F
 from ai_painter.complete_world.object_appearance_regime_input_cpu import require
@@ -18,7 +19,7 @@ def _validate(features, weight, bias, *, channels=(144, 48)):
     require(all(type(value) in (torch.Tensor, nn.Parameter) for value in values), "decode1 entry tensors required")
     require(features.device.type in ("cpu", "cuda") and all(value.device == features.device
         and value.dtype == torch.float32 and value.layout == torch.strided and value.is_contiguous()
-        and bool(torch.isfinite(value.detach()).all()) for value in values), "decode1 entry FP32/device/layout/finite differs")
+        and bounded_all_finite(value.detach()) for value in values), "decode1 entry FP32/device/layout/finite differs")
     require(features.ndim == 4 and tuple(features.shape[:2]) == (1, inputs)
         and all(size > 0 for size in features.shape[2:]) and tuple(weight.shape) == (outputs, inputs, 3, 3)
         and tuple(bias.shape) == (outputs,), "entry convolution shape differs")

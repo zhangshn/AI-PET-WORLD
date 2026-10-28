@@ -4,6 +4,7 @@ import path from "node:path"
 import { readBoundTrainingPresentation } from "./bound-training-presentation.mjs"
 import { readBoundIndependentTrainingReview, readCompletionTrainingObservation } from "./training-history-detail-adapters.mjs"
 import { bytes as readHistoryBytes } from "./training-history-safe-bytes.mjs"
+import { isReadonlyPostReviewTerminal, readReadonlyPostReviewEvidence } from "./readonly-post-review-history.mjs"
 import {
   CURRENT_EXECUTION_REGISTRY_PATH,
   readCurrentExecutionRegistry,
@@ -15,12 +16,16 @@ import {
 } from "./projection-contract"
 
 type JsonRecord = Record<string, unknown>
+type ReadonlyReviewRow = { sampleId: string; split: string; passed: boolean | null; issueCodes: string[];
+  prediction: { path: string; sha256: string }; projection: { path: string; sha256: string } }
 type BoundTrainingPresentation = Awaited<ReturnType<typeof readBoundTrainingPresentation>>
 type CompletionObservation = NonNullable<Awaited<ReturnType<typeof readCompletionTrainingObservation>>>
 type TrainingPresentation = BoundTrainingPresentation | (Omit<BoundTrainingPresentation, keyof CompletionObservation> & CompletionObservation)
 
 export type AiPainterMachineReviewNode = {
-  epoch: number
+  epoch: number | null
+  sampleId?: string
+  split?: string
   passed: boolean
   issueCodes: readonly string[]
   previewPath: string
@@ -40,6 +45,11 @@ export type AiPainterMachineReviewSummary = {
   schemaVersion: string | null
   status: string | null
   runId: string | null
+  sourceRunId?: string
+  absoluteOutcome?: string
+  relativeOutcome?: string | null
+  reviewTiming?: unknown
+  inferenceTiming?: unknown
   sampleId: string | null
   sampleSplit: string | null
   completedReviewCount: number | null
@@ -270,7 +280,7 @@ export async function queryAiPainterCurrentReviewProjection(
       ...projectionProvenance(snapshot),
       records: [{
         validationRunId: review.runId,
-        inputRunId: snapshot.latestTrainingTerminal?.runId ?? null,
+        inputRunId: review.sourceRunId ?? snapshot.latestTrainingTerminal?.runId ?? null,
         validationStage: snapshot.currentProjectTask?.lifecycleStage ?? null,
         reviewerIdentity: null,
         nodeProgress: review.completedReviewCount === null || review.targetReviewCount === null
@@ -294,7 +304,7 @@ export async function queryAiPainterCurrentReviewProjection(
     return createProjection({
       ...projectionProvenance(snapshot),
       records: review.reviews.map((node) => ({
-        evidenceId: `${review.runId}:epoch-${String(node.epoch).padStart(3, "0")}`,
+        evidenceId: `${review.runId}:${node.sampleId ?? `epoch-${String(node.epoch).padStart(3, "0")}`}`,
         reviewRunId: review.runId,
         originalArtifactPath: node.previewPath,
         normalizedArtifactPath: node.normalizedPath,
@@ -311,14 +321,14 @@ export async function queryAiPainterCurrentReviewProjection(
   return createProjection({
     ...projectionProvenance(snapshot),
     records: review.reviews.map((node, index) => ({
-      reviewResultId: `${review.runId}:epoch-${String(node.epoch).padStart(3, "0")}`,
+      reviewResultId: `${review.runId}:${node.sampleId ?? `epoch-${String(node.epoch).padStart(3, "0")}`}`,
       resultSequence: index + 1,
       reviewRunId: review.runId,
-      validationInputIdentity: review.sampleId,
+      validationInputIdentity: node.sampleId ?? review.sampleId,
       capabilityDomain: "ai_painter",
       reviewContractId: null,
       reviewContractRecordSha256: null,
-      reviewNodeId: `epoch_${node.epoch}`,
+      reviewNodeId: node.sampleId ?? `epoch_${node.epoch}`,
       reviewerIdentity: null,
       metricDefinitionId: null,
       metricValue: null,
@@ -328,7 +338,7 @@ export async function queryAiPainterCurrentReviewProjection(
       reviewStatus: node.passed ? "passed" : "failed",
       failureCode: node.issueCodes.length > 0 ? node.issueCodes.join(",") : null,
       affectedScope: null,
-      evidenceTypeId: "fixed_epoch_preview",
+      evidenceTypeId: node.sampleId ? "readonly_review_native_prediction" : "fixed_epoch_preview",
       evidenceSha256: node.previewSha256,
       resultTerminalStatus: review.status,
       commandId: null,
@@ -385,6 +395,38 @@ async function readBoundMachineReview(
   currentRunId: string,
   currentTerminalBinding: { path: string; sha256: string },
 ): Promise<AiPainterMachineReviewSummary> {
+  if (isReadonlyPostReviewTerminal(currentTaskTerminal)) {
+    if (!currentTaskTerminal || currentTaskTerminal.runId !== currentRunId) throw new Error("post_review_current_run_conflict")
+    const review = await readReadonlyPostReviewEvidence({ terminal: currentTaskTerminal, runId: currentRunId, terminalBinding: currentTerminalBinding,
+      readJson: async (binding: { path: string; sha256: string }, maximum: number) => {
+        const r = await readHistoryBytes(projectRoot, binding.path, maximum, binding.sha256)
+        return JSON.parse(r.value.toString("utf8"))
+      },
+      readEvidenceJson: async (binding: { path: string; sha256: string }, maximum: number) => {
+        const r = await readHistoryBytes(projectRoot, binding.path, maximum, binding.sha256)
+        return { value: JSON.parse(r.value.toString("utf8")), byteLength: r.value.length, sha256: r.sha256 }
+      } })
+    if (!review) throw new Error("post_review_evidence_unavailable")
+    const rows: readonly ReadonlyReviewRow[] = review.rows
+    const reportBinding = isRecord(currentTaskTerminal.report)
+      ? requiredBinding(currentTaskTerminal.report, "post_review_report") : currentTerminalBinding
+    return { availability: "available", reasonCode: null, integrityStatus: "verified",
+      sourcePath: reportBinding.path, sourceSha256: reportBinding.sha256,
+      schemaVersion: String(currentTaskTerminal.schemaVersion), status: String(currentTaskTerminal.status),
+      runId: currentRunId, sourceRunId: review.sourceRunId, sampleId: null, sampleSplit: null,
+      absoluteOutcome: review.absoluteOutcome, relativeOutcome: review.relativeOutcome,
+      reviewTiming: { ...review.reviewTiming, sourcePath: currentTerminalBinding.path, sourceSha256: currentTerminalBinding.sha256 },
+      inferenceTiming: review.inferenceTiming,
+      completedReviewCount: review.executionResult === "succeeded" ? rows.length : null,
+      targetReviewCount: review.pkg.trainSampleIds.length + review.pkg.validationSampleIds.length,
+      previewPassCount: review.executionResult === "succeeded" && rows.every(row => row.passed !== null) ? rows.filter(row => row.passed === true).length : null,
+      previewFailCount: review.executionResult === "succeeded" && rows.every(row => row.passed !== null) ? rows.filter(row => row.passed === false).length : null,
+      updatedAtUtc: stringOrNull(currentTaskTerminal.recordedAtUtc),
+      completedAtUtc: review.reviewTiming.endedAtUtc,
+      reviews: rows.filter(row => row.passed !== null).map(row => ({ epoch: null, sampleId: row.sampleId, split: row.split,
+        passed: row.passed === true, issueCodes: row.issueCodes, previewPath: row.prediction.path, previewSha256: row.prediction.sha256,
+        reproductionPath: null, reproductionSha256: null, normalizedPath: row.projection.path, normalizedSha256: row.projection.sha256 })) }
+  }
   if (currentTaskTerminal?.schema === "completed-training-independent-review-v1") {
     if (!latestBinding || latestBinding.source.runId !== currentRunId) {
       throw new Error("independent_review_training_terminal_not_registered")

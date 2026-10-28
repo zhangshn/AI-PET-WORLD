@@ -1,10 +1,19 @@
 """Single-target FP64 weight reduction; native FP32 forward/input/bias VJPs."""
 from __future__ import annotations
 import torch
+from ai_painter.complete_world.bounded_finite_validation_v1 import bounded_all_finite
 from torch.nn import functional as F
 from ai_painter.complete_world.object_appearance_regime_input_cpu import require
 
 NUMERIC_RULE = "fp32_native_biased_detail_conv_native_input_bias_vjp_fp64_unfold_matmul_weight_once_fp32_v1"
+
+
+def _bounded_finite_compatible(value):
+    if (type(value) in (torch.Tensor, torch.nn.Parameter)
+            and value.layout == torch.strided and value.device.type in ("cpu", "cuda")
+            and value.dtype in (torch.float32, torch.float64)):
+        return bounded_all_finite(value)
+    return bool(torch.isfinite(value).all())
 
 
 def _validate(features, weight, bias):
@@ -13,7 +22,7 @@ def _validate(features, weight, bias):
     require(features.device.type in ("cpu", "cuda") and all(
         v.device == features.device and v.dtype == torch.float32
         and v.layout == torch.strided and v.is_contiguous()
-        and bool(torch.isfinite(v.detach()).all()) for v in values),
+        and _bounded_finite_compatible(v.detach()) for v in values),
         "detail FP32/device/layout/finite boundary differs")
     require(len({v.untyped_storage().data_ptr() for v in values}) == 3,
         "detail input/weight/bias storage aliases prohibited")

@@ -10,6 +10,8 @@ import { readCurrentExecutionRegistry, advanceCurrentExecutionRegistry } from ".
 import { observationContract, CONTROLLER_SCOPE } from "../src/server/ai-console/training-observation-contract.mjs";
 import { twoMapCheckpointPolicy, twoMapCheckpointSuccessorPolicy, twoMapWorker, twoMapTests, twoMapExperimentSucceeded } from "./lib/ai-painter-two-map-experiment-v1.mjs";
 import { consumedSingle149Policy, single149Policy, single149Worker, single149Tests, single149Succeeded } from "./lib/ai-painter-single149-terrain-ecology-fit-v1.mjs";
+import { replayPolicies, replayWorker, replayTests, replaySucceeded } from "./lib/ai-painter-replay-retention-fit-v1.mjs";
+import { roadAttributionPolicy, roadAttributionWorker, roadAttributionTests, roadAttributionSucceeded } from "./lib/ai-painter-road-attribution-probe-v1.mjs";
 
 import { routingPolicies, routingWorker, routingTests, routingSucceeded, runTerrainRoutingComparison } from "./lib/ai-painter-terrain-routing-comparison-v1.mjs";
 import { consumedBackgroundPolicy, backgroundPolicy, backgroundWorker, backgroundTests, backgroundSucceeded } from "./lib/ai-painter-rock-background-probe-v1.mjs";
@@ -815,6 +817,16 @@ export function experimentWorkerTimeoutMs(resources, fullTrainExposure = false) 
   assert(Number.isSafeInteger(resources?.maxWallSeconds) && resources.maxWallSeconds > 0);
   return (resources.maxWallSeconds + (fullTrainExposure ? 0 : 30)) * 1000;
 }
+export function roadAttributionRemainingMs(startedAtMs, requestedMs, nowMs = performance.now()) {
+  assert(Number.isFinite(startedAtMs) && Number.isFinite(nowMs) && nowMs >= startedAtMs, "invalid diagnostic clock");
+  assert(Number.isSafeInteger(requestedMs) && requestedMs > 0, "invalid diagnostic timeout");
+  const remaining = Math.floor(900000 - (nowMs - startedAtMs));
+  assert(remaining > 0, "road attribution controller overall budget exhausted");
+  return Math.min(requestedMs, remaining);
+}
+export function experimentMayUpdateTrainingTerminal(policy, readonlyTrainFit, trainingStarted) {
+  return policy !== roadAttributionPolicy && !readonlyTrainFit && trainingStarted === true;
+}
 export function observedExperimentTermination(result, progress, runId) {
   if (result) {
     assert.equal(result.experimentIdentity, runId, "terminal_result_run_mismatch");
@@ -903,6 +915,12 @@ function stopOwnedWorker(child) {
 
 async function main() {
   const mode = process.argv[2];
+  if (mode === "run-replay-retention-comparison") {
+    assert.equal(process.argv.length, 3);
+    const { runReplayRetentionComparison } = await import("./lib/ai-painter-replay-retention-sequence-v1.mjs");
+    await runReplayRetentionComparison(root);
+    return;
+  }
   if (mode === "review-completed") {
     assert.equal(process.argv.length, 3, "review-completed accepts only the registered exact post-review policy");
     const { runTwoMapPostReview } = await import("./lib/ai-painter-two-map-post-review-v1.mjs");
@@ -929,6 +947,13 @@ async function main() {
   assert(policy !== consumedBackgroundPolicy, "background v1 failed closed before optimization; use independently bound v2");
   assert(policy !== twoMapCheckpointPolicy, "two-map v1 already failed closed; use independently bound v2 after resource clearing");
   const reconstruction = policy === reconstructionPolicy;
+  const replay = Object.values(replayPolicies).includes(policy);
+  const roadAttribution = policy === roadAttributionPolicy;
+  const diagnosticStartedAtUtc = roadAttribution ? new Date().toISOString() : null;
+  const diagnosticStartedMono = roadAttribution ? process.hrtime.bigint() : null;
+  const diagnosticWindowStartMs = roadAttribution ? performance.now() : null;
+  const boundedTimeout = requestedMs => roadAttribution
+    ? roadAttributionRemainingMs(diagnosticWindowStartMs, requestedMs) : requestedMs;
   const single149 = policy === single149Policy;
   assert(policy !== consumedSingle149Policy, "single149 v1 failed closed before updates; use only independently bound source-closure v2");
   const singleMap = single149 || policy === singleMapCheckpointPolicy || policy === singleMapCheckpointSuccessorPolicy;
@@ -949,9 +974,11 @@ async function main() {
   const v24IeeeObjectHeadCorePriority = policy === v24IeeeObjectHeadCorePriorityPolicy;
   const v24CriticModeObjectHeadCorePriority = policy === v24ResourceBoundObjectHeadCorePriorityPolicy;
   const fullTrainExposure = policy === v21FullTrainExposurePolicy || wholeFrameFidelity || objectCoreFidelity || v23CompleteSupportPartition || v24ObjectHeadCorePriority || v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority;
-  const taskKind = causalProbe ? "readonly_zero_update_causal_diagnostic" : readonlyTrainFit ? "readonly_train_fit_diagnostic" : "bounded_train_only_learning_capacity_experiment";
+  const taskKind = (roadAttribution || causalProbe) ? "readonly_zero_update_causal_diagnostic" : readonlyTrainFit ? "readonly_train_fit_diagnostic" : "bounded_train_only_learning_capacity_experiment";
   const taskGoal = readonlyTrainFit ? "48 train originals, frozen epoch-24 forward only; no weight updates or qualification"
+    : roadAttribution ? "Eight fixed parent/D train cases, zero-update road attribution; no training or qualification"
     : causalProbe ? "One new zero-update GPU call on train157; parameter44 local evidence; no training or qualification"
+    : replay ? "Same completed parent: fixed replay or short single149 arm, then 56-image retention review; no formal release"
     : rehearsal ? "Original 48 train maps plus declared anchor rehearsal;448 pairs; no formal release"
     : background ? "Two verified train rocks: explicit auxiliary background hypothesis;100 pairs; no formal release"
     : routing ? "Equal-budget object-support terrain-gradient comparison arm;100 pairs; no formal release"
@@ -967,7 +994,7 @@ async function main() {
     : fullTrainExposure ? "48 train originals, fresh V21, maximum 48 epochs; no generalization or formal release"
     : reconstruction ? "256x192 decoder-only train reconstruction; encoder frozen; no Denoiser or formal qualification"
     : "256x192 real training and checkpoint reload experiment; no formal qualification or publication";
-  const worker = causalProbe ? causalProbeWorker : rehearsal ? rehearsalWorker : background ? backgroundWorker : routing ? routingWorker : twoMap ? twoMapWorker : single149 ? single149Worker : singleMap ? "ml/ai-painter/scripts/painter_single_map_checkpoint_fit_v1.py"
+  const worker = roadAttribution ? roadAttributionWorker : replay ? replayWorker : causalProbe ? causalProbeWorker : rehearsal ? rehearsalWorker : background ? backgroundWorker : routing ? routingWorker : twoMap ? twoMapWorker : single149 ? single149Worker : singleMap ? "ml/ai-painter/scripts/painter_single_map_checkpoint_fit_v1.py"
     : readonlyTrainFit ? "ml/ai-painter/scripts/diagnose_stage4_mvp_v21_all_train_fit_readonly.py"
     : (v24ObjectHeadCorePriority || v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority) ? "ml/ai-painter/scripts/painter_stage4_v24_object_head_core_priority_probe.py"
     : v23CompleteSupportPartition ? "ml/ai-painter/scripts/painter_stage4_v23_complete_support_partition_probe.py"
@@ -977,7 +1004,7 @@ async function main() {
     : v21TrainOnly ? "ml/ai-painter/scripts/painter_stage4_v21_train_only_capacity_probe.py"
     : v11TrainOnly ? "ml/ai-painter/scripts/painter_stage4_v11_train_only_capacity_probe.py"
     : reconstruction ? "ml/ai-painter/scripts/painter_decoder_reconstruction_experiment.py" : defaultWorker;
-  const testPattern = causalProbe ? causalProbeTests : rehearsal ? rehearsalTests : background ? backgroundTests : routing ? routingTests : twoMap ? twoMapTests : single149 ? single149Tests : singleMap ? "test_single_map_checkpoint_fit_v1.py"
+  const testPattern = roadAttribution ? roadAttributionTests : replay ? replayTests : causalProbe ? causalProbeTests : rehearsal ? rehearsalTests : background ? backgroundTests : routing ? routingTests : twoMap ? twoMapTests : single149 ? single149Tests : singleMap ? "test_single_map_checkpoint_fit_v1.py"
     : readonlyTrainFit ? "test_diagnose_stage4_mvp_v21_all_train_fit_readonly.py"
     : (v24ObjectHeadCorePriority || v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority) ? "test_stage4_v24_object_head_core_priority_probe.py"
     : v23CompleteSupportPartition ? "test_stage4_v23_complete_support_partition_probe.py"
@@ -999,17 +1026,23 @@ async function main() {
     ...((v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority) ? ["scripts/tests/test-ai-painter-v24-ieee-core-priority-controller.mjs"] : []),
     ...(v24CriticModeObjectHeadCorePriority ? ["scripts/tests/test-ai-painter-v24-critic-mode-controller.mjs"] : []),
     ...(wholeFrameFidelity ? ["scripts/tests/test-ai-painter-whole-frame-fidelity-controller.mjs"] : []),
-    ...((singleMap || twoMap || routing || background || rehearsal) ? ["scripts/tests/test-training-observation-contract.mjs"] : []),
+    ...((singleMap || twoMap || routing || background || rehearsal || replay) ? ["scripts/tests/test-training-observation-contract.mjs"] : []),
+    ...(replay ? ["scripts/tests/test-ai-painter-replay-retention-fit.mjs", "scripts/tests/test-ai-painter-replay-retention-review.mjs", "scripts/tests/test-ai-painter-replay-retention-sequence.mjs"] : []),
     ...(twoMap ? ["scripts/tests/test-ai-painter-two-map-experiment.mjs"] : []),
     ...(single149 ? ["scripts/tests/test-ai-painter-single149-terrain-ecology-fit.mjs","scripts/tests/test-ai-painter-two-map-post-review.mjs"] : []),
     ...(routing ? ["scripts/tests/test-ai-painter-terrain-routing-comparison.mjs"] : []),
     ...(background ? ["scripts/tests/test-ai-painter-rock-background-probe.mjs"] : []),
     ...(rehearsal ? ["scripts/tests/test-ai-painter-mixed-train-rehearsal.mjs","scripts/tests/test-ai-painter-stem-pair-comparison.mjs"] : []),
+    ...(roadAttribution ? ["scripts/tests/test-ai-painter-road-attribution-probe.mjs"] : []),
     ...(causalProbe ? ["scripts/tests/test-ai-painter-support-weight1-causal-probe.mjs"] : [])], {
-    cwd: root, env, encoding: "utf8", windowsHide: true, timeout: 20000, maxBuffer: 2 ** 20,
+    cwd: root, env, encoding: "utf8", windowsHide: true, timeout: boundedTimeout(20000), maxBuffer: 2 ** 20,
   });
   assert(!controllerTests.error && controllerTests.status === 0, `controller behavior tests failed: ${controllerTests.error?.message ?? ""}\n${controllerTests.stdout}\n${controllerTests.stderr}`);
-  const cpu = runCpu(["-m", "unittest", "discover", "-s", "ml/ai-painter/tests", "-p", testPattern, "-v"]);
+  const cpu = runCpu(["-m", "unittest", "discover", "-s", "ml/ai-painter/tests", "-p", testPattern, "-v"], boundedTimeout(120000));
+  if (replay && policy === replayPolicies["balanced-boundary"]) {
+    const boundaryCpu = runCpu(["-m", "unittest", "discover", "-s", "ml/ai-painter/tests", "-p", "test_rock_background_boundary_v1.py", "-v"], boundedTimeout(120000));
+    cpu.stdout += boundaryCpu.stdout; cpu.stderr += boundaryCpu.stderr;
+  }
   if (routing) {
     const candidateCpu = runCpu(["-m", "unittest", "discover", "-s", "ml/ai-painter/tests", "-p", "test_object_support_terrain_gradient_device_v1.py", "-v"]);
     cpu.stdout += candidateCpu.stdout; cpu.stderr += candidateCpu.stderr;
@@ -1024,9 +1057,16 @@ async function main() {
       cpu.stdout += candidateCpu.stdout; cpu.stderr += candidateCpu.stderr;
     }
   }
-  const packageBinding = JSON.parse(runCpu([worker, "prepare", ...policyArgs], rehearsal || causalProbe ? 300000 : 120000).stdout.trim());
+  const packageBinding = JSON.parse(runCpu([worker, "prepare", ...policyArgs], boundedTimeout(rehearsal || causalProbe || replay || roadAttribution ? 300000 : 120000)).stdout.trim());
   const pkg = read(packageBinding.path);
   assert.equal(bind(packageBinding.path).sha256, packageBinding.sha256);
+  if (roadAttribution) {
+    assert.equal(pkg.schemaVersion, "road-attribution-zero-update-package-v1");
+    assert.equal(pkg.resources.maxWallSeconds, 600);
+    assert.deepEqual(pkg.resources, read(roadAttributionPolicy).resources);
+    assert.equal(pkg.policy.path, roadAttributionPolicy);
+    assert.equal(pkg.policy.sha256, bind(roadAttributionPolicy).sha256);
+  }
   if (pkg.interfaceContract) observationContract(pkg,pkg.experimentIdentity);
   if (fullTrainExposure) assert(exposureProgressPublicationValid(pkg), "frozen progress publication rule differs");
   if (wholeFrameFidelity || objectCoreFidelity || v23CompleteSupportPartition || v24ObjectHeadCorePriority || v24IeeeObjectHeadCorePriority || v24CriticModeObjectHeadCorePriority) assert.deepEqual(pkg.inputs.heartbeatPublicationRule, heartbeatPublicationRule,
@@ -1036,10 +1076,11 @@ async function main() {
   if (!fs.existsSync(path.join(root, cpuPath))) write(cpuPath, { status: "experiment_cpu_behavior_tests_passed", executionState: "completed", recordedAtUtc: new Date().toISOString(), stdout: cpu.stdout, stderr: cpu.stderr, package: packageBinding,
     controllerBehaviorTests: { program: bind("scripts/tests/test-ai-painter-experiment-heartbeat.mjs"), exitCode: controllerTests.status, stdout: controllerTests.stdout, stderr: controllerTests.stderr } });
   console.log(JSON.stringify({ status: "experiment_prepared_not_gpu_started", package: packageBinding, cpu: bind(cpuPath) }));
+  if (roadAttribution) boundedTimeout(1);
   if (mode === "prepare") return;
   assert(!fs.existsSync(path.join(root, directory, "controller-started.json")), "experiment already consumed; no automatic restart");
-  const controllerStartedAtUtc = new Date().toISOString(), controllerStartedMono = process.hrtime.bigint();
-  const controllerTiming = state => ({scope:CONTROLLER_SCOPE,
+  const controllerStartedAtUtc = diagnosticStartedAtUtc ?? new Date().toISOString(), controllerStartedMono = diagnosticStartedMono ?? process.hrtime.bigint();
+  const controllerTiming = state => ({scope:roadAttribution ? "road_attribution_before_cpu_checks_before_terminal_registration" : CONTROLLER_SCOPE,
     status:state, startedAtUtc:controllerStartedAtUtc, endedAtUtc:new Date().toISOString(),
     elapsedSeconds:Number(process.hrtime.bigint()-controllerStartedMono)/1e9});
   write(`${directory}/controller-started.json`, { recordedAtUtc: controllerStartedAtUtc, previousRegistry: { revision: previous.registry.registryRevision, sha256: previous.registrySha256 }, package: packageBinding });
@@ -1071,7 +1112,7 @@ async function main() {
   try {
     const activeResult = await advanceCurrentExecutionRegistry({ projectRoot: root, capabilityVersion: runId, packageId: runId, taskId: runId,
       taskKind, taskGoal, queueStatus: "running", nextMachineAction: null,
-      runId, lifecycleStage: "isolated_implementation", executionState: "executing", activity: readonlyTrainFit ? "readonly_train_fit_running" : "experiment_running_not_formal_stage4", taskCapsulePath: cpuCapsule, terminalEvidencePath: cpuPath,
+      runId, lifecycleStage: "isolated_implementation", executionState: "executing", activity: roadAttribution ? "readonly_road_attribution_running" : readonlyTrainFit ? "readonly_train_fit_running" : "experiment_running_not_formal_stage4", taskCapsulePath: cpuCapsule, terminalEvidencePath: cpuPath,
       activeExecution: active, expectedPreviousRegistryRevision: previous.registry.registryRevision, expectedPreviousRegistrySha256: previous.registrySha256 });
     assert(activeResult.ok, "experiment active registry commit failed");
     registered = true;
@@ -1103,6 +1144,7 @@ async function main() {
       }, 2000);
     }
     let timedOut = false;
+    const workerTimeoutMs = roadAttribution ? boundedTimeout(600000) : experimentWorkerTimeoutMs(pkg.resources, fullTrainExposure);
     const code = await new Promise((resolve, reject) => {
       child = spawn(python, [worker, "run", "--package", packageBinding.path, "--sha256", packageBinding.sha256], { cwd: root, env, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
       write(`${directory}/controller-lease.json`, { experimentIdentity: runId, workerParentPid: process.pid, workerLauncherPid: child.pid,
@@ -1110,7 +1152,7 @@ async function main() {
       const log = fs.createWriteStream(path.join(root, directory, "worker.log"), { flags: "wx" });
       child.stdout.on("data", data => { log.write(data); process.stdout.write(data); });
       child.stderr.on("data", data => { log.write(data); process.stderr.write(data); });
-      const timeout = setTimeout(() => { timedOut = true; stopOwnedWorker(child); }, experimentWorkerTimeoutMs(pkg.resources, fullTrainExposure));
+      const timeout = setTimeout(() => { timedOut = true; stopOwnedWorker(child); }, workerTimeoutMs);
       child.once("error", error => { clearTimeout(timeout); log.end(); reject(error); });
       child.once("close", exitCode => { clearTimeout(timeout); log.end(); resolve(exitCode); });
     });
@@ -1124,8 +1166,10 @@ async function main() {
     const stoppedProgressPath = `${directory}/progress.json`;
     const observedTermination = observedExperimentTermination(result,
       !result && fs.existsSync(path.join(root, stoppedProgressPath)) ? read(stoppedProgressPath) : null, runId);
-    const success = readonlyTrainFit ? readonlyTrainFitSucceeded(result, pkg, code, timedOut)
+    const success = roadAttribution ? roadAttributionSucceeded(result, pkg, code, timedOut || performance.now() - diagnosticWindowStartMs >= 900000)
+      : readonlyTrainFit ? readonlyTrainFitSucceeded(result, pkg, code, timedOut)
       : causalProbe ? causalProbeSucceeded(result, pkg, code, timedOut)
+      : replay ? replaySucceeded(result, pkg, code, timedOut)
       : single149 ? single149Succeeded(result, pkg, code, timedOut)
       : rehearsal ? rehearsalSucceeded(result, pkg, code, timedOut)
       : background ? backgroundSucceeded(result, pkg, code, timedOut)
@@ -1133,9 +1177,14 @@ async function main() {
       : twoMap ? twoMapExperimentSucceeded(result, pkg, code, timedOut)
       : fullTrainExposure ? fullTrainExposureSucceeded(result, pkg, code, timedOut)
       : code === 0 && !timedOut && result?.status === "experiment_executed_not_visual_qualified" && result?.checkpointReloadExact === true;
-    if (success) for (const artifact of result.artifacts) assert.equal(bind(artifact.path).sha256, artifact.sha256, "experiment output hash changed");
+    if (success) for (const artifact of result.artifacts) {
+      if (roadAttribution) boundedTimeout(1);
+      assert.equal(bind(artifact.path).sha256, artifact.sha256, "experiment output hash changed");
+      if (roadAttribution) boundedTimeout(1);
+    }
+    if (roadAttribution) boundedTimeout(1);
     const terminalPath = `${directory}/terminal.json`;
-    write(terminalPath, { schemaVersion: "ai-painter-learning-capacity-experiment-terminal-v1", status: success ? readonlyTrainFit ? "readonly_train_fit_diagnostic_completed_no_qualification" : "experiment_completed_not_formal_qualified" : "experiment_failed_closed",
+    write(terminalPath, { schemaVersion: "ai-painter-learning-capacity-experiment-terminal-v1", status: success ? roadAttribution ? "readonly_road_attribution_completed_no_qualification" : readonlyTrainFit ? "readonly_train_fit_diagnostic_completed_no_qualification" : "experiment_completed_not_formal_qualified" : "experiment_failed_closed",
       executionState: success ? "completed" : "failed_closed", experimentIdentity: runId, runId, recordedAtUtc: new Date().toISOString(), exitCode: code, timedOut,
       result: result ? bind(resultPath) : null, ...observedTermination,
       executionPackage:packageBinding, packageId:runId, capabilityVersion:runId, trainingObservation:result?.trainingObservation ?? null,
@@ -1149,15 +1198,16 @@ async function main() {
     capsule(terminalCapsule, [packageBinding, bind(cpuPath), bind(terminalPath), ...(result ? [bind(resultPath)] : [])]);
     const current = await readCurrentExecutionRegistry(root);
     assert(current.ok && current.registry.runId === runId, "current execution changed during experiment");
+    if (roadAttribution) boundedTimeout(1);
     const done = await advanceCurrentExecutionRegistry({ projectRoot: root, capabilityVersion: runId, packageId: runId, taskId: runId,
-      taskKind, taskGoal: readonlyTrainFit ? "Inspect all-48 train fit evidence; not training, generalization or formal release" : "Inspect the saved 256x192 experimental evidence; no formal release", queueStatus: success ? "completed" : "failed_closed", nextMachineAction: null,
-      runId, lifecycleStage: "isolated_implementation", executionState: success ? "completed" : "failed_closed", activity: success ? readonlyTrainFit ? "readonly_train_fit_completed" : "experiment_completed" : "experiment_failed_closed",
+      taskKind, taskGoal: roadAttribution ? "Inspect eight zero-update road attribution cases; no training or qualification" : readonlyTrainFit ? "Inspect all-48 train fit evidence; not training, generalization or formal release" : "Inspect the saved 256x192 experimental evidence; no formal release", queueStatus: success ? "completed" : "failed_closed", nextMachineAction: null,
+      runId, lifecycleStage: "isolated_implementation", executionState: success ? "completed" : "failed_closed", activity: roadAttribution ? success ? "readonly_road_attribution_completed" : "readonly_road_attribution_failed_closed" : success ? readonlyTrainFit ? "readonly_train_fit_completed" : "experiment_completed" : "experiment_failed_closed",
       taskCapsulePath: terminalCapsule, terminalEvidencePath: terminalPath, activeExecution: null,
-      latestTrainingTerminal: !readonlyTrainFit && observedTermination.trainingStarted === true ? { runId, ...bind(terminalPath), status: read(terminalPath).status, evidence: { manifest: bind(result ? resultPath : terminalPath) } } : null,
+      latestTrainingTerminal: experimentMayUpdateTrainingTerminal(policy, readonlyTrainFit, observedTermination.trainingStarted) ? { runId, ...bind(terminalPath), status: read(terminalPath).status, evidence: { manifest: bind(result ? resultPath : terminalPath) } } : null,
       expectedPreviousRegistryRevision: current.registry.registryRevision, expectedPreviousRegistrySha256: current.registrySha256 });
     assert(done.ok, `experiment terminal registry commit failed: ${done.errorCode ?? "unknown"}`);
     console.log(JSON.stringify({ status: read(terminalPath).status, terminal: bind(terminalPath), registryRevision: done.registry.registryRevision }));
-    postReviewEligible = (twoMap || rehearsal || single149) && success;
+    postReviewEligible = (twoMap || rehearsal || single149 || replay) && success;
     if (!success) process.exitCode = 1;
   } catch (error) {
     if (ownedWorkerIsRunning(child)) {
@@ -1209,7 +1259,7 @@ async function main() {
           taskId: runId, taskKind, queueStatus: "failed_closed", nextMachineAction: null,
           runId, lifecycleStage: "isolated_implementation", executionState: "failed_closed", activity: "experiment_controller_failed_closed",
           taskCapsulePath: failureCapsule, terminalEvidencePath: errorPath, activeExecution: null,
-          latestTrainingTerminal: !readonlyTrainFit && interruptedProgress?.trainingStarted === true
+          latestTrainingTerminal: experimentMayUpdateTrainingTerminal(policy, readonlyTrainFit, interruptedProgress?.trainingStarted)
             ? { runId, ...bind(errorPath), status: read(errorPath).status, evidence: { manifest: bind(errorPath) } } : null,
           expectedPreviousRegistryRevision: current.registry.registryRevision, expectedPreviousRegistrySha256: current.registrySha256 });
       }
@@ -1219,9 +1269,11 @@ async function main() {
   // A distinct read-only execution follows a successful training terminal.
   // Its failure must never rewrite the already committed training result.
   if (postReviewEligible) {
-    const { runTwoMapPostReview } = await import("./lib/ai-painter-two-map-post-review-v1.mjs");
+    const runReview = replay
+      ? (await import("./lib/ai-painter-replay-retention-review-v1.mjs")).runReplayRetentionReview
+      : (await import("./lib/ai-painter-two-map-post-review-v1.mjs")).runTwoMapPostReview;
     const { deliverPostReviewRecords, reviewThenDeliver } = await import("./lib/ai-painter-post-review-delivery-v1.mjs");
-    await reviewThenDeliver(() => runTwoMapPostReview({ projectRoot: root }),
+    await reviewThenDeliver(() => runReview({ projectRoot: root }),
       () => deliverPostReviewRecords({ projectRoot: root }),
       delivery => console.log(JSON.stringify({ postReviewWorkDelivery: delivery })));
   }

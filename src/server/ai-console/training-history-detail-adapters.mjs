@@ -7,6 +7,7 @@ import { readCurrentExecutionRegistry, CURRENT_EXECUTION_REGISTRY_PATH } from '.
 import { readBoundTrainingPresentation } from './bound-training-presentation.mjs'
 import { adaptSingleMapTraining } from './single-map-training-history.mjs'
 import { adaptObservationHistory } from './training-observation-history.mjs'
+import { adaptReadonlyPostReviewHistory } from './readonly-post-review-history.mjs'
 
 const COMPLETION_PROTOCOLS = new Map([
   ['stage4_mvp256_dry_decode1_entry_weight_quality24_same_call_v1', {
@@ -462,7 +463,7 @@ function experimentEnvelopeV1(request, result, requireFact, failedClosed = false
 }
 export async function adaptLegacyTrainingDetail(options) {
   const detail = await adaptLegacyTrainingDetailCore(options)
-  if (detail.record.detailCoverage?.adapter === 'training_observation_v1') return detail
+  if (['training_observation_v1', 'readonly_post_review_v1'].includes(detail.record.detailCoverage?.adapter)) return detail
   const { runId, terminal, readJson, makeArtifact } = options
   const root = process.env.AI_CONSOLE_HISTORY_ROOT || process.cwd()
   const completion = await readCompletionTrainingObservation(root, terminal)
@@ -611,6 +612,9 @@ async function adaptManagedParentFailure(options) {
 }
 
 async function adaptLegacyTrainingDetailCore({ runId, terminal, record, base, capsuleBinding, taskTerminalBinding, readJson, readEvidenceJson, readLargeResultProjection, makeArtifact, checkpointMetadata, requireFact }) {
+  const postReview = await adaptReadonlyPostReviewHistory({ runId, terminal, record, base,
+    readJson, readEvidenceJson, makeArtifact, checkpointMetadata })
+  if (postReview) return postReview
   if (terminal.schemaVersion === 'ai-painter-training-system-interruption-terminal-v1')
     return adaptSystemInterruption({ runId, terminal, record, base, readJson, readEvidenceJson, makeArtifact, requireFact })
   const dryProtocol = DRY_LIFECYCLE.exec(terminal.schemaVersion)

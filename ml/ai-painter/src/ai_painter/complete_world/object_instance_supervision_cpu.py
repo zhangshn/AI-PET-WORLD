@@ -13,6 +13,7 @@ from copy import deepcopy
 
 import torch
 from torch.nn import functional as functional
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 
 PATCH_SIZE = 32
@@ -70,10 +71,12 @@ def iter_object_views(
     conditions: torch.Tensor,
     instance_table: Sequence[Mapping],
     channel_order: Sequence[str],
+    *, geometry=None,
 ) -> Iterator[ObjectView]:
     """Build target-free views for a proposed internal object branch."""
+    height, width, patch_size = spatial_geometry(geometry)
     if (not isinstance(conditions, torch.Tensor)
-            or conditions.shape != (23, 192, 256)
+            or conditions.shape != (23, height, width)
             or len(channel_order) != 23 or len(set(channel_order)) != 23):
         raise ValueError("complete conditions must match the 23-channel contract")
     if not bool(torch.isfinite(conditions).all()
@@ -111,20 +114,24 @@ def iter_object_views(
                 or bounds["y"] + bounds["height"] > 768):
             raise ValueError("object footprint is outside the source canvas")
         ys, xs = torch.where(subject)
-        if (bool((xs * 4 + 2 < bounds["x"] - 2).any())
-                or bool((xs * 4 + 2 > bounds["x"] + bounds["width"] + 2).any())
-                or bool((ys * 4 + 2 < bounds["y"] - 2).any())
-                or bool((ys * 4 + 2 > bounds["y"] + bounds["height"] + 2).any())):
+        native_x = xs * 4 + 2 if geometry is None else geometry.native_pixel_centers(xs)
+        native_y = ys * 4 + 2 if geometry is None else geometry.native_pixel_centers(ys)
+        tolerance = 2 if geometry is None else geometry.native_half_pixel_tolerance
+        if (bool((native_x < bounds["x"] - tolerance).any())
+                or bool((native_x > bounds["x"] + bounds["width"] + tolerance).any())
+                or bool((native_y < bounds["y"] - tolerance).any())
+                or bool((native_y > bounds["y"] + bounds["height"] + tolerance).any())):
             raise ValueError("downsampled instance escaped its native footprint")
         center_y = (int(ys.min()) + int(ys.max())) // 2
         center_x = (int(xs.min()) + int(xs.max())) // 2
-        top, left = center_y - PATCH_SIZE // 2, center_x - PATCH_SIZE // 2
-        _, valid = _crop(conditions[:1], top, left, PATCH_SIZE)
-        local_conditions, _ = _crop(conditions, top, left, PATCH_SIZE)
-        local_subject, _ = _crop(subject[None].to(conditions.dtype), top, left, PATCH_SIZE)
+        top, left = center_y - patch_size // 2, center_x - patch_size // 2
+        _, valid = _crop(conditions[:1], top, left, patch_size)
+        local_conditions, _ = _crop(conditions, top, left, patch_size)
+        local_subject, _ = _crop(subject[None].to(conditions.dtype), top, left, patch_size)
+        radius = SUPPORT_RADIUS[role] if geometry is None else geometry.support_radius(role)
         support = functional.max_pool2d(
-            local_subject[None], 2 * SUPPORT_RADIUS[role] + 1,
-            stride=1, padding=SUPPORT_RADIUS[role],
+            local_subject[None], 2 * radius + 1,
+            stride=1, padding=radius,
         )[0] * valid
         # This is a proposed INTERNAL subject-relative view, not a mutation
         # of the authoritative object_instance condition channel.
@@ -141,17 +148,19 @@ def iter_train_object_supervision(
     sample: Mapping,
     instance_table: Sequence[Mapping],
     channel_order: Sequence[str],
+    *, geometry=None,
 ) -> Iterator[ObjectSupervision]:
     """Yield in-memory direct-original targets only from the bound train split."""
     if sample.get("split") != "train":
         raise ValueError("object supervision may only consume the train split")
+    height, width, patch_size = spatial_geometry(geometry)
     rgb = sample.get("image")
-    if not isinstance(rgb, torch.Tensor) or rgb.shape != (3, 192, 256):
+    if not isinstance(rgb, torch.Tensor) or rgb.shape != (3, height, width):
         raise ValueError("train RGB must be a complete 256x192 tensor")
     if not bool(torch.isfinite(rgb).all() and ((rgb >= 0) & (rgb <= 1)).all()):
         raise ValueError("object supervision requires RGB in [0,1]")
-    for view in iter_object_views(sample.get("conditions"), instance_table, channel_order):
-        target, _ = _crop(rgb, view.top, view.left, PATCH_SIZE)
+    for view in iter_object_views(sample.get("conditions"), instance_table, channel_order, geometry=geometry):
+        target, _ = _crop(rgb, view.top, view.left, patch_size)
         yield ObjectSupervision(
             sample_id=str(sample["sampleId"]), instance_value=view.instance_value,
             kind=view.kind, role=view.role, top=view.top, left=view.left,

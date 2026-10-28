@@ -1,7 +1,8 @@
 import { fields, need, hash, identity, pageQuery, dateKey } from './contracts.mjs'
+import {MVP_PRODUCER,MVP_SCOPE,MVP_LIMITS,validateMvpFact} from './mvp-acceptance-contracts.mjs'
 
 const keys = ['eventId','producerSequence','moduleId','taskId','runId','eventKind','executionResult','validationStatus','acceptanceStatus','evidenceReferences','originalStartedAtUtc','originalFinishedAtUtc','monotonicElapsedMs','originalEventAtUtc','planReference']
-const optional = ['title','completedText','nextStepsText','attributedClaims','reasonCode','sourceReference','reporter','workReport']
+const optional = ['title','completedText','nextStepsText','attributedClaims','reasonCode','sourceReference','reporter','workReport','acceptanceFact']
 const kinds = ['execution_finished','validation_finished','acceptance_finished','blocked','interrupted','progress_report']
 const validations = ['passed','failed','unknown'], acceptances = ['accepted','rejected','unknown']
 const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])])) : value
@@ -45,6 +46,15 @@ export function createWorkLedger(store, producers = [], options = {}) {
     need(validations.includes(input.validationStatus),'invalid_validation_status')
     need(acceptances.includes(input.acceptanceStatus),'invalid_acceptance_status')
     need(['human','local_program','codex'].includes(producer.sourceCategory),'producer_registration_invalid',409)
+    if(producer.id===MVP_PRODUCER)need(input.acceptanceFact!==undefined,'mvp_acceptance_fact_required',403)
+    if(input.acceptanceFact!==undefined){
+      const f=validateMvpFact(input.acceptanceFact)
+      need(producer.id===MVP_PRODUCER&&producer.sourceCategory==='local_program'&&producer.verifyAcceptanceFact?.(f,{admission:true})===true,'mvp_acceptance_producer_required',403)
+      need(f.scopeId===MVP_SCOPE&&input.eventId==='mvp-'+f.factId&&input.taskId==='mvp-'+f.checkpointId.replace(':','-')&&input.runId===null,'mvp_acceptance_event_identity',409)
+      need(input.evidenceReferences.some(e=>e.logicalPath===f.evidence.logicalPath&&e.sha256===f.evidence.sha256),'mvp_acceptance_event_evidence',409)
+      if(f.decisionClass==='legacy_external_component')need(input.eventKind==='progress_report'&&input.validationStatus==='unknown'&&input.acceptanceStatus==='unknown','mvp_legacy_machine_claim_refused',403)
+      else need(input.eventKind==='acceptance_finished'&&input.acceptanceStatus===(f.outcome==='passed'?'accepted':['failed','revoked'].includes(f.outcome)?'rejected':'unknown'),'mvp_production_status_conflict',409)
+    }
     if(input.validationStatus!=='unknown'||input.acceptanceStatus!=='unknown')need(producer.sourceCategory==='local_program','claim_is_not_machine_validation',403)
     if(input.acceptanceStatus!=='unknown')need(producer.canAccept===true&&input.eventKind==='acceptance_finished','acceptance_producer_required',403)
     for(const k of ['originalStartedAtUtc','originalFinishedAtUtc','originalEventAtUtc'])if(input[k]!==null)workTimestamp(input[k])
@@ -132,7 +142,13 @@ export function createWorkLedger(store, producers = [], options = {}) {
       return {dataStatus:'partial',reasonCode:'work_source_coverage_partial',records:records.slice(page.offset,page.offset+page.limit),total:null,knownRecordCount:records.length,nextCursor:page.offset+page.limit<records.length?page.next(page.offset+page.limit):null,revision:meta.revision,coverage}
     })
   }
-  return {append,appendProduced,find,events:search=>query(search),summary:search=>query(search,true)}
+  function mvpFacts(){return store.read((db,meta)=>{
+    const rows=db.prepare('SELECT payload_json,sha FROM work_events WHERE producer_id=? ORDER BY producer_sequence LIMIT ?').all(MVP_PRODUCER,MVP_LIMITS.facts+1)
+    need(rows.length<=MVP_LIMITS.facts&&rows.reduce((n,r)=>n+Buffer.byteLength(r.payload_json),0)<=MVP_LIMITS.bytes,'mvp_fact_history_limit',409)
+    const events=rows.map(verifyRow);need(events.every((e,i)=>e.producerSequence===i+1&&e.producerId===MVP_PRODUCER&&e.sourceCategory==='local_program'&&e.acceptanceFact),'mvp_fact_sequence_or_source',409)
+    return {events,producerSequence:events.at(-1)?.producerSequence??0,headSha:rows.at(-1)?.sha??null,moduleRevision:meta.revision}
+  })}
+  return {append,appendProduced,find,mvpFacts,events:search=>query(search),summary:search=>query(search,true)}
 }
 export function aggregateWorkEvents(events) {
   const groups=new Map()

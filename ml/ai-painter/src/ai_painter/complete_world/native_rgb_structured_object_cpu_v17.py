@@ -8,6 +8,7 @@ does not read source RGB, a sprite library, or a historical checkpoint.
 """
 
 from collections.abc import Mapping, Sequence
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 from ai_painter.complete_world.native_rgb_aperiodic_detail_renderer import (
     aperiodic_detail_basis, build_native_complete_rgb_aperiodic_detail_renderer,
@@ -30,11 +31,12 @@ OBJECT_DEPENDENT_GROUND_CHANNELS = (
 )
 
 
-def validate_bound_object_views(conditions, instance_table, order):
+def validate_bound_object_views(conditions, instance_table, order, *, geometry=None):
     """Return subject views only when their complete visible support fits."""
     import torch
 
-    views = list(iter_object_views(conditions, instance_table, order))
+    height, width, patch_size = spatial_geometry(geometry)
+    views = list(iter_object_views(conditions, instance_table, order, geometry=geometry))
     labels = (conditions[order.index("object_instance")] * 255).round().to(torch.int32)
     footprint_values = conditions[order.index("object_footprints")]
     footprint_mask = footprint_values > 0.5
@@ -52,11 +54,11 @@ def validate_bound_object_views(conditions, instance_table, order):
         ys, xs = torch.where(labels == view.instance_value)
         if not bool(footprint_mask[ys, xs].all()):
             raise ValueError("object instance is absent from the authoritative footprint mask")
-        radius = SUPPORT_RADIUS[view.role]
+        radius = SUPPORT_RADIUS[view.role] if geometry is None else geometry.support_radius(view.role)
         if (view.top > max(0, int(ys.min()) - radius)
                 or view.left > max(0, int(xs.min()) - radius)
-                or view.top + PATCH_SIZE < min(192, int(ys.max()) + radius + 1)
-                or view.left + PATCH_SIZE < min(256, int(xs.max()) + radius + 1)):
+                or view.top + patch_size < min(height, int(ys.max()) + radius + 1)
+                or view.left + patch_size < min(width, int(xs.max()) + radius + 1)):
             raise ValueError("object support exceeds the learned local patch")
     return views
 
@@ -140,17 +142,18 @@ def build_native_rgb_structured_object_cpu_v17(
             )
 
         def forward(self, views, terrain_patches):
+            _, _, patch_size = spatial_geometry(getattr(self, "native_stage_geometry", None))
             if (not views or terrain_patches.shape
-                    != (len(views), base_channels, PATCH_SIZE, PATCH_SIZE)):
+                    != (len(views), base_channels, patch_size, patch_size)):
                 raise ValueError("object appearance batch does not match bound views")
-            axis = torch.linspace(-1, 1, PATCH_SIZE, device=terrain_patches.device,
+            axis = torch.linspace(-1, 1, patch_size, device=terrain_patches.device,
                                   dtype=terrain_patches.dtype)
             yy, xx = torch.meshgrid(axis, axis, indexing="ij")
             local_xy = torch.stack((xx, yy))[None].expand(len(views), -1, -1, -1)
             kinds = terrain_patches.new_tensor([
                 [float(view.kind == kind) for kind in OBJECT_KINDS]
                 for view in views
-            ])[:, :, None, None].expand(-1, -1, PATCH_SIZE, PATCH_SIZE)
+            ])[:, :, None, None].expand(-1, -1, patch_size, patch_size)
             support = torch.stack([view.support_mask for view in views])
             features = torch.cat((
                 torch.stack([view.subject_conditions for view in views]),
@@ -172,14 +175,15 @@ def build_native_rgb_structured_object_cpu_v17(
 
         def forward(self, terrain_features, terrain_roles, object_roles,
                     responsibility_conditions):
+            height, width, _ = spatial_geometry(getattr(self, "native_stage_geometry", None))
             identities = (*TERRAIN_ROLES, "object_footprints", *OBJECT_ROLES)
-            if (terrain_features.shape != (1, base_channels, 192, 256)
+            if (terrain_features.shape != (1, base_channels, height, width)
                     or len(terrain_roles) != 3 or len(object_roles) != 4
                     or not isinstance(responsibility_conditions, Mapping)
                     or set(responsibility_conditions) != set(identities)
-                    or any(value.shape != (1, OBJECT_FEATURE_CHANNELS, 192, 256)
+                    or any(value.shape != (1, OBJECT_FEATURE_CHANNELS, height, width)
                            for value in (*terrain_roles, *object_roles))
-                    or any(responsibility_conditions[role].shape != (1, 1, 192, 256)
+                    or any(responsibility_conditions[role].shape != (1, 1, height, width)
                            for role in identities)):
                 raise ValueError("full-frame decoder responsibilities are incomplete")
             inputs = torch.cat((terrain_features.float(),
@@ -205,10 +209,12 @@ def build_native_rgb_structured_object_cpu_v17(
 
         def forward(self, conditions, instance_table: Sequence[Mapping],
                     *, return_evidence=False):
-            if not isinstance(conditions, torch.Tensor) or conditions.shape != (1, 23, 192, 256):
+            geometry = getattr(self, "native_stage_geometry", None)
+            height, width, patch_size = spatial_geometry(geometry)
+            if not isinstance(conditions, torch.Tensor) or conditions.shape != (1, 23, height, width):
                 raise ValueError("structured object renderer requires one 256x192 condition")
             # Validate the full bound table before any neural inference.
-            views = validate_bound_object_views(conditions[0], instance_table, order)
+            views = validate_bound_object_views(conditions[0], instance_table, order, geometry=geometry)
             for role in TERRAIN_ROLES:
                 values = conditions[:, order.index(role)]
                 if not bool(((values == 0) | (values == 1)).all()):
@@ -219,17 +225,17 @@ def build_native_rgb_structured_object_cpu_v17(
             indices, features, supports = [], [], []
             if views:
                 patches = torch.stack([
-                    _crop(terrain_features[0], view.top, view.left, PATCH_SIZE)[0]
+                    _crop(terrain_features[0], view.top, view.left, patch_size)[0]
                     for view in views
                 ])
                 subject_features = self.appearance(views, patches)
                 for index, view in enumerate(views):
-                    y0, y1 = max(0, view.top), min(192, view.top + PATCH_SIZE)
-                    x0, x1 = max(0, view.left), min(256, view.left + PATCH_SIZE)
+                    y0, y1 = max(0, view.top), min(height, view.top + patch_size)
+                    x0, x1 = max(0, view.left), min(width, view.left + patch_size)
                     dy, dx = y0 - view.top, x0 - view.left
                     ys = torch.arange(y0, y1, device=conditions.device)
                     xs = torch.arange(x0, x1, device=conditions.device)
-                    indices.append((ys[:, None] * 256 + xs[None, :]).reshape(-1))
+                    indices.append((ys[:, None] * width + xs[None, :]).reshape(-1))
                     features.append(subject_features[index, :, dy:dy + y1-y0,
                                                      dx:dx + x1-x0].reshape(
                         OBJECT_FEATURE_CHANNELS, -1).float())
@@ -240,18 +246,18 @@ def build_native_rgb_structured_object_cpu_v17(
                 selected_indices = (torch.cat([indices[i] for i in selection]) if selection
                                     else torch.empty(0, dtype=torch.long, device=conditions.device))
                 summed = terrain_features.new_zeros(
-                    (OBJECT_FEATURE_CHANNELS, 192 * 256), dtype=torch.float32).index_add(
+                    (OBJECT_FEATURE_CHANNELS, height * width), dtype=torch.float32).index_add(
                     1, selected_indices,
                     torch.cat([features[i] for i in selection], dim=1) if selection
                     else terrain_features.new_zeros(
                         (OBJECT_FEATURE_CHANNELS, 0), dtype=torch.float32))
                 count = terrain_features.new_zeros(
-                    (1, 192 * 256), dtype=torch.float32).index_add(
+                    (1, height * width), dtype=torch.float32).index_add(
                     1, selected_indices,
                     torch.cat([supports[i] for i in selection], dim=1) if selection
                     else terrain_features.new_zeros((1, 0), dtype=torch.float32))
                 return (summed / count.clamp_min(1)).reshape(
-                    1, OBJECT_FEATURE_CHANNELS, 192, 256), count.reshape(1, 1, 192, 256)
+                    1, OBJECT_FEATURE_CHANNELS, height, width), count.reshape(1, 1, height, width)
 
             all_object_features, footprint_count = assemble(list(range(len(views))))
             footprint_mask = conditions[:, order.index("object_footprints"):

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "native-weight-vjp-bounded-columns-policy-v1",
+  "status": "isolated_numeric_candidate_not_training_qualified",
+  "target": {
+    "parameterIndex": 48,
+    "parameterName": "core.core.terrain.decode_1.layers.0.weight",
+    "inputChannels": 144,
+    "outputChannels": 48,
+    "kernel": [
+      3,
+      3
+    ],
+    "padding": 1,
+    "stride": 1,
+    "groups": 1,
+    "batchSize": 1
+  },
+  "algorithm": {
+    "inputChannelBlock": 16,
+    "kernelOrder": "row-major",
+    "channelOrder": "ascending",
+    "spatialReduction": "entire H*W in one FP64 matmul per kernel/channel block, no spatial partial sums",
+    "accumulationDevice": "same as features",
+    "cast": "all weight entries one final FP32 conversion",
+    "inputAndBiasBackward": "original full-mask aten convolution_backward unchanged"
+  },
+  "originalOperator": {
+    "path": "ml/ai-painter/src/ai_painter/complete_world/decode1_entry_weight_reduction_precision_v1.py",
+    "sha256": "6ee5c8b74411c0bd210dae5a1d0df43e5251e89d16f54fac97c4ac1b32b73585"
+  },
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "71bdd035ea53cfc9aa993194ca2ba5417ff6b405ea401e187abc831c49a0ecd6",
+    "version": "AI-PAINTER-SPEC-1.153"
+  },
+  "thresholds": "Import original TOTAL_GRADIENT_ATOL/RTOL; no new relaxed tolerances.",
+  "qualification": {
+    "cpuPrimitiveProofOnly": true,
+    "fullModel": false,
+    "gpu": false,
+    "training": false,
+    "publication": false
+  }
+}

@@ -133,6 +133,8 @@ export type WorldRuntimeStoreAdapterKind =
 
 export type WorldRuntimeStoreAdapter = {
   kind: WorldRuntimeStoreAdapterKind
+  readNatural?: (input: NaturalWorldRuntimeReadInput) => Promise<NaturalWorldRuntimeReadResult>
+  writeNatural?: (input: NaturalWorldRuntimeWriteInput) => Promise<NaturalWorldRuntimeWriteResult>
   read(input?: { filePath?: string; ownerId?: string; worldId?: string }): Promise<WorldRuntimeStoreReadResult>
   write(input: {
     record: WorldRuntimeSaveRecord
@@ -140,4 +142,75 @@ export type WorldRuntimeStoreAdapter = {
     expectedTick?: number
   }): Promise<WorldRuntimeStoreWriteResult>
   getDefaultSavePath(): string
+}
+
+/** Architecture 4.2: persistence only; no source, semantic or visual qualification. */
+export type NaturalWorldJson = null | boolean | number | string | NaturalWorldJson[] | NaturalWorldJsonObject
+export type NaturalWorldJsonObject = { [key: string]: NaturalWorldJson }
+export type NaturalWorldIdentity = {
+  ownerId: string
+  playerId: string
+  worldId: string
+  worldSeed: string
+  worldProfileId: string
+  regionId: string
+}
+type NaturalWorldSnapshotIdentity = { worldId: string; regionId: string; tick: number }
+export type NaturalWorldRuntimeRecordInput = NaturalWorldIdentity & {
+  version: "natural-world-runtime-save-v1"
+  tick: number
+  stateVersion: number
+  savedAt: string
+  worldFacts: NaturalWorldSnapshotIdentity & {
+    schemaVersion: "natural-world-facts-snapshot-v1"
+    payload: {
+      terrainRegions: NaturalWorldJsonObject[]
+      objectFootprints: NaturalWorldJsonObject[]
+      walkableRegions: NaturalWorldJsonObject[]
+      collisionRegions: NaturalWorldJsonObject[]
+    }
+  }
+  worldState: NaturalWorldSnapshotIdentity & {
+    schemaVersion: "natural-world-state-snapshot-v1"
+    payload: {
+      environment: NaturalWorldJsonObject
+      objects: NaturalWorldJsonObject[]
+      resources: NaturalWorldJsonObject[]
+    }
+  }
+  ruleVersion: string
+  eventCursor: number
+  randomState:
+    | { status: "captured"; algorithmId: string; algorithmVersion: string; state: NaturalWorldJsonObject }
+    | { status: "not_consumed"; reason: string }
+  sourceBindings: { role: string; uri: string; fileSha256: string }[]
+}
+export type NaturalWorldRuntimeSaveRecord = NaturalWorldRuntimeRecordInput & {
+  worldFactsPayloadSha256: string
+  statePayloadSha256: string
+  recordContentSha256: string
+}
+export type NaturalWorldRuntimeReadInput = {
+  ownerId: string
+  worldId: string
+  expectedTick?: number
+  expectedStateVersion?: number
+  expectedFileSha256?: string
+  expectedPlayerId?: string
+}
+export type NaturalWorldRuntimeReadResult = Omit<WorldRuntimeStoreReadResult, "record"> & {
+  record: NaturalWorldRuntimeSaveRecord | null
+  fileSha256?: string
+}
+export type NaturalWorldRuntimeWriteInput = {
+  record: NaturalWorldRuntimeRecordInput
+  expectedTick: number
+  expectedStateVersion: number
+  expectedFileSha256: string | null
+}
+export type NaturalWorldRuntimeWriteResult = WorldRuntimeStoreWriteResult & {
+  fileSha256?: string
+  recordContentSha256?: string
+  tick?: number
+  stateVersion?: number
 }

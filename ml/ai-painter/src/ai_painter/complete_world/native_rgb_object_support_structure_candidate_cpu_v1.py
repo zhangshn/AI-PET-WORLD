@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 import torch
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 from ai_painter.complete_world.native_rgb_object_core_fidelity_candidate_cpu import (
     train_object_core_fidelity_candidate_objective,
@@ -37,14 +38,15 @@ def _support_structure_weight(value):
     return value
 
 
-def _bound_inputs(predicted, sample, channel_order):
+def _bound_inputs(predicted, sample, channel_order, *, geometry=None):
+    height, width, _ = spatial_geometry(geometry)
     _require(isinstance(sample, Mapping) and sample.get("split") == "train", "support structure requires train split")
     _require(torch.get_num_threads() <= 2, "support structure CPU threads exceeded")
     _require(not torch.is_autocast_enabled("cpu") and not torch.is_autocast_enabled("cuda"), "support structure requires FP32 without autocast")
     _require(isinstance(channel_order, Sequence) and not isinstance(channel_order, (str, bytes))
         and tuple(channel_order) == FORMAL_CONDITION_CHANNEL_ORDER, "support structure formal channel order differs")
     target, conditions = sample.get("image"), sample.get("conditions")
-    for value, shape in ((predicted, (1, 3, 192, 256)), (target, (3, 192, 256)), (conditions, (23, 192, 256))):
+    for value, shape in ((predicted, (1, 3, height, width)), (target, (3, height, width)), (conditions, (23, height, width))):
         _require(isinstance(value, torch.Tensor) and tuple(value.shape) == shape
             and value.device.type == "cpu" and value.dtype == torch.float32 and value.layout == torch.strided,
             "support structure requires complete CPU FP32 tensors")
@@ -54,35 +56,36 @@ def _bound_inputs(predicted, sample, channel_order):
     return {**sample, "image": target.detach(), "conditions": conditions.detach()}, tuple(channel_order)
 
 
-def _visible_support(conditions, instance_table, channel_order):
+def _visible_support(conditions, instance_table, channel_order, *, geometry=None):
     """Reproduce original clipped support union and exact typed ownership."""
+    height, width, patch_size = spatial_geometry(geometry)
     _require(isinstance(instance_table, Sequence) and not isinstance(instance_table, (str, bytes))
         and all(isinstance(item, Mapping) for item in instance_table), "bound instance table required")
     with torch.no_grad():
-        views = validate_bound_object_views(conditions.detach(), instance_table, channel_order)
-        coverage = {role: torch.zeros((1, 1, 192, 256), dtype=torch.float32) for role in TYPED_ROLES}
+        views = validate_bound_object_views(conditions.detach(), instance_table, channel_order, geometry=geometry)
+        coverage = {role: torch.zeros((1, 1, height, width), dtype=torch.float32) for role in TYPED_ROLES}
         for view in views:
-            y0, y1 = max(0, view.top), min(192, view.top + PATCH_SIZE)
-            x0, x1 = max(0, view.left), min(256, view.left + PATCH_SIZE)
+            y0, y1 = max(0, view.top), min(height, view.top + patch_size)
+            x0, x1 = max(0, view.left), min(width, view.left + patch_size)
             dy, dx = y0 - view.top, x0 - view.left
             clipped = view.support_mask[:, dy:dy + y1-y0, dx:dx + x1-x0].detach()
             region = coverage[view.role][0, :, y0:y1, x0:x1]
             region.copy_(torch.maximum(region, clipped))
         cores = {role: conditions[channel_order.index(role)][None, None].detach() for role in TYPED_ROLES}
-        owned, _distances = complete_typed_support_partition(cores, coverage)
+        owned, _distances = complete_typed_support_partition(cores, coverage, geometry=geometry)
         return {role: mask.detach() for role, mask in owned.items()}
 
 
 def train_original_object_support_structure(predicted, sample, instance_table, channel_order,
-        *, support_structure_weight=OBJECT_SUPPORT_STRUCTURE_WEIGHT):
+        *, support_structure_weight=OBJECT_SUPPORT_STRUCTURE_WEIGHT, geometry=None):
     """Return the weighted new term and explicit applicability diagnostics.
 
     Masks are rebuilt from authoritative facts, never caller overrides or RGB.
     A differentiable zero for all-NA is not a successful structure observation.
     """
     support_structure_weight = _support_structure_weight(support_structure_weight)
-    bound, order = _bound_inputs(predicted, sample, channel_order)
-    masks = _visible_support(bound["conditions"], instance_table, order)
+    bound, order = _bound_inputs(predicted, sample, channel_order, geometry=geometry)
+    masks = _visible_support(bound["conditions"], instance_table, order, geometry=geometry)
     weights = predicted.new_tensor(LUMA_WEIGHTS)[:, None, None]
     candidate_luma = (predicted[0] * weights).sum(0)
     reference_luma = (bound["image"] * weights).sum(0)
@@ -116,17 +119,17 @@ def train_original_object_support_structure(predicted, sample, instance_table, c
 
 
 def train_object_support_structure_candidate_objective(discriminator, predicted, sample, instance_table, channel_order,
-        *, support_structure_weight=OBJECT_SUPPORT_STRUCTURE_WEIGHT):
+        *, support_structure_weight=OBJECT_SUPPORT_STRUCTURE_WEIGHT, geometry=None):
     """Call the unchanged complete old objective once, then add the new term."""
     support_structure_weight = _support_structure_weight(support_structure_weight)
-    bound, order = _bound_inputs(predicted, sample, channel_order)
+    bound, order = _bound_inputs(predicted, sample, channel_order, geometry=geometry)
     _require(isinstance(discriminator, torch.nn.Module) and all(value.device.type == "cpu"
         and (not value.is_floating_point() or value.dtype == torch.float32)
         for value in (*discriminator.parameters(), *discriminator.buffers())), "CPU FP32 critic required")
     weighted, parts = train_original_object_support_structure(predicted, bound, instance_table, order,
-        support_structure_weight=support_structure_weight)
+        support_structure_weight=support_structure_weight, geometry=geometry)
     inherited_total, inherited_parts = train_object_core_fidelity_candidate_objective(
-        discriminator, predicted, bound, instance_table, order)
+        discriminator, predicted, bound, instance_table, order, geometry=geometry)
     total = inherited_total.float() + weighted
     _require(bool(torch.isfinite(total.detach())), "nonfinite support structure candidate total")
     return total, {**inherited_parts, **parts, "objectCoreFidelityUnchangedTotal": inherited_total,

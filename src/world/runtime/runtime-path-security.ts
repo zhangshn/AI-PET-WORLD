@@ -51,7 +51,9 @@ export async function assertRuntimePath(
   } catch (error) {
     if (!(isNodeFileError(error) && error.code === "ENOENT")) throw error
     const parent = await realpathExistingAncestor(path.dirname(lexical))
-    if (!isInside(rootReal, parent)) {
+    // A new owner/file can have the trusted root itself as its existing ancestor.
+    // The lexical target was already required to be a descendant above.
+    if (path.relative(rootReal, parent) !== "" && !isInside(rootReal, parent)) {
       throw new Error("runtime parent resolves outside configured root")
     }
   }

@@ -1,7 +1,37 @@
+import { pathToFileURL } from "node:url"
 import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
+import { verifyNaturalWorldFactRelease } from "./build-earth-geospatial-complete-map-conditions.mjs"
+import { naturalWorldDigest } from "./lib/real-earth-region-governance.mjs"
 
+export async function buildWorldVisualFactManifestFromNaturalFacts({ sourceFactReleaseBinding }) {
+  const verified = await verifyNaturalWorldFactRelease({ binding: sourceFactReleaseBinding })
+  const { proposal, factsEnvelope, release } = verified
+  const { worldId, ownerId, regionId, worldProfileId } = proposal.identity
+  const geometry = factsEnvelope.payload
+  const forbidden = /butler|building|home_center|visual_center|activity_center|construction_clearing/i
+  const visualFacts = [
+    ...geometry.terrainRegions.map(r => ({ factId: r.sourceId, factType: "terrain", semanticType: r.kind, polygon: r.polygon, source: "natural_generated_world_facts" })),
+    ...geometry.objectFootprints.map(r => ({ factId: r.objectId, factType: "object", semanticType: r.kind, footprint: r.footprint, source: "natural_generated_world_facts" })),
+  ]
+  if (visualFacts.length === 0 || visualFacts.some(r => forbidden.test(r.factId) || forbidden.test(r.semanticType))) throw new Error("natural visual fact forbidden content")
+  const manifest = { schemaVersion: "world-visual-fact-manifest-v1", scope: "natural_world_runtime_v1",
+    manifestId: `natural-visual-facts-${worldId}-${release.factHash.slice(0, 16)}`, createdAt: proposal.creationInput.createdAtUtc,
+    worldId, ownerId, regionId, tick: 0, worldProfileId, dictionaryVersionId: "mvp-natural-home-v0.3",
+    factHash: naturalWorldDigest(factsEnvelope), sourceFactReleaseBinding, sourceFactReleaseIdentity: release.sourceFactReleaseIdentity,
+    status: "natural_facts_replayed_and_structurally_verified", passed: true,
+    visualFacts, visualFactIds: visualFacts.map(r => r.factId), includedFactIds: visualFacts.map(r => r.factId),
+    excludedFactIds: [], forbiddenLeakIds: [],
+    worldSignals: { environment: proposal.environment, currentTime: null, weather: null, missingSignals: ["currentTime", "weather"] },
+    structureBindings: { terrainRecords: geometry.terrainRegions, objectRecords: geometry.objectFootprints,
+      walkableRecords: geometry.walkableRegions, collisionRecords: geometry.collisionRegions, connectivity: proposal.connectivity },
+    source: { runtimeFramePath: null, runtimeFrameId: null, kind: "replayed_measured_natural_world_facts" } }
+  manifest.manifestSha256 = crypto.createHash("sha256").update(JSON.stringify(manifest)).digest("hex")
+  return { manifest, inputReads: verified.inputReads }
+}
+
+export function buildLegacyWorldVisualFactManifest() {
 const ROOT = process.cwd()
 const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "world-visual-fact-manifests")
 const createdAt = new Date().toISOString()
@@ -290,4 +320,9 @@ function formatShanghai(iso) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
+}
+
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  buildLegacyWorldVisualFactManifest()
 }

@@ -8,6 +8,7 @@ or external image model enters inference. This is not a training qualification.
 """
 
 from collections.abc import Mapping, Sequence
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 from ai_painter.complete_world.native_rgb_aperiodic_detail_renderer import (
     build_native_complete_rgb_aperiodic_detail_renderer,
@@ -22,17 +23,18 @@ OBJECT_KINDS = ("tree", "rock", "shrub", "grass_detail")
 
 
 def _instance_object_objective(predicted, sample, instance_table, channel_order,
-                               *, expected_split):
+                               *, expected_split, geometry=None):
     """Aligned original-RGB score, with the caller's split fixed at the boundary."""
     import torch
     from torch.nn import functional as functional
+    height, width, patch_size = spatial_geometry(geometry)
 
     if sample.get("split") != expected_split:
         raise ValueError(f"instance object objective requires {expected_split} split")
     target = sample.get("image")
     if (not isinstance(predicted, torch.Tensor) or not isinstance(target, torch.Tensor)
-            or predicted.shape != (1, 3, 192, 256)
-            or target.shape != (3, 192, 256)
+            or predicted.shape != (1, 3, height, width)
+            or target.shape != (3, height, width)
             or not bool(torch.isfinite(predicted).all() and torch.isfinite(target).all())
             or not bool(((predicted >= 0) & (predicted <= 1)).all())
             or not bool(((target >= 0) & (target <= 1)).all())):
@@ -52,14 +54,14 @@ def _instance_object_objective(predicted, sample, instance_table, channel_order,
     if expected_split == "train":
         subjects = ((item.top, item.left, item.support_mask, item.target_rgb)
                     for item in iter_train_object_supervision(
-                        sample, instance_table, channel_order))
+                        sample, instance_table, channel_order, geometry=geometry))
     else:
         subjects = ((view.top, view.left, view.support_mask,
-                     _crop(target, view.top, view.left, PATCH_SIZE)[0])
+                     _crop(target, view.top, view.left, patch_size)[0])
                     for view in iter_object_views(
-                        sample.get("conditions"), instance_table, channel_order))
+                        sample.get("conditions"), instance_table, channel_order, geometry=geometry))
     for top, left, support_mask, target_rgb in subjects:
-        actual, _ = _crop(predicted[0], top, left, PATCH_SIZE)
+        actual, _ = _crop(predicted[0], top, left, patch_size)
         support = support_mask.to(device=predicted.device, dtype=predicted.dtype)
         expected = target_rgb.to(device=predicted.device, dtype=predicted.dtype)
         object_terms.append(((actual - expected).abs() * support).sum()
@@ -74,19 +76,19 @@ def _instance_object_objective(predicted, sample, instance_table, channel_order,
                    "instanceCount": len(object_terms), "total": total}
 
 
-def train_original_instance_objective(predicted, sample, instance_table, channel_order):
+def train_original_instance_objective(predicted, sample, instance_table, channel_order, *, geometry=None):
     """Differentiable train-original objective; all non-train splits fail closed."""
     return _instance_object_objective(predicted, sample, instance_table,
-                                      channel_order, expected_split="train")
+                                      channel_order, expected_split="train", geometry=geometry)
 
 
-def validation_instance_object_score(predicted, sample, instance_table, channel_order):
+def validation_instance_object_score(predicted, sample, instance_table, channel_order, *, geometry=None):
     """No-gradient validation-original score for Checkpoint selection only."""
     import torch
 
     with torch.no_grad():
         return _instance_object_objective(predicted, sample, instance_table,
-                                          channel_order, expected_split="validation")
+                                          channel_order, expected_split="validation", geometry=geometry)
 
 
 def build_native_rgb_instance_object_prototype(

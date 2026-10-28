@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "native-training-compute-policy-v1",
+  "status": "implementation_target_not_execution_qualification",
+  "capability": "terrain_ecology_native_bounded_stage_v1",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "71bdd035ea53cfc9aa993194ca2ba5417ff6b405ea401e187abc831c49a0ecd6"
+  },
+  "stageGeometry": [
+    {
+      "stage": 0,
+      "width": 256,
+      "height": 192,
+      "scale": 1,
+      "patchSize": 32,
+      "supportRadii": {
+        "tree": 8,
+        "rock": 4,
+        "vegetation": 6
+      },
+      "backgroundRingRadius": 2,
+      "nativeCoordinateStep": 4.0,
+      "nativeHalfPixelTolerance": 2.0
+    },
+    {
+      "stage": 1,
+      "width": 512,
+      "height": 384,
+      "scale": 2,
+      "patchSize": 64,
+      "supportRadii": {
+        "tree": 16,
+        "rock": 8,
+        "vegetation": 12
+      },
+      "backgroundRingRadius": 4,
+      "nativeCoordinateStep": 2.0,
+      "nativeHalfPixelTolerance": 1.0
+    },
+    {
+      "stage": 2,
+      "width": 1024,
+      "height": 768,
+      "scale": 4,
+      "patchSize": 128,
+      "supportRadii": {
+        "tree": 32,
+        "rock": 16,
+        "vegetation": 24
+      },
+      "backgroundRingRadius": 8,
+      "nativeCoordinateStep": 1.0,
+      "nativeHalfPixelTolerance": 0.5
+    }
+  ],
+  "historicalGeometryReference": {
+    "path": "data/ai-painter/system-governance/ai-painter-native-stage-policy-v1.json",
+    "sha256": "f7bb0aa4d2662b0a13f7672a9bd81d1c19f3cfe1f26ddc63dca9b603681430cc"
+  },
+  "historicalSpecificationBytes": {
+    "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.152-093a83c1.txt",
+    "sha256": "093a83c140a647996ae2acf704a1ab9da3be157802a8220823e0b01f6cf11e03"
+  },
+  "boundedNumericPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-native-weight-vjp-bounded-columns-policy-v1.json",
+    "sha256": "0561a0f7551de18ed9ffddb356897eeb48a55cc3ad850c11dc6456de824dafb3"
+  },
+  "boundedOperator": {
+    "path": "ml/ai-painter/src/ai_painter/complete_world/decode1_entry_bounded_weight_vjp_v1.py",
+    "sha256": "86f9e3e24f691a8edb997c9ab382d1cf651e44976dfc4765979214eae7ba030c"
+  },
+  "parameterGroups": 109,
+  "parameterElements": 2243023,
+  "onlyNumericReplacement": "core.core.terrain.decode_1.layers.0",
+  "oldDefault256BehaviorMustRemainEquivalent": true,
+  "lossFormulaOrWeightChangesAllowed": false,
+  "thresholdChangesAllowed": false,
+  "actualTrainingOrPublicationQualified": false,
+  "scope": "Explicit native model numeric identity plus original objective geometry. Historical geometry policy supplies dimensions only; its old no-precision-change restriction describes099, not this separately identified candidate. No training or stage qualification inherited."
+}

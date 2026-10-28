@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "natural-world-bootstrap-contract-v1",
+  "status": "active_implementation_target_not_runtime_qualification",
+  "scope": "natural_world_first_generation",
+  "producerInputVersion": "natural-world-bootstrap-input-v1",
+  "identityFields": [
+    "ownerId",
+    "playerId",
+    "worldId",
+    "worldSeed",
+    "worldProfileId",
+    "regionId"
+  ],
+  "sourceSelection": {
+    "designPath": ".runtime/ai-painter/controller-repair-reviews/natural-world-facts-098-20261028/design/implementation-plan.json",
+    "designSha256": "12dbbc8d3733c179f78d4a985f737ed757ad33d6e205552588479a768e746e9d",
+    "candidateId": "sakaerat-measurement-window-r05-c01-v3",
+    "measurementFingerprint": "9284ba55cf0c31447df410ca0c2b8ebc0e29043124cc36b8f8ef593232663615",
+    "historicalSourcePackageUse": "locator and immutable provenance only; never runtime identity or geometry input",
+    "newClimateAcquisition": {
+      "receiptPath": "data/world-samples/earth-geospatial/regions/sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1/sources/nasa-power-climatology-acquisition-20261028-v1/receipt.json",
+      "receiptSha256": "5d3ae32dc15097b77fadf760df042b74479cdd560bf40684567123f813da28e5",
+      "responsePath": "data/world-samples/earth-geospatial/regions/sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1/sources/nasa-power-climatology-acquisition-20261028-v1/response.json",
+      "responseSha256": "0ef4eed29d3831328361516b1c734d0a9d1f79bc2289ac006dc5d52b2dbce48a",
+      "period": "25-year Meteorological and Solar Monthly & Annual Climatologies (January 2001 - December 2025)",
+      "noHistoricalBackfill": true
+    }
+  },
+  "sourceChecks": [
+    "actual artifact file SHA and original canonical package SHA kept distinct",
+    "each required source role has real licensed attributed input and actual acquisition evidence",
+    "new NASA acquisition is distinct2001-2025 version; recompute climate-derived facts, never relabel2001-2020 history",
+    "fresh world geometry from measurement statistics and explicit new seed, no old blueprint/task/23channel/RGB geometry reuse",
+    "all actual input reads recorded"
+  ],
+  "state": {
+    "recordVersion": "natural-world-runtime-save-v1",
+    "factsVersion": "natural-world-facts-snapshot-v1",
+    "stateVersion": "natural-world-state-snapshot-v1",
+    "weather": "unknown with reason; no observed post_rain/daytime/wind inference from climatology",
+    "seasonScenario": {
+      "kind": "initial_simulation_scenario",
+      "season": "wet_season",
+      "basis": "explicit first-region monsoon scenario; not observed present weather"
+    },
+    "rng": "actual mulberry32 initial and final u32 plus drawCount; serialize actual consumed state and prove continuation",
+    "emptyResourcesAndCursor": "allowed only if no resources or runtime events actually created"
+  },
+  "hashOrder": [
+    "source evidence",
+    "fresh facts geometry connection and RNG",
+    "097 facts envelope canonical hash",
+    "visual manifest and director",
+    "explicit task and manifest",
+    "original23 channels",
+    "append sidecar file hashes to save",
+    "097 create CAS",
+    "independent process restore"
+  ],
+  "conditionScope": {
+    "scopeId": "natural_world_runtime_v1",
+    "tensorContractPath": "data/ai-painter/system-governance/ai-painter-complete-map-condition-contract-v1.json",
+    "tensorSemanticsUnchanged": true,
+    "datasetBindingPurpose": "model_training_knowledge_only",
+    "newWorldIsDatasetSample": false,
+    "sourcePackCompatibilityWrapperInherited": false,
+    "sourceFactReleaseBindingRecomputed": true,
+    "unknownScopeConsumersMustReject": true,
+    "noRegistryActivationInComponentTest": true
+  },
+  "publication": {
+    "frameGeneration": false,
+    "modelExecution": false,
+    "modelQualification": false,
+    "worldEntry": false,
+    "sourceQualification": "program recomputed exact source inputs; no caller passed flags",
+    "writes": "immutable explicit sidecars then original Runtime Store CAS; no global latest"
+  },
+  "limits": {
+    "cpu": 2,
+    "implementationSeconds": 4500,
+    "outputBytes": 134217728,
+    "gpuCalls": 0,
+    "networkCallsByWorker": 0,
+    "automaticRetries": 0
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "ai-painter-replay-retention-review-recovery-policy-v1",
+  "mode": "one_new_review_attempt_zero_training",
+  "baseReviewPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-replay-retention-review-policy-v1.json",
+    "sha256": "308d607e3f15bb936279be93b2525a37f1707365990941efdf6e78459029bcf4"
+  },
+  "priorFailure": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-review-v1-20d546bcfb9aa6fbe0e8/failure.json",
+    "sha256": "4ced1f8c1827e33e57a131f9bc84f8605b2b9536ceb2ba55fe76ac6c32d15bb9"
+  },
+  "priorPackage": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-review-v1-20d546bcfb9aa6fbe0e8/package.json",
+    "sha256": "4136b059701e937ea53cd39c1a528139f9682630b1be8b5f1fa8a08d1f736ab3"
+  },
+  "inferenceFailure": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-review-v1-20d546bcfb9aa6fbe0e8/inference-failure.json",
+    "sha256": "dd1547c80a38ee3176a7485e6a4b55ba749ff10cea4237a72e9fc805ef1ec45b"
+  },
+  "workerStreams": {
+    "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-review-v1-20d546bcfb9aa6fbe0e8/worker-streams.json",
+    "sha256": "96ea9f1b4f33e2e9d77875cdca9136f0a778d2348583f35c73f24c169ea5ca7a"
+  },
+  "trainingSource": {
+    "terminal": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-short-v1-30adf6ca7f50313d58cf/terminal.json",
+      "sha256": "f1b561e11f411375047aa746e98e68eb047ee6bceff4d62ce99a567f25e3e2c7"
+    },
+    "package": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-short-v1-30adf6ca7f50313d58cf/package.json",
+      "sha256": "6a3eeee5613f8111cc4e6a28644d4a4c4f080b0430e13db1a09d8373a67bf627"
+    },
+    "result": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-short-v1-30adf6ca7f50313d58cf/result.json",
+      "sha256": "f2c107e94c58c1f3a6cd4368cf7a86e9c033e20f18b334a481b4d7c75a672459"
+    },
+    "checkpoint": {
+      "path": ".runtime/ai-painter/learning-capacity-experiments/replay-retention-short-v1-30adf6ca7f50313d58cf/checkpoint-final.pt",
+      "sha256": "7d91b13126b484037f6b8259a6a63a69c0e779614ecbd540ffa47288b49282a1"
+    }
+  },
+  "initialRegistry": {
+    "revision": 604,
+    "sha256": "a33e18a2e71480174e520717840b456b616d6cf884d3604ebcf8d967cc75648c"
+  },
+  "originalSourceFreeze": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/replay-retention-091-20261027/source-freeze.json",
+    "sha256": "4eb58899fc4741d95909cedb60c87ad8991bd04079d6017b34d0cde909b7071c"
+  },
+  "dynamicReadRetry": {
+    "maximumAttempts": 5,
+    "maximumElapsedMs": 500,
+    "retryErrnos": [
+      13,
+      1
+    ],
+    "retryWinerrors": [
+      32,
+      33
+    ],
+    "delaysMs": [
+      25,
+      50,
+      100,
+      150
+    ]
+  },
+  "resources": {
+    "maxWallSeconds": 900,
+    "workerMaxWallSeconds": 600,
+    "cpuThreads": 2,
+    "generatorForwards": 56,
+    "maxOutputMiB": 128,
+    "maximumImageAudits": 112,
+    "minimumFreeDiskMiB": 2048,
+    "maximumStreamMiB": 8,
+    "terminalReserveBytes": 65536,
+    "automaticRetries": 0
+  },
+  "trainingAllowed": false,
+  "gpuAllowed": false,
+  "optimizerUpdates": 0,
+  "formalQualificationGranted": false,
+  "checkpointPromotable": false,
+  "runtimePublicationAllowed": false,
+  "automaticNextTraining": false
+}

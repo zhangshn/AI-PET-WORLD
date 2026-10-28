@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import torch
 from torch.nn import functional as F
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 from ai_painter.complete_world.native_rgb_structured_object_objective_cpu_v17 import (
     train_structured_object_objective,
@@ -19,13 +20,14 @@ FULL_RGB_WEIGHT = 1.0
 FULL_EDGE_WEIGHT = 0.25
 
 
-def train_original_whole_frame_fidelity(predicted, sample):
+def train_original_whole_frame_fidelity(predicted, sample, *, geometry=None):
     """Per-channel full-frame L1 and signed adjacent-difference L1, train only."""
+    height, width, _ = spatial_geometry(geometry)
     target = sample.get("image")
     if sample.get("split") != "train":
         raise ValueError("whole-frame fidelity requires train split")
-    if (not isinstance(predicted, torch.Tensor) or predicted.shape != (1, 3, 192, 256)
-            or not isinstance(target, torch.Tensor) or target.shape != (3, 192, 256)):
+    if (not isinstance(predicted, torch.Tensor) or predicted.shape != (1, 3, height, width)
+            or not isinstance(target, torch.Tensor) or target.shape != (3, height, width)):
         raise ValueError("whole-frame fidelity requires complete 256x192 RGB")
     if not all(bool(torch.isfinite(value).all() and ((value >= 0) & (value <= 1)).all())
                for value in (predicted, target)):
@@ -47,11 +49,11 @@ def train_original_whole_frame_fidelity(predicted, sample):
 
 
 def train_whole_frame_fidelity_candidate_objective(
-        discriminator, predicted, sample, instance_table, channel_order):
+        discriminator, predicted, sample, instance_table, channel_order, *, geometry=None):
     """One fixed additive comparison; retain every existing V21 objective term."""
-    fidelity, fidelity_parts = train_original_whole_frame_fidelity(predicted, sample)
+    fidelity, fidelity_parts = train_original_whole_frame_fidelity(predicted, sample, geometry=geometry)
     base, base_parts = train_structured_object_objective(
-        discriminator, predicted, sample, instance_table, channel_order)
+        discriminator, predicted, sample, instance_table, channel_order, geometry=geometry)
     total = base.float() + fidelity
     if not bool(torch.isfinite(total)):
         raise ValueError("nonfinite whole-frame fidelity candidate objective")

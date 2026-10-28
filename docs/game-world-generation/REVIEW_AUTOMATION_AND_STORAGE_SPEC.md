@@ -1,14 +1,14 @@
 # 审核、自动闭环与存储正式规格
 
-更新时间：2026-10-25 15:48:00 +08:00
+更新时间：2026-10-27 23:23:53 +08:00
 
 状态：active-long-term-review-automation-storage-contract
 
-文档版本：`AI-PAINTER-REVIEW-STORAGE-1.30`
+文档版本：`AI-PAINTER-REVIEW-STORAGE-1.31`
 
-生效日期：`2026-10-25`
+生效日期：`2026-10-27`
 
-替代版本：`AI-PAINTER-REVIEW-STORAGE-1.29`
+替代版本：`AI-PAINTER-REVIEW-STORAGE-1.30`
 
 文档状态：`active_normative_target`
 
@@ -697,6 +697,10 @@ D:\AI-PET-WORLD-DATA\migrations
 所有目录使用不可变身份；页面只读取明确文件或 SQLite 查询结果。
 
 RuntimeFrame生命周期固定为`working -> candidates -> accepted frame / rejected frames`。工作区和候选目录都不能被`/world`读取；只有来自机器发布能力版本并完成机器审核与Runtime发布门的正式记录才能进入`.runtime/game-map-runtime-frame/`及正式晋级存储。第一版与后续能力版本使用同一机器发布规则。
+
+### 13.1 自然世界状态存档
+
+自然世界先行存档采用总体架构第4.2节的`natural-world-runtime-save-v1`，复用已有世界Runtime Store的开发目录`data/world-runtime/`和生产配置根。世界事实与状态保存、视觉候选审核及RuntimeFrame发布分别验收；存档成功不能生成视觉资格。新记录不覆盖旧人物存档、不写旧全局latest、不以缺失人物资料阻止自然世界组件验证，也不得使用虚构人物或家园占位。旧审核、失败与帧发布门保持。
 
 ## 14. 控制台边界
 

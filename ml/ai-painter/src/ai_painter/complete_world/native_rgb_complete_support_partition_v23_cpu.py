@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 
 from ai_painter.complete_world.object_instance_supervision_cpu import SUPPORT_RADIUS
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 
 CAPABILITY = "stage4_mvp_native_rgb_complete_support_partition_v23_cpu_candidate"
@@ -30,9 +31,10 @@ def _require(condition, message):
         raise ValueError(message)
 
 
-def _binary_mask(value, name):
+def _binary_mask(value, name, *, geometry=None):
     import torch
-    _require(isinstance(value, torch.Tensor) and tuple(value.shape) == MASK_SHAPE,
+    height, width, _ = spatial_geometry(geometry)
+    _require(isinstance(value, torch.Tensor) and tuple(value.shape) == (1, 1, height, width),
              name + " must be one complete 256x192 mask")
     _require(bool(torch.isfinite(value).all()), name + " must be finite")
     _require(bool(((value == 0) | (value == 1)).all()), name + " must be binary")
@@ -57,7 +59,7 @@ def _chebyshev_distance(core, radius):
 
 
 def complete_typed_support_partition(responsibility_conditions: Mapping,
-                                     role_coverage: Mapping):
+                                     role_coverage: Mapping, *, geometry=None):
     """Partition the existing typed-support union without growing any support.
 
     Normalized distances are compared as exact integer cross products. Strict
@@ -65,15 +67,18 @@ def complete_typed_support_partition(responsibility_conditions: Mapping,
     vegetation.
     """
     import torch
+    spatial_geometry(geometry)
+    radii = SUPPORT_RADIUS if geometry is None else {
+        role: geometry.support_radius(role) for role in TYPED_ROLES}
 
     _require(isinstance(responsibility_conditions, Mapping)
              and isinstance(role_coverage, Mapping), "typed support mappings required")
     _require(all(role in responsibility_conditions and role in role_coverage
                  and role in SUPPORT_RADIUS for role in TYPED_ROLES),
              "complete typed support mappings required")
-    cores = {role: _binary_mask(responsibility_conditions[role], role + " core")
+    cores = {role: _binary_mask(responsibility_conditions[role], role + " core", geometry=geometry)
              for role in TYPED_ROLES}
-    coverage = {role: _binary_mask(role_coverage[role], role + " coverage")
+    coverage = {role: _binary_mask(role_coverage[role], role + " coverage", geometry=geometry)
                 for role in TYPED_ROLES}
     reference = cores[TYPED_ROLES[0]]
     _require(all(mask.device == reference.device for mask in (*cores.values(), *coverage.values())),
@@ -90,9 +95,9 @@ def complete_typed_support_partition(responsibility_conditions: Mapping,
 
     distances = {}
     for role in TYPED_ROLES:
-        distance = _chebyshev_distance(cores[role], SUPPORT_RADIUS[role])
+        distance = _chebyshev_distance(cores[role], radii[role])
         _require(not bool((coverage[role]
-                           & (distance > SUPPORT_RADIUS[role])).any()),
+                           & (distance > radii[role])).any()),
                  role + " coverage lacks a bounded core owner")
         distances[role] = distance
 
@@ -114,11 +119,11 @@ def complete_typed_support_partition(responsibility_conditions: Mapping,
         # comparison deliberately preserves the earlier role on exact ties.
         better = unset | (distances[role].to(torch.int32)
                           * best_radius.to(torch.int32)
-                          < best_distance.to(torch.int32) * SUPPORT_RADIUS[role])
+                          < best_distance.to(torch.int32) * radii[role])
         selected = eligible & better
         best_role[selected] = index
         best_distance[selected] = distances[role][selected]
-        best_radius[selected] = SUPPORT_RADIUS[role]
+        best_radius[selected] = radii[role]
     owner[noncore_support] = best_role[noncore_support]
     _require(not bool((support_union & (owner < 0)).any()),
              "typed support pixel has no owner")
@@ -192,7 +197,8 @@ def build_native_rgb_complete_support_partition_v23_cpu(
         def forward(self, conditions, instance_table, *, return_evidence=False):
             terrain_rgb, source = self.core(conditions, instance_table, return_evidence=True)
             typed_owned, typed_distances = complete_typed_support_partition(
-                source["responsibilityConditions"], source["roleCoverage"])
+                source["responsibilityConditions"], source["roleCoverage"],
+                geometry=getattr(self, "native_stage_geometry", None))
             visible_masks = dict(typed_owned)
             visible_masks["object_footprints"] = (
                 source["responsibilityConditions"]["object_footprints"] > .5)

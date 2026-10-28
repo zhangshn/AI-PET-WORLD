@@ -1,0 +1,159 @@
+{
+  "schemaVersion": "native-training-memory-policy-v2",
+  "status": "implementation_target_not_execution_qualification",
+  "capability": "terrain_ecology_native_recomputed_stage_v1",
+  "formalSpecification": {
+    "path": "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
+    "sha256": "0265e8257791e8ff6d553e3d38ba05c81f7ee941126bd902de4cd89596d22044",
+    "version": "AI-PAINTER-SPEC-1.155"
+  },
+  "priorSpecificationBytes": {
+    "path": "data/ai-painter/system-governance/document-baselines/ai-painter-spec-1.154-500fbda4.txt",
+    "sha256": "500fbda4f51ea16fc42618497d411a2f14cbeecd042eee8979f1496c70663bfa"
+  },
+  "parameters": {
+    "groups": 109,
+    "elements": 2243023,
+    "namesShapesOrderAndInitialBytesUnchanged": true
+  },
+  "newBoundedTargets": [
+    {
+      "parameterIndex": 4,
+      "module": "core.core.terrain.base_stem.layers.3",
+      "parameterName": "core.core.terrain.base_stem.layers.3.weight",
+      "inputChannels": 48,
+      "outputChannels": 48,
+      "kernel": [
+        3,
+        3
+      ],
+      "padding": 1,
+      "stride": 1,
+      "groups": 1,
+      "batch": 1
+    },
+    {
+      "parameterIndex": 52,
+      "module": "core.core.terrain.decode_1.layers.3",
+      "parameterName": "core.core.terrain.decode_1.layers.3.weight",
+      "inputChannels": 48,
+      "outputChannels": 48,
+      "kernel": [
+        3,
+        3
+      ],
+      "padding": 1,
+      "stride": 1,
+      "groups": 1,
+      "batch": 1
+    },
+    {
+      "parameterIndex": 56,
+      "module": "core.core.terrain.full_resolution_detail.layers.0",
+      "parameterName": "core.core.terrain.full_resolution_detail.layers.0.weight",
+      "inputChannels": 68,
+      "outputChannels": 48,
+      "kernel": [
+        3,
+        3
+      ],
+      "padding": 1,
+      "stride": 1,
+      "groups": 1,
+      "batch": 1
+    },
+    {
+      "parameterIndex": 60,
+      "module": "core.core.terrain.full_resolution_detail.layers.3",
+      "parameterName": "core.core.terrain.full_resolution_detail.layers.3.weight",
+      "inputChannels": 48,
+      "outputChannels": 48,
+      "kernel": [
+        3,
+        3
+      ],
+      "padding": 1,
+      "stride": 1,
+      "groups": 1,
+      "batch": 1
+    },
+    {
+      "parameterIndex": 88,
+      "module": "core.core.final_rgb_decoder.base.layers.2",
+      "parameterName": "core.core.final_rgb_decoder.base.layers.2.weight",
+      "inputChannels": 48,
+      "outputChannels": 48,
+      "kernel": [
+        3,
+        3
+      ],
+      "padding": 1,
+      "stride": 1,
+      "groups": 1,
+      "batch": 1
+    }
+  ],
+  "existingTarget48Unchanged": true,
+  "boundedAlgorithm": {
+    "inputChannelBlock": 16,
+    "kernelOrder": "row-major",
+    "channelOrder": "ascending",
+    "spatialReduction": "single full H*W FP64 matmul per kernel/channel group",
+    "finalCast": "all weight entries once to FP32",
+    "device": "original tensor device",
+    "nativeBackwardMask": "original complete mask including native weight work",
+    "finiteChecks": "original checks preserved"
+  },
+  "recomputation": {
+    "use_reentrant": false,
+    "preserve_rng_state": true,
+    "determinism_check": "default",
+    "early_stop": false,
+    "enabled": "training and grad enabled",
+    "terrainSegments": [
+      "base_stem",
+      "down_1",
+      "down_2",
+      "bottleneck",
+      "decode_3",
+      "decode_2",
+      "decode_1",
+      "full_resolution_detail",
+      "responsibility_heads"
+    ],
+    "appearance": "complete original V18 PositionRegularizedAppearance body: base(coordinate_free_views(views, order), terrain_patches); preserve real terrain patches, no V26 zeros_like ablation",
+    "decoder": "complete original TerrainOnlyDecoder body",
+    "fourResidualHeads": "unchanged",
+    "includePoolingInterpolationConcatenationWithinSegments": true,
+    "captureContextsOnly": [
+      "seasonal._REGIME",
+      "ecology._ECOLOGY",
+      "terrain_ecology_projection._TERRAIN_PROJECTION"
+    ],
+    "restoreContextOnEveryCallAndException": true,
+    "physicalRecomputationsSeparatelyCounted": true
+  },
+  "operatorInterface": {
+    "module": "ai_painter.complete_world.native_training_bounded_weight_vjp_v1",
+    "builder": "build_native_training_bounded_weight_conv(source, *, target)",
+    "targetArgument": "exact registered module path",
+    "class": "NativeTrainingBoundedWeightConv",
+    "constants": [
+      "NUMERIC_RULE",
+      "REGISTERED_TARGETS"
+    ],
+    "parameterNames": "weight/bias unchanged",
+    "metadata": "bound_target exact module path"
+  },
+  "modelInterface": {
+    "builder": "build_fresh_terrain_ecology_native_recomputed_stage(*, geometry, condition_channel_order)",
+    "validator": "validate_model_identity(model)"
+  },
+  "qualificationsGranted": [],
+  "originalThresholdsAndDefaultRouteUnchanged": true,
+  "replacesPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-native-training-memory-policy-v1.json",
+    "sha256": "b1edcb4a65a0e542b06e475e6950ac05ad95221a53248c9381cbc281ec6bc85d",
+    "reason": "Correct actual V18 appearance construction; V26 isolation proposal not adopted"
+  }
+}

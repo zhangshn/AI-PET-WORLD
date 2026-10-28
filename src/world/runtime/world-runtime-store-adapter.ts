@@ -10,9 +10,14 @@ import type {
   WorldRuntimeStoreAdapter,
   WorldRuntimeStoreReadResult,
   WorldRuntimeStoreWriteResult,
+  NaturalWorldRuntimeReadInput,
+  NaturalWorldRuntimeReadResult,
+  NaturalWorldRuntimeWriteInput,
+  NaturalWorldRuntimeWriteResult,
 } from "./world-runtime-schema"
 import { localFileRuntimeStore } from "./world-runtime-store"
 import { createProductionWorldRuntimeStore } from "./world-runtime-production-store"
+import { assertNaturalWorldReadInput, snapshotNaturalWorldWrite } from "./world-runtime-record-validation"
 
 export async function getWorldRuntimeStoreAdapter(): Promise<WorldRuntimeStoreAdapter> {
   if (process.env.NODE_ENV === "production") {
@@ -49,4 +54,20 @@ export async function writeWorldRuntimeSaveRecord(input: {
 export async function getDefaultWorldRuntimeSavePath(): Promise<string> {
   const adapter = await getWorldRuntimeStoreAdapter()
   return adapter.getDefaultSavePath()
+}
+
+export async function readNaturalWorldRuntimeSaveRecord(input: NaturalWorldRuntimeReadInput): Promise<NaturalWorldRuntimeReadResult> {
+  assertNaturalWorldReadInput(input)
+  const fixed = structuredClone(input)
+  const adapter = await getWorldRuntimeStoreAdapter()
+  if (!adapter.readNatural) throw new Error("natural_world_store_capability_unavailable")
+  return adapter.readNatural(fixed)
+}
+
+export async function writeNaturalWorldRuntimeSaveRecord(input: NaturalWorldRuntimeWriteInput): Promise<NaturalWorldRuntimeWriteResult> {
+  const fixed = snapshotNaturalWorldWrite(input)
+  const adapter = await getWorldRuntimeStoreAdapter()
+  if (!adapter.writeNatural) throw new Error("natural_world_store_capability_unavailable")
+  // Concrete file adapters snapshot synchronously before their first await.
+  return adapter.writeNatural(fixed)
 }

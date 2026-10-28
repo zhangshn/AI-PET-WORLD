@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 
 import torch
+from ai_painter.complete_world.native_stage_geometry_v1 import spatial_geometry
 
 from ai_painter.complete_world.native_rgb_structured_object_objective_cpu_v17 import (
     OBJECT_CHANNELS,
@@ -22,7 +23,7 @@ EXECUTION_QUALIFIED = False
 OBJECT_CORE_RGB_WEIGHT = 1.0
 
 
-def train_original_object_core_rgb(predicted, sample, channel_order):
+def train_original_object_core_rgb(predicted, sample, channel_order, *, geometry=None):
     """Equal mean of original-RGB L1 over nonempty authoritative role cores.
 
     Each role is normalized by its own pixel count and three RGB channels.
@@ -30,6 +31,7 @@ def train_original_object_core_rgb(predicted, sample, channel_order):
     A sample with no applicable cores fails closed, as does the inherited V21
     object objective. Only detached train originals provide supervision.
     """
+    height, width, _ = spatial_geometry(geometry)
     if not isinstance(sample, Mapping) or sample.get("split") != "train":
         raise ValueError("object core RGB requires train split")
     if (not isinstance(channel_order, Sequence) or isinstance(channel_order, (str, bytes))
@@ -39,9 +41,9 @@ def train_original_object_core_rgb(predicted, sample, channel_order):
             or any(role not in channel_order for role in OBJECT_CHANNELS)):
         raise ValueError("object core RGB requires the complete 23-channel order")
     target, conditions = sample.get("image"), sample.get("conditions")
-    if (not isinstance(predicted, torch.Tensor) or predicted.shape != (1, 3, 192, 256)
-            or not isinstance(target, torch.Tensor) or target.shape != (3, 192, 256)
-            or not isinstance(conditions, torch.Tensor) or conditions.shape != (23, 192, 256)):
+    if (not isinstance(predicted, torch.Tensor) or predicted.shape != (1, 3, height, width)
+            or not isinstance(target, torch.Tensor) or target.shape != (3, height, width)
+            or not isinstance(conditions, torch.Tensor) or conditions.shape != (23, height, width)):
         raise ValueError("object core RGB requires complete bound 256x192 tensors")
     if not all(bool(torch.isfinite(value).all() and ((value >= 0) & (value <= 1)).all())
                for value in (predicted, target, conditions)):
@@ -81,14 +83,14 @@ def train_original_object_core_rgb(predicted, sample, channel_order):
 
 
 def train_object_core_fidelity_candidate_objective(
-        discriminator, predicted, sample, instance_table, channel_order):
+        discriminator, predicted, sample, instance_table, channel_order, *, geometry=None):
     """Retain exact completed fidelity objective and add one core RGB term."""
-    core, core_parts = train_original_object_core_rgb(predicted, sample, channel_order)
+    core, core_parts = train_original_object_core_rgb(predicted, sample, channel_order, geometry=geometry)
     # The old formula is preserved; supervisory evidence is always constant.
     bound = {**sample, "image": sample["image"].detach(),
              "conditions": sample["conditions"].detach()}
     inherited, inherited_parts = train_whole_frame_fidelity_candidate_objective(
-        discriminator, predicted, bound, instance_table, channel_order)
+        discriminator, predicted, bound, instance_table, channel_order, geometry=geometry)
     total = inherited.float() + core
     if not bool(torch.isfinite(total)):
         raise ValueError("nonfinite object core fidelity candidate objective")
