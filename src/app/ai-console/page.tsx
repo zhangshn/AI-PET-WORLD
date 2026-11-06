@@ -9,6 +9,7 @@ import {
 import styles from "./page.module.css"
 import themeStyles from "./ai-console-theme.module.css"
 import { AiConsoleLiveStatus } from "./ai-console-live-status"
+import { RelatedWorkRecords } from "../local-backup/work/related-work-records"
 import { AiConsoleCurrentExecutionStatus } from "./ai-console-current-execution-status"
 
 export const metadata: Metadata = {
@@ -108,6 +109,7 @@ export default function AiConsolePage() {
             </header>
 
             <AiConsoleCurrentExecutionStatus />
+            <RelatedWorkRecords />
 
             <div className={styles.platformStats}>
               <div><span>业务框架</span><strong>04</strong><small>OUTER FRAMES</small></div>

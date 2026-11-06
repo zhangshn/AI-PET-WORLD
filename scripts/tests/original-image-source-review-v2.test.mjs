@@ -17,8 +17,7 @@ const parse = (f, file) => JSON.parse(fs.readFileSync(path.join(f.root, file)))
 const PROGRAMS = ["scripts/lib/ai-painter-source-correction-review-v1.mjs", "scripts/lib/ai-painter-source-correction-intake-v1.mjs",
   "scripts/lib/complete-map-world-frame-integrity.mjs", "scripts/review-ai-assisted-cold-start-image.mjs",
   "scripts/run-ai-assisted-cold-start-review-pipeline.mjs", "scripts/lib/ai-assisted-condition-alignment.mjs",
-  "scripts/lib/ai-assisted-style-fingerprint.mjs",
-  "docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md"]
+  "scripts/lib/ai-assisted-style-fingerprint.mjs"]
 
 async function reviewFixture(t) {
   const f = await fixture(t)
@@ -33,6 +32,9 @@ async function reviewFixture(t) {
   f.request.sourceCorrection.parentDataset = f.put(f.parentDataset.path, manifest)
   f.request.sourceCorrection.conditionPack = packBinding
   for (const file of PROGRAMS) f.put(file, fs.readFileSync(path.join(REPO, file)))
+  // This fixture exercises the original correction reviewer and its pinned rules.
+  f.put("docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md", fs.readFileSync(
+    path.join(REPO, "data/ai-painter/system-governance/document-baselines/review-storage-1.25-48d9b177.txt")))
   const thresholdPath = "data/ai-painter/system-governance/ai-painter-stage4-v2-machine-review-threshold-contract-v1.json"
   const threshold = JSON.parse(fs.readFileSync(path.join(REPO, thresholdPath)))
   f.put(thresholdPath, fs.readFileSync(path.join(REPO, thresholdPath)))

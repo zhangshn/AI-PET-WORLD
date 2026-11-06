@@ -88,8 +88,10 @@ export function isCurrentPolicyAiAssistedColdStartSource(request) {
     && request.source.thirdPartyGenerativeModelUsed === true
     && request.source.copiedFromExistingWork === false
     && request?.aiAssistedColdStart?.trainingLane === "ai_assisted_cold_start"
-    && request.aiAssistedColdStart.policyVersion === "AI-PAINTER-DATA-PROVENANCE-1.8"
-    && request?.sourceCorrection?.schemaVersion === "source-correction-intake-evidence-request-v1"
+    && ((request?.sourceCorrection?.schemaVersion === "source-correction-intake-evidence-request-v1"
+         && request.aiAssistedColdStart.policyVersion === "AI-PAINTER-DATA-PROVENANCE-1.8")
+      || (request?.sourceCorrection?.schemaVersion === "source-correction-intake-evidence-request-v2"
+         && /^AI-PAINTER-DATA-PROVENANCE-\d+\.\d+$/.test(request.aiAssistedColdStart.policyVersion)))
 }
 
 function hasLegacyApprovalFields(value) {

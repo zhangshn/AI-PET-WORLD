@@ -89,7 +89,7 @@ export function isPointInPolygon(
   for (
     let currentIndex = 0, previousIndex = points.length - 1;
     currentIndex < points.length;
-    previousIndex = currentIndex
+    previousIndex = currentIndex, currentIndex += 1
   ) {
     const currentPoint = points[currentIndex]
     const previousPoint = points[previousIndex]

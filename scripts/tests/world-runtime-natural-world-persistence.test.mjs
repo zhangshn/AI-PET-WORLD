@@ -16,7 +16,7 @@ const project=path.resolve(path.dirname(self),'../..'),sourceRoot=path.join(proj
 const evidence=path.resolve(process.env.WORLD_RUNTIME_TEST_OUTPUT_ROOT??path.join(os.tmpdir(),'natural-world-runtime-tests'))
 const sha=b=>createHash('sha256').update(b).digest('hex'),json=v=>JSON.stringify(v,null,2)+'\n'
 const compiled=new Map()
-for(const name of ['world-runtime-store','world-runtime-production-store','world-runtime-record-validation','runtime-path-security','world-runtime-store-adapter']){
+for(const name of ['world-runtime-store','world-runtime-production-store','world-runtime-record-validation','runtime-path-security','world-runtime-store-adapter','world-evolution-transaction']){
  const r=ts.transpileModule(fs.readFileSync(path.join(sourceRoot,name+'.ts'),'utf8'),{fileName:name+'.ts',reportDiagnostics:true,compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}})
  assert.deepEqual(r.diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error),[])
  compiled.set(name,r.outputText)

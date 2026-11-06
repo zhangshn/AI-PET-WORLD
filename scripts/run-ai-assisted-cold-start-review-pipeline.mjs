@@ -18,6 +18,14 @@ const runId = `ai-assisted-cold-start-review-${recordId}-${timestamp.replace(/[:
 const runRoot = ".runtime/ai-painter/ai-assisted-cold-start/review-pipeline-runs"
 const recordPath = findRecordPath(categoryId, recordId)
 const initialRecord = readJson(recordPath)
+if (initialRecord.sourceCorrection && initialRecord.aiAssistedColdStart?.policyVersion !== "AI-PAINTER-DATA-PROVENANCE-1.8") {
+  const { reviewGuideSource } = await import("./lib/ai-painter-guide-source-review.mjs")
+  const priorPath = argumentValue("--parent-review"), priorSha = argumentValue("--parent-review-sha256")
+  assert(Boolean(priorPath) === Boolean(priorSha), "parent review path and SHA must be supplied together")
+  const review = await reviewGuideSource({ recordId, parentReview: priorPath ? {path:priorPath,sha256:priorSha} : null })
+  console.log(JSON.stringify(review, null, 2))
+  process.exit(review.passed ? 0 : 1)
+}
 if (initialRecord.aiAssistedColdStart?.policyVersion === "AI-PAINTER-DATA-PROVENANCE-1.8") {
   const { reviewCurrentSourceCorrection } = await import("./lib/ai-painter-source-correction-review-v1.mjs")
   const priorPath = argumentValue("--parent-review")

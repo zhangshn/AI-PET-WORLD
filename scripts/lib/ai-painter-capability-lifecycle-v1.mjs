@@ -3,7 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { isDeepStrictEqual } from "node:util";
-import { loadAndValidateReleasedCapabilityBinding } from "./ai-painter-autonomous-package-decision-core-v3.mjs";
+import { weatherReleaseProfile, scopedWeatherRegistryBindingAtRelease, TRUSTED_RELEASE_REGISTRY_PATH,
+  loadAndValidateReleasedCapabilityBinding, verifyScopedWeatherReleaseForLifecycle } from "./ai-painter-autonomous-package-decision-core-v3.mjs";
 
 export const CAPABILITY_LIFECYCLE_CONTRACT_PATH = "data/ai-painter/system-governance/ai-painter-capability-lifecycle-contract-v1.json";
 export const CAPABILITY_LIFECYCLE_ROOT = ".runtime/ai-painter/capability-lifecycle";
@@ -103,7 +104,13 @@ export function advanceCapabilityLifecycle({
   let verifiedRelease = null;
   if (targetState === "released") {
     assert(releaseBinding?.capabilityReleasePath && releaseBinding?.trustedReleaseRegistryPath, "trusted release binding is required");
-    verifiedRelease = loadAndValidateReleasedCapabilityBinding({ projectRoot: root, ...releaseBinding });
+    if (weatherReleaseProfile(capabilityVersion)) {
+      assert(releaseBinding.requiredCapabilityScope === "world_evolution", "fixed weather lifecycle scope required");
+      verifiedRelease = verifyScopedWeatherReleaseForLifecycle(capabilityVersion,{ projectRoot: root,
+        capabilityReleasePath: releaseBinding.capabilityReleasePath, trustedReleaseRegistryPath: releaseBinding.trustedReleaseRegistryPath });
+    } else {
+      verifiedRelease = loadAndValidateReleasedCapabilityBinding({ projectRoot: root, ...releaseBinding });
+    }
     assert(verifiedRelease.release.modelCapabilityVersion === capabilityVersion, "release capability version mismatch");
   }
 
@@ -172,7 +179,11 @@ function persistOrVerifyEvidence(root, candidateRoot, capabilityVersion, sequenc
   assert(evidence.capabilityVersion === capabilityVersion && evidence.targetState === targetState, "stage evidence identity mismatch");
   assert(evidence.status === "passed" || targetState === "rejected" || targetState === "rolled_back", "non-terminal stage evidence must pass");
   assert(Array.isArray(evidence.bindings) && evidence.bindings.length > 0, "stage evidence bindings are required");
-  for (const binding of evidence.bindings) verifyBinding(root, binding);
+  for (const binding of evidence.bindings) {
+    if (targetState==="released" && weatherReleaseProfile(capabilityVersion) && binding.path===TRUSTED_RELEASE_REGISTRY_PATH) {
+      assert(isDeepStrictEqual(binding,scopedWeatherRegistryBindingAtRelease(root,capabilityVersion)),"weather lifecycle registry revision evidence differs");
+    } else verifyBinding(root,binding);
+  }
   const relative = `evidence/${String(sequence).padStart(3, "0")}-${targetState}.json`;
   const absolute = path.join(candidateRoot, ...relative.split("/"));
   const base = {

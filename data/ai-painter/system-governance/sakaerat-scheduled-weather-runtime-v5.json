@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "sakaerat-scheduled-weather-runtime-v5",
+  "version": "sakaerat-weather-153-scheduled-v5",
+  "requiredCapabilityScope": "world_evolution",
+  "identity": {
+    "ownerId": "mvp-natural-owner-001",
+    "playerId": "mvp-natural-player-001",
+    "worldId": "mvp-natural-world-001",
+    "worldSeed": "mvp-natural-world-001-seed-v1",
+    "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "regionId": "mvp-natural-region-001"
+  },
+  "policyPath": "data/ai-painter/system-governance/mvp-natural-world-weather-policy-v5.json",
+  "sourceBudget": {
+    "path": "data/ai-painter/system-governance/sakaerat-first-weather-execution-budget-v1.json",
+    "sha256": "e0d6bf6988f29ce9129a857d6dfcb67aa5b46430a279e41b266226200b154d2a",
+    "bytes": 4656
+  },
+  "model": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-humidity-153-20261029/model-run-v1/checkpoint.pt",
+    "sha256": "36a5e5973228295f38392b50680868331caab7b1588e3fc10f54d2f084ce05c8",
+    "trainingContractSha256": "fef9030883c521274683f6bb09806904dfcd0faeeb4b44c4406e89405df453e0",
+    "trainingDatasetSha256": "c29de6e73c6243df25d636204d972ec9597b83722492b0f82b778c33f7b2847f"
+  },
+  "interpreter": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-background-166-20261031/model/interpreter-contract.json",
+    "sha256": "303f5dc4a945c20c9d71c7b1cf605ab910dca3f788104541942763fcf8b5625d",
+    "bytes": 1640
+  },
+  "runner": {
+    "path": "scripts/lib/world-weather-scheduled-service.mjs",
+    "sha256": "a94b15e5667d79cfabae6733e040d61e40d15073a59b814b46893ed1034cd6b0",
+    "bytes": 32025
+  },
+  "entry": {
+    "path": "scripts/run-world-weather-service.mjs",
+    "sha256": "4a911a2d1130823ecf341017f31b8542dc105762cfae45136edab98a692da410",
+    "bytes": 264
+  },
+  "worker": {
+    "path": "ml/ai-painter/scripts/world_weather_scheduled_runtime.py",
+    "sha256": "c812d9b49704bc965d9ad4f6734f56ee053a5209a471ca61af585e9ba294afe1",
+    "bytes": 6495
+  },
+  "historyReader": {
+    "path": "scripts/lib/world-weather-scheduled-history.mjs",
+    "sha256": "a1306f3be1fce0809b33583fc9cdd4053fe115ba0c64ce6f4b9c1aaddb016af2",
+    "bytes": 15793
+  },
+  "leaseLedger": {
+    "path": "scripts/lib/world-weather-service-lease.mjs",
+    "sha256": "32ff0a3787d7ca08fdeb2257dd85cc6b4d6f70d8b621fa646f57e7e2157b4ae1",
+    "bytes": 22498
+  },
+  "sharedForecast": {
+    "path": "ml/ai-painter/scripts/world_weather_committed_forward.py",
+    "sha256": "01f6c20ae2b4911c4d1f976e9bb1fd4fe19d863f68fbd9a4eda4567935d8ef98",
+    "bytes": 5392
+  },
+  "origin": {
+    "tick": 3,
+    "stateVersion": 4,
+    "eventCursor": 4,
+    "fileSha256": "812125a94cf1a1704d4dfff46b2ac218bb31a9ac4a7bc277144331610e827898",
+    "businessKey": "c89b02e1b1391ed698007aa5bdc714621659bd40b0a8d53f2964c4b61735bee8",
+    "eventSha256": "bdda95e6b3a3cf7ca3007f14960d050ee56ee272c9dec0d6b297d9a965b61fe7",
+    "historyValueSha256": "58b332b94470ba155fb3719678c78975d1c6a01d8fcf79f728c3a9d9e5c416f3"
+  },
+  "originalCutoffUtc": "2020-01-08T00:00:00.000Z",
+  "validatedForecastDays": 30,
+  "maximumNewSteps": 27,
+  "batchSize": 2,
+  "maximumBatchIssues": 14,
+  "batchLeaseMs": 60000,
+  "maximumStepsPerActivation": 2,
+  "maximumActivations": 14,
+  "maximumRunSecondsPerActivation": 180,
+  "maximumSupervisedWindowSeconds": 1800,
+  "maximumConcurrentWorkers": 1,
+  "automaticModelRetries": 0,
+  "formalWritesMaximum": 27,
+  "clock": {
+    "simulationEpochUtc": "2020-01-08T00:00:00.000Z",
+    "stepSeconds": 86400,
+    "scheduleIntervalSeconds": 15,
+    "modelHorizonSeconds": 86400,
+    "downtimeMode": "freeze",
+    "maxCatchupSteps": 0,
+    "maxCatchupLogicalSeconds": 0
+  },
+  "workerLimits": {
+    "actualLaunches": 1,
+    "actualModelForwardsMaximum": 1,
+    "formalWorldWrites": 1,
+    "maintenanceWrites": 0,
+    "automaticRetry": 0,
+    "cpuThreadsMaximum": 2,
+    "maxCommittedMemoryMiB": 1536,
+    "gpu": false,
+    "vramMiB": 0,
+    "network": false,
+    "trainingUpdates": 0,
+    "minimumFreeDiskMiB": 2048,
+    "artifactBytesMaximum": 16777216,
+    "artifactFilesMaximum": 256,
+    "logBytesPerStreamMaximum": 8388608,
+    "workerSecondsMaximum": 30,
+    "runSecondsMaximum": 180,
+    "heartbeatSeconds": 1,
+    "staleSeconds": 10
+  },
+  "qualification": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-service-lease-206-20261103/delivery.json",
+    "sha256": "b53f732228828bce8ced1d096b3c9bdccb4212a0bc6a78898d94d4eeecc8b42e",
+    "bytes": 6984
+  }
+}

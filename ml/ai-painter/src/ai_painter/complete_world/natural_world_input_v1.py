@@ -81,6 +81,38 @@ class NaturalWorldModelInput:
     consumed_bindings: list
 
 
+def _verify_historical_producers(reader, descriptor, release):
+    selection_ref = descriptor["historicalBaselineSelection"]
+    prefix = ".runtime/ai-painter/controller-repair-reviews/world-runtime-transaction-157-20261030/"
+    _require(isinstance(selection_ref, dict) and selection_ref.get("path") ==
+        ".runtime/local-backup/project-progress/current-world-baseline.json", "unsupported first-world selection")
+    selection = reader.json(selection_ref)
+    _require(selection["schemaVersion"] == "natural-world-baseline-compatibility-selection-v1"
+        and selection["deliveryId"] == "WORLD-BASELINE-001" and selection["identity"] == descriptor["identity"]
+        and selection["identity"]["worldId"] == "mvp-natural-world-001"
+        and selection["proofRef"]["path"].startswith(prefix + "compat-"), "first-world selection identity differs")
+    proof = reader.json(selection["proofRef"])
+    _require(proof["schemaVersion"] == "natural-world-baseline-compatibility-proof-v1"
+        and proof["archiveManifestRef"]["path"] == prefix + "prior-source-manifest.json"
+        and proof["previousSelectionRef"]["path"] == prefix + "previous-selection.json", "unsupported first-world archive")
+    archive = reader.json(proof["archiveManifestRef"])
+    previous = reader.json(proof["previousSelectionRef"])
+    _require(archive["priorSelection"] == previous and previous["identity"] == selection["identity"],
+        "first-world historical identity differs")
+    current = reader.json(proof["readerRef"])
+    store = descriptor["bindings"]["runtimeSave"]
+    _require(current["identity"] == selection["identity"] and current["storeRef"]["path"] == store["path"]
+        and current["storeRef"]["sha256"] == store["sha256"], "first-world current Store differs")
+    sources = {entry["originalPath"]: entry for entry in archive["sources"]}
+    _require(len(sources) == len(archive["sources"]), "ambiguous first-world archive")
+    for producer in release["producerBindings"]:
+        source = sources.get(producer["path"])
+        expected = prefix + "prior-source-by-sha/" + producer["sha256"] + ".txt"
+        _require(source is not None and source["sha256"] == producer["sha256"]
+            and source["snapshotPath"] == expected, "first-world archived producer binding differs")
+        reader.verify({"path": expected, "sha256": producer["sha256"]})
+
+
 def load_natural_world_input(*, root, descriptor_binding, stage):
     """Read each stage directly from authenticated ORIGINAL 1024 channel bytes."""
     reader = _Reader(root)
@@ -148,8 +180,11 @@ def load_natural_world_input(*, root, descriptor_binding, stage):
     release_payload = {k: v for k, v in release.items() if k != "sourceFactReleaseIdentity"}
     _require(release["sourceFactReleaseIdentity"] == "natural-source-facts-" + _digest(release_payload)
         == descriptor["sourceFactReleaseIdentity"], "natural source release identity differs")
-    for producer in release["producerBindings"]:
-        reader.verify(producer)
+    if "historicalBaselineSelection" in descriptor:
+        _verify_historical_producers(reader, descriptor, release)
+    else:
+        for producer in release["producerBindings"]:
+            reader.verify(producer)
     generated = reader.json(release["generatedFactsBinding"])
     source_package = reader.json(release["sourcePackageBinding"])
     _require(generated["identity"] == descriptor["identity"] and generated["sourcePackage"] == source_package

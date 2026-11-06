@@ -25,7 +25,7 @@ test('staleness and source failure are visible without fabricated passed states'
 })
 test('work route mounts the progress panel once above the unchanged list and legacy journal remains compatible',()=>{
  const page=fs.readFileSync('src/app/local-backup/work/page.tsx','utf8'),overview=fs.readFileSync('src/app/local-backup/local-backup-overview.tsx','utf8'),source=fs.readFileSync(component,'utf8')
- assert(page.indexOf('<ProjectProgressPanel/>')<page.indexOf('<LocalBackupWorkPanel'));assert.equal(page.match(/<ProjectProgressPanel\/>/g).length,1);assert(overview.includes("journal:'/local-backup/work#journal'"));assert(source.includes("window.location.hash==='#journal'"));assert(source.includes("getElementById('project-progress')"))
+ assert(page.indexOf('<ProjectProgressPanel/>')<page.indexOf('<LocalBackupWorkPanel'));assert.equal(page.match(/<ProjectProgressPanel\/>/g).length,1);assert(overview.includes("journal:'/local-backup/work#journal'"));assert(source.includes("anchor==='journal'"));assert(source.includes("getElementById('project-progress')"))
  assert(!source.includes('setInterval'));assert(!source.includes('dangerouslySetInnerHTML'));assert(fs.readFileSync('src/app/local-backup/progress/progress.module.css','utf8').includes('@media(max-width:600px)'))
 })
 test('isolated confirmed-count changes never fabricate a whole-project percentage',async()=>{

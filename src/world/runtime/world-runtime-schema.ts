@@ -135,6 +135,9 @@ export type WorldRuntimeStoreAdapter = {
   kind: WorldRuntimeStoreAdapterKind
   readNatural?: (input: NaturalWorldRuntimeReadInput) => Promise<NaturalWorldRuntimeReadResult>
   writeNatural?: (input: NaturalWorldRuntimeWriteInput) => Promise<NaturalWorldRuntimeWriteResult>
+  writeNaturalTransition?: (input: NaturalWorldTransitionWriteInput) => Promise<NaturalWorldTransitionWriteResult>
+  readNaturalTransition?: (input: NaturalWorldTransitionQuery) => Promise<NaturalWorldTransitionReadResult>
+  recoverNaturalTransition?: (input: NaturalWorldTransitionQuery) => Promise<NaturalWorldTransitionWriteResult>
   read(input?: { filePath?: string; ownerId?: string; worldId?: string }): Promise<WorldRuntimeStoreReadResult>
   write(input: {
     record: WorldRuntimeSaveRecord
@@ -213,4 +216,54 @@ export type NaturalWorldRuntimeWriteResult = WorldRuntimeStoreWriteResult & {
   recordContentSha256?: string
   tick?: number
   stateVersion?: number
+}
+
+/** ARCH 4.4 persistence transport. These references bind evidence; their shape
+ * alone never attests source, model, validator or production qualification. */
+export type WorldEvolutionRef = { id: string; version: string; sha256: string }
+export type WorldEvolutionBefore = {
+  expectedTick: number; expectedStateVersion: number; expectedFileSha256: string
+  worldFactsPayloadSha256: string; statePayloadSha256: string; recordContentSha256: string
+}
+export type WorldEvolutionEvidence = {
+  kind: "evolution"; capabilityRef: WorldEvolutionRef; modelRef: WorldEvolutionRef
+  inputRef: WorldEvolutionRef; outputRef: WorldEvolutionRef; validatorRef: WorldEvolutionRef
+} | {
+  kind: "maintenance"
+  maintenanceContext: {
+    targetPolicyRef: WorldEvolutionRef; targetRuleVersion: string; targetModelRef: WorldEvolutionRef
+    migrationEvidenceRef: WorldEvolutionRef; executorId: string
+  }
+  migrationArtifactRef: WorldEvolutionRef; validationRef: WorldEvolutionRef
+}
+export type NaturalWorldEvolutionEvent = {
+  schemaVersion: "world-evolution-event-v1"; identity: NaturalWorldIdentity
+  eventId: string; businessKey: string; cursor: number; eventKind: "evolution" | "maintenance"
+  fromTick: number; toTick: number; fromStateVersion: number; toStateVersion: number
+  before: WorldEvolutionBefore
+  interval: { logicalStartUtc: string; logicalEndUtc: string; durationSeconds: number }
+  policyRef: WorldEvolutionRef; externalInputRefs: WorldEvolutionRef[]
+  historyInputRef: WorldEvolutionRef
+  evidence: WorldEvolutionEvidence
+  changes: { fieldId: string; operation: "set" | "replace"; beforeValueSha256: string; newValue: NaturalWorldJson; reasonRefs: string[] }[]
+  reasonRefs: string[]; previousEventSha256: string | null; domainAfterSha256: string; eventSha256: string
+}
+export type NaturalWorldTransitionWriteInput = {
+  record: NaturalWorldRuntimeRecordInput; event: NaturalWorldEvolutionEvent
+  expectedTick: number; expectedStateVersion: number; expectedFileSha256: string
+}
+export type NaturalWorldTransitionQuery = { identity: NaturalWorldIdentity; businessKey: string }
+export type NaturalWorldTransitionReceipt = {
+  schemaVersion: "world-evolution-receipt-v1"; identity: NaturalWorldIdentity
+  businessKey: string; eventId: string; eventSha256: string
+  fileSha256: string; recordContentSha256: string
+  tick: number; stateVersion: number; eventCursor: number
+  transportOnly: true; productionReady: false
+}
+export type NaturalWorldTransitionWriteResult = WorldRuntimeStoreWriteResult & {
+  receipt?: NaturalWorldTransitionReceipt; replayed?: boolean
+}
+export type NaturalWorldTransitionReadResult = {
+  status: "found" | "empty" | "invalid"; path: string; message: string
+  receipt: NaturalWorldTransitionReceipt | null; event: NaturalWorldEvolutionEvent | null
 }

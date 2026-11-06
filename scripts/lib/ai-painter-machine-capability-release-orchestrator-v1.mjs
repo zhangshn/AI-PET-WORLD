@@ -9,24 +9,95 @@ import {
   RUNTIME_AUTONOMY_CONTRACT_ID,
   RUNTIME_AUTONOMY_POLICY_PATH,
   TRUSTED_RELEASE_REGISTRY_PATH,
+  FIRST_WEATHER_SCOPED_VERSION,
+  weatherReleaseProfile,
+  scopedWeatherRegistryBindingAtRelease,
+  recomputeScopedWeatherReleaseDomain,
+  verifyScopedWeatherReleaseLifecycle,
+  assertNoScopedWeatherBindings,
+  assertUnreservedWeatherVersion,
+  inspectCapabilityScopeAdmission,
+  verifyScopedWeatherReleaseForLifecycle,
+  assertSupportedCapabilityScope,
   loadAndValidateReleasedCapabilityBinding,
   sha256Of,
 } from "./ai-painter-autonomous-package-decision-core-v3.mjs";
 import { advanceCapabilityLifecycle } from "./ai-painter-capability-lifecycle-v1.mjs";
+import { WEATHER_VERSION, FIRST_WEATHER_VERSION, requireWeatherProductionAdmission } from "./world-weather-release-policy.mjs";
+import { types } from "node:util";
 
 export const RELEASE_LEDGER_PATH = ".runtime/ai-painter/capability-release-ledger.sqlite";
 
+// Reconcile only an already committed release. No registry, release, or ledger writes.
+export function reconcilePublishedFirstWeatherLifecycle(root = process.cwd()) {
+  return reconcilePublishedScopedWeatherLifecycle(root,FIRST_WEATHER_SCOPED_VERSION);
+}
+export function reconcilePublishedScopedWeatherLifecycle(root,version) {
+  const profile=weatherReleaseProfile(version);
+  assert(profile,"unknown scoped weather lifecycle");
+  const capabilityReleasePath=profile.releasePath;
+  const trustedReleaseRegistryPath=TRUSTED_RELEASE_REGISTRY_PATH;
+  const releaseBinding={capabilityReleasePath,trustedReleaseRegistryPath,requiredCapabilityScope:"world_evolution"};
+  verifyScopedWeatherReleaseForLifecycle(version,{projectRoot:root,...releaseBinding});
+  const releaseBytes=fs.readFileSync(resolveExisting(root,capabilityReleasePath));
+  const release=JSON.parse(releaseBytes);
+  const state=advanceCapabilityLifecycle({root,capabilityVersion:version,targetState:"released",releaseBinding,
+    recordedAtUtc:release.recordedAtUtc,evidence:{schemaVersion:"ai-painter-capability-stage-evidence-v1",
+      capabilityVersion:version,targetState:"released",status:"passed",
+      bindings:[{path:capabilityReleasePath,sha256:sha256Of(releaseBytes)},
+        scopedWeatherRegistryBindingAtRelease(root,version)]}});
+  const verified=loadAndValidateReleasedCapabilityBinding({projectRoot:root,...releaseBinding});
+  return {status:state.state,releasePath:capabilityReleasePath,releaseSha256:verified.capabilityReleaseSha256,registryWrites:0};
+}
+
 export function publishMachineAdjudicatedCapability(draft, {
-  root = process.cwd(), expectedRegistryRevision, recordedAtUtc = new Date().toISOString(),
+  root = process.cwd(), expectedRegistryRevision, recordedAtUtc = new Date().toISOString(), requiredCapabilityScope,
 } = {}) {
-  validateDraft(draft, root);
+  assert(draft && typeof draft === "object" && !types.isProxy(draft)
+    && [Object.prototype,null].includes(Object.getPrototypeOf(draft)), "ordinary release draft required");
+  for (const key of ["modelCapabilityVersion","capabilityReleaseIdentity","capabilityScope","requiredCapabilityScope"]) {
+    const property = Object.getOwnPropertyDescriptor(draft,key);
+    assert(!property || Object.hasOwn(property,"value"), "release scope accessors rejected");
+  }
+  const weatherVersion=[WEATHER_VERSION,FIRST_WEATHER_VERSION].find(v=>v===draft.modelCapabilityVersion || v===draft.capabilityReleaseIdentity);
+  if (weatherVersion
+      && [undefined,"world_evolution"].includes(requiredCapabilityScope)) {
+    requireWeatherProductionAdmission(root,weatherVersion);
+  }
+  const scopedWeather = weatherReleaseProfile(draft.capabilityReleaseIdentity) ?? weatherReleaseProfile(draft.modelCapabilityVersion);
+  if (scopedWeather) {
+    assert(requiredCapabilityScope === "world_evolution", "scoped weather requires explicit world_evolution");
+    assert(Reflect.ownKeys(draft).length === 1 && Object.hasOwn(draft,"capabilityReleaseIdentity")
+      && draft.capabilityReleaseIdentity === scopedWeather.version, "weather release accepts only its fixed identity; caller evidence rejected");
+    const domain = recomputeScopedWeatherReleaseDomain(root,scopedWeather.version);
+    verifyScopedWeatherReleaseLifecycle(root,scopedWeather.version,["machine_release_adjudicated"]);
+    draft = {
+      schemaVersion: "ai-painter-capability-release-draft-v1",
+      capabilityReleaseIdentity: scopedWeather.version, modelCapabilityVersion: scopedWeather.version,
+      bindings: domain.bindings, programLineage: domain.programLineage, releaseEvidence: domain.releaseEvidence,
+      lifecycleRoot: `.runtime/ai-painter/capability-lifecycle/${scopedWeather.version}`,
+      ownerAuthorizationRequired: false, ownerDecisionUsed: false, maxInfrastructureRecoveryAttempts: 0,
+      outputRoot: null, ticketIssuer: null,
+    };
+  } else {
+    assertSupportedCapabilityScope(requiredCapabilityScope);
+    assertUnreservedWeatherVersion(draft.modelCapabilityVersion,draft.capabilityReleaseIdentity);
+    assertNoScopedWeatherBindings(draft.bindings);
+  }
+  for (const key of ["capabilityScope","requiredCapabilityScope"]) {
+    if (Object.hasOwn(draft,key)) assertSupportedCapabilityScope(draft[key]);
+  }
+  validateDraft(draft, root, scopedWeather);
   const registryPath = resolveExisting(root, TRUSTED_RELEASE_REGISTRY_PATH);
+  if (scopedWeather) inspectCapabilityScopeAdmission({projectRoot:root, requiredCapabilityScope:"world_evolution"});
   const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
   assert(registry.schemaVersion === "ai-painter-capability-release-registry-v2", "release registry schema mismatch");
   assert(registry.uniqueWriter?.identity === RELEASE_ORCHESTRATOR_IDENTITY, "release registry writer mismatch");
   assert(registry.uniqueWriter?.compareAndSwapRevisionRequired === true && registry.uniqueWriter?.sqliteTransactionRequired === true, "release registry transaction contract mismatch");
   assert(registry.trustBoundary?.ownerDecisionAcceptedAsReleaseAuthority === false, "Owner decision cannot be release authority");
   assert(registry.registryRevision === expectedRegistryRevision, "release registry revision conflict");
+  if (scopedWeather) assert(`${registry.releaseRoot}/${draft.capabilityReleaseIdentity}/release.json` === scopedWeather.releasePath,
+    "weather registry release root differs");
   assert(!registry.releaseRecords.some((record) => record.capabilityReleaseIdentity === draft.capabilityReleaseIdentity), "capability release identity already exists");
 
   const policyPath = resolveExisting(root, RUNTIME_AUTONOMY_POLICY_PATH);
@@ -59,6 +130,8 @@ export function publishMachineAdjudicatedCapability(draft, {
   const releaseRelativePath = `${releaseRelativeRoot}/release.json`;
   const adjudication = {
     schemaVersion: MACHINE_RELEASE_ADJUDICATION_SCHEMA,
+    ...(scopedWeather && {capabilityScope:"world_evolution",
+      adjudicatedStage:{path:`${draft.lifecycleRoot}/${lifecycleState.latestEvidence.path}`, sha256:lifecycleState.latestEvidence.sha256}}),
     adjudicationId: `machine-adjudication-${draft.capabilityReleaseIdentity}`,
     status: "released", writerIdentity: RELEASE_ORCHESTRATOR_IDENTITY,
     capabilityReleaseIdentity: draft.capabilityReleaseIdentity,
@@ -72,18 +145,19 @@ export function publishMachineAdjudicatedCapability(draft, {
   fs.writeFileSync(path.join(staging, "machine-release-adjudication.json"), adjudicationBytes, { flag: "wx" });
   const release = {
     schemaVersion: CAPABILITY_RELEASE_SCHEMA,
+    ...(scopedWeather && {capabilityScope:"world_evolution"}),
     capabilityReleaseIdentity: draft.capabilityReleaseIdentity,
     status: "released", modelCapabilityVersion: draft.modelCapabilityVersion,
     runtimeAutonomyPolicy: {
       contractId: RUNTIME_AUTONOMY_CONTRACT_ID, path: RUNTIME_AUTONOMY_POLICY_PATH,
-      sha256: policySha256, allowedInternalActions: policy.releasedCapabilityInternalActions,
+      sha256: policySha256, allowedInternalActions: scopedWeather ? [] : policy.releasedCapabilityInternalActions,
       maxInfrastructureRecoveryAttempts: draft.maxInfrastructureRecoveryAttempts,
     },
     bindings: verifiedBindings,
     machineReleaseAdjudication: { path: adjudicationRelativePath, sha256: adjudicationSha256 },
-    ticketIssuer: { ...draft.ticketIssuer, publicKeyPath: normalize(draft.ticketIssuer.publicKeyPath) },
+    ticketIssuer: scopedWeather ? null : { ...draft.ticketIssuer, publicKeyPath: normalize(draft.ticketIssuer.publicKeyPath) },
     programLineage: draft.programLineage,
-    outputRoot: normalize(draft.outputRoot),
+    outputRoot: scopedWeather ? null : normalize(draft.outputRoot),
     createdBy: RELEASE_ORCHESTRATOR_IDENTITY, ownerDecisionUsed: false, recordedAtUtc,
   };
   const releaseBytes = bytesOf(release);
@@ -92,14 +166,15 @@ export function publishMachineAdjudicatedCapability(draft, {
 
   const nextRevision = expectedRegistryRevision + 1;
   const record = {
+    ...(scopedWeather && {capabilityScope:"world_evolution"}),
     capabilityReleaseIdentity: draft.capabilityReleaseIdentity,
     status: "released_trusted", registryRevision: nextRevision,
     releasePath: releaseRelativePath, releaseSha256, policyContractSha256: policySha256,
     bindingSetSha256, machineReleaseAdjudicationPath: adjudicationRelativePath,
     machineReleaseAdjudicationSha256: adjudicationSha256,
-    ticketIssuerIdentity: draft.ticketIssuer.identity,
-    ticketIssuerKeyId: draft.ticketIssuer.keyId,
-    ticketIssuerPublicKeySha256: draft.ticketIssuer.publicKeySha256,
+    ticketIssuerIdentity: draft.ticketIssuer?.identity ?? null,
+    ticketIssuerKeyId: draft.ticketIssuer?.keyId ?? null,
+    ticketIssuerPublicKeySha256: draft.ticketIssuer?.publicKeySha256 ?? null,
   };
   const nextRegistry = { ...registry, status: "active_with_capability_release", registryRevision: nextRevision, releaseRecords: [...registry.releaseRecords, record] };
   const ledgerPath = resolveInside(root, RELEASE_LEDGER_PATH);
@@ -132,7 +207,9 @@ export function publishMachineAdjudicatedCapability(draft, {
     throw error;
   } finally { db.close(); }
 
-  const verified = loadAndValidateReleasedCapabilityBinding({ projectRoot: root, capabilityReleasePath: releaseRelativePath, trustedReleaseRegistryPath: TRUSTED_RELEASE_REGISTRY_PATH });
+  const releaseBinding = { capabilityReleasePath: releaseRelativePath, trustedReleaseRegistryPath: TRUSTED_RELEASE_REGISTRY_PATH,
+    ...(scopedWeather && {requiredCapabilityScope:"world_evolution"}) };
+  let verified = scopedWeather ? null : loadAndValidateReleasedCapabilityBinding({projectRoot:root,...releaseBinding});
   const releasedState = advanceCapabilityLifecycle({
     root, capabilityVersion: draft.modelCapabilityVersion, targetState: "released",
     evidence: {
@@ -140,13 +217,14 @@ export function publishMachineAdjudicatedCapability(draft, {
       capabilityVersion: draft.modelCapabilityVersion, targetState: "released", status: "passed",
       bindings: [{ path: releaseRelativePath, sha256: releaseSha256 }, { path: TRUSTED_RELEASE_REGISTRY_PATH, sha256: sha256File(registryPath) }],
     },
-    releaseBinding: { capabilityReleasePath: releaseRelativePath, trustedReleaseRegistryPath: TRUSTED_RELEASE_REGISTRY_PATH },
+    releaseBinding,
     recordedAtUtc,
   });
+  if (scopedWeather) verified = loadAndValidateReleasedCapabilityBinding({projectRoot:root,...releaseBinding});
   return { status: "released", capabilityReleaseIdentity: draft.capabilityReleaseIdentity, releasePath: releaseRelativePath, releaseSha256, registryRevision: nextRevision, registrySha256: sha256File(registryPath), lifecycleState: releasedState.state, verificationStatus: verified.verificationStatus, ownerAuthorizationRequired: false };
 }
 
-function validateDraft(draft, root) {
+function validateDraft(draft, root, scopedWeather) {
   assert(draft?.schemaVersion === "ai-painter-capability-release-draft-v1", "release draft schema mismatch");
   assert(/^[a-z0-9][a-z0-9-]{7,127}$/.test(draft.capabilityReleaseIdentity ?? ""), "release identity is invalid");
   assert(/^[a-z0-9][a-z0-9-]{7,127}$/.test(draft.modelCapabilityVersion ?? ""), "model capability version is invalid");
@@ -158,6 +236,11 @@ function validateDraft(draft, root) {
   for (const digest of Object.values(draft.programLineage)) assert(/^[a-f0-9]{64}$/.test(digest), "program lineage SHA-256 is invalid");
   assert(Number.isInteger(draft.maxInfrastructureRecoveryAttempts) && draft.maxInfrastructureRecoveryAttempts >= 0 && draft.maxInfrastructureRecoveryAttempts <= 3, "release recovery limit is invalid");
   assert(typeof draft.lifecycleRoot === "string" && draft.lifecycleRoot.startsWith(".runtime/ai-painter/capability-lifecycle/"), "release lifecycle root is invalid");
+  if (scopedWeather) {
+    assert(draft.outputRoot === null && draft.ticketIssuer === null && draft.maxInfrastructureRecoveryAttempts === 0,
+      "weather domain cannot receive generic runtime authority");
+    return;
+  }
   assert(typeof draft.outputRoot === "string" && draft.outputRoot.startsWith(".runtime/ai-painter/") && !draft.outputRoot.includes("..") && !draft.outputRoot.includes("\\"), "release outputRoot is invalid");
   assert(draft.ticketIssuer?.identity && draft.ticketIssuer?.keyId, "ticket issuer identity is required");
   verifyBinding(root, { path: draft.ticketIssuer.publicKeyPath, sha256: draft.ticketIssuer.publicKeySha256 }, "ticketIssuer");

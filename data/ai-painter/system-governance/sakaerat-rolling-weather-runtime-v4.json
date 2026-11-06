@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "sakaerat-rolling-weather-runtime-v4",
+  "version": "sakaerat-weather-153-rolling-v4",
+  "requiredCapabilityScope": "world_evolution",
+  "identity": {
+    "ownerId": "mvp-natural-owner-001",
+    "playerId": "mvp-natural-player-001",
+    "worldId": "mvp-natural-world-001",
+    "worldSeed": "mvp-natural-world-001-seed-v1",
+    "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "regionId": "mvp-natural-region-001"
+  },
+  "anchor": {
+    "tick": 1,
+    "stateVersion": 2,
+    "eventCursor": 2,
+    "fileSha256": "4c8c0a75116947cdb7a8629663f51752ee53352a29592b37147bfe226bcc1dd4",
+    "eventSha256": "110228dae10ae1f11f511395aec1065fdb3c6adefdf70832d0a896060a717ea7",
+    "businessKey": "7412d747bfa104f06a6c1796a8bca44a38123c724018c858563b36ee9dbeb61f",
+    "historyValueSha256": "b492c5d4dc5f7ffde40f679569b7fed0780b8c2b8b3b3cd3541e65deec0fd288",
+    "inputSha256": "9dd1328a722c7b8719b0719def007def72a21fb6938e2c1a43091a5c2c015733"
+  },
+  "maximumNewSteps": 2,
+  "maximumModelForwards": 2,
+  "maximumServerActivations": 2,
+  "maximumRunSeconds": 180,
+  "formalWritesMaximum": 2,
+  "automaticModelRetries": 0,
+  "clock": {
+    "simulationEpochUtc": "2020-01-08T00:00:00.000Z",
+    "stepSeconds": 86400,
+    "scheduleIntervalSeconds": 15,
+    "modelHorizonSeconds": 86400,
+    "downtimeMode": "freeze",
+    "maxCatchupSteps": 0,
+    "maxCatchupLogicalSeconds": 0
+  },
+  "workerLimits": {
+    "actualLaunches": 1,
+    "actualModelForwardsMaximum": 1,
+    "formalWorldWrites": 1,
+    "maintenanceWrites": 0,
+    "automaticRetry": 0,
+    "cpuThreadsMaximum": 2,
+    "maxCommittedMemoryMiB": 1536,
+    "gpu": false,
+    "vramMiB": 0,
+    "network": false,
+    "trainingUpdates": 0,
+    "minimumFreeDiskMiB": 2048,
+    "artifactBytesMaximum": 16777216,
+    "artifactFilesMaximum": 256,
+    "logBytesPerStreamMaximum": 8388608,
+    "workerSecondsMaximum": 30,
+    "runSecondsMaximum": 180,
+    "heartbeatSeconds": 1,
+    "staleSeconds": 10
+  },
+  "sourceBudget": {
+    "path": "data/ai-painter/system-governance/sakaerat-first-weather-execution-budget-v1.json",
+    "sha256": "e0d6bf6988f29ce9129a857d6dfcb67aa5b46430a279e41b266226200b154d2a",
+    "bytes": 4656
+  },
+  "model": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-humidity-153-20261029/model-run-v1/checkpoint.pt",
+    "sha256": "36a5e5973228295f38392b50680868331caab7b1588e3fc10f54d2f084ce05c8",
+    "trainingContractSha256": "fef9030883c521274683f6bb09806904dfcd0faeeb4b44c4406e89405df453e0",
+    "trainingDatasetSha256": "c29de6e73c6243df25d636204d972ec9597b83722492b0f82b778c33f7b2847f"
+  },
+  "interpreter": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-background-166-20261031/model/interpreter-contract.json",
+    "sha256": "303f5dc4a945c20c9d71c7b1cf605ab910dca3f788104541942763fcf8b5625d",
+    "bytes": 1640
+  },
+  "policyPath": "data/ai-painter/system-governance/mvp-natural-world-weather-policy-v4.json",
+  "runner": {
+    "path": "scripts/lib/world-rolling-weather-runtime.mjs",
+    "sha256": "93be031650b68e46472bb7d91ace48c604ffd0e4dd4e4b98a3fedeca3f104689",
+    "bytes": 32476
+  },
+  "entry": {
+    "path": "scripts/run-world-rolling-weather.mjs",
+    "sha256": "9f7b17e61cefdda16ffb3601cf888362df59f159dceca1d465f9db813248d9c9",
+    "bytes": 235
+  },
+  "worker": {
+    "path": "ml/ai-painter/scripts/world_rolling_weather_runtime.py",
+    "sha256": "05fc8a812165deac47373adc6a4d4008ae422aabdf13519274d114b90a0096eb",
+    "bytes": 6046
+  },
+  "rollingInput": {
+    "path": "scripts/lib/world-rolling-weather-input.mjs",
+    "sha256": "784531f06962b77dda2fa7e32864a04ed4f5f3fb279ccfe24a863924aa260218",
+    "bytes": 9483
+  },
+  "sharedForecast": {
+    "path": "ml/ai-painter/scripts/world_weather_committed_forward.py",
+    "sha256": "01f6c20ae2b4911c4d1f976e9bb1fd4fe19d863f68fbd9a4eda4567935d8ef98",
+    "bytes": 5392
+  },
+  "qualification": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-server-rolling-schedule-190-20261103/qualification-evidence.json",
+    "sha256": "64c49d65a766051d3f881960d0feeb95a55a128e65b23519f9357572c7d1c458"
+  }
+}

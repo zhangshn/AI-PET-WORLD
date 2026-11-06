@@ -120,6 +120,43 @@ decode_1入口卷积的独立CPU精度候选已按主体1.91及`ai-painter-decod
 
 分段交付采用业务规格第3.2节：原始自然世界，随后人格映射与性格驱动行动，最后房屋视觉及角色自主修路、种植、基建和社区建设。本切片成功仅证明所验场景，不等于正式Stage0、完整Stage4或整体MVP验收。
 
+### 3.1 固定一个世界的交付基线
+
+当前先固定一个自然世界，作为从生成到持续运行的贯穿交付对象。本步骤是模块7既有工作的聚合视图，不增加第二套计划或统计分母；详细结构为第9节同一JSON中的currentDelivery，引用原叶子工作项。具体worldId、候选路径、运行时间、状态和证据保存到机器记录，不能在正式计划内补写为已完成。
+
+1. **固定身份**：绑定实际worldId、regionId、种子、世界配置、规则版本及初始tick/stateVersion，核对所有者／玩家关联、来源、事实、状态和条件的真实摘要。优先复用适用的既有候选，不为重新统计而重建世界。
+2. **确认初始内容**：核对地形、水体、植被与环境，区分来源事实、气候背景、模拟场景和缺失项；确认视觉条件对应同一世界、同一状态，不能以训练样本PNG或聊天说明替代。
+3. **确认保存恢复**：复用原Store，在隔离候选范围保存并由独立进程读取；比较身份、事实与状态、规则、时间／版本、事件游标和随机状态。通用组件通过不等于本轮选定世界已完成这一验证。
+4. **列清接入缺口**：将绘图、模型演化、记忆实际消费、审核／RuntimeFrame及服务器持续运行映射至原计划项，逐项注明实际实现、缺口、证据与下一交付。基线通过不等于持续运行或完整MVP通过。
+
+交付为同一世界身份及产物绑定、初始内容对照、独立保存恢复结果和接入缺口。当前步骤不要求先训练、改变模型路线、增加人物动物建设，亦不把完整产品的后置模块倒置成基线前置。只有当前世界证据足够时才判断本步通过；没有绑定时明确显示“本轮世界基线尚未登记”，不得用已有组件完成率推算本轮完成率。
+
+### 3.2 同一世界交付与持续运行关系图
+
+此图按业务WORLD-AUTO-001至004和总体架构第2.0.1节展示目标关系，图上节点不表示已经实现。当前步骤为固定世界、核对初始状态及独立保存恢复；其余为后续接入。状态提交与画面发布分别验收，客户端连接不控制服务器世界生命周期。
+
+```mermaid
+flowchart TD
+    Source[已批准区域与真实来源] --> Identity[固定世界身份 种子与规则版本]
+    Identity --> Initial[同一世界初始事实 状态与条件]
+    Initial --> Store[原Store保存与独立进程恢复]
+    Store --> Baseline[当前交付 世界基线与接入缺口]
+    Baseline --> Server[服务器按合同调度]
+    Server --> Read[读取同一世界当前状态与相关历史]
+    Read --> Model[本地模型计算候选变化]
+    Model --> Validate[校验身份 前态 时间 合法范围与重复事件]
+    Validate --> Commit[原子保存状态 事件与记忆]
+    Commit --> Read
+    Commit --> Visual[派生变化后的视觉事实与条件]
+    Visual --> Painter[合格Painter生成与适用审核]
+    Painter --> Frame[发布绑定世界状态的RuntimeFrame]
+    Frame --> Client[客户端读取与合法交互]
+    Client --> Request[合法交互经校验进入世界执行]
+    Request --> Server
+    Commit --> Restart[服务器恢复同一状态与事件位置]
+    Restart --> Server
+```
+
 ## 4. 历史阶段计数与当前进度
 
 旧程序的`progress()`在`scripts/lib/ai-painter-stage4-direct-clean-latent-cpu-support-v1.mjs`及`scripts/lib/ai-painter-stage4-direct-clean-latent-readonly-gpu-v1.mjs`固定返回`completedStages=3`、`totalStages=5`、`percent=60`。这证明数值的代码来源，不证明五个阶段的业务名称、前三项成功验收或跨候选继承。机器原字段与历史记录保留，不通过文档重写旧计数。
@@ -194,10 +231,10 @@ WorldFacts是世界事实权威。条件、模型RGB、审核与Runtime的职责
 
 每项的组件、生产采用、质量或整链范围以deliverable和doneWhen为准；共有能力按主归属交付，其他模块依赖引用。条件依赖写于requirementRefs，只在对应人物／动物／疾病子范围适用，不反向阻塞自然先行或人物最小行动。生命模型训练归模块6，不从模块2静态地图质量继承。
 
-工作项版本：`work-plan-139-v1`。这段机器展开是唯一计划的一部分，不是第二计划源；实时完成、剩余、证据及比例由受限状态投影给出。
+工作项版本：`work-plan-141-v1`。这段机器展开是唯一计划的一部分，不是第二计划源；实时完成、剩余、证据及比例由受限状态投影给出。
 
 ```json
-{"schemaVersion":"whole-product-work-plan-v1","version":"work-plan-139-v1","items":[
+{"schemaVersion":"whole-product-work-plan-v1","version":"work-plan-141-v1","items":[
 {"id":"PLAN-01-001","moduleId":"1","title":"权威文档与执行职责","deliverable":"有效文档权威链及本地AI／外部执行职责边界。","doneWhen":"必读链、唯一计划、文档唯一修改职责及本地日常自主边界在现行正式文件一致定义并经核对。","dependsOn":[],"requirementRefs":["AGENTS.md §1/3/6","DOCUMENT-AUTHORITY GOV-OWNER-001"]},
 {"id":"PLAN-01-002","moduleId":"1","title":"全量文档检查通过","deliverable":"正式文档的版本、链接、元数据及编码检查。","doneWhen":"现行文档治理、文档策略和源码编码检查全部通过，无遗留违反项。","dependsOn":["PLAN-01-001"],"requirementRefs":["AGENTS.md §4","CURRENT_EXECUTION_GUIDE module1"]},
 {"id":"PLAN-01-003","moduleId":"1","title":"历史规范不可变读取","deliverable":"历史规范按原始字节和用途读取，与现行规范隔离。","doneWhen":"精确SHA／大小绑定、缺原件不回退、篡改和读取竞态拒绝等既有读取器测试通过；环境未执行反例单独保留。","dependsOn":["PLAN-01-001"],"requirementRefs":["AI-PAINTER-SPEC §17","DIRECTORY_STRUCTURE document-baselines"]},
@@ -332,5 +369,129 @@ WorldFacts是世界事实权威。条件、模型RGB、审核与Runtime的职责
 {"id":"PLAN-09-022","moduleId":"9","title":"总计划工作项展开与比例计算","deliverable":"总计划工作项展开与比例计算","doneWhen":"9模块固定原子交付完整分解，实际证据核验后重算总/模块比例并保留版本","dependsOn":[],"requirementRefs":["Owner139 pending LB-PROGRESS006"]},
 {"id":"PLAN-09-023","moduleId":"9","title":"分层交互和里程碑进度呈现","deliverable":"分层交互和里程碑进度呈现","doneWhen":"默认总图9摘要，模块/单项/证据逐层展开，具体已完成和剩余分列，真实时点不造工期","dependsOn":[],"requirementRefs":["Owner139 UX"]},
 {"id":"PLAN-09-024","moduleId":"9","title":"现行规范的兼容事实适用与常驻读回","deliverable":"旧兼容事实在现行规格／清单版本的有效适用与常驻归集读回。","doneWhen":"本地核验器按当前规范重新核对兼容来源，原件保持不可变，现行事实适用身份无冲突，独立读回宿主／闭包和真实归集水位。","dependsOn":["PLAN-09-020"],"requirementRefs":["LB-PROGRESS-004","LB-PROGRESS-005","LB-PROGRESS-006"]}
-]}
+],
+"currentDelivery":{
+  "id": "WORLD-BASELINE-001",
+  "title": "固定一个世界：从生成到持续运行的交付基线",
+  "objective": "先固定一个可追溯、可保存恢复的自然世界；后续绘图、模型演化、历史记忆和服务器持续运行都围绕同一世界验证。",
+  "scope": [
+    "采用已批准泰国首区，复用已有真实来源、初始化、条件和存档组件。",
+    "固定身份、核对初始内容、验证独立进程恢复，并列明后续接入缺口。"
+  ],
+  "nonGoals": [
+    "本步不启动训练或宣告模型画质通过。",
+    "不把初始化和存档通过当作世界已经持续自主运行。",
+    "不扩展人物、动物、建设、第二后台或第二套计划。"
+  ],
+  "steps": [
+    {
+      "id": "WORLD-BASELINE-001-IDENTITY",
+      "title": "固定世界身份",
+      "actions": [
+        "核对可复用候选的实际来源和适用范围。",
+        "绑定同一worldId、regionId、worldSeed、worldProfileId、ruleVersion与初始tick/stateVersion；保留实际owner/player关联。",
+        "将身份和原始产物摘要写入可追溯的基线记录，不从聊天或展示文案推测。"
+      ],
+      "deliverable": "固定世界身份及来源/事实/状态/条件的精确产物绑定。",
+      "doneWhen": "实际身份字段、产物和摘要一致；后继任务能明确选择这一世界，不误取其他样本或旧Run。",
+      "planItemIds": [
+        "PLAN-07-001",
+        "PLAN-07-002"
+      ]
+    },
+    {
+      "id": "WORLD-BASELINE-001-FACTS",
+      "title": "确认初始自然内容",
+      "actions": [
+        "逐项核对地形、水体、植被和环境的真实来源及已生成状态。",
+        "区分实际事实、来源背景、模拟初始场景和缺失项。",
+        "确认视觉事实及23通道属于同一世界和同一初始状态。"
+      ],
+      "deliverable": "初始自然事实、环境状态与条件对应清单，包含缺口和来源。",
+      "doneWhen": "所列内容可由实际产物读回；缺失内容明确保留，未把参考图或训练图当作新世界事实。",
+      "planItemIds": [
+        "PLAN-07-001",
+        "PLAN-07-002"
+      ]
+    },
+    {
+      "id": "WORLD-BASELINE-001-RESTORE",
+      "title": "验证同一世界保存恢复",
+      "actions": [
+        "复用原Store和隔离的候选存档，不覆盖正式世界。",
+        "保存后用独立进程读取，比较身份、事实/状态摘要、规则、tick、stateVersion、事件游标和随机状态。",
+        "确认失败、错世界、过期前态和重复写入不会伪装成功。"
+      ],
+      "deliverable": "同一固定世界的保存/独立恢复回执及一致性结果。",
+      "doneWhen": "真实独立进程恢复与基线一致，证据绑定本轮世界；已有通用组件测试只作为复用依据。",
+      "planItemIds": [
+        "PLAN-07-003"
+      ]
+    },
+    {
+      "id": "WORLD-BASELINE-001-GAPS",
+      "title": "列清后续闭环接入缺口",
+      "actions": [
+        "分别列出绘图、模型演化、历史记忆、审核/帧发布和无客户端持续运行的已实现与缺失部分。",
+        "每个缺口引用现有工作项、实际代码或证据，以及下一项可检查的交付。",
+        "区分当前基线验收、自然世界闭环和完整产品MVP。"
+      ],
+      "deliverable": "从同一世界基线到持续运行的缺口与依赖对照。",
+      "doneWhen": "各环节具有具体结论和依据；未知/未实现不写成通过，不新建第二张计划表。",
+      "planItemIds": [
+        "PLAN-07-004",
+        "PLAN-07-005",
+        "PLAN-07-006",
+        "PLAN-07-007",
+        "PLAN-07-008",
+        "PLAN-07-009",
+        "PLAN-07-010",
+        "PLAN-07-011",
+        "PLAN-07-012",
+        "PLAN-07-013",
+        "PLAN-07-014",
+        "PLAN-07-015",
+        "PLAN-07-016",
+        "PLAN-07-017"
+      ]
+    }
+  ],
+  "documents": [
+    {
+      "path": "docs/BUSINESS_SPEC.md",
+      "section": "2.2.1—2.2.4、3.2",
+      "label": "业务目标：服务器世界、模型演化、记忆及自然世界先行"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "section": "2.0.1",
+      "label": "业务架构：状态、模型、校验、保存与画面责任"
+    },
+    {
+      "path": "docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md",
+      "section": "0.8.1",
+      "label": "本地模型与程序执行边界"
+    },
+    {
+      "path": "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md",
+      "section": "3.1",
+      "label": "当前详细交付与完成标准"
+    },
+    {
+      "path": "docs/LOCAL_BACKUP_AND_WORK_LEDGER_SPEC.md",
+      "section": "LB-PROGRESS-007",
+      "label": "平台计划、进度、文档和图的展示合同"
+    }
+  ],
+  "diagram": {
+    "path": "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md",
+    "section": "3.2 同一世界交付与持续运行关系图"
+  },
+  "next": [
+    "完成固定世界基线后，分别推进适用绘图资格与最小模型演化。",
+    "通过原Runtime校验提交状态和历史，再生成对应合法画面。",
+    "独立验证无客户端持续运行、服务器重启和同世界重入。"
+  ]
+}
+}
 ```

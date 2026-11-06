@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "world-weather-initial-maintenance-contract-v1",
+  "contractId": "sakaerat-bootstrap-weather-maintenance-v1",
+  "identity": {
+    "ownerId": "mvp-natural-owner-001",
+    "playerId": "mvp-natural-player-001",
+    "worldId": "mvp-natural-world-001",
+    "worldSeed": "mvp-natural-world-001-seed-v1",
+    "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "regionId": "mvp-natural-region-001"
+  },
+  "before": {
+    "tick": 0,
+    "stateVersion": 0,
+    "eventCursor": 0,
+    "fileSha256": "93a6202c69b470ac79094ed1686889e7a85605a3554f5728be8df414ca569868",
+    "recordContentSha256": "abaaa2e2698e4c6344e25c9397059631405d41bcb98618cf03438006f3ec90f6",
+    "worldFactsPayloadSha256": "11cc6dca7cb8a648141ef370b378f0620e39bc5a7e17767e12a82b40dcbd3aa9",
+    "statePayloadSha256": "17a37043ed10e23090f87c4ee6ff461251a13491fb8d0daedca2aebd92b9f50a",
+    "randomStateSha256": "b44816c2032123b0b4481b6ea4d7daa9c2b67b9341cb71dcf8233fc22fa39c50"
+  },
+  "worldRef": {
+    "path": "data/world-runtime/mvp-natural-owner-001/mvp-natural-world-001.json",
+    "sha256": "93a6202c69b470ac79094ed1686889e7a85605a3554f5728be8df414ca569868",
+    "bytes": 137356
+  },
+  "policyRef": {
+    "path": "data/ai-painter/system-governance/mvp-natural-world-weather-policy-v2.json",
+    "sha256": "fe2e3e6948aa8bcd422be384d3eeccee217748e9e961aa34604db746fd0bd2b8",
+    "bytes": 8345
+  },
+  "preparationSha256": "325513216699c99baac2ba4bb3047b881e675aea80d6100729b3b30ba9239d30",
+  "epochUtc": "2020-01-08T00:00:00.000Z",
+  "limits": {
+    "maintenanceCommits": 1,
+    "evolutionCommits": 0,
+    "modelForwards": 0
+  },
+  "validationRef": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/natural-world-maintenance-policy-179-20261103/validation.json",
+    "sha256": "164fd8da8ccbf44ed46af3357bc9f84687b25bddce96b29bee178e2484c4f8da",
+    "bytes": 1336
+  }
+}

@@ -1,8 +1,8 @@
 {
   "schemaVersion": "ai-painter-capability-release-registry-v2",
   "contractId": "ai-painter-capability-release-registry-v2",
-  "status": "active_no_capability_release",
-  "registryRevision": 0,
+  "status": "active_with_capability_release",
+  "registryRevision": 3,
   "releaseRoot": "data/ai-painter/capability-releases",
   "uniqueWriter": {
     "identity": "local_ai_capability_release_orchestrator",
@@ -20,5 +20,51 @@
     "revokedReleaseRejected": true,
     "ownerDecisionAcceptedAsReleaseAuthority": false
   },
-  "releaseRecords": []
+  "releaseRecords": [
+    {
+      "capabilityScope": "world_evolution",
+      "capabilityReleaseIdentity": "sakaerat-weather-153-runtime-v3",
+      "status": "released_trusted",
+      "registryRevision": 1,
+      "releasePath": "data/ai-painter/capability-releases/sakaerat-weather-153-runtime-v3/release.json",
+      "releaseSha256": "39ff6c92cb5a9b3110365377dc35b6d324723ceead1ec525fa89804ff00d2aa6",
+      "policyContractSha256": "fac804ce6090f3dbb110203205a034dfc3bd1f25de982edafd649f4013895a9c",
+      "bindingSetSha256": "09ae4ca613136a1603ef6b3341a2d21127497e356d943d3bdf0514bd9f954f6f",
+      "machineReleaseAdjudicationPath": "data/ai-painter/capability-releases/sakaerat-weather-153-runtime-v3/machine-release-adjudication.json",
+      "machineReleaseAdjudicationSha256": "c640ca51cbe29d9371ac1ad9c816ae3c9957da4c3e7533749ecd7b65f9d1fc25",
+      "ticketIssuerIdentity": null,
+      "ticketIssuerKeyId": null,
+      "ticketIssuerPublicKeySha256": null
+    },
+    {
+      "capabilityScope": "world_evolution",
+      "capabilityReleaseIdentity": "sakaerat-weather-153-rolling-v4",
+      "status": "released_trusted",
+      "registryRevision": 2,
+      "releasePath": "data/ai-painter/capability-releases/sakaerat-weather-153-rolling-v4/release.json",
+      "releaseSha256": "2cc3839ae8bfdeaaf2bcc1905e6875fe2831376896e0d6baa0027694f77842e9",
+      "policyContractSha256": "fac804ce6090f3dbb110203205a034dfc3bd1f25de982edafd649f4013895a9c",
+      "bindingSetSha256": "aa6afac3a8ed405824e2a545443e02089b7a4e480b1215dbe475844de45f10cd",
+      "machineReleaseAdjudicationPath": "data/ai-painter/capability-releases/sakaerat-weather-153-rolling-v4/machine-release-adjudication.json",
+      "machineReleaseAdjudicationSha256": "b679b14ef7f2cb047f75011f0a0f329044fb844ea24654ec57a2bff2d762e436",
+      "ticketIssuerIdentity": null,
+      "ticketIssuerKeyId": null,
+      "ticketIssuerPublicKeySha256": null
+    },
+    {
+      "capabilityScope": "world_evolution",
+      "capabilityReleaseIdentity": "sakaerat-weather-153-scheduled-v5",
+      "status": "released_trusted",
+      "registryRevision": 3,
+      "releasePath": "data/ai-painter/capability-releases/sakaerat-weather-153-scheduled-v5/release.json",
+      "releaseSha256": "f7d2a4f318416a856b8fcf140a418f8bf23447289ae5ac91924f1a36eaa09846",
+      "policyContractSha256": "fac804ce6090f3dbb110203205a034dfc3bd1f25de982edafd649f4013895a9c",
+      "bindingSetSha256": "22dffaa3c069646092ebbb8c76353d497f7fed02e8b04db2f8551f9e8228243a",
+      "machineReleaseAdjudicationPath": "data/ai-painter/capability-releases/sakaerat-weather-153-scheduled-v5/machine-release-adjudication.json",
+      "machineReleaseAdjudicationSha256": "10f460d9d6ffdf424273ba8d325df2b9621619a2c1e685ee532842372e27dcca",
+      "ticketIssuerIdentity": null,
+      "ticketIssuerKeyId": null,
+      "ticketIssuerPublicKeySha256": null
+    }
+  ]
 }

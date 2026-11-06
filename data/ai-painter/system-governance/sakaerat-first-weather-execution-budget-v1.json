@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "world-first-weather-execution-budget-v1",
+  "scope": "production_world_execution",
+  "version": "sakaerat-weather-153-runtime-v2",
+  "identity": {
+    "ownerId": "mvp-natural-owner-001",
+    "playerId": "mvp-natural-player-001",
+    "worldId": "mvp-natural-world-001",
+    "worldSeed": "mvp-natural-world-001-seed-v1",
+    "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "regionId": "mvp-natural-region-001"
+  },
+  "checkpoint": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-humidity-153-20261029/model-run-v1/checkpoint.pt",
+    "sha256": "36a5e5973228295f38392b50680868331caab7b1588e3fc10f54d2f084ce05c8",
+    "trainingContractSha256": "fef9030883c521274683f6bb09806904dfcd0faeeb4b44c4406e89405df453e0",
+    "trainingDatasetSha256": "c29de6e73c6243df25d636204d972ec9597b83722492b0f82b778c33f7b2847f"
+  },
+  "timePolicy": {
+    "simulationEpochUtc": "2020-01-08T00:00:00.000Z",
+    "stepSeconds": 86400,
+    "scheduleIntervalSeconds": 15,
+    "modelHorizonSeconds": 86400,
+    "downtimeMode": "freeze",
+    "maxCatchupSteps": 0,
+    "maxCatchupLogicalSeconds": 0
+  },
+  "firstInterval": {
+    "logicalStartUtc": "2020-01-08T00:00:00.000Z",
+    "logicalEndUtc": "2020-01-09T00:00:00.000Z",
+    "durationSeconds": 86400
+  },
+  "usage": "Conditional first evolution only, after an authorized separate maintenance transaction has saved the archival seed. Production requires a released scoped capability.",
+  "precondition": {
+    "tick": 0,
+    "stateVersion": 1,
+    "eventCursor": 1,
+    "requiresCommittedInitialization": true
+  },
+  "reservationKeyFields": [
+    "worldId",
+    "epochUtc",
+    "firstEvolution"
+  ],
+  "sharing": "across tasks, retries and policy revisions",
+  "termination": {
+    "onTimeout": "terminate_owned_job_and_require_empty_tree",
+    "onCrash": "retain_consumed_reservation_no_automatic_retry",
+    "onRejectedOutput": "no_world_transaction"
+  },
+  "resources": {
+    "actualLaunches": 1,
+    "actualModelForwardsMaximum": 1,
+    "formalWorldWrites": 1,
+    "maintenanceWrites": 0,
+    "automaticRetry": 0,
+    "cpuThreadsMaximum": 2,
+    "maxCommittedMemoryMiB": 1536,
+    "gpu": false,
+    "vramMiB": 0,
+    "network": false,
+    "trainingUpdates": 0,
+    "minimumFreeDiskMiB": 2048,
+    "artifactBytesMaximum": 16777216,
+    "artifactFilesMaximum": 256,
+    "logBytesPerStreamMaximum": 8388608,
+    "workerSecondsMaximum": 30,
+    "runSecondsMaximum": 180,
+    "heartbeatSeconds": 1,
+    "staleSeconds": 10
+  },
+  "interpreter": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-background-166-20261031/model/interpreter-contract.json",
+    "sha256": "303f5dc4a945c20c9d71c7b1cf605ab910dca3f788104541942763fcf8b5625d",
+    "bytes": 1640
+  },
+  "worker": {
+    "path": "ml/ai-painter/scripts/world_weather_first_step_worker.py",
+    "sha256": "6aa149bfa36dfb8be7b988ed075053e3e1378d9df9488d8b96e55c837b447f0d",
+    "bytes": 6687
+  },
+  "nativeOwner": {
+    "path": "scripts/windows/ai-painter-owned-worker-owner.cs",
+    "sha256": "542b690b20459c445da801f17f3dc974904f35a0c81048c49bb97c04e2d2d353",
+    "bytes": 10581
+  },
+  "supervisor": {
+    "path": "scripts/lib/ai-painter-owned-worker-v1.mjs",
+    "sha256": "0e15284e320123e361b49d8b28731559b31f45e3057ac8a6deac99d951672af6",
+    "bytes": 10271
+  },
+  "nativeBuilder": {
+    "path": "scripts/lib/ai-painter-owned-worker-native-v1.mjs",
+    "sha256": "b2925ccdf6e5f3571c868bfaceb3fa5631267d3ab686a8b4e74bb28e0c4cce4c",
+    "bytes": 4205
+  },
+  "fitProgramSha256": "b3e0788504f52eaeab44fb556acced7b32d5a79af3ab47e6a0faf12df0762928",
+  "basis": [
+    {
+      "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-background-166-20261031/runtime-config.json",
+      "sha256": "7353c10c25a71f58318eb62b98ebcb89cae3bf369e1336bbeed90b1dc1208283",
+      "bytes": 5531
+    },
+    {
+      "path": "data/ai-painter/system-governance/ai-painter-saved-gradient-algebra-cpu-policy-v4.json",
+      "sha256": "8910c0da18c98b0ced68f1160f924ec8910f16d20401c2010bdb0cbcbb80835e",
+      "bytes": 7178
+    },
+    {
+      "path": "data/ai-painter/system-governance/ai-painter-decode1-entry-weight-quality-execution-policy-v18.json",
+      "sha256": "be2ac2546b850e40b4f64b16cd38e9a71cf6139a06f4f93486f8a380036d5db4",
+      "bytes": 33869
+    }
+  ],
+  "choices": "One attempt and one evolution commit. Two CPU cores, 30 seconds per worker and 180 seconds overall reuse bounded component ceilings. 1536 MiB is enforced as Windows committed job memory, 2048 MiB is reserved free disk. Heartbeat every second with ten seconds allowed between observations."
+}

@@ -6,6 +6,8 @@ import {checkpointIds} from './mvp-acceptance-contracts.mjs'
 export const TRUTH_REPORT='.runtime/ai-painter/controller-repair-reviews/mvp-truth-audit-138-20261028/controller-final-audit.json'
 export const TRUTH_REPORT_V2='.runtime/ai-painter/controller-repair-reviews/mvp-truth-audit-138-20261028/controller-final-audit-v2.json'
 export const TRUTH_REPORT_V5='.runtime/ai-painter/controller-repair-reviews/mvp-truth-audit-138-20261028/controller-final-audit-v5.json'
+export const TRUTH_REPORT_141='.runtime/ai-painter/controller-repair-reviews/world-baseline-plan-141-20261028/controller-product-audit-v6.json'
+export const TRUTH_REPORT_142='.runtime/ai-painter/controller-repair-reviews/project-module-detail-142-20261028/controller-product-audit-v7.json'
 export const TRUTH_BINDING='.runtime/local-backup/project-progress/truth-binding.json'
 const hash=b=>createHash('sha256').update(b).digest('hex'),same=(a,b)=>path.resolve(a).toLowerCase()===path.resolve(b).toLowerCase()
 const classes=['accepted','implemented_pending_acceptance','confirmed_not_implemented','partial','insufficient_evidence','blocked']
@@ -29,7 +31,7 @@ export function readProjectProgressTruth({projectRoot=process.cwd(),runtimeRoot,
  }
  try{
   let binding,bindingSha;try{const raw=read(TRUTH_BINDING,32*1024);bindingSha=raw.sha256;binding=JSON.parse(raw.bytes.toString('utf8'))}catch(error){if(error.code==='ENOENT')return pending;throw error}
-  need(binding.schemaVersion==='mvp-truth-audit-binding-v1'&&[TRUTH_REPORT_V5].includes(binding.path)&&/^[a-f0-9]{64}$/.test(binding.sha256),'truth_binding_invalid',409)
+  need(binding.schemaVersion==='mvp-truth-audit-binding-v1'&&[TRUTH_REPORT_V5,TRUTH_REPORT_141,TRUTH_REPORT_142].includes(binding.path)&&/^[a-f0-9]{64}$/.test(binding.sha256),'truth_binding_invalid',409)
   const reportPath=binding.path,reportRead=read(reportPath,256*1024);need(reportRead.sha256===binding.sha256,'truth_report_sha_conflict',409);const report=JSON.parse(reportRead.bytes.toString('utf8'))
   need(report.schemaVersion==='mvp-truth-audit-v1'&&report.source?.category==='codex'&&report.source?.reporterId==='codex-controller'&&report.source?.threadId==='01a16ccd-a67b-7ae0-b614-a0415398ae0b','truth_producer_invalid',409)
   need(report.checklistVersion==='mvp-acceptance-checklist-v1'&&report.planSha256===planSha256&&report.specificationSha256===specificationSha256,'truth_authority_conflict',409)

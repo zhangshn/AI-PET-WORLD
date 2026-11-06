@@ -121,6 +121,25 @@ class NaturalWorldInputTests(unittest.TestCase):
         self.assertFalse(torch.cuda.is_initialized())
         self.assertNotIn("ai_painter.complete_world.terrain_ecology_native_stage_v1", sys.modules)
 
+    def test_06_first_world_requires_the_selected_archive_and_original_producer_bytes(self):
+        if "historicalBaselineSelection" not in self.descriptor:
+            self.skipTest("historical first-world descriptor required")
+        wrong = self.variant("unsupported_archive", lambda d: d["historicalBaselineSelection"].update(
+            path=d["bindings"]["sourceFactRelease"]["path"]))
+        with self.assertRaisesRegex(ValueError, "unsupported first-world selection"):
+            self.load(wrong)
+        verify = _Reader.verify
+        injected = []
+        def corrupt(reader, binding):
+            if "/prior-source-by-sha/" in binding["path"]:
+                injected.append(binding["path"])
+                with patch.object(Path, "open", return_value=BytesIO(b"altered historical producer bytes")):
+                    return verify(reader, binding)
+            return verify(reader, binding)
+        with patch.object(_Reader, "verify", corrupt), self.assertRaisesRegex(ValueError, "hash differs"):
+            self.load()
+        self.assertTrue(injected)
+
 
 if __name__ == "__main__":
     unittest.main()

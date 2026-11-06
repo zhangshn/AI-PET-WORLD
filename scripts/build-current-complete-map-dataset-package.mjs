@@ -3,6 +3,13 @@ import fs from "node:fs"
 import path from "node:path"
 import { STRICT_PROJECT_OWNED_IP_POLICY_VERSION } from "./lib/complete-map-training-sample-contract.mjs"
 
+if (process.argv.length > 2 && process.argv.slice(2).some(arg=>arg.startsWith("--world-weather"))) {
+  if (process.argv.length !== 3 || process.argv[2] !== "--world-weather-153") throw new Error("invalid weather dataset arguments")
+  const { publishWeatherDataset } = await import("./lib/world-weather-dataset-release.mjs")
+  console.log(JSON.stringify(publishWeatherDataset(),null,2))
+  process.exit(0)
+}
+
 const ROOT = process.cwd()
 const OUTPUT_ROOT = path.join(ROOT, "data", "world-samples", "dataset-packages")
 const auditPointer = readRequiredJson("data/world-samples/dataset-blueprints/latest-natural-home-complete-map-audit.json")

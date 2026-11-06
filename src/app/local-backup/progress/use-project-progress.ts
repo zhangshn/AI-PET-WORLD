@@ -13,7 +13,7 @@ export function useProjectProgress(){
   const instance=createProgressPoller<ProgressResponse>({surface,timers:{set:(callback,delay)=>setTimeout(callback,delay),clear:id=>clearTimeout(id as ReturnType<typeof setTimeout>)},load:async signal=>{
    const response=await fetch('/api/local-backup/project-progress',{cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(10000)])}),value=await response.json()
    if(!response.ok)throw Error(value.reasonCode??'progress_read_failed')
-   if(!value.projection?.mvp)throw Error('progress_projection_incomplete')
+   if(!value.projection?.mvp&&!(value.projection?.projectionKind==='formal_plan_only'&&value.projection?.dynamicEvidence?.status==='unverifiable'&&value.projection?.workPlan?.currentDelivery))throw Error('progress_projection_incomplete')
    return value
   },onData:data=>setState(previous=>({...previous,data,error:''})),onError:error=>setState(previous=>({...previous,error:reason(error)})),onBusy:busy=>setState(previous=>({...previous,busy})),onPause:paused=>setState(previous=>({...previous,paused}))})
   poller.current=instance;return()=>{instance.stop();poller.current=null}

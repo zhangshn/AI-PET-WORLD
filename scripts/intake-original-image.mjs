@@ -69,9 +69,13 @@ activeRequest = request
 const failures = validateOriginalImageIntakeRequest(request)
 assert(failures.length === 0, `original image intake rejected: ${failures.join(", ")}`)
 const currentPolicyIntake = isCurrentPolicyAiAssistedColdStartSource(request)
-const currentSourceVerification = currentPolicyIntake
-  ? await (await import("./lib/ai-painter-source-correction-intake-v1.mjs")).verifyCurrentSourceCorrection({ root: ROOT, request })
-  : null
+let currentSourceVerification = null
+if (currentPolicyIntake) {
+  const verify = request.sourceCorrection.schemaVersion === "source-correction-intake-evidence-request-v2"
+    ? (await import("./lib/ai-painter-source-correction-intake-v2.mjs")).verifyGuideOnlySourceCorrection
+    : (await import("./lib/ai-painter-source-correction-intake-v1.mjs")).verifyCurrentSourceCorrection
+  currentSourceVerification = await verify({ root: ROOT, request })
+}
 
 const visualSnapshotPath = resolveProjectPath(request.worldBinding.snapshotPath)
 assert(fs.existsSync(visualSnapshotPath) && fs.statSync(visualSnapshotPath).isFile(), "visual snapshot does not exist")

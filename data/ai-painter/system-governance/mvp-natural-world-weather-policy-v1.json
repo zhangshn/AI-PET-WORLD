@@ -1,0 +1,209 @@
+{
+  "schemaVersion": "world-evolution-policy-v1",
+  "policyId": "sakaerat-daily-weather",
+  "policyVersion": "initial-run-candidate-v1",
+  "scopeId": "world_evolution",
+  "ruleVersion": "sakaerat-daily-weather-v1",
+  "identity": {
+    "ownerId": "mvp-natural-owner-001",
+    "playerId": "mvp-natural-player-001",
+    "worldId": "mvp-natural-world-001",
+    "worldSeed": "mvp-natural-world-001-seed-v1",
+    "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "regionId": "mvp-natural-region-001"
+  },
+  "capabilityRef": {
+    "id": "data/ai-painter/system-governance/mvp-natural-world-weather-target-v1.json",
+    "version": "sakaerat-weather-153-runtime-v1",
+    "sha256": "44192a477e628cf6457dbea8072d92b46a9bb5c0fddca8f00a7c92aa4c34c8a1"
+  },
+  "modelRef": {
+    "id": ".runtime/ai-painter/controller-repair-reviews/world-environment-humidity-153-20261029/model-run-v1/checkpoint.pt",
+    "version": "sakaerat-weather-153-runtime-v1",
+    "sha256": "36a5e5973228295f38392b50680868331caab7b1588e3fc10f54d2f084ce05c8"
+  },
+  "validatorRef": {
+    "id": "src/world/runtime/world-environment-validator.ts",
+    "version": "sakaerat-weather-153-runtime-v1",
+    "sha256": "637c742ab74a3ab04240885ab76e5bf649c1afae6c695f1e9549eba21e1adeff"
+  },
+  "inputSchemaRef": {
+    "id": "scripts/lib/world-environment-initialization.mjs",
+    "version": "sakaerat-weather-153-runtime-v1",
+    "sha256": "2cd950b963450820742492c87ee9d63298021f917afc4522365ccd222a3d2c58"
+  },
+  "domainFields": [
+    {
+      "fieldId": "environment.PRECTOTCORR",
+      "adapterFieldId": "environment.PRECTOTCORR",
+      "dataType": "number",
+      "unit": "mm/day",
+      "constraints": {
+        "min": 0,
+        "max": 12000
+      },
+      "missingPolicy": "reject",
+      "allowedOps": [
+        "replace"
+      ],
+      "evidenceRefs": [
+        {
+          "id": "data/world-samples/earth-geospatial/regions/sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1/sources/nasa-power-daily-utc-domain-20261102-v1/metadata.json",
+          "version": "power-daily-utc-domain-v1",
+          "sha256": "59c7347ff0d4ed79c0cc905fe0742157ed522747b588b31a747152073bf4552d"
+        }
+      ]
+    },
+    {
+      "fieldId": "environment.RH2M",
+      "adapterFieldId": "environment.RH2M",
+      "dataType": "number",
+      "unit": "%",
+      "constraints": {
+        "min": 0,
+        "max": 100
+      },
+      "missingPolicy": "reject",
+      "allowedOps": [
+        "replace"
+      ],
+      "evidenceRefs": [
+        {
+          "id": "data/world-samples/earth-geospatial/regions/sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1/sources/nasa-power-daily-utc-domain-20261102-v1/metadata.json",
+          "version": "power-daily-utc-domain-v1",
+          "sha256": "59c7347ff0d4ed79c0cc905fe0742157ed522747b588b31a747152073bf4552d"
+        }
+      ]
+    },
+    {
+      "fieldId": "environment.T2M",
+      "adapterFieldId": "environment.T2M",
+      "dataType": "number",
+      "unit": "C",
+      "constraints": {
+        "min": -125,
+        "max": 80
+      },
+      "missingPolicy": "reject",
+      "allowedOps": [
+        "replace"
+      ],
+      "evidenceRefs": [
+        {
+          "id": "data/world-samples/earth-geospatial/regions/sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1/sources/nasa-power-daily-utc-domain-20261102-v1/metadata.json",
+          "version": "power-daily-utc-domain-v1",
+          "sha256": "59c7347ff0d4ed79c0cc905fe0742157ed522747b588b31a747152073bf4552d"
+        }
+      ]
+    },
+    {
+      "fieldId": "environment.WS2M",
+      "adapterFieldId": "environment.WS2M",
+      "dataType": "number",
+      "unit": "m/s",
+      "constraints": {
+        "min": 0,
+        "max": 50
+      },
+      "missingPolicy": "reject",
+      "allowedOps": [
+        "replace"
+      ],
+      "evidenceRefs": [
+        {
+          "id": "data/world-samples/earth-geospatial/regions/sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1/sources/nasa-power-daily-utc-domain-20261102-v1/metadata.json",
+          "version": "power-daily-utc-domain-v1",
+          "sha256": "59c7347ff0d4ed79c0cc905fe0742157ed522747b588b31a747152073bf4552d"
+        }
+      ]
+    }
+  ],
+  "timePolicy": {
+    "simulationEpochUtc": "2020-01-08T00:00:00.000Z",
+    "stepSeconds": 86400,
+    "scheduleIntervalSeconds": 15,
+    "modelHorizonSeconds": 86400,
+    "downtimeMode": "freeze",
+    "maxCatchupSteps": 0,
+    "maxCatchupLogicalSeconds": 0
+  },
+  "historyPolicy": {
+    "selectorId": "seven-completed-daily-rows",
+    "selectorVersion": "sakaerat-v1",
+    "maxBytes": 65536,
+    "maxEvents": 4,
+    "minimumContextEvents": 0,
+    "summaryMode": "none",
+    "evidenceRefs": [
+      {
+        "id": "data/ai-painter/system-governance/mvp-natural-world-weather-target-v1.json",
+        "version": "sakaerat-weather-153-runtime-v1",
+        "sha256": "44192a477e628cf6457dbea8072d92b46a9bb5c0fddca8f00a7c92aa4c34c8a1"
+      },
+      {
+        "id": "scripts/lib/natural-world-temporal-data.mjs",
+        "version": "sakaerat-weather-153-runtime-v1",
+        "sha256": "d43bd95b50f190545d28229a6e0ff5e8e1fb4c57f7fc43f2fdceb120c35acd49"
+      }
+    ]
+  },
+  "executionPolicyRef": {
+    "id": ".runtime/ai-painter/controller-repair-reviews/world-environment-background-166-20261031/runtime-config.json",
+    "version": "sakaerat-weather-153-runtime-v1",
+    "sha256": "7353c10c25a71f58318eb62b98ebcb89cae3bf369e1336bbeed90b1dc1208283"
+  },
+  "resourceContractRef": {
+    "id": ".runtime/ai-painter/controller-repair-reviews/world-environment-background-166-20261031/runtime-config.json",
+    "version": "sakaerat-weather-153-runtime-v1",
+    "sha256": "7353c10c25a71f58318eb62b98ebcb89cae3bf369e1336bbeed90b1dc1208283"
+  },
+  "maintenancePolicy": {
+    "mode": "migration",
+    "compatibleFromVersions": [
+      "natural-world-bootstrap-v1"
+    ],
+    "migrationEvidenceRef": {
+      "id": ".runtime/ai-painter/controller-repair-reviews/world-environment-initialization-163-20261030/integration/actual-run/commit.json",
+      "version": "sakaerat-weather-153-runtime-v1",
+      "sha256": "32dc0b0ea08e476180cc669a2e7b8a3f12e16a8af83acb1d53896c53e99e17c6"
+    },
+    "resumeRule": {
+      "id": "scripts/lib/world-environment-initialization.mjs",
+      "version": "sakaerat-weather-153-runtime-v1",
+      "sha256": "2cd950b963450820742492c87ee9d63298021f917afc4522365ccd222a3d2c58"
+    }
+  },
+  "registrationEvidenceRefs": [
+    {
+      "id": ".runtime/ai-painter/controller-repair-reviews/world-environment-qualification-165-20261031/evidence/manifest-candidate.json",
+      "version": "sakaerat-weather-153-runtime-v1",
+      "sha256": "a487f09dfa0ae2d4f33155f27b6eed4b92e1eb8a976e30ce223f098f966d257b"
+    },
+    {
+      "id": "data/world-samples/earth-geospatial/regions/sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1/sources/nasa-power-daily-utc-domain-20261102-v1/receipt.json",
+      "version": "sakaerat-weather-153-runtime-v1",
+      "sha256": "ece4fbbd8944888a3b54b25fd70ae19e2f5c6508595d07429ffc68bb2e6d3e19"
+    },
+    {
+      "id": ".runtime/ai-painter/controller-repair-reviews/world-environment-pilot-147-20261029/source-qualification.json",
+      "version": "sakaerat-weather-153-runtime-v1",
+      "sha256": "c98cd577256e2ee125803229496f91855e06d39b2a01bce80701fbdb7d9a55f9"
+    },
+    {
+      "id": ".runtime/ai-painter/controller-repair-reviews/world-environment-pilot-147-20261029/dataset-binding.json",
+      "version": "sakaerat-weather-153-runtime-v1",
+      "sha256": "79abfaa5c2985fafe2db2cb4f3dd6dc342767f531d793dfd8e1d60de14f76017"
+    },
+    {
+      "id": ".runtime/ai-painter/controller-repair-reviews/world-environment-background-166-20261031/runtime/actual-run/result.json",
+      "version": "sakaerat-weather-153-runtime-v1",
+      "sha256": "b8a4f6e2786906f5e87fedcc024d97664f66dcffeb1fcce4f9add0c0d10cb6fc"
+    },
+    {
+      "id": "scripts/lib/world-weather-field-domain.mjs",
+      "version": "sakaerat-weather-153-runtime-v1",
+      "sha256": "9b2a1ef03f714bc74a7e556cc9714e68528d6ab8d2267bfb9f841653cf07d908"
+    }
+  ],
+  "contentSha256": "f27ff017b03d20ab34bb20a5a46f65a97e2a8aa86f16ce6e76d5f11b55c6f262"
+}

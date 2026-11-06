@@ -4,6 +4,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { createHash } from "node:crypto"
 import { buildNaturalWorldModelInputDescriptor, writeNaturalWorldModelInputDescriptor, validateNaturalObjectTable } from "../lib/natural-world-model-input.mjs"
+import { readCompatibleFirstWorldInput } from "../lib/natural-world-model-input-compatibility.mjs"
 
 const root = process.cwd(), output = path.resolve(process.env.NATURAL_MODEL_INPUT_OUTPUT_ROOT ?? ".runtime/ai-painter/controller-repair-reviews/natural-world-model-input-102-20261028/implementation/node-fixtures")
 const requestPath = path.resolve(process.env.NATURAL_MODEL_INPUT_REQUEST ?? ".runtime/ai-painter/controller-repair-reviews/natural-world-model-input-102-20261028/implementation/real-request.json")
@@ -13,7 +14,7 @@ const json = v => JSON.stringify(v, null, 2) + "\n"
 fs.mkdirSync(output, { recursive: true })
 const relative = p => path.relative(root, p).replace(/\\/g, "/")
 let positive
-test("actual 098 natural source/Store/original23 descriptor is target-free and immutable", async () => {
+test("selected natural source/Store/original23 descriptor is target-free and immutable", async () => {
   const p = path.join(output, "natural-model-input.json")
   positive = await writeNaturalWorldModelInputDescriptor({ request, outputPath: relative(p) })
   assert.equal(positive.binding.sha256, sha(fs.readFileSync(p)))
@@ -33,6 +34,22 @@ test("actual 098 natural source/Store/original23 descriptor is target-free and i
     sourceFactReleaseIdentity: d.sourceFactReleaseIdentity, inputReads: positive.inputReads,
     sourceReadBindings: d.sourceReadBindings, memoryUsage: process.memoryUsage(), rendererExecuted: false, storeWritten: false }), { flag: "wx" })
   await assert.rejects(() => writeNaturalWorldModelInputDescriptor({ request, outputPath: relative(p) }), /EEXIST/)
+})
+test("first-world compatibility rejects changed archive, current Store, and foreign identity", {
+  skip: request.identity.worldId !== "mvp-natural-world-001"
+}, () => {
+  const read = p => fs.readFileSync(path.join(root, p))
+  const record = JSON.parse(read(request.runtimeSave.path))
+  for (const match of [p => p.includes("/prior-source-by-sha/"), p => p === request.runtimeSave.path]) {
+    assert.throws(() => readCompatibleFirstWorldInput({request, record, read: p => {
+      const bytes = read(p)
+      if (match(p)) bytes[bytes.length - 1] ^= 1
+      return bytes
+    }}), /compat_digest|ref_digest/)
+  }
+  const foreign = structuredClone(request)
+  foreign.identity.ownerId += "-foreign"
+  assert.throws(() => readCompatibleFirstWorldInput({request: foreign, record, read}), /identity differs/)
 })
 for (const variant of ["swapped_world", "stale_state", "stripped_scope", "caller_pass_flag", "wrong_file_hash"]) test("Node refuses " + variant, async () => {
   const r = structuredClone(request)

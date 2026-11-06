@@ -8,6 +8,8 @@ const inventory={roots:[],categories:[],gaps:['partial-fixture'],observedAtUtc:'
 const workEvent=title=>({eventId:title,moduleId:'local-backup',taskId:'fixture-task',runId:null,eventKind:'progress_report',sourceCategory:'codex',reporter:{id:'window-a',name:'窗口A',threadId:null},title,executionResult:'unknown',validationStatus:'unknown',acceptanceStatus:'unknown',originalEventAtUtc:null,originalStartedAtUtc:null,originalFinishedAtUtc:null,monotonicElapsedMs:null,evidenceReferences:[],planReference:null})
 const summary={dataStatus:'partial',records:[],coverage:{complete:false,registeredReporters:[{id:'window-a',name:'窗口A',threadId:null,coverageStatus:'reported_partial',knownReportCount:1},{id:'window-b',name:'窗口B',threadId:null,coverageStatus:'no_report_recorded',knownReportCount:null}]}}
 const normalFetch=async url=>{
+ if(url==='/api/local-backup/project-progress')return response({projection:{mvp:{}}})
+ if(url==='/api/local-backup/documents/docs-architecture')return response({document:{content:fs.readFileSync('docs/ARCHITECTURE.md','utf8')}})
  if(url==='/api/local-backup/summary')return response({inventory})
  if(url.startsWith('/api/local-backup/runs?'))return response({records:[],nextCursor:null})
  if(url.includes('/work-summary'))return response(summary)
@@ -17,7 +19,7 @@ const normalFetch=async url=>{
 }
 test('eight-page platform panels query only their responsibility and neither shell nor Git mount starts business work',async()=>{
  for(const [file,name,expected] of [
-  ['local-backup-overview.tsx','LocalBackupOverview',['/api/local-backup/summary']],
+  ['local-backup-overview.tsx','LocalBackupOverview',['/api/local-backup/project-progress','/api/local-backup/summary','/api/local-backup/documents/docs-architecture']],
   ['local-backup-inventory.tsx','LocalBackupInventoryPanel',['/api/local-backup/summary']],
   ['local-backup-backups.tsx','LocalBackupTasksPanel',['/api/local-backup/runs?limit=20']],
   ['local-backup-work.tsx','LocalBackupWorkPanel',['/api/local-backup/work-records?date=2026-10-22&limit=20','/api/local-backup/work-summary?date=2026-10-22','/api/local-backup/journal?date=2026-10-22']],
@@ -25,7 +27,7 @@ test('eight-page platform panels query only their responsibility and neither she
   ['local-backup-shell.tsx','LocalBackupShell',[]],
  ]){
   const ui=uiHarness(root+file,name,{fetch:normalFetch,props:{date:'2026-10-22',children:'private-child'}});await ui.tick()
-  assert.deepEqual(ui.requests.map(request=>request.url),expected,file)
+  assert.deepEqual(ui.requests.map(request=>request.url).sort(),[...expected].sort(),file)
   assert(ui.requests.every(request=>!request.options.method||request.options.method==='GET'))
   ui.unmount()
  }
@@ -45,7 +47,7 @@ test('legacy hash links map only to fixed functional routes, including optional 
   const ui=uiHarness(root+'local-backup-overview.tsx','LocalBackupOverview',{fetch:normalFetch,url:'http://localhost:3000/local-backup#'+hash});await ui.tick();assert.deepEqual(ui.navigation,[{destination,kind:'replace'}]);ui.unmount()
  }
  const ui=uiHarness(root+'local-backup-overview.tsx','LocalBackupOverview',{fetch:normalFetch,url:'http://localhost:3000/local-backup#https://evil.example'});await ui.tick();assert.equal(ui.navigation.length,0)
- ui.hash('journal');assert.equal(ui.navigation.at(-1).destination,'/local-backup/work#journal')
+ ui.hash('journal');assert.equal(ui.navigation.at(-1).destination,'/local-backup/work#journal');ui.unmount()
 })
 test('work filters bind both queries, preserve URL, and late old-window responses cannot overwrite the chosen window',async()=>{
  let finishOld

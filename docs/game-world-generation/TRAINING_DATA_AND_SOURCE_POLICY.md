@@ -1,14 +1,14 @@
 # 训练数据与来源正式规则
 
-更新时间：2026-10-20 05:44:15 +08:00
+更新时间：2026-11-04 06:55:27 +08:00
 
 状态：active-long-term-data-and-provenance-contract
 
-文档版本：`AI-PAINTER-DATA-PROVENANCE-1.10`
+文档版本：`AI-PAINTER-DATA-PROVENANCE-1.12`
 
-生效日期：`2026-10-20`
+生效日期：`2026-11-04`
 
-替代版本：`AI-PAINTER-DATA-PROVENANCE-1.9`
+替代版本：`AI-PAINTER-DATA-PROVENANCE-1.11`
 
 文档状态：`active_normative_target`
 
@@ -183,7 +183,9 @@ blocked_source
 
 当前单世界先行MVP中，同一train纠错候选不再以新增的逐对象RGB语义识别、额外对象检查或来源许可文件及其适用裁决作为来源准入前置条件；其缺失不再产生审核阻断。不设置单图“内部允许”或人工审批替代层。保留来源声明及派生记录、实际文件与像素身份、WorldFacts／23通道绑定、既有风格与条件响应／画幅检查、数据内部去重、用途隔离和数据发布门；不得把未执行的对象识别或许可审核记录为通过。该限定不改变已知禁止来源的限制、实际使用权利、安全保护或训练后模型质量审核，也不直接发布新数据或开训。
 
-既有v2接收格式及`AI-PAINTER-DATA-PROVENANCE-1.8`谱系标记继续兼容，它们只表示原接收身份；不继承旧审核范围。原请求若绑定1.8或1.9文档摘要，按固定[1.8原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.8-b620c6ef.txt)或[1.9原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.9-c75029b6.txt)核验历史接收事实，同时绑定现行规则；新接收可绑定现行1.10文档。审核结论按现行审核存储规格第5.1节形成，不改写原接收记录。[1.7版原字节](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.7-e1555cd1.txt)仅供历史复核。
+既有v2接收格式和1.8谱系标记标识原接收身份。重放历史接收时，核验原请求绑定的版本、字节摘要、来源索引及当时的审核输出。可核对[1.7原文](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.7-e1555cd1.txt)、[1.8原文](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.8-b620c6ef.txt)、[1.9原文](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.9-c75029b6.txt)、[1.10原文](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.10-66c537ce.txt)与[1.11原文](../../data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.11-2d2d3b64.txt)。历史接收和审核记录保留原版本及原结论。
+
+以已经发布过单条纠错的64份数据包继续纠正另一条train样本时，接收请求绑定本版正式文件的实际摘要。顶层沿用`original-image-intake-request-v2`，纠错证据使用`source-correction-intake-evidence-request-v2`。本分支的生成只读这一条train样本的权威引导图。接收程序先复现受信父发布的来源、审核、全部成员与用途身份，再核验本次样本的世界事实、条件、引导图、生成请求、原始RGB与归一化结果。机器审核使用现行审核存储规格第5.1节。接收和审核分别保存本次程序、规则和输入身份。
 
 ## 7. 单条样本合同
 
@@ -292,6 +294,8 @@ data/world-samples/ai-assisted-cold-start-dataset-packages/<packageId>/
 
 发布格式为`ai-painter-stage4-source-correction-release-v1`，包含新Manifest、source-index及四份membership文件。仅允许合格父64份数据中的一条train样本被已接收候选替代，其他63条逐字段不变；四份用途只允许对应train样本ID替换，条件和WorldFacts不变。新记录保存纠错来源与新审核，不继承该样本旧贡献资格，不把已删除审核记为通过。
 
+当父包本身已有单条纠错时，按父发布原有验证程序、规则、来源索引和审核证据核验其不可变身份。对照直接父版本检查本次替换，其他63条中此前已纠正的样本必须连同其来源和审核绑定逐字段保留。无法复现父发布、未知父身份、自引用及循环谱系均拒绝。历史复现成功只证明父版本来源；本次候选仍须完成现行审核和独立发布。新的数据发布不授予执行、GPU或模型发布资格。
+
 现有Python `load_package`和`SplitReleaseDataset`按新格式复算不可变发布身份、父版本、全部成员与实际文件、分项核验及实现绑定；原格式分支保持。未发布草案仍不能直接作为训练发布包。复用父版本已合格的冻结基础资产时，须保持其原资格和Checkpoint身份，不冒称在新包上重新训练；不得继承失败Denoiser、旧CPU／GPU执行资格或旧训练许可。
 
 发布不修改活动数据指针或当前执行登记，不启动GPU／训练，也不授予模型、Stage4或Runtime资格。新训练仍按既有流程取得自身同包准备与执行证据。验收覆盖真实发布及Python数据读取、63条和四份用途不变、错误来源／审核／图片／条件／split拒绝、重复发布不覆盖、历史格式兼容和旧证据保持。
@@ -375,6 +379,73 @@ sourceSnapshotId
 train／validation／challenge／regression除地图来源窗口外，必须按人物身份、动物个体、同一生成谱系及完整时序片段分组隔离；相邻帧、同角色换背景或裁切增强不得跨组制造假泛化。每个已发布类型和支持状态均需覆盖审计与固定正反样本；具体张数、状态组合和阈值在新数据／审核合同中预先登记，缺少覆盖不得宣告完整MVP合格。
 
 用户出生资料按最小必要原则处理：训练／图像生成消费派生游戏档案和受控来源引用，普通样本日志、公开预览与运行监控不得展开原始出生资料。不得以人类真实健康信息作为未获许可的症状训练输入。
+
+### 11.2 生命规则、名录及参数域的注册合同
+
+本节是生命**静态数据与规则内部结构**的唯一补充定义。来源和训练用途资格沿用第4—11.1节；总体架构第4.1节的顶层对象不在此重复定义；运行输入输出、动作和建议处理见主体规格第18.8节。新增记录须有对应机器Schema及迁移测试；文档定义、静态注册、能力发布和生产采用分别判断，不改写旧自然数据或旧失败。
+
+#### 11.2.1 公共引用与身份
+
+以下为新生命记录的目标字段，不表示现有API已上线。记录进入既有正式包目录，以独立packageId隔离。
+
+| 字段 | 类型及判定 |
+|---|---|
+| schemaVersion、recordId、recordVersion、packageId | 非空有界字符串；Schema必须登记，ID/版本同包唯一；不支持的版本拒绝，不凭名称采用最新目录 |
+| producerId | 由固定生产者上下文确定，不能由调用方自称；消费者核验该生产者对本类记录的写入职责 |
+| payloadRef | 登记制品引用：artifactId、schemaVersion、sha256；sha256计算冻结payload实际字节，固定读取器解析artifactId并复算，不接受任意文件路径或仅格式正确的摘要 |
+| sourceRefs、qualificationReportRef | 引用既有来源记录/版本/权利/定位及真实资格报告，复用原来源Schema；候选、metadata-only、不合格或不可读来源不得取得超出自身层级的使用资格 |
+| domainRegistryRef、serializationPolicyRef | 分别绑定本节参数域及确定性编码策略的实际版本/内容；编码策略须明确字段、集合顺序和数字编码，业务payload不含自己的hash或读取时间，避免自引用 |
+| predecessorRef | 首版为null；后续指向真实前版；换规则/范围/来源须新版本，不覆盖旧角色/名录或删除原失败 |
+| limitsRef | 固定资源合同，必有单记录字节、条目数、读取深度、总读取字节量和耗时毫秒上限（均为正安全整数）；任一缺值在读取/执行前拒绝，无默认无限值 |
+
+本节和AI Painter主体规格第18.8节统一使用上述制品引用语义。读取时校验实际字节、Schema、生产者职责、适用版本和用途；不能以caller的qualified/passed布尔值注册。档案的contentHash按其注册编码策略映射到确定的业务payload；原字节文件hash与业务内容hash必须声明各自范围，不互相代替。日期/时间字段保留原事件时间与核验时间，未知原时间为null，不用接收时间冒充。
+
+#### 11.2.2 参数域与规则判定
+
+每个参数域条目必须有：parameterId、valueType、appliesTo、originKind、sourceRefs、unit、allowedValues或closedRange、precision、missingPolicy、conflictPolicy。appliesTo指向角色/物种及适用状态/条件；originKind区分真实资料事实和虚构游戏抽象，不能由后者反证现实医学或生物测量。
+
+- 数字/整数域的unit、有限闭区间和量化精度必填；无量纲亦显式声明。枚举/布尔域用明确合法集合，数值范围不适用标为null并说明。单位转换须绑定有来源的转换规则，不能将tile、像素、米或tick、秒默换。
+- 取值按valueStatus区分available、unknown、not_applicable：available必须有合法非null值；unknown值为null并给reasonCode；not_applicable值为null且有适用性规则和来源依据。缺字段是Schema错误，非法值是拒绝；二者不能改成unknown以消除错误，unknown不能填0、健康或静止。
+- 需要该参数的消费者遇unknown/N-A，只能按登记的适用规则判为不可用/不适用，不能继续依赖计算再宣称通过。零是有明确量纲和域内依据的真实值。
+- conflictPolicy明确reject或有依据的priority及有序规则ID。独占输出同时命中多条而无合法优先级、前置条件不可判定、循环依赖或真实来源冲突未解决时均拒绝；不得临时平均、选最有利值或改阈值。真实资料冲突的处理须有资格证据，单写一个priority不授来源权威。
+
+参数域记录只规定可判定结构；具体物种测量、症状和游戏参数必须填入有来源/明确抽象的实际版本。资料不足时该参数不可消费，不在文档伪造科学数字。
+
+#### 11.2.3 人格与初始外貌规则注册
+
+AppearanceRuleRegistration复用11.2.1，另必有ruleSetId、inputSchemaRef、supportedInputModes、supportedMappingModes、presentationDomainRef、rules、outputDomainRef和testEvidenceRefs。人格和外貌为两个输出；复用来源不表示Painter可以由人格标签猜脸。
+
+每条rules记录必有ruleId、适用谓词、所需输入字段/依赖规则ID、输出parameterId、固定登记的运算或查表实现引用、missingPolicy、conflictPolicy及原文/原创游戏映射来源定位。运算引用只能由受信规则解释器/固定实现执行，不接受任意脚本路径。规则依赖必须有向无环，全部输出属于声明域。
+
+输入完整度及紫微/三柱/不可用路由只引用AI Painter主体规格第18.2节；原始出生资料用受限引用，普通规则payload、Painter样本与预览不带其原值。现实/平行人格模式与性别呈现独立；不支持的模式或平行外貌变换返回不可用，不能以性别反转、大限顺逆行、默认男性或数值取反替代。
+
+**生产者与消费者：**来源/规则构建器提交候选；受信数据验证者重算来源、域、依赖和测试后登记静态资格；人格/外貌构建器只消费适用规则，输出架构第4.1节档案；导演/Painter只消费合格派生档案。静态规则登记不签发模型、RGB或Runtime资格。
+
+**注册必要条件：**每条有使用资格和精确定位；输入/模式/域/缺失冲突均完整；同输入/规则/seed的固定编码输出相同；域边界及拒绝测试通过；真实资格报告绑定实际payload/实现/测试。任一缺失产生具体错误路径及reasonCode，不留下无处理条件的“待定”。
+
+#### 11.2.4 五类型名录、物种及领域规则
+
+AnimalRoster的顶层身份与数量沿用架构第4.1节和主体第18.3节；其payload至少包含以下内部结构：
+
+| 内部结构 | 必填内容与约束 |
+|---|---|
+| classification | 分类层级、分类依据引用、类型唯一性与别名归一规则；不能只给五个无解释标签 |
+| types | 恰五个互异animalTypeId；每项typeDefinitionRef和非空speciesRefs；同物种改名/同别名不可重复贡献类型覆盖 |
+| speciesRecords | 真实speciesId、学名、别名、分类来源、首区分布/生境证据、适用环境谓词、morphologyDomainRef、stateRuleSetRef、actionSetRef、visibleSymptomRuleRef和明确N-A项 |
+| stateRules | 每条ruleId、实体/物种适用性、from/to状态、原因事件类型、时间/资源/环境条件、受影响动作、可见体征及来源；禁止改变稳定身份 |
+| coverage | 逐类型/物种/支持状态/动作的覆盖单元、固定正反样本引用及缺口；样本/序列数量及审核标准绑定已冻结数据/审核合同，不能用自然64图补充分子 |
+
+形态、尺度、营养/疲劳及活动范围使用11.2.2统一参数域，不另造同名单位或把人的症状强套所有物种。动作内容由AI Painter主体规格第18.8节登记，数据记录引用其版本；静态真实生物依据和游戏行为抽象分开。物种分布事实不等于每个窗口中必有该物种，文本/分布权利也不等于训练图像权利。
+
+**生产者与消费者：**生态资料构建器产生名录/物种候选；数据验证者登记资格；世界实体/生命Runtime验证名录、生境、位置和规则后形成个体；导演和审核器消费相同名录/档案/状态引用。不能把候选allowedBiomes、历史dictionary_only词条或调用方“已审核”当准入。
+
+**准入判定：**五类型唯一且各至少一真实物种；别名/交叉分类不重复计数；每物种来源/权利/首区生境合格；参数域/动作/状态引用完整且可解析；缺口不在所宣称发布范围内；来源及资格报告实际hash匹配。缺一项拒绝相应能力，保留候选，不阻断不消费它的先行自然/人物场景。
+
+#### 11.2.5 正反验收与版本保留
+
+正例至少覆盖合法完整/缺时辰规则输出、同输入同seed确定性、独立实例身份、五类型与每类真实物种、单位转换/合法零值、适用N-A和完整来源。反例覆盖非法日期/计算错误伪fallback、规则依赖环、重复/未解冲突输出、单位混用/越界/缺字段、候选文献冒正式公式、别名/图片凑类型、错误生境/无图像权利、篡改引用或缺资格报告。拒绝保存具体字段/规则ID、原原因和实际版本，不能写入正式档案/世界。
+
+四split、身份/谱系/完整序列隔离仍以11.1为唯一原则；本节只要求其覆盖单元和测试证据可解析。新规则、参数或名录版本需重新验其变化及受影响消费者，原数据/判定不改写。
 
 ## 12. 自动保存与失败处理
 

@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "sakaerat-weather-dataset-release-contract-v1",
+  "packageId": "sakaerat-daily-weather-153-v1",
+  "usage": "Reproduce historical fit and evaluation of frozen checkpoint 153 for the first-region same-point retrospective simulation.",
+  "requestPoint": {
+    "latitude": 14.5078,
+    "longitude": 101.895,
+    "returnedCoordinates": [
+      101.895,
+      14.508
+    ]
+  },
+  "historyDays": 7,
+  "horizonSeconds": 86400,
+  "statistics": "daily UTC",
+  "sourceOrigin": "external_archival_context",
+  "publishedAtUtc": null,
+  "rights": {
+    "authority": "NASA POWER Project",
+    "statementUrl": "https://forum.earthdata.nasa.gov/viewtopic.php?t=82",
+    "referenceGuide": "https://power.larc.nasa.gov/docs/referencing/",
+    "reviewedEvidence": {
+      "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-pilot-147-20261029/source-rights-web-readback.json",
+      "sha256": "7ac0b7e3ced4578c31e614939f5579170525f33e41fecb475a393ab834eb7f60"
+    },
+    "attribution": "NASA Langley Research Center POWER Project, NASA Earth Science Division. Meteorology from MERRA-2.",
+    "decision": "Public-domain POWER numerical data, including commercial use with acknowledgement. This local release covers the named weather sources and frozen model only."
+  },
+  "exposure": {
+    "train": "Only update subset. Normalization uses the 731 daily train records.",
+    "validation": "Previously observed development evaluation.",
+    "regression": "2023 original test and 2024 holdout were exposed during model development.",
+    "challenge": "2025 was acquired after checkpoint 153 froze. Results have since been reviewed. Historical challenge for this checkpoint only.",
+    "freshChallengeForFutureModels": false
+  },
+  "inputs": [
+    {
+      "response": {
+        "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-pilot-147-20261029/source-response.json",
+        "sha256": "319b7b6f9bc5310ecfdeec53679cfec6860c45d98a1865277b3fc1ce55dff183"
+      },
+      "receipt": {
+        "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-pilot-147-20261029/source-receipt.json",
+        "sha256": "cf8094e8378806f5f55860bac960a3758e157852fd629165d451c2d27c554d7b"
+      },
+      "historicalDataset": {
+        "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-pilot-147-20261029/dataset.json",
+        "sha256": "c29de6e73c6243df25d636204d972ec9597b83722492b0f82b778c33f7b2847f"
+      },
+      "sets": [
+        {
+          "parserRole": "train",
+          "originalRole": "train",
+          "releaseRole": "train",
+          "start": "20200101",
+          "end": "20211231"
+        },
+        {
+          "parserRole": "validation",
+          "originalRole": "validation",
+          "releaseRole": "validation",
+          "start": "20220101",
+          "end": "20221231"
+        },
+        {
+          "parserRole": "test",
+          "originalRole": "test",
+          "releaseRole": "regression",
+          "start": "20230101",
+          "end": "20231231"
+        }
+      ]
+    },
+    {
+      "response": {
+        "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-holdout-151-20261029/source-response.json",
+        "sha256": "5816b7218c7605aa544c5c4ac73428744d3274a878976274a2cc6f938f6ff095"
+      },
+      "receipt": {
+        "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-holdout-151-20261029/source-receipt.json",
+        "sha256": "33a5268cb2f548db78b54af6eff6b6bd73da056969aeef09a904ff40ffb1f2ed"
+      },
+      "historicalDataset": {
+        "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-holdout-151-20261029/dataset.json",
+        "sha256": "0bb927609b226177cb649e5cee0039f153be88e920c9cf2d15465462bcad2141"
+      },
+      "sets": [
+        {
+          "parserRole": "test",
+          "originalRole": "holdout2024",
+          "releaseRole": "regression",
+          "start": "20240101",
+          "end": "20241231"
+        }
+      ]
+    },
+    {
+      "response": {
+        "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-holdout-154-20261029/source-response.json",
+        "sha256": "657bf887da726507591517d6705eff8d47fbe5246c6685559dd4b7db65eca973"
+      },
+      "receipt": {
+        "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-holdout-154-20261029/source-receipt.json",
+        "sha256": "8c4def1acb3593a790044982619fc0a6890805171c4071f692c4a17768c25ece"
+      },
+      "historicalDataset": {
+        "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-holdout-154-20261029/dataset.json",
+        "sha256": "ee21c9ffc321999acba896eef88a3f8b7225712388090cde0454ecc70bc17dc5"
+      },
+      "sets": [
+        {
+          "parserRole": "test",
+          "originalRole": "holdout2025",
+          "releaseRole": "challenge",
+          "start": "20250101",
+          "end": "20251231"
+        }
+      ]
+    }
+  ],
+  "trainingResult": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-humidity-153-20261029/model-run-v1/result.json",
+    "sha256": "5bbf881808fef2b9a83e93cf2c1efadbbc0913afac7a715b3de071e260e84213"
+  },
+  "trainingContract": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-humidity-153-20261029/experiment-contract.json",
+    "sha256": "fef9030883c521274683f6bb09806904dfcd0faeeb4b44c4406e89405df453e0"
+  },
+  "checkpoint": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-humidity-153-20261029/model-run-v1/checkpoint.pt",
+    "sha256": "36a5e5973228295f38392b50680868331caab7b1588e3fc10f54d2f084ce05c8"
+  },
+  "parser": {
+    "path": "scripts/lib/natural-world-temporal-data.mjs",
+    "sha256": "d43bd95b50f190545d28229a6e0ff5e8e1fb4c57f7fc43f2fdceb120c35acd49"
+  },
+  "fitProgram": {
+    "path": "ml/ai-painter/scripts/world_environment_humidity.py",
+    "sha256": "b3e0788504f52eaeab44fb556acced7b32d5a79af3ab47e6a0faf12df0762928"
+  },
+  "fieldMetadata": {
+    "path": "data/ai-painter/system-governance/mvp-natural-world-weather-target-v1.json",
+    "sha256": "44192a477e628cf6457dbea8072d92b46a9bb5c0fddca8f00a7c92aa4c34c8a1"
+  }
+}

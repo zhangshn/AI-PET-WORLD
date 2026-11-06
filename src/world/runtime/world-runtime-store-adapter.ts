@@ -14,10 +14,13 @@ import type {
   NaturalWorldRuntimeReadResult,
   NaturalWorldRuntimeWriteInput,
   NaturalWorldRuntimeWriteResult,
+  NaturalWorldTransitionWriteInput, NaturalWorldTransitionWriteResult,
+  NaturalWorldTransitionQuery, NaturalWorldTransitionReadResult,
 } from "./world-runtime-schema"
 import { localFileRuntimeStore } from "./world-runtime-store"
 import { createProductionWorldRuntimeStore } from "./world-runtime-production-store"
 import { assertNaturalWorldReadInput, snapshotNaturalWorldWrite } from "./world-runtime-record-validation"
+import { snapshotNaturalWorldTransition, snapshotNaturalWorldTransitionQuery } from "./world-evolution-transaction"
 
 export async function getWorldRuntimeStoreAdapter(): Promise<WorldRuntimeStoreAdapter> {
   if (process.env.NODE_ENV === "production") {
@@ -70,4 +73,23 @@ export async function writeNaturalWorldRuntimeSaveRecord(input: NaturalWorldRunt
   if (!adapter.writeNatural) throw new Error("natural_world_store_capability_unavailable")
   // Concrete file adapters snapshot synchronously before their first await.
   return adapter.writeNatural(fixed)
+}
+
+export async function writeNaturalWorldRuntimeTransition(input: NaturalWorldTransitionWriteInput): Promise<NaturalWorldTransitionWriteResult> {
+  const fixed = snapshotNaturalWorldTransition(input)
+  const adapter = await getWorldRuntimeStoreAdapter()
+  if (!adapter.writeNaturalTransition) throw new Error("natural_world_transition_store_unavailable")
+  return adapter.writeNaturalTransition(fixed)
+}
+export async function readNaturalWorldRuntimeTransition(input: NaturalWorldTransitionQuery): Promise<NaturalWorldTransitionReadResult> {
+  const fixed = snapshotNaturalWorldTransitionQuery(input)
+  const adapter = await getWorldRuntimeStoreAdapter()
+  if (!adapter.readNaturalTransition) throw new Error("natural_world_transition_store_unavailable")
+  return adapter.readNaturalTransition(fixed)
+}
+export async function recoverNaturalWorldRuntimeTransition(input: NaturalWorldTransitionQuery): Promise<NaturalWorldTransitionWriteResult> {
+  const fixed = snapshotNaturalWorldTransitionQuery(input)
+  const adapter = await getWorldRuntimeStoreAdapter()
+  if (!adapter.recoverNaturalTransition) throw new Error("natural_world_transition_store_unavailable")
+  return adapter.recoverNaturalTransition(fixed)
 }

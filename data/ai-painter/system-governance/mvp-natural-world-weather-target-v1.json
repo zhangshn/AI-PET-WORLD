@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "natural-world-weather-target-profile-v1",
+  "version": "sakaerat-mvp-weather-target-v1",
+  "purpose": "prepare_for_registration_only",
+  "capabilityScope": "world_evolution",
+  "identity": {
+    "ownerId": "mvp-natural-owner-001",
+    "playerId": "mvp-natural-player-001",
+    "worldId": "mvp-natural-world-001",
+    "worldSeed": "mvp-natural-world-001-seed-v1",
+    "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "regionId": "mvp-natural-region-001"
+  },
+  "modelSha256": "36a5e5973228295f38392b50680868331caab7b1588e3fc10f54d2f084ce05c8",
+  "initialization": {
+    "mode": "full_context_retrospective_archival_seed",
+    "epochUtc": "2020-01-08T00:00:00.000Z",
+    "historyDays": 7,
+    "publicationTimeRequired": false
+  },
+  "geography": {
+    "requestedLongitude": 101.895,
+    "requestedLatitude": 14.5078,
+    "returnedLongitude": 101.895,
+    "returnedLatitude": 14.508
+  },
+  "time": {
+    "statistics": "daily UTC",
+    "singleStepSeconds": 86400
+  },
+  "fields": [
+    "PRECTOTCORR",
+    "RH2M",
+    "T2M",
+    "WS2M"
+  ],
+  "units": [
+    "mm/day",
+    "%",
+    "C",
+    "m/s"
+  ],
+  "fieldSupportTest": {
+    "method": "observed_min_max_training_days_only",
+    "fitStart": "20200101",
+    "fitEnd": "20211231",
+    "evaluationStart": "20250101",
+    "evaluationEnd": "20251231",
+    "failureAction": "report_all_outside_without_clipping_or_refitting",
+    "meaning": "Coverage test of an empirical candidate envelope; not production legal bounds."
+  }
+}

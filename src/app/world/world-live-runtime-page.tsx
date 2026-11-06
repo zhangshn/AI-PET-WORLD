@@ -3,9 +3,11 @@ import type { CSSProperties, ReactNode } from "react"
 import { readLatestGameMapRuntimeFrameRecord } from "@/world/game-map-frame"
 import type { GameMapRuntimeFrame } from "@/world/game-map-frame"
 import { readWorldRuntimeForView } from "@/world/runtime/world-runtime-gateway"
+import { requiresNaturalWorldPlayerGrant } from "@/world/runtime/natural-world-client-access"
 import { buildWorldVisualFactManifest } from "@/world/world-visual-painter"
 
 import { WorldRuntimeSurface } from "./world-runtime-surface"
+import { NaturalWorldPlayerPage } from "./natural-world-player-page"
 import type {
   WorldRuntimeSurfaceInteraction,
   WorldRuntimeSurfaceMarker,
@@ -14,8 +16,8 @@ import type {
 const WORLD_DISPLAY_REQUIRED_TAG = "composite_game_map_runtime_frame"
 const WORLD_FORMAL_JUDGE_REQUIRED_TAG = "formal_game_map_visual_judge_passed"
 
-export async function WorldLiveRuntimePage(input: { worldId?: string } = {}) {
-  if (!input.worldId) {
+export async function WorldLiveRuntimePage(input: { worldId?: string; historyCursor?: string | string[] } = {}) {
+  if (typeof input.worldId !== "string" || !input.worldId) {
     return (
       <main style={pageStyles.page}>
         <section style={pageStyles.panel}>
@@ -28,20 +30,22 @@ export async function WorldLiveRuntimePage(input: { worldId?: string } = {}) {
       </main>
     )
   }
+  if (requiresNaturalWorldPlayerGrant(input.worldId)) {
+    return NaturalWorldPlayerPage({worldId:input.worldId,historyCursor:input.historyCursor})
+  }
   const runtimeView = await readWorldRuntimeForView({ worldId: input.worldId })
 
   if (!runtimeView.isPersisted) {
+    const empty = runtimeView.readResult.status === "empty"
     return (
       <main style={pageStyles.page}>
         <section style={pageStyles.panel}>
           <div style={pageStyles.brand}>AI-PET-WORLD</div>
-          <h1 style={pageStyles.title}>世界尚未创建</h1>
+          <h1 style={pageStyles.title}>{empty ? "未找到世界存档" : "世界存档暂时无法读取"}</h1>
           <p style={pageStyles.body}>
-            请先创建正式世界。这个页面不会自动生成默认世界，也不会改写世界事实。
+            {empty ? "请检查世界链接，或创建新世界。" : "请保留当前世界链接，稍后重试。"}
           </p>
-          <a href="/create-world" style={pageStyles.link}>
-            创建世界
-          </a>
+          {empty && <a href="/create-world" style={pageStyles.link}>创建世界</a>}
         </section>
       </main>
     )

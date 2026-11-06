@@ -8,7 +8,7 @@
  */
 import { createHash, randomUUID } from "node:crypto"
 import { hostname } from "node:os"
-import { mkdir, open, readFile, rename, rm, readdir, stat } from "node:fs/promises"
+import { mkdir, open, readFile, rename, rm, readdir } from "node:fs/promises"
 import { existsSync } from "node:fs"
 import path from "node:path"
 
@@ -26,10 +26,10 @@ import {
 } from "./runtime-path-security"
 import { isWorldRuntimeSaveRecord } from "./world-runtime-record-validation"
 import {
-  NATURAL_WORLD_MAX_BYTES, decodeNaturalWorldRuntimeRecord, assertNaturalWorldReadInput,
+  decodeNaturalWorldRuntimeRecord, assertNaturalWorldReadInput,
   assertNaturalWorldReadMatch, snapshotNaturalWorldWrite, naturalWorldCasConflict,
-  validateNaturalWorldTransactionJournal, assertNaturalWorldTransactionRecord,
 } from "./world-runtime-record-validation"
+import { readVerifiedNaturalRecord, writeNaturalTransitionAt, readNaturalTransitionAt, recoverNaturalTransitionAt } from "./world-evolution-transaction"
 type LegacyReadInput = { filePath?: string; ownerId?: string; worldId?: string }
 type LegacyWriteInput = { record: WorldRuntimeSaveRecord; filePath?: string; expectedTick?: number }
 type StoredRecord = WorldRuntimeSaveRecord | NaturalWorldRuntimeSaveRecord
@@ -45,6 +45,9 @@ export function createProductionWorldRuntimeStore(runtimeRoot: string): WorldRun
     kind: "configured_file_runtime_store",
     readNatural: (input) => readNaturalRecord(root, input),
     writeNatural: (input) => writeNaturalRecord(root, input),
+    writeNaturalTransition: (input) => writeNaturalTransitionAt(root, input),
+    readNaturalTransition: (input) => readNaturalTransitionAt(root, input),
+    recoverNaturalTransition: (input) => recoverNaturalTransitionAt(root, input),
     getDefaultSavePath: () => path.join(root, LATEST_FILE),
     read: async (input) => readRecord(root, input),
     write: async (input) => writeRecord(root, input),
@@ -295,27 +298,8 @@ async function writeNaturalRecord(root: string, input: NaturalWorldRuntimeWriteI
   } catch (error) { return naturalWriteFailure(error) }
 }
 
-async function readNaturalFile(filePath: string) {
-  if ((await stat(filePath)).size > NATURAL_WORLD_MAX_BYTES) throw new Error("natural_world_invalid:size")
-  return decodeNaturalWorldRuntimeRecord(await readFile(filePath))
-}
-async function readExistingNaturalFile(filePath: string) {
-  try { return await readNaturalFile(filePath) }
-  catch (error) { if (isNodeFileError(error) && error.code === "ENOENT") return null; throw error }
-}
 async function readNaturalTransactionRecord(root: string, filePath: string, identity: { ownerId: string; worldId: string }) {
-  let rawJournal: Buffer | null = null
-  const journalPath = `${filePath}.transaction.json`
-  try {
-    await assertRuntimePath(journalPath, root)
-    if ((await stat(journalPath)).size > NATURAL_WORLD_MAX_BYTES) throw new Error("natural_world_invalid:transaction_size")
-    rawJournal = await readFile(journalPath)
-  } catch (error) { if (!(isNodeFileError(error) && error.code === "ENOENT")) throw error }
-  const journal = rawJournal === null ? null : validateNaturalWorldTransactionJournal(
-    JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(rawJournal)), filePath, identity.worldId)
-  const current = await readExistingNaturalFile(filePath)
-  if (journal) assertNaturalWorldTransactionRecord(journal, current?.record ?? null, identity)
-  return current
+  return readVerifiedNaturalRecord(root, filePath, identity)
 }
 function naturalWriteReceipt(record: NaturalWorldRuntimeSaveRecord) {
   return { fileSha256: sha256Json(record), recordContentSha256: record.recordContentSha256,

@@ -18,6 +18,7 @@ for (const relative of [
   "game-map-frame/game-map-runtime-frame-schema",
   "game-map-frame/game-map-composite-schema",
   "runtime/runtime-path-security",
+  "runtime/natural-world-client-access",
 ]) {
   const file = fileURLToPath(new URL(`../../src/world/${relative}.ts`, import.meta.url))
   const result = ts.transpileModule(fs.readFileSync(file, "utf8"), {
@@ -123,6 +124,7 @@ function fixture(t) {
         if (id === "../runtime/runtime-path-security") {
           return { assertRuntimePathSegment: load("runtime/runtime-path-security").assertRuntimePathSegment }
         }
+        if (id === "../runtime/natural-world-client-access") return load("runtime/natural-world-client-access")
         if (id.startsWith("./")) return load(`game-map-frame/${id.slice(2)}`)
         throw new Error(`unexpected fixture import: ${id}`)
       }
@@ -163,6 +165,34 @@ function fixture(t) {
 function legacyJournal(worldId = "world-a", state = "prepared") {
   return { schemaVersion: "game-map-runtime-frame-transaction-v1", worldId, tick: 7, state }
 }
+test("legacy composites cannot publish to the reserved natural world", async (t) => {
+  const f = fixture(t)
+  for (const worldId of ["mvp-natural-world-001", "MVP-NATURAL-WORLD-001"]) {
+    const candidate = frame(worldId, 30)
+    candidate.tags.push("painter_release_passed", "visual_judge_passed")
+    const result = await f.write(candidate)
+    assert.equal(result.status, "blocked_invalid_runtime_frame")
+    assert.equal(result.record, null)
+    assert.deepEqual(result.warnings, ["legacy_runtime_frame_missing_natural_world_authority"])
+  }
+  assert.equal(f.io.length, 0)
+  assert.equal(fs.existsSync(f.outputRoot), false)
+})
+test("legacy natural world records stay preserved but cannot be returned as eligible frames", async (t) => {
+  const f = fixture(t)
+  const worldId = "mvp-natural-world-001"
+  const prior = (await f.write(frame())).record
+  const runtimeFrame = frame(worldId, 30)
+  const raw = json({ ...prior, runtimeFrame, worldId, tick: 30, sourceFactIds: runtimeFrame.sourceFactIds })
+  f.seed(f.latest(worldId), raw)
+  for (const extra of [{}, { filePath: f.latest(worldId), worldId: undefined }]) {
+    const result = await f.read(worldId, extra)
+    assert.equal(result.status, "invalid")
+    assert.equal(result.record, null)
+    assert.deepEqual(result.warnings, ["legacy_runtime_frame_missing_natural_world_authority"])
+  }
+  assert.equal(f.raw(f.latest(worldId)), raw)
+})
 function rejected(result, code) {
   assert.equal(result.status, "failed")
   assert.ok(result.warnings.some((warning) => warning.includes(code)), json(result))

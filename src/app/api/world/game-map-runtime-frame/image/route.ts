@@ -6,18 +6,24 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { readLatestGameMapRuntimeFrameRecord } from "@/world/game-map-frame"
 import { assertRuntimePath } from "@/world/runtime/runtime-path-security"
+import { requiresNaturalWorldPlayerGrant } from "@/world/runtime/natural-world-client-access"
+import { readNaturalPlayerFrameResponse } from "@/world/runtime/natural-player-view"
 
 export const dynamic = "force-dynamic"
 
 const WORLD_FORMAL_JUDGE_REQUIRED_TAG = "formal_game_map_visual_judge_passed"
 
 export async function GET(request: NextRequest) {
-  const worldId = request.nextUrl.searchParams.get("worldId")
-  if (!worldId) {
+  const worldIds = request.nextUrl.searchParams.getAll("worldId")
+  const [worldId] = worldIds
+  if (worldIds.length !== 1 || !worldId) {
     return NextResponse.json(
       { ok: false, status: "world_id_required_for_runtime_image" },
       { status: 400 },
     )
+  }
+  if (requiresNaturalWorldPlayerGrant(worldId)) {
+    return readNaturalPlayerFrameResponse(request,worldId)
   }
   const requestedTick = request.nextUrl.searchParams.get("tick")
   const tick = requestedTick === null ? undefined : Number(requestedTick)

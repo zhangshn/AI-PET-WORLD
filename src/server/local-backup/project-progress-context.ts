@@ -8,8 +8,15 @@ import {readProjectWorkPlan} from './project-progress-work-plan.mjs'
 import {readProjectProgressTruth} from './project-progress-truth.mjs'
 export function projectProgress(){
  const runtimeRoot=path.resolve(process.env.AI_PET_WORLD_DATA_ROOT??(process.platform==='win32'?'D:/AI-PET-WORLD-DATA':'.ai-pet-world-data'),'hot/runtime')
- const result=readProjectProgress({projectRoot:process.cwd(),runtimeRoot})
- verifyFrozenMvpBindings(result.projection.evidence)
+ let result
+ try{result=readProjectProgress({projectRoot:process.cwd(),runtimeRoot});verifyFrozenMvpBindings(result.projection.evidence)}
+ catch(error){
+  const evidenceFailures=['progress_fixed_source_missing','progress_plan_sha_conflict','progress_checklist_binding_conflict','progress_evidence_sha_conflict','progress_json_invalid','progress_snapshot_shape','progress_snapshot_schema','progress_snapshot_time_invalid','progress_unknown_producer','progress_mixed_revision']
+  if(!(error instanceof Error)||!evidenceFailures.includes(error.message))throw error
+  const workPlan=readProjectWorkPlan({projectRoot:process.cwd(),runtimeRoot})
+  if(!workPlan.currentDelivery||!workPlan.definition)throw error
+  return {dataStatus:'partial',reasonCode:error.message,projection:{schemaVersion:'local-backup-formal-plan-projection-v1',projectionKind:'formal_plan_only',plan:workPlan.definition,workPlan,readAtUtc:workPlan.readAtUtc,live:false,dynamicEvidence:{status:'unverifiable',reasonCode:error.message,message:'动态说明快照或证据不可核验；当前正式计划独立读取，未返回旧MVP状态或默认完成比例。'}}}
+ }
  let mvp
  try{mvp=applyMvpAcceptance(result.projection.mvp,createWorkProducers().readMvpAcceptance())}
  catch(error){

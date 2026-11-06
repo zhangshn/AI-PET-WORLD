@@ -262,6 +262,13 @@ export function snapshotNaturalWorldWrite(input: NaturalWorldRuntimeWriteInput):
 }
 export function naturalWorldCasConflict(current: NaturalWorldRuntimeSaveRecord | null, next: NaturalWorldRuntimeSaveRecord,
   input: NaturalWorldRuntimeWriteInput, fileSha256: string | null): string | null {
+  // Evolution records are owned by the explicit state/event transaction path.
+  // Neither adding nor removing its commit through the old writer is legal.
+  const hasCommit = (r: NaturalWorldRuntimeSaveRecord | null) => {
+    const e = r?.worldState.payload.environment.evolution
+    return e !== undefined && e !== null && typeof e === "object" && !Array.isArray(e) && Object.hasOwn(e, "commit")
+  }
+  if (hasCommit(current) || hasCommit(next)) return "natural_world_transition_protocol_required"
   if (current === null) return input.expectedTick === -1 && input.expectedStateVersion === -1 && input.expectedFileSha256 === null && next.tick === 0 && next.stateVersion === 0 ? null : "natural_world_initial_cas_rejected"
   if (current.tick !== input.expectedTick || current.stateVersion !== input.expectedStateVersion || fileSha256 !== input.expectedFileSha256) return "natural_world_cas_rejected"
   if (next.stateVersion !== current.stateVersion + 1 || next.tick < current.tick || NATURAL_IDENTITY_KEYS.some(key => next[key] !== current[key])) return "natural_world_transition_rejected"
@@ -274,8 +281,14 @@ export function validateNaturalWorldTransactionJournal(value: unknown, recordPat
 } {
   naturalJson(value)
   naturalRequire(naturalObject(value), "transaction_object")
+  naturalRequire(!Object.hasOwn(value, "protocolVersion"), "transaction_protocol_unsupported")
+  const journalFields = ["schemaVersion", "recordKind", "stateVersion", "recordContentSha256", "state", "recordPath", "latestPath", "worldId", "tick", "createdAtUtc", "committedAtUtc"]
+  naturalRequire(Object.keys(value).every(key => journalFields.includes(key)), "transaction_unknown_fields")
   naturalRequire(value.schemaVersion === "world-runtime-transaction-v1" && value.recordKind === "natural_world", "transaction_schema")
   naturalRequire(value.state === "prepared" || value.state === "committed", "transaction_state")
+  const transactionTime = value.state === "prepared" ? value.createdAtUtc : value.committedAtUtc
+  naturalRequire(typeof transactionTime === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(transactionTime) &&
+    Number.isFinite(Date.parse(transactionTime)) && new Date(transactionTime).toISOString() === transactionTime, "transaction_time")
   naturalRequire(value.recordPath === recordPath && value.latestPath === null && value.worldId === worldId, "transaction_identity")
   naturalRequire(naturalInteger(value.tick) && naturalInteger(value.stateVersion), "transaction_counters")
   naturalRequire(typeof value.recordContentSha256 === "string" && SHA256.test(value.recordContentSha256), "transaction_content_hash")

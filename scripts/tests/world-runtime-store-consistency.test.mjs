@@ -16,7 +16,7 @@ import ts from "typescript"
 const require = createRequire(import.meta.url)
 const sourceRoot = fileURLToPath(new URL("../../src/world/runtime/", import.meta.url))
 const compiled = new Map()
-for (const name of ["world-runtime-store", "world-runtime-production-store", "world-runtime-record-validation", "runtime-path-security"]) {
+for (const name of ["world-runtime-store", "world-runtime-production-store", "world-runtime-record-validation", "world-evolution-transaction", "runtime-path-security"]) {
   const result = ts.transpileModule(fs.readFileSync(path.join(sourceRoot, `${name}.ts`), "utf8"), {
     fileName: `${name}.ts`, reportDiagnostics: true,
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },

@@ -1,0 +1,133 @@
+{
+  "schemaVersion": "native-stage0-resource-continuation-v1",
+  "dispatchId": "resource-continuation-236",
+  "runId": "stage0-native-256-formal-229",
+  "runRoot": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229",
+  "activationRoot": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/continuations/resource-continuation-236",
+  "originalPolicy": {
+    "path": "data/ai-painter/system-governance/ai-painter-native-stage0-formal-training-v1.json",
+    "sha256": "3f00ea5bb99997ddbdd4f051b424bd9177b1305591504874394370be461887e1",
+    "bytes": 78478
+  },
+  "opening": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/opening.json",
+    "sha256": "dd63aa4efbe7e54116a8f443943e9794a71fa4952757c9b7bbc72af19b17de27",
+    "bytes": 674
+  },
+  "oldTerminal": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/terminal.json",
+    "sha256": "3cb0712c1da6921fe6c5d370445679f8895328d51f096ecaa49de19ce3888fa1",
+    "bytes": 915
+  },
+  "seal13": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/13/seal.json",
+    "sha256": "7b5cddcc542d78479f9e2f32d2c226399d4cb64427724853a66eaba6468b2423",
+    "bytes": 2129
+  },
+  "checkpoint13": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/13/recovery.pt",
+    "sha256": "82c930dd25042493fae7a085e8c60c2571734ee520e40b1ab9e760983a219ee0",
+    "bytes": 30107037
+  },
+  "runDeadlineUtc": "2026-11-03T08:09:02.105Z",
+  "firstSegment": 14,
+  "lastSegment": 48,
+  "entry": {
+    "path": "scripts/run-native-stage0-continuation.mjs",
+    "sha256": "40ae5869874dc3bbf235cb1a97ec821c7e4a7e6375e6b95d521c5ca2f2e43f09",
+    "bytes": 251
+  },
+  "sources": [
+    {
+      "path": "scripts/run-native-stage0-continuation.mjs",
+      "sha256": "40ae5869874dc3bbf235cb1a97ec821c7e4a7e6375e6b95d521c5ca2f2e43f09",
+      "bytes": 251
+    },
+    {
+      "path": "scripts/lib/native-stage0-continuation-host.mjs",
+      "sha256": "973486c254a7485efeba429f4ab9f5155e1c0e286daa1bce90125c92ef30bf6c",
+      "bytes": 20993
+    },
+    {
+      "path": "scripts/lib/native-stage0-continuation-proof.mjs",
+      "sha256": "dd521c2f3e7cf09a607d7f2649a28d5cee84faf93b1c20eeb22edfc3b3cb0a54",
+      "bytes": 14341
+    },
+    {
+      "path": "scripts/lib/native-stage0-continuation-resources.mjs",
+      "sha256": "19766d02b655cff773628f96901494d8608feb05b165c106246c62b36fd4280c",
+      "bytes": 13893
+    }
+  ],
+  "grantPath": ".runtime/ai-painter/controller-repair-reviews/native-stage0-resource-continuation-236-20261103/controller/dispatch.json",
+  "originalStart": "2026-11-02T23:09:02.105Z",
+  "firstNewPair": 313,
+  "maxNewPairs": 840,
+  "totalPlannedPairs": 1152,
+  "automaticRetries": 0,
+  "originalFailureCheckpointRetained": true,
+  "resourceLimits": {
+    "segmentSeconds": 840,
+    "totalSeconds": 32400,
+    "segmentPairs": 24,
+    "segments": 48,
+    "maxArtifactBytes": 134217728,
+    "failureReserveBytes": 67108864,
+    "minimumHostEntryGiB": 13,
+    "minimumHostRunningGiB": 10,
+    "minimumDiskMiB": 2048,
+    "maximumTemperatureC": 85,
+    "wholeCardFraction": 0.7,
+    "minimumFreeVramMiB": 2048,
+    "maximumJobBytes": 8589934592,
+    "cpuCores": 2,
+    "maxPerStreamBytes": 8388608,
+    "automaticRetries": 0
+  },
+  "originalFinalReadback": {
+    "attempts": 1,
+    "device": "cuda:0",
+    "maxWorkerSeconds": 120,
+    "maxGeneratorForwards": 8,
+    "maxDiscriminatorForwards": 0,
+    "maxOptimizerUpdates": 0,
+    "automaticRetries": 0
+  },
+  "immutableSources": [
+    {
+      "path": ".runtime/ai-painter/controller-repair-reviews/native-stage0-resource-continuation-236-20261103/implementation-scope.json",
+      "sha256": "ebd6ede3882227b8db21870e61b4fac89855a73ee9a6e9ebf0b2343f9fdbc56f",
+      "bytes": 2951
+    },
+    {
+      "path": ".runtime/ai-painter/controller-repair-reviews/native-stage0-resource-continuation-236-20261103/resources/delivery.json",
+      "sha256": "8ae93a58fd49a00754d0f54a6102671c5c1e60062426397e10812f57755266e6",
+      "bytes": 21566
+    },
+    {
+      "path": ".runtime/ai-painter/controller-repair-reviews/native-stage0-resource-continuation-236-20261103/resources/implementation-delivery.json",
+      "sha256": "b570cd49c64b45e5b3a4c7d883ac32b33120aafdf78934632cfcc929cacde27f",
+      "bytes": 3790
+    },
+    {
+      "path": ".runtime/ai-painter/controller-repair-reviews/native-stage0-resource-continuation-236-20261103/recovery/readback.json",
+      "sha256": "3e199d11296dec601924762869ac3a536a7762db592e1d661abb0a11ddb8731b",
+      "bytes": 13062
+    },
+    {
+      "path": ".runtime/ai-painter/controller-repair-reviews/native-stage0-resource-continuation-236-20261103/recovery/module-delivery.json",
+      "sha256": "a07a655df40500ade90c4c8a7fb57b939407acf9ab4a3dddaa9058299cdc9186",
+      "bytes": 5111
+    },
+    {
+      "path": ".runtime/ai-painter/controller-repair-reviews/native-stage0-resource-continuation-236-20261103/controller/verified-stop.json",
+      "sha256": "9253029ff1e67c806441ccaf5472f2b1dd68b021fc7d040a257489c1b4719d0f",
+      "bytes": 993
+    },
+    {
+      "path": ".runtime/ai-painter/controller-repair-reviews/native-stage0-resource-continuation-236-20261103/controller/independent-contract-tests.txt",
+      "sha256": "daf1230d6e863d87758836fbf168f4dc23795a7e1cc9b0746c55d357c032d279",
+      "bytes": 1807
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+.page {min-height:100vh;background:#0b1915;color:#e4f1e9;padding:clamp(1.3rem,7vw,5rem);font-family:system-ui,sans-serif}
+.panel {max-width:48rem;margin:0 auto;padding:clamp(1.4rem,4vw,3rem);background:#132620;border:1px solid #426253;border-radius:1rem}
+.eyebrow {font-size:.85rem;letter-spacing:.12em;color:#adcbb5}
+.panel h1 {margin:.5rem 0 1.5rem;font-size:clamp(1.8rem,5vw,3rem)}
+.panel p {line-height:1.7}
+.form {max-width:32rem;margin:1.5rem 0 .5rem}
+.form label {display:block;margin:.85rem 0}
+.form input {display:block;box-sizing:border-box;width:100%;margin-top:.35rem;padding:.65rem;border:1px solid #698b7b;border-radius:.4rem;background:#0c1d16;color:#fff;font:inherit}
+.actions {display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0}
+.actions button,.refresh {border:1px solid #87ae94;background:#bee1c5;color:#102518;padding:.55rem .95rem;border-radius:.45rem;font:inherit;text-decoration:none;cursor:pointer}
+.actions .secondary {background:transparent;color:#d7eddd}
+.actions button:disabled {opacity:.55;cursor:wait}
+.conditions {display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.7rem;padding:0}
+.conditions div {background:#1e372c;border-radius:.45rem;padding:.8rem}
+.conditions dt {font-size:.8rem;color:#bfd3c4}
+.conditions dd {margin:.35rem 0 0;font-weight:600}
+.refresh {display:inline-block;margin-top:1rem}

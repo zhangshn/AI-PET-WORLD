@@ -19,6 +19,14 @@ const recordPath = findRecordPath(categoryId, recordId)
 assert(fs.existsSync(recordPath), "AI cold-start original image record is missing")
 const record = readJson(recordPath)
 assert(record.categoryId === categoryId, "record category mismatch")
+if (record.sourceCorrection && record.aiAssistedColdStart?.policyVersion !== "AI-PAINTER-DATA-PROVENANCE-1.8") {
+  const { reviewGuideSource } = await import("./lib/ai-painter-guide-source-review.mjs")
+  const priorPath = argumentValue("--parent-review"), priorSha = argumentValue("--parent-review-sha256")
+  assert(Boolean(priorPath) === Boolean(priorSha), "parent review path and SHA must be supplied together")
+  const review = await reviewGuideSource({ recordId, parentReview: priorPath ? {path:priorPath,sha256:priorSha} : null })
+  console.log(JSON.stringify(review, null, 2))
+  process.exit(review.passed ? 0 : 1)
+}
 if (record.aiAssistedColdStart?.policyVersion === "AI-PAINTER-DATA-PROVENANCE-1.8") {
   const { reviewCurrentSourceCorrection } = await import("./lib/ai-painter-source-correction-review-v1.mjs")
   const priorPath = argumentValue("--parent-review")

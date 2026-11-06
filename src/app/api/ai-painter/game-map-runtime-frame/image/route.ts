@@ -5,14 +5,20 @@ import { NextResponse } from "next/server"
 
 import { assertRuntimePath } from "@/world/runtime/runtime-path-security"
 import { readLatestGameMapRuntimeFrameRecord } from "@/world/game-map-frame"
+import { requiresNaturalWorldPlayerGrant } from "@/world/runtime/natural-world-client-access"
+import { readNaturalPlayerFrameResponse } from "@/world/runtime/natural-player-view"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 export async function GET(request: Request) {
-  const worldId = new URL(request.url).searchParams.get("worldId")
-  if (!worldId) {
+  const worldIds = new URL(request.url).searchParams.getAll("worldId")
+  const [worldId] = worldIds
+  if (worldIds.length !== 1 || !worldId) {
     return NextResponse.json({ ok: false, error: "world_id_required_for_runtime_image" }, { status: 400 })
+  }
+  if (requiresNaturalWorldPlayerGrant(worldId)) {
+    return readNaturalPlayerFrameResponse(request,worldId)
   }
   const recordRead = await readLatestGameMapRuntimeFrameRecord({ worldId })
   const runtimeFrame = recordRead.record?.runtimeFrame

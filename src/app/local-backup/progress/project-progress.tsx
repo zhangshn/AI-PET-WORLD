@@ -1,6 +1,7 @@
 'use client'
 import {useEffect,useState,type KeyboardEvent} from 'react'
 import {useProjectProgress} from './use-project-progress'
+import {FormalPlanFallback} from './formal-plan-fallback'
 import {WorkPlanProgress} from './work-plan-progress'
 import {MvpProgress} from './mvp-progress'
 import {time} from '../local-backup-shared'
@@ -13,15 +14,16 @@ const views=[{id:'plan',label:'总计划'},{id:'progress',label:'进度'},{id:'e
 type View=typeof views[number]['id']
 const failures:Record<string,string>={progress_fixed_source_missing:'固定快照或证据文件缺失',progress_plan_sha_conflict:'指南修订已变化，与快照摘要不一致',progress_evidence_sha_conflict:'证据实际字节与快照摘要冲突',progress_unknown_producer:'快照生产者不在登记范围',progress_json_invalid:'快照或证据不是有效 JSON',progress_path_boundary:'文件真实路径越过受限边界',progress_snapshot_stale:'静态快照已超过新鲜度范围'}
 export function ProjectProgressPanel(){
- const [view,setView]=useState<View>('progress'),[selected,setSelected]=useState('native-compute'),result=useProjectProgress(),data=result.data?.projection
- useEffect(()=>{const follow=()=>{if(window.location.hash==='#journal'||window.location.hash==='#project-progress')window.document?.getElementById('project-progress')?.scrollIntoView({block:'start'})};follow();window.addEventListener('hashchange',follow);return()=>window.removeEventListener('hashchange',follow)},[])
+ const [view,setView]=useState<View>('progress'),[selected,setSelected]=useState('native-compute'),result=useProjectProgress(),projection=result.data?.projection,planOnly=projection&&'projectionKind' in projection&&projection.projectionKind==='formal_plan_only'?projection:null,data=projection&&'projectionKind' in projection?null:projection
+ useEffect(()=>{const follow=()=>{const parts=window.location.hash.split('#').filter(Boolean),anchor=parts.length&&parts.every(part=>part===parts[0])?parts[0]:'';if(anchor==='current-delivery'){setView('plan');window.document?.getElementById('project-progress')?.scrollIntoView({block:'start'});return}if(anchor==='journal'||anchor==='project-progress')window.document?.getElementById('project-progress')?.scrollIntoView({block:'start'})};follow();window.addEventListener('hashchange',follow);return()=>window.removeEventListener('hashchange',follow)},[data?.revision,planOnly?.workPlan.version])
  function moveTab(event:KeyboardEvent<HTMLButtonElement>,index:number){
   const next=event.key==='ArrowRight'?(index+1)%views.length:event.key==='ArrowLeft'?(index+views.length-1)%views.length:event.key==='Home'?0:event.key==='End'?views.length-1:null
   if(next===null)return;event.preventDefault();setView(views[next].id);const tabs=event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]');tabs?.[next]?.focus()
  }
  const stage=data?.stages.find(s=>s.id===selected)??data?.stages[0]
  return <section className={styles.panel} id="project-progress" aria-labelledby="project-progress-heading"><header className={styles.hero}><div><span className={styles.eyebrow}>全项目 · 计划与交付进度</span><h2 id="project-progress-heading">项目进度</h2><p>按建设模块查看具体任务、完成内容与剩余工作。</p></div><div className={styles.heroActions}><span className={styles.snapshotBadge}>固定证据 · 15秒只读刷新</span><button type="button" disabled={result.busy} aria-busy={result.busy} onClick={()=>{void result.refresh()}}>重新读取 <span aria-hidden="true">↻</span></button></div></header>
- <div className={styles.content}>{result.error&&<div role="alert" className={styles.error}><strong>连接错误 · 进度读取失败</strong><p>{failures[result.error]??'固定来源读取或身份校验失败'}。{data?'下方保留上次成功读取的结果，已陈旧，不能当作最新。':'没有可用证据时不显示通过或百分比。'}</p><code>{result.error}</code></div>}{!data&&!result.error&&<p role="status" className={styles.loading}>正在核对48项清单、计划修订与绑定证据…</p>}
+ <div className={styles.content}>{result.error&&<div role="alert" className={styles.error}><strong>连接错误 · 进度读取失败</strong><p>{failures[result.error]??'固定来源读取或身份校验失败'}。{data||planOnly?'下方保留上次成功读取的结果，已陈旧，不能当作最新。':'没有可用证据时不显示通过或百分比。'}</p><code>{result.error}</code></div>}{!data&&!planOnly&&!result.error&&<p role="status" className={styles.loading}>正在核对48项清单、计划修订与绑定证据…</p>}
+ {planOnly&&<FormalPlanFallback data={planOnly}/>}
  {data&&<><div className={styles.snapshotLine}><p>静态说明快照核验于 <time dateTime={data.verifiedAtUtc}>{time(data.verifiedAtUtc)}</time><span>北京时间 · 非实时说明</span></p><span>Codex 外部整理 · {data.evidence.length} 份固定记录 · {result.paused?'后台暂停':result.busy?'读取中':'前台每15秒刷新'}</span></div>{data.stale&&<p role="alert" className={styles.notice}>快照已陈旧：超过 {data.staleAfterHours} 小时。下列是历史核验结论，不能代表当前运行；重新读取不会自动更新说明快照。</p>}
  <div className={styles.responsibilities} aria-label="唯一计划中的三类职责"><span><b>模块 2</b> 模型视觉</span><span><b>模块 3</b> 本地确定流程</span><span><b>模块 7</b> 世界 Runtime 与存档</span></div>
  <nav role="tablist" aria-label="项目进度视图" className={styles.tabs}>{views.map((item,index)=><button type="button" key={item.id} role="tab" id={'progress-tab-'+item.id} aria-selected={view===item.id} aria-controls={'progress-view-'+item.id} tabIndex={view===item.id?0:-1} onClick={()=>setView(item.id)} onKeyDown={event=>moveTab(event,index)}>{item.label}</button>)}</nav>

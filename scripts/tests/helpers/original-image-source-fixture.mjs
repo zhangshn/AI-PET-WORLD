@@ -27,7 +27,7 @@ export async function fixture(t) {
   const contract = JSON.parse(fs.readFileSync(path.join(REPO, contractPath)))
   put(contractPath, fs.readFileSync(path.join(REPO, contractPath)))
   const policy = put("docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md",
-    fs.readFileSync(path.join(REPO, "docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md")))
+    fs.readFileSync(path.join(REPO, "data/ai-painter/system-governance/document-baselines/ai-painter-data-policy-1.10-66c537ce.txt")))
   const gray = await sharp(Buffer.alloc(1024 * 768, 255), { raw: { width: 1024, height: 768, channels: 1 } }).toColourspace("b-w").png().toBuffer()
   const rgb = await sharp({ create: { width: 1024, height: 768, channels: 3, background: { r: 90, g: 100, b: 70 } } }).png().toBuffer()
   const old = await sharp({ create: { width: 1024, height: 768, channels: 3, background: { r: 40, g: 60, b: 20 } } }).png().toBuffer()

@@ -16,6 +16,7 @@ export const diagramSourceProfiles=Object.freeze([
   ['docs/ziwei/DATA_DICTIONARY_ANALYSIS_FLOW.md','subsystem','ziwei'],
   ['docs/ziwei/DATA_DICTIONARY_ARCHITECTURE.md','subsystem','ziwei'],
   ['docs/ziwei/DATA_DICTIONARY_MASTER_BLUEPRINT.md','subsystem','ziwei'],
+  ['docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md','data-flow','world'],
 ].map(([path,level,module])=>Object.freeze({path,level,module})))
 export const architectureLevels=Object.freeze([{id:'business',label:'业务架构'},{id:'system',label:'系统架构'},{id:'subsystem',label:'子系统架构'},{id:'data-flow',label:'数据与流程'}])
 export const architectureModules=Object.freeze([{id:'project',label:'项目全景'},{id:'personality',label:'人格与角色'},{id:'world',label:'世界与Runtime'},{id:'painter',label:'AI Painter'},{id:'local-ai',label:'本地AI与迁移'},{id:'console',label:'AI控制台'},{id:'ziwei',label:'紫微资料与读盘'},{id:'storage',label:'本地数据管理'},{id:'governance',label:'存储与治理'}])
@@ -31,7 +32,9 @@ export function classifyDiagram(relativePath,section){
  let level=profile?.level??'subsystem',moduleId=profile?.module??'project'
  if(relativePath==='docs/BUSINESS_SPEC.md')moduleId=/^2\.1/.test(section)?'personality':/^2\.2|可复用/.test(section)?'world':/^0\.1/.test(section)?'local-ai':'project'
  if(relativePath==='docs/ARCHITECTURE.md'){
-  if(/^2\./.test(section)){level='business';moduleId='project'}
+  const detailed=section.match(/^10\.([1-9])(?:\.|\s)/)
+  if(detailed){level='subsystem';moduleId=['governance','painter','local-ai','personality','world','world','world','console','storage'][Number(detailed[1])-1]}
+  else if(/^2\./.test(section)){level='business';moduleId='project'}
   else if(/^3\.1/.test(section)){level='subsystem';moduleId='painter'}
   else if(/^0\./.test(section))moduleId='local-ai'
   else if(/^1\.|^3\.2|^7\./.test(section))moduleId='world'

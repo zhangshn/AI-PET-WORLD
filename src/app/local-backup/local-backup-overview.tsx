@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { CurrentDeliveryEntry } from './progress/current-delivery-entry'
+import { ProjectModuleDetailNavigation } from './project-module-detail-navigation'
 import { backupPages } from './local-backup-navigation'
 import { query, reason, time, type Inventory } from './local-backup-shared'
 import styles from './local-backup.module.css'
@@ -16,6 +18,8 @@ export function LocalBackupOverview(){
  },[router])
  useEffect(()=>{let active=true;query('/api/local-backup/summary').then(x=>{if(active){setInventory(x.inventory);setError('')}}).catch(e=>{if(active)setError(reason(e))});return()=>{active=false}},[retry])
  return <>
+  <CurrentDeliveryEntry/>
+  <ProjectModuleDetailNavigation/>
   <div className={styles.toolbar}><span>项目数据、备份与工作记录的统一入口。</span><button onClick={()=>setRetry(x=>x+1)}>刷新总览</button></div>
   {error&&<p role="alert" className={styles.error}>总览记录不可用：{error}</p>}
   <div className={styles.metrics}>

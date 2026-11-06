@@ -39,7 +39,7 @@ function fixedReader(projectRoot,runtimeRoot){
  return {read,coverage:()=>({files:count,bytes:total,limits:caps,directoryScan:false,stateWrites:false})}
 }
 function json(r){try{return JSON.parse(r.body)}catch{throw new ModuleError('progress_json_invalid',409)}}
-function parsePlan(body){
+export function parsePlan(body){
  const modules=[]
  for(const line of body.split(/\r?\n/))if(/^\|\s*\d+\s*\|/.test(line)){
   const parts=line.split('|').slice(1,-1).map(v=>v.trim().replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/`/g,''))

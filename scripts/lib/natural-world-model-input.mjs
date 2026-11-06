@@ -8,6 +8,7 @@ import { verifyNaturalWorldFactRelease } from "../build-earth-geospatial-complet
 import { buildInitialNaturalWorldVisualTask } from "../build-current-world-visual-generation-task-package.mjs"
 import { verifyNaturalWorldConditionPackage } from "../compile-current-world-visual-conditions.mjs"
 import { naturalWorldDigest } from "./real-earth-region-governance.mjs"
+import { readCompatibleFirstWorldInput } from "./natural-world-model-input-compatibility.mjs"
 
 const HASH = /^[a-f0-9]{64}$/
 const SCOPE = "natural_world_runtime_v1"
@@ -47,13 +48,20 @@ function relativeFile(p) {
   requireValue(p.split("/").every(x => x && ![".", "..", "latest", "latest.json"].includes(x)), "model input latest/traversal forbidden")
   return p
 }
-function readBound(root, binding, receipts) {
-  requireValue(binding && HASH.test(binding.sha256 ?? ""), "model input file hash missing")
-  const p = path.resolve(root, relativeFile(binding.path))
+function readProjectFile(root, logical, limit = Infinity) {
+  const p = path.resolve(root, relativeFile(logical))
   const real = fs.realpathSync(p), project = fs.realpathSync(root), runtime = fs.realpathSync(path.join(root, ".runtime"))
   const inside = base => { const r = path.relative(base, real); return r && !r.startsWith("..") && !path.isAbsolute(r) }
-  requireValue(inside(project) || binding.path.startsWith(".runtime/") && inside(runtime), "model input physical path escape")
+  requireValue(inside(project) || logical.startsWith(".runtime/") && inside(runtime), "model input physical path escape")
+  const st = fs.statSync(real)
+  requireValue(st.isFile() && st.size <= limit, "model input file exceeds read limit")
   const bytes = fs.readFileSync(p)
+  requireValue(bytes.length <= limit, "model input file exceeds read limit")
+  return bytes
+}
+function readBound(root, binding, receipts) {
+  requireValue(binding && HASH.test(binding.sha256 ?? ""), "model input file hash missing")
+  const bytes = readProjectFile(root, binding.path)
   receipts.push({ path: binding.path, sha256: sha(bytes), bytes: bytes.length })
   requireValue(sha(bytes) === binding.sha256, "model input file hash mismatch:" + binding.path)
   return bytes
@@ -107,7 +115,8 @@ export async function buildNaturalWorldModelInputDescriptor({ request, root = pr
     const entries = record.sourceBindings.filter(b => b.role === role)
     requireValue(entries.length === 1 && entries[0].uri === request[key].path && entries[0].fileSha256 === request[key].sha256, "saved immutable binding differs:" + key)
   }
-  const verified = await verifyNaturalWorldFactRelease({ root, binding: request.sourceFactRelease })
+  const historical = readCompatibleFirstWorldInput({ request, record, read: (p, max) => readProjectFile(root, p, max) })
+  const verified = historical ?? await verifyNaturalWorldFactRelease({ root, binding: request.sourceFactRelease })
   requireValue(naturalWorldDigest(verified.factsEnvelope) === request.factHash && naturalWorldDigest(record.worldFacts) === naturalWorldDigest(verified.factsEnvelope) &&
     naturalWorldDigest(record.randomState) === naturalWorldDigest(verified.proposal.randomState), "natural source replay and saved facts/state differ")
   requireValue(naturalWorldDigest(record.worldState.payload.environment) === naturalWorldDigest({ ...verified.proposal.environment,
@@ -118,9 +127,13 @@ export async function buildNaturalWorldModelInputDescriptor({ request, root = pr
   const taskManifest = json(readBound(root, request.taskManifest, receipts)), task = json(readBound(root, request.taskPackage, receipts))
   requireValue(taskManifest.taskPath === request.taskPackage.path && task.scope === SCOPE && task.conditionScope === SCOPE && taskManifest.scope === SCOPE, "natural task binding or scope differs")
   const visual = record.sourceBindings.filter(b => b.role === "visual_fact_manifest"); requireValue(visual.length === 1, "saved visual fact binding missing")
-  const rebuilt = await buildInitialNaturalWorldVisualTask({ sourceFactReleaseBinding: request.sourceFactRelease,
-    visualFactManifestBinding: { path: visual[0].uri, sha256: visual[0].fileSha256 }, directorPath: taskManifest.directorPath, taskPath: request.taskPackage.path })
-  requireValue(naturalWorldDigest(rebuilt.task) === naturalWorldDigest(task) && naturalWorldDigest(rebuilt.manifest) === naturalWorldDigest(taskManifest), "natural task replay differs")
+  let taskReads = []
+  if (!historical) {
+    const rebuilt = await buildInitialNaturalWorldVisualTask({ sourceFactReleaseBinding: request.sourceFactRelease,
+      visualFactManifestBinding: { path: visual[0].uri, sha256: visual[0].fileSha256 }, directorPath: taskManifest.directorPath, taskPath: request.taskPackage.path })
+    requireValue(naturalWorldDigest(rebuilt.task) === naturalWorldDigest(task) && naturalWorldDigest(rebuilt.manifest) === naturalWorldDigest(taskManifest), "natural task replay differs")
+    taskReads = rebuilt.inputReads
+  }
   const typed = await verifyNaturalWorldConditionPackage({ manifestBinding: request.conditionManifest, expected: {
     worldId: record.worldId, regionId: record.regionId, tick: record.tick, factHash: request.factHash, sourceFactReleaseIdentity: verified.release.sourceFactReleaseIdentity } })
   const pack = json(readBound(root, request.conditionPackage, receipts))
@@ -141,12 +154,13 @@ export async function buildNaturalWorldModelInputDescriptor({ request, root = pr
   const nativePolicy = { path: policyPath, sha256: sha(policyBytes) }, policy = json(readBound(root, nativePolicy, receipts))
   requireValue(policy.schemaVersion === "native-stage-geometry-policy-v1" && policy.stages.length === 3 && policy.stages.every((s, i) => s.stage === i && s.width === 256 * 2 ** i && s.height === 192 * 2 ** i), "registered native geometry policy differs")
   const dependencies = new Map()
-  for (const p of ["scripts/lib/natural-world-model-input.mjs", ...pythonImportClosure(root), ...verified.release.producerBindings.map(b => b.path)]) {
+  for (const p of ["scripts/lib/natural-world-model-input.mjs", "scripts/lib/natural-world-model-input-compatibility.mjs",
+    ...pythonImportClosure(root), ...verified.release.producerBindings.map(b => b.path)]) {
     const bytes = fs.readFileSync(path.join(root, p)); dependencies.set(p, { path: p, sha256: sha(bytes) })
   }
   for (const b of dependencies.values()) readBound(root, b, receipts)
   const rawClosure = new Map()
-  for (const r of [...verified.inputReads, ...rebuilt.inputReads, ...typed.inputReads]) rawClosure.set(r.path, { path: r.path, sha256: r.fileSha256 })
+  for (const r of [...verified.inputReads, ...taskReads, ...typed.inputReads]) rawClosure.set(r.path, { path: r.path, sha256: r.fileSha256 })
   const descriptor = { schemaVersion: "natural-world-model-input-descriptor-v1", scope: SCOPE, status: "authenticated_input_only_no_model_qualification",
     identity: request.identity, tick: record.tick, stateVersion: record.stateVersion, factHash: request.factHash,
     statePayloadSha256: record.statePayloadSha256, recordContentSha256: record.recordContentSha256,
@@ -160,6 +174,11 @@ export async function buildNaturalWorldModelInputDescriptor({ request, root = pr
     knowledgeDatasetBinding: verified.proposal.knowledgeDatasetBinding, newWorldIsDatasetSample: false,
     dependencyBindings: [...dependencies.values()], sourceReadBindings: [...rawClosure.values()],
     noModelExecutionQualification: true }
+  if (historical) {
+    readBound(root, historical.selectionBinding, receipts)
+    readBound(root, request.runtimeSave, receipts)
+    descriptor.historicalBaselineSelection = historical.selectionBinding
+  }
   const payloadSha256 = naturalWorldDigest(descriptor)
   return { descriptor: { ...descriptor, descriptorPayloadSha256: payloadSha256 }, inputReads: receipts }
 }

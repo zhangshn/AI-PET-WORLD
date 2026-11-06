@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "sakaerat-first-committed-weather-runtime-v3",
+  "version": "sakaerat-weather-153-runtime-v3",
+  "requiredCapabilityScope": "world_evolution",
+  "identity": {
+    "ownerId": "mvp-natural-owner-001",
+    "playerId": "mvp-natural-player-001",
+    "worldId": "mvp-natural-world-001",
+    "worldSeed": "mvp-natural-world-001-seed-v1",
+    "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "regionId": "mvp-natural-region-001"
+  },
+  "firstInterval": {
+    "logicalStartUtc": "2020-01-08T00:00:00.000Z",
+    "logicalEndUtc": "2020-01-09T00:00:00.000Z",
+    "durationSeconds": 86400
+  },
+  "resources": {
+    "actualLaunches": 1,
+    "actualModelForwardsMaximum": 1,
+    "formalWorldWrites": 1,
+    "maintenanceWrites": 0,
+    "automaticRetry": 0,
+    "cpuThreadsMaximum": 2,
+    "maxCommittedMemoryMiB": 1536,
+    "gpu": false,
+    "vramMiB": 0,
+    "network": false,
+    "trainingUpdates": 0,
+    "minimumFreeDiskMiB": 2048,
+    "artifactBytesMaximum": 16777216,
+    "artifactFilesMaximum": 256,
+    "logBytesPerStreamMaximum": 8388608,
+    "workerSecondsMaximum": 30,
+    "runSecondsMaximum": 180,
+    "heartbeatSeconds": 1,
+    "staleSeconds": 10
+  },
+  "sourceBudget": {
+    "path": "data/ai-painter/system-governance/sakaerat-first-weather-execution-budget-v1.json",
+    "sha256": "e0d6bf6988f29ce9129a857d6dfcb67aa5b46430a279e41b266226200b154d2a",
+    "bytes": 4656
+  },
+  "policyPath": "data/ai-painter/system-governance/mvp-natural-world-weather-policy-v3.json",
+  "worker": {
+    "path": "ml/ai-painter/scripts/world_first_weather_runtime.py",
+    "sha256": "d15d8b8ce234758f03e5f84e295b9c41c58b7c4954580875895bd0398065b130",
+    "bytes": 6477
+  },
+  "runner": {
+    "path": "scripts/lib/world-first-weather-runtime.mjs",
+    "sha256": "f2f7b1ab1a43b73262897a9f4c741f6575c164cb85fb7f16d5dbfcb0ee216155",
+    "bytes": 20721
+  },
+  "entry": {
+    "path": "scripts/run-world-environment-scheduled.mjs",
+    "sha256": "8adc3a78dff317ae8bb245c35cc1b7dd1186cc9b476f647bba54bbc365f6dee7",
+    "bytes": 703
+  },
+  "sharedForecast": {
+    "path": "ml/ai-painter/scripts/world_weather_committed_forward.py",
+    "sha256": "01f6c20ae2b4911c4d1f976e9bb1fd4fe19d863f68fbd9a4eda4567935d8ef98",
+    "bytes": 5392
+  },
+  "committedReader": {
+    "path": "scripts/lib/world-weather-committed-input.mjs",
+    "sha256": "a3a01fb54ed1422e94ffa03f7833582fbad0635c94fa12f83ce39157f5f0040e",
+    "bytes": 18414
+  },
+  "interpreter": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-background-166-20261031/model/interpreter-contract.json",
+    "sha256": "303f5dc4a945c20c9d71c7b1cf605ab910dca3f788104541942763fcf8b5625d",
+    "bytes": 1640
+  },
+  "checkpoint": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-environment-humidity-153-20261029/model-run-v1/checkpoint.pt",
+    "sha256": "36a5e5973228295f38392b50680868331caab7b1588e3fc10f54d2f084ce05c8",
+    "trainingContractSha256": "fef9030883c521274683f6bb09806904dfcd0faeeb4b44c4406e89405df453e0",
+    "trainingDatasetSha256": "c29de6e73c6243df25d636204d972ec9597b83722492b0f82b778c33f7b2847f"
+  },
+  "qualification": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/world-first-evolution-executor-180-20261103/delivery.json",
+    "sha256": "934dbf6a8bcc846bdb0c231bba9d42fd3bf0c2db8483717bbc390dedec48fc21",
+    "bytes": 6896
+  }
+}

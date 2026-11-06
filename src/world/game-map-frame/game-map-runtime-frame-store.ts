@@ -5,6 +5,12 @@ import { dirname, join, resolve } from "node:path"
 import type { GameMapRuntimeFrame } from "./game-map-runtime-frame-schema"
 import { isGameMapRuntimeFrame } from "./game-map-runtime-frame-schema"
 import { assertRuntimePathSegment } from "../runtime/runtime-path-security"
+import { requiresNaturalWorldPlayerGrant } from "../runtime/natural-world-client-access"
+
+// The v1 compositor record carries no verified natural-world Painter or review identity.
+function legacyFrameLacksNaturalAuthority(frame: GameMapRuntimeFrame): boolean {
+  return frame.schemaVersion === "game-map-runtime-frame-v1" && requiresNaturalWorldPlayerGrant(frame.worldId)
+}
 
 export type GameMapRuntimeFrameRecord = {
   recordId: string
@@ -41,13 +47,14 @@ export async function writeGameMapRuntimeFrameRecord(input: {
   outputRoot?: string
 }): Promise<GameMapRuntimeFrameWriteResult> {
   const latestPath = getLatestGameMapRuntimeFramePath(input.outputRoot)
-  if (!isGameMapRuntimeFrame(input.runtimeFrame)) {
+  const schemaValid = isGameMapRuntimeFrame(input.runtimeFrame)
+  if (!schemaValid || legacyFrameLacksNaturalAuthority(input.runtimeFrame)) {
     return {
       status: "blocked_invalid_runtime_frame",
       record: null,
       recordPath: null,
       latestPath,
-      warnings: ["runtime_frame_schema_invalid"],
+      warnings: [schemaValid ? "legacy_runtime_frame_missing_natural_world_authority" : "runtime_frame_schema_invalid"],
       tags: ["game_map_runtime_frame_write", "blocked"],
     }
   }
@@ -215,6 +222,9 @@ export async function readLatestGameMapRuntimeFrameRecord(input?: {
 
     if (!record) {
       return invalid(filePath, ["game_map_runtime_frame_record_schema_invalid"])
+    }
+    if (legacyFrameLacksNaturalAuthority(record.runtimeFrame)) {
+      return invalid(filePath, ["legacy_runtime_frame_missing_natural_world_authority"])
     }
 
     // Explicit historical reads may omit worldId. Once it is known, bracket
