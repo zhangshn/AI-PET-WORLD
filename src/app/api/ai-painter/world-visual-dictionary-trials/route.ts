@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../../../scripts/lib/runtime-working-directory.mjs'
 import { readFile, readdir } from "node:fs/promises"
 import path from "node:path"
 import { NextResponse } from "next/server"
@@ -5,7 +6,7 @@ import { NextResponse } from "next/server"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-const root = process.cwd()
+const root = runtimeWorkingDirectory()
 const trialsRoot = path.join(/* turbopackIgnore: true */ root, ".runtime", "world-visual-dictionary-trials")
 
 export async function GET() {

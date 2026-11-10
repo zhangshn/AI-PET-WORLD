@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url'
 import {createHash,randomUUID} from 'node:crypto'
 import {ChildProcess,spawn,spawnSync} from 'node:child_process'
 import {baselineCanonical as canonical,baselineDigest as digest} from './natural-world-baseline-proof.mjs'
-import {loadLoopRuntime,LOOP_RUNTIME_FILES} from '../tests/helpers/world-evolution-loop-loader.mjs'
+import {loadLoopRuntime,LOOP_RUNTIME_FILES} from './world-evolution-runtime-loader.mjs'
 
 export const LOOP_ROOT=fs.realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'))
 export const LOOP_EVIDENCE='.runtime/ai-painter/controller-repair-reviews/world-evolution-loop-158-20261030'
@@ -21,7 +21,7 @@ const INTERPRETER_CONTRACT=LOOP_EVIDENCE+'/interpreter-contract-v2.json'
 const INTERPRETER_SHA='316902480cc389b8d73df48fab6a314d5d1233d177f89937111d047c45f8a4d8'
 const DIRECT_EXE='D:/DevCaches/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe'
 const IDS=['ownerId','playerId','worldId','worldSeed','worldProfileId','regionId']
-const CODES=[CLI,'scripts/lib/natural-world-evolution-loop.mjs','scripts/tests/helpers/world-evolution-loop-loader.mjs',
+const CODES=[CLI,'scripts/lib/natural-world-evolution-loop.mjs','scripts/lib/world-evolution-runtime-loader.mjs',
   'scripts/lib/natural-world-baseline-proof.mjs',WORKER,...LOOP_RUNTIME_FILES.map(n=>'src/world/runtime/'+n)]
 export const loopSha=b=>createHash('sha256').update(b).digest('hex')
 const need=(v,why)=>{if(!v)throw Error('world_loop_'+why)}

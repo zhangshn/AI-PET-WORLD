@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../scripts/lib/runtime-working-directory.mjs'
 import { access, statfs } from "node:fs/promises"
 import { constants as fsConstants } from "node:fs"
 import os from "node:os"
@@ -105,7 +106,7 @@ async function checkReadableDirectory(componentId: string, directoryPath: string
 async function readHealthProjection(selectedView: string): Promise<AiConsoleProjectionResult> {
   const snapshot = await sampleAiConsoleLiveObservability()
   const observedAtUtc = snapshot.observedAtUtc
-  const projectRoot = process.cwd()
+  const projectRoot = runtimeWorkingDirectory()
   let records: readonly Record<string, unknown>[]
 
   if (selectedView === "GPU与驱动") {

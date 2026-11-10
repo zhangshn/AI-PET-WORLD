@@ -1,3 +1,4 @@
+import {resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 import path from "node:path"
 import { NextResponse } from "next/server"
 import { authorizeWorldPlayerRead } from "@/server/world-player-access/session.mjs"
@@ -24,7 +25,7 @@ function object(value: NaturalWorldJson | undefined): NaturalWorldJsonObject | u
 
 export async function readNaturalPlayerView(grant: ReadGrant, includeHistory = false, historyCursor?: string | string[]) {
   if (grant.permission !== "world.read" || grant.worldId !== "mvp-natural-world-001") return null
-  const root = path.resolve("data/world-runtime")
+  const root = resolveRuntimePath("data/world-runtime")
   const store = createProductionWorldRuntimeStore(root)
   if (!store.readNatural || !store.readNaturalTransition) return null
   const result = await store.readNatural({

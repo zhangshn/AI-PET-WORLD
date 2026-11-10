@@ -10,7 +10,7 @@ import {spawnSync} from 'node:child_process'
 import {pathToFileURL} from 'node:url'
 import ts from 'typescript'
 import {initializeCurrentExecutionRegistry,advanceCurrentExecutionRegistry,readCurrentExecutionRegistry,recoverExpiredActiveExecutionToFailedClosed} from '../../src/server/ai-painter-current-execution-registry.mjs'
-import {processIdentity} from '../run-ai-painter-mvp256-dry-v24-training.mjs'
+import {processIdentity} from "../lib/windows-process-identity.mjs"
 import {verifyPrelaunchFailureFacts} from '../lib/ai-painter-decode1-entry-weight-quality-review-v1.mjs'
 import {verifiedPrelaunchFailure} from '../lib/ai-painter-decode1-entry-weight-quality-owned-native-v1.mjs'
 

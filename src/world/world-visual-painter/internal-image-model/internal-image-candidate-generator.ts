@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../../scripts/lib/runtime-working-directory.mjs'
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
 
@@ -292,7 +293,7 @@ async function writeTraceableCandidateImage(input: {
   const outputDir =
     configuredOutputDir && path.isAbsolute(configuredOutputDir)
       ? configuredOutputDir
-      : path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", "world-visual-candidates")
+      : path.join(/* turbopackIgnore: true */ runtimeWorkingDirectory(), ".runtime", "ai-painter", "world-visual-candidates")
   const outputPath = path.join(
     outputDir,
     `${sanitizeId(input.worldId)}-tick-${input.tick}.png`

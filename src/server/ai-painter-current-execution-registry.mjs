@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../scripts/lib/runtime-working-directory.mjs'
 import { createHash, randomUUID } from "node:crypto"
 import { spawnSync } from "node:child_process"
 import { closeSync, fsyncSync, openSync } from "node:fs"
@@ -54,7 +55,7 @@ export function requireRegistryDeadline(deadlineUnixMs = null) {
   return Math.min(10_000, remaining)
 }
 
-export async function readCurrentExecutionRegistry(projectRoot = process.cwd(), { deadlineUnixMs = null } = {}) {
+export async function readCurrentExecutionRegistry(projectRoot = runtimeWorkingDirectory(), { deadlineUnixMs = null } = {}) {
   return readCurrentExecutionRegistryInternal(projectRoot, { deadlineUnixMs })
 }
 
@@ -144,7 +145,7 @@ async function readCurrentExecutionRegistryInternal(
 }
 
 export async function initializeCurrentExecutionRegistry({
-  projectRoot = process.cwd(),
+  projectRoot = runtimeWorkingDirectory(),
   currentTaskCapsulePath,
   currentTaskTerminalPath,
   currentCandidatePath,
@@ -320,7 +321,7 @@ export async function initializeCurrentExecutionRegistry({
 }
 
 export async function prepareCurrentExecutionRegistryAdvance({
-  projectRoot = process.cwd(),
+  projectRoot = runtimeWorkingDirectory(),
   capabilityVersion,
   packageId,
   taskId,
@@ -597,7 +598,7 @@ export async function advanceCurrentExecutionRegistry(options) {
   requireValue(beforeAtomicWrite === null || typeof beforeAtomicWrite === "function", "registry_atomic_write_guard_invalid")
   const prepared = await prepareCurrentExecutionRegistryAdvance(options)
   return finalizePreparedCurrentExecutionRegistryAdvance({
-    projectRoot: options.projectRoot ?? process.cwd(),
+    projectRoot: options.projectRoot ?? runtimeWorkingDirectory(),
     transactionId: prepared.transactionId,
     deadlineUnixMs: options.deadlineUnixMs ?? null,
     beforeAtomicWrite,
@@ -606,7 +607,7 @@ export async function advanceCurrentExecutionRegistry(options) {
 }
 
 export async function recoverExpiredActiveExecutionToFailedClosed({
-  projectRoot = process.cwd(),
+  projectRoot = runtimeWorkingDirectory(),
   capabilityVersion,
   packageId,
   runId,
@@ -754,7 +755,7 @@ export async function recoverExpiredActiveExecutionToFailedClosed({
 }
 
 export async function finalizePreparedCurrentExecutionRegistryAdvance({
-  projectRoot = process.cwd(),
+  projectRoot = runtimeWorkingDirectory(),
   transactionId,
   _testHooks = null,
   deadlineUnixMs = null,
@@ -774,7 +775,7 @@ export async function finalizePreparedCurrentExecutionRegistryAdvance({
 }
 
 export async function recoverPreparedCurrentExecutionRegistryAdvance({
-  projectRoot = process.cwd(),
+  projectRoot = runtimeWorkingDirectory(),
   transactionId = null,
   _testHooks = null,
   deadlineUnixMs = null,
@@ -1889,8 +1890,8 @@ function normalizeRelativePath(value) {
 
 function resolveProjectPath(projectRoot, relativePath) {
   const normalized = normalizeRelativePath(relativePath)
-  const absoluteRoot = path.resolve(projectRoot)
-  const absolutePath = path.resolve(absoluteRoot, ...normalized.split("/"))
+  const absoluteRoot = resolveRuntimePath(projectRoot)
+  const absolutePath = resolveRuntimePath(absoluteRoot, ...normalized.split("/"))
   const relative = path.relative(absoluteRoot, absolutePath)
   requireValue(relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative), "project_boundary_violation")
   return absolutePath
@@ -1901,14 +1902,14 @@ function resolveTrustedCatalogDatabasePath(projectRoot, value) {
   if (!path.isAbsolute(value) && !/^[A-Za-z]:[\\/]/u.test(value)) {
     return resolveProjectPath(projectRoot, value)
   }
-  const configuredDataRoot = path.resolve(
+  const configuredDataRoot = resolveRuntimePath(
     process.env.AI_PET_WORLD_DATA_ROOT
       ?? (process.platform === "win32"
         ? "D:\\AI-PET-WORLD-DATA"
-        : path.join(path.resolve(projectRoot), ".ai-pet-world-data")),
+        : path.join(resolveRuntimePath(projectRoot), ".ai-pet-world-data")),
   )
-  const expected = path.resolve(configuredDataRoot, "catalog", "ai-pet-world-catalog.sqlite")
-  const actual = path.resolve(value)
+  const expected = resolveRuntimePath(configuredDataRoot, "catalog", "ai-pet-world-catalog.sqlite")
+  const actual = resolveRuntimePath(value)
   const samePath = process.platform === "win32"
     ? actual.toLowerCase() === expected.toLowerCase()
     : actual === expected

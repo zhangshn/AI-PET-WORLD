@@ -1,14 +1,14 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-10-22 09:10:45 +08:00
+更新时间：2026-11-10 12:51:31 +08:00
 
 状态：active-directory-reference
 
-文档版本：`AI-PET-WORLD-DIRECTORY-1.17`
+文档版本：`AI-PET-WORLD-DIRECTORY-1.18`
 
-生效日期：`2026-10-22`
+生效日期：`2026-11-10`
 
-替代版本：`AI-PET-WORLD-DIRECTORY-1.16`
+替代版本：`AI-PET-WORLD-DIRECTORY-1.17`
 
 文档状态：`active_normative_target`
 
@@ -116,6 +116,7 @@ AI Painter 是类地球世界的视觉表达系统，不能决定世界事实：
 | `scripts/lib/ai-console-training-history-index-writer.mjs`、`ai-console-training-history-discovery.mjs` | 派生历史索引写入与受限发现实现，禁止放入只读投影目录或被GET间接导入。 |
 | `D:/AI-PET-WORLD-DATA/catalog/ai-pet-world-catalog.sqlite` | 既有存储目录与迁移索引，历史观察仅参数化只读访问；路径推导run_id和迁移时摘要不等于当前Run及内容核验。 |
 | `D:/AI-PET-WORLD-DATA/cold/runs/` | 已登记冷层归档根；历史读取须核验迁移映射与归档清单，不以整个D盘为允许根，不复制第二套可写业务身份。 |
+| 项目外同卷离线备份归档根 | 仅保存已完成迁移留下的旧物理备份，具体绝对位置及恢复映射登记于既有catalog和迁移证据。不得自动作为训练、世界、控制台文件读取的允许根；不在代码检出目录继续堆放旧备份。 |
 | `src/server/ai-console-observability/` | V20新平台本机精确实时观察服务与V17训练遥测登记；固定只读探针采样CPU、内存、磁盘、GPU、显存、温度、功耗和训练特征进程，并输出序号、毫秒起止时间、采样耗时和逐通道时间。训练语义只读新平台独立遥测库。该目录不属于Stage4训练、验证或审核实现。 |
 | `src/server/ai-console-control/` | 新平台受控写入与持久化服务；负责回环操作员会话、同源与CSRF复核、任务登记、能力候选/资格/非活动发布登记、模型结构/非活动训练计划登记、主登记核验、幂等回执、控制事务、正式证据索引、终态任务胶囊库和政策边界报告库；当前不包含训练运行或Runtime执行器。 |
 | `data/ai-console/` | 新平台独立主登记与Schema；当前固定登记15个基础记录集，并定义控制、任务、能力生命周期、训练设计、审核裁决、证据、任务胶囊和政策边界报告Schema，使用`new_ai_console_only`来源边界、可信写入器、单调修订和SHA-256，不保存或迁移旧训练页面内容。 |

@@ -16,8 +16,8 @@ import {auditProfessionalAestheticFromFrozenContract} from './ai-painter-stage4-
 import {decodeV17ResponsibilityArtifact} from './ai-painter-stage4-mvp-v17-responsibility-artifact.mjs'
 import {decideMvp256DryReview} from './ai-painter-mvp256-dry-review-decision-v1.mjs'
 import {readCurrentExecutionRegistry,prepareCurrentExecutionRegistryAdvance,finalizePreparedCurrentExecutionRegistryAdvance} from '../../src/server/ai-painter-current-execution-registry.mjs'
-import {processIdentity} from '../run-ai-painter-mvp256-dry-v24-training.mjs'
-import {replaceHeartbeatFile} from '../run-ai-painter-learning-capacity-experiment.mjs'
+import {processIdentity} from './windows-process-identity.mjs'
+import {replaceHeartbeatFile} from "./training-heartbeat-publication.mjs"
 
 export const HISTORY_ROOT='.runtime/ai-painter/controller-repair-reviews/training-review-data-identity-20261022'
 export const SUCCESSOR_CASE='.runtime/ai-painter/controller-repair-reviews/training-review-transport-successor-002-20261022'

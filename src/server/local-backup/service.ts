@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { createStore } from './store.mjs'
@@ -6,8 +7,8 @@ import { ModuleError, need, schemaVersion } from './contracts.mjs'
 import { verifyLocalControlRead, verifyLocalOperatorMutation } from '@/server/ai-console-control/operator-session'
 
 export function store() {
-  const runtime = path.resolve(process.cwd(), '.runtime')
-  const expected = path.resolve(process.env.AI_PET_WORLD_DATA_ROOT ?? (process.platform === 'win32' ? 'D:/AI-PET-WORLD-DATA' : '.ai-pet-world-data'), 'hot/runtime')
+  const runtime = resolveRuntimePath(runtimeWorkingDirectory(), '.runtime')
+  const expected = resolveRuntimePath(process.env.AI_PET_WORLD_DATA_ROOT ?? (process.platform === 'win32' ? 'D:/AI-PET-WORLD-DATA' : '.ai-pet-world-data'), 'hot/runtime')
   need(fs.existsSync(runtime) && fs.realpathSync(runtime).toLowerCase() === fs.realpathSync(expected).toLowerCase(), 'runtime_mapping_conflict', 409)
   return createStore(path.join(expected, 'local-backup'))
 }

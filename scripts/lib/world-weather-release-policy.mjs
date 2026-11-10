@@ -6,7 +6,7 @@ import {createEvolutionInputReader} from './natural-world-evolution-input.mjs'
 import {prepareNaturalWorldWeatherTarget} from './world-environment-target-profile.mjs'
 import {readWeatherFieldDomain} from './world-weather-field-domain.mjs'
 import {verifyWeatherDatasetRelease} from './world-weather-dataset-release.mjs'
-import {inspectCapabilityScopeAdmission} from './ai-painter-autonomous-package-decision-core-v3.mjs'
+import {inspectCapabilityScopeAdmission} from './ai-painter-capability-scope-admission.mjs'
 
 export const WEATHER_VERSION = 'sakaerat-weather-153-runtime-v1'
 export const WEATHER_POLICY_PATH = 'data/ai-painter/system-governance/mvp-natural-world-weather-policy-v1.json'

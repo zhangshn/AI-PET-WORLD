@@ -119,6 +119,9 @@ function fixture(t) {
       const exports = {}
       cache.set(name, exports)
       const imports = (id) => {
+        if (id === "../../../scripts/lib/runtime-working-directory.mjs") return {
+          runtimeWorkingDirectory: () => root, resolveRuntimePath: path.resolve,
+        }
         if (id === "node:fs/promises") return guarded
         if (["node:crypto", "node:path"].includes(id)) return require(id)
         if (id === "../runtime/runtime-path-security") {

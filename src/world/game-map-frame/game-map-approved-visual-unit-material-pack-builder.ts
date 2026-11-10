@@ -1,6 +1,7 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 import { createHash } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { join, resolve } from "node:path"
+import { join} from 'node:path'
 
 import sharp from "sharp"
 
@@ -131,9 +132,9 @@ export async function buildGameMapApprovedMaterialPackFromFiles(input: {
   }
 
   const outputRoot = input.outputRoot
-    ? resolve(input.outputRoot)
+    ? resolveRuntimePath(input.outputRoot)
     : join(
-        /* turbopackIgnore: true */ process.cwd(),
+        /* turbopackIgnore: true */ runtimeWorkingDirectory(),
         ".runtime",
         "game-map-approved-material-packs"
       )
@@ -164,7 +165,7 @@ async function buildMaterialFromFile(
   material: GameMapApprovedVisualUnitMaterialInput | null
   blockedReasons: string[]
 }> {
-  const imagePath = resolve(file.imagePath)
+  const imagePath = resolveRuntimePath(file.imagePath)
   let bytes: Buffer
   try {
     bytes = await readFile(imagePath)

@@ -1,10 +1,11 @@
+import {runtimeWorkingDirectory} from '../../../../../scripts/lib/runtime-working-directory.mjs'
 import { createHash } from "node:crypto"
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
 
-const CANDIDATE_ROOT = path.join(process.cwd(), "data", "ai-painter-assets", "candidates")
-const QUALITY_ROOT = path.join(process.cwd(), "data", "ai-painter-quality", "vj-b2", "samples")
+const CANDIDATE_ROOT = path.join(runtimeWorkingDirectory(), "data", "ai-painter-assets", "candidates")
+const QUALITY_ROOT = path.join(runtimeWorkingDirectory(), "data", "ai-painter-quality", "vj-b2", "samples")
 const SAFE_ID = /^[a-z0-9_-]+$/
 const DECISIONS = new Set(["acceptable", "unacceptable", "redraw"])
 

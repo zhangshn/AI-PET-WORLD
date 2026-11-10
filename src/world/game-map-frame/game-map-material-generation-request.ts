@@ -1,5 +1,6 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 import { mkdir, writeFile } from "node:fs/promises"
-import { join, resolve } from "node:path"
+import { join} from 'node:path'
 
 import type {
   GameMapCompositeManifest,
@@ -74,9 +75,9 @@ export async function writeGameMapMaterialGenerationRequest(input: {
   }
 
   const outputRoot = input.outputRoot
-    ? resolve(input.outputRoot)
+    ? resolveRuntimePath(input.outputRoot)
     : join(
-        /* turbopackIgnore: true */ process.cwd(),
+        /* turbopackIgnore: true */ runtimeWorkingDirectory(),
         ".runtime",
         "game-map-material-generation-requests"
       )

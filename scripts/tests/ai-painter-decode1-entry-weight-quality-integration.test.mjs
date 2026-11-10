@@ -9,7 +9,7 @@ import {spawnSync,spawn} from 'node:child_process';
 import * as registration from '../lib/ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
 import * as candidateChain from '../lib/ai-painter-decode1-entry-weight-quality-package-chain-v1.mjs';
 import {resolveNativeTiming} from '../lib/ai-painter-decode1-entry-completion-native-owner-v1.mjs';
-import {collectActualExecutionSources,sourceCollectionReport} from '../lib/ai-painter-decode1-entry-weight-quality-source-closure-v1.mjs';
+import {collectActualExecutionSources,sourceCollectionReport,requiredProgramRoles} from '../lib/ai-painter-decode1-entry-weight-quality-source-closure-v1.mjs';
 import {isResourceGuardMessage,primaryErrorForControlStream,hasLiveOwnedProof,cleanupForCurrentCall,requireLiveOwnedReceipt,nativeBudget,deferCompletionParserUntilSpawn,runNative}
  from '../lib/ai-painter-decode1-entry-weight-quality-owned-native-v1.mjs';
 import {localPreparationRoute,LOCAL_DECODE1_ENTRY_WEIGHT_PREPARE_REGISTRATION,LOCAL_DECODE1_ENTRY_COMPLETION_PREPARE_REGISTRATION,LOCAL_DECODE1_ENTRY_COMPLETION_V2_PREPARE_REGISTRATION,LOCAL_DECODE1_ENTRY_SAME_CALL_PREPARE_REGISTRATION,verifyPreparationSources}
@@ -23,6 +23,14 @@ import {inside,bind as fileBinding,read as readBound,directoryBytes,ROLES,withOu
 import {directoryBytes as historicalDirectoryBytes} from '../lib/ai-painter-mvp256-dry-detail-weight-capture-package-chain-v1.mjs';
 import {write as writeCandidateAccounting} from '../lib/ai-painter-decode1-entry-weight-output-accounting-v1.mjs';
 import {decodeTrainingInterfaceJson,parseTrainingInterfacePolicy} from '../../src/server/ai-console/training-preview-history-v1.mjs';
+
+test('read-only role query identifies a missing interpreter instead of an empty failure',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'decode1-role-query-'));
+ fs.writeFileSync(path.join(root,'auth.py'),'# inert fixture; never imported\n');
+ assert.throws(()=>requiredProgramRoles({root,python:path.join(root,'missing-python'),
+   capabilityVersion:'fixture',authPath:'auth.py'}),/registered read-only role query failed: .*"errorCode":"ENOENT"/);
+ assert.equal(fs.readFileSync(path.join(root,'auth.py'),'utf8'),'# inert fixture; never imported\n');
+});
 
 test('registered interface index is shared by preparation and Python without changing candidate consumers',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'painter-interface-cpu-'));

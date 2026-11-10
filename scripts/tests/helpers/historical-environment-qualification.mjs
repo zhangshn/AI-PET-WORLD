@@ -26,6 +26,27 @@ export function readHistoricalWeatherRegistry() {
 
 export function createHistoricalWeatherFixture() {
   function original(file,digest) {
+    // These implementations have since been refactored. The historical audit
+    // still verifies its original bytes, never a rebinding to current source.
+    if (['scripts/lib/world-environment-evidence.mjs',
+      'scripts/lib/world-weather-release-policy.mjs',
+      'scripts/lib/natural-world-evolution-loop.mjs',
+      'scripts/lib/world-initialized-evolution.mjs',
+      'scripts/lib/world-environment-scheduled-run.mjs',
+      'scripts/tests/helpers/world-evolution-loop-loader.mjs',
+      'scripts/lib/ai-painter-autonomous-package-decision-core-v3.mjs'].includes(file)) {
+      let raw=execFileSync('git',['show','1819fae5565ba30880a6c5366a42605ec48192e3:'+file],
+        {cwd:root,windowsHide:true,maxBuffer:4*1024**2})
+      // The original Windows snapshots of these two files used CRLF; the Git
+      // blob uses LF. Restore only that documented byte representation and
+      // still require the exact SHA from the original immutable manifest.
+      if (['scripts/lib/natural-world-evolution-loop.mjs',
+        'scripts/lib/world-initialized-evolution.mjs'].includes(file)) {
+        raw=Buffer.from(raw.toString('utf8').replace(/\r?\n/g,'\r\n'))
+      }
+      assert.equal(hash(raw),digest,'pinned historical source mismatch: '+file)
+      return raw
+    }
     const p=path.join(root,file),stat=fs.statSync(p)
     assert(stat.isFile()&&stat.size>0&&stat.size<=4*1024**2,'historical source outside file budget: '+file)
     const raw=fs.readFileSync(p)
@@ -35,7 +56,7 @@ export function createHistoricalWeatherFixture() {
   const m162=original(ENVIRONMENT_EVIDENCE_MANIFEST,ENVIRONMENT_EVIDENCE_MANIFEST_SHA)
   const m165=original(ENVIRONMENT_QUALIFICATION_MANIFEST,ENVIRONMENT_QUALIFICATION_MANIFEST_SHA)
   const legacy=JSON.parse(m162),manifest=JSON.parse(m165)
-  // Only the two changing live locations are resolved through pre-existing immutable bytes.
+  // Changing live state and explicitly pinned refactored source use immutable bytes.
   // Every path, size and SHA still comes from the original pinned manifests.
   const refs=new Map()
   for(const ref of [...legacy.refs,...manifest.references]){

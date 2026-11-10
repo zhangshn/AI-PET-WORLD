@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../scripts/lib/runtime-working-directory.mjs'
 /**
  * Local runtime-only file store for the live world runtime.
  *
@@ -37,7 +38,7 @@ type InternalWriteInput = { record: StoredRecord; filePath?: string; expectedTic
 
 
 const RUNTIME_DIR = path.join(
-  process.cwd(),
+  runtimeWorkingDirectory(),
   "data",
   "world-runtime"
 )

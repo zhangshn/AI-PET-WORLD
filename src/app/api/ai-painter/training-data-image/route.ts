@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../../../scripts/lib/runtime-working-directory.mjs'
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { NextRequest, NextResponse } from "next/server"
@@ -38,10 +39,10 @@ function resolveTrainingImageFile(relativePath: string | null) {
   if (!normalizedRelativePath.startsWith(".runtime/")) return null
   if (![".png", ".jpg", ".jpeg", ".webp"].includes(path.extname(normalizedRelativePath).toLowerCase())) return null
 
-  const workspaceRoot = process.cwd()
-  const absolutePath = path.resolve(workspaceRoot, normalizedRelativePath)
+  const workspaceRoot = runtimeWorkingDirectory()
+  const absolutePath = resolveRuntimePath(workspaceRoot, normalizedRelativePath)
   const allowed = trainingImageRoots(workspaceRoot).some((root) => {
-    const absoluteRoot = path.resolve(root)
+    const absoluteRoot = resolveRuntimePath(root)
     return absolutePath === absoluteRoot || absolutePath.startsWith(`${absoluteRoot}${path.sep}`)
   })
   return allowed ? absolutePath : null
@@ -49,9 +50,9 @@ function resolveTrainingImageFile(relativePath: string | null) {
 
 function trainingImageRoots(workspaceRoot: string) {
   return [
-    path.resolve(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "ai-painter"),
-    path.resolve(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "game-map-material-slot-inference-runs"),
-    path.resolve(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "game-map-runtime-compositor"),
-    path.resolve(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "game-map-runtime-frame-candidates"),
+    resolveRuntimePath(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "ai-painter"),
+    resolveRuntimePath(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "game-map-material-slot-inference-runs"),
+    resolveRuntimePath(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "game-map-runtime-compositor"),
+    resolveRuntimePath(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "game-map-runtime-frame-candidates"),
   ]
 }

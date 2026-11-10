@@ -13,7 +13,7 @@ import { spawn } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { DatabaseSync } from "node:sqlite"
 import { createOwnedStopNativeControl, initializeOwnedStopControlEvidence } from "./ai-painter-owned-stop-native-control-v1.mjs"
-import { processIdentity } from "../run-ai-painter-mvp256-dry-v24-training.mjs"
+import { processIdentity } from "./windows-process-identity.mjs"
 import { createNativeOwnerCommand, nativeOwnerSourceIdentity, nativeBuildFailureObservation } from "./ai-painter-ecology-decode1-native-owner-v2.mjs"
 import { inside, read, json, bind, write, sha, withOutputBudget, directoryBytes } from "./ai-painter-object-support-structure-quality-package-chain-v1.mjs"
 import { validatePlan, ROLES, runtimeIdentity, finalProgramBindings, CANDIDATE, deriveConfiguration,

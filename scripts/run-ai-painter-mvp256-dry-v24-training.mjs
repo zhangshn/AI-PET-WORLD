@@ -3,7 +3,9 @@ import assert from "node:assert/strict"
 import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
-import { execFile, execFileSync } from "node:child_process"
+import { execFile } from "node:child_process"
+import { processIdentity } from "./lib/windows-process-identity.mjs"
+export { processIdentity } from "./lib/windows-process-identity.mjs"
 import { promisify } from "node:util"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
@@ -36,6 +38,7 @@ export const TRAINING_PLAN = { epochs: 48, trainRows: 48, validationRows: 8,
   discriminatorOptimizerSteps: 2304, historicalCheckpointLoaded: false }
 
 export const REQUIRED_PROGRAMS = {
+  processIdentity: "scripts/lib/windows-process-identity.mjs",
   supervisor: SUPERVISOR,
   supervisorTests: SUPERVISOR_TESTS,
   worker: WORKER,
@@ -94,14 +97,6 @@ export function writeExclusive(root, logical, value) {
     fs.fsyncSync(descriptor)
   } finally { fs.closeSync(descriptor) }
   return { path: logical, sha256: sha(encoded) }
-}
-
-export function processIdentity(pid) {
-  assert.ok(Number.isSafeInteger(pid) && pid > 0)
-  const command = `$p=Get-CimInstance Win32_Process -Filter 'ProcessId = ${pid}'; if($null -eq $p){exit 3}; [string]$p.ProcessId+':'+$p.CreationDate.ToUniversalTime().ToString('o')`
-  return execFileSync("powershell.exe",
-    ["-NoProfile", "-NonInteractive", "-Command", command],
-    { encoding: "utf8", windowsHide: true, timeout: 10_000 }).trim()
 }
 
 function programs(root) {

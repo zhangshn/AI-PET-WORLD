@@ -4,7 +4,7 @@ import {setTimeout as wait} from 'node:timers/promises'
 import {execFileSync} from 'node:child_process'
 import {ROOT, safe, read, bind, bound, json, digest, equal, idOf, featureSha, invariant,
   remapJournal, runtime, sha, observe, utc} from './world-initialized-evolution.mjs'
-import {LOOP_RUNTIME_FILES} from '../tests/helpers/world-evolution-loop-loader.mjs'
+import {LOOP_RUNTIME_FILES} from './world-evolution-runtime-loader.mjs'
 import {launchProjectCommandBackground, validateProjectCommandBackgroundReceipt} from './ai-painter-autonomous-background-launcher-v1.mjs'
 
 export const BASE='.runtime/ai-painter/controller-repair-reviews/world-environment-background-166-20261031'
@@ -132,7 +132,7 @@ export async function prepare(){
   const p=save(RUN+'/private-policy.json',policy(ctx.r))
   const pre=save(RUN+'/preflight.json',{mapping,inputRef,identityProcess:ident,sourceCheck:zero,privatePolicyRef:p})
   const code=[ENTRY,'scripts/lib/world-environment-scheduled-run.mjs','scripts/lib/world-initialized-evolution.mjs',
-    'scripts/tests/helpers/world-evolution-loop-loader.mjs','scripts/lib/ai-painter-exactly-once-background-spawn-v1.mjs',
+    'scripts/lib/world-evolution-runtime-loader.mjs','scripts/lib/ai-painter-exactly-once-background-spawn-v1.mjs',
     'scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs',...LOOP_RUNTIME_FILES.map(f=>'src/world/runtime/'+f),
     'src/world/runtime/world-evolution-policy.ts','src/world/runtime/world-environment-validator.ts']
   const manifest=save(RUN+'/execution-contract.json',{config:bind(BASE+'/runtime-config.json'),preflight:pre,bindings:[...code.map(bind),p,inputRef,

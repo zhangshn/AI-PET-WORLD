@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../../../scripts/lib/runtime-working-directory.mjs'
 ﻿import { execFile } from "node:child_process"
 import { readFile, readdir, stat } from "node:fs/promises"
 import path from "node:path"
@@ -17,7 +18,7 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 const execFileAsync = promisify(execFile)
-const aiPainterRuntimeRoot = path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter")
+const aiPainterRuntimeRoot = path.join(/* turbopackIgnore: true */ runtimeWorkingDirectory(), ".runtime", "ai-painter")
 const bootstrapTrainingDir = path.join(aiPainterRuntimeRoot, "bootstrap-training")
 const snapshotCacheTtlMs = 3_000
 
@@ -438,7 +439,7 @@ async function buildTrainingProgressSnapshot(): Promise<TrainingProgressSnapshot
     system,
     runtimeStatus,
     dataset: {
-      formalSceneSamples: await countDirectories(path.join(process.cwd(), "data", "ai-painter-datasets", "accepted", "dataset_v0", "scene", "world")),
+      formalSceneSamples: await countDirectories(path.join(runtimeWorkingDirectory(), "data", "ai-painter-datasets", "accepted", "dataset_v0", "scene", "world")),
       bootstrapSamples: await countDirectories(path.join(aiPainterRuntimeRoot, "bootstrap-dataset", "accepted", "dataset_v0", "scene", "world")),
       imageSize: "256 x 192",
       conditionChannels: 14,
@@ -503,7 +504,7 @@ async function buildTrainingProgressSnapshot(): Promise<TrainingProgressSnapshot
     },
     mvpGap: await readJson(path.join(aiPainterRuntimeRoot, "mvp-gap-report", "report.json")),
     visualUnitV0: buildVisualUnitV0Status(),
-    visualUnitData: await readJson(path.join(process.cwd(), "data", "visual-units", "manifest.json")),
+    visualUnitData: await readJson(path.join(runtimeWorkingDirectory(), "data", "visual-units", "manifest.json")),
     naturalHomeReadiness: await readJson(path.join(aiPainterRuntimeRoot, "natural-home-readiness", "report.json")),
     naturalHomeQuality: await readJson(path.join(aiPainterRuntimeRoot, "natural-home-quality", "report.json")),
     naturalHomeTraining: {
@@ -975,7 +976,7 @@ async function readLatestGameMapRuntimeFramePreview() {
   const record =
     (await readJson(
       path.join(
-        process.cwd(),
+        runtimeWorkingDirectory(),
         ".runtime",
         "game-map-runtime-frame",
         "latest-runtime-frame.json",
@@ -983,7 +984,7 @@ async function readLatestGameMapRuntimeFramePreview() {
     )) ??
     (await readJson(
       path.join(
-        process.cwd(),
+        runtimeWorkingDirectory(),
         ".runtime",
         "game-map-runtime-frame-candidates",
         "latest-runtime-frame.json",
@@ -1063,7 +1064,7 @@ async function readRuntimeFrameOwnerReviewGate(input: {
   }
 
   const ledgerPath = path.join(
-    process.cwd(),
+    runtimeWorkingDirectory(),
     ".runtime",
     "ai-painter",
     "training-process-ledger",

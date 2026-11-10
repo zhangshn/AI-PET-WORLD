@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { open, realpath } from 'node:fs/promises'
 import path from 'node:path'
+import { projectRoot, physicalRuntimeRoot } from '../../../scripts/lib/ai-pet-world-storage.mjs'
 
 const SHA = /^[a-f0-9]{64}$/
 export class HistoryError extends Error {
@@ -9,16 +10,16 @@ export class HistoryError extends Error {
 export function requireFact(value, code, status = 409) { if (!value) throw new HistoryError(code, status) }
 function inside(root, file) { const relative = path.relative(root, file); return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative)) }
 
-// Only the explicitly registered F: runtime junction is an external read root.
-// A different checkout may read its own local data/runtime; it cannot grant a disk.
+// The running project's configured runtime mount is the only external read root.
+// A caller-supplied checkout cannot grant an arbitrary disk or change this binding.
 export async function safePath(root, logical) {
   requireFact(typeof logical === 'string' && !logical.includes('\\') && !logical.split('/').some(p => p === '..' || p === '.' || p === '') && /^(?:\.runtime|data|cold)\//.test(logical), 'history_path_outside_root')
   const base = await realpath(root)
   const namespace = logical.split('/')[0]
   const logicalRoot = path.join(base, namespace)
   const resolvedRoot = await realpath(logicalRoot)
-  const registered = process.platform === 'win32' && base.toLowerCase() === path.resolve('F:/ai-pet-world').toLowerCase()
-    && namespace === '.runtime' && resolvedRoot.toLowerCase() === path.resolve('D:/AI-PET-WORLD-DATA/hot/runtime').toLowerCase()
+  const registered = namespace === '.runtime' && base === await realpath(projectRoot)
+    && resolvedRoot === await realpath(physicalRuntimeRoot).catch(() => null)
   requireFact(inside(base, resolvedRoot) || registered, 'history_unregistered_mount')
   const resolved = await realpath(path.join(base, logical))
   requireFact(inside(resolvedRoot, resolved), 'history_symlink_escape')

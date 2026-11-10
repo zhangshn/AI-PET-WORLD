@@ -1,9 +1,10 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from './runtime-working-directory.mjs'
 import fs from "node:fs"
 import path from "node:path"
 
-export const projectRoot = path.resolve(process.cwd())
+export const projectRoot = resolveRuntimePath(runtimeWorkingDirectory())
 export const projectRuntimeRoot = path.join(projectRoot, ".runtime")
-export const dataRoot = path.resolve(
+export const dataRoot = resolveRuntimePath(
   process.env.AI_PET_WORLD_DATA_ROOT ?? (process.platform === "win32" ? "D:\\AI-PET-WORLD-DATA" : path.join(projectRoot, ".ai-pet-world-data")),
 )
 export const hotRoot = path.join(dataRoot, "hot")
@@ -20,7 +21,7 @@ export function ensureStorageRoots() {
 }
 
 export function logicalProjectPath(absolutePath) {
-  const resolved = path.resolve(absolutePath)
+  const resolved = resolveRuntimePath(absolutePath)
   const relative = path.relative(projectRoot, resolved)
   if (relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
     return relative.replace(/\\/g, "/") || "."
@@ -36,10 +37,10 @@ export function physicalPathForLogical(logicalPath) {
   if (normalized === ".runtime" || normalized.startsWith(".runtime/")) {
     return path.join(physicalRuntimeRoot, normalized.slice(".runtime".length))
   }
-  return path.resolve(projectRoot, logicalPath)
+  return resolveRuntimePath(projectRoot, logicalPath)
 }
 
 export function isInside(candidate, parent) {
-  const relative = path.relative(path.resolve(parent), path.resolve(candidate))
+  const relative = path.relative(resolveRuntimePath(parent), resolveRuntimePath(candidate))
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))
 }

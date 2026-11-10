@@ -1,6 +1,7 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 import { createHash } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { isAbsolute, join, resolve } from "node:path"
+import { isAbsolute, join} from 'node:path'
 
 import sharp from "sharp"
 
@@ -86,9 +87,9 @@ export async function composeGameMapRuntimeOutput(input: {
 }): Promise<GameMapRuntimeCompositorResult> {
   const { manifest } = input
   const outputRoot = input.outputRoot
-    ? resolve(input.outputRoot)
+    ? resolveRuntimePath(input.outputRoot)
     : join(
-        /* turbopackIgnore: true */ process.cwd(),
+        /* turbopackIgnore: true */ runtimeWorkingDirectory(),
         ".runtime",
         "game-map-runtime-compositor"
       )
@@ -352,7 +353,7 @@ async function readMaterialImageBytes(imageUrl: string): Promise<Buffer | null> 
 
   const filePath = isAbsolute(imageUrl)
     ? imageUrl
-    : resolve(/* turbopackIgnore: true */ process.cwd(), imageUrl)
+    : resolveRuntimePath(/* turbopackIgnore: true */ runtimeWorkingDirectory(), imageUrl)
 
   try {
     return await readFile(filePath)

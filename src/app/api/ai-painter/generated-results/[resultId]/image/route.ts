@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../../../../../scripts/lib/runtime-working-directory.mjs'
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { NextRequest, NextResponse } from "next/server"
@@ -22,7 +23,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ re
 function resolveArchivedImageFile(resultId: string) {
   if (!/^[a-z0-9_-]+$/.test(resultId)) return null
   return path.join(
-    /* turbopackIgnore: true */ process.cwd(),
+    /* turbopackIgnore: true */ runtimeWorkingDirectory(),
     ".runtime",
     "ai-painter",
     "generated-results",

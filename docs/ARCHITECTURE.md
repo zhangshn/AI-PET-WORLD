@@ -1,14 +1,14 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-11-03 04:14:27 +08:00
+更新时间：2026-11-10 12:51:31 +08:00
 
 状态：long-term-architecture-reference
 
-文档版本：`AI-PET-WORLD-ARCHITECTURE-1.19`
+文档版本：`AI-PET-WORLD-ARCHITECTURE-1.20`
 
-生效日期：`2026-11-03`
+生效日期：`2026-11-10`
 
-替代版本：`AI-PET-WORLD-ARCHITECTURE-1.18`
+替代版本：`AI-PET-WORLD-ARCHITECTURE-1.19`
 
 文档状态：`active_normative_target`
 
@@ -633,6 +633,16 @@ D:\AI-PET-WORLD-DATA\migrations      迁移清单、数量/字节/hash校验和�
 数据库只保存run、artifact、event、审核状态、URI、大小、时间戳和SHA-256，不取代图片、checkpoint和原始JSON文件。项目逻辑路径`.runtime`在无损迁移完成后通过目录联接继续保持兼容，避免现有世界事实、训练和审核身份发生变化。完成运行进入冷层时必须保留不可变归档、原始相对路径和hash；控制台通过SQLite分页查询，不得为显示页面递归扫描整个物理目录。
 
 存储迁移必须由不可变迁移清单保存源、目标、数量、字节、逐文件hash、切换和回退证据。实际迁移状态、备份位置和SQLite计数只从机器记录读取，不写入架构文档。
+
+已完成热层迁移所保留的旧物理备份，应移出代码检出目录。此类离线备份允许在源卷的项目外独立归档根保存，以同卷目录重命名保留文件身份；它不是新的热层、可写世界根或训练来源。必须先确认无活动引用、生成逐文件摘要清单，迁移后复核摘要和数量，并在既有存储catalog登记新位置、原位置及恢复映射。原迁移记录保留原字节，以追加的迁移记录表达位置变化；不得直接改写历史证明或删除唯一副本。日常已完成Run仍使用上述D盘冷层，不混用两类归档。
+
+世界初始化的公共实现由`scripts/lib/natural-world-geospatial-generator.mjs`、`natural-world-visual-manifest.mjs`、`natural-world-visual-task.mjs`及`natural-world-condition-compiler.mjs`承担。Runtime直接调用这些模块；原`scripts/`命令入口只负责CLI兼容调用与导出，不再作为业务模块的依赖。源码绑定必须覆盖公共实现及入口，迁移不自动赋予历史事实或模型新的资格。
+
+世界演化的Node运行模块装载由`scripts/lib/world-evolution-runtime-loader.mjs`承担，按项目根目录分别缓存，仅解析明确列出的Runtime模块；运行代码不得依赖测试辅助实现。测试目录可保留兼容导出，历史证据仍验证其原始源码字节，不随重构重新绑定。
+
+受管进程身份查询及有界心跳文件发布分别由`scripts/lib/windows-process-identity.mjs`和`scripts/lib/training-heartbeat-publication.mjs`提供。调用这些公共操作不得引入整套历史训练入口；原入口保留兼容导出，发布重试上限及原失败语义保持，心跳不代表训练或验收通过。
+
+能力作用域的登记结构检查由`scripts/lib/ai-painter-capability-scope-admission.mjs`承担，不导入天气发布和环境证据实现。裁决、天气发布及环境证据依赖这一公共读取层；结构检查不替代能力发布的原始证据复核。
 
 ## 4. RuntimeFrame 数据结构边界
 

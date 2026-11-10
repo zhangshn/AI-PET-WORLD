@@ -13,7 +13,7 @@ import { inspectCandidate } from "./check-ai-painter-mvp256-dry-v24-candidate.mj
 import { validateActivationChain, validateBasePackage } from
   "./lib/ai-painter-mvp256-dry-v24-package-chain-v1.mjs"
 import { replaceHeartbeatFile, heartbeatPublicationRule } from
-  "./run-ai-painter-learning-capacity-experiment.mjs"
+  "./lib/training-heartbeat-publication.mjs"
 
 const execFileAsync = promisify(execFile)
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")

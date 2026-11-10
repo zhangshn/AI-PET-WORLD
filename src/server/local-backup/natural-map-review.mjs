@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../scripts/lib/runtime-working-directory.mjs'
 import path from 'node:path'
 import {createHash} from 'node:crypto'
 import {readFileSync} from 'node:fs'
@@ -36,7 +37,7 @@ export function safeMapPoint(hit,expected){
 // Load source with its original Node filesystem identity (the Store verifies original paths).
 // Only the fixed server module is executable. Request values never select an import or file.
 function loadOriginal(filename){
-  const absolute=path.join(process.cwd(),'scripts','lib',filename),url=pathToFileURL(absolute)
+  const absolute=path.join(runtimeWorkingDirectory(),'scripts','lib',filename),url=pathToFileURL(absolute)
   url.searchParams.set('revision',createHash('sha256').update(readFileSync(absolute)).digest('hex'))
   return import(/* webpackIgnore: true */ /* turbopackIgnore: true */ url.href)
 }

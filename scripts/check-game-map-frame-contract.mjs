@@ -970,17 +970,24 @@ check(
 let failed = 0
 for (const item of checks) {
   if (item.condition) {
-    console.log(`OK ${item.label}`)
+    console.log(`OK [static source] ${item.label}`)
   } else {
     failed += 1
-    console.error(`FAIL ${item.label}`)
+    console.error(`FAIL [static source] ${item.label}`)
   }
 }
 
-if (failed > 0) {
-  console.error(`GameMapFrame contract check failed: ${failed} failure(s).`)
-  process.exit(1)
-}
-
-console.log(`GameMapFrame contract check passed: ${checks.length} assertions.`)
+console.log(JSON.stringify({
+  status: failed === 0 ? "passed" : "failed",
+  checkKind: "static_source_contract",
+  assertions: checks.length,
+  failedAssertions: failed,
+  behavioralTests: 0,
+  behaviorVerified: false,
+  productionDeploymentVerified: false,
+  fullMvpAccepted: false,
+  behaviorCommand: "node --test scripts/tests/game-map-frame-behavior.test.mjs",
+  scope: "Source text and declared contracts only; no map construction, rendering or model inference executed.",
+}, null, 2))
+if (failed > 0) process.exitCode = 1
 

@@ -1,3 +1,4 @@
+import {resolveRuntimePath} from './runtime-working-directory.mjs'
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -18,7 +19,7 @@ const POLICY_BOUNDARY_CLASSES = new Set([
 ]);
 
 export function readLocalGovernanceContract(root = process.cwd()) {
-  const contractPath = path.resolve(root, LOCAL_GOVERNANCE_CONTRACT_PATH);
+  const contractPath = resolveRuntimePath(root, LOCAL_GOVERNANCE_CONTRACT_PATH);
   const contract = JSON.parse(fs.readFileSync(contractPath, "utf8"));
   validateLocalGovernanceContract(contract);
   return { contract, contractPath, contractSha256: sha256File(contractPath) };
@@ -83,7 +84,7 @@ export function normalizePolicyBoundaryReport(input, {
 }
 
 export function persistPolicyBoundaryReport(input, options = {}) {
-  const root = path.resolve(options.root ?? process.cwd());
+  const root = resolveRuntimePath(options.root ?? process.cwd());
   const report = normalizePolicyBoundaryReport(input, { root, recordedAtUtc: options.recordedAtUtc });
   const logicalDirectory = `${POLICY_BOUNDARY_ROOT}/${report.reportId}`;
   const finalDirectory = resolveInsideRoot(root, logicalDirectory);
@@ -165,8 +166,8 @@ function resolveExistingFileInsideRoot(root, value) {
 }
 
 function resolveInsideRoot(root, value) {
-  const resolvedRoot = path.resolve(root);
-  const absolutePath = path.resolve(resolvedRoot, value);
+  const resolvedRoot = resolveRuntimePath(root);
+  const absolutePath = resolveRuntimePath(resolvedRoot, value);
   assert(absolutePath.startsWith(`${resolvedRoot}${path.sep}`), `path escapes project root: ${value}`);
   return absolutePath;
 }

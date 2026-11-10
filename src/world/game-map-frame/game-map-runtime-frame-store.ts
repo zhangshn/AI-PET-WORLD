@@ -1,6 +1,7 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 import { mkdir, readFile, open, rename, rm, lstat } from "node:fs/promises"
 import { createHash, randomUUID } from "node:crypto"
-import { dirname, join, resolve } from "node:path"
+import { dirname, join} from 'node:path'
 
 import type { GameMapRuntimeFrame } from "./game-map-runtime-frame-schema"
 import { isGameMapRuntimeFrame } from "./game-map-runtime-frame-schema"
@@ -241,7 +242,7 @@ export async function readLatestGameMapRuntimeFrameRecord(input?: {
     if (before && before.fingerprint !== publication.fingerprint) {
       return invalid(filePath, ["game_map_runtime_frame_transaction_changed_during_read"])
     }
-    if (resolve(filePath) === resolve(getWorldLatestGameMapRuntimeFramePath(record.worldId, input?.outputRoot))) {
+    if (resolveRuntimePath(filePath) === resolveRuntimePath(getWorldLatestGameMapRuntimeFramePath(record.worldId, input?.outputRoot))) {
       await assertCommittedRecord(publication.journal, record, raw, input?.outputRoot)
     }
 
@@ -307,7 +308,7 @@ async function releaseOwnedLock(
   const owned = await handle.stat()
   const current = await lstat(filePath)
   if (!current.isFile() || current.isSymbolicLink() || owned.dev !== current.dev || owned.ino !== current.ino ||
-      await readFile(filePath, "utf8") !== bytes) {
+      await readFile(resolveRuntimePath(filePath), "utf8") !== bytes) {
     throw storeError("game_map_runtime_frame_lock_identity_conflict")
   }
   await rm(filePath)
@@ -328,7 +329,7 @@ type TransactionJournal = {
 
 async function readOptionalFile(filePath: string): Promise<string | null> {
   try {
-    return await readFile(/* turbopackIgnore: true */ filePath, "utf8")
+    return await readFile(resolveRuntimePath(filePath), "utf8")
   } catch (error) {
     if (readErrorCode(error) === "ENOENT") return null
     throw error
@@ -343,7 +344,7 @@ async function readPublicationState(worldId: string, outputRoot?: string, filePa
   const rootPath = `${getLatestGameMapRuntimeFramePath(outputRoot)}.transaction.json`
   const rootRaw = await readOptionalFile(rootPath)
   const explicitPath = filePath ? `${filePath}.transaction.json` : null
-  const explicitRaw = explicitPath && resolve(explicitPath) !== resolve(worldPath) && resolve(explicitPath) !== resolve(rootPath)
+  const explicitRaw = explicitPath && resolveRuntimePath(explicitPath) !== resolveRuntimePath(worldPath) && resolveRuntimePath(explicitPath) !== resolveRuntimePath(rootPath)
     ? await readOptionalFile(explicitPath) : null
   let journal: TransactionJournal | null = null
   let warning: string | null = null
@@ -498,7 +499,7 @@ function getGameMapRuntimeFrameRoot(outputRoot?: string): string {
   return outputRoot
     ? outputRoot
     : join(
-        /* turbopackIgnore: true */ process.cwd(),
+        /* turbopackIgnore: true */ runtimeWorkingDirectory(),
         ".runtime",
         "game-map-runtime-frame"
       )

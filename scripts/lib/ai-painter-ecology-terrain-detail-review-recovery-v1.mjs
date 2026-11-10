@@ -9,8 +9,8 @@ import {bind,read,json,write,inside,sha,finalProgramBindings,directoryBytes,with
  from './ai-painter-ecology-terrain-detail-quality-package-chain-v1.mjs'
 import {validate as validateTrainingPlan} from './ai-painter-ecology-terrain-detail-quality-registration-v1.mjs'
 import {readCurrentExecutionRegistry,advanceCurrentExecutionRegistry} from '../../src/server/ai-painter-current-execution-registry.mjs'
-import {processIdentity} from '../run-ai-painter-mvp256-dry-v24-training.mjs'
-import {replaceHeartbeatFile} from '../run-ai-painter-learning-capacity-experiment.mjs'
+import {processIdentity} from './windows-process-identity.mjs'
+import {replaceHeartbeatFile} from "./training-heartbeat-publication.mjs"
 
 const SCHEMA='ecology-terrain-detail-readonly-review-recovery-plan-v1'
 const SPEC='docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md'

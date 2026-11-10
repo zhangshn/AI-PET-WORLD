@@ -7,8 +7,8 @@ import {Worker,isMainThread,parentPort,workerData} from 'node:worker_threads'
 import {bind,json,read,write,inside,CAPABILITY,validateCompleted} from './lib/ai-painter-mvp256-dry-detail-weight-capture-package-chain-v1.mjs'
 import {runNative,auditReviewReport,priorReviewBudget,withNativeReceiptBudget} from './run-ai-painter-mvp256-dry-detail-weight-capture-training.mjs'
 import {readCurrentExecutionRegistry,advanceCurrentExecutionRegistry} from '../src/server/ai-painter-current-execution-registry.mjs'
-import {processIdentity} from './run-ai-painter-mvp256-dry-v24-training.mjs'
-import {replaceHeartbeatFile} from './run-ai-painter-learning-capacity-experiment.mjs'
+import {processIdentity} from "./lib/windows-process-identity.mjs"
+import {replaceHeartbeatFile} from "./lib/training-heartbeat-publication.mjs"
 
 export const SOURCE_RUN='mvp256-dry-detail-weight-capture-t65-20261009031741'
 export const BASE=`.runtime/ai-painter/detail-weight-capture-managed-executions/${SOURCE_RUN}`

@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../../../../../../scripts/lib/runtime-working-directory.mjs'
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { NextResponse } from "next/server"
@@ -9,8 +10,8 @@ export async function GET(request: Request, context: { params: Promise<{ sampleI
   const { sampleId } = await context.params
   if (!SAMPLE_ID_PATTERN.test(sampleId)) return new NextResponse(null, { status: 404 })
   const wantsOriginal = new URL(request.url).searchParams.get("original") === "1"
-  const original = path.join(process.cwd(), "data", "ai-painter-datasets", "incoming", sampleId, "target.png")
-  const normalized = path.join(process.cwd(), "data", "ai-painter-datasets", "accepted", "dataset_v0", "scene", "world", sampleId, "target.png")
+  const original = path.join(runtimeWorkingDirectory(), "data", "ai-painter-datasets", "incoming", sampleId, "target.png")
+  const normalized = path.join(runtimeWorkingDirectory(), "data", "ai-painter-datasets", "accepted", "dataset_v0", "scene", "world", sampleId, "target.png")
   try {
     const image = wantsOriginal ? await readOriginalOrNormalized(original, normalized) : await readFile(normalized)
     return new NextResponse(image, {

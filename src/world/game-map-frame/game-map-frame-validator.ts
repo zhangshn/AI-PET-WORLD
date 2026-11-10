@@ -1,14 +1,14 @@
-import type { GameMapFrame } from "./game-map-frame-schema"
 import { isGameMapFrame } from "./game-map-frame-schema"
 import {
   buildPolylineCorridorPolygon,
   buildSegmentPolygon,
   polygonBounds,
   polygonsOverlap,
+  rectToPolygon,
   rectWithinBounds,
   rectsOverlap,
 } from "./game-map-geometry"
-import type { HomeMapStructure } from "./home-map-structure-schema"
+import type { HomeMapPoint, HomeMapStructure } from "./home-map-structure-schema"
 import {
   collectHomeMapStructureSourceFactIds,
   isHomeMapStructure,
@@ -196,6 +196,9 @@ export function validateGameMapFrame(
   if (value.worldId !== structure.worldId) {
     issues.push(issue("world_id_mismatch", "GameMapFrame worldId must match structure."))
   }
+  if (value.ownerId !== structure.ownerId) {
+    issues.push(issue("owner_id_mismatch", "GameMapFrame ownerId must match structure."))
+  }
   if (value.tick !== structure.tick) {
     issues.push(issue("tick_mismatch", "GameMapFrame tick must match structure."))
   }
@@ -230,9 +233,41 @@ export function validateGameMapFrame(
   }
 
   const blockedObjectIds = new Set(value.collisionLayer.blockedObjectIds)
-  for (const object of structure.objects.filter((item) => item.blocksMovement)) {
+  const blockingObjects = new Map(
+    structure.objects.filter((item) => item.blocksMovement).map((object) => [object.id, object])
+  )
+  if (
+    blockedObjectIds.size !== value.collisionLayer.blockedObjectIds.length ||
+    blockedObjectIds.size !== blockingObjects.size ||
+    [...blockedObjectIds].some((id) => !blockingObjects.has(id))
+  ) {
+    issues.push(issue("blocked_object_ids_mismatch", "Collision IDs must exactly match blocking objects without duplicates."))
+  }
+  const collisionRegionCounts = new Map<string, number>()
+  for (const region of value.collisionLayer.regions) {
+    const count = (collisionRegionCounts.get(region.sourceId) ?? 0) + 1
+    collisionRegionCounts.set(region.sourceId, count)
+    if (count > 1) {
+      issues.push(issue("collision_region_duplicate", `Duplicate collision region for ${region.sourceId}.`))
+    }
+    const object = blockingObjects.get(region.sourceId)
+    if (!object) {
+      issues.push(issue("collision_region_unexpected", `Collision region ${region.id} has no blocking source object.`))
+      continue
+    }
+    if (region.kind !== "blocked_area") {
+      issues.push(issue("collision_region_kind_invalid", `Collision region for ${object.id} must be blocked_area.`))
+    }
+    if (!samePolygonBoundary(region.polygon, rectToPolygon(object.footprint))) {
+      issues.push(issue("collision_geometry_mismatch", `Collision region for ${object.id} must match its source footprint.`))
+    }
+  }
+  for (const object of blockingObjects.values()) {
     if (!blockedObjectIds.has(object.id)) {
       issues.push(issue("blocked_object_missing", `Missing collision for ${object.id}.`))
+    }
+    if (!collisionRegionCounts.has(object.id)) {
+      issues.push(issue("collision_region_missing", `Missing collision geometry for ${object.id}.`))
     }
   }
 
@@ -293,4 +328,18 @@ function sameStringSet(left: string[], right: string[]): boolean {
   if (left.length !== right.length) return false
   const rightSet = new Set(right)
   return left.every((value) => rightSet.has(value))
+}
+
+// The v1 collision layer is derived from source rectangular footprints. Preserve
+// the boundary, allowing either winding and any starting vertex, not crossed edges.
+function samePolygonBoundary(left: HomeMapPoint[], right: HomeMapPoint[]): boolean {
+  if (left.length !== right.length) return false
+  return right.some((_, start) =>
+    [1, -1].some((direction) =>
+      left.every((point, index) => {
+        const expected = right[(start + direction * index + right.length) % right.length]
+        return point.x === expected.x && point.y === expected.y
+      })
+    )
+  )
 }

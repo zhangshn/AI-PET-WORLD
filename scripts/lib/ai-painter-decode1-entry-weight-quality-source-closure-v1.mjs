@@ -266,7 +266,10 @@ function requiredProgramRoles({root,python,capabilityVersion,authPath}){
   const code="import json,sys;from pathlib import Path;root=Path(sys.argv[1]);sys.path[:0]=[str(root/'ml/ai-painter/scripts'),str(root/'ml/ai-painter/src')];import decode1_entry_weight_quality_auth_v1 as auth;print(json.dumps(auth.required_program_roles(sys.argv[2]),sort_keys=True))";
   const call=spawnSync(python,['-I','-B','-c',code,root,capabilityVersion],{encoding:'utf8',timeout:15000,maxBuffer:1048576,windowsHide:true,
     env:{...process.env,OMP_NUM_THREADS:'2',MKL_NUM_THREADS:'2',OPENBLAS_NUM_THREADS:'2'}});
-  assert.equal(call.status,0,'registered read-only role query failed: '+String(call.stderr).slice(0,256));
+  assert.equal(call.status,0,'registered read-only role query failed: '+JSON.stringify({
+    exitCode:call.status,signal:call.signal??null,errorCode:call.error?.code??null,
+    timeoutMs:15000,stderr:String(call.stderr??'').slice(0,256),
+  }));
   assert.equal(digest(fs.readFileSync(path.join(root,authPath))),before,'auth changed across role query');
   const roles=JSON.parse(call.stdout);assert.ok(roles&&typeof roles==='object'&&!Array.isArray(roles));
   roleCache.set(key,Object.freeze({...roles}));return {...roles};

@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../../../../../scripts/lib/runtime-working-directory.mjs'
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 
@@ -10,9 +11,9 @@ export async function GET(_request: Request, context: { params: Promise<{ assetI
   const fileParts = resolveView(view)
   if (!fileParts) return new Response(null, { status: 404 })
 
-  const accepted = path.join(process.cwd(), "data", "ai-painter-assets", "accepted", assetId, ...fileParts)
-  const candidate = path.join(process.cwd(), "data", "ai-painter-assets", "candidates", assetId, ...fileParts)
-  const engineering = path.join(process.cwd(), "data", "ai-painter-assets", "engineering", assetId, ...fileParts)
+  const accepted = path.join(runtimeWorkingDirectory(), "data", "ai-painter-assets", "accepted", assetId, ...fileParts)
+  const candidate = path.join(runtimeWorkingDirectory(), "data", "ai-painter-assets", "candidates", assetId, ...fileParts)
+  const engineering = path.join(runtimeWorkingDirectory(), "data", "ai-painter-assets", "engineering", assetId, ...fileParts)
   try {
     const image = await readFirst(accepted, candidate, engineering)
     return new Response(image, {

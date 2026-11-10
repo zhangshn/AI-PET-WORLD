@@ -1,3 +1,4 @@
+import {resolveRuntimePath} from './runtime-working-directory.mjs'
 import path from 'node:path'
 import fs from 'node:fs'
 import {FIRST_WEATHER_SCOPED_PATH, FIRST_WEATHER_SCOPED_VERSION,
@@ -27,7 +28,7 @@ export function readCommittedHeadBundle(file,projectRoot,logical,live,previousSh
   const dir=logical+'.evolution/'+key+'.'
   const markerRef=file(dir+eventSha+'.commit.json',65536),marker=JSON.parse(markerRef.bytes)
   const {state,transactionId,...body}=marker
-  const recordPath=logical.startsWith('.runtime/')?path.join(fs.realpathSync(path.join(projectRoot,'.runtime')),logical.slice(9)):path.resolve(projectRoot,logical)
+  const recordPath=logical.startsWith('.runtime/')?path.join(fs.realpathSync(path.join(projectRoot,'.runtime')),logical.slice(9)):resolveRuntimePath(projectRoot,logical)
   need(state==='committed'&&marker.schemaVersion==='world-runtime-transaction-v1'&&marker.protocolVersion==='world-evolution-transaction-v1'&&
     marker.recordKind==='natural_world'&&marker.recordPath===recordPath&&marker.latestPath===null&&
     marker.worldId===BASELINE_IDENTITY.worldId&&equal(marker.identity,BASELINE_IDENTITY)&&marker.businessKey===key&&
@@ -196,7 +197,7 @@ export function readBaselineAndCurrentHead(options,readOriginalBaseline){
     let live=actual
     if(pending){
       const journal=JSON.parse(pending.bytes),{state,transactionId,...payload}=journal
-      need(['prepared','committed'].includes(state)&&transactionId===digest(payload)&&journal.recordPath===path.resolve(options.projectRoot,store)&&
+      need(['prepared','committed'].includes(state)&&transactionId===digest(payload)&&journal.recordPath===resolveRuntimePath(options.projectRoot,store)&&
         equal(journal.identity,BASELINE_IDENTITY)&&shaPattern.test(journal.businessKey)&&shaPattern.test(journal.before.fileSha256)&&
         journal.before.name===journal.businessKey+'.'+journal.before.fileSha256+'.before.json','head_pending_journal')
       need(shaPattern.test(journal.next.fileSha256)&&[journal.before.fileSha256,journal.next.fileSha256].includes(actual.sha256)&&

@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url"
 import { performance } from "node:perf_hooks"
 import { DatabaseSync } from "node:sqlite"
 import { createOwnedStopNativeControl, initializeOwnedStopControlEvidence } from "./ai-painter-owned-stop-native-control-v1.mjs"
-import { processIdentity } from "../run-ai-painter-mvp256-dry-v24-training.mjs"
+import { processIdentity } from "./windows-process-identity.mjs"
 import { createNativeOwnerCommand, nativeOwnerSourceIdentity, nativeBuildFailureObservation,
  createCompletionNativeFrameParser, createCompletionCleanupClock, validateCompletionNativeTimingProof } from "./ai-painter-decode1-entry-completion-native-owner-v1.mjs"
 import { inside, read, json, bind, write, sha, withOutputBudget, directoryBytes } from "./ai-painter-decode1-entry-weight-quality-package-chain-v1.mjs"

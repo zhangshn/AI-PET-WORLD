@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../../../../scripts/lib/runtime-working-directory.mjs'
 import { watch, type FSWatcher } from "node:fs"
 import path from "node:path"
 import { NextRequest, NextResponse } from "next/server"
@@ -11,14 +12,14 @@ export function GET(request: NextRequest) {
   if (process.env.NODE_ENV === "production") return new NextResponse(null, { status: 403 })
 
   const libraryRoot = path.join(
-    process.cwd(),
+    runtimeWorkingDirectory(),
     "data",
     "world-samples",
     "original-image-library",
     "natural-home-v1",
   )
   const generationRequestRoot = path.join(
-    /* turbopackIgnore: true */ process.cwd(),
+    /* turbopackIgnore: true */ runtimeWorkingDirectory(),
     ".runtime",
     "ai-painter",
     "ai-assisted-cold-start",

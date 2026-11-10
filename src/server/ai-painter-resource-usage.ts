@@ -1,10 +1,11 @@
 import { execFile } from "node:child_process"
+import { runtimeWorkingDirectory } from "../../scripts/lib/runtime-working-directory.mjs"
 import { appendFile, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { promisify } from "node:util"
 
 const execFileAsync = promisify(execFile)
-const runtimeRoot = path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter")
+const runtimeRoot = path.join(runtimeWorkingDirectory(), ".runtime", "ai-painter")
 const usageDir = path.join(runtimeRoot, "training-resource-usage")
 const currentSessionPath = path.join(usageDir, "current-session.json")
 const latestSessionPath = path.join(usageDir, "latest-session.json")

@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../../scripts/lib/runtime-working-directory.mjs'
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
 import path from "node:path"
 
@@ -9,7 +10,7 @@ import type {
 } from "../world-visual-painter-schema"
 
 const VISUAL_CANDIDATE_DIR = path.join(
-  process.cwd(),
+  runtimeWorkingDirectory(),
   "data",
   "world-visual-candidates"
 )

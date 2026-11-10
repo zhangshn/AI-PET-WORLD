@@ -1,7 +1,8 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../scripts/lib/runtime-working-directory.mjs'
 import path from "node:path"
 
-export const aiPetWorldProjectRoot = path.resolve(/* turbopackIgnore: true */ process.cwd())
-export const aiPetWorldDataRoot = path.resolve(
+export const aiPetWorldProjectRoot = resolveRuntimePath(/* turbopackIgnore: true */ runtimeWorkingDirectory())
+export const aiPetWorldDataRoot = resolveRuntimePath(
   /* turbopackIgnore: true */
   process.env.AI_PET_WORLD_DATA_ROOT ??
     (process.platform === "win32" ? "D:\\AI-PET-WORLD-DATA" : path.join(aiPetWorldProjectRoot, ".ai-pet-world-data")),

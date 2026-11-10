@@ -54,14 +54,15 @@ fsp.readFile = async function(p, ...rest) {
 }
 syncBuiltinESMExports()
 const importWriteStart = writes.length
-const moduleFiles = ["build-earth-geospatial-complete-map-conditions", "build-current-world-visual-fact-manifest", "build-current-world-visual-generation-task-package", "compile-current-world-visual-conditions"]
+const moduleFiles = ["lib/natural-world-geospatial-generator", "lib/natural-world-visual-manifest", "lib/natural-world-visual-task", "lib/natural-world-condition-compiler"]
 const modules = new Map()
 for (const name of moduleFiles) modules.set(path.join(root, "scripts", name + ".mjs"), await import("../" + name + ".mjs"))
 const governance = await import("../lib/real-earth-region-governance.mjs")
 modules.set(path.join(root, "scripts/lib/real-earth-region-governance.mjs"), governance)
+modules.set(path.join(root, "scripts/lib/runtime-working-directory.mjs"), await import("../lib/runtime-working-directory.mjs"))
 assert.equal(writes.length, importWriteStart, "import executed a historical writer")
-const generator = modules.get(path.join(root, "scripts/build-earth-geospatial-complete-map-conditions.mjs"))
-const compiler = modules.get(path.join(root, "scripts/compile-current-world-visual-conditions.mjs"))
+const generator = modules.get(path.join(root, "scripts/lib/natural-world-geospatial-generator.mjs"))
+const compiler = modules.get(path.join(root, "scripts/lib/natural-world-condition-compiler.mjs"))
 const cache = new Map()
 function loadTs(file) {
   file = path.resolve(file)

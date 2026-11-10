@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
@@ -33,7 +34,7 @@ const MAX_JSON=1024*1024
 const MAX_MIXED_PACKAGE_JSON=4*1024*1024
 const knownReason=e=>/^[a-z][a-z0-9_]{0,159}$/.test(e?.message??'')?e.message:/^[A-Z][A-Z0-9_]{0,63}$/.test(e?.code??'')?'work_recording_'+e.code.toLowerCase():'work_recording_unavailable'
 const absent=file=>{try{fs.lstatSync(file);return false}catch(e){if(e.code==='ENOENT')return true;throw e}}
-const same=(a,b)=>path.resolve(a).toLowerCase()===path.resolve(b).toLowerCase()
+const same=(a,b)=>resolveRuntimePath(a).toLowerCase()===resolveRuntimePath(b).toLowerCase()
 const contextKey=Symbol.for('ai-pet-world.local-work-recording.context.v1')
 const implementationVersion='mvp-acceptance-ledger-136-v1'
 function fixtureScope(root) {
@@ -46,7 +47,7 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
   projectRoot=fs.realpathSync(projectRoot)
   const runtime=fs.realpathSync(path.join(projectRoot,'.runtime'))
   if(!privateFixture) {
-    const expected=path.resolve(process.env.AI_PET_WORLD_DATA_ROOT??(process.platform==='win32'?'D:/AI-PET-WORLD-DATA':path.join(projectRoot,'.ai-pet-world-data')),'hot/runtime')
+    const expected=resolveRuntimePath(process.env.AI_PET_WORLD_DATA_ROOT??(process.platform==='win32'?'D:/AI-PET-WORLD-DATA':path.join(projectRoot,'.ai-pet-world-data')),'hot/runtime')
     need(same(runtime,fs.realpathSync(expected)),'runtime_mapping_conflict',409)
   }
   const moduleRoot=path.join(runtime,'local-backup'),stateRoot=path.join(moduleRoot,'work-recording')
@@ -444,7 +445,7 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
     }})
   return {implementationVersion,projectRoot,runtime,moduleRoot,stateRoot,ledger,ledgerForStore:queryStore=>createWorkLedger(queryStore,allProducers,{readCoverage}),readCoverage,getState,saveState,failure,observeCommittedRegistry,recordGitOperation,recordBackupRun,recordCodex,planReference,readMvpAcceptance:mvpConsumer.query,consumeMvpAcceptance:mvpConsumer.consume,mvpImplementationIdentity:{version:MVP_CONSUMER_VERSION,sha256:mvpVerifier.implementationSha256,files:mvpVerifier.implementationManifest}}
 }
-export function createWorkProducers({projectRoot=process.cwd(),store}={}) {return buildContext(projectRoot,store,null,false)}
+export function createWorkProducers({projectRoot=runtimeWorkingDirectory(),store}={}) {return buildContext(projectRoot,store,null,false)}
 export function createWorkProducersForIsolatedTests({projectRoot,store,readRegistry}={}) {return buildContext(fixtureScope(projectRoot),store,readRegistry,true)}
 export function getWorkRecordingContext() {
   const scope=globalThis

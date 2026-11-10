@@ -1,3 +1,4 @@
+import {resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 /**
  * Explicit production Runtime Store.
  *
@@ -40,7 +41,7 @@ type InternalWriteInput = { record: StoredRecord; filePath?: string; expectedTic
 const LATEST_FILE = "latest-world.json"
 
 export function createProductionWorldRuntimeStore(runtimeRoot: string): WorldRuntimeStoreAdapter {
-  const root = path.resolve(runtimeRoot)
+  const root = resolveRuntimePath(runtimeRoot)
   return {
     kind: "configured_file_runtime_store",
     readNatural: (input) => readNaturalRecord(root, input),
@@ -274,7 +275,7 @@ async function writeAtomic(filePath: string, value: unknown): Promise<void> {
 
 function recordPathFor(root: string, record: Pick<WorldRuntimeSaveRecord, "ownerId" | "worldId">): string {
   assertRuntimePathSegment(record.ownerId, "ownerId"); assertRuntimePathSegment(record.worldId, "worldId")
-  return path.resolve(root, record.ownerId, `${record.worldId}.json`)
+  return resolveRuntimePath(root, record.ownerId, `${record.worldId}.json`)
 }
 
 function sha256Json(value: unknown): string { return createHash("sha256").update(`${JSON.stringify(value, null, 2)}\n`, "utf8").digest("hex") }

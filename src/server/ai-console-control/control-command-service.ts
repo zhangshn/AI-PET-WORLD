@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../scripts/lib/runtime-working-directory.mjs'
 import { createHash } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
@@ -204,7 +205,7 @@ async function persistReceipt(
     ...receipt,
     receiptSha256: sha256(JSON.stringify(receipt)),
   }
-  const receiptDirectory = path.join(process.cwd(), ...receiptDirectoryLogicalPath.split("/"))
+  const receiptDirectory = path.join(runtimeWorkingDirectory(), ...receiptDirectoryLogicalPath.split("/"))
   await mkdir(receiptDirectory, { recursive: true })
   try {
     await writeFile(getReceiptAbsolutePath(receipt.commandId), `${JSON.stringify(persistedReceipt, null, 2)}\n`, { encoding: "utf8", flag: "wx" })
@@ -221,7 +222,7 @@ async function persistReceipt(
 }
 
 function getReceiptAbsolutePath(commandId: string): string {
-  return path.join(process.cwd(), ...receiptDirectoryLogicalPath.split("/"), `${commandId}.json`)
+  return path.join(runtimeWorkingDirectory(), ...receiptDirectoryLogicalPath.split("/"), `${commandId}.json`)
 }
 
 function sha256(value: string): string {

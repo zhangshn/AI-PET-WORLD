@@ -1,8 +1,8 @@
 // Existing closed-loop six-phase exports. No separate service or fixture CLI.
 import assert from 'node:assert/strict';import fs from 'node:fs';import crypto from 'node:crypto';
 import {advanceCurrentExecutionRegistry,readCurrentExecutionRegistry} from '../src/server/ai-painter-current-execution-registry.mjs';
-import {processIdentity} from './run-ai-painter-mvp256-dry-v24-training.mjs';
-import {replaceHeartbeatFile} from './run-ai-painter-learning-capacity-experiment.mjs';
+import {processIdentity} from "./lib/windows-process-identity.mjs";
+import {replaceHeartbeatFile} from "./lib/training-heartbeat-publication.mjs";
 import {createPresentation,createActiveIdentity} from './lib/ai-painter-ecology-quality-registration-v1.mjs';
 import {runNative,cleanupForCurrentCall,hasLiveOwnedProof,withNativeOrdinaryBudget,withNativeReceiptBudget} from './lib/ai-painter-ecology-quality-owned-native-v1.mjs';
 import {CAPABILITY,EXECUTION_PROFILE,inside,read,write,json,bind,loadContext,validateTerminal} from './lib/ai-painter-ecology-quality-package-chain-v1.mjs';

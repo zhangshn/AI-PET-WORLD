@@ -3,6 +3,15 @@ name: AI Painter Stage4 core contracts
 on:
   pull_request:
     paths:
+      - "scripts/**"
+      - "ml/ai-painter/pyproject.toml"
+      - "ml/ai-painter/*constraints.txt"
+      - "data/ai-painter/system-governance/**"
+      - ".env.example"
+      - "playwright.config.mjs"
+      - "tsconfig.json"
+      - "next.config.ts"
+      - "eslint.config.mjs"
       - "docs/ARCHITECTURE.md"
       - "docs/DOCUMENT_AUTHORITY_INDEX.md"
       - "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md"
@@ -19,6 +28,7 @@ on:
       - "scripts/tests/helpers/**"
       - "scripts/tests/world-runtime-*.mjs"
       - "scripts/tests/game-map-runtime-frame-store-consistency.test.mjs"
+      - "scripts/tests/game-map-frame-behavior.test.mjs"
       - "scripts/check-world-runtime-auth-contract.mjs"
       - "scripts/tests/project-review-contract-regressions.test.mjs"
       - "scripts/lib/unique-module-plan-contract.mjs"
@@ -48,6 +58,15 @@ on:
   push:
     branches: [main]
     paths:
+      - "scripts/**"
+      - "ml/ai-painter/pyproject.toml"
+      - "ml/ai-painter/*constraints.txt"
+      - "data/ai-painter/system-governance/**"
+      - ".env.example"
+      - "playwright.config.mjs"
+      - "tsconfig.json"
+      - "next.config.ts"
+      - "eslint.config.mjs"
       - "docs/ARCHITECTURE.md"
       - "docs/DOCUMENT_AUTHORITY_INDEX.md"
       - "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md"
@@ -64,6 +83,7 @@ on:
       - "scripts/tests/helpers/**"
       - "scripts/tests/world-runtime-*.mjs"
       - "scripts/tests/game-map-runtime-frame-store-consistency.test.mjs"
+      - "scripts/tests/game-map-frame-behavior.test.mjs"
       - "scripts/check-world-runtime-auth-contract.mjs"
       - "scripts/tests/project-review-contract-regressions.test.mjs"
       - "scripts/lib/unique-module-plan-contract.mjs"
@@ -120,7 +140,7 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: "ml/ai-painter/pyproject.toml"
-      - run: python -m pip install -e "ml/ai-painter[training]"
+      - run: python -m pip install -c ml/ai-painter/training-ci-constraints.txt -e "ml/ai-painter[training]"
       # Component tests consume synthetic tensors and in-memory Checkpoints.
       # They neither populate .runtime nor amend the core qualification inventory.
       - name: Current decode1 bounded CPU operator and exact model state
@@ -263,6 +283,15 @@ jobs:
       - run: node --test --test-concurrency=1 scripts/tests/world-runtime-store-consistency.test.mjs scripts/tests/world-runtime-tick-continuity.test.mjs scripts/tests/world-runtime-gateway-read-failure.test.mjs scripts/tests/project-review-contract-regressions.test.mjs
       - run: npm run test:integration
       - run: npm run build
+      - name: Install browser for read-only route checks
+        if: runner.os == 'Linux'
+        run: npx playwright install --with-deps chromium
+      - name: Real browser read-only routes (not world or model qualification)
+        if: runner.os == 'Linux'
+        env:
+          AI_PET_WORLD_E2E_BASE_URL: http://127.0.0.1:3101
+          AI_PET_WORLD_E2E_START_SERVER: "1"
+        run: npm run test:e2e
       - name: Portable CPU summary scope and qualification rejection
         run: node --max-old-space-size=512 --test --test-concurrency=1 scripts/tests/test-ai-painter-stage4-portable-cpu-scope.mjs
       - name: Repository portable CPU behavior only (real assets and complete local core not verified)

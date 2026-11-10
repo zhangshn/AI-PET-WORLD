@@ -36,5 +36,14 @@
     "**/*.mts"
   ],
 
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    ".runtime",
+    ".runtime-f-drive-backup-*",
+    ".ai-pet-world-data",
+    ".test-output",
+    "ml/ai-painter/.venv",
+    "coverage",
+    "tmp"
+  ]
 }

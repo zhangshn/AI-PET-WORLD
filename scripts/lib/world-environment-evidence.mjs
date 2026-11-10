@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { createEvolutionInputReader } from './natural-world-evolution-input.mjs'
 import { baselineCanonical, baselineDigest, baselineJson, verifyNaturalRecordBytes } from './natural-world-baseline-proof.mjs'
-import { inspectCapabilityScopeAdmission } from './ai-painter-autonomous-package-decision-core-v3.mjs'
+import { inspectCapabilityScopeAdmission } from './ai-painter-capability-scope-admission.mjs'
 
 export const ENVIRONMENT_EVIDENCE_MANIFEST = '.runtime/ai-painter/controller-repair-reviews/world-environment-admission-162-20261030/evidence/manifest.json'
 export const ENVIRONMENT_EVIDENCE_MANIFEST_SHA = '20c8d2816641e7e3bd8b8b37b283f5e37f09d59b7a65b5ffe308193adad68b71'

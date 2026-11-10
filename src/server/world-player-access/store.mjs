@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory} from '../../../scripts/lib/runtime-working-directory.mjs'
 import {createHash,randomBytes,randomUUID,scrypt,timingSafeEqual} from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -47,7 +48,7 @@ function transact(db,callback){
 
 // Production can address only this project-private directory. No path originates in HTTP or CLI arguments.
 function privateDirectory(create){
-  const root=process.cwd();
+  const root=runtimeWorkingDirectory();
   const anchor=path.join(root,"package.json");
   if(JSON.parse(fs.readFileSync(anchor,"utf8")).name!=="ai-pet-world")throw denied(503,"player_access_unavailable");
   try{return ensurePrivatePlayerStorage(anchor,fs.realpathSync.native(path.join(root,".runtime")),create);}

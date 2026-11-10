@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../../scripts/lib/runtime-working-directory.mjs'
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
 import { createHash, randomUUID } from "node:crypto"
 import path from "node:path"
@@ -9,7 +10,7 @@ import type {
 import type { WorldVisualCandidateRecord } from "../ai-image-candidate"
 
 const APPROVED_FRAME_DIR = path.join(
-  process.cwd(),
+  runtimeWorkingDirectory(),
   "data",
   "world-approved-frames"
 )
@@ -195,7 +196,7 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
     }
 
     const expectedRecordRoot = path.dirname(indexPath)
-    const recordPath = path.resolve(index.path)
+    const recordPath = resolveRuntimePath(index.path)
     if (path.dirname(recordPath) !== expectedRecordRoot) {
       return invalidRead(indexPath, "Latest approved frame index path escapes its world namespace.")
     }

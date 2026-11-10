@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../scripts/lib/runtime-working-directory.mjs'
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -13,15 +14,15 @@ const trustRegistryPath = path.join(
   "data/ai-painter/system-governance/project-owner-trust-registry-v1.json",
 );
 const taskRunRoot = path.join(
-  process.cwd(),
+  runtimeWorkingDirectory(),
   ".runtime/ai-painter/local-task-console",
 );
 const failureLearningPointerPath = path.join(
-  process.cwd(),
+  runtimeWorkingDirectory(),
   ".runtime/ai-painter/local-ai-failure-learning/latest.json",
 );
 const failureLearningPhase2PointerPath = path.join(
-  process.cwd(),
+  runtimeWorkingDirectory(),
   ".runtime/ai-painter/local-ai-failure-learning-r3-candidates/latest.json",
 );
 
@@ -290,7 +291,7 @@ function readFailureLearning(): FailureLearningSnapshot {
   }
   const pointer = readJson<{ runPath?: string }>(failureLearningPointerPath);
   if (!pointer.runPath) throw new Error("local_failure_learning_latest_pointer_missing_run_path");
-  const reportPath = path.resolve(process.cwd(), pointer.runPath);
+  const reportPath = resolveRuntimePath(runtimeWorkingDirectory(), pointer.runPath);
   const report = readJson<{
     analysisId: string;
     createdAtUtc: string;
@@ -323,7 +324,7 @@ function readFailureLearningPhase2(): Extract<FailureLearningSnapshot, { status:
   if (!fs.existsSync(failureLearningPhase2PointerPath)) return null;
   const pointer = readJson<{ runPath?: string }>(failureLearningPhase2PointerPath);
   if (!pointer.runPath) throw new Error("local_failure_learning_phase2_latest_pointer_missing_run_path");
-  const reportPath = path.resolve(process.cwd(), pointer.runPath);
+  const reportPath = resolveRuntimePath(runtimeWorkingDirectory(), pointer.runPath);
   const report = readJson<{
     status: string;
     createdAtUtc: string;
@@ -398,7 +399,7 @@ function sha256File(filePath: string) {
 }
 
 function projectPath(filePath: string) {
-  return path.relative(process.cwd(), filePath).replaceAll("\\", "/");
+  return path.relative(runtimeWorkingDirectory(), filePath).replaceAll("\\", "/");
 }
 
 function formatShanghai(value: Date) {

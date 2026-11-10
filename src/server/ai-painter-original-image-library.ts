@@ -1,8 +1,9 @@
+import {runtimeWorkingDirectory} from '../../scripts/lib/runtime-working-directory.mjs'
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 
 const COLLECTION_ROOT = path.join(
-  process.cwd(),
+  runtimeWorkingDirectory(),
   "data",
   "world-samples",
   "original-image-library",
@@ -172,7 +173,7 @@ export async function readOriginalImageSpeciesCatalog() {
   const manifest = await readOriginalImageLibrary()
   const configuredPath = manifest.currentSpeciesCatalogPath
   if (!configuredPath) throw new Error("original image library current species catalog is not configured")
-  const catalogPath = path.resolve(process.cwd(), configuredPath)
+  const catalogPath = path.resolve(runtimeWorkingDirectory(), configuredPath)
   if (catalogPath !== COLLECTION_ROOT && !catalogPath.startsWith(`${COLLECTION_ROOT}${path.sep}`)) {
     throw new Error("original image library current species catalog escapes collection root")
   }
@@ -199,12 +200,12 @@ export async function findOriginalImageRecord(categoryId: string, recordId: stri
   const indexed = records.find((record) => record.recordId === recordId)
   if (!indexed || !indexed.recordPath) return null
 
-  const recordPath = path.resolve(process.cwd(), indexed.recordPath)
+  const recordPath = path.resolve(runtimeWorkingDirectory(), indexed.recordPath)
   if (recordPath !== COLLECTION_ROOT && !recordPath.startsWith(`${COLLECTION_ROOT}${path.sep}`)) return null
   try {
     const stored = JSON.parse(await readFile(recordPath, "utf8")) as Omit<OriginalImageRecord, "relativeDirectory" | "recordPath">
     if (stored.recordId !== recordId || stored.categoryId !== categoryId) return null
-    const relativeDirectory = path.relative(process.cwd(), path.dirname(recordPath)).replaceAll("\\", "/")
+    const relativeDirectory = path.relative(runtimeWorkingDirectory(), path.dirname(recordPath)).replaceAll("\\", "/")
     return { ...stored, relativeDirectory, recordPath: indexed.recordPath }
   } catch {
     return null
@@ -215,7 +216,7 @@ export function resolveOriginalImageFile(record: OriginalImageRecord) {
   const relativeImagePath = record.originalImage?.path
   if (!relativeImagePath) return null
 
-  const recordDirectory = path.resolve(process.cwd(), record.relativeDirectory)
+  const recordDirectory = path.resolve(runtimeWorkingDirectory(), record.relativeDirectory)
   const imagePath = path.resolve(recordDirectory, relativeImagePath)
   if (imagePath !== recordDirectory && !imagePath.startsWith(`${recordDirectory}${path.sep}`)) return null
   if (!new Set([".png", ".jpg", ".jpeg", ".webp"]).has(path.extname(imagePath).toLowerCase())) return null

@@ -66,6 +66,9 @@ function fixture(t, kind) {
     const exports = {}
     cache.set(name, exports)
     const privateRequire = (id) => {
+      if (id === "../../../scripts/lib/runtime-working-directory.mjs") return {
+        runtimeWorkingDirectory: () => privateRoot, resolveRuntimePath: path.resolve,
+      }
       if (id === "node:fs/promises") return guarded
       if (id === "node:fs") return { existsSync: (target) => { assertPrivate(target); return fs.existsSync(target) } }
       if (id === "./runtime-path-security") return {

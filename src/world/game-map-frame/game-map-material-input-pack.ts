@@ -1,5 +1,6 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 import { mkdir, writeFile } from "node:fs/promises"
-import { join, resolve } from "node:path"
+import { join} from 'node:path'
 
 import sharp from "sharp"
 
@@ -53,8 +54,8 @@ export async function buildGameMapMaterialInputPack(input: {
 
   const createdAt = input.createdAt ?? new Date().toISOString()
   const outputRoot = input.outputRoot
-    ? resolve(input.outputRoot)
-    : join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "game-map-material-input-packs")
+    ? resolveRuntimePath(input.outputRoot)
+    : join(/* turbopackIgnore: true */ runtimeWorkingDirectory(), ".runtime", "game-map-material-input-packs")
   const packId = `material-input-pack-${input.request.worldId}-${input.request.tick}-${safeTimestamp(createdAt)}`
   const packRoot = join(outputRoot, input.request.worldId, String(input.request.tick), packId)
   const slots: GameMapMaterialInputSlot[] = []

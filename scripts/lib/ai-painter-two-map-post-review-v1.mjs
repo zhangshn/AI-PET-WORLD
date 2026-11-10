@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {spawn,spawnSync} from 'node:child_process'
 import sharp from 'sharp'
-import {replaceHeartbeatFile,ownedWorkerIsRunning} from '../run-ai-painter-learning-capacity-experiment.mjs'
+import {replaceHeartbeatFile,ownedWorkerIsRunning} from "./training-heartbeat-publication.mjs"
 import {readCurrentExecutionRegistry,advanceCurrentExecutionRegistry} from '../../src/server/ai-painter-current-execution-registry.mjs'
 import {auditAiAssistedConditionAlignment} from './ai-assisted-condition-alignment.mjs'
 import {auditMvp256DetailSufficiency} from './ai-painter-mvp-detail-sufficiency-v1.mjs'

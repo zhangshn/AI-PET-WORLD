@@ -1,3 +1,4 @@
+import {runtimeWorkingDirectory,resolveRuntimePath} from '../../scripts/lib/runtime-working-directory.mjs'
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { readFile, readdir } from "node:fs/promises";
@@ -29,7 +30,7 @@ import { projectR5Stage4TaskCapsule } from "@/server/ai-painter-task-capsule-pro
 import { projectAutonomousStage4TaskCapsule } from "@/server/ai-painter-task-capsule-projection.mjs";
 
 const execFileAsync = promisify(execFile);
-const root = process.cwd();
+const root = runtimeWorkingDirectory();
 type CurrentExecutionRegistrySnapshot = Awaited<
   ReturnType<typeof readCurrentExecutionRegistry>
 >;
@@ -2304,7 +2305,7 @@ async function resolveTrainingSourceFromEvidencePath(
   )
     return null;
   let candidate = path.dirname(resolveInsideRoot(normalized));
-  const projectRoot = path.resolve(root);
+  const projectRoot = resolveRuntimePath(root);
   while (
     candidate === projectRoot ||
     candidate.startsWith(`${projectRoot}${path.sep}`)
@@ -3287,8 +3288,8 @@ async function sha256(relativePath: string) {
 }
 
 function resolveInsideRoot(relativePath: string) {
-  const absolutePath = path.resolve(root, relativePath);
-  const logicalRoot = path.resolve(root);
+  const absolutePath = resolveRuntimePath(root, relativePath);
+  const logicalRoot = resolveRuntimePath(root);
   if (
     absolutePath !== logicalRoot &&
     !absolutePath.startsWith(`${logicalRoot}${path.sep}`)

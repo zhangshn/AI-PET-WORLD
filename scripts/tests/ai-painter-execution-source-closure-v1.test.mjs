@@ -6,7 +6,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
-import {collectActualExecutionSources,nodeImports,sourceCollectionReport} from '../lib/ai-painter-execution-source-closure-v1.mjs';
+import {collectActualExecutionSources,nodeImports,sourceCollectionReport,requiredProgramRoles} from '../lib/ai-painter-execution-source-closure-v1.mjs';
 
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const python=path.join(project,'ml/ai-painter/.venv/Scripts/python.exe');
@@ -18,6 +18,12 @@ function fixture(t){
  const bind=name=>({path:name,sha256:sha(fs.readFileSync(path.join(root,name)))});
  return {root,put,bind};
 }
+
+test('read-only role query reports an unavailable interpreter without a blank failure',t=>{
+ const f=fixture(t);f.put('auth.py','# fixture only\n');
+ assert.throws(()=>requiredProgramRoles({root:f.root,python:path.join(f.root,'missing-python'),
+   capabilityVersion:'fixture',authPath:'auth.py'}),/registered read-only role query failed: .*"errorCode":"ENOENT"/);
+});
 
 test('module literals only: comments and embedded source strings do not become imports',()=>{
  const code='// import fake from "not-executed"\nconst text=`import fake from "also-not-executed"`;\n'
