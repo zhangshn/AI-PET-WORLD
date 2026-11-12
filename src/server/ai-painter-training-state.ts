@@ -136,6 +136,7 @@ export type TrainingRuntimeStatusSnapshot = {
     | "missing_heartbeat"
     | "stale_runtime_heartbeat"
     | "corrupted_runtime_heartbeat"
+    | "future_runtime_heartbeat"
   heartbeat: TrainingRuntimeHeartbeat | null
   heartbeatPath: string
   stale: boolean
@@ -168,12 +169,31 @@ export async function readTrainingControlState() {
   }
 }
 
-export async function readTrainingLogTail(maxLines = 80) {
-  try {
-    return (await readFile(trainingControlLogPath, "utf8")).trim().split(/\r?\n/).slice(-maxLines)
-  } catch {
-    return []
+export type TrainingLogObservation = {
+  lines: string[]
+  status: "available" | "not_recorded" | "unreadable" | "not_requested"
+  errorCode: "training_log_read_failed" | null
+}
+
+export async function readTrainingLogObservation(maxLines = 80): Promise<TrainingLogObservation> {
+  if (!Number.isSafeInteger(maxLines) || maxLines < 0) {
+    throw new RangeError("training log line limit must be a non-negative safe integer")
   }
+  if (maxLines === 0) return { lines: [], status: "not_requested", errorCode: null }
+  try {
+    const text = (await readFile(trainingControlLogPath, "utf8")).trim()
+    return { lines: text ? text.split(/\r?\n/).slice(-maxLines) : [], status: "available", errorCode: null }
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return { lines: [], status: "not_recorded", errorCode: null }
+    }
+    return { lines: [], status: "unreadable", errorCode: "training_log_read_failed" }
+  }
+}
+
+/** Compatibility reader; use the observation reader when presenting availability. */
+export async function readTrainingLogTail(maxLines = 80) {
+  return (await readTrainingLogObservation(maxLines)).lines
 }
 
 export async function writeTrainingControlState(state: TrainingControlState) {
@@ -251,7 +271,19 @@ export async function readTrainingRuntimeStatus(): Promise<TrainingRuntimeStatus
       staleAfterMs: runtimeHeartbeatStaleAfterMs,
     }
   }
-  const ageMs = Math.max(0, Date.now() - Date.parse(heartbeat.timestampUtc))
+  const ageMs = Date.now() - Date.parse(heartbeat.timestampUtc)
+  if (ageMs < 0) {
+    return {
+      schemaVersion: "ai-painter-runtime-status-snapshot-v1",
+      status: "blocked",
+      statusSource: "future_runtime_heartbeat",
+      heartbeat,
+      heartbeatPath: trainingRuntimeHeartbeatPath,
+      stale: true,
+      ageMs: null,
+      staleAfterMs: runtimeHeartbeatStaleAfterMs,
+    }
+  }
   const stale = ageMs > runtimeHeartbeatStaleAfterMs
   return {
     schemaVersion: "ai-painter-runtime-status-snapshot-v1",
@@ -289,19 +321,24 @@ export async function appendTrainingProcessEvent(input: Omit<TrainingProcessEven
   let event: TrainingProcessEvent | null = null
   try {
     await mkdir(trainingProcessLedgerDir, { recursive: true })
-    event = {
-      id: randomUUID(),
-      timestamp: new Date().toISOString(),
-      ...input,
+    const id = randomUUID()
+    const timestamp = new Date().toISOString()
+    const serialized = JSON.stringify({ ...input, id, timestamp })
+    const persisted: unknown = JSON.parse(serialized)
+    if (!isTrainingProcessEvent(persisted) || persisted.id !== id || persisted.timestamp !== timestamp) {
+      throw new Error("training_ledger_event_invalid")
     }
+    event = persisted
     const journal = await open(trainingProcessLedgerPath, "a")
     try {
-      await journal.write(Buffer.from(`${JSON.stringify(event)}\n`, "utf8"))
+      await journal.writeFile(Buffer.from(`${serialized}\n`, "utf8"))
       await journal.sync()
     } finally {
       await journal.close().catch(() => {})
     }
-    indexTrainingProcessEvent(event as unknown as Record<string, unknown>)
+    if (!indexTrainingProcessEvent(event as unknown as Record<string, unknown>)) {
+      throw new Error("training_ledger_index_unavailable")
+    }
     await writeJsonAtomic(trainingProcessLedgerLatestPath, await readTrainingProcessLedger())
     return event
   } catch (error) {
@@ -320,29 +357,43 @@ export async function readTrainingProcessLedger(limit = 80): Promise<TrainingPro
   const degraded = await readLedgerDegradedMarker()
   const indexed = readIndexedTrainingProcessLedger(limit)
   if (indexed && indexed.summary.total > 0) {
+    const lastEvent = isTrainingProcessEvent(indexed.summary.lastEvent) ? indexed.summary.lastEvent : null
+    const invalidEvent = lastEvent === null || indexed.events.some(event => !isTrainingProcessEvent(event))
+    const integrityError = degraded?.error ?? indexed.integrityError ?? (invalidEvent ? "training_ledger_event_invalid" : null)
     return {
       ...indexed as TrainingProcessLedger,
-      integrityStatus: degraded ? "degraded" : "complete",
-      integrityError: degraded?.error ?? null,
+      events: indexed.events.filter(isTrainingProcessEvent),
+      summary: { ...indexed.summary, lastEvent },
+      integrityStatus: integrityError ? "degraded" : "complete",
+      integrityError,
     }
   }
-  const events = await readAllTrainingProcessEvents()
-  const latestFirst = events.slice(-limit).reverse()
+  const { events, integrityError: journalError } = await readAllTrainingProcessEvents()
+  const integrityError = degraded?.error ?? indexed?.integrityError ?? journalError
+  const latestFirst = limit === 0 ? [] : events.slice(-limit).reverse()
   return {
     schemaVersion: "ai-painter-training-process-ledger-v1",
     updatedAt: events.at(-1)?.timestamp ?? null,
     events: latestFirst,
     summary: buildTrainingProcessSummary(events),
-    integrityStatus: degraded ? "degraded" : "complete",
-    integrityError: degraded?.error ?? null,
+    integrityStatus: integrityError ? "degraded" : "complete",
+    integrityError,
   }
 }
 
 async function readLedgerDegradedMarker() {
   try {
-    return JSON.parse(await readFile(trainingProcessLedgerDegradedPath, "utf8")) as { error?: string }
-  } catch {
-    return null
+    const value: unknown = JSON.parse(await readFile(trainingProcessLedgerDegradedPath, "utf8"))
+    if (value && typeof value === "object" && !Array.isArray(value)
+      && "schemaVersion" in value && value.schemaVersion === "ai-painter-training-ledger-degraded-v1"
+      && "status" in value && value.status === "degraded"
+      && "error" in value && typeof value.error === "string" && value.error.length > 0) {
+      return { error: value.error }
+    }
+    return { error: "training_ledger_degraded_marker_invalid" }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === "ENOENT") return null
+    return { error: "training_ledger_degraded_marker_unreadable" }
   }
 }
 
@@ -354,8 +405,14 @@ function isTrainingControlState(value: Partial<TrainingControlState>): value is 
     (value.currentStep === null || typeof value.currentStep === "string") &&
     (value.startedAt === null || typeof value.startedAt === "string") &&
     (value.finishedAt === null || typeof value.finishedAt === "string") &&
-    (value.error === null || typeof value.error === "string")
+    (value.error === null || typeof value.error === "string") &&
+    (value.controllerPid === undefined || value.controllerPid === null || isProcessId(value.controllerPid)) &&
+    (value.childPid === undefined || value.childPid === null || isProcessId(value.childPid))
   )
+}
+
+function isProcessId(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0 && value <= 2_147_483_647
 }
 
 function isTrainingRuntimeHeartbeat(value: unknown): value is TrainingRuntimeHeartbeat {
@@ -388,9 +445,9 @@ function isTrainingRuntimeHeartbeat(value: unknown): value is TrainingRuntimeHea
     (heartbeat.activeModelRole === null || typeof heartbeat.activeModelRole === "string") &&
     (heartbeat.activeStep === null || typeof heartbeat.activeStep === "string") &&
     (heartbeat.activeScript === null || typeof heartbeat.activeScript === "string") &&
-    Number.isInteger(heartbeat.pid) &&
-    Number.isInteger(heartbeat.controllerPid) &&
-    (heartbeat.childPid === null || Number.isInteger(heartbeat.childPid)) &&
+    isProcessId(heartbeat.pid) &&
+    isProcessId(heartbeat.controllerPid) &&
+    (heartbeat.childPid === null || isProcessId(heartbeat.childPid)) &&
     (heartbeat.lastOutputRef === null || typeof heartbeat.lastOutputRef === "string") &&
     heartbeat.source === "training_controller"
   )
@@ -404,11 +461,11 @@ function errorCode(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> {
+export async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> {
   const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`
   const handle = await open(temporaryPath, "wx")
   try {
-    await handle.write(Buffer.from(`${JSON.stringify(value, null, 2)}\n`, "utf8"))
+    await handle.writeFile(Buffer.from(`${JSON.stringify(value, null, 2)}\n`, "utf8"))
     await handle.sync()
   } finally {
     await handle.close().catch(() => {})
@@ -421,15 +478,26 @@ async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> 
   }
 }
 
-async function readAllTrainingProcessEvents() {
+function isTrainingProcessEvent(value: unknown): value is TrainingProcessEvent {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false
+  const event = value as Record<string, unknown>
+  return ["id", "timestamp", "action", "runId", "kind", "title"].every(key => typeof event[key] === "string")
+    && typeof event.status === "string"
+    && ["running", "success", "failed", "error", "blocked", "info"].includes(event.status)
+}
+
+async function readAllTrainingProcessEvents(): Promise<{ events: TrainingProcessEvent[]; integrityError: string | null }> {
   try {
-    return (await readFile(trainingProcessLedgerPath, "utf8"))
+    const events: unknown[] = (await readFile(trainingProcessLedgerPath, "utf8"))
       .trim()
       .split(/\r?\n/)
       .filter(Boolean)
-      .map((line) => JSON.parse(line) as TrainingProcessEvent)
-  } catch {
-    return []
+      .map((line) => JSON.parse(line) as unknown)
+    if (!events.every(isTrainingProcessEvent)) return { events: [], integrityError: "training_ledger_event_invalid" }
+    return { events, integrityError: null }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === "ENOENT") return { events: [], integrityError: null }
+    return { events: [], integrityError: "training_ledger_journal_unreadable" }
   }
 }
 

@@ -27,7 +27,7 @@ async function main() {
   const manifestBinding = bind(manifestPath)
   const failureBinding = bind(failurePath)
   const reviewBinding = bind(V16_REVIEW_CONTRACT_PATH)
-  const reviewContract = verifyV16FormalReviewContract(root, reviewBinding)
+  verifyV16FormalReviewContract(root, reviewBinding);
   const registry = await readCurrentExecutionRegistry(root)
   assert.equal(registry.ok, true)
   assert.equal(registry.registry.activeExecution, null)

@@ -12,25 +12,18 @@ def main() -> None:
     if not isinstance(source, str) or not isinstance(logical_path, str):
         raise ValueError("python_import_ast_request_invalid")
     tree = ast.parse(source, filename=logical_path, mode="exec")
-    imports: list[dict[str, str]] = []
+    imports: list[dict[str, object]] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.append({"kind": "python_static", "specifier": alias.name})
         elif isinstance(node, ast.ImportFrom):
             prefix = "." * node.level
-            if node.module:
-                imports.append({
-                    "kind": "python_static",
-                    "specifier": f"{prefix}{node.module}",
-                })
-            else:
-                for alias in node.names:
-                    if alias.name != "*":
-                        imports.append({
-                            "kind": "python_static",
-                            "specifier": f"{prefix}{alias.name}",
-                        })
+            imports.append({
+                "kind": "python_static",
+                "specifier": f"{prefix}{node.module or ''}",
+                "members": [alias.name for alias in node.names if alias.name != "*"],
+            })
         elif isinstance(node, ast.Call) and _is_dynamic_import_call(node.func):
             imports.append({
                 "kind": "nonliteral_dynamic",

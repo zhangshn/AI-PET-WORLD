@@ -724,8 +724,9 @@ function openWritableStore(): DatabaseSync {
   const storePath = getStorePath()
   mkdirSync(path.dirname(storePath), { recursive: true })
   const database = new DatabaseSync(storePath)
-  database.exec("PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON; PRAGMA user_version = 1;")
-  database.exec(`
+  try {
+    database.exec("PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON; PRAGMA user_version = 1;")
+    database.exec(`
     CREATE TABLE IF NOT EXISTS metadata (
       singleton INTEGER PRIMARY KEY CHECK(singleton = 1), schema_version TEXT NOT NULL, registry_identity TEXT NOT NULL,
       source_boundary TEXT NOT NULL, writer_identity TEXT NOT NULL, store_revision INTEGER NOT NULL, registry_revision INTEGER NOT NULL,
@@ -763,9 +764,13 @@ function openWritableStore(): DatabaseSync {
       execution_status TEXT NOT NULL, target_identity TEXT, record_json TEXT NOT NULL, command_receipt_sha256 TEXT NOT NULL
     );
   `)
-  const row = database.prepare("SELECT COUNT(*) AS count FROM metadata").get() as { count: number }
-  if (Number(row.count) === 0) insertInitialMetadata(database)
-  return database
+    const row = database.prepare("SELECT COUNT(*) AS count FROM metadata").get() as { count: number }
+    if (Number(row.count) === 0) insertInitialMetadata(database)
+    return database
+  } catch (error) {
+    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    throw error
+  }
 }
 
 function insertInitialMetadata(database: DatabaseSync) {

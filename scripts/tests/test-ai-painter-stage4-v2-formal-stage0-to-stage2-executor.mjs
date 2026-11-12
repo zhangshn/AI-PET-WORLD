@@ -323,7 +323,7 @@ const timer = setInterval(() => {
 }, 10);
 `, { heartbeatIntervalMs: 25 })
   const r = await f.execute({ commandRunner: undefined })
-  assert.equal(r.processResult.exitCode, 0)
+  assert.equal(r.processResult.exitCode, 0, JSON.stringify(r.processResult))
   const observed = JSON.parse(r.processResult.stdoutTail)
   assert.deepEqual(observed, { executionState: "executing", activityEvidenceStatus: "unknown", gpuStarted: null,
     trainingStarted: null, heartbeatScope: "parent_supervisor_not_training_progress" })

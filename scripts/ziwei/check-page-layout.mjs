@@ -1,10 +1,9 @@
 import { existsSync, readFileSync } from "node:fs"
-import { createRequire } from "node:module"
+import { createZiweiCheckRequire } from "../lib/ziwei-check-module-loader.mjs"
 import path from "node:path"
-import ts from "typescript"
 
 const root = process.cwd()
-const require = createRequire(import.meta.url)
+const require = createZiweiCheckRequire(import.meta.url)
 const layoutPath = path.join(
   root,
   "src",
@@ -29,19 +28,6 @@ const stylePath = path.join(
   "_styles",
   "ziwei-page.module.css",
 )
-
-require.extensions[".ts"] = (module, filename) => {
-  const source = readFileSync(filename, "utf8")
-  const output = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2020,
-      esModuleInterop: true
-    }
-  }).outputText
-
-  module._compile(output, filename)
-}
 
 function fail(message) {
   console.error(`Ziwei page layout check failed: ${message}`)

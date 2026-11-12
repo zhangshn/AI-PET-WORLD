@@ -180,7 +180,7 @@ const capsule = {
   },
 }
 writeOrVerifyJson(capsulePath, capsule)
-const capsuleBinding = bind(capsulePath)
+bind(capsulePath);
 const advanced = await advanceCurrentExecutionRegistry({
   projectRoot: ROOT,
   capabilityVersion: report.architectureId,

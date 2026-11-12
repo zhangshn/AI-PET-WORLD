@@ -1,3 +1,4 @@
+import { buildRequiredSourceChannelGroups } from "../visual-target-policy"
 import {runtimeWorkingDirectory} from '../../../../scripts/lib/runtime-working-directory.mjs'
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
@@ -219,24 +220,6 @@ async function resolveInternalModelSourceImage(
   }
 
   return null
-}
-
-function buildRequiredSourceChannelGroups(
-  generationCondition: WorldVisualGenerationCondition
-): RequiredSourceChannelGroup[] {
-  if (generationCondition.sceneCondition.sceneType !== "forest_construction_clearing") {
-    return []
-  }
-
-  return [
-    { id: "natural_ground", channels: ["grass"] },
-    { id: "readable_path", channels: ["road_center", "road_edge", "walkable"] },
-    {
-      id: "construction_core",
-      channels: ["shelter_foundation", "shelter_wall", "shelter_roof"],
-    },
-    { id: "construction_materials", channels: ["construction_material"] },
-  ]
 }
 
 function sourceChannelsSatisfyGroups(

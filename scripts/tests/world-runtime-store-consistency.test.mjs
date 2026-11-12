@@ -215,6 +215,53 @@ for (const kind of ["development", "production"]) {
     assert.deepEqual((await f.store.read()).record, record(1))
   })
 
+  test(`${kind}: missing latest index is empty, malformed latest index is invalid`, async (t) => {
+    const f = fixture(t, kind)
+    assert.equal((await f.store.read()).status, "empty")
+    fs.mkdirSync(path.dirname(f.latestPath), { recursive: true })
+    for (const index of [{}, [], 7, null, { path: f.recordPath }]) {
+      const bytes = json(index)
+      fs.writeFileSync(f.latestPath, bytes)
+      const result = await f.store.read()
+      assert.equal(result.status, "invalid")
+      assert.equal(result.record, null)
+      assert.equal(fs.readFileSync(f.latestPath, "utf8"), bytes)
+    }
+  })
+
+  test(`${kind}: latest identity or record hash mismatch is invalid without changing saved bytes`, async (t) => {
+    const f = fixture(t, kind)
+    assert.equal((await f.store.write({ record: record() })).ok, true)
+    const savedBytes = fs.readFileSync(f.recordPath, "utf8")
+    const index = JSON.parse(fs.readFileSync(f.latestPath, "utf8"))
+    for (const changes of [{ recordSha256: "f".repeat(64) }, { ownerId: "different-owner" }, { tick: "0" }]) {
+      const bytes = json({ ...index, ...changes })
+      fs.writeFileSync(f.latestPath, bytes)
+      assert.equal((await f.store.read()).status, "invalid")
+      assert.equal(fs.readFileSync(f.latestPath, "utf8"), bytes)
+      assert.equal(fs.readFileSync(f.recordPath, "utf8"), savedBytes)
+    }
+  })
+
+  test(`${kind}: matching latest hash cannot authorize a record for a different owner or world`, async (t) => {
+    const f = fixture(t, kind)
+    assert.equal((await f.store.write({ record: record() })).ok, true)
+    const index = JSON.parse(fs.readFileSync(f.latestPath, "utf8"))
+    for (const fields of [{ ownerId: "other-owner" }, { worldId: "other-world" }, { ownerId: "other-owner", worldId: "other-world" }]) {
+      const other = { ...record(), ...fields }
+      other.homeMapState.ownerId = other.ownerId
+      other.homeMapState.worldId = other.worldId
+      assert.equal(f.validator(other), true)
+      const bytes = json(other)
+      fs.writeFileSync(f.recordPath, bytes)
+      const latest = json({ ...index, recordSha256: createHash("sha256").update(bytes).digest("hex") })
+      fs.writeFileSync(f.latestPath, latest)
+      assert.equal((await f.store.read()).status, "invalid")
+      assert.equal(fs.readFileSync(f.recordPath, "utf8"), bytes)
+      assert.equal(fs.readFileSync(f.latestPath, "utf8"), latest)
+    }
+  })
+
   for (const [name, mutate] of invalidCases) {
     test(`${kind}: existing validation rejects ${name} on read and write`, async (t) => {
       const f = fixture(t, kind)
@@ -328,6 +375,49 @@ for (const kind of ["development", "production"]) {
       }
     })
   }
+
+  test(`${kind}: invalid transaction journals reject reads and updates without overwriting evidence`, async (t) => {
+    const f = fixture(t, kind)
+    assert.equal((await f.store.write({ record: record() })).ok, true)
+    const saved = fs.readFileSync(f.recordPath, "utf8")
+    const latest = fs.readFileSync(f.latestPath, "utf8")
+    const valid = { schemaVersion: "world-runtime-transaction-v1", state: "committed", recordPath: f.recordPath, tick: 0 }
+    for (const value of [null, [], 7, "committed", {},
+      { ...valid, state: "unknown" }, { ...valid, state: null },
+      { ...valid, schemaVersion: "unknown" }, { ...valid, recordPath: path.join(path.dirname(f.recordPath), "other.json") },
+      { ...valid, tick: -1 }, { ...valid, tick: "0" }, { ...valid, tick: 0.5 },
+      { ...valid, recordKind: "natural_world" }]) {
+      const journal = json(value)
+      fs.writeFileSync(f.transactionPath, journal)
+      const observed = await f.store.read({ filePath: f.recordPath })
+      assert.notEqual(observed.status, "found", JSON.stringify(value))
+      assert.notEqual(observed.status, "empty", JSON.stringify(value))
+      assert.equal(observed.record, null)
+      assert(observed.warnings.includes("runtime_transaction_journal_invalid"))
+      const result = await f.store.write({ record: record(1), expectedTick: 0 })
+      assert.equal(result.ok, false, JSON.stringify(value))
+      assert(result.warnings.includes("runtime_transaction_journal_invalid"))
+      assert.equal(fs.readFileSync(f.recordPath, "utf8"), saved)
+      assert.equal(fs.readFileSync(f.latestPath, "utf8"), latest)
+      assert.equal(fs.readFileSync(f.transactionPath, "utf8"), journal)
+    }
+    fs.writeFileSync(f.transactionPath, json(valid))
+    assert.deepEqual((await f.store.read({ filePath: f.recordPath })).record, record())
+    assert.equal((await f.store.write({ record: record(1), expectedTick: 0 })).ok, true)
+  })
+
+  test(`${kind}: invalid transaction with no record is not an empty slot`, async (t) => {
+    const f = fixture(t, kind)
+    fs.mkdirSync(path.dirname(f.transactionPath), { recursive: true })
+    const journal = json({ state: "unrecognized" })
+    fs.writeFileSync(f.transactionPath, journal)
+    const result = await f.store.write({ record: record(), expectedTick: -1 })
+    assert.equal(result.ok, false)
+    assert(result.warnings.includes("runtime_transaction_journal_invalid"))
+    assert.equal(fs.existsSync(f.recordPath), false)
+    assert.equal(fs.existsSync(f.latestPath), false)
+    assert.equal(fs.readFileSync(f.transactionPath, "utf8"), journal)
+  })
 
   test(`${kind}: prepared transaction without a record is not a truly empty slot`, async (t) => {
     const f = fixture(t, kind)

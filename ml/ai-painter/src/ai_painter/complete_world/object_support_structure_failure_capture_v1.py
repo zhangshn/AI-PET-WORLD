@@ -21,7 +21,6 @@ import zipfile
 import zlib
 
 import numpy as np
-import torch
 
 SCHEMA = "object-support-structure-gradient-failure-capture-v1"
 LABELS = ("actualTotal", "structuredObjective", "wholeFrameFidelity", "objectCoreRgb", "objectSupportStructure")
@@ -63,6 +62,7 @@ def digest(raw):
 
 
 def tensor_sha(value):
+    import torch
     return digest(value.reshape(-1).view(torch.uint8).numpy().tobytes())
 
 
@@ -219,6 +219,7 @@ def validate_graph(named, graph):
 
 
 def _copy(value):
+    import torch
     require(isinstance(value, torch.Tensor) and value.layout == torch.strided and not value.is_meta and
             value.device.type in ("cpu", "cuda") and str(value.dtype) in DTYPES,
             "unsupported snapshot tensor")
@@ -229,6 +230,7 @@ def _copy(value):
 
 def collect_snapshot(error, *, model, critic, graph, context):
     """Copy available real references, never recompute a gradient or mutate state."""
+    import torch
     require(isinstance(model, torch.nn.Module), "generator module unavailable")
     named = tuple(model.named_parameters(remove_duplicate=False))
     validate_graph(named, graph)
@@ -338,6 +340,7 @@ def collect_snapshot(error, *, model, critic, graph, context):
 
 
 def archive_bytes(payload):
+    import torch
     require(type(payload) is dict and len(payload) <= 2048 and all(type(k) is str and type(v) is torch.Tensor
             and v.device.type == "cpu" and v.layout == torch.strided and v.is_contiguous() and
             not v.requires_grad for k, v in payload.items()), "flat detached CPU dictionary required")
@@ -351,6 +354,7 @@ def archive_bytes(payload):
 
 def safe_load_bytes(raw, expected_sha, metadata):
     """Immutable bytes, pre-load ZIP budget, weights_only, no installing weights."""
+    import torch
     require(type(raw) is bytes and len(raw) <= MAX_CAPTURE and digest(raw) == expected_sha, "archive bytes/SHA differs")
     require(metadata.get("archiveEncoding") == "gzip-torch-flat-cpu-v1" and raw[:8] == b"\x1f\x8b\x08\x00\x00\x00\x00\x00",
             "fixed gzip encoding required")

@@ -1,3 +1,5 @@
+import { calculateLifeAndBodyPalace } from "./natal-foundation/life-body-palace"
+export { calculateLifeAndBodyPalace } from "./natal-foundation/life-body-palace"
 /**
  * ======================================================
  * AI-PET-WORLD
@@ -337,28 +339,7 @@ export function getOppositePalace(branch: BranchPalace): BranchPalace {
  * - bodyIndex：身宫物理索引
  * ======================================================
  */
-export function calculateLifeAndBodyPalace(
-  lunarMonth: number,
-  timeBranchNumber: number
-): {
-  lifePalace: BranchPalace
-  bodyPalace: BranchPalace
-  lifeIndex: number
-  bodyIndex: number
-} {
-  const monthIndex = lunarMonth - 1
-  const hourIndex = timeBranchNumber - 1
 
-  const lifeIndex = mod12(monthIndex - hourIndex)
-  const bodyIndex = mod12(monthIndex + hourIndex)
-
-  return {
-    lifePalace: getBranchByIndex(lifeIndex),
-    bodyPalace: getBranchByIndex(bodyIndex),
-    lifeIndex,
-    bodyIndex
-  }
-}
 
 /**
  * ======================================================

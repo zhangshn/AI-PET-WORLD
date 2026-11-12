@@ -1,22 +1,8 @@
 import { existsSync, readFileSync } from "node:fs"
-import { createRequire } from "node:module"
+import { createZiweiCheckRequire } from "../lib/ziwei-check-module-loader.mjs"
 import path from "node:path"
-import ts from "typescript"
 
-const require = createRequire(import.meta.url)
-
-require.extensions[".ts"] = (module, filename) => {
-  const source = readFileSync(filename, "utf8")
-  const output = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2020,
-      esModuleInterop: true
-    }
-  }).outputText
-
-  module._compile(output, filename)
-}
+const require = createZiweiCheckRequire(import.meta.url)
 
 const ROOT = process.cwd()
 

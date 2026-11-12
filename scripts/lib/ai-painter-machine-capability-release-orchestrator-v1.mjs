@@ -246,7 +246,16 @@ function validateDraft(draft, root, scopedWeather) {
   verifyBinding(root, { path: draft.ticketIssuer.publicKeyPath, sha256: draft.ticketIssuer.publicKeySha256 }, "ticketIssuer");
 }
 function verifyBinding(root, binding, role) { assert(binding?.identity || role === "releaseEvidence" || role === "ticketIssuer", `${role} identity is required`); assert(/^[a-f0-9]{64}$/.test(binding?.sha256 ?? ""), `${role} SHA-256 is invalid`); const absolute = resolveExisting(root, binding.path); assert(sha256File(absolute) === binding.sha256, `${role} SHA-256 mismatch`); }
-function openDb(file) { const db = new DatabaseSync(file); db.exec(`PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS releases(capability_release_identity TEXT PRIMARY KEY, registry_revision INTEGER NOT NULL UNIQUE, release_path TEXT NOT NULL UNIQUE, release_sha256 TEXT NOT NULL UNIQUE, recorded_at_utc TEXT NOT NULL, owner_decision_used INTEGER NOT NULL CHECK(owner_decision_used = 0));`); return db; }
+function openDb(file) {
+  const db = new DatabaseSync(file);
+  try {
+    db.exec(`PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS releases(capability_release_identity TEXT PRIMARY KEY, registry_revision INTEGER NOT NULL UNIQUE, release_path TEXT NOT NULL UNIQUE, release_sha256 TEXT NOT NULL UNIQUE, recorded_at_utc TEXT NOT NULL, owner_decision_used INTEGER NOT NULL CHECK(owner_decision_used = 0));`);
+    return db;
+  } catch (error) {
+    try { db.close() } catch { /* Preserve the initialization failure. */ }
+    throw error
+  }
+}
 function resolveExisting(root, relative) { const absolute = resolveInside(root, relative); assert(fs.existsSync(absolute) && fs.statSync(absolute).isFile(), `release file is missing: ${relative}`); return absolute; }
 function resolveInside(root, relative) { assert(typeof relative === "string" && relative && !path.isAbsolute(relative) && !/^[A-Za-z]:[\\/]/.test(relative), "release path must be project-relative"); const projectRoot = path.resolve(root); const absolute = path.resolve(projectRoot, relative); assert(absolute.startsWith(`${projectRoot}${path.sep}`), "release path escapes project root"); return absolute; }
 function normalize(value) { return value.replaceAll("\\", "/"); }

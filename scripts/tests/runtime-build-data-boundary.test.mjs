@@ -9,8 +9,16 @@ import test from 'node:test'
 const require = createRequire(import.meta.url)
 const {nodeFileTrace} = require('next/dist/compiled/@vercel/nft')
 
-test('build traces static assets while deployment data is read from each real runtime root', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-build-boundary-'))
+test('build traces static assets while deployment data is read from each real runtime root', async (t) => {
+  const parent = fs.realpathSync(os.tmpdir())
+  const root = fs.mkdtempSync(path.join(parent, 'runtime-build-boundary-'))
+  t.after(() => {
+    assert.equal(path.dirname(root),parent)
+    assert(path.basename(root).startsWith('runtime-build-boundary-'))
+    assert(!fs.lstatSync(root).isSymbolicLink())
+    assert.equal(fs.realpathSync(root),root)
+    fs.rmSync(root,{recursive:true})
+  })
   fs.copyFileSync(new URL('../lib/runtime-working-directory.mjs', import.meta.url), path.join(root, 'runtime-paths.mjs'))
   fs.writeFileSync(path.join(root, 'static.txt'), 'bundled-static-asset')
   fs.writeFileSync(path.join(root, 'entry.mjs'), `

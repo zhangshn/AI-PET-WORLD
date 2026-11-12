@@ -9,13 +9,14 @@ import ts from "typescript"
 const allowed = new Set([
   "game-map-frame-builder", "game-map-layer-generator", "game-map-geometry",
   "game-map-frame-validator", "game-map-frame-schema", "home-map-structure-schema",
-  "natural-home-mvp-sample",
+  "natural-home-mvp-sample", "source-fact-identity",
 ])
 const cache = new Map()
 function load(name) {
   assert.ok(allowed.has(name), `unexpected dependency: ${name}`)
   if (cache.has(name)) return cache.get(name).exports
-  const file = fileURLToPath(new URL(`../../src/world/game-map-frame/${name}.ts`, import.meta.url))
+  const relative = name === "source-fact-identity" ? "runtime-core/source-fact-identity" : `game-map-frame/${name}`
+  const file = fileURLToPath(new URL(`../../src/world/${relative}.ts`, import.meta.url))
   const result = ts.transpileModule(fs.readFileSync(file, "utf8"), {
     fileName: file, reportDiagnostics: true,
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -24,6 +25,7 @@ function load(name) {
   const loadedModule = { exports: {} }
   cache.set(name, loadedModule)
   new Function("require", "module", "exports", result.outputText)(specifier => {
+    if (specifier === "../runtime-core/source-fact-identity") return load("source-fact-identity")
     assert.ok(specifier.startsWith("./"), `external import forbidden: ${specifier}`)
     return load(specifier.slice(2))
   }, loadedModule, loadedModule.exports)
@@ -33,6 +35,31 @@ function load(name) {
 const { buildGameMapFrameFromHomeMapStructure: build } = load("game-map-frame-builder")
 const { validateGameMapFrame, validateHomeMapStructure } = load("game-map-frame-validator")
 const { naturalHomeMvpHomeMapStructure: sample } = load("natural-home-mvp-sample")
+
+test("visual masks retain their edge convention without changing collision overlap", () => {
+  const { pointInVisualMaskPolygon: contains, polygonsOverlap } = load("game-map-geometry")
+  const square = [{ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 4, y: 4 }, { x: 0, y: 4 }]
+  for (const polygon of [square, [...square].reverse()]) {
+    for (const [x, y, expected] of [[2, 2, true], [0, 0, true], [0, 2, true], [2, 0, true], [4, 2, false], [2, 4, false], [4, 4, false], [-1, 2, false]]) {
+      assert.equal(contains(x, y, polygon), expected, `visual edge ${x},${y}`)
+    }
+  }
+  const adjoining = square.map(({ x, y }) => ({ x: x + 4, y }))
+  assert.equal(polygonsOverlap(square, adjoining), false)
+  assert.equal(contains(1, 1, []), false)
+  assert.equal(contains(1, 1, [{ x: 1, y: 1 }]), false)
+  assert.equal(contains(1, 1, [{ x: 0, y: 0 }, { x: 2, y: 2 }]), false)
+})
+
+test("concave visual masks preserve cutouts and repeated closing vertices", () => {
+  const { pointInVisualMaskPolygon: contains } = load("game-map-geometry")
+  const shape = [{ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 4, y: 1 }, { x: 1, y: 1 }, { x: 1, y: 4 }, { x: 0, y: 4 }]
+  for (const polygon of [shape, [...shape].reverse(), [...shape, shape[0]]]) {
+    assert.equal(contains(0.5, 3, polygon), true)
+    assert.equal(contains(3, 0.5, polygon), true)
+    assert.equal(contains(2, 2, polygon), false)
+  }
+})
 
 function fixture() {
   const structure = structuredClone(sample)
@@ -80,6 +107,7 @@ for (const [label, mutate, code] of [
   ["different tick", f => { f.tick += 1 }, "tick_mismatch"],
   ["different structure", f => { f.structureId = "other-structure" }, "structure_id_mismatch"],
   ["foreign source facts", f => { f.sourceFactIds = ["foreign-fact"] }, "source_fact_ids_mismatch"],
+  ["duplicate facts hiding missing facts", f => { assert.ok(new Set(f.sourceFactIds).size > 1); f.sourceFactIds = f.sourceFactIds.map(() => f.sourceFactIds[0]) }, "source_fact_ids_mismatch"],
   ["missing objects", f => { f.objectLayer.objects = [] }, "object_missing"],
   ["missing collisions", f => { f.collisionLayer.blockedObjectIds = [] }, "blocked_object_missing"],
   ["missing paths", f => { f.walkableLayer.regions = [] }, "path_walkable_missing"],

@@ -9,7 +9,8 @@ export function openStorageCatalog() {
   if (database) return database
   ensureStorageRoots()
   database = new DatabaseSync(catalogPath)
-  database.exec(`
+  try {
+    database.exec(`
     PRAGMA busy_timeout=5000;
     PRAGMA journal_mode=WAL;
     PRAGMA synchronous=NORMAL;
@@ -92,9 +93,14 @@ export function openStorageCatalog() {
     );
     CREATE INDEX IF NOT EXISTS migration_checks_verified_idx ON migration_file_checks(migration_id, verified);
   `)
-  upsertStorageMeta("schema_version", "ai-pet-world-storage-catalog-v1")
-  upsertStorageMeta("catalog_path", path.resolve(catalogPath))
-  return database
+    upsertStorageMeta("schema_version", "ai-pet-world-storage-catalog-v1")
+    upsertStorageMeta("catalog_path", path.resolve(catalogPath))
+    return database
+  } catch (error) {
+    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    database = null
+    throw error
+  }
 }
 
 export function upsertStorageMeta(key, value) {
@@ -146,7 +152,7 @@ export function indexArtifact(input) {
       artifact_type=excluded.artifact_type,
       byte_size=excluded.byte_size,
       modified_at_utc=excluded.modified_at_utc,
-      sha256=COALESCE(excluded.sha256, artifacts.sha256),
+      sha256=excluded.sha256,
       migration_id=COALESCE(excluded.migration_id, artifacts.migration_id),
       indexed_at_utc=excluded.indexed_at_utc
   `).run(

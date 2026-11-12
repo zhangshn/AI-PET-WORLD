@@ -1,5 +1,5 @@
 import { createRequire } from "node:module"
-import { readdir, stat } from "node:fs/promises"
+import { readdir, realpath, stat } from "node:fs/promises"
 import path from "node:path"
 import {
   aiPetWorldCatalogPath,
@@ -22,22 +22,26 @@ type SqliteDatabase = {
 const require = createRequire(import.meta.url)
 
 function openCatalog(readOnly = true): SqliteDatabase | null {
+  let database: SqliteDatabase | null = null
   try {
     const sqlite = require("node:sqlite") as {
       DatabaseSync: new (fileName: string, options?: { readOnly?: boolean }) => SqliteDatabase
     }
-    const database = new sqlite.DatabaseSync(aiPetWorldCatalogPath, { readOnly })
+    database = new sqlite.DatabaseSync(aiPetWorldCatalogPath, { readOnly })
     database.exec("PRAGMA busy_timeout=5000")
     return database
   } catch {
+    try { database?.close() } catch { /* Preserve the existing unavailable-catalog fallback. */ }
     return null
   }
 }
 
 export function readIndexedTrainingProcessLedger(limit = 80) {
+  if (!Number.isSafeInteger(limit) || limit < 0) throw new RangeError("training_ledger_limit_invalid")
   const database = openCatalog()
   if (!database) return null
   try {
+    database.exec("BEGIN")
     const countRows = database.prepare(`
       SELECT status, COUNT(*) AS count
       FROM program_events
@@ -58,6 +62,7 @@ export function readIndexedTrainingProcessLedger(limit = 80) {
     `).get()
     const events = latestRows.flatMap((row) => parseEvent(row.event_json))
     const lastEvent = latestEventRow ? parseEvent(latestEventRow.event_json)[0] ?? null : null
+    const invalidIndexedEvent = events.length !== latestRows.length || Boolean(latestEventRow && !lastEvent)
     const summary = {
       total: numberValue(totalRow?.count),
       running: 0,
@@ -68,15 +73,22 @@ export function readIndexedTrainingProcessLedger(limit = 80) {
       info: 0,
       lastEvent,
     }
+    let invalidIndexedStatus = false
     for (const row of countRows) {
       const status = String(row.status ?? "") as keyof typeof summary
-      if (status in summary && status !== "lastEvent" && status !== "total") summary[status] = numberValue(row.count) as never
+      if (Object.hasOwn(summary, status) && status !== "lastEvent" && status !== "total") summary[status] = numberValue(row.count) as never
+      else invalidIndexedStatus = true
     }
+    const integrityError = invalidIndexedEvent ? "training_ledger_index_event_invalid"
+      : invalidIndexedStatus ? "training_ledger_index_status_invalid" : null
+    database.exec("COMMIT")
     return {
       schemaVersion: "ai-painter-training-process-ledger-v1" as const,
       updatedAt: typeof latestEventRow?.timestamp_utc === "string" ? latestEventRow.timestamp_utc : null,
       events,
       summary,
+      integrityStatus: integrityError ? "degraded" as const : "complete" as const,
+      integrityError,
     }
   } finally {
     database.close()
@@ -84,8 +96,9 @@ export function readIndexedTrainingProcessLedger(limit = 80) {
 }
 
 export function indexTrainingProcessEvent(event: Record<string, unknown>) {
+  if (typeof event.id !== "string" || typeof event.timestamp !== "string") return false
   const database = openCatalog(false)
-  if (!database || typeof event.id !== "string" || typeof event.timestamp !== "string") return false
+  if (!database) return false
   try {
     database.prepare(`
       INSERT INTO program_events(event_id, timestamp_utc, action, run_id, kind, status, title, title_zh, evidence_path, event_json)
@@ -134,13 +147,14 @@ export async function indexRuntimeArtifactPaths(inputs: string[], runId: string 
         artifact_type=excluded.artifact_type,
         byte_size=excluded.byte_size,
         modified_at_utc=excluded.modified_at_utc,
+        sha256=NULL,
         indexed_at_utc=excluded.indexed_at_utc
     `)
     for (const input of inputs) {
       const files = await collectRuntimeFiles(input)
       if (files.length === 0) skipped += 1
       for (const file of files) {
-        const info = await stat(file)
+        const info = await runtimeArtifactStat(file)
         const relative = path.relative(aiPetWorldRuntimeRoot, file)
         const logicalPath = path.posix.join(".runtime", relative.split(path.sep).join("/"))
         const physicalUri = path.join(aiPetWorldPhysicalRuntimeRoot, relative)
@@ -215,7 +229,7 @@ function parseEvent(value: unknown): Record<string, unknown>[] {
   if (typeof value !== "string") return []
   try {
     const parsed = JSON.parse(value) as unknown
-    return parsed && typeof parsed === "object" ? [parsed as Record<string, unknown>] : []
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? [parsed as Record<string, unknown>] : []
   } catch {
     return []
   }
@@ -229,23 +243,43 @@ function stringOrNull(value: unknown) {
   return typeof value === "string" ? value : null
 }
 
+async function runtimeArtifactStat(absolute: string) {
+  const relative = path.relative(aiPetWorldRuntimeRoot, absolute)
+  if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error("runtime_artifact_path_outside_root")
+  }
+  const physicalRoot = await realpath(aiPetWorldPhysicalRuntimeRoot)
+  const expected = path.join(physicalRoot, relative)
+  if (path.relative(physicalRoot, await realpath(aiPetWorldRuntimeRoot)) !== ""
+    || path.relative(expected, await realpath(absolute)) !== "") {
+    throw new Error("runtime_artifact_path_redirected")
+  }
+  const info = await stat(absolute)
+  if (path.relative(expected, await realpath(absolute)) !== "") {
+    throw new Error("runtime_artifact_path_redirected")
+  }
+  return info
+}
+
 async function collectRuntimeFiles(input: string): Promise<string[]> {
   const absolute = path.resolve(input)
   const relative = path.relative(aiPetWorldRuntimeRoot, absolute)
-  if (relative.startsWith("..") || path.isAbsolute(relative)) return []
+  if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) return []
   try {
-    const info = await stat(absolute)
+    const info = await runtimeArtifactStat(absolute)
     if (info.isFile()) return [absolute]
     if (!info.isDirectory()) return []
     const files: string[] = []
     for (const entry of await readdir(absolute, { withFileTypes: true })) {
       const child = path.join(absolute, entry.name)
+      if (entry.isSymbolicLink()) throw new Error("runtime_artifact_path_redirected")
       if (entry.isFile()) files.push(child)
       else if (entry.isDirectory()) files.push(...await collectRuntimeFiles(child))
     }
     return files
-  } catch {
-    return []
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === "ENOENT") return []
+    throw error
   }
 }
 

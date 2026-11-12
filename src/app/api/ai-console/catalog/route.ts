@@ -1,5 +1,5 @@
-import { aiCapabilityDomains, aiConsoleFrameworks, aiConsoleModules } from "@/app/ai-console/ai-console-catalog"
-import { aiConsoleWorkspaceDefinitions, validateAiConsoleWorkspaceCatalog } from "@/app/ai-console/ai-console-workspace-catalog"
+import { aiCapabilityDomains, aiConsoleFrameworks, aiConsoleModules } from "@/shared/ai-console/ai-console-catalog"
+import { aiConsoleWorkspaceDefinitions, validateAiConsoleWorkspaceCatalog } from "@/shared/ai-console/ai-console-workspace-catalog"
 
 export const dynamic = "force-dynamic"
 

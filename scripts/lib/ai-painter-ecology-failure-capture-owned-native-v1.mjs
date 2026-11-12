@@ -13,7 +13,7 @@ import { spawn } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { DatabaseSync } from "node:sqlite"
 import { createNativeOwnerCommand, nativeOwnerSourceIdentity, nativeBuildFailureObservation } from "./ai-painter-owned-worker-native-v1.mjs"
-import { inside, read, json, bind, write, sha, withOutputBudget, directoryBytes } from "./ai-painter-ecology-failure-capture-package-chain-v1.mjs"
+import { verifyCpuReport, inside, read, json, bind, write, sha, withOutputBudget, directoryBytes } from "./ai-painter-ecology-failure-capture-package-chain-v1.mjs"
 import { validatePlan, ROLES, runtimeIdentity, finalProgramBindings, SPECIFICATION, CANDIDATE, deriveConfiguration } from "./ai-painter-ecology-failure-capture-package-chain-v1.mjs"
 const SELF=fileURLToPath(import.meta.url),STREAM=8*1024*1024
 const PROOF_BYTES=65536,OUTER_TERMINAL_BYTES=65536
@@ -688,4 +688,18 @@ export async function runNative(options) {
     final=setTimeout(()=>{stop("cleanup_deadline");finish()},Math.max(1,started+budget.timeoutMs-Date.now()))
     try{persist(nativeEvidenceRoot+`/${id}-started.json`,{...record,ownerPid:child.pid,commandBinding:command.bindingBase64},budget.ordinaryOutputLimitBytes-Buffer.byteLength(guardBytes)-retainedStreamBytes)}catch(error){primaryError??=error;protocolError=String(error).slice(0,2048);stop(error)}
   })
+}
+
+export async function finalizeCpuAcceptance({root,requestBinding,result}){
+ 
+ assert.ok(hasLiveOwnedProof(result.ownedReceipt),'same live CPU call required');assert.equal(result.ownedReceipt.proof?.exitCode,0);
+ assert.equal(result.ownedReceipt.phase,'cpu');
+ assert.ok(hasLiveCpuFixtureCleanup(result.ownedReceipt),'same retained CPU call must confirm all fixture links removed');
+ const request=json(root,requestBinding),reportBinding=JSON.parse(result.stdout),raw=json(root,reportBinding);
+ assert.equal(reportBinding.path,request.outputRoot+'/cpu-report.json');assert.deepEqual(raw.request,requestBinding);
+ const plan={...request,outputRoot:request.outputRoot.replace(/\/cpu-entry$/u,'')};verifyCpuReport(raw,request,plan);
+ assert.deepEqual(raw.initialModel,json(root,request.modelBinding));
+ return withNativeOrdinaryBudget(root,result.ownedReceipt,()=>write(root,plan.outputRoot+'/cpu-acceptance.json',{
+  schema:'ecology-regime-failure-capture-final-cpu-acceptance-v1',status:'passed',programBindings:request.programBindings,
+  report:reportBinding,ownedReceipt:result.receiptBinding}));
 }

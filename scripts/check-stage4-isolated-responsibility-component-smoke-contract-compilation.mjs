@@ -1,4 +1,4 @@
-import assert from "node:assert/strict"
+import "node:assert/strict"
 import {
   RESPONSIBILITY_ORDER,
   compileControlledThreeComponentStage0SmokeContract,

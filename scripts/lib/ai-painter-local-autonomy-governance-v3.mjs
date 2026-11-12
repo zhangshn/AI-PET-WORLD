@@ -101,6 +101,7 @@ export function persistPolicyBoundaryReport(input, options = {}) {
 
   const ledgerPath = resolveInsideRoot(root, `${POLICY_BOUNDARY_ROOT}/index.sqlite`);
   const db = new DatabaseSync(ledgerPath);
+  let persistenceFailed = false;
   try {
     db.exec(`
       PRAGMA busy_timeout=5000;
@@ -134,12 +135,17 @@ export function persistPolicyBoundaryReport(input, options = {}) {
       fs.renameSync(temporaryDirectory, finalDirectory);
       db.exec("COMMIT");
     } catch (error) {
-      db.exec("ROLLBACK");
-      if (fs.existsSync(temporaryDirectory)) fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+      try { db.exec("ROLLBACK"); } catch { /* Preserve the original storage failure. */ }
+      // Keep the temporary or renamed report as evidence of the failed write.
       throw error;
     }
+  } catch (error) {
+    persistenceFailed = true;
+    throw error;
   } finally {
-    db.close();
+    try { db.close(); } catch (closeError) {
+      if (!persistenceFailed) throw closeError;
+    }
   }
   return {
     report,

@@ -1,3 +1,4 @@
+import { sameSourceFactIds as sameStringSet } from "../runtime-core/source-fact-identity"
 import type { GameMapFrame } from "./game-map-frame-schema"
 import { validateGameMapFrame, validateHomeMapStructure } from "./game-map-frame-validator"
 import type { HomeMapStructure } from "./home-map-structure-schema"
@@ -211,8 +212,3 @@ function containsAny(values: string[], blocked: string[]): boolean {
   return blocked.some((value) => valueSet.has(value))
 }
 
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
-}

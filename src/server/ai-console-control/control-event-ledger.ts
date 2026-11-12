@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto"
 import { existsSync } from "node:fs"
-import { appendFile, mkdir, open, readFile, rename, stat, unlink, writeFile, type FileHandle } from "node:fs/promises"
+import { appendFile, lstat, mkdir, open, readFile, rename, unlink, writeFile, type FileHandle } from "node:fs/promises"
 import path from "node:path"
 import type { AiConsoleControlCommandReceipt } from "./control-command-service"
 
@@ -11,7 +11,6 @@ const ledgerIdentity = "ai_console_control_event_ledger"
 const ledgerWriterIdentity = "ai_console_control_event_ledger_writer_v1"
 const maximumLedgerBytes = 4 * 1024 * 1024
 const maximumLedgerEvents = 10_000
-const staleLockMilliseconds = 30_000
 let ledgerMutationQueue: Promise<void> = Promise.resolve()
 
 export type AiConsoleControlEvent = {
@@ -277,39 +276,40 @@ async function withLedgerLock<T>(operation: () => Promise<T>): Promise<T> {
   const runtimeDirectory = getLogicalPath(".runtime/ai-console/control")
   await mkdir(runtimeDirectory, { recursive: true })
   const lockPath = getLogicalPath(controlEventLedgerLockLogicalPath)
-  const handle = await acquireLedgerLock(lockPath)
+  const release = await acquireLedgerLock(lockPath)
   try {
     return await operation()
   } finally {
-    await handle.close()
-    await unlink(lockPath).catch((error: unknown) => {
-      if (!isNodeError(error, "ENOENT")) throw error
-    })
+    await release()
   }
 }
 
-async function acquireLedgerLock(lockPath: string): Promise<FileHandle> {
+async function acquireLedgerLock(lockPath: string): Promise<() => Promise<void>> {
   for (let attempt = 0; attempt < 40; attempt += 1) {
+    let handle: FileHandle
     try {
-      const handle = await open(lockPath, "wx")
-      try {
-        await handle.writeFile(JSON.stringify({ writerIdentity: ledgerWriterIdentity, processId: process.pid, acquiredAtUtc: new Date().toISOString() }), "utf8")
-        return handle
-      } catch (error) {
-        await handle.close()
-        await unlink(lockPath).catch(() => undefined)
-        throw error
-      }
+      handle = await open(lockPath, "wx")
     } catch (error) {
       if (!isNodeError(error, "EEXIST")) throw error
-      const lockStat = await stat(lockPath).catch(() => null)
-      if (lockStat && Date.now() - lockStat.mtimeMs > staleLockMilliseconds) {
-        await unlink(lockPath).catch((unlinkError: unknown) => {
-          if (!isNodeError(unlinkError, "ENOENT")) throw unlinkError
-        })
-        continue
-      }
+      // Age alone cannot prove that a writer has stopped or surrendered its lock.
       await new Promise((resolve) => setTimeout(resolve, 25))
+      continue
+    }
+    try {
+      await handle.writeFile(JSON.stringify({ writerIdentity: ledgerWriterIdentity, processId: process.pid, acquiredAtUtc: new Date().toISOString() }), "utf8")
+      const identity = await handle.stat()
+      return async () => {
+        await handle.close()
+        const current = await lstat(lockPath)
+        if (!current.isFile() || current.isSymbolicLink() || current.ino !== identity.ino || current.dev !== identity.dev) {
+          throw new Error("ai_console_control_event_ledger_lock_identity_changed")
+        }
+        await unlink(lockPath)
+      }
+    } catch (error) {
+      // Keep incomplete lock bytes for diagnosis and preserve the first error.
+      await handle.close().catch(() => undefined)
+      throw error
     }
   }
   throw new Error("ai_console_control_event_ledger_lock_timeout")

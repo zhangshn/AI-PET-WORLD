@@ -2,7 +2,7 @@ import { sampleAiConsoleLiveObservability } from "../ai-console-observability/lo
 import { createProjection, type AiConsoleProjectionResult } from "./projection-contract"
 import { readAiPainterCurrentExecutionSnapshot } from "./ai-painter-current-execution-projection"
 // This module is a pure mapper with type-only dependencies, shared with the UI.
-import { mapTrainingSummary, type CurrentSummarySnapshot } from "../../app/ai-console/ai-console-training-summary-model"
+import { mapTrainingSummary, type CurrentSummarySnapshot } from "../../shared/ai-console/ai-console-training-summary-model"
 
 export async function queryAiConsoleTrainingObservabilityProjection(): Promise<AiConsoleProjectionResult> {
   const [snapshot, current] = await Promise.all([

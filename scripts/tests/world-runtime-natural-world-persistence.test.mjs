@@ -48,7 +48,14 @@ function fixture(kind,root=null){
  }
  const env={...process.env,NODE_ENV:kind==='development'?'test':'production',AI_PET_WORLD_RUNTIME_STORE_ROOT:runtimeRoot}
  function load(name){if(cache.has(name))return cache.get(name);const exports={};cache.set(name,exports)
-  const get=id=>{if(id==='node:fs/promises')return guarded;if(id==='node:fs')return {existsSync:p=>{inside(p);return fs.existsSync(p)}};if(id.startsWith('./'))return load(id.slice(2));assert(['node:crypto','node:os','node:path'].includes(id),'unexpected dependency '+id);return require(id)}
+  const get=id=>{
+   if(id==='../../../scripts/lib/runtime-working-directory.mjs')return {runtimeWorkingDirectory:()=>privateRoot,resolveRuntimePath:path.resolve}
+   if(id==='node:fs/promises')return guarded
+   if(id==='node:fs')return {existsSync:p=>{inside(p);return fs.existsSync(p)}}
+   if(id.startsWith('./'))return load(id.slice(2))
+   assert(['node:crypto','node:os','node:path'].includes(id),'unexpected dependency '+id)
+   return require(id)
+  }
   assert(compiled.has(name));new Function('require','exports','process',compiled.get(name))(get,exports,{cwd:()=>privateRoot,pid:process.pid,env});return exports
  }
  const store=kind==='development'?load('world-runtime-store').localFileRuntimeStore:load('world-runtime-production-store').createProductionWorldRuntimeStore(runtimeRoot)

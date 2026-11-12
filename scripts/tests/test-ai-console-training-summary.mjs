@@ -8,7 +8,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { trainingTime, experimentTime } from './helpers/training-time-cpu.mjs'
 import { createHash } from 'node:crypto'
 
-const source = readFileSync(new URL('../../src/app/ai-console/ai-console-training-summary-model.ts', import.meta.url), 'utf8')
+const source = readFileSync(new URL('../../src/shared/ai-console/ai-console-training-summary-model.ts', import.meta.url), 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
 const model = {}
 new Function('require', 'exports', compiled)(name => { assert.equal(name, './ai-console-training-time'); return trainingTime }, model)
@@ -191,7 +191,7 @@ test('AP-03 and summary share admission, pending-to-training and error mapping w
       }) },
       './projection-contract': compile(contractSource),
       './ai-painter-current-execution-projection': { readAiPainterCurrentExecutionSnapshot: async () => ({ ...f.current.snapshot, evidenceReferences: [] }) },
-      '../../app/ai-console/ai-console-training-summary-model': { mapTrainingSummary: (current, live) => model.mapTrainingSummary(current, live, now) },
+      '../../shared/ai-console/ai-console-training-summary-model': { mapTrainingSummary: (current, live) => model.mapTrainingSummary(current, live, now) },
     }
     const api = compile(projectionSource, dependencies)
     for (const phase of [null, 'validating', 'completed', 'failed_closed']) {

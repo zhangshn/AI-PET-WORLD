@@ -1,4 +1,4 @@
-import type { WorldVisualMvpTargetPolicy } from "../world-visual-painter-schema"
+import type { WorldVisualMvpTargetPolicy, WorldVisualGenerationCondition } from "../world-visual-painter-schema"
 
 export const WORLD_VISUAL_MVP_TARGET_POLICY: WorldVisualMvpTargetPolicy = {
   title: {
@@ -45,4 +45,23 @@ export const WORLD_VISUAL_MVP_TARGET_POLICY: WorldVisualMvpTargetPolicy = {
     "bright_healing_detailed_top_down_pixel",
     "approved_frame_required",
   ],
+}
+
+// Shared source requirements; each caller keeps its own identity and approval checks.
+export function buildRequiredSourceChannelGroups(
+  generationCondition: WorldVisualGenerationCondition
+): Array<{ id: string; channels: string[] }> {
+  if (generationCondition.sceneCondition.sceneType !== "forest_construction_clearing") {
+    return []
+  }
+
+  return [
+    { id: "natural_ground", channels: ["grass"] },
+    { id: "readable_path", channels: ["road_center", "road_edge", "walkable"] },
+    {
+      id: "construction_core",
+      channels: ["shelter_foundation", "shelter_wall", "shelter_roof"],
+    },
+    { id: "construction_materials", channels: ["construction_material"] },
+  ]
 }

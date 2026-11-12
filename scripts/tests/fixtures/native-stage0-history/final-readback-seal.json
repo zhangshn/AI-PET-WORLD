@@ -1,0 +1,30 @@
+{
+  "runId": "stage0-native-256-formal-229",
+  "phase": "verify_final",
+  "segment": 48,
+  "checkpoint": {
+    "bytes": 30107037,
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/48/recovery.pt",
+    "sha256": "5e9b18ffc0c37cbb0310923e2f2f3818cca881305bcf9726c8c378b557aad1d4"
+  },
+  "result": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/48/final-readback-result.json",
+    "bytes": 6320,
+    "sha256": "3dca329d6d2386c7ecd0b08178164e8301f94563bd1dd8e0a6a535d857e62f5a"
+  },
+  "ownership": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/48/final-readback-ownership.json",
+    "bytes": 6450,
+    "sha256": "0fdfb9d9dd2c91057486715475dd198eb8663ad87b1b1e603421467916d109af"
+  },
+  "workerPid": 5936,
+  "counts": {
+    "discriminator": 1152,
+    "generator": 1152
+  },
+  "modelForwards": {
+    "D": 0,
+    "G": 8
+  },
+  "optimizerUpdates": 0
+}

@@ -1,4 +1,4 @@
-﻿import { SECTOR_LABELS } from "../../page-view/labels"
+﻿import { SECTOR_LABELS } from "../../shared/chart-labels"
 
 import type {
   ZiweiContentDictionarySection,

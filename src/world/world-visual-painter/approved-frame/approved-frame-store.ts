@@ -1,3 +1,4 @@
+import { sameSourceFactIds as sameStringSet } from "../../runtime-core/source-fact-identity"
 import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../../scripts/lib/runtime-working-directory.mjs'
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
 import { createHash, randomUUID } from "node:crypto"
@@ -492,13 +493,6 @@ function validateCurrentRuntimeBinding(
 
 function pushIf(warnings: string[], failed: boolean, warning: string): void {
   if (failed) warnings.push(warning)
-}
-
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
 }
 
 function isAllowedApprovedContentType(

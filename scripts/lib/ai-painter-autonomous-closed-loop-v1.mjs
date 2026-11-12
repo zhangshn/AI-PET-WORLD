@@ -1,3 +1,10 @@
+import {
+  PHASES, FORBIDDEN_OWNER_TOKENS, validateClosedLoopPackage,
+  resolveExistingProjectFile, resolveInsideRoot, sha256File, canonical, assert,
+} from './ai-painter-autonomous-package-validation-v1.mjs';
+export {
+  CLOSED_LOOP_CONTRACT_PATH, PHASES, loadClosedLoopContract, validateClosedLoopPackage,
+} from './ai-painter-autonomous-package-validation-v1.mjs';
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -6,18 +13,12 @@ import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { persistPolicyBoundaryReport } from "./ai-painter-local-autonomy-governance-v3.mjs";
 
-export const CLOSED_LOOP_CONTRACT_PATH =
-  "data/ai-painter/system-governance/ai-painter-autonomous-closed-loop-contract-v1.json";
 export const CURRENT_ENTRYPOINT_REGISTRY_PATH =
   "data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json";
 export const CLOSED_LOOP_ROOT = ".runtime/ai-painter/autonomous-closed-loop-executions";
 
 const EXECUTION_LEASE_DIRECTORY = "execution-runner-lease";
 const EXECUTION_LEASE_HISTORY_DIRECTORY = "execution-runner-lease-history";
-
-export const PHASES = Object.freeze([
-  "preflight", "execute", "validate", "review", "adjudicate", "finalize",
-]);
 
 const STATE_FOR_PHASE = Object.freeze({
   preflight: "preflight",
@@ -39,52 +40,6 @@ const ALLOWED_TRANSITIONS = Object.freeze({
 });
 
 const TERMINAL_STATES = new Set(["completed", "failed_closed", "blocked_policy_boundary"]);
-const FORBIDDEN_OWNER_TOKENS = [
-  "waiting_owner_authorization", "waiting_owner_decision", "owner-action-request.json",
-  "owner-decision-request.json", "owner_authorization_required", "owner_signature_required",
-];
-
-export function loadClosedLoopContract(root = process.cwd()) {
-  const evidence = readBoundJson(root, CLOSED_LOOP_CONTRACT_PATH);
-  const value = evidence.value;
-  assert(value?.schemaVersion === "ai-painter-autonomous-closed-loop-contract-v1", "closed-loop contract schema mismatch");
-  assert(value?.status === "active", "closed-loop contract is not active");
-  assert(value?.authority === "local_ai_pet_world_program", "local AI authority mismatch");
-  assert(value?.ownerInNormalStateMachine === false, "Owner must not be in the normal state machine");
-  assert(value?.perTaskOwnerAuthorizationRequired === false, "per-task Owner authorization must be false");
-  assert(value?.perStageOwnerAuthorizationRequired === false, "per-stage Owner authorization must be false");
-  assert(canonical(value.normalPhaseOrder) === canonical(PHASES), "closed-loop phase order mismatch");
-  assert(value?.terminalRules?.ownerWaitStateAllowed === false, "Owner wait states must be forbidden");
-  assert(value?.terminalRules?.ownerRequestArtifactAllowed === false, "Owner request artifacts must be forbidden");
-  return evidence;
-}
-
-export function validateClosedLoopPackage(spec, { root = process.cwd(), packageSha256 } = {}) {
-  loadClosedLoopContract(root);
-  assert(spec?.schemaVersion === "ai-painter-autonomous-closed-loop-package-v1", "package schema mismatch");
-  assert(/^[a-z0-9][a-z0-9-]{7,127}$/.test(spec.packageIdentity ?? ""), "package identity is invalid");
-  assertHex(packageSha256, "package SHA-256");
-  assert(typeof spec.capabilityVersion === "string" && spec.capabilityVersion.length >= 3, "capabilityVersion is invalid");
-  assert(spec.ownerAuthorizationRequired === false, "closed-loop package cannot require Owner authorization");
-  assert(spec.ownerInStateMachine === false, "closed-loop package cannot place Owner in its state machine");
-  assert(Number.isInteger(spec.maxInfrastructureRecoveryAttempts) && spec.maxInfrastructureRecoveryAttempts >= 0 && spec.maxInfrastructureRecoveryAttempts <= 3, "infrastructure recovery limit is invalid");
-  validateRelativeRuntimeRoot(spec.outputRoot, "outputRoot");
-  assert(spec.programLineage && Object.keys(spec.programLineage).length > 0, "programLineage is required");
-  for (const [role, digest] of Object.entries(spec.programLineage)) {
-    assert(/^[A-Za-z0-9._-]+$/.test(role), "programLineage role is invalid");
-    assertHex(digest, `programLineage.${role}`);
-  }
-  assert(Array.isArray(spec.inputEvidence) && spec.inputEvidence.length > 0, "inputEvidence is required");
-  for (const evidence of spec.inputEvidence) verifyBoundFile(root, evidence);
-  assert(spec.phaseAdapters && typeof spec.phaseAdapters === "object", "phaseAdapters are required");
-  assert(canonical(Object.keys(spec.phaseAdapters).sort()) === canonical([...PHASES].sort()), "phase adapter set mismatch");
-  const serialized = JSON.stringify(spec).toLowerCase();
-  for (const token of FORBIDDEN_OWNER_TOKENS) assert(!serialized.includes(token), `forbidden Owner runtime token: ${token}`);
-  for (const phase of PHASES) validateAdapterBinding(root, phase, spec.phaseAdapters[phase]);
-  const canonicalPackageSha256 = sha256(Buffer.from(`${JSON.stringify(spec, null, 2)}\n`, "utf8"));
-  assert(canonicalPackageSha256 === packageSha256, "package SHA-256 does not bind the supplied package bytes");
-  return true;
-}
 
 export async function loadPhaseAdapters(spec, { root = process.cwd() } = {}) {
   const adapters = {};
@@ -109,6 +64,7 @@ export function createExecutionStore({ root = process.cwd(), spec, packageSha256
   fs.mkdirSync(path.join(executionRoot, "phase-evidence"), { recursive: false });
   const sqlitePath = path.join(executionRoot, "execution.sqlite");
   const db = openDatabase(sqlitePath);
+  let transactionFailed = false;
   try {
     db.exec("BEGIN IMMEDIATE");
     db.prepare(`INSERT INTO executions(package_identity, package_sha256, capability_version, state, phase, created_at_utc, updated_at_utc, owner_response_required) VALUES (?, ?, ?, 'package_materialized', NULL, ?, ?, 0)`).run(
@@ -117,11 +73,13 @@ export function createExecutionStore({ root = process.cwd(), spec, packageSha256
     db.prepare(`INSERT INTO transitions(package_identity, sequence, from_state, to_state, phase, recorded_at_utc, evidence_sha256) VALUES (?, 0, NULL, 'package_materialized', NULL, ?, NULL)`).run(spec.packageIdentity, now);
     db.exec("COMMIT");
   } catch (error) {
-    db.exec("ROLLBACK");
-    db.close();
+    transactionFailed = true;
+    try { db.exec("ROLLBACK"); } catch { /* Preserve the first transaction failure. */ }
     throw error;
+  } finally {
+    try { db.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
   }
-  db.close();
+
   const state = buildState(spec, packageSha256, "package_materialized", null, 0, now, null);
   writeJsonAtomic(path.join(executionRoot, "execution-state.json"), state);
   writeJsonAtomic(path.join(executionRoot, "progress.json"), buildProgress(state, 0));
@@ -437,6 +395,7 @@ function reconcilePersistedPhaseOutcome({ root, store, spec, state, phase, now }
 function registerPassedArtifact(store, spec, evidence, recordedAtUtc) {
   assert(evidence.payload.result.status === "passed", "only passed phase evidence can be registered as an artifact");
   const db = openDatabase(store.sqlitePath);
+  let transactionFailed = false;
   try {
     db.exec("BEGIN IMMEDIATE");
     const existing = db.prepare("SELECT attempt, logical_path, sha256 FROM artifacts WHERE package_identity = ? AND phase = ?").get(spec.packageIdentity, evidence.phase);
@@ -449,9 +408,12 @@ function registerPassedArtifact(store, spec, evidence, recordedAtUtc) {
     }
     db.exec("COMMIT");
   } catch (error) {
-    db.exec("ROLLBACK");
+    transactionFailed = true;
+    try { db.exec("ROLLBACK"); } catch { /* Preserve the first transaction failure. */ }
     throw error;
-  } finally { db.close(); }
+  } finally {
+    try { db.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+  }
 }
 
 function evidenceBinding(evidence) {
@@ -547,11 +509,13 @@ function acquireExecutionLease(store, spec, recordedAtUtc) {
     writeJsonExclusive(path.join(candidatePath, "lease.json"), lease);
     try {
       fs.renameSync(candidatePath, lockPath);
-      appendLeaseHistory(store.executionRoot, "lease_acquired", recordedAtUtc, lease);
-      return lease;
     } catch (error) {
+      // Only a real destination collision can enter stale-lease recovery.
+      // Preserve failed publication evidence and the original IO error otherwise.
+      if (!["EEXIST", "ENOTEMPTY", "EPERM"].includes(error?.code) || !fs.existsSync(lockPath)) throw error;
+      assert(path.dirname(path.resolve(candidatePath)) === path.resolve(store.executionRoot), "lease candidate escapes execution root");
+      assert(!fs.lstatSync(candidatePath).isSymbolicLink(), "lease candidate cannot be a link");
       fs.rmSync(candidatePath, { recursive: true, force: true });
-      if (!fs.existsSync(lockPath)) continue;
       const existing = readExecutionLease(lockPath, spec.packageIdentity);
       if (existing.hostname !== os.hostname()) throw new Error("closed-loop execution lease belongs to another host");
       if (isProcessAlive(existing.pid)) throw new Error(`closed-loop execution already has an active runner PID ${existing.pid}`);
@@ -575,7 +539,12 @@ function acquireExecutionLease(store, spec, recordedAtUtc) {
         stalePid: existing.pid, replacementPid: process.pid, recordedAtUtc,
       });
       appendLeaseHistory(store.executionRoot, "stale_lease_archived_for_takeover", recordedAtUtc, takeover);
+      continue;
     }
+    // A history-write failure after publication is not a lock collision.
+    // Keep the published lease and report the actual persistence failure.
+    appendLeaseHistory(store.executionRoot, "lease_acquired", recordedAtUtc, lease);
+    return lease;
   }
   throw new Error("closed-loop execution lease acquisition did not converge");
 }
@@ -587,7 +556,7 @@ function readExecutionLease(lockPath, packageIdentity) {
   assert(lease?.schemaVersion === "ai-painter-autonomous-execution-lease-v1", "closed-loop execution lease schema mismatch");
   assert(lease.packageIdentity === packageIdentity, "closed-loop execution lease package mismatch");
   assert(typeof lease.token === "string" && /^[a-f0-9]{32}$/u.test(lease.token), "closed-loop execution lease token is invalid");
-  assert(Number.isInteger(lease.pid) && lease.pid > 0, "closed-loop execution lease PID is invalid");
+  assert(Number.isSafeInteger(lease.pid) && lease.pid > 0 && lease.pid <= 2147483647, "closed-loop execution lease PID is invalid");
   assert(typeof lease.hostname === "string" && lease.hostname.length > 0, "closed-loop execution lease hostname is invalid");
   return lease;
 }
@@ -621,7 +590,9 @@ function isProcessAlive(pid) {
     process.kill(pid, 0);
     return true;
   } catch (error) {
-    return error?.code === "EPERM";
+    if (error?.code === "ESRCH") return false;
+    if (error?.code === "EPERM") return true;
+    throw error;
   }
 }
 
@@ -681,6 +652,7 @@ function transition(store, spec, state, toState, phase, evidence, recordedAtUtc,
   assert(ALLOWED_TRANSITIONS[state.state]?.includes(toState), `invalid transition ${state.state} -> ${toState}`);
   const sequence = state.sequence + 1;
   const db = openDatabase(store.sqlitePath);
+  let transactionFailed = false;
   try {
     db.exec("BEGIN IMMEDIATE");
     const current = db.prepare("SELECT state FROM executions WHERE package_identity = ?").get(spec.packageIdentity);
@@ -691,9 +663,12 @@ function transition(store, spec, state, toState, phase, evidence, recordedAtUtc,
     );
     db.exec("COMMIT");
   } catch (error) {
-    db.exec("ROLLBACK");
+    transactionFailed = true;
+    try { db.exec("ROLLBACK"); } catch { /* Preserve the first transaction failure. */ }
     throw error;
-  } finally { db.close(); }
+  } finally {
+    try { db.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+  }
   const next = buildState(spec, state.packageSha256, toState, phase, sequence, recordedAtUtc, evidence ?? state.latestEvidence, failureCode);
   writeJsonAtomic(path.join(store.executionRoot, "execution-state.json"), next);
   writeJsonAtomic(path.join(store.executionRoot, "progress.json"), buildProgress(next, PHASES.indexOf(phase) + (toState === "completed" ? 1 : 0)));
@@ -743,16 +718,6 @@ function persistTerminal(executionRoot, spec, state, result, evidence, recordedA
   });
 }
 
-function validateAdapterBinding(root, phase, binding) {
-  assert(binding?.kind === "project_module_export", `${phase} adapter kind is invalid`);
-  assert(typeof binding.exportName === "string" && /^[A-Za-z_$][\w$]*$/.test(binding.exportName), `${phase} exportName is invalid`);
-  const absolutePath = resolveExistingProjectFile(root, binding.path);
-  assertHex(binding.sha256, `${phase} adapter SHA-256`);
-  assert(sha256File(absolutePath) === binding.sha256, `${phase} adapter SHA-256 mismatch`);
-  const source = fs.readFileSync(absolutePath, "utf8").toLowerCase();
-  for (const token of FORBIDDEN_OWNER_TOKENS) assert(!source.includes(token), `${phase} adapter contains forbidden Owner token: ${token}`);
-}
-
 function validateAdapterResult(result, phase) {
   assert(result && typeof result === "object" && !Array.isArray(result), `${phase} result must be an object`);
   assert(["passed", "failed"].includes(result.status), `${phase} result status is invalid`);
@@ -768,16 +733,10 @@ function validateAdapterResult(result, phase) {
   }
 }
 
-function verifyBoundFile(root, binding) {
-  assert(binding && typeof binding === "object", "evidence binding is invalid");
-  const absolutePath = resolveExistingProjectFile(root, binding.path);
-  assertHex(binding.sha256, "evidence SHA-256");
-  assert(sha256File(absolutePath) === binding.sha256, `evidence SHA-256 mismatch: ${binding.path}`);
-}
-
 function openDatabase(sqlitePath) {
   const db = new DatabaseSync(sqlitePath);
-  db.exec(`
+  try {
+    db.exec(`
     PRAGMA busy_timeout=5000;
     PRAGMA journal_mode=WAL;
     PRAGMA synchronous=FULL;
@@ -808,7 +767,11 @@ function openDatabase(sqlitePath) {
       PRIMARY KEY(package_identity, sequence)
     );
   `);
-  return db;
+    return db;
+  } catch (error) {
+    try { db.close() } catch { /* Preserve the initialization failure. */ }
+    throw error
+  }
 }
 
 function buildState(spec, packageSha256, state, phase, sequence, updatedAtUtc, latestEvidence, failureCode = null) {
@@ -866,31 +829,6 @@ function writeTaskCapsule(executionRoot, state) {
   });
 }
 
-function readBoundJson(root, relativePath) {
-  const absolutePath = resolveExistingProjectFile(root, relativePath);
-  const bytes = fs.readFileSync(absolutePath);
-  return { value: JSON.parse(bytes.toString("utf8")), path: relativePath, sha256: sha256(bytes) };
-}
-
-function resolveExistingProjectFile(root, relativePath) {
-  assert(typeof relativePath === "string" && relativePath.length > 0, "project-relative path is required");
-  assert(!path.isAbsolute(relativePath) && !/^[A-Za-z]:[\\/]/.test(relativePath), "absolute paths are forbidden");
-  const absolutePath = resolveInsideRoot(root, relativePath);
-  assert(fs.existsSync(absolutePath) && fs.statSync(absolutePath).isFile(), `file does not exist: ${relativePath}`);
-  return absolutePath;
-}
-
-function resolveInsideRoot(root, relativePath) {
-  const projectRoot = path.resolve(root);
-  const absolutePath = path.resolve(projectRoot, relativePath);
-  assert(absolutePath.startsWith(`${projectRoot}${path.sep}`), `path escapes project root: ${relativePath}`);
-  return absolutePath;
-}
-
-function validateRelativeRuntimeRoot(value, label) {
-  assert(typeof value === "string" && value.startsWith(".runtime/ai-painter/") && !value.includes("..") && !value.includes("\\"), `${label} must be a normalized AI Painter runtime path`);
-}
-
 function writeJsonAtomic(filePath, value) {
   const temporary = `${filePath}.tmp-${process.pid}`;
   fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { flag: "w" });
@@ -900,11 +838,5 @@ function writeJsonAtomic(filePath, value) {
 function writeJsonExclusive(filePath, value) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, { flag: "wx" });
 }
-
-function sha256File(filePath) { return sha256(fs.readFileSync(filePath)); }
-function sha256(bytes) { return crypto.createHash("sha256").update(bytes).digest("hex"); }
-function canonical(value) { return JSON.stringify(value); }
-function assertHex(value, label) { assert(typeof value === "string" && /^[a-f0-9]{64}$/.test(value), `${label} is invalid`); }
-function assert(condition, message) { if (!condition) throw new Error(message); }
 
 export { sha256File };

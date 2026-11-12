@@ -15,7 +15,7 @@ const sha = (value) => crypto.createHash("sha256").update(fs.readFileSync(value)
 const relative = (value) => path.relative(ROOT, value).replaceAll("\\", "/")
 const bind = (value) => ({ path: relative(value), sha256: sha(value) })
 const read = (value) => JSON.parse(fs.readFileSync(value, "utf8"))
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+
 const writeTextAtomic = (target, content) => { const temp = `${target}.${process.pid}.${Date.now()}.tmp`; const fd = fs.openSync(temp, "wx"); try { fs.writeFileSync(fd, content, "utf8"); fs.fsyncSync(fd) } finally { fs.closeSync(fd) }; fs.renameSync(temp, target) }
 
 const authorizationPath = file(arg("--authorization"))

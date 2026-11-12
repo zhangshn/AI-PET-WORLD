@@ -13,16 +13,20 @@ const python=path.join(project,'ml/ai-painter/.venv/Scripts/python.exe');
 const sha=raw=>crypto.createHash('sha256').update(raw).digest('hex');
 function fixture(t){
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'execution-source-closure-'));
- t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+ t.after(()=>{
+  assert.equal(path.dirname(fs.realpathSync(root)),fs.realpathSync(os.tmpdir()));
+  assert.match(path.basename(root),/^execution-source-closure-/u);
+  fs.rmSync(root,{recursive:true});
+ });
  const put=(name,raw)=>{const target=path.join(root,name);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,raw);};
  const bind=name=>({path:name,sha256:sha(fs.readFileSync(path.join(root,name)))});
  return {root,put,bind};
 }
 
 test('read-only role query reports an unavailable interpreter without a blank failure',t=>{
- const f=fixture(t);f.put('auth.py','# fixture only\n');
+ const f=fixture(t);const authPath='ml/ai-painter/scripts/object_support_structure_quality_auth_v1.py';f.put(authPath,'# fixture only\n');
  assert.throws(()=>requiredProgramRoles({root:f.root,python:path.join(f.root,'missing-python'),
-   capabilityVersion:'fixture',authPath:'auth.py'}),/registered read-only role query failed: .*"errorCode":"ENOENT"/);
+   capabilityVersion:'fixture',authPath}),/registered read-only role query failed: .*"errorCode":"ENOENT"/);
 });
 
 test('module literals only: comments and embedded source strings do not become imports',()=>{

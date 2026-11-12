@@ -17,7 +17,7 @@ const fixtureSecret = crypto.randomBytes(48).toString('hex');
 process.env.AI_PET_WORLD_OPERATOR_SESSION_SECRET = fixtureSecret;
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const put = (file, value) => fs.writeFileSync(file, typeof value === 'string' ? value : JSON.stringify(value));
-const clone = x => structuredClone(x);
+
 let sequence = 0;
 function fixture() {
   const base = path.join(root, `fixture-${++sequence}`), project = path.join(base, 'project'), evidence = path.join(base, 'requests');

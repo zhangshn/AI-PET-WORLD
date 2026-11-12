@@ -623,8 +623,9 @@ function openWritableStore() {
   const storePath = getStorePath()
   mkdirSync(path.dirname(storePath), { recursive: true })
   const database = new DatabaseSync(storePath)
-  database.exec("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL;")
-  database.exec(`
+  try {
+    database.exec("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL;")
+    database.exec(`
 CREATE TABLE IF NOT EXISTS metadata (
   singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version TEXT NOT NULL, registry_identity TEXT NOT NULL,
   source_boundary TEXT NOT NULL, writer_identity TEXT NOT NULL, store_revision INTEGER NOT NULL,
@@ -662,12 +663,16 @@ CREATE TABLE IF NOT EXISTS command_receipts (
   finished_at_utc TEXT NOT NULL, executor_identity TEXT NOT NULL, previous_command_receipt_sha256 TEXT,
   command_receipt_sha256 TEXT NOT NULL
 );`)
-  const count = Number((database.prepare("SELECT COUNT(*) count FROM metadata").get() as { count: number }).count)
-  if (count === 0) insertInitialMetadata(database)
-  if (count > 1) throw new Error("ai_console_world_control_metadata_cardinality_invalid")
-  database.exec("PRAGMA user_version=1")
-  verifyDatabase(database)
-  return database
+    const count = Number((database.prepare("SELECT COUNT(*) count FROM metadata").get() as { count: number }).count)
+    if (count === 0) insertInitialMetadata(database)
+    if (count > 1) throw new Error("ai_console_world_control_metadata_cardinality_invalid")
+    database.exec("PRAGMA user_version=1")
+    verifyDatabase(database)
+    return database
+  } catch (error) {
+    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    throw error
+  }
 }
 
 function insertInitialMetadata(database: DatabaseSync) {

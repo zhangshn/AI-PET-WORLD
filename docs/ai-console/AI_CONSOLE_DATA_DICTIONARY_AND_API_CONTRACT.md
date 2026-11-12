@@ -1,12 +1,12 @@
 # AI控制台数据字典与API合同
 
-更新时间：2026-10-27 16:04:00 +08:00
+更新时间：2026-11-11 22:33:00 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-DATA-API-1.30`
+文档版本：`AI-CONSOLE-DATA-API-1.36`
 
-替代版本：`AI-CONSOLE-DATA-API-1.29`
+替代版本：`AI-CONSOLE-DATA-API-1.35`
 
 治理依据：[执行治理](../../AGENTS.md)、[主体职责与权威顺序](../DOCUMENT_AUTHORITY_INDEX.md#gov-owner-001owner不进入本地ai正常运行状态机)（`GOV-OWNER-001`）。
 
@@ -308,6 +308,41 @@ worker计时范围包含原认证、数据加载、模型准备、训练、Check
 故障附件继续采用`artifacts`及其`evidenceKind`：`gradientFailureManifest`显示为故障清单，`gradientFailurePrimary`显示为首错记录，按原绑定的SHA和既有JSON制品接口读取。没有对实际内容及完整性进行核验前，只能称已绑定，不能称完整现场已认证；二进制张量档案不作为PNG或可下载Checkpoint展示。无图像绑定表示没有已登记可查看的图像，不得从空列表推断磁盘文件不存在、未执行训练或训练已通过。失败记录时间与登记时间使用各自字段，均不得静默填入缺失的完成时间。以上呈现修正不改变2秒刷新、分页、历史选中身份、安全限额或正式资格。
 
 1.16原始字节保留于[`历史API规范快照`](../../data/ai-painter/system-governance/document-baselines/ai-console-data-api-1.16-d14a5a1c.txt)，只供对应历史复核，不作为当前接口回退来源。
+
+### 3.2.5 兼容训练进度接口的日志观测
+
+`GET /api/ai-painter/training-progress`完整响应保留`logs: string[]`，增加`logObservation`；`view=summary`不读取或增加日志。状态仅描述控制器日志读取，不代表模型、任务或资格状态。
+
+| 字段 | 类型与语义 |
+|---|---|
+| `logObservation.status` | `available`：本次读取成功，空文件允许空数组；`not_recorded`：文件不存在；`unreadable`：其他读取失败；`not_requested`：内部零行请求，未执行读取 |
+| `logObservation.errorCode` | `null`，或读取失败时固定`training_log_read_failed`；不得返回异常原文或内部路径 |
+
+来源为既有训练控制日志，本地控制器写入、GET只读。完整响应默认最多80行，按原顺序返回尾部；内部行数参数必须为非负安全整数，非法参数在IO前拒绝，0行不读取文件。只有文件不存在（ENOENT）可判定`not_recorded`；权限、IO或其他错误必须判定`unreadable`。此时兼容`logs`为空数组，消费者必须结合状态，不能解释为真实零条日志或训练未开始。日志单项不可读不得抹去其他可用观测。此投影不是持久化证据，不补写日志、不推断运行完成。
+
+### 3.2.6 兼容训练进度接口的运行状态
+
+完整及summary响应的`control`只投影登记与同次运行心跳。GPU高负载、计算进程名称或PID存在不能单独建立训练运行身份；`system`仍可提供独立资源观察。控制文件`completed`/`failed`终态保留，不被旧心跳覆盖；`corrupted_state`/`recovery_required`投影为`blocked`，并保留`controlFileStatus`。不得在GET中修复或重写控制文件。
+
+登记为`running`时，仅采用未过期且`activeAction`、`controllerPid`与控制记录一致、心跳时间不早于`startedAt`的心跳；控制记录有`childPid`时也须一致。活动状态按实际心跳阶段投影；无法确认、心跳与记录冲突或只剩PID观察时，显示`control.status=unknown`、`liveDetected=false`，以`statusSource=unverified_training_control`标明原因，不能改成`idle`或宣称训练已停止。损坏心跳明确`blocked`。`training.status`同步保留`unknown`、`blocked`等非空闲状态，不能用历史摘要覆盖当前异常。本兼容观察不授予训练、发布或MVP资格。
+
+控制器心跳时间晚于本次读取时钟时，`runtimeStatus.statusSource=future_runtime_heartbeat`、`status=blocked`、`stale=true`、`ageMs=null`；原始心跳保留用于诊断，不改写或夹成年龄0。兼容接口同样投影此阻断，已登记终态仍保留。页面采样年龄和服务器活动年龄遇到未来或不可解析时间返回null，不能冒充刚更新；真实相等时间仍可为0。本机时钟回拨同样属于无法确认的时间观察，不证明训练已停止。
+
+### 3.2.7 兼容训练进度接口的GPU观察
+
+完整及summary响应的`system`复用现行硬件观察器，保留`gpuAvailable`、设备名、驱动、显存/利用率/温度、`computeProcesses`、`activeComputeProcessCount`及`gpuBusy`字段。查询失败、空/歧义设备输出或不支持的指标必须为不可用或`null`，不能填0；真实0必须保留。`observationIssues`提供固定原因码，不泄露异常原文。
+
+可选进程明细为`{pid, processName, usedMemoryMiB: number | null}[]`。数量和明细来自同一次查询，PID去重；无效PID、缺少进程名或同PID内容矛盾使该次进程观察不可用。查询失败或不可用时列表及数量为`null`，只有有效空输出才为`[]`和0。当前看板默认仅查询PID，响应不增加明细字段。兼容接口请求明细；不另建探针或重复获取数量。`gpuBusy`仅在利用率达到20%或已知进程数量大于0时为true；两项均已知且均未触发时为false，其余为null。资源观察不得变成训练状态或执行许可。
+
+### 3.2.8 既有资源会话采样与收尾
+
+同一资源会话最多一个采样任务在途；定时器重入合并，不无限排队。首次`finish`停止定时采样、等待已开始采样完成后再采集结束样本和写入终态；之后不能重新写入该会话的运行快照。重复`finish`复用本会话首次收尾的Promise及其结果或失败，不读取全局最新会话作为替代结果，不重复追加历史。
+
+新生成资源摘要包含`samplingStatus: complete | degraded`及`samplingError: string | null`。定时采样或写样本失败必须被捕获并保留固定错误标记，不产生未处理Promise拒绝，不宣称采样完整；首个采样尚未成功时启动直接失败。结束样本或终态写入失败时，收尾Promise拒绝且重复调用仍返回该失败，不伪造成功。训练`status`与采样完整性分别表达；采样失败不改写模型结果、运行资格或历史原件。旧摘要缺少上述字段时保持历史缺失，不能补成complete。
+
+### 3.2.9 既有训练事件写入边界
+
+事件`id`与`timestamp`由本地写入器生成，调用方额外同名属性不得覆盖。实际序列化后的JSON必须在追加前通过既有事件读取Schema，并保有写入器生成的身份；索引和返回值使用同一已校验内容，不对原始输入另作解释。非法输入或自定义序列化导致身份/Schema冲突时，不追加日志、不索引、不更新latest，按既有失败路径留下degraded标记并返回失败。成功顺序保持完整日志写入、同步、关闭后再索引与更新投影。此约束不重新签发或改写历史事件。
 
 ### 3.3 本地控制会话
 

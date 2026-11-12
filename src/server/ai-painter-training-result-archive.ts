@@ -1,8 +1,8 @@
-import { copyFile, cp, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises"
+import { copyFile, cp, mkdir, readFile, readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import type { ResourceUsageSessionSummary } from "./ai-painter-resource-usage"
 import { buildTrainingQualityGateReport } from "./ai-painter-training-quality-gate"
-import { aiPainterRuntimeRoot } from "./ai-painter-training-state"
+import { aiPainterRuntimeRoot, writeJsonAtomic } from "./ai-painter-training-state"
 import { indexRuntimeArtifactPaths } from "./ai-pet-world-storage-catalog"
 
 type ResultManifest = {
@@ -357,15 +357,30 @@ export async function archiveTrainingResult(input: {
 }
 
 export async function readGeneratedResultsIndex(): Promise<GeneratedResultsIndex> {
+  let parsed: GeneratedResultsIndex
   try {
-    const parsed = JSON.parse(await readFile(indexPath, "utf8")) as GeneratedResultsIndex
-    return {
-      schemaVersion: "ai-painter-generated-results-index-v1",
-      updatedAt: parsed.updatedAt,
-      results: Array.isArray(parsed.results) ? parsed.results : [],
+    parsed = JSON.parse(await readFile(indexPath, "utf8")) as GeneratedResultsIndex
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+      return { schemaVersion: "ai-painter-generated-results-index-v1", updatedAt: new Date(0).toISOString(), results: [] }
     }
-  } catch {
-    return { schemaVersion: "ai-painter-generated-results-index-v1", updatedAt: new Date(0).toISOString(), results: [] }
+    throw error
+  }
+  // Historical rows may omit later metadata. Validate the envelope and fields
+  // used by merging/sorting without inventing or dropping historical content.
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)
+    || parsed.schemaVersion !== "ai-painter-generated-results-index-v1"
+    || typeof parsed.updatedAt !== "string" || !Array.isArray(parsed.results)
+    || !parsed.results.every(record => record && typeof record === "object" && !Array.isArray(record)
+      && typeof record.id === "string" && record.id.length > 0
+      && (record.archivedAt == null || typeof record.archivedAt === "string")
+      && (record.modifiedAt == null || typeof record.modifiedAt === "string"))) {
+    throw new Error("training_archive_index_invalid")
+  }
+  return {
+    schemaVersion: "ai-painter-generated-results-index-v1",
+    updatedAt: parsed.updatedAt,
+    results: parsed.results,
   }
 }
 
@@ -614,5 +629,5 @@ async function readJson<T>(file: string): Promise<T | null> {
 
 async function writeJson(file: string, value: unknown) {
   await mkdir(path.dirname(file), { recursive: true })
-  await writeFile(file, JSON.stringify(value, null, 2) + "\n", "utf8")
+  await writeJsonAtomic(file, value)
 }

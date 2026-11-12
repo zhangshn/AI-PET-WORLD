@@ -6,10 +6,10 @@ import * as io from './ai-painter-mvp256-dry-detail-weight-capture-package-chain
 import {directoryBytes,withOutputBudget,write as writeAccounted} from './ai-painter-decode1-entry-weight-output-accounting-v1.mjs';
 import {collectActualExecutionSources,requiredProgramRoles as queryProgramRoles} from './ai-painter-decode1-entry-weight-quality-source-closure-v1.mjs';
 import {CAPABILITY,MODEL_CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,OUTPUT_ROOT,SPECIFICATION,EXECUTION_POLICY,CANDIDATE,
- PROFILE,binding,deriveConfiguration,validate,validateModelIdentity,validateTerminal,validateCompleted,
+ binding,deriveConfiguration,validate,validateModelIdentity,validateTerminal,validateCompleted,
  LOSS,GRADIENT,INTEGRATION_POLICY,JOINT_LEARNING_RULE,PROGRESS_PUBLICATION_POLICY,executionRoute,gpuAdmissionSeconds,sourceFileCountMaximum,sourceCandidateBinding}
  from './ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
-import {COMPLETION_CAPABILITY,QUALIFICATION_CAPTURE_CAPABILITY,TRAINING_CAPTURE_CAPABILITY,TRAINING_CAPTURE_V2_CAPABILITY,TRAINING_CAPTURE_V3_CAPABILITY,TRAINING_CAPTURE_V4_CAPABILITY,TRAINING_CAPTURE_V5_CAPABILITY,TRAINING_CAPTURE_V6_CAPABILITY,TRAINING_CAPTURE_CAPABILITIES} from './ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
+import {QUALIFICATION_CAPTURE_CAPABILITY,TRAINING_CAPTURE_CAPABILITY,TRAINING_CAPTURE_V2_CAPABILITY,TRAINING_CAPTURE_V3_CAPABILITY,TRAINING_CAPTURE_V4_CAPABILITY,TRAINING_CAPTURE_V5_CAPABILITY,TRAINING_CAPTURE_V6_CAPABILITY,TRAINING_CAPTURE_CAPABILITIES} from './ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
 export {CAPABILITY,MODEL_CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,OUTPUT_ROOT,SPECIFICATION,EXECUTION_POLICY,CANDIDATE,deriveConfiguration,
  validateTerminal,validateCompleted,executionRoute,gpuAdmissionSeconds,sourceFileCountMaximum,sourceCandidateBinding};
 export const ADAPTER='scripts/run-ai-painter-decode1-entry-weight-quality-v1.mjs';
@@ -515,19 +515,7 @@ export function validatePreparationNamespace(bindingValue,request,expected){
  assert.equal(request.requestId,expected.runId);assert.deepEqual(request.candidateBinding,sourceCandidateBinding(request.capabilityVersion));
  assert.equal(request.executionPackage,null);assert.equal(request.automaticRetries,0);return request;
 }
-export async function finalizeCpuAcceptance({root,requestBinding,result}){
- const {hasLiveOwnedProof,hasLiveCpuFixtureCleanup,withNativeOrdinaryBudget}=await import('./ai-painter-decode1-entry-weight-quality-owned-native-v1.mjs');
- assert.ok(hasLiveOwnedProof(result.ownedReceipt),'same live CPU call required');assert.equal(result.ownedReceipt.proof?.exitCode,0);
- assert.equal(result.ownedReceipt.phase,'cpu');
- assert.ok(hasLiveCpuFixtureCleanup(result.ownedReceipt),'same retained CPU call must confirm all fixture links removed');
- const request=json(root,requestBinding),reportBinding=JSON.parse(result.stdout),raw=json(root,reportBinding);
- assert.equal(reportBinding.path,request.outputRoot+'/cpu-report.json');assert.deepEqual(raw.request,requestBinding);
- const plan={...request,outputRoot:request.outputRoot.replace(/\/cpu-entry$/u,'')};verifyCpuReport(raw,request,plan);
- assert.deepEqual(raw.initialModel,validateModelIdentity(json(root,raw.modelBinding)));
- return withNativeOrdinaryBudget(root,result.ownedReceipt,()=>write(root,plan.outputRoot+'/cpu-acceptance.json',{
-  schema:'object-support-structure-quality-final-cpu-acceptance-v1',status:'passed',programBindings:request.programBindings,
-  report:reportBinding,ownedReceipt:result.receiptBinding}));
-}
+
 export function preparePlan({root,requestBinding,finalCpuAcceptance}){
  const request=json(root,requestBinding),outputRoot=request.outputRoot.replace(/\/cpu-entry$/u,'');
  const acceptance=json(root,finalCpuAcceptance),raw=json(root,acceptance.report);

@@ -22,18 +22,16 @@ from ai_painter.complete_world.stem_weight_reduction_precision_v1 import StemWei
 from ai_painter.complete_world.stem_inner_weight_reduction_precision_v1 import StemInnerWeightReductionConv, NUMERIC_RULE as STEM_INNER_WEIGHT_RULE
 from ai_painter.complete_world.decode2_inner_weight_reduction_precision_v1 import Decode2InnerWeightReductionConv, NUMERIC_RULE as DECODE2_INNER_WEIGHT_RULE
 from ai_painter.complete_world.stage4_semantic_transport_v2 import FORMAL_CONDITION_CHANNEL_ORDER
+from ai_painter.complete_world.decode1_entry_capability_ids import CAPABILITY, DECODE2_CAPABILITY, RGB_OUTPUT_CAPABILITY
 
-CAPABILITY = "stage4_mvp256_dry_factorized_ecology_decode1_entry_weight_precision_v1"
 ARCHITECTURE = "fresh_detail_precision_four_heads_independent_season_ecology_decode1_terrain_detail_final_rgb_base_decode1_entry_weight_fp64_v1"
 NUMERIC_RULE = parent.NUMERIC_RULE + "|" + WEIGHT_RULE
 TARGET = "core.core.terrain.decode_1.layers.0"
 TARGET_INDEX = 48
 INITIALIZATION_SEED = 20260929
-DECODE2_CAPABILITY = "stage4_mvp256_dry_factorized_ecology_decode2_entry_weight_precision_v1"
 DECODE2_ARCHITECTURE = ARCHITECTURE + "_decode2_entry_weight_fp64_v1"
 DECODE2_RULE = NUMERIC_RULE + "|" + DECODE2_NUMERIC_RULE
 DECODE2_TARGET = "core.core.terrain.decode_2.layers.0"
-RGB_OUTPUT_CAPABILITY = "stage4_mvp256_dry_factorized_ecology_decode2_rgb_output_weight_precision_v1"
 RGB_OUTPUT_ARCHITECTURE = DECODE2_ARCHITECTURE + "_final_rgb_output_weight_fp64_v1"
 RGB_OUTPUT_RULE = DECODE2_RULE + "|" + OUTPUT_NUMERIC_RULE
 RGB_OUTPUT_TARGET = "core.core.final_rgb_decoder.base.layers.4"

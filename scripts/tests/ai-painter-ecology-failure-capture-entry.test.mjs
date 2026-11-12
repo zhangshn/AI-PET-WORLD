@@ -132,7 +132,6 @@ function fixtureWrite(root,logical,value){
  fs.mkdirSync(path.dirname(target),{recursive:true});const raw=Buffer.from(JSON.stringify(value)+'\n');fs.writeFileSync(target,raw);
  return {path:logical,sha256:actualSha(raw)};
 }
-function fixtureRead(root,logical){return JSON.parse(fs.readFileSync(path.resolve(root,logical),'utf8'));}
 function registryKeeperContext(){
  const component=process.env.T_Q4_112_COMPONENT_ROOT,owned=process.env.T_Q4_FAILURE_CAPTURE_CPU_OUTPUT_ROOT;
  assert.ok(component||owned,'current CPU keeper invocation required');assert.equal(Boolean(component&&owned),false);

@@ -5,7 +5,7 @@ import ts from 'typescript'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createRequire } from 'node:module'
-import { trainingTime } from './helpers/training-time-cpu.mjs'
+import { trainingTime, experimentTime } from './helpers/training-time-cpu.mjs'
 
 // Compile the actual pure component, without importing polling or CSS into Node.
 const source = readFileSync(new URL('../../src/app/ai-console/ai-console-training-history.tsx', import.meta.url), 'utf8')
@@ -20,7 +20,8 @@ assert.ok(imageStart >= 0 && imageEnd > imageStart)
 const imageFragment = `const useState = require('react').useState; const styles = {};\n${source.slice(source.indexOf('function formatOptimizerSteps('), start)}\n${source.slice(imageStart, imageEnd)}\nexport { EvidenceImage };`
 const imageCompiled = ts.transpileModule(imageFragment, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText
 const imageExports = {}
-new Function('require', 'exports', imageCompiled)(createRequire(import.meta.url), imageExports)
+new Function('require', 'exports', 'ImageExecutionTiming', imageCompiled)(
+  createRequire(import.meta.url), imageExports, experimentTime.ImageExecutionTiming)
 const statusStart = source.indexOf('function statusLabel('), statusEnd = source.indexOf('function reasonLabel(', statusStart)
 assert.ok(statusStart >= 0 && statusEnd > statusStart)
 const statusCompiled = ts.transpileModule(`${source.slice(statusStart, statusEnd)}\nexport { runStatusLabel }`, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
@@ -33,8 +34,9 @@ const timingNodes = timingAst.statements.filter(node => ts.isFunctionDeclaration
 assert.equal(timingNodes.length, 3)
 const timingExports = {}, timingCompiled = ts.transpileModule(timingNodes.map(node => node.getText(timingAst)).join('\n')
   + '\nexport { RunTiming };', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText
-new Function('require', 'exports', 'formatTrainingTime', 'mapWorkerTiming', timingCompiled)(createRequire(import.meta.url),
-  timingExports, trainingTime.formatTrainingTime, trainingTime.mapWorkerTiming)
+new Function('require', 'exports', 'formatTrainingTime', 'mapWorkerTiming', 'LegacyExperimentTiming', 'ControllerExecutionTiming', timingCompiled)(createRequire(import.meta.url),
+  timingExports, trainingTime.formatTrainingTime, trainingTime.mapWorkerTiming,
+  experimentTime.LegacyExperimentTiming, experimentTime.ControllerExecutionTiming)
 const renderTiming = (run, compact = false, stale = false) => renderToStaticMarkup(React.createElement(timingExports.RunTiming, { run, compact, stale }))
 function qualificationFailureTiming() {
   return { runId: 'synthetic-qualification-run', runKind: 'bounded_gpu_qualification', terminalStatus: 'failed_closed',
@@ -118,6 +120,7 @@ function renderHistorySteps(detailSteps, checkpointSteps, runFields = {}, artifa
   new Function('require', 'exports', pageCompiled)(name => {
     if (name === 'react') return { ...React, useState: () => React.useState(seeded[stateIndex++]) }
     if (name === './ai-console-training-time') return trainingTime
+    if (name === './ai-console-experiment-time') return experimentTime
     if (name.includes('history-poll')) return { startHistoryPolling() { throw new Error('SSR must not start polling') } }
     if (name.includes('training-summary')) return { AiConsoleTrainingSummary: () => null }
     if (name.endsWith('.css')) return { default: {} }

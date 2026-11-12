@@ -3,7 +3,7 @@ import type {
   ZiweiInterpretationItem,
   ZiweiPlacedStar
 } from "../contracts"
-import { SECTOR_LABELS } from "../page-view/labels"
+import { SECTOR_LABELS } from "../shared/chart-labels"
 import { getZiweiStarDefinition } from "../star-catalog"
 
 import { getZiweiSectorInterpretationProfile } from "./sector-profile-catalog"

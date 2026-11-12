@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 
 from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH, V0_MASK_CHANNELS, V1_CONDITION_CHANNELS
-from ai_painter.dataset.v1_review import validate_v1_review_record
+from ai_painter.blueprint.review_validation import validate_v1_review_record
 
 from .torch_runtime import require_torch
 

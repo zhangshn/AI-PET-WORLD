@@ -9,6 +9,7 @@ import {
 } from "../src/server/ai-painter-current-execution-registry.mjs";
 import { advanceCapabilityLifecycle } from "./lib/ai-painter-capability-lifecycle-v1.mjs";
 import {
+  FAILURE_ACTION,
   bindAbsolute,
   readBoundJson,
   readJsonObject,
@@ -22,7 +23,7 @@ import {
 import {
   persistStage4V2LifecyclePublication,
 } from "./lib/ai-painter-stage4-v2-lifecycle-publication-v1.mjs";
-import { FAILURE_ACTION } from "./run-ai-painter-stage4-v2-controlled-smoke.mjs";
+
 
 const OUTPUT_ROOT = ".runtime/ai-painter/stage4-v2-controlled-smoke-failure-adjudications";
 const isMain = process.argv[1]

@@ -1,14 +1,13 @@
 import {runtimeWorkingDirectory} from '../../../../../scripts/lib/runtime-working-directory.mjs'
-﻿import { execFile } from "node:child_process"
+import { readGpu } from "@/server/ai-painter-training-hardware"
 import { readFile, readdir, stat } from "node:fs/promises"
 import path from "node:path"
-import { promisify } from "node:util"
 import { NextRequest, NextResponse } from "next/server"
 import { readResourceUsageLedger } from "@/server/ai-painter-resource-usage"
 import { buildTrainingQualityGateReport } from "@/server/ai-painter-training-quality-gate"
 import {
   readTrainingControlState,
-  readTrainingLogTail,
+  readTrainingLogObservation,
   readTrainingProcessLedger,
   readTrainingRuntimeStatus,
 } from "@/server/ai-painter-training-state"
@@ -17,7 +16,6 @@ import { buildVisualUnitV0Status } from "@/world/world-visual-painter"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-const execFileAsync = promisify(execFile)
 const aiPainterRuntimeRoot = path.join(/* turbopackIgnore: true */ runtimeWorkingDirectory(), ".runtime", "ai-painter")
 const bootstrapTrainingDir = path.join(aiPainterRuntimeRoot, "bootstrap-training")
 const snapshotCacheTtlMs = 3_000
@@ -60,12 +58,11 @@ async function buildLightweightTrainingProgressSummary(): Promise<TrainingProgre
     readLatestTrainingRunArchive(),
     readTrainingProcessLedger(),
   ])
-  const childProcessAlive = isProcessAlive(control.childPid ?? runtimeStatus.heartbeat?.childPid)
   return {
     updatedAt: new Date().toISOString(),
     system,
     runtimeStatus,
-    control: buildLiveControlState(control, system, runtimeStatus, childProcessAlive),
+    control: buildLiveControlState(control, runtimeStatus),
     gameMapRuntimeFrame,
     trainingRunArchive,
     trainingProcessLedger: {
@@ -431,8 +428,8 @@ async function buildTrainingProgressSnapshot(): Promise<TrainingProgressSnapshot
   const trainingRunArchive = await readLatestTrainingRunArchive()
   const system = await readGpuInfo()
   const runtimeStatus = await readTrainingRuntimeStatus()
-  const childProcessAlive = isProcessAlive(control.childPid ?? runtimeStatus.heartbeat?.childPid)
-  const liveControl = buildLiveControlState(control, system, runtimeStatus, childProcessAlive)
+  const liveControl = buildLiveControlState(control, runtimeStatus)
+  const { lines: logs, ...logObservation } = await readTrainingLogObservation()
 
   return {
     updatedAt: new Date().toISOString(),
@@ -726,9 +723,10 @@ async function buildTrainingProgressSnapshot(): Promise<TrainingProgressSnapshot
     trainingProcessLedger: await readTrainingProcessLedger(),
     gameMapRuntimeFrame,
     trainingRunArchive,
-    logs: await readTrainingLogTail(),
+    logs,
+    logObservation,
     training: {
-      status: liveControl.status === "running" ? "running" : summary?.status === "completed" ? "completed" : "not_started",
+      status: liveControl.status === "idle" ? (summary?.status === "completed" ? "completed" : "not_started") : liveControl.status,
       epoch,
       targetEpochs: 120,
       percent: Math.min(100, Math.round((epoch / 120) * 100)),
@@ -741,183 +739,61 @@ async function buildTrainingProgressSnapshot(): Promise<TrainingProgressSnapshot
 }
 
 async function readGpuInfo() {
-  try {
-    const { stdout } = await execFileAsync("nvidia-smi", [
-      "--query-gpu=name,memory.total,memory.used,utilization.gpu,temperature.gpu,driver_version",
-      "--format=csv,noheader,nounits",
-    ], { windowsHide: true, timeout: 5000 })
-    const [name, memoryTotal, memoryUsed, utilization, temperature, driver] = stdout.trim().split(",").map((value) => value.trim())
-    const computeProcesses = await readGpuComputeProcesses()
-    const utilizationPercent = Number(utilization)
-    const memoryUsedMiB = Number(memoryUsed)
-    return {
-      gpuAvailable: true,
-      name,
-      memoryTotalMiB: Number(memoryTotal),
-      memoryUsedMiB,
-      utilizationPercent,
-      temperatureCelsius: Number(temperature),
-      driver,
-      computeProcesses,
-      activeComputeProcessCount: computeProcesses.length,
-      gpuBusy: utilizationPercent >= 20 || computeProcesses.length > 0,
-    }
-  } catch {
-    return {
-      gpuAvailable: false,
-      name: "未检测到 NVIDIA GPU",
-      memoryTotalMiB: 0,
-      memoryUsedMiB: 0,
-      utilizationPercent: 0,
-      temperatureCelsius: 0,
-      driver: "--",
-      computeProcesses: [],
-      activeComputeProcessCount: 0,
-      gpuBusy: false,
-    }
-  }
-}
-
-async function readGpuComputeProcesses() {
-  try {
-    const { stdout } = await execFileAsync("nvidia-smi", [
-      "--query-compute-apps=pid,process_name,used_memory",
-      "--format=csv,noheader,nounits",
-    ], { windowsHide: true, timeout: 5000 })
-    return stdout
-      .trim()
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((line) => {
-        const [pid, processName, usedMemoryMiB] = line.split(",").map((value) => value.trim())
-        const usedMemory = Number(usedMemoryMiB)
-        return {
-          pid: Number(pid),
-          processName,
-          usedMemoryMiB: Number.isFinite(usedMemory) ? usedMemory : null,
-        }
-      })
-      .filter((process) => {
-        if (!Number.isInteger(process.pid) || process.processName.length === 0) return false
-        return (
-          process.usedMemoryMiB !== null ||
-          /python|node|torch|cuda|ai-painter/i.test(process.processName)
-        )
-      })
-  } catch {
-    return []
-  }
+  const { available: gpuAvailable, ...gpu } = await readGpu({ includeProcessDetails: true })
+  const busyByUtilization = gpu.utilizationPercent === null ? null : gpu.utilizationPercent >= 20
+  const busyByProcesses = gpu.activeComputeProcessCount === null ? null : gpu.activeComputeProcessCount > 0
+  const gpuBusy = busyByUtilization === true || busyByProcesses === true
+    ? true
+    : busyByUtilization === false && busyByProcesses === false ? false : null
+  return { ...gpu, gpuAvailable, gpuBusy }
 }
 
 function buildLiveControlState(
   control: Awaited<ReturnType<typeof readTrainingControlState>>,
-  system: Awaited<ReturnType<typeof readGpuInfo>>,
   runtimeStatus: Awaited<ReturnType<typeof readTrainingRuntimeStatus>>,
-  childProcessAlive: boolean,
 ) {
-  if (runtimeStatus.statusSource === "corrupted_runtime_heartbeat") {
-    return {
-      ...control,
-      status: "blocked" as const,
-      currentStep: "训练心跳损坏，需要本地恢复；禁止把运行状态降级为空闲",
-      liveDetected: false,
-      statusSource: "corrupted_runtime_heartbeat",
-      controlFileStatus: control.status,
-      runtimeStatus,
-    }
-  }
-  if (runtimeStatus.heartbeat && !runtimeStatus.stale && runtimeStatus.status !== "completed_round") {
-    return {
-      ...control,
-      status: runtimeStatusIsActive(runtimeStatus.status) ? "running" as const : runtimeStatus.status,
-      currentStep:
-        runtimeStatus.heartbeat.activeStep ??
-        runtimeStatus.heartbeat.activeScript ??
-        labelRuntimeHeartbeatStatus(runtimeStatus.status),
-      liveDetected: true,
-      statusSource: "runtime_heartbeat",
-      controlFileStatus: control.status,
-      runtimeStatus,
-    }
-  }
-
-  const computeProcesses = system.computeProcesses ?? []
-  const hasLocalTrainingProcess = computeProcesses.some((process) =>
-    /python|node|torch|cuda|ai-painter/i.test(process.processName),
-  )
-  const highGpuLoad = system.gpuAvailable && system.utilizationPercent >= 20
-
-  if (control.status === "running" && childProcessAlive) {
-    return {
-      ...control,
-      liveDetected: true,
-      statusSource: "child_process",
-      controlFileStatus: control.status,
-      runtimeStatus,
-    }
-  }
-
-  if (control.status === "running" && (hasLocalTrainingProcess || highGpuLoad)) {
-    return {
-      ...control,
-      liveDetected: true,
-      statusSource: "training_control",
-      runtimeStatus,
-    }
-  }
-
-  if (control.status === "running") {
-    return {
-      ...control,
-      status: "idle" as const,
-      currentStep: control.currentStep ? `已忽略过期运行状态：${control.currentStep}` : "已忽略过期运行状态",
-      liveDetected: false,
-      statusSource: "stale_training_control",
-      controlFileStatus: control.status,
-      runtimeStatus,
-    }
-  }
-
-  if (hasLocalTrainingProcess || highGpuLoad) {
-    const processLabel =
-      computeProcesses.length > 0
-        ? computeProcesses
-            .slice(0, 2)
-            .map((process) => {
-              const memory = process.usedMemoryMiB === null ? "memory_unknown" : `${process.usedMemoryMiB}MiB`
-              return `${path.basename(process.processName)}:${memory}`
-            })
-            .join(" / ")
-        : `GPU ${system.utilizationPercent}%`
-    return {
-      ...control,
-      status: "running" as const,
-      currentStep: hasLocalTrainingProcess
-        ? `检测到 GPU 训练/推理进程：${processLabel}`
-        : `GPU 高负载，控制状态未登记：${processLabel}`,
-      liveDetected: true,
-      statusSource: hasLocalTrainingProcess ? "gpu_compute_process" : "gpu_utilization",
-      controlFileStatus: control.status,
-      runtimeStatus,
-    }
-  }
-
-  return {
+  const observed = {
     ...control,
     liveDetected: false,
-    statusSource: runtimeStatus.stale ? "stale_runtime_heartbeat" : "training_control",
+    controlFileStatus: control.status,
     runtimeStatus,
   }
-}
-
-function isProcessAlive(pid: number | null | undefined) {
-  if (!pid || !Number.isInteger(pid) || pid <= 0) return false
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch {
-    return false
+  if (control.status === "corrupted_state" || control.status === "recovery_required") {
+    return { ...observed, status: "blocked" as const, statusSource: control.status }
   }
+  if (control.status === "completed" || control.status === "failed") {
+    return { ...observed, statusSource: "training_control" }
+  }
+  if (runtimeStatus.statusSource === "corrupted_runtime_heartbeat" || runtimeStatus.statusSource === "future_runtime_heartbeat") {
+    return { ...observed, status: "blocked" as const, statusSource: runtimeStatus.statusSource }
+  }
+  if (control.status === "running") {
+    const heartbeat = runtimeStatus.heartbeat
+    const startedAt = Date.parse(control.startedAt ?? "")
+    const heartbeatAt = Date.parse(heartbeat?.timestampUtc ?? "")
+    const matched = heartbeat !== null && !runtimeStatus.stale &&
+      Boolean(control.action) && heartbeat.activeAction === control.action &&
+      Number.isInteger(control.controllerPid) && (control.controllerPid ?? 0) > 0 &&
+      heartbeat.controllerPid === control.controllerPid &&
+      (control.childPid == null || heartbeat.childPid === control.childPid) &&
+      Number.isFinite(startedAt) && Number.isFinite(heartbeatAt) && heartbeatAt >= startedAt
+    if (matched && runtimeStatus.status !== "completed_round" && runtimeStatus.status !== "idle") {
+      return {
+        ...observed,
+        status: runtimeStatusIsActive(runtimeStatus.status) ? "running" as const : runtimeStatus.status,
+        currentStep: heartbeat.activeStep ?? heartbeat.activeScript ?? labelRuntimeHeartbeatStatus(runtimeStatus.status),
+        liveDetected: true,
+        statusSource: "runtime_heartbeat",
+      }
+    }
+    return {
+      ...observed,
+      status: "unknown" as const,
+      currentStep: "登记为运行中，但缺少同次运行的有效心跳；当前状态未确认",
+      statusSource: "unverified_training_control",
+    }
+  }
+  return { ...observed, statusSource: "training_control" }
 }
 
 function runtimeStatusIsActive(status: Awaited<ReturnType<typeof readTrainingRuntimeStatus>>["status"]) {

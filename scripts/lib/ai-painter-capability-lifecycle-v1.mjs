@@ -40,12 +40,19 @@ export function createCapabilityCandidate(spec, { root = process.cwd(), recorded
   fs.mkdirSync(path.join(candidateRoot, "evidence"), { recursive: false });
   const sqlitePath = path.join(candidateRoot, "lifecycle.sqlite");
   const db = openDb(sqlitePath);
+  let transactionFailed = false;
   try {
     db.exec("BEGIN IMMEDIATE");
     db.prepare("INSERT INTO capabilities(capability_version, state, change_class, created_at_utc, updated_at_utc, owner_response_required) VALUES (?, 'change_candidate', ?, ?, ?, 0)").run(spec.capabilityVersion, spec.changeClass, recordedAtUtc, recordedAtUtc);
     db.prepare("INSERT INTO lifecycle_transitions(capability_version, sequence, from_state, to_state, recorded_at_utc, evidence_sha256) VALUES (?, 0, NULL, 'change_candidate', ?, NULL)").run(spec.capabilityVersion, recordedAtUtc);
     db.exec("COMMIT");
-  } catch (error) { db.exec("ROLLBACK"); throw error; } finally { db.close(); }
+  } catch (error) {
+    transactionFailed = true;
+    try { db.exec("ROLLBACK"); } catch { /* Preserve the first transaction failure. */ }
+    throw error;
+  } finally {
+    try { db.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+  }
   const state = stateOf(spec, "change_candidate", 0, recordedAtUtc, null);
   writeAtomic(path.join(candidateRoot, "state.json"), state);
   writeAtomic(path.join(candidateRoot, "candidate.json"), spec);
@@ -237,6 +244,7 @@ function reconcileLifecycleDatabase({
   isSameStateEvidenceRefresh,
 }) {
   const db = openDb(sqlitePath);
+  let transactionFailed = false;
   let transactionOpen = false;
   try {
     db.exec("BEGIN IMMEDIATE");
@@ -333,10 +341,11 @@ function reconcileLifecycleDatabase({
     transactionOpen = false;
     return committed;
   } catch (error) {
-    if (transactionOpen) db.exec("ROLLBACK");
+    transactionFailed = true;
+    try { if (transactionOpen) db.exec("ROLLBACK"); } catch { /* Preserve the first transaction failure. */ }
     throw error;
   } finally {
-    db.close();
+    try { db.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
   }
 }
 
@@ -435,10 +444,15 @@ function verifyBinding(root, binding) {
 
 function openDb(sqlitePath) {
   const db = new DatabaseSync(sqlitePath);
-  db.exec(`PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
+  try {
+    db.exec(`PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
     CREATE TABLE IF NOT EXISTS capabilities(capability_version TEXT PRIMARY KEY, state TEXT NOT NULL, change_class TEXT NOT NULL, created_at_utc TEXT NOT NULL, updated_at_utc TEXT NOT NULL, owner_response_required INTEGER NOT NULL CHECK(owner_response_required = 0));
     CREATE TABLE IF NOT EXISTS lifecycle_transitions(capability_version TEXT NOT NULL, sequence INTEGER NOT NULL, from_state TEXT, to_state TEXT NOT NULL, recorded_at_utc TEXT NOT NULL, evidence_sha256 TEXT, PRIMARY KEY(capability_version, sequence));`);
-  return db;
+    return db;
+  } catch (error) {
+    try { db.close() } catch { /* Preserve the initialization failure. */ }
+    throw error
+  }
 }
 function stateOf(spec, state, sequence, updatedAtUtc, latestEvidence) { return { schemaVersion: "ai-painter-capability-lifecycle-state-v1", capabilityVersion: spec.capabilityVersion, changeClass: spec.changeClass, state, sequence, latestEvidence, releaseIdentity: null, ownerAuthorizationRequired: false, ownerResponseRequired: false, updatedAtUtc }; }
 function appendEvent(root, state, recordedAtUtc) { fs.appendFileSync(path.join(root, "event-ledger.jsonl"), `${JSON.stringify({ schemaVersion: "ai-painter-capability-lifecycle-event-v1", capabilityVersion: state.capabilityVersion, sequence: state.sequence, state: state.state, evidenceSha256: state.latestEvidence?.sha256 ?? null, ownerResponseRequired: false, recordedAtUtc })}\n`); }

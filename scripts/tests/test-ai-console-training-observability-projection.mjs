@@ -14,8 +14,8 @@ function compile(relative, dependencies = {}) {
   return exports
 }
 // The shared mapper has no runtime imports, including no React or server probes.
-const time = compile('../../src/app/ai-console/ai-console-training-time.ts')
-const model = compile('../../src/app/ai-console/ai-console-training-summary-model.ts', { './ai-console-training-time': time })
+const time = compile('../../src/shared/ai-console/ai-console-training-time.ts')
+const model = compile('../../src/shared/ai-console/ai-console-training-summary-model.ts', { './ai-console-training-time': time })
 const contract = compile('../../src/server/ai-console/projection-contract.ts')
 function fixture(bound = true) {
   const now = Date.now(), time = new Date(now).toISOString()
@@ -52,7 +52,7 @@ function fixture(bound = true) {
     '../ai-console-observability/local-observability': { sampleAiConsoleLiveObservability: async () => snapshot },
     './projection-contract': contract,
     './ai-painter-current-execution-projection': { readAiPainterCurrentExecutionSnapshot: async () => current },
-    '../../app/ai-console/ai-console-training-summary-model': model,
+    '../../shared/ai-console/ai-console-training-summary-model': model,
   })
   return { now, time, current, snapshot, query }
 }

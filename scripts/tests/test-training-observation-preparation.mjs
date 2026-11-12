@@ -6,7 +6,7 @@ import {observationFixture} from './helpers/training-observation-fixture.mjs'
 import {readBoundTrainingPresentation} from '../../src/server/ai-console/bound-training-presentation.mjs'
 import {trainingTime} from './helpers/training-time-cpu.mjs'
 
-const source=fs.readFileSync(new URL('../../src/app/ai-console/ai-console-training-summary-model.ts',import.meta.url),'utf8')
+const source=fs.readFileSync(new URL('../../src/shared/ai-console/ai-console-training-summary-model.ts',import.meta.url),'utf8')
 const model={}
 new Function('require','exports',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(
   name=>{assert.equal(name,'./ai-console-training-time');return trainingTime},model)

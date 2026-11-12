@@ -60,8 +60,11 @@ function main() {
   const materialPassed = manifest.quality?.materialPassed === true
   const formalPassed = manifest.quality?.formalVisualJudgePassed === true
   const failedMaterialArchive = manifest.status === "archived_existing_failed_material_quality"
+  if (failedMaterialArchive) {
+    check(manifest.quality?.materialPassed === false, "failed material status contradicts materialPassed")
+  }
   const materialQualityFailed = failedMaterialArchive && manifest.quality?.materialPassed === false
-  const failedFormalArchive = !materialQualityFailed && formalPassed === false
+  const failedFormalArchive = !materialQualityFailed && manifest.quality?.formalVisualJudgePassed === false
   const failedArchive = failedMaterialArchive || failedFormalArchive
   if (failedArchive) {
     if (materialQualityFailed) {
@@ -111,8 +114,9 @@ function main() {
   if (materialQualityFailed) {
     check(manifest.quality?.materialPassed === false, "failed material archive must keep materialPassed=false")
   } else {
-    check(manifest.quality?.materialPassed === true, "材料质量必须记录为通过")
-    check(manifest.quality?.formalVisualJudgePassed === true, "Formal VisualJudge 必须记录为通过")
+    check(materialPassed, "材料质量必须记录为通过")
+    // This checks the preserved archive, including failures; it grants no visual qualification.
+    check(formalPassed || failedFormalArchive, "Formal VisualJudge 必须记录明确的通过或失败结果")
   }
   check(manifest.manualReview?.required === true, "必须记录需要项目所有者人工复核")
   check(manifest.manualReview?.status === "pending_owner_review", "人工复核状态必须是 pending_owner_review")
@@ -166,6 +170,12 @@ function finish(manifest) {
         manifestPath,
         runId: manifest.runId,
         action: manifest.action,
+        formalQualificationGranted: false,
+        verificationScope: "legacy_archive_structure_and_references_not_visual_qualification",
+        recordedQuality: {
+          materialPassed: manifest.quality?.materialPassed ?? null,
+          formalVisualJudgePassed: manifest.quality?.formalVisualJudgePassed ?? null,
+        },
         materialFiles: countFiles(manifest.inference?.archivedMaterialDir),
         manualReview: manifest.manualReview,
       },

@@ -1897,8 +1897,8 @@ function validateControlledStructureSmokeAuthorization(authorizationPath, author
   const compilationTerminal = readJsonRequired(authorization.bindings.contractCompilationTerminal.path)
   const gpuTerminal = readJsonRequired(authorization.bindings.readonlyGpuTerminal.path)
   const gpuReport = readJsonRequired(authorization.bindings.readonlyGpuDiagnostic.path)
-  const cudaTelemetry = readJsonRequired(authorization.bindings.cudaTelemetry.path)
-  const gradientEvidence = readJsonRequired(authorization.bindings.conditionGradientEvidence.path)
+  readJsonRequired(authorization.bindings.cudaTelemetry.path);
+  readJsonRequired(authorization.bindings.conditionGradientEvidence.path);
   const cpuSupport = readJsonRequired(authorization.bindings.readonlyCpuReport.path)
   const inactiveConfig = readJsonRequired(authorization.bindings.inactiveConfig.path)
   const sourceInactiveConfig = readJsonRequired(authorization.bindings.sourceInactiveConfig.path)

@@ -180,7 +180,7 @@ test('per-source byte limit stays explicit without dropping verified package ide
   assert.equal(detail.record.metrics.length, 0); assert.equal(detail.dataStatus, 'partial')
 })
 test('dry adapter has no filesystem, process, directory discovery or write dependency', () => {
-  const source = readFileSync(new URL('../../src/server/ai-console/training-history-detail-adapters.mjs', import.meta.url), 'utf8')
+  const source = readFileSync(new URL('../../src/server/ai-console/training-history-dry-lifecycle.mjs', import.meta.url), 'utf8')
   assert.doesNotMatch(source, /^import\s/m)
   assert.doesNotMatch(source, /(?:readdir|writeFile|mkdir|execFile|spawn|DatabaseSync)\s*\(/)
 })

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import crypto from "node:crypto";
+import "node:crypto"
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -10,12 +10,7 @@ import {
   sha256File,
   validateReadonlyGpuQualificationInputs,
 } from "./lib/ai-painter-stage4-post-decode-full-condition-responsibility-readonly-gpu-v1.mjs";
-import {
-  appendAiPainterProgramEvent,
-  formatShanghai,
-  projectPath,
-  writeJsonAtomic,
-} from "./lib/ai-painter-program-event-store.mjs";
+import { appendAiPainterProgramEvent, formatShanghai, projectPath } from "./lib/ai-painter-program-event-store.mjs"
 
 const root = process.cwd();
 const runtimeRoot = path.join(root, ".runtime", "ai-painter", "stage4-post-decode-full-condition-responsibility-readonly-gpu");

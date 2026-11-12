@@ -12,7 +12,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { types } from "node:util";
 import { createRequire } from "node:module";
-import { WEATHER_RELEASE_PATH, WEATHER_VERSION, FIRST_WEATHER_VERSION, FIRST_WEATHER_RELEASE_PATH, requireWeatherProductionAdmission } from "./world-weather-release-policy.mjs";
+import { WEATHER_RELEASE_PATH, WEATHER_VERSION, FIRST_WEATHER_VERSION, FIRST_WEATHER_RELEASE_PATH, requireWeatherProductionAdmission } from "./world-weather-release-policy-reader.mjs";
 
 export const RUNTIME_AUTONOMY_CONTRACT_ID = "ai-painter-capability-runtime-autonomy-contract-v3";
 
@@ -607,6 +607,7 @@ export function applyRuntimeStateTransition(ticket, executionState, {
   invariant(ticketLedgerPath.startsWith(".runtime/ai-painter/"), "ticket ledger must be in the AI Painter runtime namespace");
   fs.mkdirSync(path.dirname(ledgerAbsolutePath), { recursive: true });
   const db = new DatabaseSync(ledgerAbsolutePath);
+  let persistenceFailed = false;
   try {
     db.exec(`
       PRAGMA busy_timeout=5000;
@@ -652,13 +653,23 @@ export function applyRuntimeStateTransition(ticket, executionState, {
       );
       db.exec("COMMIT");
     } catch (error) {
-      db.exec("ROLLBACK");
-      throw new Error(`ticket replay or output reuse rejected: ${error.message}`);
+      try { db.exec("ROLLBACK"); } catch { /* Preserve the original storage failure. */ }
+      // SQLite extended constraint codes: PRIMARYKEY and UNIQUE. Busy, IO and
+      // other constraint failures do not establish that a ticket was replayed.
+      if (error?.code === "ERR_SQLITE_ERROR" && [1555, 2067].includes(error.errcode)) {
+        throw new Error(`ticket replay or output reuse rejected: ${error.message}`, { cause: error });
+      }
+      throw error;
     }
     executionState.currentState = ticket.targetState;
     return Object.freeze({ ...consumption, resultingState: executionState.currentState, ticketLedgerPath });
+  } catch (error) {
+    persistenceFailed = true;
+    throw error;
   } finally {
-    db.close();
+    try { db.close(); } catch (closeError) {
+      if (!persistenceFailed) throw closeError;
+    }
   }
 }
 

@@ -13,15 +13,15 @@ import stat
 from pathlib import Path
 
 import json
-import torch
 from ai_painter.complete_world import ecology_terrain_detail_weight_checkpoint_v1 as tools
 from ai_painter.complete_world import object_support_structure_checkpoint_v1 as template
-from ai_painter.complete_world import detail_weight_checkpoint_codec as strict
-from ai_painter.complete_world import object_ecology_decode1_entry_weight_precision_v1 as identity
-from ai_painter.complete_world.native_rgb_conditional_texture_cpu import build_conditional_texture_discriminator
+from ai_painter.complete_world.decode1_entry_capability_ids import (
+    CAPABILITY as MODEL_CAPABILITY,
+    DECODE2_CAPABILITY as _DECODE2_MODEL_CAPABILITY,
+    RGB_OUTPUT_CAPABILITY as _RGB_OUTPUT_MODEL_CAPABILITY,
+)
 
 CAPABILITY = "stage4_mvp256_dry_decode1_entry_weight_quality24_v1"
-MODEL_CAPABILITY = identity.CAPABILITY
 SCHEMA = "decode1-entry-weight-quality-checkpoint-v1"
 CONFIGURATION_SCHEMA = "object-support-structure-quality-configuration-v1"
 EXECUTION_QUALIFIED = False
@@ -70,7 +70,34 @@ exact_binding, configuration_digest, require = tools.exact_binding, tools.config
 _same_json = tools._same_json
 
 
+_COMPONENT_NAMES = frozenset(("torch", "strict", "identity", "build_conditional_texture_discriminator"))
+
+
+def _ensure_components():
+    if _COMPONENT_NAMES.issubset(globals()):
+        return
+    import torch as loaded_torch
+    from ai_painter.complete_world import detail_weight_checkpoint_codec as loaded_strict
+    from ai_painter.complete_world import object_ecology_decode1_entry_weight_precision_v1 as loaded_identity
+    from ai_painter.complete_world.native_rgb_conditional_texture_cpu import build_conditional_texture_discriminator as loaded_builder
+    globals().update(torch=loaded_torch, strict=loaded_strict, identity=loaded_identity,
+                     build_conditional_texture_discriminator=loaded_builder)
+
+
+def __getattr__(name):
+    # Preserve the existing component attributes for callers that explicitly use them.
+    if name in _COMPONENT_NAMES:
+        _ensure_components()
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(set(globals()) | _COMPONENT_NAMES)
+
+
 def components(capability_version=CAPABILITY):
+    _ensure_components()
     if capability_version in (RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY, QUALIFICATION_CAPTURE_CAPABILITY, *TRAINING_CAPTURE_CAPABILITIES):
         return (torch, strict, identity.validate_model_identity, identity.RGB_OUTPUT_ARCHITECTURE, identity.RGB_OUTPUT_RULE)
     decode2 = capability_version == DECODE2_SUPPORT_WEIGHT1_CAPABILITY
@@ -81,8 +108,8 @@ def components(capability_version=CAPABILITY):
 
 def model_capability(capability_version=CAPABILITY):
     if capability_version in (RGB_OUTPUT_SUPPORT_WEIGHT1_CAPABILITY, QUALIFICATION_CAPTURE_CAPABILITY, *TRAINING_CAPTURE_CAPABILITIES):
-        return identity.RGB_OUTPUT_CAPABILITY
-    return identity.DECODE2_CAPABILITY if capability_version == DECODE2_SUPPORT_WEIGHT1_CAPABILITY else MODEL_CAPABILITY
+        return _RGB_OUTPUT_MODEL_CAPABILITY
+    return _DECODE2_MODEL_CAPABILITY if capability_version == DECODE2_SUPPORT_WEIGHT1_CAPABILITY else MODEL_CAPABILITY
 
 
 def _source_configuration():
@@ -290,6 +317,7 @@ def validate_execution_policy(policy, configuration):
 
 
 def _references(model,critic):
+    _ensure_components()
     identity.validate_model_identity(model)
     with torch.device("cpu"),torch.random.fork_rng(devices=[]):
         factory = (identity.build_fresh_object_ecology_decode2_output_weight_precision
@@ -309,11 +337,13 @@ def _references(model,critic):
 
 
 def _state(state,reference,label):
+    _ensure_components()
     require(all(type(v) is torch.Tensor and v.is_contiguous() for v in state.values()),label+" contiguous state required")
     return strict._state(state,reference,label)
 
 
 def _restore_installation(network,snapshot):
+    _ensure_components()
     for module,children,parameters,buffers,training in snapshot["modules"]:
         module._modules,module._parameters,module._buffers,module.training=children,parameters,buffers,training
     with torch.no_grad():
@@ -429,3 +459,6 @@ def reload(raw, *, model, critic, configuration, run_id, package_binding, datase
         raise
     return {"modelStateLoaded": True, "automaticResumeAllowed": False, "checkpointQualified": False,
         "capabilityVersion": configuration["capabilityVersion"]}
+
+
+__all__ = sorted({name for name in globals() if not name.startswith("_")} | _COMPONENT_NAMES)

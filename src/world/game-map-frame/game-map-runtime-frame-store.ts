@@ -1,3 +1,4 @@
+import { sameSourceFactIds as sameStringSet } from "../runtime-core/source-fact-identity"
 import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 import { mkdir, readFile, open, rename, rm, lstat } from "node:fs/promises"
 import { createHash, randomUUID } from "node:crypto"
@@ -541,12 +542,6 @@ function readErrorCode(error: unknown): string | null {
     return typeof code === "string" ? code : null
   }
   return null
-}
-
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
 }
 
 function safeTimestamp(value: string): string {

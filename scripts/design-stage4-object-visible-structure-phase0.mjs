@@ -3,15 +3,7 @@ import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
-import {
-  AUTHORIZATION_SHA256,
-  CONSUMPTION_SHA256,
-  FORBIDDEN_ACTIONS,
-  REQUEST_ID,
-  buildInactivePhase0Design,
-  validateAuthorizationAndConsumption,
-  validatePhase0DesignSource,
-} from "./lib/ai-painter-stage4-object-visible-structure-phase0-design.mjs"
+import { AUTHORIZATION_SHA256, CONSUMPTION_SHA256, FORBIDDEN_ACTIONS, buildInactivePhase0Design, validateAuthorizationAndConsumption, validatePhase0DesignSource } from "./lib/ai-painter-stage4-object-visible-structure-phase0-design.mjs"
 import { appendAiPainterProgramEvent, formatShanghai, writeJsonAtomic } from "./lib/ai-painter-program-event-store.mjs"
 import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
 import { logicalProjectPath } from "./lib/ai-pet-world-storage.mjs"

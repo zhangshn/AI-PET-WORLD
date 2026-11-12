@@ -3,7 +3,7 @@ import type {
   ZiweiStarDefinition,
   ZiweiStarId
 } from "../contracts"
-import { STAR_CATEGORY_LABELS } from "../page-view/labels"
+import { STAR_CATEGORY_LABELS } from "../shared/chart-labels"
 import { getZiweiStarDefinition, ziweiStarCatalog } from "../star-catalog"
 
 import { getStarCategoryInterpretationProfile } from "./star-keywords"

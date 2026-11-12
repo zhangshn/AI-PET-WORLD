@@ -1,5 +1,2 @@
-process.env.AI_PAINTER_ROUTE_COUNTERFACTUAL_FIXED_40 = "1"
-
-await import(
-  "./run-ai-painter-stage4-route-counterfactual-compositor-controlled-smoke.mjs"
-)
+// Retired entrypoint. Original bytes are available only to SHA-verified historical audit.
+throw Object.assign(new Error("Retired entrypoint; execution denied: run:ai-painter-stage4-route-counterfactual-fixed40"), {code: 'ERR_RETIRED_ENTRYPOINT'});

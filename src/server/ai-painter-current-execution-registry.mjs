@@ -282,9 +282,12 @@ export async function initializeCurrentExecutionRegistry({
   await mkdir(registryRoot, { recursive: true })
   const databasePath = path.join(registryRoot, "registry.sqlite")
   const database = new DatabaseSync(databasePath)
-  initializeDatabase(database)
-  database.exec("BEGIN IMMEDIATE")
+  let transactionFailed = false;
+  
+  
   try {
+    initializeDatabase(database)
+    database.exec("BEGIN IMMEDIATE")
     const row = database.prepare("SELECT MAX(registry_revision) AS revision FROM registry_revisions").get()
     requireValue(row?.revision === null || row?.revision === undefined, "registry_database_not_empty")
     await appendDurableLine(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/events.jsonl`, event)
@@ -311,10 +314,11 @@ export async function initializeCurrentExecutionRegistry({
     `).run(registryRevision, eventSequence, transactionId, currentSha256, current.taskId, current.runId, recordedAtUtc)
     database.exec("COMMIT")
   } catch (error) {
-    database.exec("ROLLBACK")
-    throw error
+    transactionFailed = true;
+    try { database.exec("ROLLBACK") } catch { /* Preserve the first transaction failure. */ }
+    throw error;
   } finally {
-    database.close()
+    try { database.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
   }
 
   return readCurrentExecutionRegistry(projectRoot)
@@ -652,7 +656,7 @@ export async function recoverExpiredActiveExecutionToFailedClosed({
     recoveryContext.historicalSources = await verifyHistoricalSources(projectRoot, current.value, current.sha256, historicalSourceManifest, deadlineUnixMs)
   }
   if (kernelInterruptionProfile !== null) {
-    const recovery = await import('../../scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs')
+    const recovery = await import('../../scripts/lib/ai-painter-owned-worker-recovery-input.mjs')
     const recheck = () => {
       const bound = recovery.loadRecoveryProfile(projectRoot, kernelInterruptionProfile.path, kernelInterruptionProfile.sha256)
       requireValue(recovery.isKernelInterruptionProfile(bound.profile), 'registry_kernel_interruption_profile_invalid')
@@ -707,7 +711,7 @@ export async function recoverExpiredActiveExecutionToFailedClosed({
   )
   if (kernelInterruptionProfile !== null) {
     const proof = recoveryContext.kernelInterruption.recheck()
-    const recovery = await import('../../scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs')
+    const recovery = await import('../../scripts/lib/ai-painter-owned-worker-recovery-input.mjs')
     const expectedTerminal = recovery.kernelInterruptionTerminalIdentity(proof.bound.profile)
     requireValue(terminal.value.schemaVersion === expectedTerminal.schemaVersion
       && terminal.value.status === expectedTerminal.status
@@ -1190,9 +1194,11 @@ function stagedCurrentValueForDatabase(current) {
 
 function ensurePreparedDatabaseRows(projectRoot, pending, current, testHooks = null) {
   const database = new DatabaseSync(resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/registry.sqlite`))
-  initializeDatabase(database)
+  let transactionFailed = false;
+  
   let transactionStarted = false
   try {
+    initializeDatabase(database)
     invokeTransactionHook(testHooks, "before_prepare_database_begin", {
       transactionId: pending.transactionId,
     })
@@ -1254,10 +1260,11 @@ function ensurePreparedDatabaseRows(projectRoot, pending, current, testHooks = n
     database.exec("COMMIT")
     transactionStarted = false
   } catch (error) {
-    if (transactionStarted) database.exec("ROLLBACK")
-    throw error
+    transactionFailed = true;
+    try { if (transactionStarted) database.exec("ROLLBACK") } catch { /* Preserve the first transaction failure. */ }
+    throw error;
   } finally {
-    database.close()
+    try { database.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
   }
 }
 
@@ -1280,9 +1287,12 @@ async function writeAbortedPrepareRecord(
 
 function commitPreparedDatabaseRows(projectRoot, pending) {
   const database = new DatabaseSync(resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/registry.sqlite`))
-  initializeDatabase(database)
-  database.exec("BEGIN IMMEDIATE")
+  let transactionFailed = false;
+  
+  
   try {
+    initializeDatabase(database)
+    database.exec("BEGIN IMMEDIATE")
     const transaction = database.prepare(`
       SELECT status, current_sha256 FROM registry_transactions WHERE transaction_id = ?
     `).get(pending.transactionId)
@@ -1295,10 +1305,11 @@ function commitPreparedDatabaseRows(projectRoot, pending) {
     }
     database.exec("COMMIT")
   } catch (error) {
-    database.exec("ROLLBACK")
-    throw error
+    transactionFailed = true;
+    try { database.exec("ROLLBACK") } catch { /* Preserve the first transaction failure. */ }
+    throw error;
   } finally {
-    database.close()
+    try { database.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
   }
 }
 

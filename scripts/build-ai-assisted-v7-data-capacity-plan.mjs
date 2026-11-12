@@ -4,7 +4,6 @@ import path from "node:path"
 import {
   appendAiPainterProgramEvent,
   formatShanghai,
-  projectPath,
   writeJsonAtomic,
 } from "./lib/ai-painter-program-event-store.mjs"
 import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
@@ -43,12 +42,7 @@ const REQUIRED_SEASONS = [
   "dry_season",
   "dry_to_wet_transition",
 ]
-const EXTRA_SEASON_PRIORITY = [
-  "wet_to_dry_transition",
-  "dry_to_wet_transition",
-  "dry_season",
-  "wet_season",
-]
+
 
 const createdAtUtc = new Date().toISOString()
 const createdAtAsiaShanghai = formatShanghai(createdAtUtc)
@@ -1233,79 +1227,9 @@ function createOwnerRejectedWithdrawalReplacementGap(record) {
   }
 }
 
-function createPlannedSlot(regionalLandscapeType, monsoonSeason, coverageRole) {
-  return {
-    slotId: null,
-    status: "planned_missing_record",
-    regionalLandscapeType,
-    monsoonSeason,
-    coverageRole,
-    split: null,
-    mapScope: EXPECTED_MAP_SCOPE,
-    worldProfileId: EXPECTED_WORLD_PROFILE,
-    requiredConditionContract: EXPECTED_CONDITION_CONTRACT,
-    requiredNativeResolution: { width: 1024, height: 768 },
-    requiredDistinctness: [
-      "unique_world_seed",
-      "unique_layout_variant",
-      "unique_concrete_region_connectivity_instance",
-      "unique_theme_architecture_identity",
-      "unique_instance_detail_identity",
-      "unique_task_package_id",
-      "unique_condition_label",
-      "unique_rgb_sha256",
-      "composition_novelty_audit_passed",
-    ],
-    requiredEvidence: [
-      "real_earth_region_source_package",
-      "current_region_graph_and_paired_connection",
-      "world_facts",
-      "world_director",
-      "complete_map_scope_proof",
-      "23_channel_condition_pack",
-      "source_and_image_hashes",
-      "machine_review",
-      "owner_review",
-      "split_identity",
-    ],
-    imageGenerationAuthorized: false,
-    gpuTrainingAuthorized: false,
-    automaticBatchGenerationAllowed: false,
-    continuousBatchAuthorizationId: null,
-    blockedReason: "previous_continuous_batch_stopped_and_mvp_64_plan_requires_owner_review",
-  }
-}
 
-function assignPlannedSplits(slots, existingRecords, firstSlotNumber) {
-  const deficits = Object.fromEntries(Object.entries(REQUIRED_SPLITS).map(([split, target]) => [
-    split,
-    target - existingRecords.filter((record) => record.split === split).length,
-  ]))
-  assert(Object.values(deficits).every((value) => value >= 0), "existing split exceeds approved target")
-  assert(sum(Object.values(deficits)) === slots.length, "split deficits do not match planned slot count")
 
-  const ordered = [...slots].sort((left, right) => {
-    const seasonDifference = EXTRA_SEASON_PRIORITY.indexOf(left.monsoonSeason) - EXTRA_SEASON_PRIORITY.indexOf(right.monsoonSeason)
-    const landscapeDifference = landscapeTypes.indexOf(left.regionalLandscapeType) - landscapeTypes.indexOf(right.regionalLandscapeType)
-    return seasonDifference || landscapeDifference || left.coverageRole.localeCompare(right.coverageRole)
-  })
-  let available = ordered
-  for (const split of ["validation", "challenge", "regression"]) {
-    const selected = selectEvenly(available, deficits[split])
-    const selectedSet = new Set(selected)
-    for (const slot of selected) slot.split = split
-    available = available.filter((slot) => !selectedSet.has(slot))
-  }
-  assert(available.length === deficits.train, "remaining train slot count mismatch")
-  for (const slot of available) slot.split = "train"
-  slots.sort((left, right) => {
-    const landscapeDifference = landscapeTypes.indexOf(left.regionalLandscapeType) - landscapeTypes.indexOf(right.regionalLandscapeType)
-    return landscapeDifference || REQUIRED_SEASONS.indexOf(left.monsoonSeason) - REQUIRED_SEASONS.indexOf(right.monsoonSeason) || left.split.localeCompare(right.split)
-  })
-  slots.forEach((slot, index) => {
-    slot.slotId = `v7-capacity-slot-${String(firstSlotNumber + index).padStart(3, "0")}`
-  })
-}
+
 
 function assertUniqueQualifiedIdentities(audits) {
   const records = audits.map((audit) => audit.record)
@@ -1326,39 +1250,9 @@ function capacitySlotNumber(value) {
   return Number(match[1])
 }
 
-function discoverHistoricalV7SlotNumbers() {
-  const roots = [
-    ".runtime/ai-painter/ai-assisted-v7-data-tasks",
-    ".runtime/ai-painter/ai-assisted-v7-capacity-contributions",
-    "data/world-samples/original-image-library/natural-home-v1/complete-maps",
-  ]
-  const numbers = new Set()
-  for (const relativeRoot of roots) {
-    const absoluteRoot = path.join(ROOT, relativeRoot)
-    if (!fs.existsSync(absoluteRoot)) continue
-    for (const entry of fs.readdirSync(absoluteRoot, { withFileTypes: true })) {
-      const match = entry.name.match(/v7-capacity-slot-(\d{3})/)
-      if (match) numbers.add(Number(match[1]))
-    }
-  }
-  return [...numbers]
-}
 
-function selectEvenly(items, count) {
-  if (count === 0) return []
-  assert(count <= items.length, "cannot select more items than available")
-  const selected = []
-  const used = new Set()
-  for (let index = 0; index < count; index += 1) {
-    let candidateIndex = Math.floor(((index + 0.5) * items.length) / count)
-    while (used.has(candidateIndex) && candidateIndex < items.length - 1) candidateIndex += 1
-    while (used.has(candidateIndex) && candidateIndex > 0) candidateIndex -= 1
-    assert(!used.has(candidateIndex), "even split selection produced a duplicate")
-    used.add(candidateIndex)
-    selected.push(items[candidateIndex])
-  }
-  return selected
-}
+
+
 
 function buildCoverageMatrix({ qualifiedRecords, plannedSlots, qualifiedByCell }) {
   const rows = landscapeTypes.map((landscapeType) => ({

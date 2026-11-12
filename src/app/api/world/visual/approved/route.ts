@@ -1,3 +1,7 @@
+import {
+  approvedFrameHardFieldsValid, approvedFrameGameWorldDisplayBoundaryPassed,
+  isApprovedContentType, sameStringSet,
+} from "@/world/world-visual-painter/runtime-frame/approved-frame-display-policy"
 import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
@@ -433,56 +437,6 @@ function buildRuntimeRenderGate(input: {
       "production_display_blocked",
     ],
   }
-}
-
-function approvedFrameHardFieldsValid(
-  approvedFrame: WorldVisualApprovedFrame
-): boolean {
-  return (
-    approvedFrame.canShowToPlayer === true &&
-    typeof approvedFrame.sourceImageSha256 === "string" &&
-    approvedFrame.sourceImageSha256.length === 64 &&
-    typeof approvedFrame.sourceImageByteLength === "number" &&
-    approvedFrame.sourceImageByteLength > 0 &&
-    typeof approvedFrame.sourceImageContentType === "string" &&
-    isApprovedContentType(approvedFrame.sourceImageContentType) &&
-    approvedFrame.sourceImagePayloadQualityPassed === true
-  )
-}
-
-function approvedFrameGameWorldDisplayBoundaryPassed(
-  approvedFrame: WorldVisualApprovedFrame
-): boolean {
-  const tags = new Set(approvedFrame.tags)
-
-  return (
-    approvedFrame.approvalScope === "approved_for_game_world" &&
-    approvedFrame.productionApprovalStatus === "not_approved_for_production" &&
-    approvedFrame.approvedForProduction === false &&
-    approvedFrame.vj0Status === "vj_0_passed" &&
-    approvedFrame.vj1Status === "vj_1_passed" &&
-    String(approvedFrame.vj2Status) === "vj_2_passed" &&
-    tags.has("game_world_ready_for_player") &&
-    tags.has("formal_full_world_frame") &&
-    !tags.has("controlled_mvp_player_visible_allowed") &&
-    !tags.has("training_candidate") &&
-    !tags.has("partial_or_crop_candidate")
-  )
-}
-
-function isApprovedContentType(contentType: string): boolean {
-  return (
-    contentType === "image/png" ||
-    contentType === "image/webp" ||
-    contentType === "image/jpeg"
-  )
-}
-
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
 }
 
 function buildImageUrlAudit(imageUrl: string) {

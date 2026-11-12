@@ -1,4 +1,4 @@
-import type { AiConsoleWorkspaceDefinition } from "@/app/ai-console/ai-console-workspace-catalog"
+import type { AiConsoleWorkspaceDefinition } from "@/shared/ai-console/ai-console-workspace-catalog"
 import { queryAiConsoleCapabilityProjection } from "./capability-projection"
 import { queryAiConsoleControlProjection } from "./control-projection"
 import { createNotConnectedProjection, type AiConsoleProjectionResult } from "./projection-contract"

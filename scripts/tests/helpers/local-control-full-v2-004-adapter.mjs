@@ -1,6 +1,6 @@
 // Arithmetic/lifecycle dependency used only in a fresh full-v2 CPU project.
-import fs from'node:fs';import path from'node:path';import assert from'node:assert/strict';import crypto from'node:crypto';import{execFileSync}from'node:child_process';import{pathToFileURL}from'node:url';
-const root=process.cwd(),mod=p=>import(pathToFileURL(path.join(root,p)).href),sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+import fs from'node:fs';import path from'node:path';import assert from'node:assert/strict';import'node:crypto';import{execFileSync}from'node:child_process';import{pathToFileURL}from'node:url';
+const root=process.cwd(),mod=p=>import(pathToFileURL(path.join(root,p)).href);
 const io=await mod('scripts/lib/ai-painter-mvp256-dry-detail-weight-capture-package-chain-v1.mjs'),native=await mod('scripts/lib/ai-painter-ecology-quality-owned-native-v1.mjs'),reg=await mod('src/server/ai-painter-current-execution-registry.mjs'),stop=await mod('scripts/lib/ai-painter-owned-stop-native-control-v1.mjs');
 function plan(c){return io.json(root,c.inputEvidence.find(b=>b.path.endsWith('/quality-plan.json')))}
 function log(c,phase,extra={}){const p=plan(c);fs.appendFileSync(path.join(root,p.outputRoot,'fixture-lifecycle.jsonl'),JSON.stringify({phase,pid:process.pid,atUtc:new Date().toISOString(),...extra})+'\n');c.heartbeat();return p}

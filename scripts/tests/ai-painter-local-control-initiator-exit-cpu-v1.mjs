@@ -20,7 +20,7 @@ const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const bindingPath = '.runtime/fixture/acceptance.json';
 const fixedCpu = {logicalProcessors: 2, affinity: '3', seconds: 120, bytes: 8388608, attempts: 1, automaticRetries: 0};
-const sourceCli = 'scripts/run-ai-painter-local-control-v1.mjs';
+
 const adapterPath = 'scripts/run-ai-painter-ecology-quality-v1.mjs';
 const phases = ['preflight', 'execute', 'validate', 'review', 'adjudicate', 'finalize'];
 const driverProjectRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');

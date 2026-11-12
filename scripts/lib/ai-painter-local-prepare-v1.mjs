@@ -1,4 +1,3 @@
-import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -391,7 +390,7 @@ async function executePreparation(root, request, chain, native, loop=runAutonomo
       abortReason:()=>cpuDeadlineReason});}finally{clearTimeout(timer);}
     // Keep the real result in this same invocation: the finalizer checks the
     // native runner's private retained receipt and genuine fixture cleanup.
-    const cpuAcceptance=await chain.finalizeCpuAcceptance({root,requestBinding:cpuRequest,result});
+    const cpuAcceptance=await native.finalizeCpuAcceptance({root,requestBinding:cpuRequest,result});
     await native.withNativeOrdinaryBudget(root,result.ownedReceipt,()=>progress('cpu_accepted',{cpuRequest,cpuAcceptance}));
     const planBinding=await native.withNativeOrdinaryBudget(root,result.ownedReceipt,()=>{
       const binding=chain.preparePlan({root,requestBinding:cpuRequest,finalCpuAcceptance:cpuAcceptance});progress('plan_prepared',{planBinding:binding,cpuAcceptance});return binding;});

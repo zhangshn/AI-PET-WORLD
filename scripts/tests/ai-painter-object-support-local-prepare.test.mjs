@@ -260,9 +260,10 @@ async function cleanupPreparationFixture(t, nativePhase='training', candidateSel
         assert.equal(options.capabilityVersion,selected.capability);
         assert.deepEqual(options.preparationRequestBinding,rb,'registered non-default route requires its exact preparation request');
         cpuRequest=put(base,outputRoot+'/cpu-request.json',{synthetic:true});return cpuRequest;},
-      finalizeCpuAcceptance:async()=>put(base,outputRoot+'/cpu-acceptance.json',{synthetic:true}),
+
       preparePlan:()=>put(base,outputRoot+'/quality-plan.json',{synthetic:true}),makeInternalCandidate:()=>({synthetic:true})},
-    native:{runNative:async()=>{events.push('cpu');if(nativePhase==='cpu'){retainFailure(cpuRequest,null);adapter.fixture.before?.();throw error;}
+    native:{finalizeCpuAcceptance:async()=>put(base,outputRoot+'/cpu-acceptance.json',{synthetic:true}),
+runNative:async()=>{events.push('cpu');if(nativePhase==='cpu'){retainFailure(cpuRequest,null);adapter.fixture.before?.();throw error;}
         return {ownedReceipt:{syntheticCpuOnly:true}};},withNativeOrdinaryBudget:async(_r,_receipt,action)=>action(),
       nativeAccountingRoots:()=>[outputRoot],
       requireLiveOwnedReceipt:(root,binding)=>{

@@ -21,7 +21,7 @@ const sha = (value) => crypto.createHash("sha256").update(fs.readFileSync(value)
 const read = (value) => JSON.parse(fs.readFileSync(value, "utf8"))
 const rel = (value) => path.relative(ROOT, value).replaceAll("\\", "/")
 const bind = (value) => ({ path: rel(value), sha256: sha(value) })
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+
 const freshJson = (target, body) => { fs.mkdirSync(path.dirname(target), { recursive: true }); const handle = fs.openSync(target, "wx"); try { fs.writeFileSync(handle, `${JSON.stringify(body, null, 2)}\n`, "utf8"); fs.fsyncSync(handle) } finally { fs.closeSync(handle) } }
 
 const authorizationArg = arg("--authorization")

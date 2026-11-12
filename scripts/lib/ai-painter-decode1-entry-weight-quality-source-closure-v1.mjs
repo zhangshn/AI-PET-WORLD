@@ -1,3 +1,4 @@
+import {pythonExecutionImportAst as pythonAst} from './python-execution-imports.mjs';
 // Read-only dependency collection for the two registered local execution routes.
 // No imports/evaluation of collected project modules and no runner/process owner.
 import fs from 'node:fs';
@@ -6,7 +7,7 @@ import crypto from 'node:crypto';
 import {createRequire,builtinModules} from 'node:module';
 import {spawnSync} from 'node:child_process';
 import assert from 'node:assert/strict';
-import {executionRoute,QUALIFICATION_CAPTURE_CAPABILITY,TRAINING_CAPTURE_CAPABILITY,TRAINING_CAPTURE_V3_CAPABILITY,TRAINING_CAPTURE_V4_CAPABILITY,TRAINING_CAPTURE_V5_CAPABILITY,TRAINING_CAPTURE_V6_CAPABILITY,TRAINING_CAPTURE_CAPABILITIES} from './ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
+import {executionRoute,QUALIFICATION_CAPTURE_CAPABILITY,TRAINING_CAPTURE_V3_CAPABILITY,TRAINING_CAPTURE_V4_CAPABILITY,TRAINING_CAPTURE_V5_CAPABILITY,TRAINING_CAPTURE_V6_CAPABILITY,TRAINING_CAPTURE_CAPABILITIES} from './ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
 import {parse} from '@babel/parser';
 const builtins = new Set([...builtinModules, ...builtinModules.map(v => 'node:' + v)]);
 const digest = raw => crypto.createHash('sha256').update(raw).digest('hex');
@@ -30,33 +31,6 @@ const finalRgbDeferredSurfaces=Object.freeze({
   excludeScopes:['derive_model_metadata','load_execution_package'],
   reason:'new auth imports these pure binding/process helpers; its own new package/model validators replace legacy entry functions'}
 });
-const pythonAst = `import ast,json,sys
-result=[]
-for item in json.load(sys.stdin):
- tree=ast.parse(item['source'],filename=item['path'])
- imports=[];excluded=[]
- rule=item.get('deferredSurface') or {}
- def walk(node,scope=(),disabled=False):
-  if isinstance(node,ast.ClassDef):scope=(*scope,node.name)
-  if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef)):
-   scope=(*scope,node.name)
-   if len(scope)==1:
-    disabled=(('includeScopes' in rule and node.name not in rule['includeScopes']) or node.name in rule.get('excludeScopes',[]))
-  if isinstance(node,ast.Import):
-   for v in node.names:
-    (excluded if disabled else imports).append({'module':v.name,'level':0,'names':[],'line':node.lineno,'scope':'.'.join(scope)})
-  elif isinstance(node,ast.ImportFrom):
-   entry={'module':node.module or '', 'level':node.level,'names':[v.name for v in node.names],'line':node.lineno,'scope':'.'.join(scope)}
-   excluded_import=any(all(entry.get(k)==v for k,v in row.items()) for row in rule.get('excludeImports',[]))
-   (excluded if disabled or excluded_import else imports).append(entry)
-  elif isinstance(node,ast.Call) and isinstance(node.func,ast.Attribute) and node.func.attr=='import_module':
-   if node.args and isinstance(node.args[0],ast.Constant) and isinstance(node.args[0].value,str):
-    (excluded if disabled else imports).append({'module':node.args[0].value,'level':0,'names':[],'line':node.lineno,'scope':'.'.join(scope),'dynamicLiteral':True})
-  for child in ast.iter_child_nodes(node):walk(child,scope,disabled)
- walk(tree)
- result.append({'path':item['path'],'imports':imports,'excludedLateImports':excluded})
-json.dump(result,sys.stdout)
-`;
 let lastSourceCollectionReport=null;
 export function sourceCollectionReport(){return lastSourceCollectionReport===null?null:structuredClone(lastSourceCollectionReport);}
 
@@ -74,7 +48,7 @@ function collectActualExecutionSources({root, required, dynamicPaths=[], python,
       sha256:'d6e05cf98a7902592d1b6518968eedb72961a57872d67a6e0695a4572101d7ea',excludeScopes:['load_package'],
       reason:'Only this route uses the bound metadata/sourceIndex/cpu.load_sample path, not historical release reconstruction.'},
     'ml/ai-painter/src/ai_painter/complete_world/object_support_structure_failure_capture_v1.py':{
-      sha256:'6363c4065b9dbec4376594d56664d6c0ecfdb395df61879f9045b2e75cb9e153',excludeScopes:['_joint_program_limit'],
+      sha256:'8551086d9d59cb192f50fb492153bc664bf0535c0c3e5b025c8cbb8ca1b14feb',excludeScopes:['_joint_program_limit'],
       reason:'This decode1 route rejects above256 before capture; the other JOINT route alone can enter the historical260 exception.'}
   }:finalRgbDeferredSurfaces;
   const qualificationCapture=capabilityVersion===QUALIFICATION_CAPTURE_CAPABILITY;
@@ -187,7 +161,7 @@ function collectActualExecutionSources({root, required, dynamicPaths=[], python,
         if(deferredSurface)assert.equal(digest(raw),deferredSurface.sha256,'reviewed late import source changed: '+name);
         pythonBatch.push({path:name,source:raw.toString('utf8'),deferredSurface});continue;
       }
-      if(!/\.(?:mjs|cjs|js|ts|tsx)$/u.test(name))continue;
+      if(!/\.(?:mjs|cjs|js|jsx|ts|tsx|mts|cts)$/u.test(name))continue;
       for(const edge of nodeImports(raw.toString('utf8'),{sourcePath:name,edges:true}))addNode(edge.value,name,edge.optional);
     }
     if(pythonBatch.length){
@@ -230,7 +204,7 @@ function nodeImports(source,{sourcePath=null,edges=false}={}){
   // The installed parser handles regular expressions, nested templates and TS
   // without evaluating any project source. Its own bytes join the closure.
   const tree=parse(source,{sourceType:'unambiguous',
-    plugins:['typescript','jsx'],createImportExpressions:true});
+    plugins:/\.(?:ts|tsx|mts|cts)$/u.test(sourcePath??'')?['typescript','jsx']:['jsx'],createImportExpressions:true});
   const imports=[];
   function visit(node,optional=false){
     if(!node || typeof node!=='object')return;
@@ -261,6 +235,7 @@ function nodeImports(source,{sourcePath=null,edges=false}={}){
 
 const roleCache=new Map();
 function requiredProgramRoles({root,python,capabilityVersion,authPath}){
+  assert.equal(authPath,'ml/ai-painter/scripts/decode1_entry_weight_quality_auth_v1.py','role query auth path differs from executed module');
   const source=fs.readFileSync(path.join(root,authPath)),before=digest(source),key=[root,python,capabilityVersion,before].join('|');
   if(roleCache.has(key))return {...roleCache.get(key)};
   const code="import json,sys;from pathlib import Path;root=Path(sys.argv[1]);sys.path[:0]=[str(root/'ml/ai-painter/scripts'),str(root/'ml/ai-painter/src')];import decode1_entry_weight_quality_auth_v1 as auth;print(json.dumps(auth.required_program_roles(sys.argv[2]),sort_keys=True))";

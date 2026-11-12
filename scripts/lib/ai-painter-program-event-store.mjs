@@ -88,7 +88,7 @@ export function writeImmutableProgramRun({ root, runId, fileName, record, latest
   const runRoot = path.resolve(ROOT, root, runId)
   const runPath = path.join(runRoot, fileName)
   if (fs.existsSync(runPath)) throw new Error(`immutable program run already exists: ${projectPath(runPath)}`)
-  writeJsonAtomic(runPath, record)
+  writeTextAtomic(runPath, `${JSON.stringify(record, null, 2)}\n`, null, { exclusive: true })
   writeJsonAtomic(path.resolve(ROOT, root, "latest.json"), {
     schemaVersion: `${record.schemaVersion}-latest-pointer`,
     runId,
@@ -157,8 +157,9 @@ function buildLedgerSummary(events) {
     info: 0,
     lastEvent: events.at(-1) ?? null,
   }
+  const countedStatuses = new Set(["running", "success", "failed", "error", "blocked", "info"])
   for (const event of events) {
-    if (Object.prototype.hasOwnProperty.call(summary, event.status)) summary[event.status] += 1
+    if (countedStatuses.has(event.status)) summary[event.status] += 1
   }
   return summary
 }
@@ -368,7 +369,7 @@ function readJsonIfValid(filePath) {
   }
 }
 
-function writeTextAtomic(filePath, text, testHook = null) {
+function writeTextAtomic(filePath, text, testHook = null, { exclusive = false } = {}) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true })
   const temp = `${filePath}.${process.pid}.${randomUUID()}.tmp`
   let descriptor = null
@@ -376,14 +377,24 @@ function writeTextAtomic(filePath, text, testHook = null) {
     descriptor = fs.openSync(temp, "wx")
     fs.writeFileSync(descriptor, text, "utf8")
     fs.fsyncSync(descriptor)
-    fs.closeSync(descriptor)
+    const closingDescriptor = descriptor
     descriptor = null
+    fs.closeSync(closingDescriptor)
     if (testHook) invokeProgramEventStoreTestHook(testHook, { filePath, temp })
-    fs.renameSync(temp, filePath)
+    if (exclusive) {
+      // A same-directory hard link publishes complete bytes without replacing an
+      // existing name. Do not fall back to rename: it can overwrite a racing run.
+      fs.linkSync(temp, filePath)
+      fs.unlinkSync(temp)
+    } else {
+      fs.renameSync(temp, filePath)
+    }
     fsyncDirectoryBestEffort(path.dirname(filePath))
   } catch (error) {
-    if (descriptor !== null) fs.closeSync(descriptor)
-    if (fs.existsSync(temp)) fs.unlinkSync(temp)
+    // Cleanup must neither replace the write failure nor skip independent cleanup.
+    // A failed close may already have consumed its descriptor; never retry it.
+    try { if (descriptor !== null) fs.closeSync(descriptor) } catch { /* Preserve the primary failure. */ }
+    try { if (fs.existsSync(temp)) fs.unlinkSync(temp) } catch { /* Leave the temporary file for diagnosis. */ }
     throw error
   }
 }
@@ -394,10 +405,20 @@ function withLedgerCommitLock(callback) {
   const startedAt = Date.now()
   const processStartIdentity = currentProcessStartIdentity()
   acquireLedgerCommitLock(token, startedAt, processStartIdentity)
+  let callbackFailed = false
   try {
     return callback()
+  } catch (error) {
+    callbackFailed = true
+    throw error
   } finally {
-    releaseLedgerCommitLock(token, processStartIdentity)
+    try {
+      releaseLedgerCommitLock(token, processStartIdentity)
+    } catch (releaseError) {
+      // A failed commit/verification remains the primary failure. A standalone
+      // release failure still propagates, so callers cannot report success.
+      if (!callbackFailed) throw releaseError
+    }
   }
 }
 
@@ -416,13 +437,17 @@ function acquireLedgerCommitLock(token, startedAt, processStartIdentity) {
         createdAtUtc: new Date().toISOString(),
       })}\n`, "utf8")
       fs.fsyncSync(descriptor)
-      fs.closeSync(descriptor)
+      const closingDescriptor = descriptor
+      descriptor = null
+      fs.closeSync(closingDescriptor)
       fsyncDirectoryBestEffort(LEDGER_DIR)
       return
     } catch (error) {
-      if (descriptor !== null) fs.closeSync(descriptor)
-      if (lockCreated && fs.existsSync(LEDGER_LOCK_PATH)) fs.unlinkSync(LEDGER_LOCK_PATH)
-      if (error.code !== "EEXIST") throw error
+      // Only clean up our own incomplete lock; preserve the first failure even
+      // when close or unlink also fails. A failed close is not safe to retry.
+      try { if (descriptor !== null) fs.closeSync(descriptor) } catch { /* Preserve the primary failure. */ }
+      try { if (lockCreated && fs.existsSync(LEDGER_LOCK_PATH)) fs.unlinkSync(LEDGER_LOCK_PATH) } catch { /* Keep the failed lock for diagnosis. */ }
+      if (lockCreated || error?.code !== "EEXIST") throw error
       const probe = probeLedgerCommitLock()
       if (probe.state === "dead") {
         if (probe.lockMissing === true || archiveDeadLedgerCommitLock(probe)) continue
@@ -693,13 +718,21 @@ function isValidProcessStartIdentity(identity) {
 
 function fsyncDirectoryBestEffort(directory) {
   let descriptor = null
+  let syncFailed = false
   try {
     descriptor = fs.openSync(directory, "r")
     fs.fsyncSync(descriptor)
   } catch (error) {
-    if (!["EACCES", "EBADF", "EINVAL", "EISDIR", "EPERM"].includes(error.code)) throw error
+    if (!["EACCES", "EBADF", "EINVAL", "EISDIR", "EPERM"].includes(error?.code)) {
+      syncFailed = true
+      throw error
+    }
   } finally {
-    if (descriptor !== null) fs.closeSync(descriptor)
+    try {
+      if (descriptor !== null) fs.closeSync(descriptor)
+    } catch (closeError) {
+      if (!syncFailed) throw closeError
+    }
   }
 }
 

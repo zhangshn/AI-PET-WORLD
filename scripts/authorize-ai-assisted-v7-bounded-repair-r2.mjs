@@ -1,5 +1,5 @@
-import fs from "node:fs"
-import path from "node:path"
+import "node:fs"
+import "node:path"
 import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-store.mjs"
 import { recordAiPainterOwnerActionRequest } from "./lib/ai-painter-owner-action-request-store.mjs"
 

@@ -19,12 +19,13 @@ import type {
   ZiweiStarCategory
 } from "../contracts"
 import {
+  getDynamicStemSourceLabel,
   BRANCH_LABELS,
   DYNAMIC_FLOW_LABELS,
   SECTOR_LABELS,
   STAR_CATEGORY_LABELS,
   STEM_LABELS
-} from "../page-view/labels"
+} from "../shared/chart-labels"
 import { getZiweiStarDefinition } from "../star-catalog"
 
 import {
@@ -1236,17 +1237,6 @@ function getRelationFocus(kind: ZiweiDetailedPalaceRelationKind): string {
   }
 
   return focuses[kind]
-}
-
-function getDynamicStemSourceLabel(
-  source: FullZiweiDynamicFlow["stemSource"]
-): string {
-  if (source === "birthYearStem") return "本命年干"
-  if (source === "currentYearStem") return "流年年干"
-  if (source === "currentMonthStem") return "流月月干"
-  if (source === "currentDayStem") return "流日日干"
-  if (source === "currentTimeStem") return "流时时干"
-  return "动态宫干"
 }
 
 function formatTransformationLabel(star: ZiweiPlacedStar): string {

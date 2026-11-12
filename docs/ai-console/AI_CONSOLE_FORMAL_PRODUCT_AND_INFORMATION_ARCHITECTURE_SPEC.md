@@ -1,10 +1,10 @@
 # AI控制台正式产品、信息架构与统一数据字典规格
 
-更新时间：2026-10-03 15:25:45 +08:00
+更新时间：2026-11-11 01:21:48 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-2.9`
+文档版本：`AI-CONSOLE-2.11`
 
 生效日期：`2026-08-27`
 
@@ -541,15 +541,21 @@ GET /api/ai-console/observability/current-execution
 
 ## 11. 代码与目录定版
 
+平台与工作页目录的唯一实现位于`src/shared/ai-console/ai-console-catalog.ts`及`ai-console-workspace-catalog.ts`。页面、API与服务器投影共同消费这两份定义；下列页面目录中的同名文件仅为兼容转导出，不保留第二份实现。
+
+
 ```text
 src/app/ai-console/
 ├─ page.tsx                           # 一级页面，只负责平台总览和模块目录
 ├─ page.module.css                    # 一级页面私有样式
-├─ ai-console-catalog.ts              # 一级模块、能力域和二级目录的只读目录定义
-├─ ai-console-workspace-catalog.ts    # 二级工作页、业务视图、状态合同和字段字典定义
+├─ ai-console-catalog.ts              # 共享平台目录的兼容转导出
+├─ ai-console-workspace-catalog.ts    # 共享工作页目录的兼容转导出
 ├─ ai-console-workspace.tsx           # 十模块共用的二级业务投影工作台
 ├─ ai-console-workspace-interactions.tsx # 二级视图切换、字段筛选和页面查询合同连接
-├─ ai-console-control-surface.tsx      # 已登记安全命令的独立控制面交互
+├─ ai-console-control-surface.tsx      # 七类控制组件的兼容转导出
+├─ ai-console-control-{registry,tasks,capabilities,training,reviews,runtime,world}.tsx # 按职责组织的控制交互
+├─ ai-console-control-types.ts         # 控制组件响应类型
+├─ ai-console-control-common.tsx       # 公共回执展示与幂等键生成
 ├─ ai-console-workspace.module.css    # 二级工作页共用样式
 ├─ ai-console-live-observability.ts   # 客户端单例轮询与会话趋势
 ├─ ai-console-live-status.tsx         # 跨页面固定实时状态条

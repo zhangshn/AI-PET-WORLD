@@ -1,3 +1,4 @@
+import { sameSourceFactIds as sameStringSet } from "../runtime-core/source-fact-identity"
 import type { GameMapFrame, GameMapVisualLayer } from "./game-map-frame-schema"
 
 export type GameMapAiPainterCandidateInput = {
@@ -367,12 +368,6 @@ function hasRequiredCompositeInputTags(tags: string[]): boolean {
 function hasTrainingOrPartialTags(tags: string[]): boolean {
   const tagSet = new Set(tags)
   return TRAINING_OR_PARTIAL_TAGS.some((tag) => tagSet.has(tag))
-}
-
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
 }
 
 function unique(values: string[]): string[] {

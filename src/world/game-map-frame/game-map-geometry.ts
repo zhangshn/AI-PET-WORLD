@@ -237,3 +237,22 @@ function polygonCentroid(polygon: HomeMapPoint[]): HomeMapPoint {
     y: total.y / polygon.length,
   }
 }
+
+// Visual masks retain the existing ray-crossing edge rule. Collision interiors
+// deliberately use pointInPolygonInterior, which excludes every polygon edge.
+export function pointInVisualMaskPolygon(x: number, y: number, points: HomeMapPoint[]): boolean {
+  let inside = false
+  for (let index = 0, previous = points.length - 1; index < points.length; previous = index, index += 1) {
+    const currentPoint = points[index]
+    const previousPoint = points[previous]
+    if (!currentPoint || !previousPoint) continue
+    const intersects =
+      currentPoint.y > y !== previousPoint.y > y &&
+      x <
+        ((previousPoint.x - currentPoint.x) * (y - currentPoint.y)) /
+          (previousPoint.y - currentPoint.y || Number.EPSILON) +
+          currentPoint.x
+    if (intersects) inside = !inside
+  }
+  return inside
+}

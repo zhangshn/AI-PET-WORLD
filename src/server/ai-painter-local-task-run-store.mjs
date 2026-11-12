@@ -146,14 +146,19 @@ function writeImmutableJsonAtomic(targetPath, value) {
 
 function acquireTaskLock(lockPath, taskId, now) {
   let handle = null;
+  let identity;
+  const lockBytes = `${JSON.stringify({ schemaVersion: "local-ai-task-lock-v1", taskId, pid: process.pid, acquiredAtUtc: now.toISOString() }, null, 2)}\n`;
   try {
     handle = fs.openSync(lockPath, "wx");
-    fs.writeFileSync(handle, `${JSON.stringify({ schemaVersion: "local-ai-task-lock-v1", taskId, pid: process.pid, acquiredAtUtc: now.toISOString() }, null, 2)}\n`, "utf8");
+    fs.writeFileSync(handle, lockBytes, "utf8");
     fs.fsyncSync(handle);
+    identity = fs.fstatSync(handle);
     fs.closeSync(handle);
     handle = null;
   } catch (error) {
-    if (handle !== null) fs.closeSync(handle);
+    if (handle !== null) {
+      try { fs.closeSync(handle); } catch { /* Preserve the original initialization error. */ }
+    }
     if (error?.code === "EEXIST") {
       throw new LocalTaskRunStoreError("已有本地AI任务持有互斥锁。", "task_mutex_locked");
     }
@@ -162,8 +167,12 @@ function acquireTaskLock(lockPath, taskId, now) {
   let released = false;
   return () => {
     if (released) return;
+    const current = fs.lstatSync(lockPath);
+    if (!current.isFile() || current.isSymbolicLink() || current.ino !== identity.ino || current.dev !== identity.dev || fs.readFileSync(lockPath, "utf8") !== lockBytes) {
+      throw new LocalTaskRunStoreError("任务互斥锁身份已变化，保留现有文件。", "task_mutex_identity_changed");
+    }
+    fs.unlinkSync(lockPath);
     released = true;
-    try { fs.unlinkSync(lockPath); } catch {}
   };
 }
 

@@ -24,7 +24,7 @@ import { bind, boundJson, inside, processIdentity, readBound, writeExclusive } f
   "./run-ai-painter-mvp256-dry-v24-training.mjs"
 import { BUDGET, CAPABILITY, PLAN, validateActivationChain,
   validateBasePackage, addDependencyBindings, validateProgramBindings } from "./lib/ai-painter-mvp256-dry-appearance-regime-package-chain-v1.mjs"
-import { replaceHeartbeatFile, heartbeatPublicationRule } from "./lib/training-heartbeat-publication.mjs"
+import { replaceHeartbeatFile } from "./lib/training-heartbeat-publication.mjs"
 import { runOwnedWorker } from "./lib/ai-painter-owned-worker-v1.mjs"
 
 const execFileAsync = promisify(execFile)

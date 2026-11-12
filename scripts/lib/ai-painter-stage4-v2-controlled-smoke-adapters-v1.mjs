@@ -18,29 +18,7 @@ import {
   executeStage4V2MachineReview,
   validateReviewExecutionBinding,
 } from "./ai-painter-stage4-v2-machine-review-execution-v1.mjs";
-import {
-  bindAbsolute,
-  FIXED_EPOCH_COUNT,
-  FIXED_PREVIEW_EPOCHS,
-  FIXED_RESOLUTION,
-  FIXED_TRAIN_SAMPLE_ID,
-  FIXED_VALIDATION_SAMPLE_ID,
-  FIXED_SEED,
-  projectLogicalPath,
-  readBoundJson,
-  readJsonObject,
-  readSmokePayload,
-  resolveProjectPath,
-  sha256File,
-  SMOKE_RUN_ACTION,
-  SMOKE_RUN_TASK,
-  STAGE4_V2_ARCHITECTURE,
-  STAGE4_V2_CAPABILITY,
-  validateStage4V2SmokePackagePayload,
-  validateSmokeTrainingDataUse,
-  writeExclusiveJson,
-  writeJsonAtomic,
-} from "./ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
+import { bindAbsolute, FIXED_EPOCH_COUNT, FIXED_PREVIEW_EPOCHS, FIXED_RESOLUTION, FIXED_TRAIN_SAMPLE_ID, FIXED_VALIDATION_SAMPLE_ID, FIXED_SEED, projectLogicalPath, readBoundJson, readJsonObject, readSmokePayload, resolveProjectPath, sha256File, SMOKE_RUN_TASK, STAGE4_V2_ARCHITECTURE, STAGE4_V2_CAPABILITY, validateStage4V2SmokePackagePayload, validateSmokeTrainingDataUse, writeExclusiveJson, writeJsonAtomic } from "./ai-painter-stage4-v2-controlled-smoke-common-v1.mjs"
 import {
   consumeStage4V2SmokeTicket,
   validateStage4V2SmokeTicket,
@@ -2109,6 +2087,6 @@ function canonicalSha256(value) {
   };
   return crypto.createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex");
 }
-function writeExclusiveText(target, value) { fs.writeFileSync(target, String(value ?? ""), { flag: "wx" }); }
+
 function tail(value, length = 1500) { return String(value ?? "").slice(-length); }
 function failed(kind, code, error) { return { status: "failed", failureKind: kind, failureCode: code, detail: String(error?.stack ?? error) }; }

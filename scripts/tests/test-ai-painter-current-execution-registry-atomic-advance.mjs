@@ -494,7 +494,7 @@ async function createKernelInterruptionFixture(root, advance, registeredRoute = 
   await writeJson(root, output + '/progress.json', { runId, packageId: advance.packageId, capabilityVersion: advance.capabilityVersion, executionState: 'executing', selectedCheckpoint: null,
     optimizerStepsGenerator: registeredRoute ? 593 : 286, optimizerStepsDiscriminator: registeredRoute ? 593 : 286, updatedAtUtc: new Date(Date.now() - 240000).toISOString() })
   const programBindings = []
-  for (const p of ['docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md', 'scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs', 'scripts/run-ai-painter-owned-worker-reboot-recovery.mjs', 'src/server/ai-painter-current-execution-registry.mjs']) {
+  for (const p of ['docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md', 'scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs', 'scripts/lib/ai-painter-owned-worker-recovery-input.mjs', 'scripts/run-ai-painter-owned-worker-reboot-recovery.mjs', 'src/server/ai-painter-current-execution-registry.mjs']) {
     await writeText(root, p, 'private fixture source training_kernel_interruption_v1'); programBindings.push(await bind(p))
   }
   const profile = { schema: 'ai-painter-owned-worker-reboot-recovery-profile-v3', failureCase: 'training_kernel_interruption_v1', caseId: 'fixture-training', runId,
@@ -575,6 +575,8 @@ test('qualification missing-terminal branch rejects contradictions before regist
     ['release receipt', f => writeText(f.root, f.profile.missingReceiptPath, '{}')],
     ['wrong receipt path', f => { f.profile.missingReceiptPath = f.output + '/other.json' }],
     ['source tamper', f => writeText(f.root, f.sourcePath, 'changed')],
+    ['readonly verifier binding omitted', f => { f.profile.programBindings = f.profile.programBindings.filter(b => !b.path.endsWith('ai-painter-owned-worker-recovery-input.mjs')) }],
+    ['readonly verifier changed', f => writeText(f.root, 'scripts/lib/ai-painter-owned-worker-recovery-input.mjs', 'changed')],
     ['same kernel', f => { f.host.OsBootUtc = f.priorHost.OsBootUtc; f.host.BootEventUtc = f.host.OsBootUtc }],
     ['other machine', f => { f.host.MachineIdentitySha256 = 'd'.repeat(64) }],
     ['incomplete process query', f => { f.host.ProcessQueryComplete = false }],

@@ -620,13 +620,7 @@ function argumentValue(name) {
   return index >= 0 ? process.argv[index + 1] ?? null : null
 }
 
-function readRequiredJson(filePath) {
-  try {
-    return JSON.parse(fs.readFileSync(filePath, "utf8"))
-  } catch (error) {
-    throw new Error(`required JSON unreadable: ${projectPath(filePath)} (${error instanceof Error ? error.message : "unknown"})`)
-  }
-}
+
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true })

@@ -37,9 +37,19 @@ export function createGitStore(root) {
   function lock() {
     prepare();const file=path.join(root,'publish.lock')
     let fd
-    try{fd=fs.openSync(file,'wx')}catch{throw new ModuleError('git_operation_lock_present',409)}
-    fs.writeFileSync(fd,JSON.stringify({processId:process.pid,at:new Date().toISOString()}))
-    const identity=fs.fstatSync(fd)
+    try{fd=fs.openSync(file,'wx')}catch(error){
+      if(error.code==='EEXIST')throw new ModuleError('git_operation_lock_present',409)
+      throw error
+    }
+    let identity
+    try{
+      fs.writeFileSync(fd,JSON.stringify({processId:process.pid,at:new Date().toISOString()}))
+      identity=fs.fstatSync(fd)
+    }catch(error){
+      // Keep the failed lock as evidence; release only this invocation's handle.
+      try{fs.closeSync(fd)}catch{/* Preserve the original initialization failure. */}
+      throw error
+    }
     return()=>{
       fs.closeSync(fd)
       const current=fs.lstatSync(file)

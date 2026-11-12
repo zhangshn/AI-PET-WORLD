@@ -4,11 +4,11 @@ import {advanceCurrentExecutionRegistry,readCurrentExecutionRegistry} from '../s
 import {processIdentity} from "./lib/windows-process-identity.mjs";
 import {replaceHeartbeatFile} from "./lib/training-heartbeat-publication.mjs";
 import {createPresentation,createActiveIdentity,gpuAdmissionSeconds as admissionSeconds} from './lib/ai-painter-object-support-structure-quality-registration-v1.mjs';
-import {runNative,cleanupForCurrentCall,hasLiveOwnedProof,validateNativeReceipt,requireLiveOwnedReceipt,withNativeOrdinaryBudget,withNativeReceiptBudget,persistNativeFailureEvidence,boundedNativeFailureMetadata,currentNativeFailureScope} from './lib/ai-painter-object-support-structure-quality-owned-native-v1.mjs';
+import {finalizeCpuAcceptance,runNative,cleanupForCurrentCall,hasLiveOwnedProof,validateNativeReceipt,requireLiveOwnedReceipt,withNativeOrdinaryBudget,withNativeReceiptBudget,persistNativeFailureEvidence,boundedNativeFailureMetadata,currentNativeFailureScope} from './lib/ai-painter-object-support-structure-quality-owned-native-v1.mjs';
 import {nativeOwnerSourceIdentity} from './lib/ai-painter-ecology-decode1-native-owner-v2.mjs';
 import {executionRoute,inside,read,write,json,bind,loadContext,validateTerminal} from './lib/ai-painter-object-support-structure-quality-package-chain-v1.mjs';
 import {fileURLToPath} from 'node:url';import path from 'node:path';
-import {prepareCpuRequest,finalizeCpuAcceptance,preparePlan,makeInternalCandidate,ROLES,runtimeIdentity} from './lib/ai-painter-object-support-structure-quality-package-chain-v1.mjs';
+import {prepareCpuRequest,preparePlan,makeInternalCandidate,ROLES,runtimeIdentity} from './lib/ai-painter-object-support-structure-quality-package-chain-v1.mjs';
 import {materializeAutonomousClosedLoopPackage} from './lib/ai-painter-autonomous-package-materializer-v1.mjs';
 
 export function verifyGpuOutcome(ready,binding){

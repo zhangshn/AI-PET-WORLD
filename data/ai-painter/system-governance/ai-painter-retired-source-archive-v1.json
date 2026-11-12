@@ -1,0 +1,259 @@
+{
+  "schemaVersion": "ai-painter-retired-source-archive-v1",
+  "dispatchable": false,
+  "retiredIndexSha256": "fee9b3d4ad40191f520423672d631b232e214bd6d51887f151545ee1ab6228fc",
+  "entries": [
+    {
+      "entryFile": "scripts/adjudicate-ai-painter-stage4-joint-condition-local-transport-full-data-screen-failure-boundary.mjs",
+      "sourceSha256": "27ded06200e1193926d14f760c4d14aed58eeb966ba2285031287df01d8d88f1",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "e0abd0b0145c6115302e0b81790bbba967dcc5a7"
+    },
+    {
+      "entryFile": "scripts/run-stage4-three-component-smoke-failure-boundary-adjudication-v2.mjs",
+      "sourceSha256": "e15e638205d7c03f21c752b86c43ac6c940da2e0666a7b4c496e11718968d696",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "e6f5f6c4f0c6d96eb4d4d26c87ee73248bc010ae"
+    },
+    {
+      "entryFile": "scripts/materialize-stage4-three-component-smoke-failure-boundary-local-package.mjs",
+      "sourceSha256": "aa207a6ac0daa46bd65999fd7c376ea04d12461c87c9ec42b38ea1bc5db31686",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "9e0799f59abd5f43e8c94e059a208fdaa1ce802d"
+    },
+    {
+      "entryFile": "scripts/check-ai-painter-stage4-bounded-candidate-planner.mjs",
+      "sourceSha256": "653d100500562d407d3bb06fa76fcb68368cc936bd1083475b7a204b04fc1da5",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "ccc28a09ac4a58b30174b50020e65c370011b38b"
+    },
+    {
+      "entryFile": "scripts/materialize-ai-painter-stage4-bounded-candidate.mjs",
+      "sourceSha256": "bc513751aa1af790b28cd616e9245f1d0dbe7704744031ab99f1b3ccbe7f5dc6",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "0c9844d4220454ce950716465fd1bf5e76551cb1"
+    },
+    {
+      "entryFile": "scripts/check-ai-painter-stage4-post-decode-failure-bounded-planning.mjs",
+      "sourceSha256": "f6f4dc5585c20e75f92616ea3aa713aa7b2686e7b526da1c41f6fc9fadeb31ef",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "7325db99a7c1395113a86f29e2359a5f21957e1b"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-post-decode-failure-bounded-planning.mjs",
+      "sourceSha256": "3ec2b5dbd9f3eb7cc48e6aee86c8d7a54a87a5d47f00fcac8e3a4a49999b67f3",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "d7a085f5fee90310a254e622bab9fa47ebd5bc11"
+    },
+    {
+      "entryFile": "scripts/check-ai-painter-stage4-authoritative-semantic-carrier.mjs",
+      "sourceSha256": "ac2bbc31026e1f3abaece309fcc917eb29495ce627a52d04643d6b8f91514050",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "9d2a8748c648cc9f6e2a05a0ff0a21e6b1bc22f0"
+    },
+    {
+      "entryFile": "scripts/implement-ai-painter-stage4-bounded-model-family.mjs",
+      "sourceSha256": "73ad07cd192ce84a4d7a52aba003bf90b9f6b5d3468cf0492b9a4f38dbcd5d0c",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "3bf95fdc008ad104309f921125cfd3a096cefbf8"
+    },
+    {
+      "entryFile": "scripts/verify-ai-painter-stage4-authoritative-semantic-carrier-cpu-contract.mjs",
+      "sourceSha256": "f938946121085280d513caeb97d1b39e1cd9311b650c78c7f169a75e4f5e7da8",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "4687c83829eb5f759987157735357228760c3298"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-authoritative-semantic-carrier-readonly-gpu.mjs",
+      "sourceSha256": "ed6373f2cee6b5ef31f3b45d93747b85c4e051d73193b294c91f3906f2f54a2b",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "a250287bc3c6d38b806cf1ae7ba09cf7a1e99b3b"
+    },
+    {
+      "entryFile": "scripts/record-ai-painter-stage4-readonly-gpu-failure.mjs",
+      "sourceSha256": "f25ada4a40b7923e9e60b8dbc882246eaaa1635b638402e5af8624d0e21d9e72",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "7f94bde5fbe6bdb1f87035329bbd783f202b0138"
+    },
+    {
+      "entryFile": "scripts/check-ai-painter-stage4-authoritative-semantic-carrier-smoke-contract.mjs",
+      "sourceSha256": "654ebbe9731907613d142ec81058a355dcac98485fe3b38076b3aaad28a47ef5",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "e43209c6b93a31afc931cf97110fc68a39f8cb95"
+    },
+    {
+      "entryFile": "scripts/compile-ai-painter-stage4-authoritative-semantic-carrier-smoke.mjs",
+      "sourceSha256": "5b396da74548bae328ce3892d384ed309cfb5876c947cc3460540ce02c163cd2",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "6b61ab7cdc90f1464266b194d3babf9e432cf316"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-authoritative-semantic-carrier-controlled-smoke.mjs",
+      "sourceSha256": "fe9afd539cad09041a0a45cf278801d8c8e6d52abf1f811a6ac35a491c4d0062",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "f1178f9a0f21aef9621f7374eb392ef4e5c79e44"
+    },
+    {
+      "entryFile": "scripts/check-ai-painter-stage4-direct-clean-latent-smoke-contract.mjs",
+      "sourceSha256": "bb407f00ed12305b3753a8004777c88d849fb73a7377d2ff401ffe71f9594281",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "5da68ffac7a1e78eab118ac7e7d066b5277225c8"
+    },
+    {
+      "entryFile": "scripts/compile-ai-painter-stage4-direct-clean-latent-smoke-contract.mjs",
+      "sourceSha256": "c2a4a5256fe4d2ccf80fe8279e550569c909f38ab7d36b3802edcc41f7b57267",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "5c27bcea652e416d0e018f69338a8e446d35809c"
+    },
+    {
+      "entryFile": "scripts/plan-ai-painter-stage4-direct-responsibility-residual-successor.mjs",
+      "sourceSha256": "562d31f20a51af5f8b79da832cc341846853acf9f1004a2e27e4631360d58e13",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "856eb20a82efabcb733d78e9d1148321728bdb2b"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-cpu-support.mjs",
+      "sourceSha256": "6e77226a463265a9c41f847d7088f8ada68aa232040b9c75130d52a9f6530c44",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "c9f1a383c5b92d830e47f2abf6f991b373b930d0"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-readonly-gpu.mjs",
+      "sourceSha256": "5a310dc7a190cd78cba34ec737427b537845f7b0af7d250c375559aec6bd2075",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "c537c61a1d5e30841786fff5554c2d715eb91771"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-controlled-smoke.mjs",
+      "sourceSha256": "23b0746135818c5eea79eab9d3e87db39229c606cf1fdf6e93db9f3504204940",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "da08270c4b2f8c9f0880ba29e602237a8d03f5f1"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-direct-responsibility-residual-stage0.mjs",
+      "sourceSha256": "2d6ccc5e9aedc0ab28d897ec77db9efceb02a26d9e702801d4d04c6b318fb3da",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "0868756a63841d07aab453cb0680d80353558e83"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-native-responsibility-residual-cpu-support.mjs",
+      "sourceSha256": "c9bbcc3ef8dff6e99b04ace0d3e300f0cdb30ecf3be5932886a73deae9042825",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "196168678f86d863e676f4bc084eea305b6cc6ab"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-native-responsibility-residual-readonly-gpu.mjs",
+      "sourceSha256": "febbbaf86ad4fd9a49154966b40acb707328875bb47d7f9d0741bd6eaa9ba84b",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "5d924367698bae8fa44008de08e01b55c1a7943a"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-native-responsibility-residual-controlled-smoke.mjs",
+      "sourceSha256": "47b04dc90e90e7587fc4858f7914de5ce607e1fc0e1e5f6513300be086277a17",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "5948bce59a3171c3b7ad3d7864d54b41d0fede81"
+    },
+    {
+      "entryFile": "scripts/plan-ai-painter-stage4-route-counterfactual-compositor.mjs",
+      "sourceSha256": "91b7881ddef5172de436fdce49fdfb48fe2508cff95d5c5acff0bf29e7679867",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "60f970414759f6b691b64c9dc05ee71a4c3db914"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-cpu-support.mjs",
+      "sourceSha256": "253ad54522904730599c7d022e7cd80b1be0f47e266d1e7488e003703f88238d",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "da783dea79c657438ebcd5fa4ae2c92f8e886cf3"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-readonly-gpu.mjs",
+      "sourceSha256": "16256c23679e25ef05e94810325e3a2f74df368e68c0a8f85845081f3f9e7dc8",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "93ee55727a1a8ffda9c253392167f4f307ea2bae"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-compositor-controlled-smoke.mjs",
+      "sourceSha256": "a4f96f6e0eac41025aa00263b691b3bf98f5a36188d3b6bba8b223a0690999f6",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "1867e531fc18701b0b02d0dcdb5faa5738c9a338"
+    },
+    {
+      "entryFile": "scripts/check-ai-painter-stage4-route-counterfactual-fixed40.mjs",
+      "sourceSha256": "74e1f9866ae449d9f3df7fbf5b7c17bec8d79049aef4d0fbee9e6c85036c1e74",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "93337c271456669316b26e1652dc4c60c57848f5"
+    },
+    {
+      "entryFile": "scripts/adjudicate-ai-painter-stage4-route-counterfactual-fixed40-lineage.mjs",
+      "sourceSha256": "958d901a1625cc8f79c6808bc7e87492811a09e1b37bb5560d5886b392866a40",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "27809cf388eab83dcb23d85203f794b1e48fb1cd"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-route-counterfactual-fixed-40-qualification.mjs",
+      "sourceSha256": "cb2d73c37cd8df918b59b402541c4134683fc173c788d9b224c9cd8bdfe2a6ff",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "3a23cd97961a53147ddf885eac778b4c3a9f4fcd"
+    },
+    {
+      "entryFile": "scripts/check-ai-painter-stage4-staged-successor-unique-derivation-review.mjs",
+      "sourceSha256": "540569633c49b57ce89cb636cd806ca17639c4b6d33d2ac661aa36685c41295e",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "d768f5c4e1ba073266918196960e9a4a62aa9283"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-staged-successor-unique-derivation-review.mjs",
+      "sourceSha256": "3c8a7dc0144c9abcbc57b97e525b102f9b9085c81b566753348211a47ea50b01",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "aebcd49709f641965d4cee891dea7fd20f986bf6"
+    },
+    {
+      "entryFile": "scripts/check-ai-painter-stage4-joint-condition-local-transport-full-data-screen-compilation.mjs",
+      "sourceSha256": "0a87986ac06dee02db78fb04a6685142e9ef32b9fb47e3b2d099e8e1c3a16d7b",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "276109f6d77ea4c202349900435470db20c19be0"
+    },
+    {
+      "entryFile": "scripts/check-ai-painter-stage4-joint-condition-local-transport-lifecycle-routing.mjs",
+      "sourceSha256": "fe61609ed5b5950f9e76c1ac598427c75805acb36483fb787f537c81df587fc8",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "d28570d256cf863e5b05c9955562e29995e28a74"
+    },
+    {
+      "entryFile": "scripts/compile-ai-painter-stage4-joint-condition-local-transport-full-data-screen.mjs",
+      "sourceSha256": "681c083f9adf74cdd391889fee12c44d0ff9f84ff480e2ca02b7812bc8473036",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "1d22650ddeb251b6c38bfad388dd523e5eeb0a8c"
+    },
+    {
+      "entryFile": "scripts/materialize-ai-painter-stage4-joint-condition-local-transport-full-data-screen-package.mjs",
+      "sourceSha256": "24200b855af52576de80a360bf5b1a6cf14676972f1f515c535abb477ef35583",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "7d1d0b57d8c6be9fecf664eb588d7860c6e2ccf9"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-joint-condition-local-transport-full-data-screen-package.mjs",
+      "sourceSha256": "702e4a1866eabb644f8a3fcd23055ac197148ed5170fd6438d15e979a9439f5d",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "d5c27e873962f497b66599b64c88c94c52da67e1"
+    },
+    {
+      "entryFile": "scripts/launch-ai-painter-stage4-joint-condition-local-transport-full-data-screen-background.mjs",
+      "sourceSha256": "ffab872344f01ec1d85045168f8e81e5a423f912b807652ba52fdc3a57e53244",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "4638aa9d63de80d7933b7c29e776f65a2c9c6e09"
+    },
+    {
+      "entryFile": "scripts/run-ai-painter-stage4-joint-condition-local-transport-full-data-screen-post-checkpoint-recovery.mjs",
+      "sourceSha256": "a8b9cc6a5620e812259e5e8dba92c71a22bf65ef8a81dfa660214f8e2816458e",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "f247fb3afaf199050c99debb97b6708e102af44c"
+    },
+    {
+      "entryFile": "scripts/materialize-ai-painter-stage4-joint-condition-local-transport-full-data-screen-adjudication-task.mjs",
+      "sourceSha256": "c54f6f09183047fad47b5465ec0d55caa3837e72ccd0148afd0a4ef17262394b",
+      "gitCommit": "f4f58a0711e21a9e56fbfae5bc0b4a653d08dca0",
+      "gitBlob": "02289cd6b34cf0b0d9d1f330ecc6813cbed2e112"
+    }
+  ]
+}

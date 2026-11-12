@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import {spawn,execFileSync} from 'node:child_process';
+import { spawn } from 'node:child_process'
 import {pathToFileURL} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
 

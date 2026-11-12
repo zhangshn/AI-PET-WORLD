@@ -15,7 +15,7 @@ import {
   formatShanghai,
   verifyAiPainterProgramEventCommitted,
 } from "./lib/ai-painter-program-event-store.mjs";
-import { catalogPath } from "./lib/ai-pet-world-storage.mjs";
+import "./lib/ai-pet-world-storage.mjs"
 import {
   buildStage4V2ExternalRegistryDependencyManifest,
 } from "./lib/ai-painter-stage4-v2-external-registry-dependency-v1.mjs";

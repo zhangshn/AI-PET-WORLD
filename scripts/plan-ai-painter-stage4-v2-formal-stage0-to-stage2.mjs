@@ -9,6 +9,7 @@ import {
 } from "../src/server/ai-painter-current-execution-registry.mjs";
 import { formatShanghai } from "./lib/ai-painter-program-event-store.mjs";
 import {
+  FORMAL_PLAN_ACTION, validateOuterFinalizationChain,
   bindAbsolute,
   readBoundJson,
   readJsonObject,
@@ -17,10 +18,7 @@ import {
   STAGE4_V2_CAPABILITY,
   writeExclusiveJson,
 } from "./lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
-import {
-  FORMAL_PLAN_ACTION,
-  validateOuterFinalizationChain,
-} from "./run-ai-painter-stage4-v2-controlled-smoke.mjs";
+
 import {
   commitStage4V2ExternalRegistryDependencies,
 } from "./lib/ai-painter-stage4-v2-external-registry-dependency-v1.mjs";

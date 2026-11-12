@@ -1,4 +1,4 @@
-import type { AiConsoleWorkspaceDefinition, AiConsoleWorkspaceField } from "@/app/ai-console/ai-console-workspace-catalog"
+import type { AiConsoleWorkspaceDefinition, AiConsoleWorkspaceField } from "@/shared/ai-console/ai-console-workspace-catalog"
 import { createNotConnectedProjection, createProjection, createUnknownOrStaleProjection, type AiConsoleProjectionResult } from "./projection-contract"
 import { readAiConsoleRegistryWorkspace } from "./registry-store"
 

@@ -54,7 +54,7 @@ export function validateRecoveryEvidence(p,pkg,failure,prior,inference,streams){
 
 async function runRecoveryReview({projectRoot=process.cwd(),sourceTerminal:explicitSource=null,policy:explicitPolicy=null,recovery:explicitRecovery=null}={}){
  const root=path.resolve(projectRoot);assert.equal(root,path.resolve(process.cwd()),'audit components require the actual project working directory')
- const {replaceHeartbeatFile}=await import('../run-ai-painter-learning-capacity-experiment.mjs')
+ const {replaceHeartbeatFile}=await import('./training-heartbeat-publication.mjs')
  const {stopReviewWorker}=await import('./ai-painter-two-map-post-review-v1.mjs')
  const started=Date.now(),mono=performance.now(),observed=new Map()
  const absolute=p=>{assert(typeof p==='string'&&!p.includes('\\')&&!p.includes(':')&&!path.posix.isAbsolute(p)&&p.split('/').every(x=>x&&x!=='.'&&x!=='..'),'logical path');return path.join(root,p)}

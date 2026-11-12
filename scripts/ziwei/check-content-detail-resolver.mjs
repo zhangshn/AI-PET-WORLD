@@ -1,24 +1,10 @@
-import { readFileSync } from "node:fs"
-import { createRequire } from "node:module"
-import ts from "typescript"
+import { createZiweiCheckRequire } from "../lib/ziwei-check-module-loader.mjs"
 
-const require = createRequire(import.meta.url)
-
-require.extensions[".ts"] = (module, filename) => {
-  const source = readFileSync(filename, "utf8")
-  const output = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2020,
-      esModuleInterop: true
-    }
-  }).outputText
-
-  module._compile(output, filename)
-}
+const require = createZiweiCheckRequire(import.meta.url)
 
 const {
   buildZiweiChartInterpretation,
+  getMainStarContentDetail,
   getStarContentDetail,
   resolveZiweiContentDetail
 } = require("../../src/ai/destiny-core/ziwei-core/interpretation/index.ts")
@@ -35,10 +21,26 @@ function fail(message) {
   process.exit(1)
 }
 
-const starDetail = getStarContentDetail(MAIN_STAR_IDS.ziwei)
+for (const starId of Object.values(MAIN_STAR_IDS)) {
+  const canonical = getMainStarContentDetail(starId)
+  const resolved = getStarContentDetail(starId)
+  const generic = resolveZiweiContentDetail({ kind: "star", starId })
+  if (!canonical || resolved !== canonical || resolved.starId !== starId) {
+    fail(`expected star resolver to preserve canonical dictionary identity: ${starId}`)
+  }
+  if (generic?.kind !== "star" || generic.detail !== canonical) {
+    fail(`expected generic resolver to preserve canonical star detail: ${starId}`)
+  }
+  if (typeof resolved.worldBehaviorHint !== "string" || !resolved.worldBehaviorHint.trim()) {
+    fail(`expected nonempty canonical interpretation hint: ${starId}`)
+  }
+}
 
-if (!starDetail?.worldBehaviorHint.includes("管家")) {
-  fail("expected star resolver to return butler world behavior hint")
+if (
+  getStarContentDetail("star.unknown-check-fixture") !== null ||
+  resolveZiweiContentDetail({ kind: "star", starId: "star.unknown-check-fixture" }) !== null
+) {
+  fail("unknown star identity must not resolve to an invented dictionary entry")
 }
 
 const transformationDetail = resolveZiweiContentDetail({

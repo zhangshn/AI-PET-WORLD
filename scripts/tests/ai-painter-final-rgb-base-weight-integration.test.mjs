@@ -219,10 +219,11 @@ function fixture(t){
  chain:{ROLES:chain.ROLES,inside:(_r,p)=>path.join(base,p),bind:(_r,p)=>({path:p,sha256:hash(fs.readFileSync(path.join(base,p)))}),
   finalProgramBindings:(_r,o)=>{assert.equal(o.capabilityVersion,route.capability);return programs;},runtimeIdentity:()=>runtimeIdentity,
   prepareCpuRequest:options=>{events.push('request');assert.equal(options.capabilityVersion,route.capability);assert.deepEqual(options.preparationRequestBinding,rb);return put(base,outputRoot+'/cpu-request.json',{synthetic:true});},
-  finalizeCpuAcceptance:async options=>{events.push('accept');assert.equal(options.result,liveResult);return put(base,outputRoot+'/cpu-acceptance.json',{synthetic:true});},
+
   preparePlan:()=>{events.push('plan');return put(base,outputRoot+'/quality-plan.json',plan);},
   makeInternalCandidate:(_r,b)=>{events.push('candidate');assert.equal(b.path,outputRoot+'/quality-plan.json');return {synthetic:true};}},
- native:{runNative:async options=>{events.push('cpu');assert.equal(options.phase,'cpu');assert.equal(options.outputRoot,outputRoot);return liveResult;},
+ native:{finalizeCpuAcceptance:async options=>{events.push('accept');assert.equal(options.result,liveResult);return put(base,outputRoot+'/cpu-acceptance.json',{synthetic:true});},
+runNative:async options=>{events.push('cpu');assert.equal(options.phase,'cpu');assert.equal(options.outputRoot,outputRoot);return liveResult;},
   withNativeOrdinaryBudget:async(_r,receipt,action)=>{assert.equal(receipt,liveResult.ownedReceipt);return action();},
   nativeAccountingRoots:()=>[outputRoot]},
  materialize:(_candidate,options)=>{events.push('package');assert.equal(options.recoverExistingExact,false);

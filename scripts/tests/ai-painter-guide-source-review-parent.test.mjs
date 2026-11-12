@@ -33,6 +33,8 @@ async function exercise(){
  }return next(s,c)}})
  const {verifyGuideReviewParent,reviewGuideSource}=await mod(program)
  const currentBytes=fs.readFileSync(path.join(project,program));write(program,currentBytes)
+ const verifierProgram="scripts/lib/ai-painter-guide-source-review-parent.mjs"
+ write(verifierProgram,fs.readFileSync(path.join(project,verifierProgram)))
  const rulesPath="docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md"
  const rulesRef=write(rulesPath,fs.readFileSync(path.join(project,rulesPath)))
  const rules={path:rulesPath,sha256:rulesRef.sha256}
@@ -90,6 +92,27 @@ async function exercise(){
  const failure=child.failureCase;assert.equal(failure.ledgerEventId,child.reviewId+"-failure-case");assert.equal(JSON.parse(fs.readFileSync(failure.observation.path)).parentReviewId,first.report.reviewId)
  const shaped={path:child.reviewPath,sha256:child.reviewSha256,reviewId:child.reviewId};assert.equal(verify(shaped).reviewId,child.reviewId)
  const childBytes=fs.readFileSync(shaped.path)
+ assert.equal(child.evidencePaths.filter(r=>r.path===verifierProgram).length,1)
+ for(const variant of ["missing","changed_hash"]){
+  const candidate=structuredClone(child.identityPayload)
+  if(variant==="missing")candidate.evidencePaths=candidate.evidencePaths.filter(r=>r.path!==verifierProgram)
+  else candidate.evidencePaths.find(r=>r.path===verifierProgram).sha256="0".repeat(64)
+  const forgedVerifier=make(candidate,{reviewerProgramSha256:candidate.reviewerProgramSha256,parentReviewId:candidate.parentReviewId})
+  assert.throws(()=>verify(forgedVerifier.ref),/verifier source binding/)
+ }
+ const previousReviewer="df552168cdb1769f5b86a687781e1cc3a403186927e6a8b609a20e9502088b88"
+ const preSplit=structuredClone(child.identityPayload)
+ preSplit.evidencePaths=preSplit.evidencePaths.filter(r=>r.path!==verifierProgram)
+ preSplit.evidencePaths.find(r=>r.path===program).sha256=previousReviewer
+ preSplit.reviewerProgramSha256=previousReviewer
+ const preserved=make(preSplit,{reviewerProgramSha256:previousReviewer,parentReviewId:preSplit.parentReviewId})
+ commit(preserved)
+ assert.equal(verify(preserved.ref).reviewId,preserved.report.reviewId)
+ const unknown=structuredClone(preSplit)
+ unknown.evidencePaths.find(r=>r.path===program).sha256="1".repeat(64)
+ unknown.reviewerProgramSha256="1".repeat(64)
+ const unknownReview=make(unknown,{reviewerProgramSha256:unknown.reviewerProgramSha256,parentReviewId:unknown.parentReviewId})
+ assert.throws(()=>verify(unknownReview.ref),/unrecognized parent reviewer/)
  const fakeSelf=JSON.parse(childBytes)
  fakeSelf.identityPayload.parentReview=shaped;fakeSelf.identityPayload.parentReviewId=shaped.reviewId
  fakeSelf.parentReviewId=shaped.reviewId

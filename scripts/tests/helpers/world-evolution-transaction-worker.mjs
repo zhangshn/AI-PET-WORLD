@@ -81,6 +81,7 @@ export function fixture(kind,root=null){
   assert(compiled.has(name),'compile whitelist excludes '+name)
   const exports={};cache.set(name,exports)
   const get=id=>{
+   if(id==='../../../scripts/lib/runtime-working-directory.mjs')return {runtimeWorkingDirectory:()=>privateRoot,resolveRuntimePath:path.resolve}
    if(id==='node:fs/promises')return guarded
    if(id==='node:fs')return {existsSync:p=>{inside(p);return fs.existsSync(p)}}
    if(id.startsWith('./'))return load(id.slice(2))

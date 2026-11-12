@@ -223,3 +223,56 @@ function requireId(value, label) { assert.match(value ?? "", /^[A-Za-z0-9][A-Za-
 function requireRuntimePath(value, label) { assert.ok(typeof value === "string" && value.startsWith(".runtime/ai-painter/") && !value.includes("..") && !value.includes("\\"), `${label} invalid`); }
 function canonical(value) { if (Array.isArray(value)) return value.map(canonical); if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])])); return value; }
 function sha256Of(value) { return crypto.createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex"); }
+
+// Shared successor identifiers and readonly outer-evidence validation.
+export const FORMAL_PLAN_ACTION = "plan:ai-painter-stage4-v2-formal-stage0-to-stage2";
+
+export const FORMAL_PLAN_TASK = "materialize_stage4_v2_formal_stage0_to_stage2";
+
+export const FAILURE_ACTION = "adjudicate:ai-painter-stage4-v2-controlled-smoke-failure-boundary";
+
+export const FAILURE_TASK = "adjudicate_stage4_v2_controlled_smoke_failure_boundary";
+
+export function validateOuterFinalizationChain({
+  root, payload, genericTerminal, smokeFinalizationBinding,
+}) {
+  const finalResultBinding = genericTerminal.finalResult?.finalization;
+  assert.deepEqual(finalResultBinding, smokeFinalizationBinding,
+    "closed-loop final phase does not bind the outer Smoke finalization");
+  const finalization = readBoundJson(root, smokeFinalizationBinding);
+  assert.equal(finalization.schemaVersion,
+    "ai-painter-stage4-v2-controlled-smoke-finalization-v1");
+  assert.equal(finalization.packageId, payload.packageId);
+  assert.equal(finalization.runId, payload.runId);
+  for (const [label, binding] of [
+    ["trainingManifest", finalization.trainingManifest],
+    ["machineReview", finalization.machineReview],
+    ["reviewExecutionBinding", finalization.reviewExecutionBinding],
+    ["reviewPhaseEvidence", finalization.reviewPhaseEvidence],
+    ["causalAdjudication", finalization.causalAdjudication],
+    ["adjudicationPhaseEvidence", finalization.adjudicationPhaseEvidence],
+    ["resourceTelemetry", finalization.resourceTelemetry],
+  ]) {
+    assert.ok(binding && typeof binding.path === "string"
+      && /^[a-f0-9]{64}$/u.test(binding.sha256 ?? ""), `finalization.${label} is invalid`);
+    assert.equal(sha256File(resolveProjectPath(root, binding.path, {
+      mustExist: true, kind: "file",
+    })), binding.sha256, `finalization ${label} changed`);
+  }
+  const causal = readBoundJson(root, finalization.causalAdjudication);
+  assert.deepEqual(causal.sourceMachineReview, finalization.machineReview,
+    "causal adjudication consumed another machine review");
+  assert.deepEqual(causal.sourceReviewExecutionBinding,
+    finalization.reviewExecutionBinding,
+    "causal adjudication consumed another review execution binding");
+  assert.deepEqual(causal.sourceReviewPhaseEvidence, finalization.reviewPhaseEvidence,
+    "causal adjudication consumed another review phase evidence");
+  const adjudicationPhase = readBoundJson(root, finalization.adjudicationPhaseEvidence);
+  assert.deepEqual(adjudicationPhase.result?.adjudication,
+    finalization.causalAdjudication,
+    "finalization did not consume the passed adjudication phase output");
+  const reviewPhase = readBoundJson(root, finalization.reviewPhaseEvidence);
+  assert.deepEqual(reviewPhase.result?.machineReview, finalization.machineReview,
+    "finalization did not transitively consume the passed review output");
+  return finalization;
+}

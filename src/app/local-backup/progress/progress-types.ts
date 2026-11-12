@@ -24,9 +24,14 @@ export type ProgressProjection={
 }
 export type FormalPlanProjection={schemaVersion:'local-backup-formal-plan-projection-v1';projectionKind:'formal_plan_only';plan:WorkPlanDefinition;workPlan:WorkPlanProjection;readAtUtc:string;live:false;dynamicEvidence:{status:'unverifiable';reasonCode:string;message:string}}
 export type ProgressResponse={dataStatus:string;reasonCode:string;projection:ProgressProjection|FormalPlanProjection}
-export type NativeStage0Progress = {kind:'reading'|'unavailable';message:string}|{
+export type NativeStage0HistoricalStop = {status:'unavailable';message:string}|{
+ status:'verified';runId:string;runStatus:'failed_closed';startedAt:string;endedAt:string;recordedPairs:number;recordedSegments:number;
+ reason:string;terminalSha256:string;checkpointRevalidated:false;verifiedAtUtc:string;
+ continuation?:{status:'unavailable';message:string}|{status:'verified';runStatus:'training_completed_fixed_review_failed';endedAt:string;recordedPairs:number;recordedSegments:number;terminalSha256:string;checkpointRevalidated:false;reviewRecomputed:false};
+}
+export type NativeStage0Progress = ({kind:'reading'|'unavailable';message:string}|{
  kind:'verified';runId:string;status:string;sourceTime:string;startedAt:string|null;endedAt:string|null;elapsedSeconds:number|null;previousStop?:{endedAt:string;committed:number};waitingResource?:{at:string;ram:number;minRam:number;disk:number;minDisk:number}|null;
  committed:number;percentage:number;segments:number;currentSegment:number|null;epoch:number|null;hostPid:number|null;hostAlive:boolean|null;
  workerPid:number|null;workerOwned:boolean;pendingD:number|null;pendingG:number|null;heartbeatAt:string|null;workerPhase:string|null;reason:string|null;
  reviews:{epoch:number;rows:number;reviewAvailable:boolean;eligibility:string}[];links:{label:string;href:string}[];
-}
+})&{historicalStop?:NativeStage0HistoricalStop}

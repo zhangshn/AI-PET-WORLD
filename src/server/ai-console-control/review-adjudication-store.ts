@@ -375,20 +375,25 @@ function validateCommandInput(input: AiConsoleReviewCommandInput) {
 
 function openWritableStore(): DatabaseSync {
   const storePath = getStorePath(); mkdirSync(path.dirname(storePath), { recursive: true }); const database = new DatabaseSync(storePath)
-  database.exec("PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL;")
-  database.exec(`
+  try {
+    database.exec("PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL;")
+    database.exec(`
     CREATE TABLE IF NOT EXISTS metadata (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), schema_version TEXT NOT NULL, registry_identity TEXT NOT NULL, source_boundary TEXT NOT NULL, writer_identity TEXT NOT NULL, store_revision INTEGER NOT NULL CHECK (store_revision >= 0), registry_revision INTEGER NOT NULL CHECK (registry_revision >= 0), review_contract_count INTEGER NOT NULL CHECK (review_contract_count >= 0), review_result_count INTEGER NOT NULL CHECK (review_result_count >= 0), command_count INTEGER NOT NULL CHECK (command_count >= 0), event_count INTEGER NOT NULL CHECK (event_count >= 0), created_at_utc TEXT NOT NULL, updated_at_utc TEXT NOT NULL, head_event_record_sha256 TEXT, head_command_receipt_sha256 TEXT, metadata_sha256 TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS review_contracts (review_contract_id TEXT PRIMARY KEY, contract_sequence INTEGER NOT NULL UNIQUE CHECK (contract_sequence >= 1), capability_domain TEXT NOT NULL, reviewer_identity TEXT NOT NULL, reviewer_version TEXT NOT NULL, metric_definition_id TEXT NOT NULL, threshold_operator TEXT NOT NULL, threshold_value REAL NOT NULL, threshold_unit TEXT NOT NULL, evidence_requirement_id TEXT NOT NULL, failure_code TEXT NOT NULL, previous_review_contract_id TEXT, contract_status TEXT NOT NULL, command_id TEXT NOT NULL UNIQUE, registered_at_utc TEXT NOT NULL, creation_content_sha256 TEXT NOT NULL, creation_content_blob BLOB NOT NULL, review_contract_record_sha256 TEXT NOT NULL, FOREIGN KEY (previous_review_contract_id) REFERENCES review_contracts(review_contract_id));
     CREATE TABLE IF NOT EXISTS review_results (review_result_id TEXT PRIMARY KEY, result_sequence INTEGER NOT NULL UNIQUE CHECK (result_sequence >= 1), review_run_id TEXT NOT NULL, validation_input_identity TEXT NOT NULL, capability_domain TEXT NOT NULL, review_contract_id TEXT NOT NULL, review_contract_record_sha256 TEXT NOT NULL, review_node_id TEXT NOT NULL, reviewer_identity TEXT NOT NULL, metric_definition_id TEXT NOT NULL, metric_value REAL NOT NULL, threshold_operator TEXT NOT NULL, threshold_value REAL NOT NULL, threshold_unit TEXT NOT NULL, review_status TEXT NOT NULL, failure_code TEXT, affected_scope TEXT NOT NULL, evidence_type_id TEXT NOT NULL, evidence_sha256 TEXT NOT NULL, result_terminal_status TEXT NOT NULL, command_id TEXT NOT NULL UNIQUE, registered_at_utc TEXT NOT NULL, creation_content_sha256 TEXT NOT NULL, creation_content_blob BLOB NOT NULL, review_result_record_sha256 TEXT NOT NULL, UNIQUE (review_run_id, review_contract_id), FOREIGN KEY (review_contract_id) REFERENCES review_contracts(review_contract_id));
     CREATE TABLE IF NOT EXISTS adjudication_events (adjudication_event_id TEXT PRIMARY KEY, event_sequence INTEGER NOT NULL UNIQUE CHECK (event_sequence >= 1), command_id TEXT NOT NULL UNIQUE, event_type TEXT NOT NULL, subject_type TEXT NOT NULL, subject_identity TEXT NOT NULL, capability_domain TEXT NOT NULL, subject_record_sha256 TEXT NOT NULL, occurred_at_utc TEXT NOT NULL, previous_event_record_sha256 TEXT, event_record_sha256 TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS command_receipts (command_id TEXT PRIMARY KEY, command_sequence INTEGER NOT NULL UNIQUE CHECK (command_sequence >= 1), command_type TEXT NOT NULL, actor_identity TEXT NOT NULL, role TEXT NOT NULL, target_identity TEXT, expected_registry_revision INTEGER NOT NULL, resulting_registry_revision INTEGER NOT NULL, idempotency_key_sha256 TEXT NOT NULL, input_sha256 TEXT NOT NULL, reason_text TEXT NOT NULL, validation_status TEXT NOT NULL, execution_status TEXT NOT NULL, result_terminal_id TEXT NOT NULL, failure_code TEXT, event_id TEXT, requested_at_utc TEXT NOT NULL, finished_at_utc TEXT NOT NULL, executor_identity TEXT NOT NULL, previous_command_receipt_sha256 TEXT, command_receipt_sha256 TEXT NOT NULL);
   `)
-  verifyDatabaseSchema(database)
-  const count = Number((database.prepare("SELECT COUNT(*) AS count FROM metadata").get() as { count: number }).count)
-  if (count === 0) insertInitialMetadata(database)
-  if (count > 1) throw new Error("ai_console_review_metadata_cardinality_invalid")
-  database.exec("PRAGMA user_version = 1")
-  return database
+    verifyDatabaseSchema(database)
+    const count = Number((database.prepare("SELECT COUNT(*) AS count FROM metadata").get() as { count: number }).count)
+    if (count === 0) insertInitialMetadata(database)
+    if (count > 1) throw new Error("ai_console_review_metadata_cardinality_invalid")
+    database.exec("PRAGMA user_version = 1")
+    return database
+  } catch (error) {
+    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    throw error
+  }
 }
 function insertInitialMetadata(database: DatabaseSync) {
   const createdAtUtc = new Date().toISOString()

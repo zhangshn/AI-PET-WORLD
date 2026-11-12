@@ -449,12 +449,7 @@ function sha256Text(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-function writeJsonExclusive(target, value) {
-  fs.writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`, {
-    encoding: "utf8",
-    flag: "wx",
-  });
-}
+
 
 function writeOrVerifyJson(target, value) {
   const bytes = `${JSON.stringify(value, null, 2)}\n`;

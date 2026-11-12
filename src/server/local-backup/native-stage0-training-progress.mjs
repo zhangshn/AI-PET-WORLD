@@ -2,6 +2,7 @@ import {execFile} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+import {readNativeStage0HistoricalStop} from './native-stage0-history.mjs'
 
 const runId='stage0-native-256-formal-229',entry='scripts/run-native-stage0-formal-training.mjs'
 const host='scripts/lib/native-stage0-formal-service.mjs',policy='data/ai-painter/system-governance/ai-painter-native-stage0-formal-training-v1.json'
@@ -118,8 +119,22 @@ async function currentProjection(root){
   }
   return projectStage0Continuation(base,await report(root,continuationEntry))
 }
+export function projectNativeStage0Polling(cache,now){
+  const sinceAttempt=now-cache.lastAttempt
+  const shouldPoll=!cache.pending&&(sinceAttempt<0||sinceAttempt>=14500)
+  const age=cache.last?now-Date.parse(cache.last.sourceTime):null
+  // A wall-clock rollback is not evidence that the worker stopped or that a
+  // future observation is fresh. Keep the cached source intact for diagnosis.
+  if(cache.last&&(!date(cache.last.sourceTime)||!Number.isFinite(age)||age<0)){
+    return {shouldPoll,view:{kind:'unavailable',message:'训练报告观察时间异常，无法确认当前训练状态。'}}
+  }
+  const view=cache.last&&age<45000?cache.last:
+    cache.problem?{kind:'unavailable',message:cache.problem}:{kind:'reading',message:'正在读取本地正式训练服务，结果随看板刷新。'}
+  return {shouldPoll,view}
+}
 export function readNativeStage0TrainingProgress(projectRoot){
   if(path.resolve(projectRoot)!==path.resolve(process.cwd()))return null
+  const historicalStop=readNativeStage0HistoricalStop(projectRoot)
   try{
     const bytes=installedBytes(projectRoot,policy,256*1024)
     if(hash(bytes)!==approvedPolicy)fail('正式训练合同已变更')
@@ -127,12 +142,13 @@ export function readNativeStage0TrainingProgress(projectRoot){
     for(const [key,file] of [['entry',entry],['host',host]]){
       if(spec[key].path!==file||hash(installedBytes(projectRoot,file,128*1024))!==spec[key].sha256)fail('本地训练报告程序与登记不符')
     }
-  }catch(err){return err.code==='ENOENT'?null:{kind:'unavailable',message:'无法校验本地正式训练报告程序。'}}
+  }catch(err){return err.code==='ENOENT'&&historicalStop.status!=='verified'?null:
+    {kind:'unavailable',message:'无法校验本地正式训练报告程序。',historicalStop}}
   const now=Date.now()
-  if(!cache.pending&&now-cache.lastAttempt>=14500){
+  const {shouldPoll,view}=projectNativeStage0Polling(cache,now)
+  if(shouldPoll){
     cache.pending=true;cache.lastAttempt=now
     currentProjection(projectRoot).then(v=>{cache.last=v;cache.problem=null}).catch(e=>{cache.problem=e.message;cache.last=null}).finally(()=>{cache.pending=false})
   }
-  if(cache.last&&now-Date.parse(cache.last.sourceTime)<45000)return cache.last
-  return cache.problem?{kind:'unavailable',message:cache.problem}:{kind:'reading',message:'正在读取本地正式训练服务，结果随看板刷新。'}
+  return {...view,historicalStop}
 }

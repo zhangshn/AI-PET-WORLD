@@ -19,15 +19,20 @@ function openIndex(root, readOnly) {
   if (readOnly && !existsSync(file)) return null
   if (!readOnly) mkdirSync(path.dirname(file), { recursive: true })
   const db = new DatabaseSync(file, { readOnly })
-  db.exec(readOnly ? 'PRAGMA query_only=ON; PRAGMA busy_timeout=5000' : `PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;
+  try {
+    db.exec(readOnly ? 'PRAGMA query_only=ON; PRAGMA busy_timeout=5000' : `PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;
     CREATE TABLE IF NOT EXISTS meta(id INTEGER PRIMARY KEY CHECK(id=1), schema TEXT NOT NULL, revision INTEGER NOT NULL, scanned_at TEXT, lease_until INTEGER NOT NULL DEFAULT 0, complete INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS queue(logical_path TEXT PRIMARY KEY, cursor TEXT NOT NULL DEFAULT '', priority INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS directories(logical_path TEXT PRIMARY KEY, last_scanned INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS sources(logical_path TEXT PRIMARY KEY, content_sha TEXT NOT NULL, run_id TEXT NOT NULL, kind TEXT NOT NULL, terminal_path TEXT, terminal_sha TEXT, parent_path TEXT, parent_sha TEXT, status TEXT NOT NULL, reason_code TEXT, discovered_at TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS sources_run ON sources(run_id,kind);
     INSERT OR IGNORE INTO meta(id,schema,revision,lease_until,complete) VALUES(1,'ai_console_training_history_index_v1',0,0,0);`)
-  if (!readOnly && !db.prepare('PRAGMA table_info(queue)').all().some(column => column.name === 'priority')) db.exec('ALTER TABLE queue ADD COLUMN priority INTEGER NOT NULL DEFAULT 0')
-  return db
+    if (!readOnly && !db.prepare('PRAGMA table_info(queue)').all().some(column => column.name === 'priority')) db.exec('ALTER TABLE queue ADD COLUMN priority INTEGER NOT NULL DEFAULT 0')
+    return db
+  } catch (error) {
+    try { db.close() } catch { /* Preserve the initialization failure. */ }
+    throw error
+  }
 }
 
 function validBinding(value) { return value && typeof value.path === 'string' && SHA.test(value.sha256) }

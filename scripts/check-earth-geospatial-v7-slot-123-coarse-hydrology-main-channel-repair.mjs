@@ -236,6 +236,11 @@ const checks = {
   engineeredCellsExcludedBeforeAggregation:
     coarseProfile.aggregation
       .engineeredCellsExcludedBeforeAggregation === true,
+  reportedSupportMeansMatchBoundBands:
+    Number.isFinite(mainChannel.selection.upperQuantizedSupportMean) &&
+    Number.isFinite(mainChannel.selection.lowerQuantizedSupportMean) &&
+    mainChannel.selection.upperQuantizedSupportMean === round(upperSupportMean, 6) &&
+    mainChannel.selection.lowerQuantizedSupportMean === round(lowerSupportMean, 6),
   measuredEightBandSupportVariation:
     coarseProfile.coarseBands.length === 8 &&
     new Set(

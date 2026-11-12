@@ -4,10 +4,7 @@ import {execFileSync} from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
 import crypto from "node:crypto";
-import {ARMS,TRAINING,TRAINING_V2,TRAINING_V3,RESOURCES,OWNED_FILES,summarize,decide,failureFacts,validatePredecessor,
-  sealEndpointV2Request,sealEndpointV3Request,validateRequestStrategy,buildEndpointAbV2Request,buildEndpointAbV3Request,requestOf,
-  TRAINING_V4,sealEndpointV4Request,buildEndpointAbV4Request,expectedEndpointRoute,PHASE4_POLICY,validatePhase4Policy,
-  validateGpuRecheckResult,GPU_RECHECK_POLICY,CONTROLLED_TRAINING_POLICY} from "../lib/ai-painter-endpoint-ab-v1.mjs";
+import { ARMS, TRAINING, TRAINING_V2, TRAINING_V3, RESOURCES, OWNED_FILES, summarize, decide, failureFacts, validatePredecessor, sealEndpointV2Request, sealEndpointV3Request, validateRequestStrategy, buildEndpointAbV2Request, buildEndpointAbV3Request, requestOf, TRAINING_V4, sealEndpointV4Request, expectedEndpointRoute, PHASE4_POLICY, validatePhase4Policy, validateGpuRecheckResult, GPU_RECHECK_POLICY, CONTROLLED_TRAINING_POLICY } from "../lib/ai-painter-endpoint-ab-v1.mjs"
 const hash="a".repeat(64), checkpoint={path:"parent.pt",sha256:hash};
 const regions=["terrain_path_ground","object_footprints","object_tree","object_rock","object_vegetation"];
 const metrics=value=>({final:{rgbMae:value,laplacianMae:value,edgeMae:value,phase4ResidualRmsAfterGlobalBiasRemoval:value},

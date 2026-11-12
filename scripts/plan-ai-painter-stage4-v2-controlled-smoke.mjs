@@ -21,30 +21,7 @@ import {
   buildStage4V2SmokeProgramGraph,
   validateStage4V2QualificationProgramGraph,
 } from "./lib/ai-painter-program-graph-manifest-v1.mjs";
-import {
-  bindAbsolute,
-  buildDerivedTrainerExecution,
-  FIXED_EPOCH_COUNT,
-  FIXED_PREVIEW_EPOCHS,
-  FIXED_RESOLUTION,
-  FIXED_TRAIN_SAMPLE_ID,
-  FIXED_VALIDATION_SAMPLE_ID,
-  FIXED_SEED,
-  projectLogicalPath,
-  readBoundJson,
-  readJsonObject,
-  resolveProjectPath,
-  sha256File,
-  SMOKE_BACKGROUND_LAUNCH_ACTION,
-  SMOKE_OUTPUT_ROOT,
-  SMOKE_PACKAGE_ROOT,
-  SMOKE_PLAN_ACTION,
-  SMOKE_RUN_ACTION,
-  SMOKE_RUN_TASK,
-  STAGE4_V2_ARCHITECTURE,
-  STAGE4_V2_CAPABILITY,
-  validateStage4V2SmokePackagePayload,
-} from "./lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs";
+import { bindAbsolute, buildDerivedTrainerExecution, FIXED_EPOCH_COUNT, FIXED_PREVIEW_EPOCHS, FIXED_RESOLUTION, FIXED_TRAIN_SAMPLE_ID, FIXED_VALIDATION_SAMPLE_ID, FIXED_SEED, readBoundJson, readJsonObject, resolveProjectPath, SMOKE_BACKGROUND_LAUNCH_ACTION, SMOKE_OUTPUT_ROOT, SMOKE_PLAN_ACTION, SMOKE_RUN_ACTION, SMOKE_RUN_TASK, STAGE4_V2_ARCHITECTURE, STAGE4_V2_CAPABILITY, validateStage4V2SmokePackagePayload } from "./lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs"
 import {
   buildStage4V2SmokeTicket,
   ensureStage4V2SmokeTicketIssuer,

@@ -21,12 +21,15 @@ await test("qualification and Smoke profiles include declared reboot recovery an
   const root = process.cwd();
   const registryPath = "src/server/ai-painter-current-execution-registry.mjs";
   const recoveryPath = "scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs";
+  const recoveryInputPath = "scripts/lib/ai-painter-owned-worker-recovery-input.mjs";
   for (const builder of [buildStage4V2QualificationProgramGraph, buildStage4V2SmokeProgramGraph]) {
     const graph = builder({ projectRoot: root,
       programLineage: { registry: bindProjectFile(root, registryPath) } });
     assert.ok(graph.dynamicSuccessors.some(({ path: value }) => value === recoveryPath));
     assert.ok(graph.imports.some(({ from, to, kind }) => from === registryPath
-      && to === recoveryPath && kind === "dynamic_literal"));
+      && to === recoveryInputPath && kind === "dynamic_literal"));
+    assert.ok(graph.imports.some(({ from, to, kind }) => from === recoveryPath
+      && to === recoveryInputPath && kind === "static"));
     assert.ok(graph.imports.some(({ from, to, kind }) => from === recoveryPath
       && to === registryPath && kind === "static"));
     const recovery = graph.files.find(({ path: value }) => value === recoveryPath);

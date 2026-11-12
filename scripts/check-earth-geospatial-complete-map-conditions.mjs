@@ -115,7 +115,7 @@ const EXPECTED_COMPOSITION_ARCHITECTURE_REVISION =
 const regionContract = V7_SLOT_ID ? null : readJson(REGION_CONTRACT_PATH);
 const blueprint = readJson(path.join(ROOT, manifest.blueprintPath));
 const director = readJson(path.join(ROOT, manifest.directorPath));
-const visualFacts = readJson(
+readJson(
   path.join(ROOT, manifest.visualFactManifestPath),
 );
 const task = readJson(path.join(ROOT, manifest.taskPath));

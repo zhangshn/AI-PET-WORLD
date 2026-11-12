@@ -42,3 +42,6 @@ export async function call(request,phase,context=null){
  live.add(receipt);const receiptBinding=put(logical+'/receipt.json',receipt);retained.set(receiptBinding.path+':'+receiptBinding.sha256,receipt);const result={ownedReceipt:receipt,receiptBinding,stdout:Buffer.concat(decoded.stdout).toString('utf8'),stderr:Buffer.concat(decoded.stderr).toString('utf8')};
  if(proof.exitCode!==0)throw Object.assign(Error(phase==='execute'&&c.mode==='stop'?'private_full_v2_operator_stopped':'private_full_v2_worker_exit_'+proof.exitCode),{code:phase==='execute'&&c.mode==='stop'?'private_full_v2_operator_stop':'private_full_v2_worker_failure',ownedReceipt:receipt,receiptBinding,result});return result
 }
+
+const io=await mod('scripts/lib/ai-painter-mvp256-dry-detail-weight-capture-package-chain-v1.mjs');
+export async function finalizeCpuAcceptance({requestBinding,result}){assert.equal(requireLiveOwnedReceipt(root,result.receiptBinding),result.ownedReceipt);assert.equal(result.ownedReceipt.proof.exitCode,0);assert.equal(result.ownedReceipt.phase,'cpu');const req=io.json(root,requestBinding);return io.write(root,req.outputRoot+'/cpu-acceptance.json',{status:'passed',fixtureOnly:true,trainingQualified:false,modelForwardCalls:0,requestBinding,nativeReceipt:result.receiptBinding,observedInitiatorExit:JSON.parse(result.stdout).initiatorExitObserved===true})}

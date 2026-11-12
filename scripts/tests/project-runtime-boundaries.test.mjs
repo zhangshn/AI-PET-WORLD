@@ -12,6 +12,42 @@ import {inspectCapabilityScopeAdmission as compatibility} from '../lib/ai-painte
 const root = path.resolve(import.meta.dirname, '../..')
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json')))
 
+test('registry recovery uses readonly validation and preserves the transaction entry exports', async () => {
+  const reader = await import('../lib/ai-painter-owned-worker-recovery-input.mjs')
+  const transaction = await import('../lib/ai-painter-owned-worker-reboot-recovery-v1.mjs')
+  for (const name of ['loadRecoveryProfile','verifyHistoricalInputs','queryNativeHost','verifyKernelInterruptionHost','kernelInterruptionTerminalIdentity'])
+    assert.equal(reader[name],transaction[name])
+  for (const name of ['quarantineRecovery','registerTrainingKernelInterruption','saveRecoveryAudit'])
+    assert.equal(Object.hasOwn(reader,name),false)
+  const imports = parse(fs.readFileSync(path.join(root,'scripts/lib/ai-painter-owned-worker-recovery-input.mjs'),'utf8'),{sourceType:'module'}).program.body
+    .filter(n=>n.type==='ImportDeclaration').map(n=>n.source.value)
+  assert.equal(imports.some(s=>s.includes('current-execution-registry')||s.includes('reboot-recovery-v1')),false)
+  const registrySource = fs.readFileSync(path.join(root,'src/server/ai-painter-current-execution-registry.mjs'),'utf8')
+  assert.doesNotMatch(registrySource,/import\(['"].*owned-worker-reboot-recovery-v1\.mjs['"]\)/)
+  assert.match(registrySource,/import\(['"].*owned-worker-recovery-input\.mjs['"]\)/)
+})
+
+test('review and successor libraries depend on shared contracts instead of executing CLI modules', async () => {
+  const sharedSmoke = await import('../lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs')
+  const legacySmoke = await import('../run-ai-painter-stage4-v2-controlled-smoke.mjs')
+  for (const name of ['FORMAL_PLAN_ACTION','FORMAL_PLAN_TASK','FAILURE_ACTION','FAILURE_TASK','validateOuterFinalizationChain'])
+    assert.equal(sharedSmoke[name],legacySmoke[name])
+  const sharedHeartbeat = await import('../lib/training-heartbeat-publication.mjs')
+  const legacyExperiment = await import('../run-ai-painter-learning-capacity-experiment.mjs')
+  assert.equal(sharedHeartbeat.replaceHeartbeatFile,legacyExperiment.replaceHeartbeatFile)
+  for (const name of ['plan-ai-painter-stage4-v2-formal-stage0-to-stage2','adjudicate-ai-painter-stage4-v2-controlled-smoke-failure-boundary']) {
+    const imports = parse(fs.readFileSync(path.join(root,'scripts',name+'.mjs'),'utf8'),{sourceType:'module'}).program.body
+      .filter(n=>n.type==='ImportDeclaration').map(n=>n.source.value)
+    assert.equal(imports.includes('./run-ai-painter-stage4-v2-controlled-smoke.mjs'),false)
+    assert.ok(imports.includes('./lib/ai-painter-stage4-v2-controlled-smoke-common-v1.mjs'))
+  }
+  for (const name of ['ai-painter-replay-retention-review-v1','ai-painter-replay-retention-review-recovery-v1']) {
+    const source = fs.readFileSync(path.join(root,'scripts/lib',name+'.mjs'),'utf8')
+    assert.doesNotMatch(source,/import\(['"]\.\.\/run-ai-painter-learning-capacity-experiment\.mjs['"]\)/)
+    assert.match(source,/import\(['"]\.\/training-heartbeat-publication\.mjs['"]\)/)
+  }
+})
+
 test('world runtime loader is shared and never reuses another checkout runtime', async () => {
   assert.equal(loadLoopRuntime, testLoader)
   const runtime = await loadLoopRuntime(root)
@@ -77,4 +113,21 @@ test('runtime parsers remain in production lockfile and default listeners stay l
     assert.notEqual(lock.packages[`node_modules/${name}`].dev, true, `${name} omitted by production install`)
   }
   for (const name of ['dev','start']) assert.match(pkg.scripts[name], /--hostname 127\.0\.0\.1(?: |$)/)
+})
+
+test('guide review parent verification cannot dispatch review, failure capture or palette execution', async () => {
+  const parent = await import('../lib/ai-painter-guide-source-review-parent.mjs')
+  const review = await import('../lib/ai-painter-guide-source-review.mjs')
+  assert.equal(parent.verifyGuideReviewParent, review.verifyGuideReviewParent)
+  const verifier = fs.readFileSync(path.join(root, parent.GUIDE_PARENT_VERIFIER), 'utf8')
+  const imports = parse(verifier, { sourceType: 'module' }).program.body.filter(n => n.type === 'ImportDeclaration').map(n => n.source.value)
+  for (const file of ['ai-painter-guide-source-review.mjs', 'ai-painter-guide-source-failure.mjs', 'ai-painter-guide-palette-proposal.mjs']) {
+    assert.equal(imports.some(p => p.endsWith('/'+file)), false)
+  }
+  assert.doesNotMatch(verifier, /\bimport\s*\(/u)
+  for (const file of ['ai-painter-guide-source-failure.mjs', 'ai-painter-guide-palette-proposal.mjs']) {
+    const code = fs.readFileSync(path.join(root, 'scripts/lib', file), 'utf8')
+    assert.match(code, /from\s*["']\.\/ai-painter-guide-source-review-parent\.mjs["']/u)
+    assert.doesNotMatch(code, /from\s*["']\.\/ai-painter-guide-source-review\.mjs["']/u)
+  }
 })

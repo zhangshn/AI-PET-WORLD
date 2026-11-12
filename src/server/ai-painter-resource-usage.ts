@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process"
 import { runtimeWorkingDirectory } from "../../scripts/lib/runtime-working-directory.mjs"
-import { appendFile, mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { appendFile, mkdir, readFile, rm } from "node:fs/promises"
+import { writeJsonAtomic } from "./ai-painter-training-state"
 import path from "node:path"
 import { promisify } from "node:util"
 
@@ -34,6 +35,8 @@ export type ResourceUsageSessionSummary = {
   durationSeconds: number
   telemetrySampleCount: number
   sampleCount: number
+  samplingStatus?: "complete" | "degraded"
+  samplingError?: string | null
   gpuName: string
   driver: string
   averageGpuUtilizationPercent: number
@@ -72,18 +75,33 @@ export async function startResourceUsageSession(action: string): Promise<Resourc
   const samples: ResourceUsageSample[] = []
   const sampleMs = readPositiveNumber(process.env.AI_PAINTER_RESOURCE_SAMPLE_MS, 2000)
   let finished = false
+  let collectionInFlight: Promise<void> | null = null
+  let samplingError: string | null = null
+  let finishPromise: Promise<ResourceUsageSessionSummary> | null = null
 
   const writeCurrent = async () => {
-    const summary = buildSummary({ sessionId, action, startedAt, finishedAt: null, status: "running", samples, error: null })
-    await writeFile(currentSessionPath, JSON.stringify(summary, null, 2) + "\n", "utf8")
+    const summary = buildSummary({ sessionId, action, startedAt, finishedAt: null, status: "running", samples, error: null, samplingError })
+    await writeJsonAtomic(currentSessionPath, summary)
   }
 
-  const collect = async () => {
-    if (finished) return
-    const sample = await readGpuSample()
-    samples.push(sample)
-    await appendFile(samplePath, JSON.stringify(sample) + "\n", "utf8")
-    await writeCurrent()
+  const collect = () => {
+    if (finished) return Promise.resolve()
+    if (collectionInFlight) return collectionInFlight
+    const collection = (async () => {
+      const sample = await readGpuSample()
+      samples.push(sample)
+      await appendFile(samplePath, JSON.stringify(sample) + "\n", "utf8")
+      await writeCurrent()
+    })()
+    collectionInFlight = collection
+    void collection.then(() => {
+      collectionInFlight = null
+    }, (error: unknown) => {
+      const code = error instanceof Error && "code" in error && typeof error.code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code) ? error.code : "unknown"
+      samplingError ??= `resource_sample_collection_failed:${code}`
+      collectionInFlight = null
+    })
+    return collection
   }
 
   await collect()
@@ -93,30 +111,32 @@ export async function startResourceUsageSession(action: string): Promise<Resourc
 
   return {
     sessionId,
-    async finish(result) {
-      if (finished) {
-        return readLatestSession()
-      }
+    finish(result) {
+      if (finishPromise) return finishPromise
       finished = true
       clearInterval(timer)
-
-      const finalSample = await readGpuSample()
-      samples.push(finalSample)
-      await appendFile(samplePath, JSON.stringify(finalSample) + "\n", "utf8")
-
-      const summary = buildSummary({
-        sessionId,
-        action,
-        startedAt,
-        finishedAt: new Date().toISOString(),
-        status: result.status,
-        samples,
-        error: result.error,
-      })
-      await writeFile(latestSessionPath, JSON.stringify(summary, null, 2) + "\n", "utf8")
-      await appendFile(historyPath, JSON.stringify(summary) + "\n", "utf8")
-      await rm(currentSessionPath, { force: true })
-      return summary
+      finishPromise = (async () => {
+        // Collection errors are retained separately; all admitted writes settle first.
+        await collectionInFlight?.catch(() => {})
+        const finalSample = await readGpuSample()
+        samples.push(finalSample)
+        await appendFile(samplePath, JSON.stringify(finalSample) + "\n", "utf8")
+        const summary = buildSummary({
+          sessionId,
+          action,
+          startedAt,
+          finishedAt: new Date().toISOString(),
+          status: result.status,
+          samples,
+          error: result.error,
+          samplingError,
+        })
+        await writeJsonAtomic(latestSessionPath, summary)
+        await appendFile(historyPath, JSON.stringify(summary) + "\n", "utf8")
+        await rm(currentSessionPath, { force: true })
+        return summary
+      })()
+      return finishPromise
     },
   }
 }
@@ -127,21 +147,6 @@ export async function readResourceUsageLedger() {
     latest: await readJson<ResourceUsageSessionSummary>(latestSessionPath),
     history: await readHistory(),
   }
-}
-
-async function readLatestSession() {
-  return (
-    (await readJson<ResourceUsageSessionSummary>(latestSessionPath)) ??
-    buildSummary({
-      sessionId: "unknown",
-      action: "unknown",
-      startedAt: new Date().toISOString(),
-      finishedAt: new Date().toISOString(),
-      status: "failed",
-      samples: [],
-      error: "Resource usage session already finished, but latest summary was not found.",
-    })
-  )
 }
 
 async function readGpuSample(): Promise<ResourceUsageSample> {
@@ -199,6 +204,7 @@ function buildSummary(input: {
   status: "running" | "completed" | "failed"
   samples: ResourceUsageSample[]
   error: string | null
+  samplingError?: string | null
 }): ResourceUsageSessionSummary {
   const startedMs = Date.parse(input.startedAt)
   const finishedMs = input.finishedAt ? Date.parse(input.finishedAt) : Date.now()
@@ -219,6 +225,8 @@ function buildSummary(input: {
     durationSeconds,
     telemetrySampleCount: input.samples.length,
     sampleCount: input.samples.length,
+    samplingStatus: input.samplingError ? "degraded" : "complete",
+    samplingError: input.samplingError ?? null,
     gpuName: input.samples.at(-1)?.gpuName ?? "NVIDIA GPU not detected",
     driver: input.samples.at(-1)?.driver ?? "--",
     averageGpuUtilizationPercent: round2(averageGpuUtilizationPercent),

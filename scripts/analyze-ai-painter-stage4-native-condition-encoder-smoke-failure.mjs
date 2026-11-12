@@ -3,7 +3,7 @@ import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 
-import { appendAiPainterProgramEvent, formatShanghai, projectPath, writeJsonAtomic } from "./lib/ai-painter-program-event-store.mjs"
+import { appendAiPainterProgramEvent, formatShanghai, projectPath } from "./lib/ai-painter-program-event-store.mjs"
 import { advanceCurrentExecutionRegistry, readCurrentExecutionRegistry } from "../src/server/ai-painter-current-execution-registry.mjs"
 
 const ROOT = process.cwd()

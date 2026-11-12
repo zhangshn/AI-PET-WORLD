@@ -9,7 +9,7 @@ import {
   BRANCH_LABELS,
   SECTOR_LABELS,
   STAR_CATEGORY_LABELS
-} from "../page-view/labels"
+} from "../shared/chart-labels"
 import { getZiweiStarDefinition } from "../star-catalog"
 
 import { getStarCategoryInterpretationProfile } from "./star-keywords"

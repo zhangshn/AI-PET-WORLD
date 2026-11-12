@@ -1,5 +1,7 @@
 "use client"
 
+import { millisecondTime, ageMilliseconds } from "./ai-console-training-time"
+
 import type { CSSProperties } from "react"
 import { refreshAiConsoleLiveObservability, type AiConsoleLiveHistoryPoint, useAiConsoleLiveObservability } from "./ai-console-live-observability"
 import styles from "./ai-console-live-status.module.css"
@@ -13,20 +15,6 @@ function metricValue(value: number | null, unit = "%", digits = 1): string {
 
 function bytes(value: number | null): string {
   return value === null ? "—" : `${(value / 1024 ** 3).toFixed(2)} GiB`
-}
-
-function millisecondTime(value: string | null | undefined): string {
-  if (!value) return "--:--:--.---"
-  const timestamp = new Date(value)
-  if (!Number.isFinite(timestamp.getTime())) return "--:--:--.---"
-  const clock = timestamp.toLocaleTimeString("zh-CN", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })
-  return `${clock}.${String(timestamp.getMilliseconds()).padStart(3, "0")}`
-}
-
-function ageMilliseconds(value: string | null | undefined): number | null {
-  if (!value) return null
-  const timestamp = Date.parse(value)
-  return Number.isFinite(timestamp) ? Math.max(0, Date.now() - timestamp) : null
 }
 
 function Sparkline({ field, history, maximum = 100 }: { field: keyof AiConsoleLiveHistoryPoint; history: readonly AiConsoleLiveHistoryPoint[]; maximum?: number }) {

@@ -13,7 +13,7 @@ import { bind, boundJson, inside, processIdentity, readBound, writeExclusive } f
   "./run-ai-painter-mvp256-dry-v24-training.mjs"
 import { BUDGET, CAPABILITY, PLAN, validateActivationChain,
   validateBasePackage } from "./lib/ai-painter-mvp256-dry-v26-v2-package-chain-v1.mjs"
-import { replaceHeartbeatFile, heartbeatPublicationRule } from "./lib/training-heartbeat-publication.mjs"
+import { replaceHeartbeatFile } from "./lib/training-heartbeat-publication.mjs"
 
 const execFileAsync = promisify(execFile)
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -130,7 +130,7 @@ export function validatePolicy({ root, policy, policyBinding, parent, proposal }
   assert.equal(proposal.singleRepairProposal.maximumTrainingAttempts, 1)
   assert.equal(proposal.singleRepairProposal.automaticRetries, 0)
   assert.equal(policy.modelCpuEvidence.path, MODEL_CPU_PATH)
-  const modelCpu = boundJson(root, policy.modelCpuEvidence)
+  boundJson(root, policy.modelCpuEvidence);
   readNumericCpuProof(root, policy.modelCpuEvidence, parent)
   assert.deepEqual(policy.historicalFormalSpecification, HISTORICAL_SPECIFICATION)
   assert.equal(policy.aggregationRule, AGGREGATION_RULE)

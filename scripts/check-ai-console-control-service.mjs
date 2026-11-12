@@ -1,3 +1,4 @@
+import { readAiConsoleControlSource } from "./lib/ai-console-control-source-reader.mjs"
 import { createHash } from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
@@ -28,7 +29,7 @@ for (const [sourcePath, markers] of requiredSources) {
     failures.push(`missing:${path.relative(projectRoot, sourcePath)}`)
     continue
   }
-  const source = fs.readFileSync(sourcePath, "utf8")
+  const source = sourcePath === controlSurfacePath ? readAiConsoleControlSource(sourcePath) : fs.readFileSync(sourcePath, "utf8")
   for (const marker of markers) {
     if (!source.includes(marker)) failures.push(`contract_marker_missing:${path.relative(projectRoot, sourcePath)}:${marker}`)
   }

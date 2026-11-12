@@ -7,6 +7,17 @@ import type {
   NaturalWorldRuntimeReadInput, NaturalWorldRuntimeWriteInput,
 } from "./world-runtime-schema"
 
+export function decodeWorldRuntimeTransactionJournal(value: unknown, journalPath: string): { state: "prepared" | "committed" } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("runtime_transaction_journal_invalid")
+  const journal = value as Record<string, unknown>
+  if (journal.schemaVersion !== "world-runtime-transaction-v1"
+    || (journal.state !== "prepared" && journal.state !== "committed")
+    || typeof journal.recordPath !== "string" || `${journal.recordPath}.transaction.json` !== journalPath
+    || typeof journal.tick !== "number" || !Number.isInteger(journal.tick) || journal.tick < 0
+    || journal.recordKind !== undefined) throw new Error("runtime_transaction_journal_invalid")
+  return { state: journal.state }
+}
+
 export function isWorldRuntimeSaveRecord(value: unknown): value is WorldRuntimeSaveRecord {
   if (!value || typeof value !== "object") return false
   const record = value as Partial<WorldRuntimeSaveRecord>

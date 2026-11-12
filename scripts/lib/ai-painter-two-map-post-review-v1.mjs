@@ -83,7 +83,10 @@ export async function runTwoMapPostReview({projectRoot=process.cwd()}={}){
  const checkpoints=result.artifacts.filter(b=>b.path===source.outputRoot+'/checkpoint-final.pt');assert.equal(checkpoints.length,1)
  const policy={...declaredPolicy,sourceTerminal,sourceCheckpoint:checkpoints[0]}
  validateReviewSource(policy,terminal,source,result);assert.deepEqual(bind(policy.sourceCheckpoint.path),policy.sourceCheckpoint)
- const plan=read(source.sourcePlan),manifest=read(plan.datasetManifest),validation=read(plan.validationSplit).sampleIds
+ const plan=read(source.sourcePlan)
+ // The manifest must still pass the bound-file reader even though its value is unused.
+ read(plan.datasetManifest)
+ const validation=read(plan.validationSplit).sampleIds
  assert.equal(validation.length,8);assert.equal(new Set(validation).size,8);assert.ok(validation.every(x=>!twoMapSamples.includes(x)))
  const entry=snapshot('data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json')
  assert.ok(entry.currentEntrypoints.some(e=>e.entryFile===ENTRY))

@@ -1,10 +1,10 @@
 # AI控制台系统架构规格
 
-更新时间：2026-11-10 20:36:16 +08:00
+更新时间：2026-11-11 01:42:00 +08:00
 
 状态：active-normative-target
 
-文档版本：`AI-CONSOLE-ARCHITECTURE-1.10`
+文档版本：`AI-CONSOLE-ARCHITECTURE-1.14`
 
 Codex等外部执行智能体不得超出当前用户任务范围；本地程序在生效业务、安全和机器合同内自主运行，不从聊天或本句推导逐步Owner审批。
 
@@ -68,10 +68,17 @@ ApplicationShell
 
 ## 4. 代码分层
 
+平台与工作页目录由`src/shared/ai-console/`提供唯一实现，页面与服务器共同消费。原页面目录中的同名文件仅兼容转导出，不定义第二份目录；后端及API不得再通过页面路径消费这些公共定义。共享层同时提供训练摘要映射、计时格式化和观察类型；页面仅负责轮询与展示，后端不导入页面实现。兼容入口与新入口使用同一个函数或目录对象，工程检查验证此关系并拒绝新增后端到页面的导入。迁移保持十模块、52工作页、字段、路由及状态语义不变。
+
+控制面前端按主登记核验、任务、能力、训练设计、审核、Runtime发布及世界控制七项职责划分为`ai-console-control-registry.tsx`、`-tasks.tsx`、`-capabilities.tsx`、`-training.tsx`、`-reviews.tsx`、`-runtime.tsx`和`-world.tsx`，均位于`src/app/ai-console/`。各组件负责本职责的表单、请求与响应展示；`ai-console-control-types.ts`集中保留前端响应类型，`ai-console-control-common.tsx`提供幂等键生成与回执展示。`ai-console-control-surface.tsx`只保留原公开组件的转导出。职责拆分不改变命令、请求字段、会话、CSRF或服务端执行权限，不建立新的业务合同。源码检查须沿该兼容入口读取真实组件及公共实现，不能只检查转导出文件。
+
+历史详情服务的公共入口仍为`src/server/ai-console/training-history-detail-adapters.mjs`。该入口负责统一预览补充并保留原导出；同目录`training-history-completion-observation.mjs`负责计时与完成模式观察，`training-history-independent-review.mjs`负责独立审核绑定核验，`training-history-managed-detail.mjs`负责受管训练及父级失败，`training-history-legacy-detail.mjs`负责协议分发与旧实验，`training-history-system-interruption.mjs`负责中断恢复证据，`training-history-dry-lifecycle.mjs`、`training-history-stage0-lifecycle.mjs`和`training-history-spatial-affine.mjs`分别解释对应历史协议。每种协议只有一份实现，子模块不反向依赖公共入口。原API、Schema、读取限额、SHA与身份核验不因拆分而改变；源码闭包须包含实际导入的子模块，不得为满足条目上限漏记它们。历史源码摘要保持原值，源码重构不延续旧训练资格。
+
+
 | 层 | 代码位置 | 职责 |
 |---|---|---|
-| 平台目录 | `src/app/ai-console/ai-console-catalog.ts` | 四大Frame、十模块、能力域和一级路由 |
-| 工作页目录 | `src/app/ai-console/ai-console-workspace-catalog.ts` | 52工作页、字段、状态、来源和呈现类型 |
+| 平台目录 | `src/shared/ai-console/ai-console-catalog.ts` | 四大Frame、十模块、能力域和一级路由 |
+| 工作页目录 | `src/shared/ai-console/ai-console-workspace-catalog.ts` | 52工作页、字段、状态、来源和呈现类型 |
 | 一级页面 | `src/app/ai-console/page.tsx` | 固定平台壳和嵌套Frame投影 |
 | 二级渲染 | `src/app/ai-console/ai-console-workspace.tsx` | 模块总览与工作页统一骨架 |
 | 页面交互 | `src/app/ai-console/ai-console-workspace-interactions.tsx` | 视图切换、字段筛选、受信记录选择、结果内检索、只读详情和合同连接 |
@@ -179,6 +186,7 @@ ApplicationShell
 43. 当前项目任务、活动执行、最近训练终态和显式历史选择是四个独立身份。历史选择只服务只读查询，不能替代当前任务或重新激活旧Run。
 44. 当前机器审核只能从当前登记显式绑定的逻辑路径读取；路径必须保持在项目内，文件SHA-256、Run身份、节点数和通过/失败计数必须重新计算一致。
 45. 旧`src/app/ai-painter-progress/`只能保留覆盖根路径和任意子路径的永久重定向；不得保留旧UI、状态读取或训练控制。共享证据与仍被其他业务使用的`/api/ai-painter`接口不属于旧UI删除范围。
+46. 控制台源码边界检查必须区分退役页面／接口依赖与数据API合同第3.2.2—3.2.4节规定的观察协议、路径校验及历史格式定义。允许项限定到已登记文件中的具体语法用途；不得整文件跳过、仅凭出现协议关键词判定旧页面耦合，或把同一字符串用于任意读取仍视为允许。新增未登记路径、旧接口调用、旧页面导入及语法错误须报错；用反例回归验证禁止项。该检查属于静态工程检查，不替代实际读取器的SHA、身份、路径、限额与只读校验，也不证明任意动态表达式的完整数据流安全。
 
 ## 6. 状态与失败关闭
 

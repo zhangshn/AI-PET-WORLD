@@ -1,12 +1,7 @@
 import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
-import {
-  appendAiPainterProgramEvent,
-  formatShanghai,
-  projectPath,
-  writeImmutableProgramRun,
-} from "./lib/ai-painter-program-event-store.mjs"
+import { appendAiPainterProgramEvent, formatShanghai, writeImmutableProgramRun } from "./lib/ai-painter-program-event-store.mjs"
 
 const ROOT = process.cwd()
 const SLOT_ID = "v7-capacity-slot-122"

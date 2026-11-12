@@ -228,6 +228,7 @@ export type TrainingStageDetail = {
 };
 
 export type CurrentExecutionActivity = {
+  progressUnavailableReason?: "progress_observation_incomplete" | null;
   actor:
     | "local_ai_model"
     | "local_program"
@@ -477,38 +478,42 @@ export type CurrentTrainingDashboardSnapshot = {
   gpu: {
     available: boolean;
     name: string;
-    memoryTotalMiB: number;
-    memoryUsedMiB: number;
-    utilizationPercent: number;
-    temperatureCelsius: number;
+    memoryTotalMiB: number | null;
+    memoryUsedMiB: number | null;
+    utilizationPercent: number | null;
+    temperatureCelsius: number | null;
     driver: string;
-    activeComputeProcessCount: number;
+    activeComputeProcessCount: number | null;
+    computeProcesses?: { pid: number; processName: string; usedMemoryMiB: number | null }[] | null;
+    observationIssues?: string[];
   };
   hardware: {
     capturedAtUtc: string;
+    observationSource?: "windows_cim" | "node_os_fallback";
+    observationIssues?: string[];
     cpu: {
       model: string;
       loadPercent: number | null;
-      physicalCoreCount: number;
-      logicalProcessorCount: number;
+      physicalCoreCount: number | null;
+      logicalProcessorCount: number | null;
       currentClockMhz: number | null;
       maxClockMhz: number | null;
-      packageCount: number;
+      packageCount: number | null;
     };
     memory: {
-      totalMiB: number;
-      usedMiB: number;
-      availableMiB: number;
-      usagePercent: number;
+      totalMiB: number | null;
+      usedMiB: number | null;
+      availableMiB: number | null;
+      usagePercent: number | null;
     };
     disks: Array<{
       name: string;
       volumeName: string | null;
       fileSystem: string | null;
-      totalGiB: number;
-      usedGiB: number;
-      freeGiB: number;
-      usagePercent: number;
+      totalGiB: number | null;
+      usedGiB: number | null;
+      freeGiB: number | null;
+      usagePercent: number | null;
     }>;
     networkAdapters: Array<{
       name: string;

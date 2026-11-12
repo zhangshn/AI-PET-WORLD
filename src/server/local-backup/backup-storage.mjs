@@ -39,8 +39,21 @@ export function createBackupStorage(moduleRoot,store) {
   }
   function lock(backupId) {
     checkDirectory(moduleRoot);const file=path.join(moduleRoot,'backup-publish.lock')
-    let fd;try{fd=fs.openSync(file,'wx',0o600)}catch{need(false,'backup_task_lock_present',409)}
-    fs.writeFileSync(fd,JSON.stringify({backupId,processId:process.pid,createdAtUtc:new Date().toISOString()}));fs.fsyncSync(fd);const own=fs.fstatSync(fd)
+    let fd
+    try{fd=fs.openSync(file,'wx',0o600)}catch(error){
+      if(error.code==='EEXIST')need(false,'backup_task_lock_present',409)
+      throw error
+    }
+    let own
+    try{
+      fs.writeFileSync(fd,JSON.stringify({backupId,processId:process.pid,createdAtUtc:new Date().toISOString()}))
+      fs.fsyncSync(fd)
+      own=fs.fstatSync(fd)
+    }catch(error){
+      // Retain the failed lock for inspection; release only this open handle.
+      try{fs.closeSync(fd)}catch{/* Preserve the original initialization error. */}
+      throw error
+    }
     return()=>{fs.closeSync(fd);const current=fs.lstatSync(file,{throwIfNoEntry:false});need(current&&current.isFile()&&!current.isSymbolicLink()&&current.ino===own.ino&&current.dev===own.dev,'backup_lock_identity_changed',409);fs.unlinkSync(file)}
   }
   function begin(input,backupId,configurationSha256,startedAtUtc) {

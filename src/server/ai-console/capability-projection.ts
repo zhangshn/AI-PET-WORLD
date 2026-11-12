@@ -1,4 +1,4 @@
-import { aiCapabilityDomains } from "@/app/ai-console/ai-console-catalog"
+import { aiCapabilityDomains } from "@/shared/ai-console/ai-console-catalog"
 import {
   aiConsoleQualificationGates,
   capabilityLifecycleStoreLogicalPath,
@@ -57,7 +57,7 @@ function queryCapabilityDomains(): AiConsoleProjectionResult {
     sourceRevision: capabilityDirectoryRevision,
     evidenceReferences: [
       "docs/ai-console/AI_CONSOLE_FORMAL_PRODUCT_AND_INFORMATION_ARCHITECTURE_SPEC.md",
-      "src/app/ai-console/ai-console-catalog.ts",
+      "src/shared/ai-console/ai-console-catalog.ts",
       capabilityLifecycleStoreLogicalPath,
     ],
     trustStatus: "verified_registry",

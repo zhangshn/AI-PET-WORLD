@@ -1,0 +1,44 @@
+{
+  "schema": "native-stage0-durable-segment-v1",
+  "mode": "train",
+  "runId": "stage0-native-256-formal-229",
+  "segment": 48,
+  "endPair": 1152,
+  "result": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/48/result.json",
+    "bytes": 38575,
+    "sha256": "2a0c3aa092e942edb8f5be83d8f1f03964ae119bb0e172439bb51cc24a60b335"
+  },
+  "checkpoint": {
+    "bytes": 30107037,
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/48/recovery.pt",
+    "sha256": "5e9b18ffc0c37cbb0310923e2f2f3818cca881305bcf9726c8c378b557aad1d4"
+  },
+  "ownership": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/48/ownership.json",
+    "bytes": 6453,
+    "sha256": "2941966e9f52200d3dfc99928bab23722e0ee8cf545bb9f660226f807b5522c1"
+  },
+  "ticket": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/48/ticket.json",
+    "bytes": 902,
+    "sha256": "913d965456363314e81e94a0eb4ef712c3d6a4b83fbaeef68e12ea8be22bf5a3"
+  },
+  "workerPid": 27520,
+  "guardIdentity": "2130fd90-29cb-457c-ac39-5c7e05aeee33",
+  "nativeCleanup": {
+    "path": ".runtime/ai-painter/owned-worker-guards/2130fd90-29cb-457c-ac39-5c7e05aeee33-native/cleanup-observation.json",
+    "bytes": 3413,
+    "sha256": "ab21f5dc4eb960ff4e82110f455eabb229974f2f9a5c451a63aef38f2d646dd2"
+  },
+  "stateDigest": {
+    "adamw": "f660f7e11fe6329c4e1e94ce1fe479d7638d7c13bbe5ad453edbe6229fd7157b",
+    "counts": "1506f3fcc8b819d496befc6577d6d3965f3e5d8309d9842cb752cd6d4a43a726",
+    "cudaRng": "13a8c9961612edfe696e65754f6ceffe43c34662bde24a41d295a61fe08a462a",
+    "history": "ea349ee4f067788e6c6924d4f66b182ca01525dc587e94f398603323c27a11e3",
+    "modes": "13ab24f8bfcdce769f0bf0449f0fc3694075306b50c5d0e0ab4439e1d15d4322",
+    "networks": "325757eff7ee58696914123acce6e2fa27614260b2f6377558051220b81a5834",
+    "rng": "d554910f94b70041511f6cf6e95ca5217f67a89221a30af1e380ae944b0489a9"
+  },
+  "previousSealSha256": "24626d408d4edb5505a26f6b226216b12f556dc4ac7b12f0fedd82981d21798e"
+}

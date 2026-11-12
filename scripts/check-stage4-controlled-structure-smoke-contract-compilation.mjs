@@ -3,10 +3,7 @@ import { deepStrictEqual } from "node:assert"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import {
-  BASELINE_ARM, CAPACITY_ARM, FUSION_ARM, compileAdjudicationContract, compileSmokeContract,
-  validateAdjudicationContract, validateSmokeContract,
-} from "./lib/ai-painter-stage4-controlled-structure-smoke-contracts.mjs"
+import { CAPACITY_ARM, FUSION_ARM, compileAdjudicationContract, compileSmokeContract, validateAdjudicationContract, validateSmokeContract } from "./lib/ai-painter-stage4-controlled-structure-smoke-contracts.mjs"
 
 const baseConfig = (arm, width) => ({
   status: "stage4_controlled_structure_arm_cpu_supported_inactive",

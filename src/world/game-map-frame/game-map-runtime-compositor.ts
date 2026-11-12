@@ -1,3 +1,4 @@
+import { pointInVisualMaskPolygon as pointInVisualPolygon } from "./game-map-geometry"
 import {runtimeWorkingDirectory,resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
 import { createHash } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
@@ -729,26 +730,7 @@ function pointNearVisualSlot(
   return samples.some(([dx, dy]) => pointInVisualSlot(x + dx, y + dy, slot))
 }
 
-function pointInVisualPolygon(
-  x: number,
-  y: number,
-  points: Array<{ x: number; y: number }>
-): boolean {
-  let inside = false
-  for (let index = 0, previous = points.length - 1; index < points.length; previous = index, index += 1) {
-    const currentPoint = points[index]
-    const previousPoint = points[previous]
-    if (!currentPoint || !previousPoint) continue
-    const intersects =
-      currentPoint.y > y !== previousPoint.y > y &&
-      x <
-        ((previousPoint.x - currentPoint.x) * (y - currentPoint.y)) /
-          (previousPoint.y - currentPoint.y || Number.EPSILON) +
-          currentPoint.x
-    if (intersects) inside = !inside
-  }
-  return inside
-}
+
 
 function noiseSigned(x: number, y: number, salt: number): number {
   let value = Math.imul(x + 374761393, 668265263) ^ Math.imul(y + 1442695041, 3266489917) ^ salt

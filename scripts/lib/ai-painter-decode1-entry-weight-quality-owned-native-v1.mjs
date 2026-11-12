@@ -17,10 +17,13 @@ import { createOwnedStopNativeControl, initializeOwnedStopControlEvidence } from
 import { processIdentity } from "./windows-process-identity.mjs"
 import { createNativeOwnerCommand, nativeOwnerSourceIdentity, nativeBuildFailureObservation,
  createCompletionNativeFrameParser, createCompletionCleanupClock, validateCompletionNativeTimingProof } from "./ai-painter-decode1-entry-completion-native-owner-v1.mjs"
-import { inside, read, json, bind, write, sha, withOutputBudget, directoryBytes } from "./ai-painter-decode1-entry-weight-quality-package-chain-v1.mjs"
+import { verifyCpuReport, inside, read, json, bind, write, sha, withOutputBudget, directoryBytes } from "./ai-painter-decode1-entry-weight-quality-package-chain-v1.mjs"
 import { validatePlan, ROLES, runtimeIdentity, finalProgramBindings, deriveConfiguration,
  executionRoute, requiredProgramRoles, sourceFileCountMaximum, gpuAdmissionSeconds as admissionSeconds } from "./ai-painter-decode1-entry-weight-quality-package-chain-v1.mjs"
-import {registeredTrainingInterfaces} from "./ai-painter-decode1-entry-weight-quality-registration-v1.mjs"
+import {registeredTrainingInterfaces,validateModelIdentity} from "./ai-painter-decode1-entry-weight-quality-registration-v1.mjs"
+import {consumeNativeOwnerChunk,deferCompletionParserUntilSpawn,createRetainedNativeStopSender,
+ primaryErrorBeforeNativeFinalization} from "./ai-painter-owned-worker-stream.mjs"
+export {consumeNativeOwnerChunk,deferCompletionParserUntilSpawn,primaryErrorBeforeNativeFinalization}
 const SELF=fileURLToPath(import.meta.url),STREAM=8*1024*1024
 const PROOF_BYTES=65536,OUTER_TERMINAL_BYTES=65536
 const CAPABILITY="stage4_mvp256_dry_decode1_entry_weight_quality24_v1"
@@ -512,58 +515,11 @@ const SAFE_FAILURE_REASONS=new Set(["wall_timeout","cleanup_deadline","stream_li
  "native failure parent changed","native failure source changed","native failure runtime changed","native failure evidence budget",
  "native failure evidence already exhausted","native failure root differs"]);
 const SAFE_FAILURE_CODES=new Set(["ENOENT","EACCES","EPERM","EBUSY","EEXIST","ETIMEDOUT","ENOSPC","EIO","EINVAL","EPIPE","ERR_ASSERTION","OWNED_GUARD_BUSY"]);
-// Parsing is still per frame; expensive disk accounting is once per incoming
-// block and again at finalization. No disk total is cached between callbacks.
-export function consumeNativeOwnerChunk(pending,chunk,{onFrame,onError,onOverflow,account}){
- let input=pending+chunk.toString("ascii"),index,frames=0;
- while((index=input.indexOf("\n"))>=0){
-  const line=input.slice(0,index).trimEnd();input=input.slice(index+1);frames++;
-  try{onFrame(line)}catch(error){onError(error)}
- }
- if(input.length>65536){onOverflow();input="";}
- if(frames)try{account()}catch(error){onError(error)}
- return input;
-}
-// Install only AFTER retained error/close listeners. An asynchronous spawn
-// failure has no child PID and must follow those original failure handlers.
-export function deferCompletionParserUntilSpawn(child,create,onReady,onFailure){
- assert(child.listenerCount("error")>0&&child.listenerCount("close")>0,"retained failure listeners required before parser startup");
- child.once("spawn",()=>{try{
-   assert(Number.isInteger(child.pid)&&child.pid>0,"real spawned owner PID required");
-   onReady(create(child.pid));
- }catch(error){onFailure(error)}});
-}
 export function primaryErrorForControlStream(primaryError,stopReason,error){
  if(primaryError)return primaryError;
  // A pipe failure after a requested stop is a secondary transport failure,
  // not a replacement for the already observed timeout/resource stop.
  return typeof stopReason==="string"&&(SAFE_FAILURE_REASONS.has(stopReason)||isResourceGuardMessage(stopReason))?new Error(stopReason):error;
-}
-// Terminal-frame observation only closes this call's control-writing window;
-// it grants no cleanup authority. Every control error still reaches the same
-// strict protocol-error handler, including a write already in flight.
-function createRetainedNativeStopSender(child,{isClosed,isSettled,hasTerminalFrame,onError}){
- let sent=false;
- child.stdin.on("error",onError);
- return reason=>{
-  if(sent||isClosed()||isSettled()||hasTerminalFrame()||child.exitCode!==null||child.signalCode!==null
-    ||child.stdin.destroyed||!child.stdin.writable||child.stdin.writableEnded||child.stdin.writableFinished)return false;
-  sent=true;
-  child.stdin.write(Buffer.from(reason).toString("base64")+"\n");
-  return true;
- };
-}
-// Capture an already observed execution/transport failure before the later
-// fixture, cleanup and receipt checks. This selects error precedence only;
-// every existing acceptance and cleanup condition still fails closed.
-export function primaryErrorBeforeNativeFinalization({primaryError=null,stopReason=null,protocolError=null,proof=null}){
- if(primaryError)return primaryError;
- if(stopReason)return new Error(stopReason);
- if(protocolError)return new Error(protocolError);
- if(typeof proof?.stopReason==="string"&&proof.stopReason)return new Error(proof.stopReason);
- if(Number.isInteger(proof?.exitCode)&&proof.exitCode!==0)
-  return Object.assign(new Error(`worker_exit_${proof.exitCode}`),{status:proof.exitCode});
- return null;
 }
 export function boundedNativeFailureMetadata(error){
  const name=["Error","AssertionError","TypeError","SyntaxError","RangeError"].includes(error?.name)?error.name:"Error";
@@ -742,7 +698,7 @@ export async function runNative(options) {
   let recovery=null
   if(reviewRecoveryPlan){
     assert.equal(executionPlan,null);assert.equal(phase,"review")
-    const entry=await import('./ai-painter-decode1-entry-weight-quality-review-v1.mjs')
+    const entry=await import('./ai-painter-decode1-entry-weight-quality-review-context.mjs')
     recovery=entry.recoveryNativeContext(root,reviewRecoveryPlan,onHeartbeat)
     assert.equal(outputRoot,recovery.plan.outputRoot+'/dry-review-owned')
     assert.equal(path.resolve(executable),path.resolve(recovery.original.runtimeIdentity.node.absolutePath))
@@ -1081,3 +1037,18 @@ export async function runNative(options) {
 }
 
 
+
+
+export async function finalizeCpuAcceptance({root,requestBinding,result}){
+ 
+ assert.ok(hasLiveOwnedProof(result.ownedReceipt),'same live CPU call required');assert.equal(result.ownedReceipt.proof?.exitCode,0);
+ assert.equal(result.ownedReceipt.phase,'cpu');
+ assert.ok(hasLiveCpuFixtureCleanup(result.ownedReceipt),'same retained CPU call must confirm all fixture links removed');
+ const request=json(root,requestBinding),reportBinding=JSON.parse(result.stdout),raw=json(root,reportBinding);
+ assert.equal(reportBinding.path,request.outputRoot+'/cpu-report.json');assert.deepEqual(raw.request,requestBinding);
+ const plan={...request,outputRoot:request.outputRoot.replace(/\/cpu-entry$/u,'')};verifyCpuReport(raw,request,plan);
+ assert.deepEqual(raw.initialModel,validateModelIdentity(json(root,raw.modelBinding)));
+ return withNativeOrdinaryBudget(root,result.ownedReceipt,()=>write(root,plan.outputRoot+'/cpu-acceptance.json',{
+  schema:'object-support-structure-quality-final-cpu-acceptance-v1',status:'passed',programBindings:request.programBindings,
+  report:reportBinding,ownedReceipt:result.receiptBinding}));
+}

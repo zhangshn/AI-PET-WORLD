@@ -407,8 +407,8 @@ def observation(prediction, sample, correlations, shared, epoch):
 
 
 def subject_artifacts(reader, plan, sample, evidence, model, order, output, publish, *, shared):
-    from ai_painter.complete_world.stage4_v17_responsibility_artifact import encode_responsibility_artifact
-    import materialize_stage4_mvp256_dry_v24_candidate as files
+    from ai_painter.complete_world.stage4_v17_responsibility_artifact import INTERFACE_ID, encode_responsibility_artifact
+    interface_path = "data/ai-painter/system-governance/" + INTERFACE_ID + ".json"
     release = read_json(reader, plan["datasetManifest"])
     src = read_json(reader, release["sourceIndex"])
     rows = [row for row in src["samples"] if row["sampleId"] == SUBJECT_ID]
@@ -422,8 +422,8 @@ def subject_artifacts(reader, plan, sample, evidence, model, order, output, publ
         "factHash": identity["factHash"], "visualFactManifestSha256": identity["visualFactManifestContentSha256"],
         "conditionPackSha256": identity["conditionPack"]["sha256"],
         "modelStateSha256": shared.v24.core.cpu.state_hash(model)}
-    interface = {"path": files.INTERFACE,
-                 "sha256": hashlib.sha256(reader.path(files.INTERFACE).read_bytes()).hexdigest()}
+    interface = {"path": interface_path,
+                 "sha256": hashlib.sha256(reader.path(interface_path).read_bytes()).hexdigest()}
     schema = read_bytes(reader, interface)
     tensors = {**evidence["terrainResponsibilityFeatures"], **evidence["responsibilityFeatures"]}
     archive, responsibility = encode_responsibility_artifact(

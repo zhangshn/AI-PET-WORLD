@@ -5,7 +5,7 @@ import type {
   ZiweiPlacedStar,
   ZiweiStarCategory
 } from "../contracts"
-import { BRANCH_LABELS, SECTOR_LABELS } from "../page-view/labels"
+import { BRANCH_LABELS, SECTOR_LABELS } from "../shared/chart-labels"
 
 const RELATION_CATEGORIES = [
   "main",

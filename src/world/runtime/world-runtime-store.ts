@@ -24,7 +24,7 @@ import {
   assertRuntimePath,
   assertRuntimePathSegment,
 } from "./runtime-path-security"
-import { isWorldRuntimeSaveRecord } from "./world-runtime-record-validation"
+import { isWorldRuntimeSaveRecord, decodeWorldRuntimeTransactionJournal } from "./world-runtime-record-validation"
 import {
   decodeNaturalWorldRuntimeRecord, assertNaturalWorldReadInput,
   assertNaturalWorldReadMatch, snapshotNaturalWorldWrite, naturalWorldCasConflict,
@@ -81,13 +81,25 @@ function getDefaultLocalFileWorldRuntimeSavePath(): string {
 function readLocalFileWorldRuntimeSaveRecord(input?: LegacyReadInput): Promise<WorldRuntimeStoreReadResult>
 function readLocalFileWorldRuntimeSaveRecord(input: NaturalWorldRuntimeReadInput, natural: true): Promise<NaturalWorldRuntimeReadResult>
 async function readLocalFileWorldRuntimeSaveRecord(input?: LegacyReadInput & Partial<NaturalWorldRuntimeReadInput>, natural = false): Promise<InternalReadResult> {
-  const resolvedFilePath = input?.filePath
-    ? await assertRuntimePath(input.filePath, RUNTIME_DIR)
-    : input?.ownerId && input?.worldId
-      ? await assertRuntimePath(getWorldRuntimeSavePath({ ownerId: input.ownerId, worldId: input.worldId } as WorldRuntimeSaveRecord), RUNTIME_DIR)
-      : input?.worldId
-        ? await resolveWorldRuntimeSavePathByWorldId(input.worldId)
-      : await resolveLatestWorldRuntimeSavePath()
+  let resolvedFilePath: string | null
+  try {
+    resolvedFilePath = input?.filePath
+      ? await assertRuntimePath(input.filePath, RUNTIME_DIR)
+      : input?.ownerId && input?.worldId
+        ? await assertRuntimePath(getWorldRuntimeSavePath({ ownerId: input.ownerId, worldId: input.worldId } as WorldRuntimeSaveRecord), RUNTIME_DIR)
+        : input?.worldId
+          ? await resolveWorldRuntimeSavePathByWorldId(input.worldId)
+        : await resolveLatestWorldRuntimeSavePath()
+  } catch (error) {
+    if (natural) throw error // The natural adapter retains its dedicated failure mapping.
+    return {
+      status: "invalid", record: null,
+      path: input?.filePath ?? getDefaultLocalFileWorldRuntimeSavePath(),
+      message: "Runtime save path or latest index could not be verified.",
+      warnings: [error instanceof Error ? error.message : String(error)],
+      tags: ["world_runtime_store_read", "invalid", "runtime_path_rejected"],
+    }
+  }
 
   if (!resolvedFilePath) {
     return {
@@ -327,7 +339,7 @@ async function writeTransactionJournal(filePath: string, value: unknown): Promis
 
 async function readTransactionJournal(filePath: string): Promise<{ state?: string } | null> {
   try {
-    return JSON.parse(await readFile(filePath, "utf8")) as { state?: string }
+    return decodeWorldRuntimeTransactionJournal(JSON.parse(await readFile(filePath, "utf8")), filePath)
   } catch (error) {
     if (isNodeFileError(error) && error.code === "ENOENT") return null
     throw error
@@ -378,19 +390,20 @@ async function resolveLatestWorldRuntimeSavePath(): Promise<string | null> {
     }>
 
     if (
+      !parsed || typeof parsed !== "object" || Array.isArray(parsed) ||
       typeof parsed.path !== "string" ||
       typeof parsed.ownerId !== "string" ||
       typeof parsed.worldId !== "string" ||
       !Number.isInteger(parsed.tick) ||
       !/^[a-f0-9]{64}$/u.test(parsed.recordSha256 ?? "")
-    ) return null
+    ) throw new Error("runtime_latest_index_invalid")
 
     assertRuntimePathSegment(parsed.ownerId, "ownerId")
     assertRuntimePathSegment(parsed.worldId, "worldId")
     const resolved = await assertRuntimePath(parsed.path, RUNTIME_DIR)
-    if (resolved !== getWorldRuntimeSavePath({ ownerId: parsed.ownerId, worldId: parsed.worldId } as WorldRuntimeSaveRecord)) return null
+    if (resolved !== getWorldRuntimeSavePath({ ownerId: parsed.ownerId, worldId: parsed.worldId } as WorldRuntimeSaveRecord)) throw new Error("runtime_latest_index_identity_mismatch")
     const record = await readExistingRuntimeRecord(resolved)
-    if (!record || record.ownerId !== parsed.ownerId || record.worldId !== parsed.worldId || record.tick !== parsed.tick || sha256Json(record) !== parsed.recordSha256) return null
+    if (!record || record.ownerId !== parsed.ownerId || record.worldId !== parsed.worldId || record.tick !== parsed.tick || sha256Json(record) !== parsed.recordSha256) throw new Error("runtime_latest_index_record_mismatch")
     return resolved
   } catch (error) {
     if (isNodeFileError(error) && error.code === "ENOENT") {

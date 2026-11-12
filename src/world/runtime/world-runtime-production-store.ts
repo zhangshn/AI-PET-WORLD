@@ -25,7 +25,7 @@ import {
   assertRuntimePath,
   assertRuntimePathSegment,
 } from "./runtime-path-security"
-import { isWorldRuntimeSaveRecord } from "./world-runtime-record-validation"
+import { isWorldRuntimeSaveRecord, decodeWorldRuntimeTransactionJournal } from "./world-runtime-record-validation"
 import {
   decodeNaturalWorldRuntimeRecord, assertNaturalWorldReadInput,
   assertNaturalWorldReadMatch, snapshotNaturalWorldWrite, naturalWorldCasConflict,
@@ -229,7 +229,7 @@ async function releaseOwnedLock(lockPath: string, lockToken: string): Promise<vo
 
 async function readTransactionJournal(filePath: string): Promise<{ state?: string } | null> {
   try {
-    return JSON.parse(await readFile(filePath, "utf8")) as { state?: string }
+    return decodeWorldRuntimeTransactionJournal(JSON.parse(await readFile(filePath, "utf8")), filePath)
   } catch (error) {
     if (isNodeFileError(error) && error.code === "ENOENT") return null
     throw error
@@ -241,11 +241,16 @@ async function readLatestPath(root: string): Promise<string | null> {
     const index = JSON.parse(await readFile(path.join(root, LATEST_FILE), "utf8")) as Partial<{
       path: string; ownerId: string; worldId: string; tick: number; recordSha256: string
     }>
-    if (typeof index.path !== "string" || typeof index.ownerId !== "string" || typeof index.worldId !== "string" || !/^[a-f0-9]{64}$/u.test(index.recordSha256 ?? "")) return null
+    if (!index || typeof index !== "object" || Array.isArray(index)
+      || typeof index.path !== "string" || typeof index.ownerId !== "string" || typeof index.worldId !== "string"
+      || !Number.isInteger(index.tick) || !/^[a-f0-9]{64}$/u.test(index.recordSha256 ?? "")) {
+      throw new Error("runtime_latest_index_invalid")
+    }
     const target = await assertRuntimePath(index.path, root)
     if (target !== recordPathFor(root, { ownerId: index.ownerId, worldId: index.worldId } as WorldRuntimeSaveRecord)) throw new Error("latest index identity mismatch")
     const parsed = await readExisting(target)
-    if (!parsed || sha256Json(parsed) !== index.recordSha256 || parsed.tick !== index.tick) throw new Error("latest index record hash mismatch")
+    if (!parsed || parsed.ownerId !== index.ownerId || parsed.worldId !== index.worldId
+      || sha256Json(parsed) !== index.recordSha256 || parsed.tick !== index.tick) throw new Error("latest index record identity or hash mismatch")
     return target
   } catch (error) {
     if (isNodeFileError(error) && error.code === "ENOENT") return null

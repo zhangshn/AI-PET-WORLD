@@ -8,6 +8,7 @@ import { verifyNaturalWorldFactRelease } from "../build-earth-geospatial-complet
 import { buildInitialNaturalWorldVisualTask } from "../build-current-world-visual-generation-task-package.mjs"
 import { verifyNaturalWorldConditionPackage } from "../compile-current-world-visual-conditions.mjs"
 import { naturalWorldDigest } from "./real-earth-region-governance.mjs"
+import { collectPythonStaticSourcePaths } from "./ai-painter-program-graph-manifest-v1.mjs"
 import { readCompatibleFirstWorldInput } from "./natural-world-model-input-compatibility.mjs"
 
 const HASH = /^[a-f0-9]{64}$/
@@ -15,31 +16,10 @@ const SCOPE = "natural_world_runtime_v1"
 const ROLES = Object.freeze({ tree: "object_tree", rock: "object_rock", shrub: "object_vegetation", grass_detail: "object_vegetation" })
 const PYTHON_DEPS = ["natural_world_input_v1.py", "native_stage_geometry_v1.py", "object_instance_supervision_cpu.py", "dataset.py",
   "object_ecology_regime_input_cpu.py", "object_appearance_regime_input_cpu.py"].map(n => "ml/ai-painter/src/ai_painter/complete_world/" + n)
-function pythonImportClosure(root) {
-  const prefix = "ml/ai-painter/src/", seen = new Set(), pending = [...PYTHON_DEPS]
-  const addModule = name => {
-    if (!name.startsWith("ai_painter")) return
-    const stem = prefix + name.replaceAll(".", "/")
-    const file = fs.existsSync(path.join(root, stem + ".py")) ? stem + ".py" : stem + "/__init__.py"
-    if (fs.existsSync(path.join(root, file))) pending.push(file)
-  }
-  while (pending.length) {
-    const file = pending.pop(); if (seen.has(file)) continue; seen.add(file)
-    const parts = file.slice(prefix.length).split("/")
-    for (let i = 1; i < parts.length; i++) {
-      const init = prefix + parts.slice(0, i).join("/") + "/__init__.py"
-      if (fs.existsSync(path.join(root, init))) pending.push(init)
-    }
-    const packageName = parts.slice(0, -1)
-    const source = fs.readFileSync(path.join(root, file), "utf8")
-    for (const match of source.matchAll(/^from\s+([.\w]+)\s+import\s/gm)) {
-      const specifier = match[1], dots = /^\.+/.exec(specifier)?.[0].length ?? 0
-      addModule(dots ? [...packageName.slice(0, packageName.length - dots + 1), ...specifier.slice(dots).split(".").filter(Boolean)].join(".") : specifier)
-    }
-  }
-  return [...seen].sort()
+export function collectNaturalWorldPythonStaticSources(root) {
+  return collectPythonStaticSourcePaths({ projectRoot: root, entrypoints: PYTHON_DEPS })
 }
-let runtimePromise
+const runtimeByRoot = new Map()
 const requireValue = (value, message) => { if (!value) throw new Error(message) }
 const sha = bytes => createHash("sha256").update(bytes).digest("hex")
 const json = bytes => JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes))
@@ -67,18 +47,22 @@ function readBound(root, binding, receipts) {
   return bytes
 }
 async function originalRuntime(root) {
-  if (!runtimePromise) runtimePromise = (async () => {
-    const prefix = pathToFileURL(path.join(root, "src/world/runtime") + path.sep).href
+  const key = fs.realpathSync(root)
+  if (runtimeByRoot.has(key)) return runtimeByRoot.get(key)
+  const pending = (async () => {
+    const prefix = pathToFileURL(path.join(key, "src/world/runtime") + path.sep).href
     const hooks = registerHooks({ resolve(specifier, context, next) {
       return next(context.parentURL?.startsWith(prefix) && specifier.startsWith(".") && !path.extname(specifier)
         ? new URL(specifier + ".ts", context.parentURL).href : specifier, context)
     } })
     try {
-      return { facade: await import(pathToFileURL(path.join(root, "src/world/runtime/world-runtime-store-adapter.ts")).href),
-        validator: await import(pathToFileURL(path.join(root, "src/world/runtime/world-runtime-record-validation.ts")).href) }
+      return { facade: await import(pathToFileURL(path.join(key, "src/world/runtime/world-runtime-store-adapter.ts")).href),
+        validator: await import(pathToFileURL(path.join(key, "src/world/runtime/world-runtime-record-validation.ts")).href) }
     } finally { hooks.deregister() }
   })()
-  return runtimePromise
+  runtimeByRoot.set(key, pending)
+  pending.catch(() => { if (runtimeByRoot.get(key) === pending) runtimeByRoot.delete(key) })
+  return pending
 }
 export function validateNaturalObjectTable(table, footprints) {
   requireValue(Array.isArray(table) && table.length > 0 && table.length <= 254 && Array.isArray(footprints) && footprints.length === table.length, "natural instance table missing or ambiguous")
@@ -155,7 +139,8 @@ export async function buildNaturalWorldModelInputDescriptor({ request, root = pr
   requireValue(policy.schemaVersion === "native-stage-geometry-policy-v1" && policy.stages.length === 3 && policy.stages.every((s, i) => s.stage === i && s.width === 256 * 2 ** i && s.height === 192 * 2 ** i), "registered native geometry policy differs")
   const dependencies = new Map()
   for (const p of ["scripts/lib/natural-world-model-input.mjs", "scripts/lib/natural-world-model-input-compatibility.mjs",
-    ...pythonImportClosure(root), ...verified.release.producerBindings.map(b => b.path)]) {
+    "scripts/lib/ai-painter-program-graph-manifest-v1.mjs", "scripts/lib/ai-painter-python-import-ast-v1.py",
+    ...collectNaturalWorldPythonStaticSources(root), ...verified.release.producerBindings.map(b => b.path)]) {
     const bytes = fs.readFileSync(path.join(root, p)); dependencies.set(p, { path: p, sha256: sha(bytes) })
   }
   for (const b of dependencies.values()) readBound(root, b, receipts)

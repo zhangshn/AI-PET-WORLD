@@ -1,7 +1,7 @@
 // Internal leased CPU acceptance. One native Job contains the entire batch.
 import assert from "node:assert/strict"
 import fs from "node:fs"
-import path from "node:path"
+
 import {spawnSync} from "node:child_process"
 import {fileURLToPath} from "node:url"
 import {inside,read,json,bind,write,sha} from "./lib/ai-painter-mvp256-dry-detail-weight-package-chain-v1.mjs"

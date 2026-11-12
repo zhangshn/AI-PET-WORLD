@@ -1,0 +1,18 @@
+{
+  "runId": "stage0-native-256-formal-229",
+  "phase": "train",
+  "grant": {
+    "path": ".runtime/ai-painter/controller-repair-reviews/native-stage0-formal-training-229-20261103/controller/dispatch.json",
+    "bytes": 222,
+    "sha256": "a594dd3f9e0a62b93cbee80cdb192b57a66d01b21e5b7b7823c2103c3469820c"
+  },
+  "policy": {
+    "path": "data/ai-painter/system-governance/ai-painter-native-stage0-formal-training-v1.json",
+    "bytes": 78478,
+    "sha256": "3f00ea5bb99997ddbdd4f051b424bd9177b1305591504874394370be461887e1"
+  },
+  "startedAtUtc": "2026-11-02T23:09:02.105Z",
+  "runDeadlineUtc": "2026-11-03T08:09:02.105Z",
+  "maximumSegments": 48,
+  "automaticRetries": 0
+}

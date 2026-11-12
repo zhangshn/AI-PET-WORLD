@@ -19,6 +19,7 @@ for (const relative of [
   "game-map-frame/game-map-composite-schema",
   "runtime/runtime-path-security",
   "runtime/natural-world-client-access",
+  "runtime-core/source-fact-identity",
 ]) {
   const file = fileURLToPath(new URL(`../../src/world/${relative}.ts`, import.meta.url))
   const result = ts.transpileModule(fs.readFileSync(file, "utf8"), {
@@ -128,6 +129,7 @@ function fixture(t) {
           return { assertRuntimePathSegment: load("runtime/runtime-path-security").assertRuntimePathSegment }
         }
         if (id === "../runtime/natural-world-client-access") return load("runtime/natural-world-client-access")
+        if (id === "../runtime-core/source-fact-identity") return load("runtime-core/source-fact-identity")
         if (id.startsWith("./")) return load(`game-map-frame/${id.slice(2)}`)
         throw new Error(`unexpected fixture import: ${id}`)
       }
@@ -168,6 +170,19 @@ function fixture(t) {
 function legacyJournal(worldId = "world-a", state = "prepared") {
   return { schemaVersion: "game-map-runtime-frame-transaction-v1", worldId, tick: 7, state }
 }
+
+test("duplicate stored fact IDs cannot conceal a missing current-world fact", async (t) => {
+  const f = fixture(t)
+  const candidate = frame()
+  candidate.sourceFactIds.push(candidate.sourceFactIds[0])
+  const written = await f.write(candidate)
+  assert.equal(written.status, "written")
+  const original = f.raw(written.recordPath)
+  const read = await f.read("world-a", { currentSourceFactIds: ["fact-world-a", "fact-world-b"] })
+  assert.equal(read.status, "invalid")
+  assert(read.warnings.includes("source_fact_ids_mismatch"))
+  assert.equal(f.raw(written.recordPath), original)
+})
 test("legacy composites cannot publish to the reserved natural world", async (t) => {
   const f = fixture(t)
   for (const worldId of ["mvp-natural-world-001", "MVP-NATURAL-WORLD-001"]) {

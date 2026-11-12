@@ -10,7 +10,7 @@ import {RECOVERY_POLICY,RECOVERY_CLI,validateRecoveryPolicy,validateInitialRegis
 import {REPLAY_REVIEW_POLICY,REPLAY_REVIEW_POLICY_SHA} from '../lib/ai-painter-replay-retention-review-v1.mjs'
 import {validateRecoveryEntry} from '../run-ai-painter-replay-retention-review-recovery-v1.mjs'
 
-const sha=b=>createHash('sha256').update(b).digest('hex'),clone=v=>JSON.parse(JSON.stringify(v))
+const sha=b=>createHash('sha256').update(b).digest('hex');
 const policy=JSON.parse(fs.readFileSync(RECOVERY_POLICY)),base=JSON.parse(fs.readFileSync(REPLAY_REVIEW_POLICY))
 const read=b=>{const bytes=fs.readFileSync(b.path);assert.equal(sha(bytes),b.sha256,b.path);return JSON.parse(bytes)}
 const failure=read(policy.priorFailure),prior=read(policy.priorPackage),inference=read(policy.inferenceFailure),streams=read(policy.workerStreams)

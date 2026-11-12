@@ -1,3 +1,4 @@
+import { sameSourceFactIds as sameStringSet } from "../../../../../world/runtime-core/source-fact-identity"
 import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
@@ -366,9 +367,3 @@ function isApprovedContentType(contentType: string): boolean {
   )
 }
 
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
-}

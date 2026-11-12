@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { validateClosedLoopPackage } from "./ai-painter-autonomous-closed-loop-v1.mjs";
+import { validateClosedLoopPackage } from "./ai-painter-autonomous-package-validation-v1.mjs";
 
 export const AUTONOMOUS_PACKAGE_ROOT = ".runtime/ai-painter/autonomous-closed-loop-packages";
 
@@ -93,11 +93,21 @@ function persistExactFile(targetPath, bytes, { recoverExistingExact }) {
       `autonomous package staged bytes differ: ${path.basename(targetPath)}`);
   } else {
     const descriptor = fs.openSync(stagedPath, "wx", 0o600);
+    let writeFailed = false;
     try {
       fs.writeFileSync(descriptor, bytes);
       fs.fsyncSync(descriptor);
+    } catch (error) {
+      writeFailed = true;
+      throw error;
     } finally {
-      fs.closeSync(descriptor);
+      try {
+        fs.closeSync(descriptor);
+      } catch (closeError) {
+        // Preserve the write/sync failure and its staged bytes. A standalone
+        // close failure still prevents publication and is reported to the caller.
+        if (!writeFailed) throw closeError;
+      }
     }
   }
   try {

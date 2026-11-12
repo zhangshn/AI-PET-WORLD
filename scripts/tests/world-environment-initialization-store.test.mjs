@@ -3,8 +3,10 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import {randomUUID} from 'node:crypto'
+import {spawnSync} from 'node:child_process'
 import {record} from './helpers/world-evolution-transaction-worker.mjs'
-import {BASE,ROOT,exercise,cloneRecord,candidate,idOf,unchangedDomain,digest,write,binding,privateRun,independentReadback} from '../../.runtime/ai-painter/controller-repair-reviews/world-environment-initialization-163-20261030/integration/bridge.mjs'
+import {BASE,ROOT,exercise,cloneRecord,candidate,idOf,unchangedDomain,digest,write,binding,privateRun,independentReadback,prepareFixtureRoot} from './helpers/world-environment-initialization-store.mjs'
+test.before(prepareFixtureRoot)
 const token=()=>randomUUID().replaceAll('-',''),run=()=>BASE+'/integration/test-'+token()
 function fixture(){
  const original=record();delete original.worldState.payload.environment.evolution
@@ -33,3 +35,12 @@ test('source mutation or preparation world mismatch fails before private Store c
  const foreign=fixture();foreign.prepared.sourceIdentity.worldId='another-world';const second=run();await assert.rejects(exercise({run:second,...foreign,bindings:[]}),/source_world_identity/);assert.equal(fs.existsSync(path.join(ROOT,second,'store')),false)
 })
 test('private acceptance roots reject traversal, formal store and historical runs',()=>{for(const p of ['data/world-runtime',BASE+'/integration/actual-run/../escape',BASE+'/integration/test-abc','.runtime/ai-painter/controller-repair-reviews/world-evolution-loop-158-20261030/run-'+'a'.repeat(32)])assert.throws(()=>privateRun(p),/private_run/)})
+
+test('tracked helper refuses actual acceptance and cannot run the historical actual entry',async()=>{
+ const f=fixture(),privatePath=run()
+ await assert.rejects(exercise({run:privatePath,...f,bindings:[],actual:true}),/actual_scope/)
+ assert.equal(fs.existsSync(path.join(ROOT,privatePath)),false)
+ assert.throws(()=>privateRun(BASE+'/integration/actual-run'),/private_run/)
+ const child=spawnSync(process.execPath,['scripts/tests/helpers/world-environment-initialization-store.mjs','--actual'],{cwd:ROOT,windowsHide:true,encoding:'utf8',timeout:10000})
+ assert.equal(child.status,1);assert.match(child.stderr,/test_helper_readback_only/)
+})

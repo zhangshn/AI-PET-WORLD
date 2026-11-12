@@ -1,7 +1,7 @@
 // Versioned model adapter for the existing package materializer and phase engine.
 // Immutable configuration references are not admission or publication evidence.
 import assert from 'node:assert/strict'
-import fs from 'node:fs'
+import 'node:fs'
 import {CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,COMPONENT_CPU_ACCEPTANCE,
  validate,verifyBindings} from './ai-painter-ecology-execution-registration-v1.mjs'
 import {inside,read,json,bind,write,sha,directoryBytes,withOutputBudget}

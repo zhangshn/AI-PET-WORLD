@@ -5,7 +5,7 @@ import path from "node:path"
 import test from "node:test"
 import { buildBasePackage, run, runReviewPipeline, PROGRAMS, updateHeartbeat } from
   "../run-ai-painter-mvp256-dry-v26-training.mjs"
-import { bind, boundJson, writeExclusive } from "../run-ai-painter-mvp256-dry-v24-training.mjs"
+import { boundJson, writeExclusive } from "../run-ai-painter-mvp256-dry-v24-training.mjs"
 
 const root = path.resolve(import.meta.dirname, "../..")
 const parent = JSON.parse(fs.readFileSync(path.join(root,

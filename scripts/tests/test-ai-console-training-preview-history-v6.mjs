@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import fsPromises from 'node:fs/promises'
+import { syncBuiltinESMExports } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
@@ -821,19 +823,29 @@ test('history list: timing enrichment preserves bounded pages, opaque cursors an
   const paths = [`${reg}/current.json`, `${reg}/events.jsonl`, `${reg}/registry.sqlite`,
     `${f.outputRoot}/worker-terminal.json`, f.parent.workerExecutionTiming.path]
   const before = paths.map(logical => fs.readFileSync(path.join(f.root, logical)))
+  // Observe actual bounded file opens instead of matching an implementation's
+  // argument list. The previous page must not load this Run's timing evidence.
+  const openedFiles = [], originalOpen = fsPromises.open
+  const observedOpen = t.mock.method(fsPromises, 'open', async (...args) => {
+    openedFiles.push(path.resolve(String(args[0])))
+    return originalOpen(...args)
+  })
+  syncBuiltinESMExports()
+  t.after(() => { observedOpen.mock.restore(); syncBuiltinESMExports() })
+  const timingPath = await fsPromises.realpath(path.join(f.root, f.parent.workerExecutionTiming.path))
   const page1 = await listTrainingHistory({ root: f.root, limit: 1 })
   assert.deepEqual(page1.records.map(row => row.runId), [runId])
   assert.equal(page1.records[0].workerExecutionTiming ?? null, null)
   assert.ok(page1.nextCursor); assert.equal(page1.total, 2)
+  assert.equal(openedFiles.includes(timingPath), false, 'unselected Run timing must not be read')
   const page2 = await listTrainingHistory({ root: f.root, limit: 1, cursor: page1.nextCursor })
   assert.deepEqual(page2.records.map(row => row.runId), [f.parent.runId])
   assert.equal(page2.records[0].workerExecutionTiming.availability, 'available')
+  assert.ok(openedFiles.includes(timingPath), 'selected Run timing must be verified from its actual bytes')
   assert.equal(page2.nextCursor, null); assert.equal(page2.sourceRevision, page1.sourceRevision)
   const bad = Buffer.from(JSON.stringify({ sha256: '0'.repeat(64), offset: 1 })).toString('base64url')
   await assert.rejects(listTrainingHistory({ root: f.root, cursor: bad }), /history_cursor_revision_conflict/)
   for (const [i, logical] of paths.entries()) assert.deepEqual(fs.readFileSync(path.join(f.root, logical)), before[i])
-  const source = fs.readFileSync('src/server/ai-console/training-history-store.mjs', 'utf8')
-  assert.match(source, /combined\.slice\(offset, next\)[\s\S]*verifiedListWorkerTiming\(root, record\)/)
 })
 
 for (const mutation of ['missing-mode', 'finite-wall', 'missing-policy', 'policy-mode', 'policy-null', 'policy-hash'])

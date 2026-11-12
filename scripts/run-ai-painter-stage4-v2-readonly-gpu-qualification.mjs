@@ -11,7 +11,7 @@ import {
   recoverExpiredActiveExecutionToFailedClosed,
   recoverPreparedCurrentExecutionRegistryAdvance,
 } from "../src/server/ai-painter-current-execution-registry.mjs";
-import { catalogPath } from "./lib/ai-pet-world-storage.mjs";
+import "./lib/ai-pet-world-storage.mjs"
 import {
   buildStage4V2ExternalRegistryDependencyManifest,
 } from "./lib/ai-painter-stage4-v2-external-registry-dependency-v1.mjs";

@@ -1,3 +1,4 @@
+import { sameSourceFactIds as sameStringSet } from "../../runtime-core/source-fact-identity"
 import {runtimeWorkingDirectory} from '../../../../scripts/lib/runtime-working-directory.mjs'
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
 import path from "node:path"
@@ -391,13 +392,6 @@ function validateCurrentRuntimeBinding(
   if (!sameStringSet(record.generationCondition.sourceFactIds, input.currentSourceFactIds)) warnings.push("current_condition_source_facts_mismatch")
 
   return warnings
-}
-
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
 }
 
 function getWorldVisualCandidateRecordPath(input: {

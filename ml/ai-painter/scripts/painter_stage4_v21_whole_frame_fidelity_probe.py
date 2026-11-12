@@ -182,6 +182,7 @@ def zero_update_probe(model, critic, sample, order, resource, forward):
          patch.object(torch.optim.Optimizer, "__init__", side_effect=RuntimeError("probe optimizer prohibited")), \
          patch.object(torch, "load", side_effect=RuntimeError("probe checkpoint load prohibited")), \
          patch.object(torch, "save", side_effect=RuntimeError("probe checkpoint write prohibited")):
+        primary = None
         try:
             model.eval(); critic.eval()
             critic.requires_grad_(False)
@@ -210,12 +211,19 @@ def zero_update_probe(model, critic, sample, order, resource, forward):
             discriminator_facts = core.gpu.gradient_facts(critic, "cuda")
             core.require(all(p.grad is None for p in model.parameters()), "probe discriminator leaked generator gradient")
             resource()
+        except BaseException as error:
+            primary = error
+            raise
         finally:
-            model.zero_grad(set_to_none=True); critic.zero_grad(set_to_none=True)
-            for p, flag in enabled:
-                p.requires_grad_(flag)
-            core.require(before == {name: core.cpu.state_hash(network) for name, network in (("Model", model), ("Critic", critic))},
-                         "zero-update probe mutated state")
+            core.restore_state_callbacks([
+                ("probe_model_gradient_clear", lambda: model.zero_grad(set_to_none=True)),
+                ("probe_critic_gradient_clear", lambda: critic.zero_grad(set_to_none=True)),
+                *[(f"probe_parameter_{index}", lambda p=p, flag=flag: p.requires_grad_(flag))
+                  for index, (p, flag) in enumerate(enabled)],
+                *[(f"probe_state_{name}", lambda name=name, network=network:
+                   core.require(before[name] == core.cpu.state_hash(network), "zero-update probe mutated state"))
+                  for name, network in (("Model", model), ("Critic", critic))],
+            ], primary=primary)
     return {"passed": True, "optimizerCreated": False, "optimizerSteps": {"generator": 0, "discriminator": 0},
         "initialStateSha256": before, "finalStateSha256": before, "generatorGradients": generator_facts,
         "discriminatorGradients": discriminator_facts, "objectHeadGradientAbsoluteSums": head_facts,

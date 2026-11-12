@@ -19,9 +19,7 @@ function assert(condition, message) {
   if (!condition) throw new Error(message)
 }
 
-function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"))
-}
+
 
 function sha256Buffer(buffer) {
   return createHash("sha256").update(buffer).digest("hex")

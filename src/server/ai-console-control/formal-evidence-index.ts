@@ -383,8 +383,9 @@ function openWritableDatabase(firstEligibleTransactionSequence: number): Databas
   const indexPath = getIndexPath()
   mkdirSync(path.dirname(indexPath), { recursive: true })
   const database = new DatabaseSync(indexPath)
-  database.exec("PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000")
-  database.exec(`
+  try {
+    database.exec("PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000")
+    database.exec(`
     CREATE TABLE IF NOT EXISTS metadata (
       singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
       schema_version TEXT NOT NULL,
@@ -432,12 +433,16 @@ function openWritableDatabase(firstEligibleTransactionSequence: number): Databas
       UNIQUE (registration_id, evidence_type)
     );
   `)
-  verifyDatabaseSchema(database)
-  const metadataCount = Number((database.prepare("SELECT COUNT(*) AS count FROM metadata").get() as { count: number }).count)
-  if (metadataCount === 0) insertInitialMetadata(database, firstEligibleTransactionSequence)
-  if (metadataCount > 1) throw new Error("ai_console_formal_evidence_metadata_cardinality_invalid")
-  database.exec("PRAGMA user_version = 1")
-  return database
+    verifyDatabaseSchema(database)
+    const metadataCount = Number((database.prepare("SELECT COUNT(*) AS count FROM metadata").get() as { count: number }).count)
+    if (metadataCount === 0) insertInitialMetadata(database, firstEligibleTransactionSequence)
+    if (metadataCount > 1) throw new Error("ai_console_formal_evidence_metadata_cardinality_invalid")
+    database.exec("PRAGMA user_version = 1")
+    return database
+  } catch (error) {
+    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    throw error
+  }
 }
 
 function insertInitialMetadata(database: DatabaseSync, firstEligibleTransactionSequence: number) {

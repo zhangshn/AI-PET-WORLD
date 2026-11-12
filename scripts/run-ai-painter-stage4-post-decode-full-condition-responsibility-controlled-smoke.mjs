@@ -9,12 +9,7 @@ import { auditAiAssistedConditionAlignment } from "./lib/ai-assisted-condition-a
 import { auditAiAssistedProfessionalAesthetic } from "./lib/ai-assisted-professional-aesthetic.mjs";
 import { normalizePreviewWithWindowsSafeIo } from "./lib/ai-assisted-v7-r5-stage3-preview-review.mjs";
 import { advanceCapabilityLifecycle } from "./lib/ai-painter-capability-lifecycle-v1.mjs";
-import {
-  ARCHITECTURE_ID, EXECUTION_ACTIONS, FROZEN_SOURCE_RELATIVE,
-  FROZEN_SOURCE_SHA256, MODE_ID, PREVIEW_EPOCHS, SAMPLE_ID,
-  buildActiveConfig, compileControlledSmokeContract, qualifyLateStability,
-  resolveInside, sha256File, validateActiveConfig, validateControlledSmokeContract,
-} from "./lib/ai-painter-stage4-post-decode-full-condition-responsibility-controlled-smoke-v1.mjs";
+import { EXECUTION_ACTIONS, FROZEN_SOURCE_RELATIVE, FROZEN_SOURCE_SHA256, MODE_ID, PREVIEW_EPOCHS, SAMPLE_ID, buildActiveConfig, compileControlledSmokeContract, qualifyLateStability, resolveInside, sha256File, validateActiveConfig, validateControlledSmokeContract } from "./lib/ai-painter-stage4-post-decode-full-condition-responsibility-controlled-smoke-v1.mjs"
 import { advanceCurrentExecutionRegistry, readCurrentExecutionRegistry } from "../src/server/ai-painter-current-execution-registry.mjs";
 import { appendAiPainterProgramEvent, formatShanghai, projectPath, writeJsonAtomic } from "./lib/ai-painter-program-event-store.mjs";
 

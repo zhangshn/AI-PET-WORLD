@@ -1,5 +1,7 @@
 "use client"
 
+import { millisecondTime, ageMilliseconds } from "./ai-console-training-time"
+
 import type { CSSProperties } from "react"
 import Link from "next/link"
 import { useState } from "react"
@@ -20,20 +22,6 @@ function numberWithUnit(value: number | null, unit: string, digits = 0): string 
 function bytes(value: number | null): string {
   if (value === null) return "—"
   return `${(value / 1024 ** 3).toFixed(1)} GiB`
-}
-
-function millisecondTime(value: string | null | undefined): string {
-  if (!value) return "--:--:--.---"
-  const timestamp = new Date(value)
-  if (!Number.isFinite(timestamp.getTime())) return "--:--:--.---"
-  const clock = timestamp.toLocaleTimeString("zh-CN", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })
-  return `${clock}.${String(timestamp.getMilliseconds()).padStart(3, "0")}`
-}
-
-function ageMilliseconds(value: string | null | undefined): number | null {
-  if (!value) return null
-  const timestamp = Date.parse(value)
-  return Number.isFinite(timestamp) ? Math.max(0, Date.now() - timestamp) : null
 }
 
 function milliseconds(value: number | null, digits = 0): string {

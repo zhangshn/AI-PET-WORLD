@@ -1,3 +1,4 @@
+import { sameSourceFactIds as sameStringSet } from "../runtime-core/source-fact-identity"
 import { isGameMapFrame } from "./game-map-frame-schema"
 import {
   buildPolylineCorridorPolygon,
@@ -322,12 +323,6 @@ function failed(code: string, message: string): GameMapFrameValidationResult {
 
 function issue(code: string, message: string): GameMapFrameValidationIssue {
   return { code, message }
-}
-
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
 }
 
 // The v1 collision layer is derived from source rectangular footprints. Preserve

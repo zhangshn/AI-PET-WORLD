@@ -59,7 +59,7 @@ await test('new unrelated process reusing old PID does not imply old process sur
   assert.equal(evaluateRecovery(f).status, 'eligible_for_quarantine')
 })
 
-const testParent = path.resolve('.runtime/ai-painter/owned-worker-reboot-recovery-t-q4-57/tests')
+const testParent = path.resolve(process.env.AI_PAINTER_REBOOT_TEST_OUTPUT ?? '.runtime/ai-painter/controller-repair-reviews/reboot-recovery-tests')
 fs.mkdirSync(testParent, { recursive: true })
 function transactionFixture() {
   const root = fs.mkdtempSync(path.join(testParent, 'isolated-'))
@@ -202,6 +202,10 @@ if (fs.existsSync(realProfilePath)) {
   ]
   for (const [name, change, error] of negatives) await test(name, () => {
     const candidate = structuredClone(original)
+    // Extend this private negative fixture only; never rewrite the historical profile.
+    const readerPath = 'scripts/lib/ai-painter-owned-worker-recovery-input.mjs'
+    if (!candidate.programBindings.some(b => b.path === readerPath))
+      candidate.programBindings.push({path:readerPath,sha256:sha256(fs.readFileSync(readerPath))})
     change(candidate)
     assert.throws(() => verifyHistoricalInputs(process.cwd(), candidate), error)
   })
@@ -269,7 +273,7 @@ function qualificationTimeoutFixture() {
     cleanupQualificationGranted: false, guardReleaseGranted: false, normalWriteQualificationGranted: false, automaticRetries: 0, privateCpuFixture: false })
   const registry = { ...put('.runtime/ai-painter/current-execution-registry/current.json', { registryRevision: 7, activeExecution: null }), revision: 7 }
   const required = ['docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md', 'scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs',
-    'scripts/run-ai-painter-owned-worker-reboot-recovery.mjs', 'src/server/ai-painter-current-execution-registry.mjs']
+    'scripts/lib/ai-painter-owned-worker-recovery-input.mjs', 'scripts/run-ai-painter-owned-worker-reboot-recovery.mjs', 'src/server/ai-painter-current-execution-registry.mjs']
   const profile = { schema: 'ai-painter-owned-worker-reboot-recovery-profile-v1', caseId: 'private-qualification-timeout',
     guard: { path: '.runtime/ai-painter/owned-worker-guards/active.json', sha256: guardSnapshot.sha256 }, guardIdentity: call,
     guardSnapshot, started, build: buildBinding, observation, helperSnapshot, plan, executionPackage, receipt, failure, registry,
@@ -351,6 +355,18 @@ const qualificationRejections = [
 for (const [name, mutate] of qualificationRejections) await test('qualification evidence rejects ' + name, () => {
   const f = qualificationTimeoutFixture(); mutate(f)
   assert.throws(() => verifyHistoricalInputs(f.root, f.profile))
+})
+
+await test('missing current readonly recovery source cannot reuse a prior four-role profile', () => {
+  const f = qualificationTimeoutFixture()
+  f.profile.programBindings = f.profile.programBindings.filter(b => !b.path.endsWith('ai-painter-owned-worker-recovery-input.mjs'))
+  assert.throws(() => verifyHistoricalInputs(f.root,f.profile), /required_program_not_bound/)
+})
+await test('changed readonly recovery source is rejected by its exact bytes', () => {
+  const f = qualificationTimeoutFixture()
+  const binding = f.profile.programBindings.find(b => b.path.endsWith('ai-painter-owned-worker-recovery-input.mjs'))
+  fs.appendFileSync(path.join(f.root,binding.path),'// changed')
+  assert.throws(() => verifyHistoricalInputs(f.root,f.profile), /bound_sha256_mismatch/)
 })
 
 const report = { schema: 'ai-painter-reboot-recovery-isolated-tests-v1', recordedAtUtc: new Date().toISOString(), passed: results.filter(r => r.passed).length, failed: results.filter(r => !r.passed).length, results, productionGuardTouched: false, gpuInvocations: 0 }

@@ -1,7 +1,7 @@
 import { formatTrainingElapsed, formatTrainingTime } from './ai-console-training-time'
 
-export type ExperimentTiming = { availability: string; scope: string; elapsedSeconds: number;
-  startedAtUtc: null; endedAtUtc: null; sourcePath: string; sourceSha256: string }
+import type { ExperimentTiming } from "@/shared/ai-console/observation-types"
+export type { ExperimentTiming } from "@/shared/ai-console/observation-types"
 export function LegacyExperimentTiming({ value, compact }: { value: ExperimentTiming; compact: boolean }) {
   const verified = value.availability === 'available' && value.scope === 'legacy_single_map_experiment_before_result_publication'
     && /^[a-f0-9]{64}$/u.test(value.sourceSha256) && value.sourcePath.startsWith('.runtime/ai-painter/')

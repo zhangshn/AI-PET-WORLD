@@ -13,6 +13,8 @@ on:
       - "next.config.ts"
       - "eslint.config.mjs"
       - "docs/ARCHITECTURE.md"
+      - "docs/DIRECTORY_STRUCTURE.md"
+      - "docs/ai-console/**"
       - "docs/DOCUMENT_AUTHORITY_INDEX.md"
       - "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md"
       - "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md"
@@ -45,8 +47,7 @@ on:
       - "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs"
       - "src/server/ai-painter-current-execution-registry.*"
       - "src/server/ai-console/ai-painter-current-execution-projection.ts"
-      - "src/app/**"
-      - "src/server/**"
+      - "src/**"
       - "src/world/**"
       - "src/ai/**"
       - "data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json"
@@ -68,6 +69,8 @@ on:
       - "next.config.ts"
       - "eslint.config.mjs"
       - "docs/ARCHITECTURE.md"
+      - "docs/DIRECTORY_STRUCTURE.md"
+      - "docs/ai-console/**"
       - "docs/DOCUMENT_AUTHORITY_INDEX.md"
       - "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md"
       - "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md"
@@ -100,8 +103,7 @@ on:
       - "scripts/lib/ai-painter-autonomous-closed-loop-v1.mjs"
       - "src/server/ai-painter-current-execution-registry.*"
       - "src/server/ai-console/ai-painter-current-execution-projection.ts"
-      - "src/app/**"
-      - "src/server/**"
+      - "src/**"
       - "src/world/**"
       - "src/ai/**"
       - "data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json"
@@ -130,6 +132,8 @@ jobs:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: "24.14.0"
@@ -280,6 +284,22 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint -- --quiet
+      - name: Shared catalog and compatibility boundaries
+        run: node --test scripts/tests/project-shared-boundaries.test.mjs scripts/tests/ziwei-check-module-loader.test.mjs scripts/tests/ziwei-algorithm-delegation.test.mjs
+      - name: Pure world geometry and producer binding regressions
+        run: node --test scripts/tests/natural-world-geometry.test.mjs
+      - name: Project dependency scanner regressions
+        run: node --test scripts/tests/project-dependencies.test.mjs scripts/tests/retired-training-dashboard-check.test.mjs
+      - name: Project static dependency boundaries
+        run: npm run check:dependencies
+      - name: Native worker stream and stop transport regressions
+        run: node --test scripts/tests/ai-painter-owned-worker-stream.test.mjs scripts/tests/owned-native-proof-boundaries.test.mjs
+      - name: Weather lifecycle and training observation boundaries
+        run: node --test scripts/tests/world-weather-policy-boundary.test.mjs scripts/tests/test-ai-console-current-training-telemetry-match.mjs
+      - name: Private world initialization and test source isolation
+        run: node --test scripts/tests/world-environment-initialization-store.test.mjs
+      - name: Console source and observation boundaries
+        run: node scripts/check-ai-console-structure.mjs
       - run: node --test --test-concurrency=1 scripts/tests/world-runtime-store-consistency.test.mjs scripts/tests/world-runtime-tick-continuity.test.mjs scripts/tests/world-runtime-gateway-read-failure.test.mjs scripts/tests/project-review-contract-regressions.test.mjs
       - run: npm run test:integration
       - run: npm run build

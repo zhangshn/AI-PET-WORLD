@@ -15,7 +15,7 @@ import {
   readWorldRuntimeSaveRecord,
   writeWorldRuntimeSaveRecord,
 } from "./world-runtime-store-adapter"
-import { auditWorldRuntimeTick } from "./world-runtime-audit"
+
 import { runOneRuntimeTick } from "./world-runtime-tick-runner"
 import type {
   WorldRuntimeSaveRecord,

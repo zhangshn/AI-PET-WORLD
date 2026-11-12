@@ -11,9 +11,7 @@ import {materializeAutonomousClosedLoopPackage} from '../lib/ai-painter-autonomo
 import {launchAutonomousClosedLoopBackground} from '../lib/ai-painter-autonomous-background-launcher-v1.mjs';
 import {prepareExactlyOnceBackgroundSpawn} from '../lib/ai-painter-exactly-once-background-spawn-v1.mjs';
 import {runLocalControlV2} from '../run-ai-painter-local-control-v2.mjs';
-import {LOCAL_CONTROL_REGISTRATION, LOCAL_CONTROL_PROTOCOL, localPreparationRoute,
-  runLocalPreparationRequest, runFinalRgbPreparationForIsolatedTests,
-  preservePreparationFailure} from '../lib/ai-painter-local-prepare-v1.mjs';
+import { LOCAL_CONTROL_REGISTRATION, LOCAL_CONTROL_PROTOCOL, localPreparationRoute, runFinalRgbPreparationForIsolatedTests, preservePreparationFailure } from '../lib/ai-painter-local-prepare-v1.mjs'
 import {initializeOwnedStopControlEvidence, submitOwnedStopIntent,
   createOwnedStopNativeControlForIsolatedTests} from '../lib/ai-painter-owned-stop-native-control-v1.mjs';
 import {issueLocalOperatorSession} from '../../src/server/ai-console-control/operator-session.ts';
@@ -184,10 +182,11 @@ const held={ownedReceipt:{privateSyntheticCpuOnly:true}},original=Object.assign(
 try{const terminal=await runFinalRgbPreparationForIsolatedTests({root,relativePath:rb.path,sha256:rb.sha256,readRegistry:async()=>({ok:true,status:'verified',registry:{activeExecution:null}}),
 chain:{ROLES:{cpuHarness:'inert-cpu.py'},inside:(_r,p)=>path.join(root,p),bind:(_r,p)=>({path:p,sha256:sha(fs.readFileSync(path.join(root,p)))}),finalProgramBindings:()=>programs,runtimeIdentity:()=>request.runtimeIdentity,
 prepareCpuRequest:o=>{assert.deepEqual(o.preparationRequestBinding,rb);events.push('cpu_request');return put(request.outputRoot+'/cpu-request.json',{synthetic:true});},
-finalizeCpuAcceptance:async o=>{assert.equal(o.result,held);events.push('cpu_acceptance');return put(request.outputRoot+'/cpu-acceptance.json',{synthetic:true});},
+
 preparePlan:()=>{events.push('plan');return put(request.outputRoot+'/quality-plan.json',{programs,synthetic:true});},
 makeInternalCandidate:(_r,b)=>({schemaVersion:'ai-painter-autonomous-closed-loop-candidate-v1',packageIdentity:request.packageId,capabilityVersion:request.capabilityVersion,outputRoot:request.outputRoot,ownerAuthorizationRequired:false,maxInfrastructureRecoveryAttempts:0,programFiles:Object.fromEntries(Object.entries(programs).map(([k,v])=>[k,v.path])),inputEvidencePaths:[b.path],phaseAdapters:Object.fromEntries(phases.map(p=>[p,{path:${JSON.stringify(route.adapter)},exportName:p}]))})},
-native:{runNative:async()=>{events.push('cpu_running');put('cpu-waiting.json',{pid:process.pid});const end=Date.now()+15000;while(!fs.existsSync(path.join(root,'client-exited.json'))){if(Date.now()>end)throw Error('private_v2_gate_timeout');await new Promise(r=>setTimeout(r,25));}if(failure)throw original;return held;},withNativeOrdinaryBudget:async(_r,r,fn)=>{assert.equal(r,held.ownedReceipt);return fn();},nativeAccountingRoots:()=>[request.outputRoot],requireLiveOwnedReceipt:()=>{throw Error('no_real_native_receipt');}},
+native:{finalizeCpuAcceptance:async o=>{assert.equal(o.result,held);events.push('cpu_acceptance');return put(request.outputRoot+'/cpu-acceptance.json',{synthetic:true});},
+runNative:async()=>{events.push('cpu_running');put('cpu-waiting.json',{pid:process.pid});const end=Date.now()+15000;while(!fs.existsSync(path.join(root,'client-exited.json'))){if(Date.now()>end)throw Error('private_v2_gate_timeout');await new Promise(r=>setTimeout(r,25));}if(failure)throw original;return held;},withNativeOrdinaryBudget:async(_r,r,fn)=>{assert.equal(r,held.ownedReceipt);return fn();},nativeAccountingRoots:()=>[request.outputRoot],requireLiveOwnedReceipt:()=>{throw Error('no_real_native_receipt');}},
 materialize:(c,o)=>{assert.equal(o.recoverExistingExact,false);packageCreated=true;events.push('materialize');return materializeAutonomousClosedLoopPackage(c,o);},loop:async o=>{events.push('lifecycle');return runAutonomousClosedLoop(o);}});
 assert.equal(failure,false);assert.equal(terminal.status,'completed');put('driver-result.json',{status:'passed',events,packageCreated,terminal});}
 catch(e){if(!failure||e!==original)throw e;const terminal=JSON.parse(fs.readFileSync(path.join(root,request.outputRoot,'local-prepare/terminal.json')));assert.equal(terminal.originalErrorCode,'private_v2_original');assert.equal(terminal.cleanupConfirmed,false);assert.equal(packageCreated,false);put('driver-result.json',{status:'passed',events,packageCreated,terminal,originalErrorIdentityPreserved:true});}

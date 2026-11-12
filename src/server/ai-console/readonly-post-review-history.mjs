@@ -84,7 +84,7 @@ export async function readReadonlyPostReviewEvidence({ terminal, runId,
     const length = r.byteLength ?? Buffer.byteLength(JSON.stringify(r.value))
     requireFact(Number.isSafeInteger(length) && length >= 0 && length <= max,
       'history_post_review_aggregate_limit')
-    if (length > ITEM) requireFact(r.value?.schemaVersion === 'replay-retention-fit-package-v1' && ['mixed','balanced'].includes(r.value.arm)
+    if (length > ITEM) requireFact(storage?.isLargeReplayRetentionFitPackage(r.value)
       || r.value?.schemaVersion === 'mixed-train-rehearsal-package-v1' && r.value.training?.pairs === 448,
       'history_post_review_large_package_conflict')
     consumed += length

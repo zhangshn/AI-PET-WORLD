@@ -4,6 +4,8 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import * as acorn from "acorn";
+import ts from "typescript";
+import { createJavascriptLoaderClassifier } from "./javascript-loader-bindings.mjs";
 
 import {
   bindProjectFile,
@@ -39,9 +41,36 @@ const SMOKE_ADAPTER_PATH =
 
 const SAFE_ROLE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u;
 const JS_EXTENSIONS = new Set([".mjs", ".js", ".cjs", ".json"]);
+const TS_EXTENSIONS = new Set([".ts", ".mts", ".cts"]);
 const PYTHON_AST_HELPER_PATH =
   "scripts/lib/ai-painter-python-import-ast-v1.py";
 const PYTHON_IMPORT_AST_CACHE = new Map();
+
+// Explicit imports only: dynamic dispatch still requires the separate program
+// graph declarations and is not qualified by this source inventory.
+export function collectPythonStaticSourcePaths({ projectRoot = process.cwd(), entrypoints } = {}) {
+  const root = path.resolve(projectRoot);
+  assert.ok(Array.isArray(entrypoints) && entrypoints.length > 0,
+    "Python static source entrypoints are missing");
+  const pending = entrypoints.map(value => normalizeLogicalPath(root, value));
+  for (const entry of [...pending]) {
+    assert.equal(path.extname(entry), ".py", "Python static source entrypoint must be Python");
+    addPythonPackageInitializers(root, path.join(root, entry), pending);
+  }
+  const seen = new Set();
+  while (pending.length > 0) {
+    const logicalPath = pending.pop();
+    if (seen.has(logicalPath)) continue;
+    const absolute = resolveProjectPath(root, logicalPath, { mustExist: true, kind: "file" });
+    const source = fs.readFileSync(absolute, "utf8").replace(/^\uFEFF/u, "");
+    seen.add(logicalPath);
+    for (const imported of parsePythonImports(source, logicalPath, root)) {
+      if (imported.kind !== "python_static") continue;
+      pending.push(...resolvePythonImport(root, logicalPath, imported).targets);
+    }
+  }
+  return [...seen].sort();
+}
 
 export function buildStage4V2QualificationProgramGraph({
   projectRoot = process.cwd(), programLineage,
@@ -148,20 +177,23 @@ export function buildAiPainterProgramGraphManifest({
     });
     if (language === "json") continue;
     const source = fs.readFileSync(absolute, "utf8").replace(/^\uFEFF/u, "");
-    const imports = language === "javascript"
-      ? parseJavascriptImports(source, logicalPath)
-      : parsePythonImports(source, logicalPath, root);
+    const imports = language === "python"
+      ? parsePythonImports(source, logicalPath, root)
+      : language === "typescript" ? parseTypescriptImports(source, logicalPath)
+        : parseJavascriptImports(source, logicalPath);
     for (const imported of imports) {
       if (imported.kind === "nonliteral_dynamic") {
         const observed = observedNonLiteralDispatches.get(logicalPath) ?? 0;
         observedNonLiteralDispatches.set(logicalPath, observed + 1);
         continue;
       }
-      const targets = language === "javascript"
-        ? resolveJavascriptImport(root, logicalPath, imported.specifier)
-        : resolvePythonImport(root, logicalPath, imported);
+      const pythonResolution = language === "python"
+        ? resolvePythonImport(root, logicalPath, imported)
+        : null;
+      const targets = pythonResolution?.targets
+        ?? resolveJavascriptImport(root, logicalPath, imported.specifier);
       if (targets.length === 0) {
-        if (!isProjectRelative(imported.specifier)) {
+        if (!isProjectRelative(imported.specifier) && !pythonResolution?.namespaceFound) {
           externalModules.add(imported.specifier.replace(/^node:/u, "node:"));
         }
         continue;
@@ -300,6 +332,13 @@ function stage4V2GraphDefinition({ graphId, programLineage }) {
     entrypoints,
     dynamicSuccessors: [
       { role: "ownedWorkerRebootRecovery", path: "scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs" },
+      { role: "ownedWorkerRecoveryInput", path: "scripts/lib/ai-painter-owned-worker-recovery-input.mjs" },
+      { role: "worldEnvironmentQualification", path: "scripts/lib/world-environment-qualification.mjs" },
+      { role: "weatherQualificationDecision", path: "scripts/lib/ai-painter-autonomous-package-decision-core-v3.mjs" },
+      { role: "weatherCommittedInput", path: "scripts/lib/world-weather-committed-input.mjs" },
+      { role: "weatherRollingInput", path: "scripts/lib/world-rolling-weather-input.mjs" },
+      { role: "weatherScheduledHistory", path: "scripts/lib/world-weather-scheduled-history.mjs" },
+      { role: "weatherCapabilityLifecycle", path: "scripts/lib/ai-painter-capability-lifecycle-v1.mjs" },
       { role: "qualificationContinuationRuntime", path: QUALIFICATION_CONTINUATION_PATH },
       { role: "autonomousClosedLoopRuntime", path: AUTONOMOUS_CLOSED_LOOP_PATH },
       { role: "controlledSmokePhaseAdapter", path: SMOKE_ADAPTER_PATH },
@@ -312,6 +351,37 @@ function stage4V2GraphDefinition({ graphId, programLineage }) {
       { role: "qualificationFailureAdjudicator", path: QUALIFICATION_FAILURE_ADJUDICATOR_PATH },
     ],
     nonLiteralDynamicDispatches: [
+      {
+        role: "initializedWorldRuntimeDispatch",
+        importerPath: "scripts/lib/world-initialized-evolution.mjs",
+        targetPaths: [
+          "src/world/runtime/world-evolution-policy.ts",
+          "src/world/runtime/world-environment-validator.ts",
+        ],
+        siteCount: 2,
+      },
+      {
+        role: "worldLoopRuntimeDispatch",
+        importerPath: "scripts/lib/world-evolution-runtime-loader.mjs",
+        targetPaths: [
+          "src/world/runtime/world-runtime-production-store.ts",
+          "src/world/runtime/world-runtime-record-validation.ts",
+          "src/world/runtime/world-evolution-transaction.ts",
+          "src/world/runtime/world-evolution-clock.ts",
+          "src/world/runtime/world-evolution-history.ts",
+        ],
+        siteCount: 5,
+      },
+      {
+        role: "weatherDomainQualificationDispatch",
+        importerPath: "scripts/lib/ai-painter-autonomous-package-decision-core-v3.mjs",
+        targetPaths: [
+          "scripts/lib/world-weather-v3-qualification.mjs",
+          "scripts/lib/world-weather-rolling-qualification.mjs",
+          "scripts/lib/world-weather-scheduled-qualification.mjs",
+        ],
+        siteCount: 1,
+      },
       {
         role: "qualificationContinuationDispatch",
         importerPath: QUALIFICATION_CONTINUATION_PATH,
@@ -391,6 +461,17 @@ function parseJavascriptImports(source, logicalPath) {
   } catch (error) {
     throw new Error(`program graph JavaScript AST parse failed: ${logicalPath}: ${error.message}`);
   }
+  // Acorn remains the syntax gate; the shared lexical classifier distinguishes
+  // Node loaders from local assertions without executing the inspected source.
+  const bindingTree = ts.createSourceFile(path.resolve(logicalPath), source,
+    ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const classify = createJavascriptLoaderClassifier(bindingTree);
+  const loaders = new Map();
+  function collectLoaders(node) {
+    if (ts.isCallExpression(node)) loaders.set(`${node.getStart(bindingTree)}:${node.end}`, classify(node.expression));
+    ts.forEachChild(node, collectLoaders);
+  }
+  collectLoaders(bindingTree);
   walkJavascriptAst(tree, (node) => {
     if (["ImportDeclaration", "ExportNamedDeclaration", "ExportAllDeclaration"]
       .includes(node.type) && typeof node.source?.value === "string") {
@@ -404,16 +485,51 @@ function parseJavascriptImports(source, logicalPath) {
         : { kind: "dynamic_literal", specifier: literal });
       return;
     }
-    if (node.type === "CallExpression"
-      && node.callee?.type === "Identifier"
-      && node.callee.name === "require") {
+    const loader = loaders.get(`${node.start}:${node.end}`);
+    if (node.type === "CallExpression" && loader && loader !== "local-function") {
       const literal = node.arguments?.length === 1
         ? javascriptStaticString(node.arguments[0]) : null;
-      values.push(literal === null
+      values.push(literal === null || loader === "unknown" && isProjectRelative(literal)
         ? { kind: "nonliteral_dynamic", specifier: `nonliteral:${logicalPath}` }
         : { kind: "commonjs_literal", specifier: literal });
     }
   });
+  return values;
+}
+
+function parseTypescriptImports(source, logicalPath) {
+  const tree = ts.createSourceFile(path.resolve(logicalPath), source,
+    ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  assert.equal(tree.parseDiagnostics.length, 0,
+    `program graph TypeScript AST parse failed: ${logicalPath}: ${tree.parseDiagnostics
+      .map(d => ts.flattenDiagnosticMessageText(d.messageText, " ")).join("; ")}`);
+  const classify = createJavascriptLoaderClassifier(tree), values = [];
+  const add = (node, kind, base = "source") => {
+    const literal = node && ts.isStringLiteralLike(node) ? node.text : null;
+    values.push(literal === null || base === "unknown" && literal.startsWith(".")
+      ? { kind: "nonliteral_dynamic", specifier: `nonliteral:${logicalPath}` }
+      : { kind, specifier: literal });
+  };
+  function visit(node) {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      const typeOnly = node.isTypeOnly || node.importClause?.isTypeOnly;
+      // Node erases explicit type imports. Bind source bytes, but do not claim
+      // their declarations execute; whole-project typechecking remains separate.
+      // Inline `import {type T}` retains an empty runtime import in Node.
+      if (!typeOnly && node.moduleSpecifier) add(node.moduleSpecifier, "static");
+    } else if (ts.isImportEqualsDeclaration(node) && !node.isTypeOnly
+      && ts.isExternalModuleReference(node.moduleReference)) {
+      add(node.moduleReference.expression, "commonjs_literal");
+    } else if (ts.isCallExpression(node)) {
+      if (node.expression.kind === ts.SyntaxKind.ImportKeyword) add(node.arguments[0], "dynamic_literal");
+      else {
+        const base = classify(node.expression);
+        if (base && base !== "local-function") add(node.arguments.length === 1 ? node.arguments[0] : null, "commonjs_literal", base);
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(tree);
   return values;
 }
 
@@ -468,14 +584,17 @@ function parsePythonImports(source, logicalPath, root) {
     encoding: "utf8",
     windowsHide: true,
     maxBuffer: 4 * 1024 * 1024,
+    timeout: 15_000,
+    killSignal: "SIGKILL",
     env: {
       ...process.env,
       PYTHONUTF8: "1",
       PYTHONIOENCODING: "utf-8",
     },
   });
+  const failureDetail = [result.error?.message, result.stderr].filter(Boolean).join(": ");
   assert.equal(result.status, 0,
-    `program graph Python AST parse failed: ${logicalPath}: ${result.stderr || result.error?.message}`);
+    `program graph Python AST parse failed: ${logicalPath}: ${failureDetail}`);
   const parsed = JSON.parse(result.stdout);
   assert.ok(Array.isArray(parsed),
     `program graph Python AST result is invalid: ${logicalPath}`);
@@ -483,6 +602,9 @@ function parsePythonImports(source, logicalPath, root) {
     assert.ok(["python_static", "nonliteral_dynamic"].includes(item?.kind)
       && typeof item.specifier === "string" && item.specifier.length > 0,
     `program graph Python AST item is invalid: ${logicalPath}`);
+    assert.ok(item.members === undefined || Array.isArray(item.members)
+      && item.members.every(member => typeof member === "string" && member.length > 0 && !/[./\\]/u.test(member)),
+    `program graph Python AST members are invalid: ${logicalPath}`);
   }
   PYTHON_IMPORT_AST_CACHE.set(cacheKey,
     parsed.map((item) => Object.freeze({ ...item })));
@@ -490,6 +612,8 @@ function parsePythonImports(source, logicalPath, root) {
 }
 
 function resolveJavascriptImport(root, importer, specifier) {
+  assert.equal(specifier.startsWith("@/"), false,
+    `program graph runtime alias requires an explicit resolver: ${importer} -> ${specifier}`);
   if (!specifier.startsWith(".")) return [];
   assert.equal(/[?#]/u.test(specifier), false,
     `program graph import query/fragment is forbidden: ${importer}`);
@@ -498,6 +622,7 @@ function resolveJavascriptImport(root, importer, specifier) {
   const base = path.resolve(path.dirname(importerAbsolute), specifier);
   const candidates = [
     base,
+    ...(TS_EXTENSIONS.has(path.extname(importer)) ? [`${base}.ts`, `${base}.mts`, `${base}.cts`] : []),
     `${base}.mjs`,
     `${base}.js`,
     `${base}.json`,
@@ -526,26 +651,47 @@ function resolvePythonImport(root, importer, imported) {
     bases.push(path.join(root, "ml", "ai-painter", "scripts", ...moduleParts));
     bases.push(path.join(root, "ml", "ai-painter", "src", ...moduleParts));
   }
-  const resolved = [];
-  for (const base of bases) {
-    const file = `${base}.py`;
-    const init = path.join(base, "__init__.py");
-    if (fs.existsSync(file) && fs.lstatSync(file).isFile()) {
-      resolved.push(normalizeLogicalPath(root, file));
-      addPythonPackageInitializers(root, file, resolved);
-      break;
+  function selectModule(candidates) {
+    const namespaces = [];
+    for (const base of candidates) {
+      const init = path.join(base, "__init__.py"), file = `${base}.py`;
+      // FileFinder gives a regular package precedence over a same-named .py.
+      if (fs.existsSync(init) && fs.lstatSync(init).isFile()) return { file: init, directories: [base] };
+      if (fs.existsSync(file) && fs.lstatSync(file).isFile()) return { file, directories: [] };
+      if (fs.existsSync(base) && fs.lstatSync(base).isDirectory()) namespaces.push(base);
     }
-    if (fs.existsSync(init) && fs.lstatSync(init).isFile()) {
-      resolved.push(normalizeLogicalPath(root, init));
-      addPythonPackageInitializers(root, init, resolved);
-      break;
-    }
+    return { file: null, directories: namespaces };
   }
-  return [...new Set(resolved)].sort();
+  const resolved = [], selected = selectModule(bases);
+  function add(file) {
+    if (!file) return;
+    resolved.push(normalizeLogicalPath(root, file));
+    addPythonPackageInitializers(root, file, resolved);
+  }
+  add(selected.file);
+  // Namespace packages have no source of their own, but importing them still
+  // executes any regular parent package initializers.
+  for (const directory of selected.directories) {
+    assert.ok(isInside(root, directory) && isInside(fs.realpathSync(root), fs.realpathSync(directory)),
+      `program graph Python namespace escapes project root: ${importer} -> ${specifier}`);
+    addPythonPackageInitializers(root, path.join(directory, "__init__.py"), resolved);
+  }
+  // A from-import can refer to an ordinary attribute or a real submodule.
+  // Bind existing member sources conservatively without inventing files for attributes.
+  for (const member of imported.members ?? []) {
+    add(selectModule(selected.directories.map(base => path.join(base, member))).file);
+  }
+  const targets = [...new Set(resolved)].sort();
+  const namespaceFound = !selected.file && selected.directories.length > 0;
+  assert.ok(targets.length > 0 || !isProjectRelative(specifier) || namespaceFound,
+    `program graph local Python import is missing: ${importer} -> ${specifier}`);
+  return { targets, namespaceFound };
 }
 
 function addPythonPackageInitializers(root, target, output) {
-  const sourceRoot = path.join(root, "ml", "ai-painter", "src");
+  const sourceRoot = ["scripts", "src"].map(name => path.join(root, "ml", "ai-painter", name))
+    .find(candidate => isInside(candidate, target));
+  if (!sourceRoot) return;
   let directory = path.dirname(target);
   while (isInside(sourceRoot, directory) && directory !== sourceRoot) {
     const init = path.join(directory, "__init__.py");
@@ -577,6 +723,7 @@ function languageFor(logicalPath) {
   const extension = path.extname(logicalPath).toLowerCase();
   if (extension === ".py") return "python";
   if (extension === ".json") return "json";
+  if (TS_EXTENSIONS.has(extension)) return "typescript";
   assert.equal(JS_EXTENSIONS.has(extension), true,
     `program graph file type is unsupported: ${logicalPath}`);
   return "javascript";

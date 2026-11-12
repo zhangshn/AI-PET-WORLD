@@ -11,7 +11,7 @@ import ts from "typescript"
 import sharp from "sharp"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
-const evidence = path.resolve(process.env.NATURAL_WORLD_TEST_OUTPUT_ROOT ?? path.join(root, ".runtime/ai-painter/controller-repair-reviews/natural-world-facts-098-20261028/implementation/test-fixtures"))
+const evidence = path.resolve(process.env.NATURAL_WORLD_TEST_OUTPUT_ROOT ?? path.join(root, ".runtime/ai-painter/controller-repair-reviews/natural-world-bootstrap-tests", randomUUID()))
 const hash = bytes => createHash("sha256").update(bytes).digest("hex")
 const json = value => JSON.stringify(value, null, 2) + "\n"
 const self = fileURLToPath(import.meta.url), require = createRequire(import.meta.url)
@@ -220,6 +220,21 @@ if (process.argv[2] === "--natural-bootstrap-child") {
     const q = path.join(d, "natural-forged-release.json"); save(q, release)
     await assert.rejects(() => generator.verifyNaturalWorldFactRelease({ binding: binding(q) }), /release replay mismatch/)
     save(path.join(d, "forged-release-rejected.json"), { binding: binding(q), forgedGeneratedBinding: binding(p), rejectedByActualSourceReplay: true })
+  })
+  for (const geometryPath of ["scripts/lib/natural-world-geometry.mjs", "scripts/lib/natural-world-hydrology.mjs", "scripts/lib/natural-world-composition.mjs"])
+  for (const variant of ["missing", "changed_hash"]) test("source release rejects " + variant + " " + geometryPath + " producer even with a recomputed release identity", async () => {
+    assert(creation)
+    const d = privateDir("geometry-binding-negative"); fs.mkdirSync(d)
+    const release = read(path.resolve(root, creation.result.sourceFactReleaseBinding.path))
+    const matches = release.producerBindings.filter(b => b.path === geometryPath)
+    assert.equal(matches.length, 1)
+    if (variant === "missing") release.producerBindings = release.producerBindings.filter(b => b.path !== geometryPath)
+    else matches[0].sha256 = "0".repeat(64)
+    const { sourceFactReleaseIdentity: _old, ...payload } = release
+    assert(_old)
+    release.sourceFactReleaseIdentity = "natural-source-facts-" + governance.naturalWorldDigest(payload)
+    const p = path.join(d, "forged-release.json"); save(p, release)
+    await assert.rejects(() => generator.verifyNaturalWorldFactRelease({ binding: binding(p) }), variant === "missing" ? /bindings incomplete/ : /SHA|sha|hash|digest/)
   })
   for (const variant of ["missing_license", "missing_acquisition_time", "wrong_climate_period", "changed_climate_value"]) test("actual source release rejects " + variant + " despite recomputed caller hashes", async () => {
     assert(creation)

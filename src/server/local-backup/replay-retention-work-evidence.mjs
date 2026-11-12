@@ -19,6 +19,13 @@ const noQualification=v=>{for(const k of FLAGS)check(v[k]===false,'qualification
 
 // Exact versioned package exception. Used by the existing reader only after
 // actual bytes/SHA/path checks; this grants no execution or qualification.
+// Shared with console reads; full policy/roster/schedule validation is still
+// required after admission. Keep the larger-package arm list in one place.
+export function isLargeReplayRetentionFitPackage(value) {
+ return value?.schemaVersion==='replay-retention-fit-package-v1'
+  &&['mixed','balanced','balanced-boundary'].includes(value.arm)
+}
+
 export function validateReplayRetentionFitPackage(value,read) {
  check(value?.schemaVersion==='replay-retention-fit-package-v1'&&Object.hasOwn(FIT_POLICIES,value.arm),'fit_schema')
  const policyBinding=FIT_POLICIES[value.arm];sameBinding(value.policy,policyBinding,'fit_policy_binding')
@@ -63,7 +70,7 @@ function boundReader(read) {
    v.schemaVersion==='mixed-train-rehearsal-package-v1'&&v.training?.pairs===448&&v.qualificationGranted===false
     &&Array.isArray(v.selectedSampleIds)&&v.selectedSampleIds.length===48&&new Set(v.selectedSampleIds).size===48
     &&v.outputRoot==='.runtime/ai-painter/learning-capacity-experiments/'+v.experimentIdentity
-   ||v.schemaVersion==='replay-retention-fit-package-v1'&&['mixed','balanced','balanced-boundary'].includes(v.arm)),'large_package_only')
+   ||isLargeReplayRetentionFitPackage(v)),'large_package_only')
   bytes+=size;check(bytes<=MAX_TOTAL,'total_bytes_limit');cache.set(key,r)
   if(large&&v.schemaVersion==='replay-retention-fit-package-v1')validateReplayRetentionFitPackage(v,(p,s)=>get({path:p,sha256:s}))
   return r

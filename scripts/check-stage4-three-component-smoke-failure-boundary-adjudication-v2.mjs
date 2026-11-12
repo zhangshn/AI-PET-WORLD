@@ -1,5 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
+import {readRetiredSource} from './lib/ai-painter-retired-source.mjs';
 import { adjudicateThreeComponentSmokeFailure } from "./lib/ai-painter-stage4-three-component-smoke-failure-boundary-adjudication.mjs";
 
 function manifest(roleId, outputHash, predecessor = null) {
@@ -19,7 +18,7 @@ function fixture() {
   return { manifests: [terrain, object, final], review: review() };
 }
 
-const runnerSource = fs.readFileSync(path.resolve(process.cwd(), "scripts/run-stage4-three-component-smoke-failure-boundary-adjudication-v2.mjs"), "utf8");
+const runnerSource = readRetiredSource(process.cwd(), "scripts/run-stage4-three-component-smoke-failure-boundary-adjudication-v2.mjs").bytes.toString("utf8");
 const positive = [
   ["complete_exact_chain_with_persistent_semantic_failure_selects_A", () => adjudicateThreeComponentSmokeFailure(fixture()).selectedCause === "A"],
   ["explicit_wiring_defect_selects_B", () => adjudicateThreeComponentSmokeFailure({ ...fixture(), directWiringDefectEvidence: true }).selectedCause === "B"],

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto"
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
+import ts from "typescript"
 import {
   CURRENT_EXECUTION_REGISTRY_PATH,
   initializeCurrentExecutionRegistry,
@@ -14,11 +15,11 @@ const serverSource = await readFile(
   path.join(projectRoot, "src/server/ai-painter-current-training.ts"),
   "utf8",
 )
-const buildSnapshotBody = between(
-  serverSource,
-  "async function buildSnapshot()",
-  "async function readCurrentR5Stage4TaskCapsule()",
-)
+const sourceTree = ts.createSourceFile("current-training.ts", serverSource, ts.ScriptTarget.Latest, true)
+const snapshotFunction = sourceTree.statements.find(node =>
+  ts.isFunctionDeclaration(node) && node.name?.text === "buildSnapshot")
+assert.ok(snapshotFunction?.body, "missing buildSnapshot implementation")
+const buildSnapshotBody = snapshotFunction.body.getText(sourceTree)
 
 assert.match(serverSource, /readCurrentExecutionRegistry/)
 assert.match(serverSource, /discoverCurrentTrainingSources/)
@@ -177,14 +178,6 @@ process.stdout.write(
     },
   }, null, 2)}\n`,
 )
-
-function between(value, start, end) {
-  const startIndex = value.indexOf(start)
-  assert.notEqual(startIndex, -1, `missing_start_${start}`)
-  const endIndex = value.indexOf(end, startIndex + start.length)
-  assert.notEqual(endIndex, -1, `missing_end_${end}`)
-  return value.slice(startIndex, endIndex)
-}
 
 async function writeJson(root, relativePath, value) {
   const absolutePath = path.join(root, ...relativePath.split("/"))

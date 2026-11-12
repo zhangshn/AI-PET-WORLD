@@ -12,7 +12,7 @@ const finite = (value, label) => {
 const exactEpochs = (rows, label) => {
   assert.deepEqual(rows.map((row) => Number(row.epoch)), REVIEW_EPOCHS, `${label}_epoch_timeline_invalid`)
 }
-const title = (value) => `${value[0].toUpperCase()}${value.slice(1)}`
+
 
 function activeTrainingEvidence(activeConfig) {
   const training = activeConfig?.training ?? {}

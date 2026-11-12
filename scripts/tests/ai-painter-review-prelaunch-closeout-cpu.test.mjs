@@ -70,19 +70,28 @@ test('cross-run, source hash, missing lock, missing heartbeat and wrong publishe
  ])await t.test(name,async()=>{const f=await registryFixture(),before=read(f.root,REG+'/current.json');change(f);await assert.rejects(recoverExpiredActiveExecutionToFailedClosed(f.options));assert.deepEqual(read(f.root,REG+'/current.json'),before)})
 })
 
-// Exercise the actual CLI body and actual runNative -> dynamic self-import.
+function frozenV3Sources(){
+ const root='.runtime/ai-painter/controller-repair-reviews/independent-review-adoption-004-20261022/source-v3-before/'
+ const driverSha='a096c6f944be03881ca7c5210d6b63cecd4393a1e336dd13c64a14299e0b375f',nativeSha='5e19f60ac77db2ec45b14f88a86e5c2fe593ed525d6b367186d726d92d1269ec'
+ const driver=fs.readFileSync(root+'reviewDriver-'+driverSha+'.txt'),native=fs.readFileSync(root+'nativeRunner-'+nativeSha+'.txt')
+ assert.equal(sha(driver),driverSha);assert.equal(sha(native),nativeSha);return {driver,native}
+}
+
+// Historical CLI regressions use their actual frozen bytes. Current context
+// admission is tested separately; importing this fixture never starts a model.
 // Only metadata/OS adapters are private stubs. Never replace runNative or CLI.
 async function cliCycleFixture(driverSource,nativeSource,{guardAppears=false,nativePreparation=false}={}){
  const seeded=await registryFixture(),root=seeded.root,closed=await recoverExpiredActiveExecutionToFailedClosed(seeded.options)
  const driverPath='scripts/lib/ai-painter-decode1-entry-weight-quality-review-v1.mjs',nativePath='scripts/lib/ai-painter-decode1-entry-weight-quality-owned-native-v1.mjs'
- const legacy=/export const RECOVERY_ROOT='([^']+)'/u.exec(driverSource)?.[1],successor=/export const SUCCESSOR_CASE='([^']+)'/u.exec(driverSource)?.[1],history=/export const HISTORY_ROOT='([^']+)'/u.exec(driverSource)?.[1]
+ const contextPath='scripts/lib/ai-painter-decode1-entry-weight-quality-review-context.mjs',split=driverSource.includes('weight-quality-review-context.mjs'),metadataSource=split?fs.readFileSync(contextPath,'utf8'):driverSource
+ const legacy=/export const RECOVERY_ROOT='([^']+)'/u.exec(metadataSource)?.[1],successor=/export const SUCCESSOR_CASE='([^']+)'/u.exec(metadataSource)?.[1],history=/export const HISTORY_ROOT='([^']+)'/u.exec(metadataSource)?.[1]
  const recoveryRoot=legacy??successor;assert(recoveryRoot,'exact recovery metadata root')
  const overrides={loadReviewRecovery:'return {...globalThis.__prelaunchCpuContext,plan:json(root,planBinding),planBinding}',loadSuccessorLedger:'return {budget:globalThis.__prelaunchCpuContext.budget,roots:[],wallDebitMs:65572}',recoveryNativeContext:'fs.writeFileSync(path.join(root,"dynamic-import-boundary-reached.json"),JSON.stringify({planBinding}));'+(guardAppears?'fs.mkdirSync(path.join(root,".runtime/ai-painter/owned-worker-guards"),{recursive:true});fs.writeFileSync(path.join(root,".runtime/ai-painter/owned-worker-guards/active.json"),"unrelated-unknown-owner");':'')+(nativePreparation?'return {...globalThis.__prelaunchCpuContext,plan:json(root,planBinding),planBinding};':'throw Error("independent_cpu_pre_owner_refusal")')}
- const parsed=ts.createSourceFile('driver.mjs',driverSource,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS),replacements=[]
+ const parsed=ts.createSourceFile('driver.mjs',metadataSource,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS),replacements=[]
  for(const node of parsed.statements){if(ts.isFunctionDeclaration(node)&&overrides[node.name?.text]){assert(node.body);replacements.push([node.body.getStart(parsed),node.body.end,'{'+overrides[node.name.text]+'}'])}}
  assert.equal(replacements.length,legacy?2:3)
- let transformed=driverSource;for(const [start,end,body]of replacements.sort((a,b)=>b[0]-a[0]))transformed=transformed.slice(0,start)+body+transformed.slice(end)
- write(root,driverPath,transformed);write(root,nativePath,nativeSource)
+ let transformed=metadataSource;for(const [start,end,body]of replacements.sort((a,b)=>b[0]-a[0]))transformed=transformed.slice(0,start)+body+transformed.slice(end)
+ write(root,driverPath,split?driverSource:transformed);if(split)write(root,contextPath,transformed);write(root,nativePath,nativeSource)
  const original={runId:'d1-src-v1-850c25f8-8181-446e-99da-3dae2dbb21a8',packageId:'d1-src-v1-package-850c25f8-8181-446e-99da-3dae2dbb21a8',outputRoot:'.runtime/fixture/original',programBindings:{reviewDriver:{path:driverPath},nativeRunner:{path:nativePath}}}
  const planRef=write(root,original.outputRoot+'/quality-plan.json',original),packageRef=write(root,'.runtime/fixture/package.json',{inputEvidence:[planRef]})
  const workerRef=write(root,'.runtime/fixture/worker.json',{schemaVersion:'stage4-post-decode-object-rgb-stage0-terminal-v1',executionState:'completed',status:'post_decode_object_rgb_stage0_real_visual_failure',runId:original.runId,executionPackage:packageRef,selectedCheckpointRecord:{checkpoint:{path:'.runtime/fixture/selected.pt',sha256:'a'.repeat(64)}}})
@@ -90,22 +99,22 @@ async function cliCycleFixture(driverSource,nativeSource,{guardAppears=false,nat
  const failure=write(root,'.runtime/fixture/failure.json',{executionState:'failed_closed',status:'review_execution_failed_closed',nativeOwnedReceipt:prior})
  write(root,(legacy?path.posix.dirname(legacy):history)+'/all-original-source-preservation.json',{})
  if(!legacy){write(root,history+'/recovery-v1/plan.json',{sourceReviewFailure:failure});const exactClosed=successor+'/old-prelaunch-closeout/failure-terminal.json';write(root,exactClosed,fs.readFileSync(exactClosed,'utf8'))}
- const chain=`import fs from 'node:fs';import path from 'node:path';import {createHash} from 'node:crypto';export const inside=(r,p)=>path.join(r,p),sha=b=>createHash('sha256').update(b).digest('hex'),read=(r,b)=>fs.readFileSync(inside(r,b.path)),json=(r,b)=>JSON.parse(read(r,b)),bind=(r,p)=>({path:p,sha256:sha(fs.readFileSync(inside(r,p)))}),write=(r,p,v)=>{fs.mkdirSync(path.dirname(inside(r,p)),{recursive:true});fs.writeFileSync(inside(r,p),JSON.stringify(v)+'\\n',{flag:'wx'});return bind(r,p)},withOutputBudget=(_options,action)=>action(),directoryBytes=()=>0,ROLES={reviewDriver:${JSON.stringify(driverPath)}};export const loadContext=()=>{throw Error('unexpected_context')},runtimeIdentity=()=>({}),validateCompleted=()=>{},validatePlan=()=>{},executionRoute=()=>null,requiredProgramRoles=()=>[],sourceFileCountMaximum=256,gpuAdmissionSeconds=()=>0,finalProgramBindings=()=>({}),deriveConfiguration=()=>({});`
+ const chain=`import fs from 'node:fs';import path from 'node:path';import {createHash} from 'node:crypto';export const inside=(r,p)=>path.join(r,p),sha=b=>createHash('sha256').update(b).digest('hex'),read=(r,b)=>fs.readFileSync(inside(r,b.path)),json=(r,b)=>JSON.parse(read(r,b)),bind=(r,p)=>({path:p,sha256:sha(fs.readFileSync(inside(r,p)))}),write=(r,p,v)=>{fs.mkdirSync(path.dirname(inside(r,p)),{recursive:true});fs.writeFileSync(inside(r,p),JSON.stringify(v)+'\\n',{flag:'wx'});return bind(r,p)},withOutputBudget=(_options,action)=>action(),directoryBytes=()=>0,ROLES={reviewDriver:${JSON.stringify(driverPath)}};export const loadContext=()=>{throw Error('unexpected_context')},runtimeIdentity=()=>({}),validateCompleted=()=>{},validatePlan=()=>{},verifyCpuReport=()=>{throw Error("unexpected_CPU_report_validation")},executionRoute=()=>null,requiredProgramRoles=()=>[],sourceFileCountMaximum=256,gpuAdmissionSeconds=()=>0,finalProgramBindings=()=>({}),deriveConfiguration=()=>({});`
  write(root,'private-chain.mjs',chain)
  const modules={}
- for(const [source,parent]of [[driverSource,driverPath],[nativeSource,nativePath]]){
+ for(const [source,parent]of [[driverSource,driverPath],[nativeSource,nativePath],...(split?[[metadataSource,contextPath]]:[])]){
   const ast=ts.createSourceFile(parent,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS)
-  for(const node of ast.statements){if(!ts.isImportDeclaration(node))continue;const spec=node.moduleSpecifier.text;if(spec.startsWith('node:'))continue
+  for(const node of ast.statements){if(!ts.isImportDeclaration(node))continue;const spec=node.moduleSpecifier.text;if(spec.startsWith('node:')||spec.endsWith('weight-quality-review-context.mjs'))continue
    if(spec.endsWith('package-chain-v1.mjs')){modules[spec]='chain';continue}
    if(modules[spec])continue
-   if(spec.endsWith('ai-painter-current-execution-registry.mjs')){modules[spec]=`export {readCurrentExecutionRegistry,advanceCurrentExecutionRegistry} from ${JSON.stringify(pathToFileURL(path.resolve('src/server/ai-painter-current-execution-registry.mjs')).href)};`;continue}
+   if(spec.endsWith('ai-painter-current-execution-registry.mjs')){modules[spec]=`export {readCurrentExecutionRegistry,advanceCurrentExecutionRegistry,prepareCurrentExecutionRegistryAdvance,finalizePreparedCurrentExecutionRegistryAdvance} from ${JSON.stringify(pathToFileURL(path.resolve('src/server/ai-painter-current-execution-registry.mjs')).href)};`;continue}
    const names=node.importClause?.namedBindings&&ts.isNamedImports(node.importClause.namedBindings)?node.importClause.namedBindings.elements.map(e=>e.propertyName?.text??e.name.text):[]
    let content=node.importClause?.name?'export default {concurrency(){}};':''
    for(const name of names){let body='(...args)=>{throw Error("unexpected_private_metadata_call_'+name+'")}';if(name==='processIdentity')body='pid=>pid+":"+globalThis.__prelaunchCpuCreatedAt';if(name==='replaceHeartbeatFile')body='(from,to)=>fs.renameSync(from,to)';content+='export const '+name+'='+body+';'}
    modules[spec]='import fs from "node:fs";'+content
   }
  }
- write(root,'private-loader.mjs',`import fs from 'node:fs';import path from 'node:path';import {pathToFileURL} from 'node:url';const root=${JSON.stringify(root)},modules=${JSON.stringify(modules)},driver=pathToFileURL(path.join(root,${JSON.stringify(driverPath)})).href,native=pathToFileURL(path.join(root,${JSON.stringify(nativePath)})).href;export async function resolve(specifier,context,next){if(context.parentURL===driver||context.parentURL===native){if(specifier.endsWith('weight-quality-review-v1.mjs'))return {url:driver,shortCircuit:true};if(specifier.endsWith('weight-quality-owned-native-v1.mjs'))return {url:native,shortCircuit:true};if(Object.hasOwn(modules,specifier))return {url:modules[specifier]==='chain'?pathToFileURL(path.join(root,'private-chain.mjs')).href:'data:text/javascript,'+encodeURIComponent(modules[specifier]),shortCircuit:true};if(specifier==='node:child_process')return {url:'data:text/javascript,'+encodeURIComponent('export const spawn=()=>{throw Error("UNEXPECTED_NATIVE_SPAWN")},spawnSync=()=>{throw Error("UNEXPECTED_NATIVE_SPAWN")};'),shortCircuit:true}}return next(specifier,context)};`)
+ write(root,'private-loader.mjs',`import fs from 'node:fs';import path from 'node:path';import {pathToFileURL} from 'node:url';const root=${JSON.stringify(root)},modules=${JSON.stringify(modules)},driver=pathToFileURL(path.join(root,${JSON.stringify(driverPath)})).href,native=pathToFileURL(path.join(root,${JSON.stringify(nativePath)})).href,contextModule=pathToFileURL(path.join(root,${JSON.stringify(contextPath)})).href;export async function resolve(specifier,context,next){if(context.parentURL===driver||context.parentURL===native||context.parentURL===contextModule){if(specifier.endsWith('weight-quality-review-context.mjs'))return {url:contextModule,shortCircuit:true};if(specifier.endsWith('weight-quality-review-v1.mjs'))return {url:driver,shortCircuit:true};if(specifier.endsWith('weight-quality-owned-native-v1.mjs'))return {url:native,shortCircuit:true};if(Object.hasOwn(modules,specifier))return {url:modules[specifier]==='chain'?pathToFileURL(path.join(root,'private-chain.mjs')).href:'data:text/javascript,'+encodeURIComponent(modules[specifier]),shortCircuit:true};if(specifier==='node:child_process')return {url:'data:text/javascript,'+encodeURIComponent('export const spawn=()=>{throw Error("UNEXPECTED_NATIVE_SPAWN")},spawnSync=()=>{throw Error("UNEXPECTED_NATIVE_SPAWN")};'),shortCircuit:true}}return next(specifier,context)};`)
  const currentTerminal=legacy?failure.path:successor+'/old-prelaunch-closeout/failure-terminal.json'
  const capsule=write(root,'.runtime/fixture/cli-seed-capsule.json',{schemaVersion:'ai-painter-local-task-capsule-v1',integrity:{status:'verified'},evidence:[{path:currentTerminal,sha256:sha(read(root,currentTerminal)),kind:'fixture_closed_source',sha256Verified:true}]})
  await advanceCurrentExecutionRegistry({projectRoot:root,capabilityVersion:'stage4_mvp256_dry_decode1_registered_source_v1',packageId:original.packageId,runId:original.runId,taskId:'private-cli-prelaunch',taskKind:'private_fixture_review',lifecycleStage:'review',executionState:'failed_closed',activity:'review_execution_failed_closed',taskCapsulePath:capsule.path,terminalEvidencePath:currentTerminal,latestTrainingTerminal:{runId:original.runId,...workerRef,status:'post_decode_object_rgb_stage0_real_visual_failure',evidence:{}},activeExecution:null,expectedPreviousRegistryRevision:closed.registry.registryRevision,expectedPreviousRegistrySha256:closed.registrySha256,_testHooks:{currentProcessIdentity:'private-cli-setup'}})
@@ -114,22 +123,22 @@ async function cliCycleFixture(driverSource,nativeSource,{guardAppears=false,nat
  const run=args=>{const result=spawnSync(process.execPath,['--experimental-loader',pathToFileURL(path.join(root,'private-loader.mjs')).href,'--import',pathToFileURL(path.join(root,'private-preload.mjs')).href,...args],{cwd:root,encoding:'utf8',timeout:10000,maxBuffer:128*1024,windowsHide:true,env:{...process.env,CUDA_VISIBLE_DEVICES:'-1',OMP_NUM_THREADS:'2',MKL_NUM_THREADS:'2'}});write(root,'cli-attempt-'+(++attempts)+'.json',{args,status:result.status,errorCode:result.error?.code??null,stdout:result.stdout,stderr:result.stderr,actualDriverSha256:sha(Buffer.from(driverSource)),actualNativeSha256:sha(Buffer.from(nativeSource))});return result}
  return {root,driverPath,recoveryRoot,run}
 }
-test('real frozen CLI reproduces exit13; current CLI reaches native self-import, archives failure and atomically closes its private activity',async()=>{
+test('frozen CLI reproduces exit13; frozen v3 archives pre-owner failure and closes its private activity',async()=>{
  const baseline='.runtime/ai-painter/controller-repair-reviews/review-prelaunch-acceptance-20261022/m-033425/'
  const oldDriver=fs.readFileSync(baseline+'reviewDriver-old-source.txt','utf8'),oldNative=fs.readFileSync(baseline+'nativeRunner-old-source.txt','utf8')
  assert.equal(sha(Buffer.from(oldDriver)),'06162db44327ece70935640f5f6bb8c75a29233e6a4618eded8f73727734f4e0')
  const previous=await cliCycleFixture(oldDriver,oldNative),oldResult=previous.run([previous.driverPath,'--recover-once','fixture-acceptance.json','a'.repeat(64)])
  assert.equal(oldResult.status,13,oldResult.stderr);assert.match(oldResult.stderr,/unsettled top-level await/);assert.equal(fs.existsSync(path.join(previous.root,'dynamic-import-boundary-reached.json')),false)
- const currentDriver=fs.readFileSync('scripts/lib/ai-painter-decode1-entry-weight-quality-review-v1.mjs','utf8'),currentNative=fs.readFileSync('scripts/lib/ai-painter-decode1-entry-weight-quality-owned-native-v1.mjs','utf8'),current=await cliCycleFixture(currentDriver,currentNative)
+ const frozen=frozenV3Sources(),current=await cliCycleFixture(frozen.driver.toString(),frozen.native.toString())
  const result=current.run([current.driverPath,'--recover-once','fixture-acceptance.json','a'.repeat(64)])
  assert.equal(result.status,1,result.stderr);assert.match(result.stderr,/independent_cpu_pre_owner_refusal/);assert.doesNotMatch(result.stderr,/unsettled top-level await|UNEXPECTED_NATIVE_SPAWN/)
  assert.equal(fs.existsSync(path.join(current.root,'dynamic-import-boundary-reached.json')),true)
  assert.equal(fs.existsSync(path.join(current.root,'.runtime/ai-painter/owned-worker-guards')),false)
  const head=await readCurrentExecutionRegistry(current.root);assert.equal(head.ok,true,head.errorCode);assert.equal(head.registry.activeExecution,null);assert.equal(head.registry.executionState,'failed_closed');assert.equal(head.currentTaskTerminal.nativeCleanupCertified,false);assert.equal(head.currentTaskTerminal.modelForwardCalls,0);assert.equal(head.currentTaskTerminal.nativeReceipt,null);assert.match(head.currentTaskTerminal.error,/independent_cpu_pre_owner_refusal/)
 })
-test('real CLI retains unknown guard or native preparation failure and saves explicit unknown-cleanup evidence',async t=>{
+test('frozen v3 CLI retains unknown guard or native preparation failure and saves explicit unknown-cleanup evidence',async t=>{
  for(const [name,mode]of [['guard appeared',{guardAppears:true}],['native preparation entered',{nativePreparation:true}]])await t.test(name,async()=>{
-  const fixture=await cliCycleFixture(fs.readFileSync('scripts/lib/ai-painter-decode1-entry-weight-quality-review-v1.mjs','utf8'),fs.readFileSync('scripts/lib/ai-painter-decode1-entry-weight-quality-owned-native-v1.mjs','utf8'),mode)
+  const frozen=frozenV3Sources(),fixture=await cliCycleFixture(frozen.driver.toString(),frozen.native.toString(),mode)
   const result=fixture.run([fixture.driverPath,'--recover-once','fixture-acceptance.json','a'.repeat(64)]);assert.equal(result.status,1,result.stderr);assert.doesNotMatch(result.stderr,/unsettled top-level await|UNEXPECTED_NATIVE_SPAWN/)
   assert.equal(fs.existsSync(path.join(fixture.root,'dynamic-import-boundary-reached.json')),true)
   const boundary=json(fixture.root,'dynamic-import-boundary-reached.json'),output=path.posix.dirname(boundary.planBinding.path),failure=json(fixture.root,output+'/cleanup-unknown-failure.json'),head=json(fixture.root,REG+'/current.json')
@@ -173,7 +182,7 @@ test('actual repaired review module import has no CLI side effect',async()=>{
  assert.equal(result.status,0,result.stderr);assert.equal(result.stdout,'import-ok');assert.equal(fs.existsSync(path.join(fixture.root,'metadata-published.json')),false);assert.equal(fs.existsSync(path.join(fixture.root,'dynamic-import-boundary-reached.json')),false)
 })
 test('frozen v3 real CLI pre-owner failure archives and atomically closes only its private activity',async()=>{
- const driver=fs.readFileSync('scripts/lib/ai-painter-decode1-entry-weight-quality-review-v1.mjs'),native=fs.readFileSync('scripts/lib/ai-painter-decode1-entry-weight-quality-owned-native-v1.mjs')
+ const {driver,native}=frozenV3Sources()
  assert.equal(sha(driver),'a096c6f944be03881ca7c5210d6b63cecd4393a1e336dd13c64a14299e0b375f');assert.equal(sha(native),'5e19f60ac77db2ec45b14f88a86e5c2fe593ed525d6b367186d726d92d1269ec')
  const fixture=await cliCycleFixture(driver.toString(),native.toString()),before=await readCurrentExecutionRegistry(fixture.root)
  const result=fixture.run([fixture.driverPath,'--recover-once','fixture-acceptance.json','a'.repeat(64)]);assert.equal(result.status,1,result.stderr);assert.match(result.stderr,/independent_cpu_pre_owner_refusal/);assert.doesNotMatch(result.stderr,/unsettled top-level await|UNEXPECTED_NATIVE_SPAWN/)

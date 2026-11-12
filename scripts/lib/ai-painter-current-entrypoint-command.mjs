@@ -1,5 +1,29 @@
 import assert from 'node:assert/strict';
 
+export function retiredEntrypointCommand(packageScript) {
+  assert.match(packageScript ?? '', /^[a-z][a-z0-9:-]{0,159}$/u, 'invalid retired package script');
+  return `node scripts/retired-ai-painter-entrypoint.mjs ${packageScript}`;
+}
+
+// This audits literal package-command references, not arbitrary shell programs.
+const normalizeCommand = command => command.replaceAll('\\', '/').replace(/["']/gu, '').toLowerCase();
+
+export function verifyRetiredCommandExposure(scripts, retiredEntries) {
+  assert.ok(scripts && typeof scripts === 'object' && !Array.isArray(scripts));
+  assert.ok(Array.isArray(retiredEntries));
+  for (const [commandName, command] of Object.entries(scripts)) {
+    assert.equal(typeof command, 'string');
+    const normalized = normalizeCommand(command);
+    for (const entry of retiredEntries) {
+      assert.match(entry.entryFile ?? '', /^scripts\/[a-zA-Z0-9._/-]+\.mjs$/u);
+      assert.ok(!entry.entryFile.split('/').includes('..'));
+      const basename = entry.entryFile.toLowerCase().split('/').at(-1);
+      assert.ok(!normalized.includes(basename), `undeclared retired source reference in ${commandName}: ${entry.entryFile}`);
+    }
+  }
+  return [];
+}
+
 // Compatibility for the two already registered actions sharing one CLI.
 // No arbitrary suffix, shell expression, or caller-provided argument is accepted.
 const EXPERIMENT_ACTIONS = Object.freeze({

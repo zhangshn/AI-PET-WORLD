@@ -3,10 +3,12 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import {registeredTrainingInterfaces} from './lib/ai-painter-decode1-entry-weight-quality-registration-v1.mjs';
-import { verifyCurrentEntrypointCommand } from "./lib/ai-painter-current-entrypoint-command.mjs";
+import { verifyCurrentEntrypointCommand, retiredEntrypointCommand, verifyRetiredCommandExposure } from "./lib/ai-painter-current-entrypoint-command.mjs";
 import {
   readCurrentExecutionRegistry,
 } from "../src/server/ai-painter-current-execution-registry.mjs";
+
+import {readRetiredSource} from './lib/ai-painter-retired-source.mjs';
 
 const root = process.cwd();
 const staticOnly = process.argv.slice(2).includes("--static-only");
@@ -58,9 +60,7 @@ for (const entry of registry.currentEntrypoints) {
     const source = fs.readFileSync(file, "utf8");
     const relativeFile = path.relative(root, file).replaceAll("\\", "/");
     if (enforcementFiles.has(relativeFile) || entry.role.endsWith("_regression")) continue;
-    for (const token of registry.forbiddenCurrentSourceTokens) {
-      assert.ok(!source.includes(token), `current entry graph contains forbidden token ${token}: ${path.relative(root, file)}`);
-    }
+    assertNoForbiddenCurrentTokens(source, relativeFile, registry.forbiddenCurrentSourceTokens);
   }
   results.push({ packageScript: entry.packageScript, entryFile: entry.entryFile, args: verifiedCommand.args,
     entrySha256: sha256File(absolute), graphFileCount: graph.size });
@@ -111,14 +111,19 @@ for (const entry of retiredIndex.retiredEntrypoints ?? []) {
   assert.equal(seenFiles.has(entry.entryFile), false, `retired entry file remains schedulable: ${entry.entryFile}`);
   assert.equal(entry.retirementDisposition, "read_only_audit_not_dispatchable");
   const command = packageJson.scripts?.[entry.packageScript];
-  assert.equal(command, `node ${entry.entryFile}`, `retired package entry mismatch: ${entry.packageScript}`);
+  assert.equal(command, retiredEntrypointCommand(entry.packageScript), `retired package entry must only report retirement: ${entry.packageScript}`);
+  for (const prefix of ["pre", "post"]) {
+    assert.equal(Object.hasOwn(packageJson.scripts, prefix + entry.packageScript), false,
+      `retired package entry must not execute npm lifecycle hooks: ${prefix}${entry.packageScript}`);
+  }
   const absolute = path.resolve(root, entry.entryFile);
   assert.ok(absolute.startsWith(`${path.resolve(root)}${path.sep}`));
   assert.ok(fs.existsSync(absolute), `retired entry file missing: ${entry.entryFile}`);
   assert.match(entry.sourceSha256 ?? "", /^[a-f0-9]{64}$/u);
-  assert.equal(sha256File(absolute), entry.sourceSha256, `retired source SHA-256 mismatch: ${entry.entryFile}`);
+  assert.equal(readRetiredSource(root, entry.entryFile).sha256, entry.sourceSha256);
 }
 assert.ok(retiredSeen.size > 0, "retired entrypoint index must not be empty");
+const retiredLiteralSourceReferences = verifyRetiredCommandExposure(packageJson.scripts, retiredIndex.retiredEntrypoints);
 
 // A live workspace verifies the transaction-bound current registry. A clean
 // checkout has no .runtime by design, so the core gate validates the complete
@@ -194,6 +199,7 @@ process.stdout.write(`${JSON.stringify({
   status: "passed",
   currentEntrypointCount: results.length,
   retiredEntrypointCount: retiredSeen.size,
+  retiredLiteralSourceReferences,
   retiredEntrypointIndex: {
     path: retiredBinding.path,
     sha256: retiredBinding.sha256,
@@ -225,6 +231,25 @@ function collectDeclaredSuccessorActions(terminal) {
     unique.add(action);
     return true;
   });
+}
+
+function assertNoForbiddenCurrentTokens(source, relativeFile, tokens) {
+  let inspected = source;
+  if (relativeFile === 'scripts/lib/ai-painter-autonomous-package-validation-v1.mjs') {
+    // The extracted validator contains the original rejection vocabulary as data.
+    // Bind that exact declaration; every other byte still gets the normal scan.
+    const normalized = source.replaceAll('\r\n', '\n');
+    const declarations = [...normalized.matchAll(/^export const FORBIDDEN_OWNER_TOKENS = \[[\s\S]*?^\];/gmu)];
+    assert.equal(declarations.length, 1, 'package rejection vocabulary declaration missing or duplicated');
+    const declaration = declarations[0][0];
+    assert.equal(crypto.createHash('sha256').update(declaration).digest('hex'),
+      '09aaefe6ef042c615cee5d106bd28f2b221a1ef80eb87cc5c89821dd56f882d5',
+      'package rejection vocabulary differs from the reviewed declaration');
+    inspected = normalized.replace(declaration, '');
+  }
+  for (const token of tokens) {
+    assert.ok(!inspected.includes(token), `current entry graph contains forbidden token ${token}: ${relativeFile}`);
+  }
 }
 
 function collectImportGraph(start) {

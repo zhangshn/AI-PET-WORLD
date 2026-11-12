@@ -1,15 +1,7 @@
 import assert from "node:assert/strict"
 import path from "node:path"
 
-import {
-  CAPABILITY_VERSION,
-  EXPECTED_TRAINER_STATUS,
-  FIXED_SAMPLE_ID,
-  LATE_EPOCHS,
-  PLAN_SCHEMA_VERSION,
-  PREVIEW_EPOCHS,
-  validateJointConditionLocalTransportFullDataScreenExecutionPlan,
-} from "./ai-painter-stage4-joint-condition-local-transport-full-data-screen-adapters-v1.mjs"
+import { CAPABILITY_VERSION, EXPECTED_TRAINER_STATUS, FIXED_SAMPLE_ID, LATE_EPOCHS, PLAN_SCHEMA_VERSION, PREVIEW_EPOCHS } from "./ai-painter-stage4-joint-condition-local-transport-full-data-screen-adapters-v1.mjs"
 
 export { CAPABILITY_VERSION }
 

@@ -1,3 +1,4 @@
+import { sameSourceFactIds as sameStringSet } from "../../runtime-core/source-fact-identity"
 import { Buffer } from "node:buffer"
 import { createHash } from "node:crypto"
 
@@ -10,7 +11,7 @@ import type {
   WorldVisualReviewCheck,
   WorldVisualReviewReport,
 } from "../world-visual-painter-schema"
-import { WORLD_VISUAL_MVP_TARGET_POLICY } from "../visual-target-policy"
+import { WORLD_VISUAL_MVP_TARGET_POLICY, buildRequiredSourceChannelGroups } from "../visual-target-policy"
 import { judgeWorldVisualDeterministicQuality } from "../visual-quality"
 
 const MIN_IMAGE_WIDTH = 1024
@@ -559,24 +560,6 @@ function candidateSourceChannelsSatisfyRequiredFacts(
   )
 }
 
-function buildRequiredSourceChannelGroups(
-  generationCondition: WorldVisualGenerationCondition
-): Array<{ id: string; channels: string[] }> {
-  if (generationCondition.sceneCondition.sceneType !== "forest_construction_clearing") {
-    return []
-  }
-
-  return [
-    { id: "natural_ground", channels: ["grass"] },
-    { id: "readable_path", channels: ["road_center", "road_edge", "walkable"] },
-    {
-      id: "construction_core",
-      channels: ["shelter_foundation", "shelter_wall", "shelter_roof"],
-    },
-    { id: "construction_materials", channels: ["construction_material"] },
-  ]
-}
-
 function getMinimumImageByteLength(
   width: number | null,
   height: number | null
@@ -941,13 +924,6 @@ function buildFixInstructions(
       zh: `修正 ${check.label.zh}：${check.evidence.zh}`,
       en: `Fix ${check.label.en}: ${check.evidence.en}`,
     }))
-}
-
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
 }
 
 function readAscii(bytes: Uint8Array, offset: number, length: number): string {

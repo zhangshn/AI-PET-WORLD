@@ -4,6 +4,8 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
+import { createHash } from "node:crypto";
+import { verifyRetiredCommandExposure } from "./lib/ai-painter-current-entrypoint-command.mjs";
 
 const root = process.cwd();
 const node = process.execPath;
@@ -45,7 +47,7 @@ const checks = [
   ["successor-capability-lifecycle-reconciliation", node, ["scripts/tests/test-ai-painter-stage4-v2-capability-lifecycle-reconciliation.mjs"]],
   ["successor-lifecycle-state-semantics", node, ["--test", "scripts/tests/test-ai-painter-stage4-lifecycle-state-semantics.mjs"]],
   ["exactly-once-background-spawn-regression", node, ["scripts/tests/test-ai-painter-exactly-once-background-spawn.mjs"]],
-  ["failure-lifecycle-routing", node, ["scripts/check-ai-painter-stage4-joint-condition-local-transport-lifecycle-routing.mjs"]],
+  ["failure-lifecycle-routing", node, ["--test", "scripts/tests/stage4-historical-lifecycle-routing.test.mjs"]],
   ["current-entrypoints", node, [
     "scripts/check-ai-painter-current-entrypoints.mjs", ...currentEntrypointArgs,
   ]],
@@ -88,6 +90,22 @@ const checks = [
   ["console-review-availability-regression", node, ["--test", "scripts/tests/test-ai-console-current-projection-availability.mjs"]],
 ];
 
+export function verifyStage4CoreRetiredBoundary(projectRoot = root, inventory = checks) {
+  const registry = JSON.parse(fs.readFileSync(path.join(projectRoot, "data/ai-painter/system-governance/ai-painter-current-entrypoint-registry-v1.json"), "utf8"));
+  const binding = registry.retiredEntrypointIndex;
+  assert.equal(binding?.path, "data/ai-painter/system-governance/ai-painter-retired-entrypoint-index-v1.json");
+  assert.equal(binding.dispatchable, false);
+  const bytes = fs.readFileSync(path.join(projectRoot, binding.path));
+  assert.equal(createHash("sha256").update(bytes).digest("hex"), binding.sha256, "retired index SHA mismatch");
+  const index = JSON.parse(bytes);
+  assert.equal(index.dispatchable, false);
+  assert.equal(index.resolverMaySchedule, false);
+  for (const [identity, command, args] of inventory) {
+    verifyRetiredCommandExposure({ [identity]: [command, ...args].join(" ") }, index.retiredEntrypoints);
+  }
+  return true;
+}
+
 export function stage4CoreArgsForComponent(binding, hasSuccessorGraph) {
   if (!hasSuccessorGraph) return ["scripts/check-ai-painter-stage4-core.mjs"];
   assert.ok(typeof binding?.path === "string" && binding.path.length > 0, "explicit CPU component path required");
@@ -120,6 +138,7 @@ export function validateStage4CoreQualificationSummary(summary) {
 }
 
 function runStage4Core() {
+  verifyStage4CoreRetiredBoundary();
   const { values } = parseArgs({ options: { component: { type: "string" }, sha256: { type: "string" } } });
   const componentContract = values.component || values.sha256 ? { path: values.component, sha256: values.sha256 } : null;
   if (componentContract) stage4CoreArgsForComponent(componentContract, true);

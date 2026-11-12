@@ -8,7 +8,7 @@ const seed = "live-world-p2-fixed-seed-5x5-v1";
 const outputDir = path.join(root, "data/live-world/world-states");
 const outputPath = path.join(outputDir, "p2-fixed-seed-5x5-world.json");
 const chunkSize = 32;
-const tileSize = 16;
+
 const chunkRadius = 2;
 const blockedTraversalCost = 999999;
 

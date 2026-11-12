@@ -11,9 +11,7 @@ const reviewRoot = "data/live-world/visual-reviews/p11-active-chunks";
 const batchPath = `${reviewRoot}/p11-auto-visual-review-batch.json`;
 const latestPath = "data/live-world/visual-reviews/latest-p11-auto-visual-review-batch.json";
 
-function projectPath(filePath) {
-  return path.relative(root, filePath).replaceAll("\\", "/");
-}
+
 
 function resolveProjectPath(filePath) {
   return path.isAbsolute(filePath) ? filePath : path.join(root, filePath);

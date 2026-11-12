@@ -24,12 +24,19 @@ import {directoryBytes as historicalDirectoryBytes} from '../lib/ai-painter-mvp2
 import {write as writeCandidateAccounting} from '../lib/ai-painter-decode1-entry-weight-output-accounting-v1.mjs';
 import {decodeTrainingInterfaceJson,parseTrainingInterfacePolicy} from '../../src/server/ai-console/training-preview-history-v1.mjs';
 
-test('read-only role query identifies a missing interpreter instead of an empty failure',()=>{
+test('read-only role query identifies a missing interpreter instead of an empty failure',t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'decode1-role-query-'));
- fs.writeFileSync(path.join(root,'auth.py'),'# inert fixture; never imported\n');
+ t.after(()=>{
+  assert.equal(path.dirname(fs.realpathSync(root)),fs.realpathSync(os.tmpdir()));
+  assert.match(path.basename(root),/^decode1-role-query-/u);
+  fs.rmSync(root,{recursive:true});
+ });
+ const authPath='ml/ai-painter/scripts/decode1_entry_weight_quality_auth_v1.py';
+ fs.mkdirSync(path.dirname(path.join(root,authPath)),{recursive:true});
+ fs.writeFileSync(path.join(root,authPath),'# inert fixture; never imported\n');
  assert.throws(()=>requiredProgramRoles({root,python:path.join(root,'missing-python'),
-   capabilityVersion:'fixture',authPath:'auth.py'}),/registered read-only role query failed: .*"errorCode":"ENOENT"/);
- assert.equal(fs.readFileSync(path.join(root,'auth.py'),'utf8'),'# inert fixture; never imported\n');
+   capabilityVersion:'fixture',authPath}),/registered read-only role query failed: .*"errorCode":"ENOENT"/);
+ assert.equal(fs.readFileSync(path.join(root,authPath),'utf8'),'# inert fixture; never imported\n');
 });
 
 test('registered interface index is shared by preparation and Python without changing candidate consumers',()=>{
@@ -187,13 +194,10 @@ test('retained stop sender handles asynchronous terminal, exit and EPIPE races w
 import assert from 'node:assert/strict';
 import {Writable,PassThrough} from 'node:stream';
 import {EventEmitter} from 'node:events';
-import {registerHooks} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import path from 'node:path';
-const url=pathToFileURL(path.join(process.cwd(),'scripts/lib/ai-painter-decode1-entry-weight-quality-owned-native-v1.mjs')).href+'?private-timeout-finalize';
-const hook=registerHooks({load(urlToLoad,context,next){const loaded=next(urlToLoad,context);return urlToLoad===url?
- {...loaded,source:Buffer.from(loaded.source).toString('utf8')+'\nexport {createRetainedNativeStopSender as privateSender};\n'}:loaded;}});
-let native;try{native=await import(url);}finally{hook.deregister();}
+const native=await import(pathToFileURL(path.join(process.cwd(),'scripts/lib/ai-painter-decode1-entry-weight-quality-owned-native-v1.mjs')).href);
+const {createRetainedNativeStopSender:privateSender}=await import(pathToFileURL(path.join(process.cwd(),'scripts/lib/ai-painter-owned-worker-stream.mjs')).href);
 const tick=()=>new Promise(resolve=>setImmediate(resolve)),cases=[];
 const binding=Buffer.from(JSON.stringify({callId:'private-current-call',nonce:'private-current-nonce'})).toString('base64');
 const proof=()=>({ownerPid:123,rootPid:456,rootCreationDateUtc:'2026-10-17T00:00:00Z',bindingBase64:binding,
@@ -205,7 +209,7 @@ function fixture({broken=false}={}){
  const state={closed:false,settled:false,proof:null,protocolError:null,primary:null,stopReason:null,pending:'',writes:[],errors:[],stdoutBytes:0,stderrBytes:0};
  child.stdin=new Writable({write(chunk,encoding,done){state.writes.push(Buffer.from(chunk).toString('utf8'));
   setImmediate(()=>done(broken?Object.assign(new Error('write EPIPE'),{code:'EPIPE'}):null));}});
- const send=native.privateSender(child,{isClosed:()=>state.closed,isSettled:()=>state.settled,
+ const send=privateSender(child,{isClosed:()=>state.closed,isSettled:()=>state.settled,
   hasTerminalFrame:()=>state.proof!==null,onError:error=>{state.errors.push(error.code);state.primary=native.primaryErrorForControlStream(state.primary,state.stopReason,error);state.protocolError??=String(error);}});
  const output=new PassThrough();output.on('data',chunk=>{state.pending=native.consumeNativeOwnerChunk(state.pending,chunk,{
   onFrame:line=>{if(line.startsWith('R:')){assert.equal(state.proof,null);state.proof=JSON.parse(Buffer.from(line.slice(2),'base64').toString('utf8'));}

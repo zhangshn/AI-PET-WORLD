@@ -16,8 +16,6 @@ const outputRoot = path.resolve(process.argv[5] ?? runtimeFrameRoot)
 const compileOutputDir = path.resolve(".runtime/check-game-map-frame-composite-writer")
 const sourceDir = "src/world/game-map-frame"
 const approvedPackRoot = path.resolve(".runtime/game-map-approved-material-packs")
-const ledgerDir = path.resolve(".runtime/ai-painter/training-process-ledger")
-const ledgerPath = path.join(ledgerDir, "events.jsonl")
 let resolvedMaterialPackPathForReport = materialPackPathArg
 
 function readJson(filePath) {

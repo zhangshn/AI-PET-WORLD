@@ -204,15 +204,26 @@ test('balanced48 exact policy and four passes plus first8 fit the existing packa
   assert(r.readCoverage.byteLength <= 8 * 1024 * 1024)
   assert(f.calls.every(p => !p.endsWith('.pt') && !p.endsWith('.png')))
 })
-for (const [label, fitMutation] of [
+test('balanced-boundary registered large package projects all 56 rows without granting qualification', async t => {
+  const f = await replayFixture(t, { arm: 'balanced-boundary' }); if (!f) return
+  assert(f.entries.get(f.sourcePackage.path).byteLength > 1024 * 1024)
+  const r = await readReadonlyPostReviewEvidence(f)
+  assert.equal(r.arm, 'balanced-boundary'); assert.equal(r.rows.length, 56)
+  assert.equal(r.executionResult, 'succeeded'); assert.equal(r.absoluteOutcome, 'failed')
+  assert.equal(r.pkg.checkpointPromotable, false); assert.equal(r.pkg.runtimePublicationAllowed, false)
+  assert(r.readCoverage.byteLength <= 8 * 1024 * 1024)
+  assert(f.calls.every(p => !p.endsWith('.pt') && !p.endsWith('.png')))
+})
+
+for (const arm of ['balanced', 'balanced-boundary']) for (const [label, fitMutation] of [
   ['substituted policy SHA', v => { v.policy = { ...v.policy, sha256: '0'.repeat(64) } }],
   ['changed frozen schedule', v => { v.schedule.reverse() }],
   ['wrong target exposure', v => { v.training = { ...v.training, targetPairs: 100, replayPairs: 100 } }],
   ['wrong recorded sample visits', v => { v.plannedSampleVisits['mvp64-slot164-objects-v5-20261020'] = 5 }],
   ['borrowed formal qualification', v => { v.qualificationGranted = true }],
   ['unknown package arm', v => { v.arm = 'unregistered' }],
-]) test('balanced large-package exception rejects ' + label + ' despite valid new JSON hashes', async t => {
-  const f = await replayFixture(t, { arm: 'balanced', fitMutation }); if (!f) return
+]) test(arm + ' large-package exception rejects ' + label + ' despite valid new JSON hashes', async t => {
+  const f = await replayFixture(t, { arm, fitMutation }); if (!f) return
   await assert.rejects(readReadonlyPostReviewEvidence(f))
 })
 test('short arm cannot inherit the balanced large-package exception', async t => {
@@ -230,7 +241,7 @@ test('balanced registered execution failure retains unknown verdict and counters
   assert.equal(record.reviewSummary.formalQualificationGranted, false)
 })
 
-for (const arm of ['mixed', 'balanced']) test(arm + ' 56-image metadata fixture passes the real history store and every artifact page without changing the registry', async t => {
+for (const arm of ['mixed', 'balanced', 'balanced-boundary']) test(arm + ' 56-image metadata fixture passes the real history store and every artifact page without changing the registry', async t => {
   const f = await replayFixture(t, { arm }); if (!f) return
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'console-review-fixture-'))
   t.after(() => { const absolute = fs.realpathSync(root)

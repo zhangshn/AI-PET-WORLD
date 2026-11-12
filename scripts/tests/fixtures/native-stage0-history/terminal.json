@@ -1,0 +1,25 @@
+{
+  "runId": "stage0-native-256-formal-229",
+  "phase": "train",
+  "status": "failed_closed",
+  "reason": "host or disk below floor",
+  "atUtc": "2026-11-03T00:47:51.135Z",
+  "reservedSegments": 13,
+  "sealedSegments": 13,
+  "sealedPairs": 312,
+  "rehearsalPositions": null,
+  "unconfirmedSegment": null,
+  "lastSealed": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/13/seal.json",
+    "bytes": 2129,
+    "sha256": "7b5cddcc542d78479f9e2f32d2c226399d4cb64427724853a66eaba6468b2423"
+  },
+  "mostRecentSealedCheckpoint": {
+    "bytes": 30107037,
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/13/recovery.pt",
+    "sha256": "82c930dd25042493fae7a085e8c60c2571734ee520e40b1ab9e760983a219ee0"
+  },
+  "actualOutputBytesBeforeTerminal": 30845957,
+  "stageAdvanceAllowed": false,
+  "worldEntryAllowed": false
+}

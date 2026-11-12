@@ -32,6 +32,7 @@ import { moveBranch, PHYSICAL_BRANCH_ORDER } from "../shared"
 import { getZiweiStarDefinition, ziweiStarCatalog } from "../star-catalog"
 
 import {
+  getDynamicStemSourceLabel,
   BRANCH_LABELS,
   DYNAMIC_DIRECTION_LABELS,
   DYNAMIC_FLOW_LABELS,
@@ -206,17 +207,6 @@ function buildDynamicTransformationView(
     sectorLabel: SECTOR_LABELS[transformation.sectorName],
     placementRuleId: transformation.placementRuleId
   }
-}
-
-function getDynamicStemSourceLabel(
-  source: FullZiweiDynamicFlow["stemSource"]
-): string {
-  if (source === "birthYearStem") return "本命年干"
-  if (source === "currentYearStem") return "流年年干"
-  if (source === "currentMonthStem") return "流月月干"
-  if (source === "currentDayStem") return "流日日干"
-  if (source === "currentTimeStem") return "流时时干"
-  return "动态宫干"
 }
 
 function buildDynamicTabView(

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type {NativeStage0Progress} from './progress-types'
+import type {NativeStage0Progress,NativeStage0HistoricalStop} from './progress-types'
 import styles from './current-delivery.module.css'
 
 const labels:Record<string,string>={not_started:'尚未启动',initialization_incomplete:'初始化未完成',active:'运行中',stopping:'正在停止',
@@ -10,9 +10,29 @@ const phases:Record<string,string>={training_guard:'训练计算与资源检查'
 const dateText=(v:string)=>new Date(v).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false})
 const duration=(s:number)=>[Math.floor(s/3600),Math.floor(s/60)%60,Math.floor(s)%60].map(n=>String(n).padStart(2,'0')).join(':')
 
+function HistoricalStop({data}:{data:NativeStage0HistoricalStop|undefined}){
+ if(!data)return null
+ return <aside aria-label="训练历史记录"><h5>首次停机记录（历史）</h5>
+  {data.status==='verified'?<>
+   <p>北京时间 {dateText(data.endedAt)}，原始停机记录记载已封存 {data.recordedPairs} 对更新、{data.recordedSegments} 段。</p>
+   <p>仅为首次停机记录，不代表最新接续进度或可恢复资格。</p>
+   <p>停止原因：{data.reason==='host or disk below floor'?'内存或磁盘低于原资源门槛':data.reason}。</p>
+   <details><summary>历史记录来源</summary><p>运行编号 {data.runId}</p>
+    <p>开始 {dateText(data.startedAt)}　停止 {dateText(data.endedAt)}</p>
+    <p>原始记录 SHA-256：{data.terminalSha256}</p>
+    <p>记录核验于北京时间 {dateText(data.verifiedAtUtc)}；未重新校验恢复文件。</p>
+   </details>
+   {data.continuation&&<><h5>接续终态（历史）</h5>{data.continuation.status==='verified'?<>
+    <p>北京时间 {dateText(data.continuation.endedAt)}，接续记录记载已完成 {data.continuation.recordedPairs} 对更新、{data.continuation.recordedSegments} 段；训练完成，固定审核未通过。</p>
+    <p>这是已结束运行的历史终态，不代表模型能力通过或当前正在训练。</p>
+   </>:<p>{data.continuation.message}</p>}</>}
+  </>:<p>{data.message}</p>}
+ </aside>
+}
+
 export function CurrentNativeTraining({data}:{data:NativeStage0Progress|null|undefined}){
  if(!data)return null
- if(data.kind!=='verified')return <section className={styles.training} aria-label="本地地图模型训练"><h4>原生 256 地图模型训练</h4><p role="status">{data.message}</p></section>
+ if(data.kind!=='verified')return <section className={styles.training} aria-label="本地地图模型训练"><h4>原生 256 地图模型训练</h4><p role="status">{data.message}</p><HistoricalStop data={data.historicalStop}/></section>
  return <section className={styles.training} aria-label="本地地图模型训练">
   <header><div><small>Painter · Stage0 · 256 × 192</small><h4>原生地图模型训练</h4></div><strong>{labels[data.status]??data.status}</strong></header>
   <div className={styles.trainingCount}><b>{data.percentage.toFixed(1)}%</b><span>本轮已封存 {data.committed} / 1152 对更新</span></div>
@@ -35,6 +55,7 @@ export function CurrentNativeTraining({data}:{data:NativeStage0Progress|null|und
     工作进程 PID {data.workerPid??'—'}{data.workerPid?(data.workerOwned?'（受管）':'（最近记录）'):''}</p>
    {data.workerPhase&&<p>工作阶段 {phases[data.workerPhase]??data.workerPhase}</p>}
   </details>
+  <HistoricalStop data={data.historicalStop}/>
   <nav aria-label="地图模型相关工作记录">{data.links.map(link=><Link key={link.href} href={link.href}>{link.label} ↗</Link>)}</nav>
  </section>
 }

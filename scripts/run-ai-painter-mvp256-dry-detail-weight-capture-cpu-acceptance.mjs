@@ -9,7 +9,7 @@ import {runNative,nativeAccountingRoots,withNativeReceiptBudget} from "./run-ai-
 import {processIdentity} from "./lib/windows-process-identity.mjs"
 import {initializeCurrentExecutionRegistry,advanceCurrentExecutionRegistry,readCurrentExecutionRegistry} from "../src/server/ai-painter-current-execution-registry.mjs"
 import {materializeAutonomousClosedLoopPackage} from "./lib/ai-painter-autonomous-package-materializer-v1.mjs"
-import {CLOSED_LOOP_CONTRACT_PATH} from "./lib/ai-painter-autonomous-closed-loop-v1.mjs"
+import "./lib/ai-painter-autonomous-closed-loop-v1.mjs"
 const SELF=fileURLToPath(import.meta.url)
 export const TASK_ROOT=".runtime/ai-painter/detail-weight-capture-bounded-repair-t-q4-51"
 const CPU_TASK_ROOTS={"T-Q4-51":TASK_ROOT,"T-Q4-55":".runtime/ai-painter/native-startup-recovery-t-q4-55/cpu","T-Q4-58":".runtime/ai-painter/post-reboot-current-source-t-q4-58/cpu","T-Q4-59":".runtime/ai-painter/corrected-source-verification-t-q4-59/cpu","T-Q4-60":".runtime/ai-painter/output-accounting-race-repair-t-q4-60/cpu","T-Q4-61":".runtime/ai-painter/progress-publication-current-source-t-q4-61/cpu","T-Q4-62":".runtime/ai-painter/progress-publication-binding-guard-t-q4-62/cpu","T-Q4-64":".runtime/ai-painter/seventy-minute-resource-successor-t-q4-64/cpu","T-Q4-65":".runtime/ai-painter/seventy-minute-config-binding-repair-t-q4-65/cpu"}

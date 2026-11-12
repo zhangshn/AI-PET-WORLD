@@ -2,10 +2,10 @@
 // start scans or mutate its state. The global guard avoids duplicate dev reloads.
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
+  const { pathToFileURL } = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ 'node:url')
   // This observer has its own singleton; GET handlers never start it. Keep it
   // independent of the existing history indexer guard and polling behavior.
-  const workCwd = process.cwd().replaceAll('\\', '/')
-  const workUrl = `${workCwd.startsWith('/') ? 'file://' : 'file:///'}${workCwd}/src/server/local-backup/work-observer.mjs`
+  const workUrl = pathToFileURL(`${process.cwd()}/src/server/local-backup/work-observer.mjs`).href
   try {
     const { startWorkObserver } = await import(/* webpackIgnore: true */ workUrl)
     const observer = startWorkObserver()
@@ -15,8 +15,7 @@ export async function register() {
   if (scope.__aiConsoleHistoryIndexerStarted) return
   // Next also compiles instrumentation for Edge. The indexer is Node-only and
   // must stay outside that module graph, while still starting in Node runtime.
-  const cwd = process.cwd().replaceAll('\\', '/')
-  const indexerUrl = `${cwd.startsWith('/') ? 'file://' : 'file:///'}${cwd}/src/server/ai-console/training-history-evidence-index.mjs`
+  const indexerUrl = pathToFileURL(`${process.cwd()}/src/server/ai-console/training-history-evidence-index.mjs`).href
   const { scanHistoryEvidence } = await import(/* webpackIgnore: true */ indexerUrl)
   scope.__aiConsoleHistoryIndexerStarted = true
   let busy = false

@@ -3,16 +3,7 @@ import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
-import {
-  FIXED_TASK_IDENTITY,
-  GPU_ACTIONS,
-  GPU_REQUEST_ID,
-  GPU_SCOPE,
-  IMPLEMENTATION_AUTHORIZATION_SHA256,
-  IMPLEMENTATION_CONSUMPTION_SHA256,
-  buildGpuAuthorizationFixture,
-  validateImplementationSource,
-} from "./lib/ai-painter-stage4-object-visible-structure-phase0-execution.mjs"
+import { FIXED_TASK_IDENTITY, GPU_ACTIONS, GPU_REQUEST_ID, IMPLEMENTATION_AUTHORIZATION_SHA256, IMPLEMENTATION_CONSUMPTION_SHA256, buildGpuAuthorizationFixture, validateImplementationSource } from "./lib/ai-painter-stage4-object-visible-structure-phase0-execution.mjs"
 import { appendAiPainterProgramEvent, formatShanghai, writeJsonAtomic } from "./lib/ai-painter-program-event-store.mjs"
 import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
 import { logicalProjectPath } from "./lib/ai-pet-world-storage.mjs"

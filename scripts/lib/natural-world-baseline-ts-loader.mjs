@@ -5,12 +5,14 @@ import { pathToFileURL } from 'node:url'
 
 const FILES = new Set(['natural-world-bootstrap.ts', 'world-runtime-store-adapter.ts', 'world-runtime-store.ts',
   'world-runtime-production-store.ts', 'world-runtime-record-validation.ts', 'world-runtime-schema.ts', 'runtime-path-security.ts', 'world-evolution-transaction.ts'])
-let loaded
+const pendingByRoot = new Map()
 /** Node24's fixed native type stripper; no arbitrary transpilation or source selection. */
 export async function loadNaturalWorldBaselineRuntime(root = process.cwd()) {
-  if (loaded) return loaded
-  loaded = (async () => {
-    const directory = path.resolve(root, 'src/world/runtime')
+  const key = fs.realpathSync(root)
+  if (key !== fs.realpathSync(process.cwd())) throw new Error('baseline_loader_cwd')
+  if (pendingByRoot.has(key)) return pendingByRoot.get(key)
+  const pending = (async () => {
+    const directory = path.join(key, 'src/world/runtime')
     const prefix = pathToFileURL(directory + path.sep).href
     const hook = registerHooks({ resolve(specifier, context, next) {
       if (context.parentURL?.startsWith(prefix) && specifier.startsWith('.') && !path.extname(specifier)) {
@@ -21,7 +23,6 @@ export async function loadNaturalWorldBaselineRuntime(root = process.cwd()) {
       return next(specifier, context)
     } })
     try {
-      if (fs.realpathSync(root) !== fs.realpathSync(process.cwd())) throw new Error('baseline_loader_cwd')
       return {
         bootstrap: await import(pathToFileURL(path.join(directory, 'natural-world-bootstrap.ts')).href),
         facade: await import(pathToFileURL(path.join(directory, 'world-runtime-store-adapter.ts')).href),
@@ -29,5 +30,7 @@ export async function loadNaturalWorldBaselineRuntime(root = process.cwd()) {
       }
     } finally { hook.deregister() }
   })()
-  return loaded
+  pendingByRoot.set(key, pending)
+  pending.catch(() => { if (pendingByRoot.get(key) === pending) pendingByRoot.delete(key) })
+  return pending
 }

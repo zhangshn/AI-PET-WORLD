@@ -2,7 +2,7 @@
 import assert from "node:assert/strict"
 import fs from "node:fs"
 import path from "node:path"
-import {inside,read,json,bind,sha,write,withOutputBudget,directoryBytes,validatePlan,effectiveExecutionCeiling,RESOURCE_POLICY,validateCompleted,PHASE_EXPORTS,EXECUTION_PROFILE} from "../lib/ai-painter-mvp256-dry-detail-weight-capture-package-chain-v1.mjs"
+import { inside, read, json, sha, write, withOutputBudget, directoryBytes, validatePlan, effectiveExecutionCeiling, RESOURCE_POLICY, validateCompleted, PHASE_EXPORTS, EXECUTION_PROFILE } from "../lib/ai-painter-mvp256-dry-detail-weight-capture-package-chain-v1.mjs"
 import * as actual from "../run-ai-painter-mvp256-dry-detail-weight-capture-training.mjs"
 import {runAutonomousClosedLoop,validateClosedLoopPackage,PHASES} from "../lib/ai-painter-autonomous-closed-loop-v1.mjs"
 

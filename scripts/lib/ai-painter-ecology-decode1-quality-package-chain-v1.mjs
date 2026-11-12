@@ -277,19 +277,7 @@ export function prepareCpuRequest({root,runId,packageId,preparationRequestBindin
   datasetManifest:candidate.frozenBindings.datasetManifest,trainSplit:candidate.frozenBindings.trainSplit,validationSplit:candidate.frozenBindings.validationSplit,
   formalSpecification:SPECIFICATION,sourceCandidate:CANDIDATE,runtimeIdentity:runtime});
 }
-export async function finalizeCpuAcceptance({root,requestBinding,result}){
- const {hasLiveOwnedProof,hasLiveCpuFixtureCleanup,withNativeOrdinaryBudget}=await import('./ai-painter-ecology-decode1-quality-owned-native-v1.mjs');
- assert.ok(hasLiveOwnedProof(result.ownedReceipt),'same live CPU call required');assert.equal(result.ownedReceipt.proof?.exitCode,0);
- assert.equal(result.ownedReceipt.phase,'cpu');
- assert.ok(hasLiveCpuFixtureCleanup(result.ownedReceipt),'same retained CPU call must confirm all fixture links removed');
- const request=json(root,requestBinding),reportBinding=JSON.parse(result.stdout),raw=json(root,reportBinding);
- assert.equal(reportBinding.path,request.outputRoot+'/cpu-report.json');assert.deepEqual(raw.request,requestBinding);
- const plan={...request,outputRoot:request.outputRoot.replace(/\/cpu-entry$/u,'')};verifyCpuReport(raw,request,plan);
- assert.deepEqual(raw.initialModel,validateModelIdentity(json(root,raw.modelBinding)));
- return withNativeOrdinaryBudget(root,result.ownedReceipt,()=>write(root,plan.outputRoot+'/cpu-acceptance.json',{
-  schema:'ecology-decode1-weight-quality-final-cpu-acceptance-v1',status:'passed',programBindings:request.programBindings,
-  report:reportBinding,ownedReceipt:result.receiptBinding}));
-}
+
 export function preparePlan({root,requestBinding,finalCpuAcceptance}){
  const request=json(root,requestBinding),outputRoot=request.outputRoot.replace(/\/cpu-entry$/u,'');
  const acceptance=json(root,finalCpuAcceptance),raw=json(root,acceptance.report);

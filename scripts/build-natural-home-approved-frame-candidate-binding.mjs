@@ -347,8 +347,8 @@ function buildBindingReport() {
     ],
   }
 
-  const latestPath = path.join(outputRoot, "latest.json")
-  const reportPath = path.join(outputRoot, "binding-report.json")
+  
+  
   writeJsonPair(outputRoot, binding)
 
   return binding

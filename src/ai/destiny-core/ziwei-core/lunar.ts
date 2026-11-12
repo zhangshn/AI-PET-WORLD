@@ -1,3 +1,5 @@
+import { getTimeBranchFromHour } from "./birth/time-branch-resolver"
+export { getTimeBranchFromHour } from "./birth/time-branch-resolver"
 /**
  * ======================================================
  * AI-PET-WORLD
@@ -160,20 +162,7 @@ const LUNAR_MONTH_TEXT_TO_NUMBER: Record<string, number> = {
  * - "zi" / "chou" / "yin" ...
  * ======================================================
  */
-export function getTimeBranchFromHour(hour: number): TimeBranch {
-  if (hour === 23 || hour === 0) return "zi"
-  if (hour === 1 || hour === 2) return "chou"
-  if (hour === 3 || hour === 4) return "yin"
-  if (hour === 5 || hour === 6) return "mao"
-  if (hour === 7 || hour === 8) return "chen"
-  if (hour === 9 || hour === 10) return "si"
-  if (hour === 11 || hour === 12) return "wu"
-  if (hour === 13 || hour === 14) return "wei"
-  if (hour === 15 || hour === 16) return "shen"
-  if (hour === 17 || hour === 18) return "you"
-  if (hour === 19 || hour === 20) return "xu"
-  return "hai"
-}
+
 
 /**
  * ======================================================

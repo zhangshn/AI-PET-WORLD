@@ -34,6 +34,7 @@ sys.path.insert(0, str(ROOT / "ml/ai-painter/scripts"))
 sys.path.insert(0, str(ROOT / "ml/ai-painter/src"))
 import diagnose_stage4_mvp_v21_all_train_fit_readonly as fit
 import painter_stage4_v21_train_only_capacity_probe as capacity
+from ai_painter.complete_world.state_restoration import restore_state_callbacks, state_restoration_evidence
 
 v21, cpu, gpu, require = fit.training, fit.cpu, fit.gpu, fit.require
 WORKER = "ml/ai-painter/scripts/painter_stage4_v21_full_train_exposure_probe.py"
@@ -253,16 +254,21 @@ def preserve_rng_and_modes(*networks):
     cpu_rng, python_rng, numpy_rng = torch.get_rng_state().clone(), random.getstate(), np.random.get_state()
     cuda_rng = torch.cuda.get_rng_state_all() if torch.cuda.is_initialized() else None
     modes = [(module, module.training) for network in networks for module in network.modules()]
+    primary = None
     try:
         yield
+    except BaseException as error:
+        primary = error
+        raise
     finally:
-        torch.set_rng_state(cpu_rng)
-        random.setstate(python_rng)
-        np.random.set_state(numpy_rng)
+        callbacks = [("torch_rng", lambda: torch.set_rng_state(cpu_rng)),
+                     ("python_rng", lambda: random.setstate(python_rng)),
+                     ("numpy_rng", lambda: np.random.set_state(numpy_rng))]
         if cuda_rng is not None:
-            torch.cuda.set_rng_state_all(cuda_rng)
-        for module, mode in modes:
-            module.training = mode
+            callbacks.append(("cuda_rng", lambda: torch.cuda.set_rng_state_all(cuda_rng)))
+        callbacks.extend((f"mode_{index}", lambda module=module, mode=mode: setattr(module, "training", mode))
+                         for index, (module, mode) in enumerate(modes))
+        restore_state_callbacks(callbacks, primary=primary)
 
 
 @contextmanager
@@ -275,12 +281,21 @@ def observation_guard(*networks):
         for network in networks:
             network.eval()
         with fit.readonly_guard(), patch.object(torch, "load", side_effect=RuntimeError("observation checkpoint load prohibited")):
+            primary = None
             try:
                 yield
+            except BaseException as error:
+                primary = error
+                raise
             finally:
-                require(before == [cpu.state_hash(network) for network in networks], "observation mutated model state")
-                require(all(p.requires_grad == enabled and (cpu.tensor_hash(p.grad) if p.grad is not None else None) == digest
-                            for p, enabled, digest in gradients), "observation mutated gradient state")
+                # These are integrity checks, not a rollback of changed weights or gradients.
+                restore_state_callbacks([
+                    ("observation_state", lambda: require(
+                        before == [cpu.state_hash(network) for network in networks], "observation mutated model state")),
+                    ("observation_gradient", lambda: require(
+                        all(p.requires_grad == enabled and (cpu.tensor_hash(p.grad) if p.grad is not None else None) == digest
+                            for p, enabled, digest in gradients), "observation mutated gradient state")),
+                ], primary=primary)
 
 
 def fresh_networks(order, acceptance=None):
@@ -473,6 +488,7 @@ def zero_update_probe(model, critic, sample, order, resource, forward):
          patch.object(torch.optim.Optimizer, "__init__", side_effect=RuntimeError("probe optimizer prohibited")), \
          patch.object(torch, "load", side_effect=RuntimeError("probe checkpoint load prohibited")), \
          patch.object(torch, "save", side_effect=RuntimeError("probe checkpoint write prohibited")):
+        primary = None
         try:
             model.eval(); critic.eval()
             critic.requires_grad_(False)
@@ -498,12 +514,19 @@ def zero_update_probe(model, critic, sample, order, resource, forward):
             discriminator_facts = gpu.gradient_facts(critic, "cuda")
             require(all(p.grad is None for p in model.parameters()), "probe discriminator leaked generator gradient")
             resource()
+        except BaseException as error:
+            primary = error
+            raise
         finally:
-            model.zero_grad(set_to_none=True); critic.zero_grad(set_to_none=True)
-            for p, flag in enabled:
-                p.requires_grad_(flag)
-            require(before == {name: cpu.state_hash(network) for name, network in (("Model", model), ("Critic", critic))},
-                    "zero-update probe mutated state")
+            restore_state_callbacks([
+                ("probe_model_gradient_clear", lambda: model.zero_grad(set_to_none=True)),
+                ("probe_critic_gradient_clear", lambda: critic.zero_grad(set_to_none=True)),
+                *[(f"probe_parameter_{index}", lambda p=p, flag=flag: p.requires_grad_(flag))
+                  for index, (p, flag) in enumerate(enabled)],
+                *[(f"probe_state_{name}", lambda name=name, network=network:
+                   require(before[name] == cpu.state_hash(network), "zero-update probe mutated state"))
+                  for name, network in (("Model", model), ("Critic", critic))],
+            ], primary=primary)
     return {"passed": True, "optimizerCreated": False, "optimizerSteps": {"generator": 0, "discriminator": 0},
         "initialStateSha256": before, "finalStateSha256": before, "generatorGradients": generator_facts,
         "discriminatorGradients": discriminator_facts, "objectHeadGradientAbsoluteSums": head_facts}
@@ -837,6 +860,7 @@ def run(package_binding):
     except BaseException as error:
         failure = {**state, "status": "experiment_failed_closed", "executionState": "failed_closed",
             "optimizerSteps": counts.copy(), "perSampleExposure": ledger, "error": repr(error),
+            **state_restoration_evidence(error),
             "qualification": QUALIFICATION, "failedAtUtc": now()}
         v21.write_exclusive(directory / "worker-failure.json", failure)
         if not (directory / "result.json").exists():

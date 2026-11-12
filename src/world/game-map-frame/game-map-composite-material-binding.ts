@@ -1,3 +1,4 @@
+import { sameSourceFactIds as sameStringSet } from "../runtime-core/source-fact-identity"
 import type {
   GameMapCompositeManifest,
   GameMapCompositeMaterialBinding,
@@ -310,12 +311,6 @@ function outputBlocked(
 
 function uniqueTags(tags: string[]): string[] {
   return Array.from(new Set(tags))
-}
-
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
 }
 
 function containsAny(values: string[], blocked: string[]): boolean {

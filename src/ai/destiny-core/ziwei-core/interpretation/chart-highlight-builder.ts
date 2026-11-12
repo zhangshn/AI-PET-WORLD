@@ -3,7 +3,7 @@ import type {
   ZiweiInterpretationItem,
   ZiweiStarCategory
 } from "../contracts"
-import { BRANCH_LABELS, SECTOR_LABELS } from "../page-view/labels"
+import { BRANCH_LABELS, SECTOR_LABELS } from "../shared/chart-labels"
 
 export function buildChartHighlights(
   chart: FullZiweiChart

@@ -1,0 +1,33 @@
+{
+  "dispatchId": "resource-continuation-236",
+  "runId": "stage0-native-256-formal-229",
+  "status": "training_completed_fixed_review_failed",
+  "reason": {
+    "review": {
+      "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/review/epoch-24.json",
+      "sha256": "a524c616922fb5881417ff61f2a56664caf6a115cfa0388323c6f1bb7001ef59",
+      "bytes": 53845
+    },
+    "finalReadback": {
+      "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/48/final-readback-seal.json",
+      "sha256": "e0007be475e040ae99de60db9b42d0ed9dc157999558fd6786bffc018e39ec2e",
+      "bytes": 1008
+    }
+  },
+  "atUtc": "2026-11-03T07:01:29.622Z",
+  "completedPairs": 1152,
+  "lastSeal": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/segments/48/seal.json",
+    "bytes": 2130,
+    "sha256": "54216352bfd3b57347534691a2aecb1800b411124cc25df963547e12630c215e"
+  },
+  "reservedSegment": null,
+  "originalTerminal": {
+    "path": ".runtime/ai-painter/native-stage0-formal-training/stage0-native-256-formal-229/terminal.json",
+    "sha256": "3cb0712c1da6921fe6c5d370445679f8895328d51f096ecaa49de19ce3888fa1",
+    "bytes": 915
+  },
+  "deadlineUtc": "2026-11-03T08:09:02.105Z",
+  "stageAdvanceAllowed": false,
+  "worldEntryAllowed": false
+}

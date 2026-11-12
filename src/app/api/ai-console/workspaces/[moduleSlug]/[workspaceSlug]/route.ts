@@ -1,4 +1,4 @@
-import { getAiConsoleWorkspace } from "@/app/ai-console/ai-console-workspace-catalog"
+import { getAiConsoleWorkspace } from "@/shared/ai-console/ai-console-workspace-catalog"
 import { queryAiConsoleWorkspaceProjection } from "@/server/ai-console/workspace-projection"
 import { guardHistoryRequest } from '@/server/ai-console/training-history-http'
 

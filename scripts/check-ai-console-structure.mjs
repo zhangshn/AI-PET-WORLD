@@ -1,10 +1,12 @@
+import { readAiConsoleControlSource } from "./lib/ai-console-control-source-reader.mjs"
 import fs from "node:fs"
 import path from "node:path"
 import process from "node:process"
+import { auditAiConsoleSourceBoundary } from "./lib/ai-console-source-boundary-audit.mjs"
 
 const projectRoot = process.cwd()
 const consoleRoot = path.join(projectRoot, "src", "app", "ai-console")
-const catalogPath = path.join(consoleRoot, "ai-console-workspace-catalog.ts")
+const catalogPath = path.join(projectRoot, "src", "shared", "ai-console", "ai-console-workspace-catalog.ts")
 const rendererPath = path.join(consoleRoot, "ai-console-workspace.tsx")
 const interactionsPath = path.join(consoleRoot, "ai-console-workspace-interactions.tsx")
 const rootStylePath = path.join(consoleRoot, "page.module.css")
@@ -55,7 +57,7 @@ const themeStyleSource = fs.existsSync(themeStylePath) ? fs.readFileSync(themeSt
 const liveStyleSource = fs.existsSync(liveStylePath) ? fs.readFileSync(liveStylePath, "utf8") : ""
 const catalogApiSource = fs.existsSync(catalogApiPath) ? fs.readFileSync(catalogApiPath, "utf8") : ""
 const workspaceApiSource = fs.existsSync(workspaceApiPath) ? fs.readFileSync(workspaceApiPath, "utf8") : ""
-const controlSurfaceSource = fs.existsSync(controlSurfacePath) ? fs.readFileSync(controlSurfacePath, "utf8") : ""
+const controlSurfaceSource = fs.existsSync(controlSurfacePath) ? readAiConsoleControlSource(controlSurfacePath) : ""
 
 function collectSourceFiles(root) {
   if (!fs.existsSync(root)) return []
@@ -90,68 +92,17 @@ for (const presentation of requiredPresentations) {
 }
 
 const isolatedConsoleSources = [
+  ...collectSourceFiles(path.join(projectRoot, "src", "shared", "ai-console")),
   ...collectSourceFiles(consoleRoot),
   ...collectSourceFiles(path.join(projectRoot, "src", "app", "api", "ai-console")),
   ...collectSourceFiles(projectionRoot),
   ...collectSourceFiles(controlServiceRoot),
   ...collectSourceFiles(observabilityServiceRoot),
 ]
-const historyIndexerPath = path.join(projectionRoot, "training-history-evidence-index.mjs")
-const registeredHistoryScanRoots = "const SCAN_ROOTS = ['.runtime/ai-painter', 'cold/runs']"
-
-const prohibitedLegacyCouplings = [
-  ["legacy_page_route", /ai-painter-progress/u],
-  ["legacy_page_api", /\/api\/ai-painter/u],
-  ["legacy_page_entry", /current-training/u],
-  ["legacy_page_import", /(?:from|import\()[^\n]*(?:ai-painter-progress|aiPainterProgress)/u],
-  ["legacy_runtime_source", /(?:\.runtime|data|src)[\\/]ai-painter/u],
-]
-
 for (const sourceFile of isolatedConsoleSources) {
-  const source = fs.readFileSync(sourceFile, "utf8")
-  for (const [couplingName, pattern] of prohibitedLegacyCouplings) {
-    if (couplingName === "legacy_runtime_source" && path.normalize(sourceFile) === path.normalize(path.join(consoleRoot, "ai-console-current-execution-status.tsx"))) {
-      continue
-    }
-    // V23 permits only this explicitly registered, bounded historical scan root.
-    // All other AI Painter runtime paths remain prohibited console couplings.
-    let inspectedSource = couplingName === "legacy_runtime_source"
-      && path.normalize(sourceFile) === path.normalize(historyIndexerPath)
-      && source.includes(registeredHistoryScanRoots)
-      ? source.replace(registeredHistoryScanRoots, "const SCAN_ROOTS = ['registered_hot_root', 'registered_cold_root']")
-      : source
-    // Shared browser polling validates the response's fixed provenance string;
-    // it still cannot read runtime paths or call any legacy backend.
-    if (couplingName === "legacy_runtime_source"
-      && path.normalize(sourceFile) === path.normalize(path.join(consoleRoot, "ai-console-current-execution-store.ts"))) {
-      inspectedSource = inspectedSource.replaceAll('".runtime/ai-painter/current-execution-registry/current.json"', '"fixed_current_registry_provenance"')
-    }
-    // API contract 3.2.2.2: this reader follows only the verified current
-    // registry's bounded evidence chain. Exempt exact protocol/provenance
-    // literals, not arbitrary Painter paths, imports, APIs or directory scans.
-    if (path.normalize(sourceFile) === path.normalize(path.join(projectionRoot, "bound-training-presentation.mjs"))) {
-      if (couplingName === "legacy_runtime_source")
-        inspectedSource = inspectedSource.replaceAll("'.runtime/ai-painter/'", "'bound_current_output_namespace/'")
-      if (couplingName === "legacy_page_entry")
-        inspectedSource = inspectedSource.replaceAll("'ai-painter-current-training-package-v1'", "'bound_observation_package_v1'")
-          .replaceAll("'ai-painter-current-training-progress-v1'", "'bound_observation_progress_v1'")
-          .replaceAll('"ai-painter-current-training-package-v1"', '"bound_observation_package_v1"')
-          .replaceAll('"ai-painter-current-training-progress-v1"', '"bound_observation_progress_v1"')
-    }
-    // API contract 3.2.3: historical adapters perform no discovery or IO;
-    // only their injected verified reader may consume explicit evidence.
-    if (couplingName === "legacy_runtime_source"
-      && path.normalize(sourceFile) === path.normalize(path.join(projectionRoot, "training-history-detail-adapters.mjs"))) {
-      inspectedSource = inspectedSource.replaceAll("'.runtime/ai-painter/'", "'bound_historical_output_namespace/'")
-    }
-    if (couplingName === "legacy_page_entry"
-      && path.normalize(sourceFile) === path.normalize(path.join(projectionRoot, "training-history-detail-adapters.mjs"))) {
-      inspectedSource = inspectedSource.replaceAll("'ai-painter-current-training-package-v1'", "'bound_observation_package_v1'")
-    }
-    if (pattern.test(inspectedSource)) {
-      failures.push(`${couplingName}:${path.relative(projectRoot, sourceFile)}`)
-    }
-  }
+  const relative = path.relative(projectRoot, sourceFile)
+  const result = auditAiConsoleSourceBoundary(relative, fs.readFileSync(sourceFile, "utf8"))
+  for (const failure of result.failures) failures.push(failure + ":" + relative)
 }
 
 for (const marker of ["useState", "aria-pressed", "type=\"search\"", "AiConsoleFieldDictionary"]) {
@@ -198,7 +149,7 @@ for (const [fileName, markers] of [
   ["workspace-projection.ts", ["queryAiConsoleWorkspaceProjection", 'workspace.moduleSlug === "system"', 'workspace.moduleSlug === "capabilities"', 'workspace.moduleSlug === "data"', 'workspace.moduleSlug === "tasks"', 'workspace.moduleSlug === "runtime"', 'workspace.moduleSlug === "evidence"', 'workspace.moduleSlug === "training"', 'workspace.moduleSlug === "reviews"', 'workspace.moduleSlug === "archive"', 'workspace.moduleSlug === "control"']],
 ]) {
   const sourcePath = path.join(projectionRoot, fileName)
-  const source = fs.existsSync(sourcePath) ? fs.readFileSync(sourcePath, "utf8") : ""
+  const source = sourcePath === controlSurfacePath ? controlSurfaceSource : fs.existsSync(sourcePath) ? fs.readFileSync(sourcePath, "utf8") : ""
   if (!source) failures.push(`projection_source_missing:${fileName}`)
   for (const marker of markers) {
     if (!source.includes(marker)) failures.push(`projection_contract_missing:${fileName}:${marker}`)
@@ -248,7 +199,7 @@ for (const [sourcePath, markers] of [
   [controlSurfacePath, ["AiConsoleRegistryVerificationControl", "AiConsoleCapabilityLifecycleControl", "AiConsoleTrainingDesignControl", "AiConsoleReviewAdjudicationControl", "AiConsoleRuntimeReleaseControl", "AiConsoleWorldControl", "x-ai-console-csrf", "verify_primary_registry", "EXACT RECEIPT LOOKUP", "lookupReceiptByCommandId", "transactionRecordSha256", "register_capability_candidate", "record_capability_qualification", "register_qualified_capability_release", "register_model_structure", "register_training_plan", "register_review_contract", "register_machine_review_observation", "activate_qualified_release", "register_runtime_frame_candidate", "publish_reviewed_runtime_frame", "consume_registered_runtime_frame", "pause_frame_publish", "resume_frame_publish", "rollback_runtime_frame", "freeze_visual_updates", "服务端按冻结合同重新计算结果"]],
   [interactionsPath, ["EvidenceArtifactContentInspector", "EXACT CONTENT INSPECTION", "verified_utf8_preview", "binary_metadata_only", 'workspace.slug === "capsules"', "fieldNamesByView", "正式边界报告", "policyBoundaryReportId", "AiConsoleTaskRegistryControl", "AiConsoleCapabilityLifecycleControl", "AiConsoleTrainingDesignControl", "AiConsoleReviewAdjudicationControl", "AiConsoleRuntimeReleaseControl", "AiConsoleWorldControl", "7 SAFE COMMANDS READY", "4 SAFE COMMANDS READY", "3 SAFE COMMANDS READY", "2 SAFE COMMANDS READY"]],
 ]) {
-  const source = fs.existsSync(sourcePath) ? fs.readFileSync(sourcePath, "utf8") : ""
+  const source = sourcePath === controlSurfacePath ? controlSurfaceSource : fs.existsSync(sourcePath) ? fs.readFileSync(sourcePath, "utf8") : ""
   if (!source) failures.push(`control_source_missing:${path.relative(projectRoot, sourcePath)}`)
   for (const marker of markers) {
     if (!source.includes(marker)) failures.push(`control_contract_missing:${path.relative(projectRoot, sourcePath)}:${marker}`)

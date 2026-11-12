@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process"
 import { appendFile, cp, mkdir, rm, stat, writeFile } from "node:fs/promises"
-import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
+import { closeSync, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { startResourceUsageSession } from "./ai-painter-resource-usage"
 import { archiveTrainingResult } from "./ai-painter-training-result-archive"
@@ -119,13 +119,13 @@ export async function startTrainingAction(action: TrainingAction) {
   if (activeRun) {
     throw new Error("已有本地训练任务正在运行，请等待完成。")
   }
+  const stateBeforeLock = await readTrainingControlState()
+  assertTrainingControlStateAvailable(stateBeforeLock)
   const releaseProcessLock = acquireTrainingProcessLock(action)
 
   try {
     const persistedState = await readTrainingControlState()
-    if (persistedState.status === "running" && isProcessAlive(persistedState.childPid)) {
-      throw new Error("已有本地训练任务正在运行，请等待完成。")
-    }
+    assertTrainingControlStateAvailable(persistedState)
 
     await mkdir(trainingControlDir, { recursive: true })
     await writeFile(trainingControlLogPath, "", "utf8")
@@ -172,35 +172,66 @@ export async function startTrainingAction(action: TrainingAction) {
   }
 }
 
+function assertTrainingControlStateAvailable(state: TrainingControlState) {
+  if (state.status === "corrupted_state" || state.status === "recovery_required") {
+    throw new Error("training_control_state_unavailable", { cause: state.error })
+  }
+  if (state.status === "running" && isProcessAlive(state.childPid)) {
+    throw new Error("已有本地训练任务正在运行，请等待完成。")
+  }
+}
+
 function acquireTrainingProcessLock(action: TrainingAction): () => void {
   mkdirSync(trainingControlDir, { recursive: true })
   for (let attempt = 0; attempt < 2; attempt += 1) {
+    let fd: number
     try {
-      const fd = openSync(trainingProcessLockPath, "wx")
-      writeFileSync(fd, JSON.stringify({ controllerPid: process.pid, action, acquiredAt: new Date().toISOString() }), "utf8")
-      closeSync(fd)
-      let released = false
-      return () => {
-        if (released) return
-        released = true
-        try { unlinkSync(trainingProcessLockPath) } catch {}
-      }
+      fd = openSync(trainingProcessLockPath, "wx")
     } catch (error) {
+      if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") throw error
       const lock = readTrainingProcessLock()
       if (attempt === 0 && lock && !isProcessAlive(lock.controllerPid)) {
-        try { unlinkSync(trainingProcessLockPath) } catch {}
+        assertTrainingProcessLockIdentity(lock.identity)
+        unlinkSync(trainingProcessLockPath)
         continue
       }
       throw new Error("已有本地训练任务持有跨进程运行锁，请等待完成。", { cause: error })
+    }
+    let identity: { ino: number; dev: number }
+    try {
+      writeFileSync(fd, JSON.stringify({ controllerPid: process.pid, action, acquiredAt: new Date().toISOString() }), "utf8")
+      identity = fstatSync(fd)
+    } catch (error) {
+      try { closeSync(fd) } catch { /* Preserve the initialization error and failed lock. */ }
+      throw error
+    }
+    closeSync(fd)
+    let released = false
+    return () => {
+      if (released) return
+      assertTrainingProcessLockIdentity(identity)
+      unlinkSync(trainingProcessLockPath)
+      released = true
     }
   }
   throw new Error("无法获取本地训练跨进程运行锁。")
 }
 
-function readTrainingProcessLock(): { controllerPid: number } | null {
+function assertTrainingProcessLockIdentity(identity: { ino: number; dev: number }) {
+  const current = lstatSync(trainingProcessLockPath)
+  if (!current.isFile() || current.isSymbolicLink() || current.ino !== identity.ino || current.dev !== identity.dev) {
+    throw new Error("training_process_lock_identity_changed")
+  }
+}
+
+function readTrainingProcessLock(): { controllerPid: number; identity: { ino: number; dev: number } } | null {
   try {
+    const identity = lstatSync(trainingProcessLockPath)
+    if (!identity.isFile() || identity.isSymbolicLink()) return null
     const value = JSON.parse(readFileSync(trainingProcessLockPath, "utf8"))
-    return typeof value?.controllerPid === "number" ? value : null
+    return Number.isSafeInteger(value?.controllerPid) && value.controllerPid > 0 && value.controllerPid <= 2_147_483_647
+      ? { controllerPid: value.controllerPid, identity }
+      : null
   } catch {
     return null
   }
@@ -1127,8 +1158,9 @@ function isProcessAlive(pid: number | null | undefined) {
   try {
     process.kill(pid, 0)
     return true
-  } catch {
-    return false
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ESRCH") return false
+    throw error
   }
 }
 

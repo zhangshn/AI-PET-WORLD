@@ -13,7 +13,7 @@ const arg = (name) => { const index = process.argv.indexOf(name); return index <
 const absolute = (value) => path.resolve(ROOT, value)
 const relative = (value) => path.relative(ROOT, value).replace(/\\/g, "/")
 const sha = (value) => crypto.createHash("sha256").update(fs.readFileSync(value)).digest("hex")
-const canonicalSha = (value) => crypto.createHash("sha256").update(JSON.stringify(value, Object.keys(value).sort())).digest("hex")
+
 const bind = (value) => ({ path: relative(value), sha256: sha(value) })
 const authorizationPath = absolute(arg("--authorization"))
 const authorizationSha = arg("--authorization-sha256")

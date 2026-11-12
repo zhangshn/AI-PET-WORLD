@@ -912,39 +912,7 @@ function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, value));
 }
 
-function readBoundaryWaterPorts(connectivityBlueprint) {
-  const internalWaterPlan =
-    connectivityBlueprint.anonymousTrainingCoordinateProjection?.waterPlan;
-  if (
-    internalWaterPlan?.start &&
-    internalWaterPlan?.end &&
-    Array.isArray(internalWaterPlan.externalWaterPorts) &&
-    internalWaterPlan.externalWaterPorts.length === 0
-  ) {
-    return {
-      upstream: structuredClone(internalWaterPlan.start),
-      downstream: structuredClone(internalWaterPlan.end),
-    };
-  }
-  const currentRegionId = connectivityBlueprint.currentRegion?.regionId;
-  const waterPorts = (connectivityBlueprint.edgePorts ?? []).filter(
-    (entry) =>
-      entry.regionId === currentRegionId &&
-      entry.kind === "watercourse" &&
-      entry.boundaryPosition,
-  );
-  const upstream = waterPorts.find(
-    (entry) => entry.role === "upstream_inlet",
-  );
-  const downstream = waterPorts.find(
-    (entry) => entry.role === "downstream_outlet",
-  );
-  assert(upstream && downstream, "water boundary constraints are missing");
-  return {
-    upstream: structuredClone(upstream.boundaryPosition),
-    downstream: structuredClone(downstream.boundaryPosition),
-  };
-}
+
 
 function currentSuccessfulConditionManifest(slotId) {
   const root = path.resolve(ROOT, CONDITION_RUN_ROOT);

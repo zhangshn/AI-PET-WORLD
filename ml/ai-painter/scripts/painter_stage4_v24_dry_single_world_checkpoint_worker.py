@@ -35,6 +35,7 @@ for entry in (str(SRC), str(SCRIPTS)):
         sys.path.insert(0, entry)
 
 import painter_stage4_v24_object_head_core_priority_probe as v24  # noqa: E402
+from ai_painter.complete_world.state_restoration import restore_state_callbacks, state_restoration_evidence
 import train_stage4_mvp_structured_object_v18_dry_stage0 as managed_worker  # noqa: E402
 from ai_painter.complete_world.native_rgb_structured_object_objective_cpu_v17 import (  # noqa: E402
     OBJECT_CHANNELS,
@@ -453,14 +454,19 @@ def _preserve_rng_and_mode(model):
     torch_state = torch.get_rng_state().clone()
     cuda_states = torch.cuda.get_rng_state_all() if torch.cuda.is_initialized() else None
     flags = tuple((module, bool(module.training)) for module in model.modules())
+    primary = None
     try:
         yield
+    except BaseException as error:
+        primary = error
+        raise
     finally:
-        torch.set_rng_state(torch_state)
+        callbacks = [("torch_rng", lambda: torch.set_rng_state(torch_state))]
         if cuda_states is not None:
-            torch.cuda.set_rng_state_all(cuda_states)
-        for module, training in flags:
-            module.training = training
+            callbacks.append(("cuda_rng", lambda: torch.cuda.set_rng_state_all(cuda_states)))
+        callbacks.extend((f"mode_{index}", lambda module=module, training=training: setattr(module, "training", training))
+                         for index, (module, training) in enumerate(flags))
+        restore_state_callbacks(callbacks, primary=primary)
 
 
 def validation_observation(model, sample, channel_order, *, epoch):
@@ -973,6 +979,7 @@ def run_with_terminal_boundary(*, terminal_sink, **training_arguments):
             "packageId": (gate.authenticated.package_id
                           if isinstance(gate, _ConsumedTrainingGate) else None),
             "errorType": type(error).__name__, "error": str(error),
+            **state_restoration_evidence(error),
             "optimizerSteps": counts,
             "optimizerStepsGenerator": counts["generator"],
             "optimizerStepsDiscriminator": counts["discriminator"],

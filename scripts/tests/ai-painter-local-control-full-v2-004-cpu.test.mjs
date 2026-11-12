@@ -2,7 +2,7 @@
 // are deliberately separate from the genuine private Windows Job evidence.
 import test from'node:test';import assert from'node:assert/strict';import fs from'node:fs';import path from'node:path';import os from'node:os';import crypto from'node:crypto';import{spawnSync}from'node:child_process';import{DatabaseSync}from'node:sqlite';
 import{buildFixture,validateFixtureRoot,staticStatus,runCase,measure,TASK,PROTOCOL,CANDIDATE,LIMITS}from'./helpers/local-control-full-v2-004-fixture.mjs';
-const hash=b=>crypto.createHash('sha256').update(b).digest('hex'),output=process.env.AI_PAINTER_FULL_V2_004_EVIDENCE;
+const output=process.env.AI_PAINTER_FULL_V2_004_EVIDENCE;
 const nativeEnabled=process.env.AI_PAINTER_FULL_V2_004_NATIVE_WINDOW==='coordinated_private_cpu_only';let root,setup,priorFailure=false;const completed=[];
 test('full-v2004 private roots/protocol/resource scope reject project, nested, reused or wrong candidates',()=>{
  assert.equal(TASK,'M-LOCAL-FULL-V2-CPU-004');assert.equal(PROTOCOL,'ai-painter-local-control-v2');assert.equal(CANDIDATE,'ecology-quality-v1');assert.deepEqual(LIMITS,{cpuThreads:2,affinity:'3',wallMs:120000,outputBytes:8388608,automaticRetries:0,attempts:1});

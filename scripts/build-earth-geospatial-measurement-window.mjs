@@ -67,7 +67,7 @@ const createdAtUtc = new Date().toISOString()
 const createdAtAsiaShanghai = formatShanghai(createdAtUtc)
 const runId = `earth-geospatial-naturalization-${createdAtUtc.replace(/[:.]/g, "-")}`
 const runRoot = path.join(ROOT, RUNTIME_ROOT, runId)
-const rawRoot = path.join(runRoot, "raw")
+
 const normalizedRoot = path.join(runRoot, "normalized")
 const humanRemovalRoot = path.join(runRoot, "human-removal")
 

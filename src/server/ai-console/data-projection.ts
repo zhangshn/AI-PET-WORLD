@@ -1,5 +1,5 @@
-import { aiConsoleModules } from "@/app/ai-console/ai-console-catalog"
-import { getAiConsoleWorkspaces } from "@/app/ai-console/ai-console-workspace-catalog"
+import { aiConsoleModules } from "@/shared/ai-console/ai-console-catalog"
+import { getAiConsoleWorkspaces } from "@/shared/ai-console/ai-console-workspace-catalog"
 import { createNotConnectedProjection, createProjection, type AiConsoleProjectionResult } from "./projection-contract"
 
 type DictionaryRecord = {
@@ -104,7 +104,7 @@ function dictionaryProvenance() {
     sourceRevision: dictionaryRevision,
     evidenceReferences: [
       "docs/ai-console/AI_CONSOLE_DATA_DICTIONARY_AND_API_CONTRACT.md",
-      "src/app/ai-console/ai-console-workspace-catalog.ts",
+      "src/shared/ai-console/ai-console-workspace-catalog.ts",
     ],
     trustStatus: "verified_registry" as const,
   }

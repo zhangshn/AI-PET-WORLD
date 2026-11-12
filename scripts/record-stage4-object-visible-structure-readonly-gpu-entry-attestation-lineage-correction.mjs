@@ -44,7 +44,7 @@ const sha = (value) => crypto.createHash("sha256").update(fs.readFileSync(value)
 const read = (value) => JSON.parse(fs.readFileSync(value, "utf8"))
 const relative = (value) => path.relative(ROOT, value).replaceAll("\\", "/")
 const bind = (value) => ({ path: relative(value), sha256: sha(value) })
-const same = (left, right) => JSON.stringify(left) === JSON.stringify(right)
+
 
 const authorizationPath = resolveProject(arg("--authorization"))
 const consumptionPath = resolveProject(arg("--consumption"))

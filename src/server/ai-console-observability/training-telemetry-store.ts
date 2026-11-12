@@ -116,8 +116,9 @@ function validateInput(input: AiConsoleTrainingTelemetryInput) {
 function openWritableStore(storePath: string): DatabaseSync {
   mkdirSync(path.dirname(storePath), { recursive: true })
   const database = new DatabaseSync(storePath)
-  database.exec("PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA user_version=1;")
-  database.exec(`
+  try {
+    database.exec("PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA user_version=1;")
+    database.exec(`
     CREATE TABLE IF NOT EXISTS training_telemetry (
       sample_id TEXT PRIMARY KEY,
       sample_sequence INTEGER NOT NULL UNIQUE,
@@ -143,8 +144,12 @@ function openWritableStore(storePath: string): DatabaseSync {
     CREATE INDEX IF NOT EXISTS training_telemetry_run_sequence
       ON training_telemetry(run_id, sample_sequence DESC);
   `)
-  verifyStore(database)
-  return database
+    verifyStore(database)
+    return database
+  } catch (error) {
+    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    throw error
+  }
 }
 
 function verifyStore(database: DatabaseSync) {
@@ -305,11 +310,18 @@ export function readLatestAiConsoleTrainingTelemetry(
     const latest = rowToRecord(row)
     verifyRecord(latest)
     const staleAfterMs = options.staleAfterMs ?? 15_000
-    const isStale = Date.now() - Date.parse(latest.heartbeatAtUtc) > staleAfterMs
+    if (!Number.isFinite(staleAfterMs) || staleAfterMs < 0) {
+      throw new Error("ai_console_training_telemetry_stale_after_invalid")
+    }
+    const ageMs = Date.now() - Date.parse(latest.heartbeatAtUtc)
+    if (!Number.isFinite(ageMs)) throw new Error("ai_console_training_telemetry_heartbeat_invalid")
+    const isFuture = ageMs < 0
+    const isStale = isFuture || ageMs > staleAfterMs
     return {
       status: isStale ? "unknown_or_stale" : "connected",
       latest,
-      reasonCode: isStale ? "new_platform_training_telemetry_heartbeat_stale" : null,
+      reasonCode: isFuture ? "new_platform_training_telemetry_heartbeat_future"
+        : isStale ? "new_platform_training_telemetry_heartbeat_stale" : null,
       sourceRevision: latest.sampleSequence,
       evidenceReferences: [aiConsoleTrainingTelemetryLogicalPath],
     }

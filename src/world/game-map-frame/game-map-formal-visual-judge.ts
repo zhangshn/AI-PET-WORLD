@@ -1,3 +1,4 @@
+import { pointInVisualMaskPolygon as pointInPolygon } from "./game-map-geometry"
 import sharp from "sharp"
 
 import type {
@@ -576,22 +577,7 @@ function pointInSlotMask(
   return pointInPolygon(x, y, geometry.points)
 }
 
-function pointInPolygon(x: number, y: number, points: Array<{ x: number; y: number }>): boolean {
-  let inside = false
-  for (let index = 0, previous = points.length - 1; index < points.length; previous = index, index += 1) {
-    const currentPoint = points[index]
-    const previousPoint = points[previous]
-    if (!currentPoint || !previousPoint) continue
-    const intersects =
-      currentPoint.y > y !== previousPoint.y > y &&
-      x <
-        ((previousPoint.x - currentPoint.x) * (y - currentPoint.y)) /
-          (previousPoint.y - currentPoint.y || Number.EPSILON) +
-          currentPoint.x
-    if (intersects) inside = !inside
-  }
-  return inside
-}
+
 
 function rgbDistance(data: Buffer, leftOffset: number, rightOffset: number): number {
   return (

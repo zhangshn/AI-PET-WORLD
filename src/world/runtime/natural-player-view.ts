@@ -1,5 +1,5 @@
 import {resolveRuntimePath} from '../../../scripts/lib/runtime-working-directory.mjs'
-import path from "node:path"
+
 import { NextResponse } from "next/server"
 import { authorizeWorldPlayerRead } from "@/server/world-player-access/session.mjs"
 import { readLatestGameMapRuntimeFrameRecord } from "@/world/game-map-frame"

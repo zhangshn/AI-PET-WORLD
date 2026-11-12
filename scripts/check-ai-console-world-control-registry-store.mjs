@@ -1,3 +1,4 @@
+import { readAiConsoleControlSource } from "./lib/ai-console-control-source-reader.mjs"
 import { createHash } from "node:crypto"
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -20,7 +21,7 @@ for (const sourcePath of [storeSourcePath, serviceSourcePath, projectionSourcePa
   if (!existsSync(sourcePath)) failures.push(`missing_file:${path.relative(projectRoot, sourcePath)}`)
 }
 if (failures.length === 0) {
-  const productSource = [storeSourcePath, serviceSourcePath, projectionSourcePath, routeSourcePath, controlSurfacePath].map((sourcePath) => readFileSync(sourcePath, "utf8")).join("\n")
+  const productSource = [storeSourcePath, serviceSourcePath, projectionSourcePath, routeSourcePath, controlSurfacePath].map((sourcePath) => sourcePath === controlSurfacePath ? readAiConsoleControlSource(sourcePath) : readFileSync(sourcePath, "utf8")).join("\n")
   if (/ai-painter-progress|\/api\/ai-painter|world-runtime-store-adapter|data[\\/]world-runtime/u.test(productSource)) failures.push("legacy_source_coupling")
   for (const marker of [
     "new_ai_console_only", "ai_console_world_control_registry_writer_v1", "ai_console_world_control_executor_v1",
