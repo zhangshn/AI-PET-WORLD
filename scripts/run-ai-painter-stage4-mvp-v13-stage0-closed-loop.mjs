@@ -248,7 +248,6 @@ export async function run({ projectRoot = ROOT, cpuQualification,
     ticketConsumptionRequired: true, recordedAtUtc: new Date().toISOString(),
   })
   let timer = null
-  let active = false
   const heartbeatAbort = new AbortController()
   try {
     const started = writeExclusive(root, `${outputRoot}/training-started-terminal.json`, {
@@ -263,7 +262,6 @@ export async function run({ projectRoot = ROOT, cpuQualification,
       outputRoot, evidence: started, programs, active: true,
       status: "formal_stage0_training_dispatched", state: "executing",
       taskKind: "formal_stage0_256x192_native_rgb_training" })
-    active = true
     timer = setInterval(() => {
       try { updateHeartbeat(root, outputRoot, runId) }
       catch (error) { heartbeatAbort.abort(error) }
@@ -295,7 +293,6 @@ export async function run({ projectRoot = ROOT, cpuQualification,
       taskKind: "formal_stage0_256x192_native_rgb_training",
       latestTrainingTerminal: { runId, path: trainingFinal.path,
         sha256: trainingFinal.sha256, status: "training_completed_review_pending", evidence: {} } })
-    active = false
     const candidateOutput = `${outputRoot}/review-candidates`
     const result = await python(root, MATERIALIZER, [
       "--execution-package", packageBinding.path,

@@ -8,7 +8,9 @@ import {CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,OUTPUT_ROOT,SPECIFICATION,CANDI
 export {CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,SPECIFICATION,CANDIDATE,MODEL_REFERENCE,FROZEN_PLAN,deriveConfiguration,validateTerminal,validateCompleted};
 export const ADAPTER='scripts/run-ai-painter-ecology-quality-v1.mjs';
 export const sha=io.sha,withOutputBudget=io.withOutputBudget,directoryBytes=io.directoryBytes;
-export const ROLES={adapter:ADAPTER,packageChain:'scripts/lib/ai-painter-ecology-quality-package-chain-v1.mjs',
+export const ROLES={
+ cpuNegativeInputInspector:'scripts/lib/cpu-negative-input-inspector.mjs',
+adapter:ADAPTER,packageChain:'scripts/lib/ai-painter-ecology-quality-package-chain-v1.mjs',
  worker:'ml/ai-painter/scripts/painter_stage4_ecology_quality_worker_v1.py',
  gpuQualifier:'ml/ai-painter/scripts/qualify_stage4_ecology_quality_gpu_v1.py',
  executionAuth:'ml/ai-painter/scripts/ecology_quality_auth_v1.py',

@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {isGameMapFrame} from './game-map-frame-schema.ts'
-import {bindAiPainterCandidateVisualLayer} from './game-map-visual-layer-binding.ts'
+import {loadNaturalFrameVisualBinding} from './natural-frame-module-loader.mjs'
 import {createNaturalWorldSpatialQuery} from './natural-world-spatial-query.mjs'
 import {baselineDigest as digest} from '../../../scripts/lib/natural-world-baseline-proof.mjs'
+
+const {bindAiPainterCandidateVisualLayer}=await loadNaturalFrameVisualBinding()
 
 const sha=b=>createHash('sha256').update(b).digest('hex')
 const noVisual={status:'not_generated',source:'none',approvedFrameId:null,candidateId:null,imageSha256:null,imageWidth:null,imageHeight:null,imageFormat:null}

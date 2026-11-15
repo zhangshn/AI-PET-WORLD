@@ -49,9 +49,9 @@ export function readProjectWorkPlan({projectRoot=process.cwd(),runtimeRoot,planS
    need(typeof logical==='string'&&logical.length<=512&&!/[\\:\0]/.test(logical)&&logical.split('/').every(p=>p&&p!=='.'&&p!=='..'),'work_plan_path',409)
    need((logical==='AGENTS.md'||CURRENT_WORLD_BASELINE_SOURCE_PATHS.includes(logical)||/^(?:src\/|scripts\/|docs\/|data\/|ml\/ai-painter\/(?:src|scripts|tests)\/|\.runtime\/(?:ai-painter\/(?:controller-repair-reviews|natural-world-baselines)|local-backup\/project-progress)\/)/.test(logical))&&!/FULL_DICTIONARY_PRINT|(?:^|\/)(?:\.env[^/]*|[^/]*(?:secret|credential|cookie)[^/]*)$/i.test(logical),'work_plan_source_scope',409)
    const runtimeFile=logical.startsWith('.runtime/');let file=runtimeFile?runtime:root
-   for(const part of (runtimeFile?logical.slice(9):logical).split('/')){file=path.join(file,part);need(!fs.lstatSync(file).isSymbolicLink()&&same(fs.realpathSync(file),file),'work_plan_path_boundary',409)}
-   const before=fs.lstatSync(file);need(before.isFile()&&before.nlink===1&&before.size<=max,'work_plan_file_limit',409)
-   const bytes=fs.readFileSync(file),after=fs.lstatSync(file);need(bytes.length<=max&&before.ino===after.ino&&before.size===after.size&&before.mtimeMs===after.mtimeMs,'work_plan_source_changed',409)
+   for(const part of (runtimeFile?logical.slice(9):logical).split('/')){file=path.join(file,part);need(!fs.lstatSync(file,{bigint:true}).isSymbolicLink()&&same(fs.realpathSync(file),file),'work_plan_path_boundary',409)}
+   const before=fs.lstatSync(file,{bigint:true});need(before.isFile()&&before.nlink===1n&&before.size<=max,'work_plan_file_limit',409)
+   const bytes=fs.readFileSync(file),after=fs.lstatSync(file,{bigint:true});need(bytes.length<=max&&before.ino===after.ino&&before.dev===after.dev&&before.size===after.size&&before.mtimeNs===after.mtimeNs,'work_plan_source_changed',409)
    need(++files<=512&&(totalBytes+=bytes.length)<=16*1024*1024,'work_plan_read_limit',409)
    const value={bytes,sha256:sha(bytes)};cache.set(logical,value);return value
   }

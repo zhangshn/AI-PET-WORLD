@@ -1,3 +1,4 @@
+import './weather-display-release-cache.test.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -134,4 +135,59 @@ test('tampered policies and unknown candidates fail before lifecycle creation', 
   }
   await assert.rejects(compatibility.registerWeatherPolicyCandidate(temp,'forged-weather-version'),/unknown_weather_policy_version/)
   assert.deepEqual(fs.readdirSync(path.join(temp,'.runtime')),[])
+})
+
+// Inject faults only during the synchronous read of a private SQLite fixture.
+// Always close the real connection before simulating a close failure.
+for (const scenario of [
+  {phase:'exec',closeFails:true},
+  {phase:'prepare',closeFails:true},
+  {phase:'get',closeFails:true},
+  {phase:'state',closeFails:true},
+  {phase:'none',closeFails:true},
+  {phase:'get',closeFails:false},
+  {phase:'none',closeFails:false},
+  {phase:'undefined',closeFails:true},
+  {phase:'undefined',closeFails:false},
+]) test(`weather lifecycle diagnostic preserves ${scenario.phase} and close=${scenario.closeFails}`, t => {
+  const fixture=lifecycleFixture(t), before=baselineSha256(fs.readFileSync(fixture.database))
+  const primary=scenario.phase==='undefined'?undefined:new Error('private '+scenario.phase+' read failure')
+  const cleanup=new Error('private lifecycle close failure'), prototype=DatabaseSync.prototype
+  const original={exec:prototype.exec,prepare:prototype.prepare,close:prototype.close}
+  let closeCalls=0, thrown=false, failure, result
+  prototype.exec=function(...args){
+    if(scenario.phase==='exec'||scenario.phase==='undefined')throw primary
+    return original.exec.apply(this,args)
+  }
+  prototype.prepare=function(...args){
+    if(scenario.phase==='prepare')throw primary
+    const statement=original.prepare.apply(this,args)
+    return {get(...values){
+      const row=statement.get(...values)
+      if(scenario.phase==='get')throw primary
+      if(scenario.phase==='state')return {...row,sequence:row.sequence+1}
+      return row
+    }}
+  }
+  prototype.close=function(){
+    closeCalls++
+    original.close.call(this)
+    if(scenario.closeFails)throw cleanup
+  }
+  try {result=fixture.read()} catch(error){thrown=true;failure=error}
+  finally {Object.assign(prototype,original)}
+  assert.equal(closeCalls,1)
+  assert.equal(baselineSha256(fs.readFileSync(fixture.database)),before)
+  const readFailed=scenario.phase!=='none'
+  assert.equal(thrown,readFailed||scenario.closeFails)
+  if(readFailed&&scenario.closeFails){
+    assert(failure instanceof AggregateError,'both errors must be retained')
+    assert.equal(failure.errors.length,2)
+    if(scenario.phase==='state')assert.match(failure.errors[0].message,/lifecycle_state_conflict/)
+    else assert.equal(failure.errors[0],primary)
+    assert.equal(failure.errors[1],cleanup)
+    assert.equal(failure.cause,failure.errors[0])
+  }else if(readFailed)assert.equal(failure,primary)
+  else if(scenario.closeFails)assert.equal(failure,cleanup)
+  else assert.deepEqual(result,{state:fixture.state.state,sequence:fixture.state.sequence})
 })

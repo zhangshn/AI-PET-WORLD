@@ -66,6 +66,11 @@ def _critic_state(critic):
         tuple(None if p.grad is None else tensor_digest(p.grad) for p in critic.parameters()), v24._critic_tensor_versions(critic))
 
 
+def network_snapshot(network):
+    """Read value/gradient state and parameter identity without a CPU training interface."""
+    return (_critic_state(network), tuple((id(p), p.requires_grad, id(p.grad)) for p in network.parameters()))
+
+
 def _cuda_rng_snapshot(device):
     # CPU paths must not touch CUDA RNG even in an already-initialized process.
     return torch.cuda.get_rng_state(device).clone() if device.type == "cuda" else None

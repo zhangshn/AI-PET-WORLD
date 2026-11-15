@@ -1,8 +1,9 @@
+import { fingerprintMapPlacements as fingerprintPlacements } from "@/world/map-state/map-placement-fingerprint"
 /**
  * 当前文件职责：审计建设纵向闭环进入运行时桥接层之前的边界。
  */
 
-import type { MapPlacement } from "@/world/map-state/home-map-state-schema"
+
 
 import type {
   ConstructionRuntimeBridgeAudit,
@@ -87,20 +88,4 @@ function buildStableRuntimeBridgeFingerprint(input: {
     input.verticalSliceResult.fullPipelineAudit.stablePipelineFingerprint,
     fingerprintPlacements(input.verticalSliceResult.nextHomeMapState.placements),
   ].join("::")
-}
-
-function fingerprintPlacements(placements: MapPlacement[]): string {
-  return placements
-    .map((placement) =>
-      [
-        placement.id,
-        placement.layer,
-        String(placement.x),
-        String(placement.y),
-        String(placement.alpha),
-        placement.tags.slice().sort().join("+"),
-      ].join(":")
-    )
-    .sort()
-    .join("|")
 }

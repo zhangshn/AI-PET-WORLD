@@ -127,3 +127,62 @@ test.after(()=>{
  // Preserve private evidence until the parent process exits; no cleanup of project/runtime data.
  cleanups.push(resolved)
 })
+
+
+import {runInNewContext} from 'node:vm'
+import * as storeContracts from '../../src/server/local-backup/contracts.mjs'
+
+for(const operation of ['read','write','open','initialize'])for(const scenario of ['success','primary','close','both-error','both-null','both-undefined']) {
+ test(`work store cleanup errors ${operation}/${scenario}`,()=>{
+  const f=fixture(),events=[],primary=scenario==='both-null'?null:scenario==='both-undefined'?undefined:new Error('private database operation failed'),closeError=new Error('private database close failed')
+  const primaryFails=scenario==='primary'||scenario.startsWith('both-'),closeFails=scenario==='close'||scenario.startsWith('both-')
+  let closes=0,callbackCalled=false
+  class FaultyDatabase {
+   constructor(file,options){this.db=new DatabaseSync(file,...(options===undefined?[]:[options]))}
+   exec(sql){events.push(sql);if(primaryFails&&((operation==='open'&&sql.startsWith('PRAGMA busy_timeout'))||(operation==='initialize'&&sql.includes('CREATE TABLE'))))throw primary;return this.db.exec(sql)}
+   prepare(...args){return this.db.prepare(...args)}
+   close(){closes++;this.db.close();if(closeFails)throw closeError}
+  }
+  const source=fs.readFileSync('src/server/local-backup/store.mjs','utf8')
+  const api=runInNewContext(source.replace(/^import .+\r?$/gmu,'').replace(/export (function|const) /gu,'$1 ')+';({initializeStore,createStore})',{fs,path,DatabaseSync:FaultyDatabase,...storeContracts,Error,AggregateError,Buffer})
+  const root=operation==='initialize'?path.join(f.parent,'new-store'):f.root
+  let caught=false,error,result
+  try{
+   if(operation==='initialize')result=api.initializeStore(root,inventory)
+   else result=api.createStore(root)[operation==='write'?'write':'read'](db=>{callbackCalled=true;if(operation==='write')db.exec('UPDATE module_meta SET revision=revision+1 WHERE id=1');if(primaryFails)throw primary;return 17})
+  }catch(e){caught=true;error=e}
+  assert.equal(closes,1);assert.equal(caught,primaryFails||closeFails)
+  if(caught){
+   const wrapped=operation==='initialize'||(operation==='open'&&primaryFails)
+   if(wrapped){assert.equal(error.message,operation==='initialize'?'store_initialization_failed':'module_store_unreadable');assert.equal(error.status,operation==='initialize'?409:503);assert(Object.hasOwn(error,'cause'));assert.equal(Object.keys(error).includes('cause'),false)}
+   const actual=wrapped?error.cause:error
+   if(primaryFails&&closeFails){assert(actual instanceof AggregateError);assert.deepEqual(actual.errors,[primary,closeError]);assert.equal(actual.cause,primary)}
+   else assert.equal(actual,primaryFails?primary:closeError)
+  }else if(operation!=='initialize')assert.equal(result,17)
+  if(operation==='write'){
+   assert.equal(sqlite(f.root,db=>db.prepare('SELECT revision FROM module_meta').get().revision),primaryFails?0:1)
+   assert.equal(events.includes('COMMIT'),!primaryFails);assert.equal(events.includes('ROLLBACK'),primaryFails)
+  }else if(operation!=='initialize')assert.equal(sqlite(f.root,db=>db.prepare('SELECT revision FROM module_meta').get().revision),0)
+  if(operation==='open'&&primaryFails)assert.equal(callbackCalled,false)
+  if(operation==='initialize'){assert(fs.existsSync(path.join(root,'inventory/initial-v1.json')));assert(fs.existsSync(path.join(root,'module.sqlite')))}
+ })
+}
+
+for(const phase of ['begin','commit','operation'])for(const rollbackFails of [false,true])for(const closeFails of [false,true]) {
+ test(`work store rollback evidence ${phase}/rollback=${rollbackFails}/close=${closeFails}`,()=>{
+  const f=fixture(),primary=new Error('private '+phase+' failure'),rollback=new Error('private rollback failure'),close=new Error('private close failure'),events=[];let closes=0
+  class FaultyDatabase {
+   constructor(file,options){this.db=new DatabaseSync(file,...(options===undefined?[]:[options]))}
+   exec(sql){events.push(sql);if((phase==='begin'&&sql==='BEGIN IMMEDIATE')||(phase==='commit'&&sql==='COMMIT'))throw primary;if(sql==='ROLLBACK'&&rollbackFails)throw rollback;return this.db.exec(sql)}
+   prepare(...args){return this.db.prepare(...args)}
+   close(){closes++;this.db.close();if(closeFails)throw close}
+  }
+  const source=fs.readFileSync('src/server/local-backup/store.mjs','utf8'),factory=runInNewContext(source.replace(/^import .+\r?$/gmu,'').replace(/export (function|const) /gu,'$1 ')+';createStore',{fs,path,DatabaseSync:FaultyDatabase,...storeContracts,Error,AggregateError,Buffer})
+  let caught=false,error;try{factory(f.root).write(db=>{db.exec('UPDATE module_meta SET revision=revision+1 WHERE id=1');if(phase==='operation')throw primary})}catch(e){caught=true;error=e}
+  assert(caught);assert.equal(closes,1);assert.equal(events.filter(s=>s==='ROLLBACK').length,1)
+  const expected=[primary,...(rollbackFails?[rollback]:[]),...(phase==='begin'&&!rollbackFails?[null]:[]),...(closeFails?[close]:[])]
+  if(expected.length===1)assert.equal(error,primary)
+  else{assert(error instanceof AggregateError);assert.equal(error.errors[0],primary);if(rollbackFails)assert.equal(error.errors[1],rollback);if(phase==='begin'&&!rollbackFails)assert.match(error.errors[1].message,/rollback|transaction/i);if(closeFails)assert.equal(error.errors.at(-1),close);assert.equal(error.errors.length,expected.length);assert.equal(error.cause,primary)}
+  assert.equal(sqlite(f.root,db=>db.prepare('SELECT revision FROM module_meta').get().revision),0)
+ })
+}

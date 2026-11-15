@@ -25,7 +25,6 @@ const PYTHON_CHECKER = path.join(ROOT, "ml", "ai-painter", "scripts", "check_sta
 const NODE_CHECKER = path.join(ROOT, "scripts", "check-stage4-object-reference-multiscale-phase0-execution-entry.mjs")
 const IMPLEMENTATION_OUTPUT = ".runtime/ai-painter/stage4-object-reference-multiscale-phase0-execution-entry-implementations/20260815-153000000"
 const FUTURE_GPU_REQUEST_ID = "owner-authorized-stage4-object-reference-multiscale-phase0-gpu-execution-20260815-154500000"
-const CORRECTED_FUTURE_GPU_REQUEST_ID = "owner-authorized-stage4-object-reference-multiscale-phase0-gpu-execution-20260815-163000000"
 const TASK_IDENTITY = Object.freeze({
   architectureId: "stage4_fact_conditioned_semantic_mixture_decoder_v1",
   trainingObjectiveContractId: "typed_object_multiscale_luminance_structure_correlation_supervision_v1",

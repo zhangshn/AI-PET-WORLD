@@ -491,14 +491,13 @@ export function initializeStage4V2QualificationReplayLedger({
   requireRuntimeNamespace(ledgerPath, "ledgerPath");
   const absolute = resolveProjectPath(projectRoot, ledgerPath);
   fs.mkdirSync(path.dirname(absolute), { recursive: true });
-  const db = new DatabaseSync(absolute);
+  const db = new DatabaseSync(absolute), errors = [];
   try {
     configureLedger(db);
     const integrity = db.prepare("PRAGMA integrity_check").get();
     assert.equal(Object.values(integrity ?? {})[0], "ok", "ticket ledger integrity check failed");
-  } finally {
-    db.close();
-  }
+  } catch (error) { errors.unshift(error); }
+  finally { finishQualificationLedger(db, errors); }
   return Object.freeze({ path: ledgerPath, schemaVersion: STAGE4_V2_QUALIFICATION_LEDGER_SCHEMA });
 }
 
@@ -512,7 +511,7 @@ export function registerStage4V2QualificationTicket({
   validateBinding(packagePayloadBinding, "packagePayloadBinding");
   assert.equal(ticket.packagePayload.sha256, packagePayloadBinding.sha256);
   const ledger = initializeStage4V2QualificationReplayLedger({ projectRoot, ledgerPath: ticket.ledgerPath });
-  const db = new DatabaseSync(resolveProjectPath(projectRoot, ledger.path));
+  const db = new DatabaseSync(resolveProjectPath(projectRoot, ledger.path)), errors = [];
   try {
     configureLedger(db);
     db.exec("BEGIN IMMEDIATE");
@@ -596,12 +595,13 @@ export function registerStage4V2QualificationTicket({
         registrationStatus,
       });
     } catch (error) {
-      try { db.exec("ROLLBACK"); } catch {}
-      throw new Error(`qualification ticket identity/output reuse rejected: ${error.message}`);
+      try { db.exec("ROLLBACK"); } catch (rollbackError) { errors.push(rollbackError); }
+      if (error?.code === "ERR_SQLITE_ERROR" && [1555, 2067].includes(error.errcode))
+        throw new Error(`qualification ticket identity/output reuse rejected: ${error.message}`, { cause: error });
+      throw error;
     }
-  } finally {
-    db.close();
-  }
+  } catch (error) { errors.unshift(error); }
+  finally { finishQualificationLedger(db, errors); }
 }
 
 export function consumeStage4V2QualificationTicket({
@@ -651,7 +651,7 @@ export function consumeStage4V2QualificationTicket({
   };
   const consumptionBytes = jsonBytes(consumption);
   const consumptionSha256 = sha256Of(consumptionBytes);
-  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath));
+  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath)), errors = [];
   try {
     configureLedger(db);
     db.exec("BEGIN IMMEDIATE");
@@ -699,12 +699,13 @@ export function consumeStage4V2QualificationTicket({
       );
       db.exec("COMMIT");
     } catch (error) {
-      try { db.exec("ROLLBACK"); } catch {}
-      throw new Error(`qualification ticket replay or output reuse rejected: ${error.message}`);
+      try { db.exec("ROLLBACK"); } catch (rollbackError) { errors.push(rollbackError); }
+      if (error?.code === "ERR_SQLITE_ERROR" && [1555, 2067].includes(error.errcode))
+        throw new Error(`qualification ticket replay or output reuse rejected: ${error.message}`, { cause: error });
+      throw error;
     }
-  } finally {
-    db.close();
-  }
+  } catch (error) { errors.unshift(error); }
+  finally { finishQualificationLedger(db, errors); }
   invokeTestHook(_testHooks, "afterConsumptionPrepareCommit", { ticketId: ticket.ticketId, consumptionPath });
   ensureImmutableJson(consumptionAbsolute, consumption, consumptionSha256);
   invokeTestHook(_testHooks, "afterConsumptionEvidencePersisted", { ticketId: ticket.ticketId, consumptionPath });
@@ -820,7 +821,7 @@ export function closeStage4V2UnconsumedQualificationTicket({
   };
   const closureBytes = jsonBytes(closure);
   const closureSha256 = sha256Of(closureBytes);
-  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath));
+  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath)), errors = [];
   try {
     configureLedger(db);
     db.exec("BEGIN IMMEDIATE");
@@ -869,12 +870,11 @@ export function closeStage4V2UnconsumedQualificationTicket({
       }
       db.exec("COMMIT");
     } catch (cause) {
-      try { db.exec("ROLLBACK"); } catch {}
+      try { db.exec("ROLLBACK"); } catch (rollbackError) { errors.push(rollbackError); }
       throw cause;
     }
-  } finally {
-    db.close();
-  }
+  } catch (error) { errors.unshift(error); }
+  finally { finishQualificationLedger(db, errors); }
   ensureImmutableJson(resolveProjectPath(projectRoot, closurePath), closure, closureSha256);
   return Object.freeze({
     closure: Object.freeze(closure),
@@ -887,6 +887,14 @@ export function readJsonObject(filePath) {
   const value = JSON.parse(fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/u, ""));
   assert.ok(value && typeof value === "object" && !Array.isArray(value), `${filePath} must contain a JSON object`);
   return value;
+}
+
+function finishQualificationLedger(db, errors) {
+  try { db.close(); } catch (error) { errors.push(error); }
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors,
+    errors[0] instanceof Error ? errors[0].message : "Qualification ledger operation and cleanup failed",
+    { cause: errors[0] });
 }
 
 function configureLedger(db) {
@@ -951,7 +959,7 @@ function configureLedger(db) {
 }
 
 function readPreparedConsumption({ projectRoot, ticket, packagePayloadBinding, consumptionPath }) {
-  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath));
+  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath)), errors = [];
   try {
     configureLedger(db);
     const prepared = db.prepare(`
@@ -971,9 +979,8 @@ function readPreparedConsumption({ projectRoot, ticket, packagePayloadBinding, c
     requireSha256(prepared.consumption_sha256, "prepared consumption SHA-256");
     assert.ok(["prepared", "committed"].includes(prepared.status), "prepared consumption status invalid");
     return prepared;
-  } finally {
-    db.close();
-  }
+  } catch (error) { errors.unshift(error); }
+  finally { finishQualificationLedger(db, errors); }
 }
 
 function finalizePreparedConsumption({
@@ -988,7 +995,7 @@ function finalizePreparedConsumption({
   const consumptionAbsolute = resolveProjectPath(projectRoot, consumptionPath, { mustExist: true, kind: "file" });
   assert.equal(sha256File(consumptionAbsolute), consumptionSha256,
     "qualification consumption evidence SHA-256 mismatch before commit");
-  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath));
+  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath)), errors = [];
   try {
     configureLedger(db);
     db.exec("BEGIN IMMEDIATE");
@@ -1059,12 +1066,11 @@ function finalizePreparedConsumption({
       }
       db.exec("COMMIT");
     } catch (error) {
-      try { db.exec("ROLLBACK"); } catch {}
-      throw new Error(`qualification consumption commit failed: ${error.message}`);
+      try { db.exec("ROLLBACK"); } catch (rollbackError) { errors.push(rollbackError); }
+      throw new Error(`qualification consumption commit failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
-  } finally {
-    db.close();
-  }
+  } catch (error) { errors.unshift(error); }
+  finally { finishQualificationLedger(db, errors); }
 }
 
 function validateIssuerRecord({ projectRoot, issuer, expectedRoot = null }) {

@@ -196,7 +196,7 @@ export async function startLocalPreparation({root,credentials,candidateSelection
       runnerArgs:['--internal-prepare-v2','--request',requestPath(requestId),'--request-sha256',requestBinding.sha256]});
     return {protocol:LOCAL_CONTROL_PROTOCOL,command:'start',requestId,runId:requestId,plannedPackageId:packageId,executionPackage:null,
       preparationAccepted:true,trainingQualified:false,launch};
-  } catch(error) {
+  } catch {
     const currentState=readJson(root,`${evidenceRoot(requestId)}/state.json`);
     if(currentState.stage==='prepared_request_not_cpu_qualified')withOutputBudget({projectRoot:root,roots:[outputRoot],maximum:8388608,reserveBytes:65536},()=>writeState(root,request,'failed_closed',{errorCode:'local_prepare_launch_failed',processState:'unknown'}));
     return {protocol:LOCAL_CONTROL_PROTOCOL,command:'start',status:'launch_observation_failed',requestId,runId:requestId,plannedPackageId:packageId,

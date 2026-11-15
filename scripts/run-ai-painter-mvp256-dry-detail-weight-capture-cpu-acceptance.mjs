@@ -16,7 +16,6 @@ const CPU_TASK_ROOTS={"T-Q4-51":TASK_ROOT,"T-Q4-55":".runtime/ai-painter/native-
 export const WORKER_BYTES=7340032,RESERVE=65536
 const REGISTRY=".runtime/ai-painter/current-execution-registry/current.json"
 const TEST="ml/ai-painter/tests/test_painter_stage4_detail_weight_capture_execution_worker.py"
-const GUIDE_SNAPSHOT={path:".runtime/ai-painter/detail-weight-postfailure-t-q4-48/controller/prior-execution-guide.json",sha256:"804ef037e782f190903b1e9f7497fe1259fb73d7602b4c032bed6e1cd0688214"}
 function bytes(dir){if(!fs.existsSync(dir))return 0;return fs.readdirSync(dir,{withFileTypes:true}).reduce((n,e)=>{const p=path.join(dir,e.name);assert.equal(fs.lstatSync(p).isSymbolicLink(),false);return n+(e.isDirectory()?bytes(p):fs.statSync(p).size)},0)}
 export function validateBatch(raw){
  assert.equal(raw.failed,0);assert.equal(raw.errors,0);assert.equal(raw.skipped,0)

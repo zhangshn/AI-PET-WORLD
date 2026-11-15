@@ -1,4 +1,5 @@
-import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
+import { fingerprintMapPlacements as fingerprintPlacements } from "@/world/map-state/map-placement-fingerprint"
+
 
 import type {
   ConstructionRuntimeCycleAudit,
@@ -210,25 +211,11 @@ function buildStableRuntimeFingerprint(input: {
     input.rejectedDiffIds.slice().sort().join("+"),
     result.persistenceProposal?.proposalId ?? "none",
     result.painterRefreshSignal?.signalId ?? "none",
-    fingerprintPlacements(result.nextHomeMapState),
+    fingerprintPlacements(result.nextHomeMapState.placements),
   ].join("::")
 }
 
-function fingerprintPlacements(homeMapState: HomeMapState): string {
-  return homeMapState.placements
-    .map((placement) =>
-      [
-        placement.id,
-        placement.layer,
-        String(placement.x),
-        String(placement.y),
-        String(placement.alpha),
-        placement.tags.slice().sort().join("+"),
-      ].join(":")
-    )
-    .sort()
-    .join("|")
-}
+
 
 function uniqueTags(tags: string[]): string[] {
   return Array.from(new Set(tags))

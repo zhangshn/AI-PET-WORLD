@@ -1,3 +1,4 @@
+import { acquireExclusiveFileLock } from "./lib/exclusive-file-lock.mjs"
 import crypto from "node:crypto"
 import { spawn, spawnSync } from "node:child_process"
 import fs from "node:fs"
@@ -984,14 +985,7 @@ function closeRun(status, blockers, extra = {}) {
 
 function acquireLock() {
   fs.mkdirSync(MODEL_ROOT, { recursive: true })
-  const handle = fs.openSync(LOCK_PATH, "wx")
-  fs.writeFileSync(handle, `${JSON.stringify({ schemaVersion: "stage4-bounded-repair-smoke-lock-v1", pid: process.pid, runId, createdAtUtc: new Date().toISOString() }, null, 2)}\n`)
-  fs.closeSync(handle)
-  return () => {
-    if (!fs.existsSync(LOCK_PATH)) return
-    const lock = readJson(LOCK_PATH)
-    if (lock?.pid === process.pid && lock?.runId === runId) fs.unlinkSync(LOCK_PATH)
-  }
+  return acquireExclusiveFileLock(LOCK_PATH, `${JSON.stringify({ schemaVersion: "stage4-bounded-repair-smoke-lock-v1", pid: process.pid, runId, createdAtUtc: new Date().toISOString() }, null, 2)}\n`)
 }
 
 function diskBudgetSnapshot() {

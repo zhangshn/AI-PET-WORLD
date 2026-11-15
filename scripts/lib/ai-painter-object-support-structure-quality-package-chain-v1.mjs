@@ -15,7 +15,9 @@ export {FINAL_RGB_CAPABILITY,FINAL_RGB_PROFILE,JOINT_CAPABILITY,JOINT_PROFILE,gp
 import {JOINT_COMPONENTS,verifyJointAuthority,jointHistoryBindings,jointProvenance} from './ai-painter-joint-object-priority-quality-package-chain-v1.mjs';
 const requireSource=createRequire(import.meta.url);
 export const sha=io.sha,withOutputBudget=io.withOutputBudget,directoryBytes=io.directoryBytes;
-export const ROLES={adapter:ADAPTER,packageChain:'scripts/lib/ai-painter-object-support-structure-quality-package-chain-v1.mjs',
+export const ROLES={
+ cpuNegativeInputInspector:'scripts/lib/cpu-negative-input-inspector.mjs',
+adapter:ADAPTER,packageChain:'scripts/lib/ai-painter-object-support-structure-quality-package-chain-v1.mjs',
  frozenProjectManifest:'.runtime/ai-painter/ecology-quality-v1-repair/t-qv12-r1/ns003-original-package.json',
  currentLegacyNativeTests:'scripts/tests/ai-painter-ecology-owned-native.test.mjs',
  currentExecutionRegistry:'src/server/ai-painter-current-execution-registry.mjs',

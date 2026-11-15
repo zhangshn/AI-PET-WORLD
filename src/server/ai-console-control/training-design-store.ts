@@ -196,7 +196,15 @@ export function isAiConsoleTrainingDesignStoreInitialized(): boolean {
 
 export function initializeAiConsoleTrainingDesignStore(): AiConsoleTrainingDesignMetadata {
   const database = openWritableStore()
-  try { return readAndVerifyMetadata(database) } finally { database.close() }
+  const errors: unknown[] = []
+  try { return readAndVerifyMetadata(database) } catch (error) {
+    errors.push(error)
+    throw error
+  } finally {
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'initialize_ai_console_training_design_store_operation_and_cleanup_failed', { cause: errors[0] })
+  }
 }
 
 export function executeAiConsoleTrainingDesignCommand(input: AiConsoleTrainingDesignCommandInput): AiConsoleTrainingDesignCommandResult {
@@ -206,6 +214,8 @@ export function executeAiConsoleTrainingDesignCommand(input: AiConsoleTrainingDe
   const commandId = sha256Text(`${input.actorIdentity}\n${input.commandType}\n${input.idempotencyKeySha256}`)
   const database = openWritableStore()
 
+  const errors: unknown[] = []
+  let transactionActive = false
   try {
     const existingRow = database.prepare(`${receiptSelectSql} WHERE command_id = ?`).get(commandId)
     if (existingRow) {
@@ -343,20 +353,25 @@ export function executeAiConsoleTrainingDesignCommand(input: AiConsoleTrainingDe
     const receipt = { ...unsignedReceipt, commandReceiptSha256: sha256Text(JSON.stringify(unsignedReceipt)) }
 
     database.exec("BEGIN IMMEDIATE")
-    try {
-      if (event && modelStructure && input.commandType === "register_model_structure") insertModel(database, modelStructure, creationContentBlob as Uint8Array)
-      if (event && trainingPlan && input.commandType === "register_training_plan") insertPlan(database, trainingPlan, creationContentBlob as Uint8Array)
-      if (event) insertEvent(database, event)
-      insertReceipt(database, receipt)
-      updateMetadata(database, metadata, receipt, event, input.commandType)
-      database.exec("COMMIT")
-    } catch (error) {
-      database.exec("ROLLBACK")
-      throw error
-    }
+    transactionActive = true
+    if (event && modelStructure && input.commandType === "register_model_structure") insertModel(database, modelStructure, creationContentBlob as Uint8Array)
+    if (event && trainingPlan && input.commandType === "register_training_plan") insertPlan(database, trainingPlan, creationContentBlob as Uint8Array)
+    if (event) insertEvent(database, event)
+    insertReceipt(database, receipt)
+    updateMetadata(database, metadata, receipt, event, input.commandType)
+    database.exec("COMMIT")
+    transactionActive = false
     return { receipt, modelStructure, trainingPlan, event, replayed: false, httpStatus: succeeded ? 201 : 409 }
+  } catch (error) {
+    errors.push(error)
+    if (transactionActive) {
+      try { database.exec("ROLLBACK") } catch (rollbackError) { errors.push(rollbackError) }
+    }
+    throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'execute_ai_console_training_design_command_operation_and_cleanup_failed', { cause: errors[0] })
   }
 }
 
@@ -364,6 +379,8 @@ export function readAiConsoleTrainingDesignStore(): AiConsoleTrainingDesignRead 
   const storePath = getStorePath()
   if (!existsSync(storePath)) return { status: "not_connected", reasonCode: "ai_console_training_design_store_not_initialized", evidenceReferences: [trainingDesignStoreLogicalPath] }
   let database: DatabaseSync | null = null
+  let readFailed = false
+  let readError: unknown
   try {
     database = new DatabaseSync(storePath, { open: true, readOnly: true })
     verifyDatabaseIntegrity(database)
@@ -385,8 +402,15 @@ export function readAiConsoleTrainingDesignStore(): AiConsoleTrainingDesignRead 
       evidenceReferences: [trainingDesignStoreLogicalPath, "data/ai-console/schemas/ai-console-training-design-v1.schema.json"],
     }
   } catch (error) {
+    readFailed = true
+    readError = error
     return { status: "unknown_or_stale", reasonCode: error instanceof Error ? error.message : "ai_console_training_design_store_read_failed", evidenceReferences: [trainingDesignStoreLogicalPath] }
-  } finally { database?.close() }
+  } finally {
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], 'read_ai_console_training_design_store_read_and_close_failed', { cause: readError })
+      throw closeError
+    }
+  }
 }
 
 function modelCreationContent(input: Extract<AiConsoleTrainingDesignCommandInput, { commandType: "register_model_structure" }>) {
@@ -531,7 +555,9 @@ function openWritableStore(): DatabaseSync {
     database.exec("PRAGMA user_version = 1")
     return database
   } catch (error) {
-    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    try { database.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'training_design_store_initialization_and_close_failed', { cause: error })
+    }
     throw error
   }
 }

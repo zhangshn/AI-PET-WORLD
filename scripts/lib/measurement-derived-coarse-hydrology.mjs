@@ -764,9 +764,6 @@ export function buildMeasurementDerivedAnonymousAnabranch({
     "main_channel_connected_floodplain_backwater_finger";
   const branchDirection =
     internalHydrologyProfile.branchSide === "west" ? -1 : 1;
-  const relativeSupportRange =
-    internalHydrologyProfile.measurementSupportStatistics
-      ?.relativeSupportRange ?? 0;
   const westernWaterCenterMinimum =
     width *
     (internalHydrologyProfile
@@ -1261,8 +1258,6 @@ function buildContinuousMeasurementDerivedMapping({
 function buildMeasurementCandidateSelection({
   coarseHydrologyProfile,
   mappingFamily,
-  directBandSupports,
-  relativeBandSupports,
 }) {
   const fingerprint =
     coarseHydrologyProfile.measurementFingerprint;
@@ -1353,7 +1348,6 @@ function buildEightBandAnonymousSpline({
   start,
   end,
   width,
-  height,
   baselinePoints,
   bandSupports,
   directBandInfluence,

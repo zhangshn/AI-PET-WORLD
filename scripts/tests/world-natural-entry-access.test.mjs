@@ -6,6 +6,7 @@ import * as jsx from 'react/jsx-runtime'
 import * as React from 'react'
 import {renderToStaticMarkup} from 'react-dom/server'
 import {NextRequest,NextResponse} from 'next/server.js'
+import * as runtimePaths from '../../scripts/lib/runtime-working-directory.mjs'
 import {requiresNaturalWorldPlayerGrant} from '../../src/world/runtime/natural-world-client-access.ts'
 
 const file = 'src/app/world/world-live-runtime-page.tsx'
@@ -22,6 +23,7 @@ test('authorized natural image reads distinguish a missing publication from a br
     ['found',[],409,'natural_frame_unqualified'],
   ]){
     const api={},modules={
+      '../../../scripts/lib/runtime-working-directory.mjs':runtimePaths,
       'node:path':await import('node:path'),
       'next/server':{NextResponse},
       '@/server/world-player-access/session.mjs':{authorizeWorldPlayerRead:async()=>({ok:true,ownerId,playerId,worldId,permission:'world.read'})},
@@ -35,7 +37,7 @@ test('authorized natural image reads distinguish a missing publication from a br
       }},
       './natural-player-history':{},
     }
-    new Function('require','exports',built.outputText)(k=>modules[k],api)
+    new Function('require','exports',built.outputText)(k=>{assert(Object.hasOwn(modules,k),k);return modules[k]},api)
     const reply=await api.readNaturalPlayerFrameResponse(request,worldId)
     assert.equal(reply.status,http)
     assert.equal(reply.headers.get('Cache-Control'),'private, no-store')

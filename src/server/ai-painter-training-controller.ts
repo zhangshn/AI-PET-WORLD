@@ -197,10 +197,10 @@ function acquireTrainingProcessLock(action: TrainingAction): () => void {
       }
       throw new Error("已有本地训练任务持有跨进程运行锁，请等待完成。", { cause: error })
     }
-    let identity: { ino: number; dev: number }
+    let identity: { ino: bigint; dev: bigint }
     try {
       writeFileSync(fd, JSON.stringify({ controllerPid: process.pid, action, acquiredAt: new Date().toISOString() }), "utf8")
-      identity = fstatSync(fd)
+      identity = fstatSync(fd, { bigint: true })
     } catch (error) {
       try { closeSync(fd) } catch { /* Preserve the initialization error and failed lock. */ }
       throw error
@@ -217,16 +217,16 @@ function acquireTrainingProcessLock(action: TrainingAction): () => void {
   throw new Error("无法获取本地训练跨进程运行锁。")
 }
 
-function assertTrainingProcessLockIdentity(identity: { ino: number; dev: number }) {
-  const current = lstatSync(trainingProcessLockPath)
+function assertTrainingProcessLockIdentity(identity: { ino: bigint; dev: bigint }) {
+  const current = lstatSync(trainingProcessLockPath, { bigint: true })
   if (!current.isFile() || current.isSymbolicLink() || current.ino !== identity.ino || current.dev !== identity.dev) {
     throw new Error("training_process_lock_identity_changed")
   }
 }
 
-function readTrainingProcessLock(): { controllerPid: number; identity: { ino: number; dev: number } } | null {
+function readTrainingProcessLock(): { controllerPid: number; identity: { ino: bigint; dev: bigint } } | null {
   try {
-    const identity = lstatSync(trainingProcessLockPath)
+    const identity = lstatSync(trainingProcessLockPath, { bigint: true })
     if (!identity.isFile() || identity.isSymbolicLink()) return null
     const value = JSON.parse(readFileSync(trainingProcessLockPath, "utf8"))
     return Number.isSafeInteger(value?.controllerPid) && value.controllerPid > 0 && value.controllerPid <= 2_147_483_647

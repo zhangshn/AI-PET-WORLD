@@ -92,3 +92,70 @@ test('a snapshot revision changed during child reads is refused',()=>{
  try{assert.throws(()=>f.read(),/progress_mixed_revision/)}finally{fs.openSync=original}assert(changed)
 })
 }
+
+import ts from 'typescript'
+import {need,ModuleError} from '../../src/server/local-backup/contracts.mjs'
+
+for(const kind of ['progress','truth','work-plan'])for(const scenario of ['stable','file-replaced','device-replaced',...(kind==='progress'?['opened-file']:[])]) {
+ test(`progress readers exact identity ${kind}/${scenario}`,t=>{
+  const root=fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(),'progress-exact-identity-'))),runtime=path.join(root,'.runtime'),logical='docs/fixture.md',file=path.join(root,'docs','fixture.md'),original='private progress evidence'
+  fs.mkdirSync(runtime);fs.mkdirSync(path.dirname(file));fs.writeFileSync(file,original,{flag:'wx'})
+  const sourceFile='src/server/local-backup/project-progress'+(kind==='progress'?'':kind==='truth'?'-truth':'-work-plan')+'.mjs'
+  const tree=ts.createSourceFile(sourceFile,fs.readFileSync(sourceFile,'utf8'),ts.ScriptTarget.Latest,true)
+  let fn
+  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text===(kind==='progress'?'fixedReader':'read')){assert.equal(fn,undefined);fn=node}ts.forEachChild(node,visit)}visit(tree);assert(fn)
+  const base=9007199254740992n,opened=new Set();let read=false
+  const alter=(stat,options,handle=false)=>{const ino=base+(scenario==='opened-file'&&handle||scenario==='file-replaced'&&read&&!handle?1n:0n),dev=7n+(scenario==='device-replaced'&&read&&!handle?1n:0n);stat.ino=options?.bigint?ino:Number(ino);stat.dev=options?.bigint?dev:Number(dev);return stat}
+  const io={...fs,
+   lstatSync(p,options){const stat=fs.lstatSync(p,options);return p===file?alter(stat,options):stat},
+   openSync(p,...args){const fd=fs.openSync(p,...args);if(p===file)opened.add(fd);return fd},
+   fstatSync(fd,options){const stat=fs.fstatSync(fd,options);return opened.has(fd)?alter(stat,options,true):stat},
+   readSync(fd,...args){const n=fs.readSync(fd,...args);if(opened.has(fd))read=true;return n},
+   readFileSync(p,...args){const bytes=fs.readFileSync(p,...args);if(p===file)read=true;return bytes},
+   closeSync(fd){opened.delete(fd);return fs.closeSync(fd)},
+  }
+  const same=(a,b)=>path.resolve(a).toLowerCase()===path.resolve(b).toLowerCase()
+  const globals={fs:io,path,need,ModuleError,TextDecoder,Buffer,hash:sha,sha,same,samePath:same,root,runtime,cache:new Map(),began:Date.now(),caps:{files:24,total:4*1024*1024},CURRENT_WORLD_BASELINE_SOURCE_PATHS:[]}
+  const handleTree=ts.createSourceFile('read-handle.mjs',fs.readFileSync('src/server/local-backup/read-handle.mjs','utf8'),ts.ScriptTarget.Latest,true)
+  const handleFunction=handleTree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='withReadHandle').getText(handleTree).replace(/^export\s+/,'')
+  const code='let files=0,totalBytes=0,reads=0,bytes=0;'+handleFunction+';'+fn.getText(tree)+';return '+(kind==='progress'?'fixedReader(root,runtime).read':'read')+';'
+  const invoke=new Function(...Object.keys(globals),code)(...Object.values(globals))
+  if(scenario==='stable'){const result=invoke(logical,1024);assert.equal(result.sha256,sha(Buffer.from(original)));assert.equal(kind==='progress'?result.body:result.bytes.toString('utf8'),original);assert.doesNotThrow(()=>JSON.stringify(result))}
+  else assert.throws(()=>invoke(logical,1024),error=>error.message===(kind==='work-plan'?'work_plan':kind)+'_source_changed')
+  assert.equal(opened.size,0);assert.equal(fs.readFileSync(file,'utf8'),original);t.diagnostic('retained private fixture: '+root)
+ })
+}
+
+
+for(const scenario of ['stable','chunked','early-eof','short-read','negative','noninteger','oversized','opened-mtime','opened-ctime','opened-links','after-ctime','path-mtime','path-ctime','path-size','path-links','read-error','read-null','read-undefined','close-error','both-error','both-null','both-domain']){
+ test(`progress exact read and cleanup ${scenario}`,t=>{
+  const f=progressFixture(),target=path.join(f.root,PROGRESS_PLAN),baseline=f.read(),initial=fs.readFileSync(target)
+  const first=scenario==='read-null'||scenario==='both-null'?null:scenario==='read-undefined'?undefined:scenario==='both-domain'?new ModuleError('progress_source_changed',409):new Error('private progress read error')
+  const closing=new Error('private progress close error'),readFails=scenario.startsWith('read-')||scenario.startsWith('both-'),closeFails=scenario==='close-error'||scenario.startsWith('both-')
+  const native={openSync:fs.openSync,readSync:fs.readSync,closeSync:fs.closeSync,fstatSync:fs.fstatSync,lstatSync:fs.lstatSync},held=new Set();let reads=0,stats=0,closes=0
+  const amend=(s,key)=>{if(key==='links')s.nlink+=1n;else if(key==='size')s.size+=1n;else s[key+'Ns']+=1n;return s}
+  const mocks=[t.mock.method(fs,'openSync',(p,...args)=>{const fd=native.openSync(p,...args);if(p===target)held.add(fd);return fd}),t.mock.method(fs,'readSync',(fd,buffer,offset,length,position)=>{
+   if(!held.has(fd))return native.readSync(fd,buffer,offset,length,position)
+   reads++;if(readFails)throw first
+   if(scenario==='early-eof'||scenario==='short-read'&&reads>1)return 0
+   if(scenario==='negative')return -1
+   if(scenario==='noninteger')return NaN
+   if(scenario==='oversized')return length+1
+   return native.readSync(fd,buffer,offset,['chunked','short-read'].includes(scenario)?Math.min(4,length):length,position)
+  }),t.mock.method(fs,'fstatSync',(fd,options)=>{const s=native.fstatSync(fd,options);if(held.has(fd)){const n=stats++;if(n===0&&scenario.startsWith('opened-'))return amend(s,scenario.slice(7));if(n>0&&scenario==='after-ctime')return amend(s,'ctime')}return s}),t.mock.method(fs,'lstatSync',(p,options)=>{const s=native.lstatSync(p,options);return p===target&&reads>0&&scenario.startsWith('path-')?amend(s,scenario.slice(5)):s}),t.mock.method(fs,'closeSync',fd=>{const tracked=held.delete(fd),result=native.closeSync(fd);if(tracked){closes++;if(closeFails)throw closing}return result})]
+  try{
+   if(['stable','chunked'].includes(scenario))assert.deepEqual(f.read(),baseline)
+   else{
+    let error;try{f.read();assert.fail('unexpected progress success')}catch(e){error=e}
+    assert(error instanceof ModuleError)
+    const boundary=!(scenario.startsWith('read-')||scenario==='close-error'||scenario.startsWith('both-'))||scenario==='both-domain'
+    assert.equal(error.message,boundary?'progress_source_changed':'progress_source_unavailable');assert.equal(error.status,boundary?409:503)
+    if(readFails&&closeFails){assert(error.cause instanceof AggregateError);assert.deepEqual(error.cause.errors,[first,closing]);assert.strictEqual(error.cause.cause,first)}
+    else if(readFails||closeFails){assert(Object.hasOwn(error,'cause'));assert.strictEqual(error.cause,readFails?first:closing)}
+    assert(!JSON.stringify(error).includes('private progress'))
+   }
+   assert.equal(held.size,0);assert.equal(closes,['stable','chunked'].includes(scenario)?2:1)
+  }finally{for(const mock of mocks.reverse())mock.mock.restore()}
+  assert.deepEqual(fs.readFileSync(target),initial);t.diagnostic('retained private fixture: '+f.root)
+ })
+}

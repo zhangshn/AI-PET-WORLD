@@ -20,6 +20,14 @@ import {
 
 import { resolveZiweiCycleDirection } from "./cycle-direction"
 
+import {
+  getTimeBranchOffset,
+  normalizeLunarDay,
+  normalizeLunarMonth
+} from "../dynamic-chart/dynamic-normalizers"
+
+export { getTimeBranchOffset } from "../dynamic-chart/dynamic-normalizers"
+
 import type {
   ZiweiCycleDirection,
   ZiweiDynamicChart,
@@ -44,21 +52,6 @@ const SECTOR_ORDER: SectorName[] = [
 ]
 
 const YEAR_BRANCH_ORDER: BranchPalace[] = [
-  "zi",
-  "chou",
-  "yin",
-  "mao",
-  "chen",
-  "si",
-  "wu",
-  "wei",
-  "shen",
-  "you",
-  "xu",
-  "hai"
-]
-
-const TIME_BRANCH_ORDER: BranchPalace[] = [
   "zi",
   "chou",
   "yin",
@@ -111,52 +104,6 @@ export interface BuildZiweiDynamicChartInput {
 export function getYearBranch(currentYear: number): BranchPalace {
   const offset = safeModulo(currentYear - 2020, 12)
   return YEAR_BRANCH_ORDER[offset]
-}
-
-export function getTimeBranchOffset(timeBranch: BranchPalace): number {
-  const index = TIME_BRANCH_ORDER.indexOf(timeBranch)
-
-  if (index < 0) {
-    return 0
-  }
-
-  return index
-}
-
-function normalizeLunarMonth(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 1
-  }
-
-  const month = Math.trunc(value)
-
-  if (month < 1) {
-    return 1
-  }
-
-  if (month > 12) {
-    return 12
-  }
-
-  return month
-}
-
-function normalizeLunarDay(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 1
-  }
-
-  const day = Math.trunc(value)
-
-  if (day < 1) {
-    return 1
-  }
-
-  if (day > 30) {
-    return 30
-  }
-
-  return day
 }
 
 function buildDynamicPalaceMaps(

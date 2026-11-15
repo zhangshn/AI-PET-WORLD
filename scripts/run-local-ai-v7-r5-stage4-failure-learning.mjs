@@ -10,9 +10,7 @@ import {
   runStage4ArchitectureDesignContractRegression,
   runStage4DecisionContractRegression,
   validateStage4ArchitectureDesignConvergence,
-  validateStage4ArchitectureOwnerActionRequestPreview,
   validateStage4FailureDecision,
-  validateStage4InactiveArchitectureImplementationContract,
 } from "./lib/ai-assisted-v7-r5-stage4-failure-decision.mjs"
 import { appendAiPainterProgramEvent, formatShanghai } from "./lib/ai-painter-program-event-store.mjs"
 
@@ -54,7 +52,6 @@ const AUTHORIZATION_PATH = CURRENT_SMOKE_TIMELINE_MODE ? CURRENT_AUTHORIZATION_P
 const AUTHORIZATION_SHA256 = CURRENT_SMOKE_TIMELINE_MODE ? sha256File(AUTHORIZATION_PATH) : LEGACY_AUTHORIZATION_SHA256
 const authorization = readJson(AUTHORIZATION_PATH)
 const CURRENT_IDENTITY = CURRENT_SMOKE_TIMELINE_MODE ? authorization.taskIdentity ?? {} : {}
-const REQUEST_ID = CURRENT_SMOKE_TIMELINE_MODE ? authorization.requestId : LEGACY_REQUEST_ID
 const CONSUMPTION_PATH = CURRENT_SMOKE_TIMELINE_MODE
   ? projectPath(path.join(path.dirname(resolve(AUTHORIZATION_PATH)), "analysis-implementation-consumption.json"))
   : LEGACY_CONSUMPTION_PATH

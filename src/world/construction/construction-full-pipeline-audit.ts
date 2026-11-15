@@ -1,4 +1,5 @@
-import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
+import { fingerprintMapPlacements as fingerprintPlacements } from "@/world/map-state/map-placement-fingerprint"
+
 
 import type {
   ConstructionFullPipelineAudit,
@@ -146,22 +147,6 @@ function buildStablePipelineFingerprint(input: {
     input.rejectedDiffIds.slice().sort().join("+"),
     input.input.memoryPersistenceMockResult.mockPersistenceId,
     input.input.painterRefreshBridgeResult.bridgeId,
-    fingerprintPlacements(input.input.runtimeCycleResult.nextHomeMapState),
+    fingerprintPlacements(input.input.runtimeCycleResult.nextHomeMapState.placements),
   ].join("::")
-}
-
-function fingerprintPlacements(homeMapState: HomeMapState): string {
-  return homeMapState.placements
-    .map((placement) =>
-      [
-        placement.id,
-        placement.layer,
-        String(placement.x),
-        String(placement.y),
-        String(placement.alpha),
-        placement.tags.slice().sort().join("+"),
-      ].join(":")
-    )
-    .sort()
-    .join("|")
 }

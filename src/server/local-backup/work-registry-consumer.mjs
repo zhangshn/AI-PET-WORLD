@@ -13,12 +13,13 @@ export function createRegistryWorkConsumer({readHead,physical,read,terminalEvent
     need(Number.isSafeInteger(limit)&&limit>0&&limit<=MAX_BATCH,'work_batch_limit')
     need(Array.isArray(replayRevisions)&&replayRevisions.length<=limit&&new Set(replayRevisions).size===replayRevisions.length
       &&replayRevisions.every(n=>Number.isSafeInteger(n)&&n>0),'work_replay_revision_invalid')
-    const began=performance.now(),eventIds=new Set(),replayed=[],verified=new Map(),errors={}
-    let database,current,state,historyCursor,liveCursor,liveStartRevision,latestConfirmedRevision,processed=0,unsupported=0
+    const began=performance.now(),eventIds=new Set(),replayed=[],verified=new Map(),errors={},operationErrors=[],failureCauses=new Map()
+    let database,current,state,historyCursor,liveCursor,liveStartRevision,latestConfirmedRevision,outcome,processed=0,unsupported=0
     const deadline=()=>need(performance.now()-began<=8000,'work_observation_time_limit',409)
     const receipt=(lane,revision,error)=>{
       const result=failure(SOURCE,error)
       errors[lane]={revision,reasonCode:result.reasonCode}
+      failureCauses.set(lane,error)
     }
     try {
       current=await readHead()
@@ -26,10 +27,10 @@ export function createRegistryWorkConsumer({readHead,physical,read,terminalEvent
       const head=current.registry,published=head.registryRevision
       need(Number.isSafeInteger(published)&&published>0,'work_registry_head_invalid',409)
       need(replayRevisions.every(n=>n<=published),'work_replay_revision_invalid')
-      const eventsPath=physical(REG+'/events.jsonl'),before=fs.lstatSync(eventsPath)
+      const eventsPath=physical(REG+'/events.jsonl'),before=fs.lstatSync(eventsPath,{bigint:true})
       need(before.isFile()&&!before.isSymbolicLink()&&before.size<=1024*1024,'work_registry_events_limit',409)
-      const eventBytes=fs.readFileSync(eventsPath),after=fs.lstatSync(eventsPath)
-      need(eventBytes.length<=1024*1024&&before.ino===after.ino&&before.size===after.size&&before.mtimeMs===after.mtimeMs,'work_registry_events_changed',409)
+      const eventBytes=fs.readFileSync(eventsPath),after=fs.lstatSync(eventsPath,{bigint:true})
+      need(eventBytes.length<=1024*1024&&before.ino===after.ino&&before.dev===after.dev&&before.size===after.size&&before.mtimeNs===after.mtimeNs,'work_registry_events_changed',409)
       const events=new Map()
       const lines=eventBytes.toString('utf8').split('\n').filter(Boolean)
       need(lines.length<=4096,'work_registry_events_limit',409)
@@ -132,11 +133,25 @@ export function createRegistryWorkConsumer({readHead,physical,read,terminalEvent
       saveState(SOURCE,{status:blocking?'stale':'partial',reasonCode,cursor:historyCursor,liveCursor,liveStartRevision,latestConfirmedRevision,coverage,
         consumerImplementationVersion:'training-interface-038-v1',
         ...(consumed.size?{lastSuccessAtUtc:new Date().toISOString()}:{})})
-      return {recorded:!blocking,eventIds:[...eventIds],processed,coverage,...(blocking?{replayed:false,reasonCode}:{})}
+      outcome={recorded:!blocking,eventIds:[...eventIds],processed,coverage,...(blocking?{replayed:false,reasonCode}:{})}
     }catch(error) {
-      // Event IDs survive even a failed checkpoint; immutable ledger IDs make
-      // recovery safe when a process stops between append and watermark save.
-      return {...failure(SOURCE,error),eventIds:[...eventIds]}
-    }finally{database?.close()}
+      operationErrors.push(...(error instanceof AggregateError?error.errors:[error]))
+    }finally{
+      try{database?.close()}catch(error){operationErrors.push(error)}
+    }
+    if(operationErrors.length) {
+      // An already reported lane failure remains primary when only closing
+      // fails afterwards. Repeat its diagnostic, never its committed events.
+      if(outcome?.recorded===false) {
+        const lane=['head','live','replay'].find(name=>errors[name])
+        operationErrors.unshift(failureCauses.get(lane))
+      }
+      // Save each original failure. Report the primary last so a secondary
+      // close error cannot replace its reason in the persisted source status.
+      for(let i=operationErrors.length-1;i>=0;i--)outcome=failure(SOURCE,operationErrors[i])
+      // Events already committed remain discoverable and idempotent on retry.
+      return {...outcome,eventIds:[...eventIds]}
+    }
+    return outcome
   }
 }

@@ -262,14 +262,10 @@ async function writeLedgerHead(events: readonly AiConsoleControlEvent[]) {
   const head: ControlEventLedgerHead = { ...unsignedHead, headRecordSha256: sha256(JSON.stringify(unsignedHead)) }
   const headPath = getLogicalPath(controlEventLedgerHeadLogicalPath)
   const temporaryPath = `${headPath}.${randomUUID()}.tmp`
-  try {
-    await writeFile(temporaryPath, `${JSON.stringify(head, null, 2)}\n`, { encoding: "utf8", flag: "wx" })
-    await rename(temporaryPath, headPath)
-  } finally {
-    await unlink(temporaryPath).catch((error: unknown) => {
-      if (!isNodeError(error, "ENOENT")) throw error
-    })
-  }
+  // Rename consumes our temporary path on success. On failure retain the
+  // bytes, including an existing path we never acquired when wx rejects.
+  await writeFile(temporaryPath, `${JSON.stringify(head, null, 2)}\n`, { encoding: "utf8", flag: "wx" })
+  await rename(temporaryPath, headPath)
 }
 
 async function withLedgerLock<T>(operation: () => Promise<T>): Promise<T> {
@@ -277,10 +273,22 @@ async function withLedgerLock<T>(operation: () => Promise<T>): Promise<T> {
   await mkdir(runtimeDirectory, { recursive: true })
   const lockPath = getLogicalPath(controlEventLedgerLockLogicalPath)
   const release = await acquireLedgerLock(lockPath)
+  let operationFailed = false
+  let operationError: unknown
   try {
     return await operation()
+  } catch (error) {
+    operationFailed = true
+    operationError = error
+    throw error
   } finally {
-    await release()
+    try {
+      await release()
+    } catch (releaseError) {
+      if (!operationFailed) throw releaseError
+      const errors = [operationError, releaseError]
+      throw new AggregateError(errors, `control_ledger_operation_and_release_failed: ${errors.map(error => error instanceof Error ? error.message : String(error)).join("; ")}`, { cause: operationError })
+    }
   }
 }
 
@@ -297,10 +305,10 @@ async function acquireLedgerLock(lockPath: string): Promise<() => Promise<void>>
     }
     try {
       await handle.writeFile(JSON.stringify({ writerIdentity: ledgerWriterIdentity, processId: process.pid, acquiredAtUtc: new Date().toISOString() }), "utf8")
-      const identity = await handle.stat()
+      const identity = await handle.stat({ bigint: true })
       return async () => {
         await handle.close()
-        const current = await lstat(lockPath)
+        const current = await lstat(lockPath, { bigint: true })
         if (!current.isFile() || current.isSymbolicLink() || current.ino !== identity.ino || current.dev !== identity.dev) {
           throw new Error("ai_console_control_event_ledger_lock_identity_changed")
         }

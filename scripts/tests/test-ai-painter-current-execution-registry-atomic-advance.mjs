@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { appendFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
@@ -1413,6 +1414,145 @@ test("publication024 ordinary live active recovery retains existing live-byte ve
   assert.equal(result.publicationRecovered, undefined)
   assert.deepEqual(result.registry.activeExecution, activeExecution)
 }))
+
+test("registry public read: keeps the query error code when connection close also fails", async (context) => {
+  await withFixture(async ({ root }) => {
+    const before = await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH)
+    const primary = Object.freeze(new Error("fixture_readonly_original_failure")), cleanup = new Error("fixture_readonly_close_failure")
+    const originalClose = DatabaseSync.prototype.close
+    let closes = 0
+    context.mock.method(DatabaseSync.prototype, "prepare", () => { throw primary })
+    context.mock.method(DatabaseSync.prototype, "close", function () {
+      closes++; originalClose.call(this); throw cleanup
+    })
+    try {
+      const result = await readCurrentExecutionRegistry(root)
+      assert.equal(result.ok, false)
+      assert.equal(result.errorCode, primary.message)
+      assert.equal(result.registry, null)
+      assert.equal(closes, 1)
+    } finally { context.mock.restoreAll() }
+    assert.equal(await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH), before)
+    const reopened = await readCurrentExecutionRegistry(root)
+    assert.equal(reopened.ok, true)
+    assert.equal(reopened.registrySha256, before)
+  })
+})
+
+for (const blockAbort of [false, true]) test(`registry prepare cleanup: retains original and real cleanup failures, blockAbort=${blockAbort}`, async () => {
+  await withFixture(async ({ root, advance }) => {
+    const before = await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH)
+    const primary = Object.freeze(new Error("fixture_outer_prepare_failed"))
+    let transactionId, foreignClaimBytes
+    await assert.rejects(prepareCurrentExecutionRegistryAdvance({ ...advance,
+      _testHooks: hooks({ observe(point, detail) {
+        if (point !== "before_prepare_database_begin") return
+        transactionId = detail.transactionId
+        const claimPath = absolute(root, writerClaimPath()), claim = JSON.parse(readFileSync(claimPath, "utf8"))
+        foreignClaimBytes = JSON.stringify({ ...claim, transactionId: `${transactionId}-foreign` })
+        writeFileSync(claimPath, foreignClaimBytes)
+        if (blockAbort) mkdirSync(absolute(root, `${transactionRootFor(transactionId)}/transaction.aborted.json`))
+        throw primary
+      } }),
+    }), error => {
+      assert(error instanceof AggregateError)
+      assert.equal(error.cause, primary)
+      assert.equal(error.message, primary.message)
+      assert.equal(error.errors[0], primary)
+      assert.equal(error.errors.length, blockAbort ? 3 : 2)
+      if (blockAbort) assert.equal(error.errors[1].code, "EISDIR")
+      assert.equal(error.errors.at(-1).message, "registry_writer_claim_transaction_mismatch")
+      return true
+    })
+    assert.equal(await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH), before)
+    assert.equal(await readFile(absolute(root, writerClaimPath()), "utf8"), foreignClaimBytes)
+    assert.equal(sqliteTransactionStatus(root, transactionId), undefined)
+    assert.equal(await exists(root, `${transactionRootFor(transactionId)}/transaction.pending.json`), true)
+    if (!blockAbort) {
+      const aborted = await readJson(root, `${transactionRootFor(transactionId)}/transaction.aborted.json`)
+      assert.equal(aborted.status, "aborted_before_durable_prepare")
+      assert.equal(aborted.errorCode, primary.message)
+    }
+  })
+})
+
+for (const stage of ["prepare", "finalize"]) {
+  for (const phase of ["query", "commit"]) {
+    test(`registry ${stage}: retains ${phase}, rollback and close failures and recovers without false publication`, async (context) => {
+      await withFixture(async ({ root, advance }) => {
+        const before = await readCurrentExecutionRegistry(root)
+        const prepared = stage === "finalize"
+          ? await prepareCurrentExecutionRegistryAdvance({ ...advance, _testHooks: hooks() }) : null
+        let transactionId = prepared?.transactionId ?? null
+        let armed = false, closes = 0, rollbacks = 0
+        const targets = new WeakSet()
+        const primary = Object.freeze(new Error(`fixture_registry_${phase}_failed`))
+        const rollback = new Error("fixture registry rollback failed"), cleanup = new Error("fixture registry close failed")
+        const originalExec = DatabaseSync.prototype.exec, originalPrepare = DatabaseSync.prototype.prepare
+        const originalClose = DatabaseSync.prototype.close
+        const faultHooks = hooks({ observe(point, detail) {
+          if (detail?.transactionId) transactionId = detail.transactionId
+          if (point === (stage === "prepare" ? "before_prepare_database_begin" : "after_registry_event_committed")) armed = true
+        } })
+        context.mock.method(DatabaseSync.prototype, "exec", function (sql) {
+          if (armed && sql === "BEGIN IMMEDIATE") { targets.add(this); armed = false }
+          if (targets.has(this)) {
+            if (sql === "ROLLBACK") { rollbacks++; throw rollback }
+            if (phase === "commit" && sql === "COMMIT") throw primary
+          }
+          return originalExec.call(this, sql)
+        })
+        context.mock.method(DatabaseSync.prototype, "prepare", function (sql) {
+          if (targets.has(this) && phase === "query") throw primary
+          return originalPrepare.call(this, sql)
+        })
+        context.mock.method(DatabaseSync.prototype, "close", function () {
+          originalClose.call(this)
+          if (targets.has(this)) { closes++; throw cleanup }
+        })
+        try {
+          await assert.rejects(stage === "prepare"
+            ? prepareCurrentExecutionRegistryAdvance({ ...advance, _testHooks: faultHooks })
+            : finalizePreparedCurrentExecutionRegistryAdvance({ projectRoot: root, transactionId, _testHooks: faultHooks }),
+          error => error instanceof AggregateError && error.cause === primary &&
+            error.errors.length === 3 && error.errors[0] === primary && error.errors[1] === rollback && error.errors[2] === cleanup)
+          assert.equal(closes, 1)
+          assert.equal(rollbacks, 1)
+        } finally { context.mock.restoreAll() }
+        const after = await readCurrentExecutionRegistry(root)
+        assert.equal(await sha256File(root, CURRENT_EXECUTION_REGISTRY_PATH), before.registrySha256)
+        if (stage === "prepare") {
+          assert.equal(after.ok, true)
+          assert.equal(after.registrySha256, before.registrySha256)
+        } else {
+          // An event published ahead of current must remain unavailable until recovery.
+          assert.equal(after.ok, false)
+          assert.equal(after.errorCode, "registry_current_behind_published_event")
+          assert.equal(after.registry, null)
+        }
+        assert.equal(sqliteTransactionStatus(root, transactionId), stage === "prepare" ? undefined : "prepared")
+        if (stage === "prepare") {
+          assert.equal(await exists(root, writerClaimPath()), false)
+          const aborted = await readJson(root, `${transactionRootFor(transactionId)}/transaction.aborted.json`)
+          assert.equal(aborted.status, "aborted_before_durable_prepare")
+          assert.equal(aborted.errorCode, primary.message)
+          const retry = await advanceCurrentExecutionRegistry({ ...advance, _testHooks: hooks() })
+          assert.equal(retry.ok, true)
+          assert.equal(retry.registry.registryRevision, 2)
+        } else {
+          assert.equal(await exists(root, writerClaimPath()), true)
+          assert.equal(await exists(root, `${transactionRootFor(transactionId)}/transaction.pending.json`), true)
+          const recovered = await recoverPreparedCurrentExecutionRegistryAdvance({
+            projectRoot: root, transactionId, _testHooks: hooks({ probe: "dead" }),
+          })
+          assert.equal(recovered.ok, true)
+          assert.equal(recovered.registry.registryRevision, 2)
+          assert.equal(sqliteTransactionStatus(root, transactionId), "committed")
+        }
+      })
+    })
+  }
+}
 
 async function withFixture(callback) {
   const root = await mkdtemp(path.join(os.tmpdir(), "ai-painter-registry-atomic-"))

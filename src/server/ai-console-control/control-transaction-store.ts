@@ -64,8 +64,11 @@ export async function ensureAiConsoleControlTransaction(
 
   const database = openWritableDatabase()
   let record: AiConsoleControlTransaction
+  const errors: unknown[] = []
+  let transactionActive = false
   try {
     database.exec("BEGIN IMMEDIATE")
+    transactionActive = true
     const metadata = readAndVerifyMetadata(database)
     const existingRow = database.prepare(transactionSelectByIdSql).get(event.transactionId)
     if (existingRow) {
@@ -98,15 +101,17 @@ export async function ensureAiConsoleControlTransaction(
       updateMetadata(database, metadata, record.transactionSequence, record.committedAtUtc)
     }
     database.exec("COMMIT")
+    transactionActive = false
   } catch (error) {
-    try {
-      database.exec("ROLLBACK")
-    } catch {
-      // The transaction may already be closed by SQLite after a fatal statement error.
+    errors.push(error)
+    if (transactionActive) {
+      try { database.exec("ROLLBACK") } catch (rollbackError) { errors.push(rollbackError) }
     }
     throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'ensure_ai_console_control_transaction_transaction_and_cleanup_failed', { cause: errors[0] })
   }
 
   const verified = await readAiConsoleControlTransactionStore()
@@ -123,6 +128,8 @@ export async function readAiConsoleControlTransactionStore(): Promise<AiConsoleC
     return { status: "not_connected", reasonCode: "ai_console_control_transaction_store_not_initialized" }
   }
   let database: DatabaseSync | null = null
+  let readFailed = false
+  let readError: unknown
   try {
     database = new DatabaseSync(getStorePath(), { readOnly: true })
     database.exec("PRAGMA query_only = ON; PRAGMA foreign_keys = ON")
@@ -143,12 +150,17 @@ export async function readAiConsoleControlTransactionStore(): Promise<AiConsoleC
     if (metadata.registryRevision !== records.length) throw new Error("ai_console_control_transaction_revision_mismatch")
     return { status: "connected", records, metadata }
   } catch (error) {
+    readFailed = true
+    readError = error
     return {
       status: "unknown_or_stale",
       reasonCode: error instanceof Error ? error.message : "ai_console_control_transaction_store_read_failed",
     }
   } finally {
-    database?.close()
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], 'read_ai_console_control_transaction_store_read_and_close_failed', { cause: readError })
+      throw closeError
+    }
   }
 }
 
@@ -195,7 +207,9 @@ function openWritableDatabase(): DatabaseSync {
     database.exec("PRAGMA user_version = 1")
     return database
   } catch (error) {
-    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    try { database.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'control_transaction_store_initialization_and_close_failed', { cause: error })
+    }
     throw error
   }
 }

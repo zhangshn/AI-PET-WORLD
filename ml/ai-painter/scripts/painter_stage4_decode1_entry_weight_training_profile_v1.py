@@ -10,7 +10,6 @@ import importlib
 import numpy as np
 import torch
 import painter_stage4_ecology_terrain_detail_weight_training_profile_v1 as inherited
-import painter_stage4_object_support_structure_training_profile_cpu_v1 as cpu_reference
 from ai_painter.complete_world.native_rgb_object_support_structure_device_v1 import (
     train_object_support_structure_candidate_objective)
 from ai_painter.complete_world.object_decode1_entry_joint_priority_device_v1 import (
@@ -288,7 +287,7 @@ def perform_pair(model, critic, sample, order, generator_optimizer, critic_optim
 @contextmanager
 def _probe_state(model, critic, device):
     networks = (model, critic)
-    state = tuple(cpu_reference._network_snapshot(n) for n in networks)
+    state = tuple(inherited.network_snapshot(n) for n in networks)
     modes = [(m, m.training) for n in networks for m in n.modules()]
     flags = [(p, p.requires_grad) for n in networks for p in n.parameters()]
     rng, py, numpy = torch.get_rng_state().clone(), random.getstate(), np.random.get_state()
@@ -306,7 +305,7 @@ def _probe_state(model, critic, device):
             except BaseException as error: errors.append(error)
         for m, value in modes: attempt(lambda m=m, value=value: setattr(m, "training", value))
         for p, value in flags: attempt(lambda p=p, value=value: p.requires_grad_(value))
-        attempt(lambda: require(state == tuple(cpu_reference._network_snapshot(n) for n in networks), "probe G/D state/grad/identity changed"))
+        attempt(lambda: require(state == tuple(inherited.network_snapshot(n) for n in networks), "probe G/D state/grad/identity changed"))
         def check_rng():
             now = np.random.get_state()
             require(torch.equal(rng, torch.get_rng_state()) and py == random.getstate() and numpy[0] == now[0]

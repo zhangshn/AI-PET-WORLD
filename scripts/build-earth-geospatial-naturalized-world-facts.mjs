@@ -542,7 +542,7 @@ function buildSourceEvidence({
   }));
 }
 
-function reconstructNaturalLandCover(values, removalMask, width, height) {
+function reconstructNaturalLandCover(values, removalMask, width) {
   const output = new Uint8Array(values);
   const distance = new Int32Array(values.length);
   distance.fill(-1);

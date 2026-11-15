@@ -270,7 +270,15 @@ export function isAiConsoleCapabilityLifecycleStoreInitialized(): boolean {
 
 export function initializeAiConsoleCapabilityLifecycleStore(): AiConsoleCapabilityLifecycleMetadata {
   const database = openWritableStore()
-  try { return readAndVerifyMetadata(database) } finally { database.close() }
+  const errors: unknown[] = []
+  try { return readAndVerifyMetadata(database) } catch (error) {
+    errors.push(error)
+    throw error
+  } finally {
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'initialize_ai_console_capability_lifecycle_store_operation_and_cleanup_failed', { cause: errors[0] })
+  }
 }
 
 export function executeAiConsoleCapabilityCommand(input: AiConsoleCapabilityCommandInput): AiConsoleCapabilityCommandResult {
@@ -280,6 +288,8 @@ export function executeAiConsoleCapabilityCommand(input: AiConsoleCapabilityComm
   const commandId = sha256Text(`${input.actorIdentity}\n${input.commandType}\n${input.idempotencyKeySha256}`)
   const database = openWritableStore()
 
+  const errors: unknown[] = []
+  let transactionActive = false
   try {
     const existingReceiptRow = database.prepare("SELECT record_json FROM command_receipts WHERE command_id = ?").get(commandId)
     if (existingReceiptRow) {
@@ -516,25 +526,30 @@ export function executeAiConsoleCapabilityCommand(input: AiConsoleCapabilityComm
     const receipt: AiConsoleCapabilityCommandReceipt = { ...unsignedReceipt, commandReceiptSha256: sha256Record(unsignedReceipt) }
 
     database.exec("BEGIN IMMEDIATE")
-    try {
-      if (event && candidate) {
+    transactionActive = true
+    if (event && candidate) {
         if (input.commandType === "register_capability_candidate") insertCandidate(database, candidate, candidateCreationBlob as Uint8Array)
         else updateCandidate(database, candidate)
         if (qualification) insertQualification(database, qualification)
         if (release) insertRelease(database, release)
         insertEvent(database, event)
       }
-      insertReceipt(database, receipt)
-      updateMetadata(database, metadata, receipt, event, Boolean(input.commandType === "register_capability_candidate" && event), Boolean(qualification && event), Boolean(release && event))
-      database.exec("COMMIT")
-    } catch (error) {
-      database.exec("ROLLBACK")
-      throw error
-    }
+    insertReceipt(database, receipt)
+    updateMetadata(database, metadata, receipt, event, Boolean(input.commandType === "register_capability_candidate" && event), Boolean(qualification && event), Boolean(release && event))
+    database.exec("COMMIT")
+    transactionActive = false
 
     return { receipt, candidate, qualification, release, event, replayed: false, httpStatus: succeeded ? 201 : 409 }
+  } catch (error) {
+    errors.push(error)
+    if (transactionActive) {
+      try { database.exec("ROLLBACK") } catch (rollbackError) { errors.push(rollbackError) }
+    }
+    throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'execute_ai_console_capability_command_operation_and_cleanup_failed', { cause: errors[0] })
   }
 }
 
@@ -542,6 +557,8 @@ export function readAiConsoleCapabilityLifecycleStore(): AiConsoleCapabilityLife
   const storePath = getStorePath()
   if (!existsSync(storePath)) return { status: "not_connected", reasonCode: "ai_console_capability_lifecycle_store_not_initialized", evidenceReferences: [capabilityLifecycleStoreLogicalPath] }
   let database: DatabaseSync | null = null
+  let readFailed = false
+  let readError: unknown
   try {
     database = new DatabaseSync(storePath, { open: true, readOnly: true })
     verifyDatabase(database)
@@ -567,8 +584,15 @@ export function readAiConsoleCapabilityLifecycleStore(): AiConsoleCapabilityLife
       evidenceReferences: [capabilityLifecycleStoreLogicalPath, "data/ai-console/schemas/ai-console-capability-lifecycle-v1.schema.json"],
     }
   } catch (error) {
+    readFailed = true
+    readError = error
     return { status: "unknown_or_stale", reasonCode: error instanceof Error ? error.message : "ai_console_capability_lifecycle_store_read_failed", evidenceReferences: [capabilityLifecycleStoreLogicalPath] }
-  } finally { database?.close() }
+  } finally {
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], 'read_ai_console_capability_lifecycle_store_read_and_close_failed', { cause: readError })
+      throw closeError
+    }
+  }
 }
 
 function createCandidateRecord(input: {
@@ -768,7 +792,9 @@ function openWritableStore(): DatabaseSync {
     if (Number(row.count) === 0) insertInitialMetadata(database)
     return database
   } catch (error) {
-    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    try { database.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'capability_lifecycle_store_initialization_and_close_failed', { cause: error })
+    }
     throw error
   }
 }

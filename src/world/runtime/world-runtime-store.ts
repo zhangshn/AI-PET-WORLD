@@ -1,3 +1,4 @@
+import { finishWorldRuntimeWrite } from "./world-runtime-write-cleanup"
 import {runtimeWorkingDirectory} from '../../../scripts/lib/runtime-working-directory.mjs'
 /**
  * Local runtime-only file store for the live world runtime.
@@ -215,121 +216,122 @@ async function writeLocalFileWorldRuntimeSaveRecord(input: InternalWriteInput, n
   const lockToken = randomUUID()
   let recordReplaced = false
 
-  try {
-    if (natural) decodeNaturalWorldRuntimeRecord(Buffer.from(`${JSON.stringify(input.record, null, 2)}\n`, "utf8"))
-    else if (!isWorldRuntimeSaveRecord(input.record)) throw new Error("runtime record schema invalid")
-    await mkdir(path.dirname(filePath), { recursive: true })
+  const persist = async (): Promise<NaturalWorldRuntimeWriteResult> => {
     try {
-      lock = await open(lockPath, "wx")
-      await lock.writeFile(`${JSON.stringify({
-        schemaVersion: "world-runtime-write-lock-v1",
-        pid: process.pid,
-        host: hostname(),
-        ownerId: input.record.ownerId,
+      if (natural) decodeNaturalWorldRuntimeRecord(Buffer.from(`${JSON.stringify(input.record, null, 2)}\n`, "utf8"))
+      else if (!isWorldRuntimeSaveRecord(input.record)) throw new Error("runtime record schema invalid")
+      await mkdir(path.dirname(filePath), { recursive: true })
+      try {
+        lock = await open(lockPath, "wx")
+        await lock.writeFile(`${JSON.stringify({
+          schemaVersion: "world-runtime-write-lock-v1",
+          pid: process.pid,
+          host: hostname(),
+          ownerId: input.record.ownerId,
+          worldId: input.record.worldId,
+          lockToken,
+          createdAtUtc: new Date().toISOString(),
+        })}\n`, "utf8")
+        await lock.sync()
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException)?.code === "EEXIST") {
+          return {
+            ok: false,
+            code: "conflict",
+            path: filePath,
+            message: "Another runtime writer currently owns this world.",
+            warnings: ["runtime_write_lock_exists"],
+            tags: ["world_runtime_store_write", "failed", "runtime_save_write_conflict"],
+          }
+        }
+        throw error
+      }
+      const transactionPath = `${filePath}.transaction.json`
+      const transaction = natural ? null : await readTransactionJournal(transactionPath)
+      if (transaction?.state === "prepared") throw new Error("runtime_transaction_incomplete")
+      const naturalCurrent = natural ? await readNaturalTransactionRecord(filePath, input.record) : null
+      const existing = natural ? naturalCurrent?.record ?? null : await readExistingRuntimeRecord(filePath)
+      if (natural) {
+        const conflict = naturalWorldCasConflict(naturalCurrent?.record ?? null, input.record as NaturalWorldRuntimeSaveRecord,
+          input as NaturalWorldRuntimeWriteInput, naturalCurrent?.fileSha256 ?? null)
+        if (conflict) return { ok: false, code: "conflict", path: filePath, message: conflict,
+          warnings: [conflict], tags: ["world_runtime_store_write", "failed", "natural_world_cas_rejected"] }
+      }
+      if (input.expectedTick !== undefined) {
+        if ((existing?.tick ?? -1) !== input.expectedTick) {
+          return {
+            ok: false,
+            code: "conflict",
+            path: filePath,
+            message: "Runtime tick compare-and-set rejected the stale writer.",
+            warnings: [`expected_tick:${input.expectedTick}`, `actual_tick:${existing?.tick ?? -1}`],
+            tags: ["world_runtime_store_write", "failed", "runtime_save_write_conflict", "runtime_tick_cas_rejected"],
+          }
+        }
+      }
+      await writeTransactionJournal(transactionPath, {
+        ...(natural ? { recordKind: "natural_world", stateVersion: (input.record as NaturalWorldRuntimeSaveRecord).stateVersion,
+          recordContentSha256: (input.record as NaturalWorldRuntimeSaveRecord).recordContentSha256 } : {}),
+        schemaVersion: "world-runtime-transaction-v1",
+        state: "prepared",
+        recordPath: filePath,
+        latestPath: natural || input.filePath ? null : getDefaultLocalFileWorldRuntimeSavePath(),
         worldId: input.record.worldId,
-        lockToken,
+        tick: input.record.tick,
         createdAtUtc: new Date().toISOString(),
-      })}\n`, "utf8")
-      await lock.sync()
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException)?.code === "EEXIST") {
-        return {
-          ok: false,
-          code: "conflict",
-          path: filePath,
-          message: "Another runtime writer currently owns this world.",
-          warnings: ["runtime_write_lock_exists"],
-          tags: ["world_runtime_store_write", "failed", "runtime_save_write_conflict"],
-        }
-      }
-      throw error
-    }
-    const transactionPath = `${filePath}.transaction.json`
-    const transaction = natural ? null : await readTransactionJournal(transactionPath)
-    if (transaction?.state === "prepared") throw new Error("runtime_transaction_incomplete")
-    const naturalCurrent = natural ? await readNaturalTransactionRecord(filePath, input.record) : null
-    const existing = natural ? naturalCurrent?.record ?? null : await readExistingRuntimeRecord(filePath)
-    if (natural) {
-      const conflict = naturalWorldCasConflict(naturalCurrent?.record ?? null, input.record as NaturalWorldRuntimeSaveRecord,
-        input as NaturalWorldRuntimeWriteInput, naturalCurrent?.fileSha256 ?? null)
-      if (conflict) return { ok: false, code: "conflict", path: filePath, message: conflict,
-        warnings: [conflict], tags: ["world_runtime_store_write", "failed", "natural_world_cas_rejected"] }
-    }
-    if (input.expectedTick !== undefined) {
-      if ((existing?.tick ?? -1) !== input.expectedTick) {
-        return {
-          ok: false,
-          code: "conflict",
-          path: filePath,
-          message: "Runtime tick compare-and-set rejected the stale writer.",
-          warnings: [`expected_tick:${input.expectedTick}`, `actual_tick:${existing?.tick ?? -1}`],
-          tags: ["world_runtime_store_write", "failed", "runtime_save_write_conflict", "runtime_tick_cas_rejected"],
-        }
-      }
-    }
-    await writeTransactionJournal(transactionPath, {
-      ...(natural ? { recordKind: "natural_world", stateVersion: (input.record as NaturalWorldRuntimeSaveRecord).stateVersion,
-        recordContentSha256: (input.record as NaturalWorldRuntimeSaveRecord).recordContentSha256 } : {}),
-      schemaVersion: "world-runtime-transaction-v1",
-      state: "prepared",
-      recordPath: filePath,
-      latestPath: natural || input.filePath ? null : getDefaultLocalFileWorldRuntimeSavePath(),
-      worldId: input.record.worldId,
-      tick: input.record.tick,
-      createdAtUtc: new Date().toISOString(),
-    })
-    await writeJsonAtomic(filePath, input.record)
-    recordReplaced = true
-    if (!natural && !input.filePath) {
-      await writeLatestWorldRuntimeIndex({
-        record: input.record as WorldRuntimeSaveRecord,
-        filePath,
       })
-    }
-    await writeTransactionJournal(transactionPath, {
-      ...(natural ? { recordKind: "natural_world", stateVersion: (input.record as NaturalWorldRuntimeSaveRecord).stateVersion,
-        recordContentSha256: (input.record as NaturalWorldRuntimeSaveRecord).recordContentSha256 } : {}),
-      schemaVersion: "world-runtime-transaction-v1",
-      state: "committed",
-      recordPath: filePath,
-      latestPath: natural || input.filePath ? null : getDefaultLocalFileWorldRuntimeSavePath(),
-      worldId: input.record.worldId,
-      tick: input.record.tick,
-      committedAtUtc: new Date().toISOString(),
-    })
-    await rm(transactionPath, { force: true })
+      await writeJsonAtomic(filePath, input.record)
+      recordReplaced = true
+      if (!natural && !input.filePath) {
+        await writeLatestWorldRuntimeIndex({
+          record: input.record as WorldRuntimeSaveRecord,
+          filePath,
+        })
+      }
+      await writeTransactionJournal(transactionPath, {
+        ...(natural ? { recordKind: "natural_world", stateVersion: (input.record as NaturalWorldRuntimeSaveRecord).stateVersion,
+          recordContentSha256: (input.record as NaturalWorldRuntimeSaveRecord).recordContentSha256 } : {}),
+        schemaVersion: "world-runtime-transaction-v1",
+        state: "committed",
+        recordPath: filePath,
+        latestPath: natural || input.filePath ? null : getDefaultLocalFileWorldRuntimeSavePath(),
+        worldId: input.record.worldId,
+        tick: input.record.tick,
+        committedAtUtc: new Date().toISOString(),
+      })
+      await rm(transactionPath, { force: true })
 
-    return {
-      ...(natural ? naturalWriteReceipt(input.record as NaturalWorldRuntimeSaveRecord) : {}),
-      ok: true,
-      path: filePath,
-      message: "Runtime save record written.",
-      warnings: [],
-      tags: ["world_runtime_store_write", "ok"],
+      return {
+        ...(natural ? naturalWriteReceipt(input.record as NaturalWorldRuntimeSaveRecord) : {}),
+        ok: true,
+        path: filePath,
+        message: "Runtime save record written.",
+        warnings: [],
+        tags: ["world_runtime_store_write", "ok"],
+      }
+    } catch (error) {
+      return {
+        ok: false,
+        code: "persistence_error",
+        path: filePath,
+        message: recordReplaced
+          ? "Runtime save record was replaced; transaction finalization failed."
+          : "Runtime save record was not overwritten.",
+        warnings: [error instanceof Error ? error.message : String(error)],
+        tags: ["world_runtime_store_write", "failed", recordReplaced ? "runtime_save_record_replaced" : "old_save_preserved"],
+      }
     }
-  } catch (error) {
-    return {
-      ok: false,
-      code: "persistence_error",
-      path: filePath,
-      message: recordReplaced
-        ? "Runtime save record was replaced; transaction finalization failed."
-        : "Runtime save record was not overwritten.",
-      warnings: [error instanceof Error ? error.message : String(error)],
-      tags: ["world_runtime_store_write", "failed", recordReplaced ? "runtime_save_record_replaced" : "old_save_preserved"],
-    }
-  } finally {
-    if (lock) await lock.close().catch(() => {})
-    if (lock) await releaseOwnedLock(lockPath, lockToken)
   }
+  return finishWorldRuntimeWrite(await persist(), lock, () => releaseOwnedLock(lockPath, lockToken), recordReplaced)
 }
 
 async function releaseOwnedLock(lockPath: string, lockToken: string): Promise<void> {
   try {
     const lock = JSON.parse(await readFile(lockPath, "utf8")) as { lockToken?: unknown }
-    if (lock.lockToken === lockToken) await rm(lockPath, { force: true })
+    if (lock.lockToken !== lockToken) throw new Error("runtime_write_lock_identity_changed")
+    await rm(lockPath, { force: true })
   } catch (error) {
-    if (!(isNodeFileError(error) && error.code === "ENOENT")) return
+    if (!(isNodeFileError(error) && error.code === "ENOENT")) throw error
   }
 }
 
@@ -361,11 +363,18 @@ async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> 
   const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`
   await mkdir(path.dirname(filePath), { recursive: true })
   const handle = await open(tempPath, "wx")
+  const errors: unknown[] = []
   try {
     await handle.writeFile(`${JSON.stringify(value, null, 2)}\n`, "utf8")
     await handle.sync()
+  } catch (error) {
+    errors.push(error)
   } finally {
-    await handle.close().catch(() => {})
+    try { await handle.close() } catch (error) { errors.push(error) }
+  }
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1) {
+    throw new AggregateError(errors, `Runtime temporary write and close failed: ${errors.map(error => error instanceof Error ? error.message : String(error)).join("; ")}`, { cause: errors[0] })
   }
   await rename(tempPath, filePath)
 }

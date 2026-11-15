@@ -24,6 +24,34 @@ import {directoryBytes as historicalDirectoryBytes} from '../lib/ai-painter-mvp2
 import {write as writeCandidateAccounting} from '../lib/ai-painter-decode1-entry-weight-output-accounting-v1.mjs';
 import {decodeTrainingInterfaceJson,parseTrainingInterfacePolicy} from '../../src/server/ai-console/training-preview-history-v1.mjs';
 
+for(const change of ['updated','missing','invalid'])test(`read-only role query rechecks ${change} external input`,t=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'decode1-role-freshness-'));
+ t.after(()=>{
+  assert.equal(path.dirname(fs.realpathSync(root)),fs.realpathSync(os.tmpdir()));
+  assert.match(path.basename(root),/^decode1-role-freshness-/u);
+  fs.rmSync(root,{recursive:true});
+ });
+ const authPath='ml/ai-painter/scripts/decode1_entry_weight_quality_auth_v1.py';
+ const target=path.join(root,authPath),input=path.join(path.dirname(target),'roles.json');
+ fs.mkdirSync(path.dirname(target),{recursive:true});
+ fs.writeFileSync(target,'import json\nfrom pathlib import Path\ndef required_program_roles(version):\n    return json.loads(Path(__file__).with_name("roles.json").read_text())\n');
+ fs.writeFileSync(input,JSON.stringify({worker:'first.py'}));
+ const original=fs.readFileSync(target),query=()=>requiredProgramRoles({root,
+  python:path.resolve('ml/ai-painter/.venv/Scripts/python.exe'),capabilityVersion:'private-fixture',authPath});
+ assert.deepEqual(query(),{worker:'first.py'});
+ if(change==='updated'){
+  fs.writeFileSync(input,JSON.stringify({worker:'second.py'}));
+  assert.deepEqual(query(),{worker:'second.py'});
+ }else if(change==='missing'){
+  fs.unlinkSync(input);
+  assert.throws(query,/registered read-only role query failed/);
+ }else{
+  fs.writeFileSync(input,'[]');
+  assert.throws(query);
+ }
+ assert.deepEqual(fs.readFileSync(target),original,'query entry bytes stayed unchanged');
+});
+
 test('read-only role query identifies a missing interpreter instead of an empty failure',t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'decode1-role-query-'));
  t.after(()=>{
@@ -348,11 +376,11 @@ test('managed CPU registry metadata binds exact route Run request declaration an
   const body={schema:'cpu-negative-input-declaration-v1',runId,packageId,programBindings:structuredClone(current.programBindings),
    callIdentity:'00000000-0000-4000-8000-000000000001'};
   assert.deepEqual(managedCpuRegistryContext(entryRoot,request,declaration,body,current),{entryRoot,request,declaration,callIdentity:body.callIdentity});
-  const changes=[(r,b,c)=>{r.path=r.path.replace(runId,runId+'-other')},(r,b,c)=>{c.outputRoot+='/other'},
+  const changes=[(r)=>{r.path=r.path.replace(runId,runId+'-other')},(r,b,c)=>{c.outputRoot+='/other'},
    (r,b,c)=>{c.configuration.capabilityVersion=cap===registration.CAPABILITY?registration.COMPLETION_CAPABILITY:registration.CAPABILITY},
-   (r,b,c)=>{c.runId+='-other';b.runId=c.runId},(r,b,c)=>{b.packageId+='-other'},
+   (r,b,c)=>{c.runId+='-other';b.runId=c.runId},(r,b)=>{b.packageId+='-other'},
    (r,b,c)=>{c.formalSpecification={...c.formalSpecification,sha256:'0'.repeat(64)}},
-   (r,b,c)=>{b.programBindings={}},(r,b,c)=>{b.callIdentity='unknown-owner'}];
+   (r,b)=>{b.programBindings={}},(r,b)=>{b.callIdentity='unknown-owner'}];
   for(const change of changes){const r=structuredClone(request),b=structuredClone(body),c=structuredClone(current);change(r,b,c);
    assert.throws(()=>managedCpuRegistryContext(entryRoot,r,declaration,b,c));}
  }

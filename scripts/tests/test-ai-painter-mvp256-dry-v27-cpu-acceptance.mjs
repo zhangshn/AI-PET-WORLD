@@ -6,6 +6,7 @@ import test from "node:test"
 import { testCounts, writeAcceptanceObservations, runRecordedStage } from "../run-ai-painter-mvp256-dry-v27-cpu-acceptance.mjs"
 import { javascriptDependencyClosure, describePolicy } from "../run-ai-painter-mvp256-dry-v27-training.mjs"
 import { bind, readBound, boundJson, writeExclusive } from "../run-ai-painter-mvp256-dry-v24-training.mjs"
+import { historicalV27PolicyFixture } from "./helpers/historical-v27-policy-fixture.mjs"
 const root = path.resolve(import.meta.dirname, "../..")
 test("actual TAP and unittest counts are required, with no failures/skips/cuda", () => {
   const py = { testsRun: 5, failures: 0, errors: 0, skipped: 0, gpuInitialized: false,
@@ -32,8 +33,9 @@ test("recursive JS closure includes only reachable local files and rejects unres
     fs.rmSync(dir, { recursive: true })
   }
 })
-test("policy description uses actual V24 parent scope and has no descendant graph", () => {
-  const policy = describePolicy({ root, cpuAcceptance: { path: "fixture/cpu.json", sha256: "1".repeat(64) },
+test("policy description verifies isolated historical sources and actual V24 parent scope", t => {
+  const historical = historicalV27PolicyFixture(t, root)
+  const policy = describePolicy({ root: historical.root, cpuAcceptance: { path: "fixture/cpu.json", sha256: "1".repeat(64) },
     programBindings: {} })
   assert.equal(policy.numericSuccessGate.preselectedSampleId,
     "ai-cold-start-v7-v7-capacity-slot-189-bamboo-grove-v2")
@@ -42,6 +44,16 @@ test("policy description uses actual V24 parent scope and has no descendant grap
   for (const field of ["executionPackage", "gpuQualification", "trainingTicket", "managedLock", "launchIdentity"])
     assert.equal(field in policy, false)
   assert.equal(policy.activation.trainingAllowed, false)
+})
+
+test("historical policy still rejects changed predecessor bytes", t => {
+  const historical = historicalV27PolicyFixture(t, root)
+  const worker = "ml/ai-painter/scripts/painter_stage4_v24_dry_single_world_checkpoint_worker.py"
+  assert.ok(historical.bindings.some(item => item.path === worker && item.sha256 === "e471fd5d7d1d77609a73853bcf2e59deaeae1ad2ca3a1a0028e7d28e5eac4602"))
+  fs.appendFileSync(path.join(historical.root, worker), "\n# changed isolated fixture\n")
+  assert.throws(() => describePolicy({ root: historical.root,
+    cpuAcceptance: { path: "fixture/cpu.json", sha256: "1".repeat(64) }, programBindings: {} }),
+  /bound evidence changed/)
 })
 
 function observationFixture(t) {

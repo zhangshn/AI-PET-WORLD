@@ -9,7 +9,7 @@ import {createHash,randomUUID} from 'node:crypto'
 import {launchProjectCommandBackground,validateProjectCommandBackgroundReceipt} from './ai-painter-autonomous-background-launcher-v1.mjs'
 import {runOwnedWorker} from './ai-painter-owned-worker-v1.mjs'
 import {ensureAiPainterProgramEventCommitted} from './ai-painter-program-event-store.mjs'
-import {ROOT,safe,digest} from './world-initialized-evolution.mjs'
+import {ROOT,safe} from './world-initialized-evolution.mjs'
 
 const MiB=1024**2,GiB=1024**3,name='stage0-native-256-formal-229'
 const task='.runtime/ai-painter/controller-repair-reviews/native-stage0-formal-training-229-20261103'

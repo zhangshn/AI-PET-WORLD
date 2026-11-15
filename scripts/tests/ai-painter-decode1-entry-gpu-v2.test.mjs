@@ -1,3 +1,4 @@
+import {readQualificationCanonicalFixture} from './helpers/qualification-canonical-fixture.mjs';
 // Synthetic source/ledger/ABI fixtures only; never calls a real owned worker.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -125,7 +126,7 @@ test('deadline, GPU identity/thermal/free-memory and nested redirects fail close
 
 function closureFixture(){const profile='ml/ai-painter/scripts/painter_stage4_joint_object_priority_training_profile_v1.py';
   const source='from ai_painter.complete_world import parameter48_causal_observation_v1\n';
-  const code=new Map([[profile,source],[p.implementations.host,"import '@babel/parser';\n"],[p.metadataCanonicalProgram.path,fs.readFileSync(path.join(ROOT,p.metadataCanonicalProgram.path))]]);
+  const code=new Map([[profile,source],[p.implementations.host,"import '@babel/parser';\n"],[p.metadataCanonicalProgram.path,readQualificationCanonicalFixture(ROOT,p.metadataCanonicalProgram).bytes]]);
   const q=copy(p);q.sourceAlgorithmBindings=[];const original={profile:{path:profile,sha256:hash(source)}},reads=[];
   const reader={bound:()=>({context:{programBindings:original}}),bytes(name,sha){reads.push(name);const raw=Buffer.from(code.get(name)??'');if(sha!==undefined)assert.equal(hash(raw),sha);return raw;},verifyStable(){}};
   return {q,reader,code,reads};}

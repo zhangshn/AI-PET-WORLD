@@ -226,7 +226,7 @@ function launchWithWindowsWmi({ root, launchRoot, nodeExecutable, absoluteRunner
 }
 
 function launchCommandWithWindowsWmi({
-  root, launchRoot, executable, absoluteRunner, runnerArgs, attempt,
+  root, launchRoot, executable, absoluteRunner, attempt,
 }) {
   const prepared = prepareBoundedBackgroundObservation({ root, launchRoot, absoluteRunner, attempt });
   const commandLine = [executable, '--import', pathToFileURL(prepared.bootstrapPath).href, ...exactSpawnNodeArguments(attempt, absoluteRunner)]
@@ -366,15 +366,26 @@ try{
 }
 
 function launchCommandDetached({
-  root, launchRoot, executable, absoluteRunner, runnerArgs, attempt,
+  root, launchRoot, executable, absoluteRunner, attempt,
 }) {
   const stdout = fs.openSync(path.join(launchRoot, "stdout.log"), "ax");
-  const stderr = fs.openSync(path.join(launchRoot, "stderr.log"), "ax");
+  let stderr;
   let child;
+  const launchErrors = [];
   try {
+    stderr = fs.openSync(path.join(launchRoot, "stderr.log"), "ax");
     child = spawn(executable, exactSpawnNodeArguments(attempt, absoluteRunner), { cwd: path.resolve(root), detached: true, windowsHide: true, stdio: ["ignore", stdout, stderr] });
     child.unref();
-  } finally { fs.closeSync(stdout); fs.closeSync(stderr); }
+  } catch (error) {
+    launchErrors.push(error);
+  } finally {
+    for (const fd of [stdout, stderr]) {
+      if (fd === undefined) continue;
+      try { fs.closeSync(fd); } catch (error) { launchErrors.push(error); }
+    }
+  }
+  if (launchErrors.length === 1) throw launchErrors[0];
+  if (launchErrors.length > 1) throw new AggregateError(launchErrors, "Background launch or log cleanup failed");
   const started = execFileSync("ps", ["-o", "lstart=", "-p", String(child.pid)], {
     cwd: path.resolve(root), encoding: "utf8", timeout: 10_000,
   }).trim();
@@ -431,9 +442,11 @@ async function launchWithDetachedProcess({ root, launchRoot, nodeExecutable, abs
   const stdoutRelative = path.relative(path.resolve(root), path.join(launchRoot, "stdout.log")).replaceAll("\\", "/");
   const stderrRelative = path.relative(path.resolve(root), path.join(launchRoot, "stderr.log")).replaceAll("\\", "/");
   const stdout = fs.openSync(path.join(launchRoot, "stdout.log"), "ax");
-  const stderr = fs.openSync(path.join(launchRoot, "stderr.log"), "ax");
+  let stderr;
   let child;
+  const launchErrors = [];
   try {
+    stderr = fs.openSync(path.join(launchRoot, "stderr.log"), "ax");
     child = spawn(nodeExecutable, exactSpawnNodeArguments(attempt, absoluteRunner), {
       cwd: path.resolve(root), detached: true, windowsHide: true, stdio: ["ignore", stdout, stderr],
       env: { ...process.env, AI_PAINTER_AUTONOMOUS_BACKGROUND: "1" },
@@ -443,10 +456,16 @@ async function launchWithDetachedProcess({ root, launchRoot, nodeExecutable, abs
       child.once("error", reject);
     });
     child.unref();
+  } catch (error) {
+    launchErrors.push(error);
   } finally {
-    fs.closeSync(stdout);
-    fs.closeSync(stderr);
+    for (const fd of [stdout, stderr]) {
+      if (fd === undefined) continue;
+      try { fs.closeSync(fd); } catch (error) { launchErrors.push(error); }
+    }
   }
+  if (launchErrors.length === 1) throw launchErrors[0];
+  if (launchErrors.length > 1) throw new AggregateError(launchErrors, "Background launch or log cleanup failed");
   const started = execFileSync("ps", ["-o", "lstart=", "-p", String(child.pid)], {
     cwd: path.resolve(root), encoding: "utf8", timeout: 10_000,
   }).trim();

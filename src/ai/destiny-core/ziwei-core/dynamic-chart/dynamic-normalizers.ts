@@ -1,5 +1,5 @@
 import type { TimeBranch } from "../contracts"
-import { TIME_BRANCH_ORDER } from "../shared"
+import { TIME_BRANCH_ORDER } from "../shared/branch-order"
 
 export function normalizeLunarMonth(value: number): number {
   if (!Number.isFinite(value)) {

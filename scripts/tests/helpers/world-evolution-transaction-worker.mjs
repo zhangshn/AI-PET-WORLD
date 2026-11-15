@@ -20,7 +20,7 @@ export const lookup={ownerId:'owner-fixture',worldId:'natural-world-fixture'}
 const compiled=new Map()
 function compile(){
  if(compiled.size)return
- for(const name of ['world-runtime-store','world-runtime-production-store','world-runtime-record-validation','runtime-path-security','world-runtime-store-adapter','world-evolution-transaction']){
+ for(const name of ['world-runtime-store','world-runtime-production-store','world-runtime-record-validation','world-runtime-write-cleanup','runtime-path-security','world-runtime-store-adapter','world-evolution-transaction']){
   const r=ts.transpileModule(fs.readFileSync(path.join(project,'src/world/runtime',name+'.ts'),'utf8'),{fileName:name+'.ts',reportDiagnostics:true,compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}})
   assert.deepEqual(r.diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error),[])
   compiled.set(name,r.outputText)

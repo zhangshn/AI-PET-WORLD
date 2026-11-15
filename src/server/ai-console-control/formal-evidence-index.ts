@@ -121,8 +121,11 @@ export async function ensureAiConsoleFormalEvidenceRegistration(
   const snapshots = await readFormalSurfaceSnapshots(receipt, transaction)
   const database = openWritableDatabase(transaction.transactionSequence)
   let registration: AiConsoleFormalEvidenceRegistration
+  const errors: unknown[] = []
+  let transactionActive = false
   try {
     database.exec("BEGIN IMMEDIATE")
+    transactionActive = true
     const metadata = readAndVerifyMetadata(database)
     const expectedRegistrationId = deriveRegistrationId(transaction.transactionId)
     const existingRow = database.prepare(`${registrationSelectSql} WHERE transaction_id = ?`).get(transaction.transactionId)
@@ -175,15 +178,17 @@ export async function ensureAiConsoleFormalEvidenceRegistration(
       updateMetadata(database, metadata, registration, records.length)
     }
     database.exec("COMMIT")
+    transactionActive = false
   } catch (error) {
-    try {
-      database.exec("ROLLBACK")
-    } catch {
-      // SQLite may already have closed the transaction after a fatal statement error.
+    errors.push(error)
+    if (transactionActive) {
+      try { database.exec("ROLLBACK") } catch (rollbackError) { errors.push(rollbackError) }
     }
     throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'ensure_ai_console_formal_evidence_registration_transaction_and_cleanup_failed', { cause: errors[0] })
   }
 
   const verified = await readAiConsoleFormalEvidenceIndex()
@@ -201,6 +206,8 @@ export async function readAiConsoleFormalEvidenceIndex(): Promise<AiConsoleForma
     return { status: "not_connected", reasonCode: "ai_console_formal_evidence_index_not_initialized" }
   }
   let database: DatabaseSync | null = null
+  let readFailed = false
+  let readError: unknown
   try {
     database = new DatabaseSync(getIndexPath(), { readOnly: true })
     database.exec("PRAGMA query_only = ON; PRAGMA foreign_keys = ON")
@@ -236,12 +243,17 @@ export async function readAiConsoleFormalEvidenceIndex(): Promise<AiConsoleForma
       metadata,
     }
   } catch (error) {
+    readFailed = true
+    readError = error
     return {
       status: "unknown_or_stale",
       reasonCode: error instanceof Error ? error.message : "ai_console_formal_evidence_index_read_failed",
     }
   } finally {
-    database?.close()
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], 'read_ai_console_formal_evidence_index_read_and_close_failed', { cause: readError })
+      throw closeError
+    }
   }
 }
 
@@ -253,6 +265,8 @@ export async function readAiConsoleFormalEvidenceArtifact(evidenceId: string): P
   if (!verifiedPublicRecord) return { status: "not_found", reasonCode: "ai_console_formal_evidence_artifact_not_found" }
 
   let database: DatabaseSync | null = null
+  let readFailed = false
+  let readError: unknown
   try {
     database = new DatabaseSync(getIndexPath(), { readOnly: true })
     database.exec("PRAGMA query_only = ON; PRAGMA foreign_keys = ON")
@@ -269,12 +283,17 @@ export async function readAiConsoleFormalEvidenceArtifact(evidenceId: string): P
       contentBytes: Uint8Array.from(storedRecord.contentBlob),
     }
   } catch (error) {
+    readFailed = true
+    readError = error
     return {
       status: "unknown_or_stale",
       reasonCode: error instanceof Error ? error.message : "ai_console_formal_evidence_artifact_read_failed",
     }
   } finally {
-    database?.close()
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], 'read_ai_console_formal_evidence_artifact_read_and_close_failed', { cause: readError })
+      throw closeError
+    }
   }
 }
 
@@ -440,7 +459,9 @@ function openWritableDatabase(firstEligibleTransactionSequence: number): Databas
     database.exec("PRAGMA user_version = 1")
     return database
   } catch (error) {
-    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    try { database.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'formal_evidence_index_initialization_and_close_failed', { cause: error })
+    }
     throw error
   }
 }

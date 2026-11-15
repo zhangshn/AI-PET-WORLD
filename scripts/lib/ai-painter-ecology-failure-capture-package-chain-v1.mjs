@@ -8,7 +8,9 @@ import {CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,OUTPUT_ROOT,SPECIFICATION,CANDI
 export {CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,SPECIFICATION,CANDIDATE,MODEL_REFERENCE,FROZEN_PLAN,deriveConfiguration,validateTerminal};
 export const ADAPTER='scripts/run-ai-painter-ecology-regime-failure-capture.mjs';
 export const sha=io.sha,withOutputBudget=io.withOutputBudget,directoryBytes=io.directoryBytes;
-export const ROLES={adapter:ADAPTER,packageChain:'scripts/lib/ai-painter-ecology-failure-capture-package-chain-v1.mjs',
+export const ROLES={
+ cpuNegativeInputInspector:'scripts/lib/cpu-negative-input-inspector.mjs',
+adapter:ADAPTER,packageChain:'scripts/lib/ai-painter-ecology-failure-capture-package-chain-v1.mjs',
  worker:'ml/ai-painter/scripts/painter_stage4_ecology_regime_failure_capture_execution_worker.py',
  gpuQualifier:'ml/ai-painter/scripts/qualify_stage4_ecology_regime_failure_capture_gpu.py',
  executionAuth:'ml/ai-painter/scripts/ecology_regime_failure_capture_auth.py',

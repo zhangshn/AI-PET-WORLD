@@ -1,8 +1,9 @@
+import { fingerprintMapPlacements as fingerprintPlacements } from "@/world/map-state/map-placement-fingerprint"
 ﻿/**
 
  */
 
-import type { HomeMapState, MapPlacement } from "@/world/map-state/home-map-state-schema"
+import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 
 import type { ButlerRuntimeProfile } from "@/world/butler/butler-runtime-profile-schema"
 
@@ -37,20 +38,4 @@ export function auditMvpInitialWorld(result: {
       "initial_world_fact_fingerprint",
     ],
   }
-}
-
-function fingerprintPlacements(placements: MapPlacement[]): string {
-  return placements
-    .map((placement) =>
-      [
-        placement.id,
-        placement.layer,
-        String(placement.x),
-        String(placement.y),
-        String(placement.alpha),
-        placement.tags.slice().sort().join("+"),
-      ].join(":")
-    )
-    .sort()
-    .join("|")
 }

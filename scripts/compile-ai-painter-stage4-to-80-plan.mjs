@@ -176,7 +176,7 @@ export function compilePlan({ authorizationPath, authorizationSha256, consumptio
   })
 
   const timestamp = runId.replace(/[^0-9]/gu, "") || new Date().toISOString().replace(/[^0-9]/gu, "").slice(0, 17)
-  const plan = buildPlan({ runId, timestamp, relativeOutputRoot, smokeCpuReportPath, smokeAttestationPath, recordedAtUtc })
+  const plan = buildPlan({ runId, timestamp, smokeCpuReportPath, smokeAttestationPath, recordedAtUtc })
   writeFreshJson(smokeAuthorizationCheckPath, plan.steps[0].runnerAuthorization)
   const nodeCheck = runSmokeCpuContract(plan.steps[0], smokeAuthorizationCheckPath)
   if (nodeCheck.status !== 0 || !nodeCheck.stdout.includes("semantic-mixture_stage4_smoke_authorization_contract_valid_cpu_only")) {
@@ -319,7 +319,7 @@ export function compilePlan({ authorizationPath, authorizationSha256, consumptio
   return { status: "stage4_exact_five_step_execution_plan_ready_for_owner_signature_closed", runId, plan: planBinding, audit: bind(auditPath), ownerActionRequest: bind(requestPath), terminal: bind(terminalPath), fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 } }
 }
 
-function buildPlan({ runId, timestamp, relativeOutputRoot, smokeCpuReportPath, smokeAttestationPath, recordedAtUtc }) {
+function buildPlan({ runId, timestamp, smokeCpuReportPath, smokeAttestationPath, recordedAtUtc }) {
   const smokeContract = readJson(CURRENT_SMOKE_CONTRACT)
   const smokeTemplate = structuredClone(smokeContract.proposedAuthorization)
   const diagnosticFields = smokeTemplate.taskIdentity.diagnosticManifestFields

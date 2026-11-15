@@ -312,7 +312,6 @@ async function recoverStage4V2QualificationBackgroundLaunch({
   manifest,
   manifestBinding,
   packagePayload,
-  backgroundLauncher,
   childRunner,
   launchDirectory,
   launchIntentPath,
@@ -1405,7 +1404,6 @@ function launchWindowsHiddenProcess({
   root,
   executable,
   absoluteRunner,
-  runnerArgs,
   spawnAttempt,
   stdoutAbsolute,
   stderrAbsolute,
@@ -1457,15 +1455,16 @@ function launchWindowsHiddenProcess({
 async function launchPosixDetachedProcess({
   root,
   absoluteRunner,
-  runnerArgs,
   spawnAttempt,
   stdoutAbsolute,
   stderrAbsolute,
 }) {
   const stdout = fs.openSync(stdoutAbsolute, "ax");
-  const stderr = fs.openSync(stderrAbsolute, "ax");
+  let stderr;
   let child;
+  const launchErrors = [];
   try {
+    stderr = fs.openSync(stderrAbsolute, "ax");
     child = spawn(process.execPath, exactSpawnNodeArguments(spawnAttempt, absoluteRunner), {
       cwd: path.resolve(root),
       detached: true,
@@ -1477,10 +1476,16 @@ async function launchPosixDetachedProcess({
       child.once("error", reject);
     });
     child.unref();
+  } catch (error) {
+    launchErrors.push(error);
   } finally {
-    fs.closeSync(stdout);
-    fs.closeSync(stderr);
+    for (const fd of [stdout, stderr]) {
+      if (fd === undefined) continue;
+      try { fs.closeSync(fd); } catch (error) { launchErrors.push(error); }
+    }
   }
+  if (launchErrors.length === 1) throw launchErrors[0];
+  if (launchErrors.length > 1) throw new AggregateError(launchErrors, "Background launch or log cleanup failed");
   const identityResult = execFileSync("ps", ["-o", "lstart=", "-p", String(child.pid)], {
     cwd: path.resolve(root),
     encoding: "utf8",

@@ -1,3 +1,4 @@
+import { writeExclusiveEvidence } from '../../../scripts/lib/exclusive-evidence-write.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { hash, need, identity } from './contracts.mjs'
@@ -9,7 +10,7 @@ export function createBackupStorage(moduleRoot,store) {
   const runs=path.join(moduleRoot,'runs')
   function folder(directory){if(!fs.existsSync(directory))fs.mkdirSync(directory,{mode:0o700});checkDirectory(directory)}
   function read(file) {safeFile(file,1024*1024);const bytes=fs.readFileSync(file);return{value:JSON.parse(bytes.toString('utf8')),sha256:hash(bytes)}}
-  function put(file,value){const bytes=Buffer.from(JSON.stringify(value));need(bytes.length<=1024*1024,'backup_evidence_limit',409);const fd=fs.openSync(file,'wx',0o600);try{fs.writeFileSync(fd,bytes);fs.fsyncSync(fd)}finally{fs.closeSync(fd)}return hash(bytes)}
+  function put(file,value){const bytes=Buffer.from(JSON.stringify(value));need(bytes.length<=1024*1024,'backup_evidence_limit',409);writeExclusiveEvidence(file,bytes,0o600);return hash(bytes)}
   function requestFile(key){return path.join(runs,`request-${hash(key)}.json`)}
   function directory(id){identity(id);need(/^backup-[a-f0-9-]{36}$/.test(id),'backup_run_identity_invalid',409);return path.join(runs,id)}
   function request(input){const file=requestFile(input.idempotencyKey);if(!fs.existsSync(file))return null;checkDirectory(moduleRoot);checkDirectory(runs);const saved=read(file).value;need(saved.schemaVersion==='local_backup_request_v1'&&saved.requestSha256===hash(input),'backup_idempotency_conflict',409);directory(saved.backupId);return saved}
@@ -48,13 +49,24 @@ export function createBackupStorage(moduleRoot,store) {
     try{
       fs.writeFileSync(fd,JSON.stringify({backupId,processId:process.pid,createdAtUtc:new Date().toISOString()}))
       fs.fsyncSync(fd)
-      own=fs.fstatSync(fd)
+      own=fs.fstatSync(fd,{bigint:true})
     }catch(error){
       // Retain the failed lock for inspection; release only this open handle.
-      try{fs.closeSync(fd)}catch{/* Preserve the original initialization error. */}
+      try{fs.closeSync(fd)}catch(closeError){
+        const errors=[error,closeError]
+        throw new AggregateError(errors, `backup_lock_initialization_and_close_failed: ${errors.map(value=>value instanceof Error?value.message:String(value)).join('; ')}`, {cause:error})
+      }
       throw error
     }
-    return()=>{fs.closeSync(fd);const current=fs.lstatSync(file,{throwIfNoEntry:false});need(current&&current.isFile()&&!current.isSymbolicLink()&&current.ino===own.ino&&current.dev===own.dev,'backup_lock_identity_changed',409);fs.unlinkSync(file)}
+    let releaseAttempted=false,releaseFailed=false,releaseFailure
+    return()=>{
+      // A close failure leaves ownership uncertain; never retry this descriptor.
+      if(releaseAttempted){if(releaseFailed)throw releaseFailure;return}
+      releaseAttempted=true
+      try{
+        fs.closeSync(fd);const current=fs.lstatSync(file,{throwIfNoEntry:false,bigint:true});need(current&&current.isFile()&&!current.isSymbolicLink()&&current.ino===own.ino&&current.dev===own.dev,'backup_lock_identity_changed',409);fs.unlinkSync(file)
+      }catch(error){releaseFailed=true;releaseFailure=error;throw error}
+    }
   }
   function begin(input,backupId,configurationSha256,startedAtUtc) {
     folder(runs);folder(directory(backupId));folder(path.join(directory(backupId),'events'))

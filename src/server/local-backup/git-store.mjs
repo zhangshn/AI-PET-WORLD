@@ -44,17 +44,26 @@ export function createGitStore(root) {
     let identity
     try{
       fs.writeFileSync(fd,JSON.stringify({processId:process.pid,at:new Date().toISOString()}))
-      identity=fs.fstatSync(fd)
+      identity=fs.fstatSync(fd,{bigint:true})
     }catch(error){
       // Keep the failed lock as evidence; release only this invocation's handle.
-      try{fs.closeSync(fd)}catch{/* Preserve the original initialization failure. */}
+      try{fs.closeSync(fd)}catch(closeError){
+        const errors=[error,closeError]
+        throw new AggregateError(errors, `git_lock_initialization_and_close_failed: ${errors.map(value=>value instanceof Error?value.message:String(value)).join('; ')}`, {cause:error})
+      }
       throw error
     }
+    let releaseAttempted=false,releaseFailed=false,releaseFailure
     return()=>{
-      fs.closeSync(fd)
-      const current=fs.lstatSync(file)
-      need(!current.isSymbolicLink()&&current.ino===identity.ino&&current.dev===identity.dev,'git_operation_lock_changed',409)
-      fs.unlinkSync(file) // only the exact lock created by this invocation; never stale-lock cleanup
+      // A close failure leaves ownership uncertain; never retry this descriptor.
+      if(releaseAttempted){if(releaseFailed)throw releaseFailure;return}
+      releaseAttempted=true
+      try{
+        fs.closeSync(fd)
+        const current=fs.lstatSync(file,{bigint:true})
+        need(!current.isSymbolicLink()&&current.ino===identity.ino&&current.dev===identity.dev,'git_operation_lock_changed',409)
+        fs.unlinkSync(file) // only the exact lock created by this invocation; never stale-lock cleanup
+      }catch(error){releaseFailed=true;releaseFailure=error;throw error}
     }
   }
   return {prepare,read,put,lock}

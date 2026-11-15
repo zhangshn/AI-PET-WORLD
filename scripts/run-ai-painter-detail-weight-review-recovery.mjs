@@ -71,7 +71,14 @@ export function auditBeforeDeadline(ready,result,outputRoot,deadline){
  return new Promise((resolve,reject)=>{
   const thread=new Worker(new URL(import.meta.url),{workerData:{mode:'audit',ready,result,outputRoot,deadline},stdout:true,stderr:true,env:{...process.env,OMP_NUM_THREADS:'2',MKL_NUM_THREADS:'2',OPENBLAS_NUM_THREADS:'2',VIPS_CONCURRENCY:'2'}})
   let settled=false,bytes=0
-  const finish=async(error,value)=>{if(settled)return;settled=true;clearTimeout(timer);try{await thread.terminate()}catch(cleanup){error??=cleanup}error?reject(error):resolve(value)}
+  const finish=async(error,value)=>{
+   if(settled)return
+   settled=true
+   clearTimeout(timer)
+   try{await thread.terminate()}catch(cleanup){error??=cleanup}
+   if(error)reject(error)
+   else resolve(value)
+  }
   const timer=setTimeout(()=>{void finish(new Error('cumulative review wall timeout during machine audit'))},Math.max(1,deadline-Date.now()))
   for(const stream of [thread.stdout,thread.stderr])stream.on('data',raw=>{bytes+=raw.length;if(bytes>65536)void finish(new Error('audit worker stream bound exceeded'))})
   thread.once('message',message=>{void finish(message.ok?null:new Error(message.error),message.value)})

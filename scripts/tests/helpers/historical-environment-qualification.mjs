@@ -19,7 +19,8 @@ export function readHistoricalWeatherRegistry() {
   // This exact blob is from the historical release registry at the reviewed code baseline.
   // A current checkout can have valid newer releases. Reconstructing an "empty" JSON object
   // would lose the original bytes and could accidentally drop a real policy field.
-  const raw=execFileSync('git',['cat-file','blob','85984c7c1c2e593094ef9d7f7f510f69e93eb87f'],{cwd:root,maxBuffer:4096,windowsHide:true})
+  const raw=execFileSync('git',['cat-file','blob','85984c7c1c2e593094ef9d7f7f510f69e93eb87f'],{cwd:root,maxBuffer:4096,windowsHide:true,
+    timeout:10000,env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_TERMINAL_PROMPT:'0'}})
   assert.equal(hash(raw),registrySha,'historical weather registry provenance')
   return raw
 }
@@ -34,9 +35,13 @@ export function createHistoricalWeatherFixture() {
       'scripts/lib/world-initialized-evolution.mjs',
       'scripts/lib/world-environment-scheduled-run.mjs',
       'scripts/tests/helpers/world-evolution-loop-loader.mjs',
+      'src/world/runtime/world-evolution-transaction.ts',
+      'src/world/runtime/world-runtime-production-store.ts',
+      'src/world/runtime/world-runtime-record-validation.ts',
       'scripts/lib/ai-painter-autonomous-package-decision-core-v3.mjs'].includes(file)) {
       let raw=execFileSync('git',['show','1819fae5565ba30880a6c5366a42605ec48192e3:'+file],
-        {cwd:root,windowsHide:true,maxBuffer:4*1024**2})
+        {cwd:root,windowsHide:true,maxBuffer:4*1024**2,timeout:10000,
+          env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_TERMINAL_PROMPT:'0'}})
       // The original Windows snapshots of these two files used CRLF; the Git
       // blob uses LF. Restore only that documented byte representation and
       // still require the exact SHA from the original immutable manifest.

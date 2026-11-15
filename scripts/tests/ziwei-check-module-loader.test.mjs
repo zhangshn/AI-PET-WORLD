@@ -36,3 +36,34 @@ test('Ziwei check loader resolves nested TypeScript relative to its caller', () 
     fs.rmSync(root, { recursive: true })
   }
 })
+
+
+test('world smoke loader resolves aliases, nested TypeScript and builtins in a private fixture', async () => {
+  const moduleApi=await import('node:module'),hostRequire=createRequire(import.meta.url)
+  const {installWorldSmokeTypeScriptRequireHook}=hostRequire('../lib/world-smoke-typescript-hook.cjs')
+  const ts=hostRequire('typescript'),parent=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(parent,'world-smoke-loader-'))
+  const localRequire=createRequire(path.join(root,'entry.cjs')),previousResolve=moduleApi.default._resolveFilename,previousExtension=localRequire.extensions['.ts']
+  const sources=['src/shared.ts','src/nested/child.ts','src/entry.ts','src/invalid.ts']
+  try {
+    fs.mkdirSync(path.join(root,'src','nested'),{recursive:true})
+    fs.writeFileSync(path.join(root,sources[0]),'export const value: number = 17;')
+    fs.writeFileSync(path.join(root,sources[1]),'import {value} from "@/shared"; export const child: number = value + 25;')
+    fs.writeFileSync(path.join(root,sources[2]),'import {child} from "./nested/child"; import path from "node:path"; export const answer: number = child; export const base = path.basename("/x/result");')
+    fs.writeFileSync(path.join(root,sources[3]),'export const broken = ;')
+    installWorldSmokeTypeScriptRequireHook({moduleApi,path,repoRoot:root,localRequire,fs,ts})
+    assert.equal(localRequire('./src/entry.ts').answer,42)
+    assert.equal(localRequire('@/entry').base,'result')
+    assert.equal(localRequire.resolve('@/shared'),path.join(root,'src','shared.ts'))
+    assert.equal(localRequire('node:path'),path)
+    assert.throws(()=>localRequire('@/missing'),{code:'MODULE_NOT_FOUND'})
+    assert.throws(()=>localRequire('@/invalid'),SyntaxError)
+  } finally {
+    moduleApi.default._resolveFilename=previousResolve
+    if(previousExtension)localRequire.extensions['.ts']=previousExtension
+    else delete localRequire.extensions['.ts']
+    for(const file of sources)delete localRequire.cache[path.join(root,file)]
+    assert.equal(path.dirname(root),parent);assert(path.basename(root).startsWith('world-smoke-loader-'))
+    assert.equal(fs.realpathSync(root),root);assert(!fs.lstatSync(root).isSymbolicLink())
+    fs.rmSync(root,{recursive:true})
+  }
+})

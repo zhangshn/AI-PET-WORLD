@@ -25,8 +25,8 @@ export function verifyPath(root,relative,expectedRoot) {
   verifyDirectory(root,expectedRoot);safeRelative(relative)
   let current=root
   for(const part of relative.split('/').slice(0,-1)) {current=path.join(current,part);directoryIdentity(current)}
-  const file=path.join(root,...relative.split('/')),stat=fs.lstatSync(file)
-  need(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1,'backup_file_boundary',409)
+  const file=path.join(root,...relative.split('/')),stat=fs.lstatSync(file,{bigint:true})
+  need(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1n,'backup_file_boundary',409)
   return{file,stat}
 }
 export function validateBackupConfiguration(config) {

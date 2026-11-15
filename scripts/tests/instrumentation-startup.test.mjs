@@ -10,7 +10,7 @@ import ts from 'typescript'
 const source = fs.readFileSync(new URL('../../src/instrumentation.ts', import.meta.url), 'utf8')
 const compiled = ts.transpileModule(source, {compilerOptions: {target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext}}).outputText
 
-function runFixture(t, {runtime = 'nodejs', workThrows = false, readyRejects = false} = {}) {
+function runFixture(t, {runtime = 'nodejs', workThrows = false, readyRejects = false, concurrent = 0} = {}) {
   const parent = fs.realpathSync(os.tmpdir())
   const root = fs.mkdtempSync(path.join(parent, 'instrumentation-startup-#% 地图-'))
   t.after(() => {
@@ -31,12 +31,13 @@ function runFixture(t, {runtime = 'nodejs', workThrows = false, readyRejects = f
       globalThis.observed.work++;
       ${workThrows ? "throw Error('fixture work failure');" : `return {ready: ${readyRejects ? "Promise.reject(Error('fixture readiness failure'))" : 'Promise.resolve()'}};`}
     }`)
-    fs.writeFileSync(history, 'export async function scanHistoryEvidence() { globalThis.observed.scans++; }')
+    fs.writeFileSync(history, `${concurrent ? 'await new Promise(resolve => setTimeout(resolve, 5));' : ''}export async function scanHistoryEvidence() { globalThis.observed.scans++; }`)
   }
-  const driver = `globalThis.observed = {work: 0, scans: 0, errors: []};
+  const driver = `globalThis.observed = {work: 0, scans: 0, errors: []${concurrent ? ', timers: 0' : ''}};
+    ${concurrent ? 'const originalInterval = globalThis.setInterval; globalThis.setInterval = (...args) => { globalThis.observed.timers++; return originalInterval(...args); };' : ''}
     console.error = (...args) => globalThis.observed.errors.push(String(args[0]));
     const {register} = await import(${JSON.stringify(pathToFileURL(entry).href)});
-    await register(); await register(); await Promise.resolve();
+    ${concurrent ? `await Promise.all(Array.from({length: ${concurrent}}, () => register()));` : 'await register(); await register();'} await Promise.resolve();
     console.log(JSON.stringify(globalThis.observed));`
   const result = spawnSync(process.execPath, ['--input-type=module', '-e', driver], {
     cwd: root, env: {...process.env, NEXT_RUNTIME: runtime}, encoding: 'utf8', windowsHide: true, timeout: 10000,
@@ -61,4 +62,17 @@ test('asynchronous observer readiness failures remain visible without blocking h
 
 test('Edge registration returns without loading any Node observer source', t => {
   assert.deepEqual(runFixture(t, {runtime: 'edge'}), {work: 0, scans: 0, errors: []})
+})
+
+for(const concurrent of [2,8])test(`concurrent ${concurrent} Node registrations start exactly one history scan and interval`,t=>{
+  assert.deepEqual(runFixture(t,{concurrent}),{work:concurrent,scans:1,errors:[],timers:1})
+})
+test('concurrent work-observer failures do not duplicate the independent history timer',t=>{
+  assert.deepEqual(runFixture(t,{concurrent:2,workThrows:true}),{work:2,scans:1,errors:['local_work_recording_startup_unavailable','local_work_recording_startup_unavailable'],timers:1})
+})
+test('concurrent asynchronous work readiness failures preserve one history timer',t=>{
+  assert.deepEqual(runFixture(t,{concurrent:2,readyRejects:true}),{work:2,scans:1,errors:['local_work_recording_startup_failed','local_work_recording_startup_failed'],timers:1})
+})
+test('concurrent Edge registrations do not start timers or load Node sources',t=>{
+  assert.deepEqual(runFixture(t,{concurrent:2,runtime:'edge'}),{work:0,scans:0,errors:[],timers:0})
 })

@@ -50,7 +50,7 @@ def sample_forward(model, sample, return_evidence=False):
 
 
 def _network_snapshot(network):
-    return (parent._critic_state(network), tuple((id(p), p.requires_grad, id(p.grad)) for p in network.parameters()))
+    return parent.network_snapshot(network)
 
 
 @contextmanager

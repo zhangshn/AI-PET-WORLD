@@ -66,7 +66,7 @@ export async function materializeStage4V2FormalStage0ToStage2Plan({
   }
   assert.equal(current.registry.lifecycleStage, "controlled_smoke_completed");
   assert.equal(current.registry.nextMachineAction, FORMAL_PLAN_ACTION);
-  const { sourceTerminal, smokeFinalization } =
+  const { sourceTerminal } =
     verifyControlledSmokeSuccessHandoff(root, current);
   const plan = {
     schemaVersion: "ai-painter-stage4-v2-formal-stage0-to-stage2-plan-v1",

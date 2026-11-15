@@ -456,7 +456,6 @@ export async function runStage4V2ReadonlyGpuQualification({
       packagePayload,
       status: "readonly_gpu_qualified",
       terminal,
-      terminalBinding,
       blocker: {
         code: "controlled_smoke_not_yet_materialized",
         summaryZh: "V2只读GPU资格已通过；下一步由本地程序登记并物化同能力身份的受控Smoke。",
@@ -1062,7 +1061,6 @@ export async function recoverInterruptedQualification({
     packagePayload,
     status: "readonly_gpu_qualification_host_interruption_failed_closed",
     terminal,
-    terminalBinding,
     blocker: {
       code: "expired_active_execution_host_interruption",
       summaryZh: "资格执行宿主中断；程序只收口既有证据并失败关闭，未重放GPU。",
@@ -2656,7 +2654,6 @@ async function persistFailedClosed({ context, error, commitCurrentRegistry, appe
     packagePayload: payload,
     status: "readonly_gpu_qualification_failed_closed",
     terminal: readJsonObject(terminalPath),
-    terminalBinding,
     blocker: { code: classifyFailure(errorText, context), summaryZh: "V2只读GPU资格失败关闭；程序已保存失败边界，禁止自动重试或启动Smoke。" },
     nextAction: { code: FAILURE_ACTION, labelZh: "仅依据已保存证据执行只读失败裁决。" },
     evidence: [
@@ -2758,7 +2755,7 @@ function classifyFailure(errorText, context) {
   return "qualification_cuda_or_evidence_failed";
 }
 
-function buildTerminalCapsule({ packagePayload, status, terminal, terminalBinding, blocker, nextAction, evidence }) {
+function buildTerminalCapsule({ packagePayload, status, terminal, blocker, nextAction, evidence }) {
   return {
     schemaVersion: "ai-painter-local-task-capsule-v1",
     capsuleId: `local-ai-${packagePayload.runId}-${status}`,

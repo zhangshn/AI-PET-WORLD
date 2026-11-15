@@ -182,12 +182,18 @@ export function publishMachineAdjudicatedCapability(draft, {
   const db = openDb(ledgerPath);
   const registryTemporary = `${registryPath}.tmp-${process.pid}`;
   const journalPath = path.join(staging, "publish-journal.json");
-  const originalRegistryBytes = fs.readFileSync(registryPath);
+  const failures = [];
+  let originalRegistryBytes;
+  let transactionStarted = false;
   let releasePromoted = false;
   let registryReplaced = false;
-  fs.writeFileSync(journalPath, bytesOf({ schemaVersion: "ai-painter-capability-release-publish-journal-v1", status: "prepared", expectedRegistryRevision, nextRevision, releaseRelativePath, releaseSha256, recordedAtUtc }), { flag: "wx" });
   try {
+    originalRegistryBytes = fs.readFileSync(registryPath);
+    // Keep the prior registry with the attempted release, including on recovery failure.
+    fs.writeFileSync(path.join(staging, "registry-before-publish.json"), originalRegistryBytes, { flag: "wx" });
+    fs.writeFileSync(journalPath, bytesOf({ schemaVersion: "ai-painter-capability-release-publish-journal-v1", status: "prepared", expectedRegistryRevision, nextRevision, releaseRelativePath, releaseSha256, recordedAtUtc }), { flag: "wx" });
     db.exec("BEGIN IMMEDIATE");
+    transactionStarted = true;
     const latest = db.prepare("SELECT MAX(registry_revision) AS revision FROM releases").get().revision;
     if (latest === null) assert(expectedRegistryRevision === 0, "release ledger is missing prior registry revisions");
     else assert(Number(latest) === expectedRegistryRevision, "release ledger revision conflict");
@@ -199,13 +205,26 @@ export function publishMachineAdjudicatedCapability(draft, {
     registryReplaced = true;
     db.exec("COMMIT");
   } catch (error) {
-    try { db.exec("ROLLBACK"); } catch {}
-    if (fs.existsSync(registryTemporary)) fs.rmSync(registryTemporary, { force: true });
-    if (registryReplaced) fs.writeFileSync(registryPath, originalRegistryBytes);
-    if (releasePromoted && fs.existsSync(releaseAbsoluteRoot)) fs.rmSync(releaseAbsoluteRoot, { recursive: true, force: true });
-    else if (fs.existsSync(staging)) fs.rmSync(staging, { recursive: true, force: true });
-    throw error;
-  } finally { db.close(); }
+    failures.push(error);
+    if (transactionStarted) {
+      try { db.exec("ROLLBACK"); } catch (rollbackError) { failures.push(rollbackError); }
+    }
+    if (registryReplaced) {
+      try {
+        const restoreTemporary = `${registryTemporary}.restore`;
+        fs.writeFileSync(restoreTemporary, originalRegistryBytes, { flag: "wx" });
+        fs.renameSync(restoreTemporary, registryPath);
+      } catch (restoreError) { failures.push(restoreError); }
+    }
+    // Preserve failed evidence outside the published path, even if registry restoration failed.
+    // Existing staging/temporary files deliberately prevent an unreviewed retry of this identity.
+    if (releasePromoted) {
+      try {
+        assert(!fs.existsSync(staging), "release recovery staging directory already exists");
+        fs.renameSync(releaseAbsoluteRoot, staging);
+      } catch (restoreError) { failures.push(restoreError); }
+    }
+  } finally { closeReleaseDatabase(db, failures); }
 
   const releaseBinding = { capabilityReleasePath: releaseRelativePath, trustedReleaseRegistryPath: TRUSTED_RELEASE_REGISTRY_PATH,
     ...(scopedWeather && {requiredCapabilityScope:"world_evolution"}) };
@@ -252,9 +271,15 @@ function openDb(file) {
     db.exec(`PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS releases(capability_release_identity TEXT PRIMARY KEY, registry_revision INTEGER NOT NULL UNIQUE, release_path TEXT NOT NULL UNIQUE, release_sha256 TEXT NOT NULL UNIQUE, recorded_at_utc TEXT NOT NULL, owner_decision_used INTEGER NOT NULL CHECK(owner_decision_used = 0));`);
     return db;
   } catch (error) {
-    try { db.close() } catch { /* Preserve the initialization failure. */ }
-    throw error
+    closeReleaseDatabase(db, [error]);
   }
+}
+function closeReleaseDatabase(db, failures) {
+  try { db.close(); } catch (error) { failures.push(error); }
+  if (failures.length > 1) throw new AggregateError(failures,
+    failures[0] instanceof Error ? failures[0].message : "capability_release_cleanup_failed",
+    { cause: failures[0] });
+  if (failures.length === 1) throw failures[0];
 }
 function resolveExisting(root, relative) { const absolute = resolveInside(root, relative); assert(fs.existsSync(absolute) && fs.statSync(absolute).isFile(), `release file is missing: ${relative}`); return absolute; }
 function resolveInside(root, relative) { assert(typeof relative === "string" && relative && !path.isAbsolute(relative) && !/^[A-Za-z]:[\\/]/.test(relative), "release path must be project-relative"); const projectRoot = path.resolve(root); const absolute = path.resolve(projectRoot, relative); assert(absolute.startsWith(`${projectRoot}${path.sep}`), "release path escapes project root"); return absolute; }

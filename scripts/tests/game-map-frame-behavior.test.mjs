@@ -3,13 +3,14 @@ import fs from "node:fs"
 import { fileURLToPath } from "node:url"
 import test from "node:test"
 import ts from "typescript"
+import sharp from "sharp"
 
 // Execute actual pure map modules in memory with a closed import table.
 // No runtime store, server, model, filesystem writes or production world access.
 const allowed = new Set([
   "game-map-frame-builder", "game-map-layer-generator", "game-map-geometry",
   "game-map-frame-validator", "game-map-frame-schema", "home-map-structure-schema",
-  "natural-home-mvp-sample", "source-fact-identity",
+  "natural-home-mvp-sample", "source-fact-identity", "game-map-composite-image-analysis",
 ])
 const cache = new Map()
 function load(name) {
@@ -25,6 +26,7 @@ function load(name) {
   const loadedModule = { exports: {} }
   cache.set(name, loadedModule)
   new Function("require", "module", "exports", result.outputText)(specifier => {
+    if (name === "game-map-composite-image-analysis" && specifier === "sharp") return { default: sharp }
     if (specifier === "../runtime-core/source-fact-identity") return load("source-fact-identity")
     assert.ok(specifier.startsWith("./"), `external import forbidden: ${specifier}`)
     return load(specifier.slice(2))
@@ -170,4 +172,54 @@ test("rebuilding a later tick changes its identity without changing the source s
   assert.notEqual(next.frameId, frame.frameId)
   assert.ok(next.runtimeLayer.stateRefs.includes("tick:8"))
   assert.equal(frame.tick, 7)
+})
+
+
+test("composite image analysis preserves uniform pixels and distinguishes object alpha", async () => {
+  const analysis = load("game-map-composite-image-analysis")
+  const png = await sharp({ create: { width: 96, height: 80, channels: 4, background: { r: 40, g: 80, b: 120, alpha: 1 } } }).png().toBuffer()
+  const metrics = await analysis.measureCompositeOutputQuality(png)
+  assert.equal(metrics.averageVerticalSeamDelta, 0)
+  assert.equal(metrics.averageHorizontalSeamDelta, 0)
+  assert.equal(metrics.objectMaterialAlphaMissingCount, 0)
+  assert.equal(metrics.objectMaterialAlphaMissingSuspected, false)
+  const audit = [{ slotId: "terrain-patch-1-1", left: 32, top: 32, width: 32, height: 32,
+    unitKind: "tree_visual_unit", sourceHasAlpha: false }]
+  const missing = await analysis.measureCompositeOutputQuality(png, audit)
+  assert.equal(missing.objectMaterialAlphaMissingCount, 1)
+  assert.equal(missing.objectMaterialAlphaMissingSuspected, true)
+  const isolated = await analysis.measureCompositeOutputQuality(png, [{ ...audit[0], sourceHasAlpha: true }])
+  assert.equal(isolated.objectMaterialAlphaMissingCount, 0)
+  const repaired = await analysis.repairCompositeSeams(png, audit)
+  const raw = async input => sharp(input).ensureAlpha().raw().toBuffer()
+  assert.deepEqual(await raw(repaired), await raw(png))
+})
+
+test("composite seam processing changes only the requested seam band", async () => {
+  const { repairCompositeSeams } = load("game-map-composite-image-analysis")
+  const width = 96, height = 32, raw = Buffer.alloc(width * height * 4)
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const offset = (y * width + x) * 4
+    raw.fill(x < 32 ? 20 : 220, offset, offset + 3)
+    raw[offset + 3] = 255
+  }
+  const png = await sharp(raw, { raw: { width, height, channels: 4 } }).png().toBuffer()
+  const result = await repairCompositeSeams(png, [{ slotId: "ground-patch-0-1", left: 32, top: 0 }])
+  const pixels = await sharp(result).ensureAlpha().raw().toBuffer()
+  assert.notDeepEqual(pixels, raw)
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const offset = (y * width + x) * 4
+    assert.equal(pixels[offset + 3], 255)
+    if (Math.abs(x - 32) > 5 && Math.abs(x - 64) > 5)
+      assert.deepEqual(pixels.subarray(offset, offset + 4), raw.subarray(offset, offset + 4))
+  }
+})
+
+test("composite analysis retains terrain patch identity and rejects corrupt images", async () => {
+  const analysis = load("game-map-composite-image-analysis")
+  assert.deepEqual(analysis.parseTerrainPatchSlotId("grass-main-patch-12-3"), { groupId: "grass-main", row: 12, column: 3 })
+  assert.equal(analysis.parseTerrainPatchSlotId("grass-main"), null)
+  assert.equal(analysis.parseTerrainPatchSlotId("grass-patch--1-2"), null)
+  await assert.rejects(analysis.measureCompositeOutputQuality(Buffer.from("invalid png")))
+  await assert.rejects(analysis.repairCompositeSeams(Buffer.from("invalid png"), []))
 })

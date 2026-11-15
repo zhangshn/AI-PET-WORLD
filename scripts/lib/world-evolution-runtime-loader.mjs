@@ -3,7 +3,7 @@ import path from 'node:path'
 import {registerHooks} from 'node:module'
 import {pathToFileURL} from 'node:url'
 
-export const LOOP_RUNTIME_FILES = Object.freeze(['world-runtime-production-store.ts','world-runtime-record-validation.ts',
+export const LOOP_RUNTIME_FILES = Object.freeze(['world-runtime-production-store.ts','world-runtime-write-cleanup.ts','world-runtime-record-validation.ts',
   'world-runtime-schema.ts','runtime-path-security.ts','world-evolution-transaction.ts','world-evolution-clock.ts','world-evolution-history.ts'])
 const pendingByRoot = new Map()
 export function loadLoopRuntime(root){

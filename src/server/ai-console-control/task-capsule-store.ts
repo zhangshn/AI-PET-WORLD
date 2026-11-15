@@ -111,10 +111,16 @@ export function isAiConsoleTaskCapsuleStoreInitialized(): boolean {
 
 export function initializeAiConsoleTaskCapsuleStore(): AiConsoleTaskCapsuleStoreMetadata {
   const database = openWritableStore()
+  const errors: unknown[] = []
   try {
     return readAndVerifyMetadata(database)
+  } catch (error) {
+    errors.push(error)
+    throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'initialize_ai_console_task_capsule_store_operation_and_cleanup_failed', { cause: errors[0] })
   }
 }
 
@@ -127,6 +133,8 @@ export function writeAiConsoleTaskCapsule(input: AiConsoleTaskCapsuleInput): AiC
   const capsuleId = sha256Text(`ai_console_task_capsule_v1\n${contentSha256}`)
   const database = openWritableStore()
 
+  const errors: unknown[] = []
+  let transactionActive = false
   try {
     const existingRow = database.prepare(`${capsuleSelectSql} WHERE task_id = ?`).get(input.taskId)
     if (existingRow) {
@@ -175,17 +183,22 @@ export function writeAiConsoleTaskCapsule(input: AiConsoleTaskCapsuleInput): AiC
     }
 
     database.exec("BEGIN IMMEDIATE")
-    try {
-      insertCapsule(database, record, contentBlob)
-      updateMetadata(database, metadata, record)
-      database.exec("COMMIT")
-    } catch (error) {
-      database.exec("ROLLBACK")
-      throw error
-    }
+    transactionActive = true
+    insertCapsule(database, record, contentBlob)
+    updateMetadata(database, metadata, record)
+    database.exec("COMMIT")
+    transactionActive = false
     return record
+  } catch (error) {
+    errors.push(error)
+    if (transactionActive) {
+      try { database.exec("ROLLBACK") } catch (rollbackError) { errors.push(rollbackError) }
+    }
+    throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'write_ai_console_task_capsule_operation_and_cleanup_failed', { cause: errors[0] })
   }
 }
 
@@ -200,6 +213,8 @@ export function readAiConsoleTaskCapsuleStore(): AiConsoleTaskCapsuleStoreRead {
   }
 
   let database: DatabaseSync | null = null
+  let readFailed = false
+  let readError: unknown
   try {
     database = new DatabaseSync(storePath, { open: true, readOnly: true })
     verifyDatabaseIntegrity(database)
@@ -226,13 +241,18 @@ export function readAiConsoleTaskCapsuleStore(): AiConsoleTaskCapsuleStoreRead {
       ],
     }
   } catch (error) {
+    readFailed = true
+    readError = error
     return {
       status: "unknown_or_stale",
       reasonCode: error instanceof Error ? error.message : "ai_console_task_capsule_store_read_failed",
       evidenceReferences: [taskCapsuleStoreLogicalPath],
     }
   } finally {
-    database?.close()
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], 'read_ai_console_task_capsule_store_read_and_close_failed', { cause: readError })
+      throw closeError
+    }
   }
 }
 
@@ -345,7 +365,9 @@ function openWritableStore(): DatabaseSync {
     database.exec("PRAGMA user_version = 1")
     return database
   } catch (error) {
-    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    try { database.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'task_capsule_store_initialization_and_close_failed', { cause: error })
+    }
     throw error
   }
 }

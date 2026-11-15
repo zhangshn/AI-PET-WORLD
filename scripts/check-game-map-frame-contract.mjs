@@ -30,6 +30,7 @@ const materialPackBuilder = read("src/world/game-map-frame/game-map-approved-vis
 const materialRequest = read("src/world/game-map-frame/game-map-material-generation-request.ts")
 const materialInputPack = read("src/world/game-map-frame/game-map-material-input-pack.ts")
 const runtimeCompositor = read("src/world/game-map-frame/game-map-runtime-compositor.ts")
+const runtimeImageAnalysis = read("src/world/game-map-frame/game-map-composite-image-analysis.ts")
 const runtimeFrameSchema = read("src/world/game-map-frame/game-map-runtime-frame-schema.ts")
 const runtimeFrameBuilder = read("src/world/game-map-frame/game-map-runtime-frame-builder.ts")
 const runtimeFrameFinalizer = read("src/world/game-map-frame/game-map-runtime-frame-finalizer.ts")
@@ -425,7 +426,7 @@ check(
 )
 check(
   "P7-9 Runtime Compositor blocks dense or repeated whole-map texture",
-  runtimeCompositor.includes("measureRepetitiveTextureMetrics") &&
+  runtimeImageAnalysis.includes("measureRepetitiveTextureMetrics") &&
     runtimeCompositor.includes("denseTextureArtifactSuspected") &&
     runtimeCompositor.includes("composite_repetitive_texture_suspected") &&
     runtimeCompositor.includes("composite_dense_texture_suspected") &&
@@ -434,9 +435,9 @@ check(
 )
 check(
   "P7-9 Runtime Compositor blocks object materials without alpha isolation",
-  runtimeCompositor.includes("objectMaterialAlphaMissingCount") &&
-    runtimeCompositor.includes("isObjectVisualUnitKind") &&
-    runtimeCompositor.includes('unitKind.endsWith("_visual_unit")') &&
+  runtimeImageAnalysis.includes("objectMaterialAlphaMissingCount") &&
+    runtimeImageAnalysis.includes("isObjectVisualUnitKind") &&
+    runtimeImageAnalysis.includes('unitKind.endsWith("_visual_unit")') &&
     runtimeCompositor.includes("composite_object_material_alpha_missing") &&
     compositeJudge.includes("composite_object_material_alpha_missing")
 )

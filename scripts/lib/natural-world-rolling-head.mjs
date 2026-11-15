@@ -17,10 +17,10 @@ const equal=(a,b)=>digest(a)===digest(b)
 const ref=(b,version=v4)=>({id:b.path,sha256:b.sha256,version})
 const iso=x=>new Date(x).toISOString()
 const hashPattern=/^[0-9a-f]{64}$/
-const memo=new Map()
 
-// Display-only, short-lived attestation. Fresh release/registry, five roles, lifecycle, machine ledger,
-// SQLite WAL and adjudication identities invalidate it; the full inspection timestamp is exposed.
+// Display-only attestation. The full validator also checks transitive programs
+// and evidence outside the outer bindings below. Revalidate on every read:
+// an unchanged partial digest cannot establish that those sources are unchanged.
 export function readDisplayRelease(projectRoot,releasePath,version,file){
   const rel=file(releasePath,256*1024),entry=JSON.parse(rel.bytes),registry=file(TRUSTED_RELEASE_REGISTRY_PATH,1024*1024)
   const rows=JSON.parse(registry.bytes).releaseRecords.filter(r=>r.releasePath===releasePath)
@@ -36,15 +36,12 @@ export function readDisplayRelease(projectRoot,releasePath,version,file){
     '.runtime/ai-painter/capability-lifecycle/'+version+'/lifecycle.sqlite-wal','.runtime/ai-painter/capability-release-ledger.sqlite','.runtime/ai-painter/capability-release-ledger.sqlite-wal']){
     try{checks.push(sha(reader.read(f,4*1024*1024)))}catch(e){if(e.code!=='ENOENT')throw e;checks.push('absent')}
   }
-  const key=path.resolve(projectRoot)+'|'+version,id=checks.join('|'),now=Date.now(),cached=memo.get(key)
-  if(cached&&cached.id===id&&now>=cached.at&&now-cached.at<30000)return cached
+  const id=checks.join('|'),now=Date.now()
   const value=loadAndValidateReleasedCapabilityBinding({projectRoot,capabilityReleasePath:releasePath,trustedReleaseRegistryPath:TRUSTED_RELEASE_REGISTRY_PATH,requiredCapabilityScope:'world_evolution'})
   need(value.verificationStatus==='verified_from_machine_adjudication_and_trusted_registry'&&value.release.modelCapabilityVersion===version&&
     value.release.capabilityReleaseIdentity===version&&value.release.capabilityScope==='world_evolution'&&value.capabilityReleaseSha256===rel.sha256&&
     value.trustedReleaseRegistrySha256===registry.sha256,'head_release_scope')
-  const item={id,at:now,value}
-  if(memo.size>=4&&!memo.has(key))memo.delete(memo.keys().next().value)
-  memo.set(key,item);return item
+  return {id,at:now,value}
 }
 export function rollingAuthority(projectRoot,file){
   const full=readDisplayRelease(projectRoot,release,v4,file),a=full.value

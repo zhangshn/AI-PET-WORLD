@@ -23,9 +23,9 @@ export function readProjectProgressTruth({projectRoot=process.cwd(),runtimeRoot,
   need(typeof logical==='string'&&logical.length<=512&&!logical.startsWith('/')&&!logical.includes('\\')&&!/[:\0]/.test(logical)&&logical.split('/').every(s=>s&&s!=='.'&&s!=='..'),'truth_path_invalid',409)
   need(/^(?:src\/|scripts\/|ml\/ai-painter\/(?:src|scripts|tests)\/|docs\/|data\/|\.runtime\/ai-painter\/controller-repair-reviews\/|\.runtime\/local-backup\/project-progress\/)/.test(logical)&&!/(?:^|\/)(?:\.env[^/]*|[^/]*(?:credential|secret|cookie)[^/]*)$/i.test(logical),'truth_path_scope',409)
   const inRuntime=logical.startsWith('.runtime/');let file=inRuntime?runtime:root
-  for(const part of (inRuntime?logical.slice(9):logical).split('/')){file=path.join(file,part);need(!fs.lstatSync(file).isSymbolicLink()&&same(fs.realpathSync(file),file),'truth_path_boundary',409)}
-  const before=fs.lstatSync(file);need(before.isFile()&&before.nlink===1&&before.size<=max,'truth_file_limit',409)
-  const b=fs.readFileSync(file),after=fs.lstatSync(file);need(b.length<=max&&before.ino===after.ino&&before.dev===after.dev&&before.size===after.size&&before.mtimeMs===after.mtimeMs,'truth_source_changed',409)
+  for(const part of (inRuntime?logical.slice(9):logical).split('/')){file=path.join(file,part);need(!fs.lstatSync(file,{bigint:true}).isSymbolicLink()&&same(fs.realpathSync(file),file),'truth_path_boundary',409)}
+  const before=fs.lstatSync(file,{bigint:true});need(before.isFile()&&before.nlink===1n&&before.size<=max,'truth_file_limit',409)
+  const b=fs.readFileSync(file),after=fs.lstatSync(file,{bigint:true});need(b.length<=max&&before.ino===after.ino&&before.dev===after.dev&&before.size===after.size&&before.mtimeNs===after.mtimeNs,'truth_source_changed',409)
   need(++reads<=192&&(bytes+=b.length)<=8*1024*1024,'truth_read_limit',409)
   const result={bytes:b,sha256:hash(b)};cache.set(logical,result);return result
  }

@@ -14,6 +14,16 @@ export function checkDirectory(root) {
   const s = fs.lstatSync(root)
   need(s.isDirectory() && !s.isSymbolicLink() && path.resolve(fs.realpathSync(root)).toLowerCase() === path.resolve(root).toLowerCase(), 'store_root_boundary', 409)
 }
+function storeFailure(code,status,cause) {
+  const error=new ModuleError(code,status)
+  Object.defineProperty(error,'cause',{value:cause,configurable:true})
+  return error
+}
+function finishStoreDatabase(db,errors) {
+  try { db?.close() } catch(error) { errors.push(error) }
+  if(errors.length===1)throw errors[0]
+  if(errors.length>1)throw new AggregateError(errors,'Database operation and cleanup failed',{cause:errors[0]})
+}
 export function initializeStore(root, inventory) {
   need(!fs.existsSync(root), 'store_already_exists', 409)
   fs.mkdirSync(root, { recursive: false })
@@ -23,7 +33,7 @@ export function initializeStore(root, inventory) {
     const bytes = Buffer.from(JSON.stringify(inventory))
     need(bytes.length <= 256 * 1024, 'inventory_limit')
     fs.writeFileSync(path.join(root, 'inventory', 'initial-v1.json'), bytes, { flag: 'wx' })
-    const db = new DatabaseSync(path.join(root, 'module.sqlite'))
+    const db = new DatabaseSync(path.join(root, 'module.sqlite')), errors=[]
     try {
       db.exec(`PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON;
         CREATE TABLE module_meta (id INTEGER PRIMARY KEY CHECK(id=1), schema_version TEXT NOT NULL, revision INTEGER NOT NULL, inventory_sha TEXT NOT NULL, created_at_utc TEXT NOT NULL);
@@ -34,10 +44,11 @@ export function initializeStore(root, inventory) {
         CREATE TABLE work_events (event_id TEXT PRIMARY KEY, producer_id TEXT NOT NULL, producer_sequence INTEGER NOT NULL, module_id TEXT NOT NULL, task_id TEXT NOT NULL, event_at_utc TEXT, work_date TEXT, payload_json TEXT NOT NULL, sha TEXT NOT NULL, UNIQUE(producer_id,producer_sequence));
         CREATE INDEX work_date_module ON work_events(work_date,module_id);`)
       db.prepare('INSERT INTO module_meta VALUES (1,?,?,?,?)').run(schema, 0, hash(bytes), new Date().toISOString())
-    } finally { db.close() }
-  } catch {
+    } catch(error) { errors.push(error) }
+    finally { finishStoreDatabase(db,errors) }
+  } catch(error) {
     // Keep failed initialization bytes for diagnosis; never erase or silently reinitialize.
-    throw new ModuleError('store_initialization_failed', 409)
+    throw storeFailure('store_initialization_failed',409,error)
   }
 }
 export function createStore(root) {
@@ -61,18 +72,25 @@ export function createStore(root) {
       const meta = db.prepare('SELECT * FROM module_meta WHERE id=1').get()
       need(meta?.schema_version === schema && Number.isSafeInteger(meta.revision) && meta.revision >= 0, 'store_metadata_conflict', 409)
       return db
-    } catch (e) { db?.close(); if (e instanceof ModuleError) throw e; throw new ModuleError('module_store_unreadable', 503) }
+    } catch (error) {
+      try { finishStoreDatabase(db,[error]) }
+      catch(cause) {
+        if(error instanceof ModuleError&&cause===error)throw error
+        throw storeFailure(error instanceof ModuleError?error.message:'module_store_unreadable',error instanceof ModuleError?error.status:503,cause)
+      }
+    }
   }
   function read(fn) {
-    const db = open()
+    const db = open(), errors=[]
     try { db.exec('BEGIN'); const meta = db.prepare('SELECT * FROM module_meta WHERE id=1').get(); return fn(db, meta) }
-    finally { db.close() }
+    catch(error) { errors.push(error) }
+    finally { finishStoreDatabase(db,errors) }
   }
   function write(fn) {
-    const db = open(true)
+    const db = open(true), errors=[]
     try { db.exec('BEGIN IMMEDIATE'); const result = fn(db); db.exec('COMMIT'); return result }
-    catch (e) { try { db.exec('ROLLBACK') } catch {} throw e }
-    finally { db.close() }
+    catch(error) { errors.push(error); try { db.exec('ROLLBACK') } catch(rollbackError) { errors.push(rollbackError) } }
+    finally { finishStoreDatabase(db,errors) }
   }
   function journalFrom(db, date) {
     const row = db.prepare('SELECT * FROM daily_records WHERE record_date=?').get(date)

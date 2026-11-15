@@ -108,7 +108,7 @@ function fixture(t) {
           return value.writeFile(content, encoding)
         },
         sync: async () => { await hook({ operation: "handle.sync", path: args[0] }); return value.sync() },
-        stat: () => value.stat(), close: () => value.close(),
+        stat: (options) => value.stat(options), close: () => value.close(),
       }
     }
   }

@@ -102,17 +102,17 @@ export function createRepository(projectRoot,{privateFixture=false}={}) {
     const match=tree?tree.match(/^(\d+) blob ([a-f0-9]+)\t/):null
     if(tree)need(match&&['100644','100755'].includes(match[1]),'git_tree_entry_unsupported',409)
     if(!fs.existsSync(absolute)){need(!fs.lstatSync(absolute,{throwIfNoEntry:false}),'git_file_link_unsupported',409);need(match,'git_missing_untracked_file',409);return{path:file,workingSha256:null,sizeBytes:0,mode:'000000',expectedOid:null,baseOid:match[2],baseMode:match[1],newFile:false}}
-    const before=fs.lstatSync(absolute);need(before.isFile()&&!before.isSymbolicLink()&&before.nlink===1&&before.size<=2*1024*1024,'git_file_boundary',409)
-    const bytes=fs.readFileSync(absolute),after=fs.lstatSync(absolute)
-    need(after.isFile()&&!after.isSymbolicLink()&&after.nlink===1&&before.ino===after.ino&&before.dev===after.dev&&before.size===after.size&&before.mtimeMs===after.mtimeMs&&before.ctimeMs===after.ctimeMs,'git_file_changed',409)
+    const before=fs.lstatSync(absolute,{bigint:true});need(before.isFile()&&!before.isSymbolicLink()&&before.nlink===1n&&before.size<=2*1024*1024,'git_file_boundary',409)
+    const bytes=fs.readFileSync(absolute),after=fs.lstatSync(absolute,{bigint:true})
+    need(after.isFile()&&!after.isSymbolicLink()&&after.nlink===1n&&before.ino===after.ino&&before.dev===after.dev&&before.size===after.size&&before.mtimeNs===after.mtimeNs&&before.ctimeNs===after.ctimeNs,'git_file_changed',409)
     const content=bytes.toString('utf8')
     need(!bytes.includes(0)&&!/(?:-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----|(?:gh[pousr]_|github_pat_|sk-proj-)[a-zA-Z0-9_]{16,}|(?:password|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["'][^"'\s]{12,}["'])/i.test(content),'git_sensitive_content_blocked',409)
     const attr=git(['check-attr','-z','filter','working-tree-encoding','--',file]).stdout.toString('utf8').split('\0')
     for(let i=0;i+2<attr.length;i+=3)need(['unspecified','unset'].includes(attr[i+2]),'git_attributes_unsupported',409)
     const converted=textWithInput(['hash-object',`--path=${file}`,'--stdin'],bytes)
     need(oid.test(converted),'git_blob_identity_invalid',409)
-    const mode=snapshot.coreFilemode?(before.mode&0o111?'100755':'100644'):(match?.[1]??'100644')
-    return{path:file,workingSha256:hash(bytes),sizeBytes:bytes.length,mtimeMs:before.mtimeMs,ctimeMs:before.ctimeMs,mode,expectedOid:converted,baseOid:match?.[2]??null,baseMode:match?.[1]??null,newFile:!match}
+    const mode=snapshot.coreFilemode?(before.mode&0o111n?'100755':'100644'):(match?.[1]??'100644')
+    return{path:file,workingSha256:hash(bytes),sizeBytes:bytes.length,mtimeMs:Number(before.mtimeNs)/1e6,ctimeMs:Number(before.ctimeNs)/1e6,mode,expectedOid:converted,baseOid:match?.[2]??null,baseMode:match?.[1]??null,newFile:!match}
   }
   function textWithInput(args,input){return git(args,{input}).stdout.toString('utf8').trim()}
   function expectedChanges(selected){return selected.filter(x=>x.expectedOid!==x.baseOid||x.mode!==x.baseMode).map(x=>({path:x.path,newOid:x.expectedOid,newMode:x.mode})).sort((a,b)=>a.path.localeCompare(b.path))}

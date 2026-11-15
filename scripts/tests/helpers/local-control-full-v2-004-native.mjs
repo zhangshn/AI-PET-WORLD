@@ -3,7 +3,7 @@
 import fs from'node:fs';import path from'node:path';import crypto from'node:crypto';import assert from'node:assert/strict';import{spawn,execFileSync}from'node:child_process';import{pathToFileURL}from'node:url';
 import{observeAffinity}from'./local-control-full-v2-004-observer.mjs';
 const root=process.cwd(),sha=b=>crypto.createHash('sha256').update(b).digest('hex'),mod=p=>import(pathToFileURL(path.join(root,p)).href);
-const owner=await mod('scripts/lib/ai-painter-owned-worker-native-v1.mjs'),stop=await mod('scripts/lib/ai-painter-owned-stop-native-control-v1.mjs'),registry=await mod('src/server/ai-painter-current-execution-registry.mjs');
+const owner=await mod('scripts/lib/ai-painter-owned-worker-native-v1.mjs'),stop=await mod('scripts/lib/ai-painter-owned-stop-native-control-v1.mjs');await mod('src/server/ai-painter-current-execution-registry.mjs');
 const live=new WeakSet(),retained=new Map();let streamDebit=0,helperDebit=0;
 export function directoryBytes(r){return fs.readdirSync(r,{withFileTypes:true}).reduce((n,e)=>{const p=path.join(r,e.name),s=fs.lstatSync(p);assert(!s.isSymbolicLink());if(e.isDirectory())return n+directoryBytes(p);assert(s.isFile()&&s.nlink===1);return n+s.size},0)}
 function caseData(){const c=JSON.parse(fs.readFileSync(path.join(root,'.runtime/fixture/case.json')));assert.equal(c.taskId,'M-LOCAL-FULL-V2-CPU-004');return c}
@@ -18,7 +18,7 @@ export async function runNative(o){
 }
 export async function call(request,phase,context=null){
  budget();assert(['cpu','execute'].includes(phase));const c=caseData(),id=crypto.randomUUID(),logical='.runtime/n/'+id.slice(0,8),dir=path.join(root,logical);fs.mkdirSync(dir,{recursive:true});
- const identityOutput=execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',"$p=Get-Process -Id "+process.pid+";$p.ProcessorAffinity=[IntPtr]3;(Get-CimInstance Win32_Process -Filter 'ProcessId="+process.pid+"').CreationDate.ToUniversalTime().ToString('o')"],{encoding:'utf8',windowsHide:true,timeout:5000});helperDebit+=Buffer.byteLength(identityOutput);const identity=process.pid+':'+identityOutput.trim();
+ const identityOutput=execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',"$p=Get-Process -Id "+process.pid+";$p.ProcessorAffinity=[IntPtr]3;(Get-CimInstance Win32_Process -Filter 'ProcessId="+process.pid+"').CreationDate.ToUniversalTime().ToString('o')"],{encoding:'utf8',windowsHide:true,timeout:5000});helperDebit+=Buffer.byteLength(identityOutput);
  const observationPath=request.outputRoot+'/initiator-exit-observed.json',workerInput=put(logical+'/worker-request.json',{...request,phase,observationPath}),runtime=JSON.parse(fs.readFileSync(path.join(root,'.runtime/fixture/runtime.json'))).python.absolutePath,args=['-B',path.join(root,'scripts/tests/private-full-v2-004-worker.py'),'--cpu-request',workerInput.path,'--sha256',workerInput.sha256];
  const guardPath=path.join(dir,'guard.json'),guard={identity:id,startedEvidence:path.join(dir,'started.json'),nativeOwnerSource:owner.nativeOwnerSourceIdentity()},guardBytes=JSON.stringify(guard);put(logical+'/guard.json',guardBytes);
  const command=owner.createNativeOwnerCommand(runtime,args,root,c.deadlineUnixMs-2000,1000,guard,guardBytes);helperDebit+=Buffer.byteLength(command.nativeBuild.output);budget();

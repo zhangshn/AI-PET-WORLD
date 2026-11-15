@@ -97,8 +97,11 @@ export function openStorageCatalog() {
     upsertStorageMeta("catalog_path", path.resolve(catalogPath))
     return database
   } catch (error) {
-    try { database.close() } catch { /* Preserve the initialization failure. */ }
-    database = null
+    try { database.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'ai_pet_world_storage_catalog_initialization_and_close_failed', { cause: error })
+    } finally {
+      database = null
+    }
     throw error
   }
 }

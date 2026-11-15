@@ -426,9 +426,11 @@ function acquireLedgerCommitLock(token, startedAt, processStartIdentity) {
   while (true) {
     let descriptor = null
     let lockCreated = false
+    let lockIdentity = null
     try {
       descriptor = fs.openSync(LEDGER_LOCK_PATH, "wx")
       lockCreated = true
+      lockIdentity = fs.fstatSync(descriptor, { bigint: true })
       fs.writeFileSync(descriptor, `${JSON.stringify({
         schemaVersion: "ai-painter-program-event-commit-lock-v2",
         token,
@@ -446,7 +448,14 @@ function acquireLedgerCommitLock(token, startedAt, processStartIdentity) {
       // Only clean up our own incomplete lock; preserve the first failure even
       // when close or unlink also fails. A failed close is not safe to retry.
       try { if (descriptor !== null) fs.closeSync(descriptor) } catch { /* Preserve the primary failure. */ }
-      try { if (lockCreated && fs.existsSync(LEDGER_LOCK_PATH)) fs.unlinkSync(LEDGER_LOCK_PATH) } catch { /* Keep the failed lock for diagnosis. */ }
+      try {
+        if (lockCreated && lockIdentity && fs.existsSync(LEDGER_LOCK_PATH)) {
+          const current = fs.lstatSync(LEDGER_LOCK_PATH, { bigint: true })
+          if (current.isFile() && !current.isSymbolicLink() && current.ino === lockIdentity.ino && current.dev === lockIdentity.dev) {
+            fs.unlinkSync(LEDGER_LOCK_PATH)
+          }
+        }
+      } catch { /* Keep the failed lock for diagnosis. */ }
       if (lockCreated || error?.code !== "EEXIST") throw error
       const probe = probeLedgerCommitLock()
       if (probe.state === "dead") {
@@ -466,11 +475,11 @@ function probeLedgerCommitLock() {
   let stat
   let record = null
   try {
-    stat = fs.statSync(LEDGER_LOCK_PATH)
+    stat = fs.statSync(LEDGER_LOCK_PATH, { bigint: true })
     record = JSON.parse(fs.readFileSync(LEDGER_LOCK_PATH, "utf8"))
   } catch (error) {
     if (error.code === "ENOENT") return { state: "dead", reason: "lock_missing", lockMissing: true }
-    if (!stat || Date.now() - stat.mtimeMs < MALFORMED_LOCK_GRACE_MS) {
+    if (!stat || Date.now() - Number(stat.mtimeMs) < MALFORMED_LOCK_GRACE_MS) {
       return { state: "active", reason: "lock_initialization_in_progress" }
     }
     return { state: "indeterminate", reason: "lock_record_unreadable" }
@@ -495,6 +504,16 @@ function probeLedgerCommitLock() {
 function archiveDeadLedgerCommitLock(probe) {
   if (probe.state !== "dead" || probe.lockMissing === true) {
     throw new Error("only a dead bound process lock may be archived")
+  }
+  // A dead-owner probe is a snapshot, not authority over a replacement file.
+  if (!probe.stat || !probe.record) return false
+  try {
+    const current = fs.lstatSync(LEDGER_LOCK_PATH, { bigint: true })
+    if (!current.isFile() || current.isSymbolicLink() || current.ino !== probe.stat.ino || current.dev !== probe.stat.dev) return false
+    if (!isDeepStrictEqual(JSON.parse(fs.readFileSync(LEDGER_LOCK_PATH, "utf8")), probe.record)) return false
+  } catch (error) {
+    if (error instanceof SyntaxError || ["ENOENT", "EACCES", "EPERM"].includes(error?.code)) return false
+    throw error
   }
   fs.mkdirSync(LEDGER_LOCK_ARCHIVE_DIR, { recursive: true })
   const reason = String(probe.reason ?? "dead").replace(/[^a-z0-9_-]+/giu, "-").slice(0, 80)

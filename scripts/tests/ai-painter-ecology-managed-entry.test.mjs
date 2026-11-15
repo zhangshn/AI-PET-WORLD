@@ -7,7 +7,7 @@ import {CAPABILITY,EXECUTION_PROFILE,write,bind,json,validateCompleted} from '..
 
 // Transport and registry fixtures only: no native Job, tensor computation,
 // original pixels, GPU admission or production registry writes in these tests.
-function fixture(t){
+function fixture(){
  const base=path.resolve(process.env.ECOLOGY_TEST_EVIDENCE_ROOT??'.runtime/ai-painter/ecology-managed-entry-t-q4-73/phase-tests')
  fs.mkdirSync(base,{recursive:true});const root=fs.mkdtempSync(path.join(base,'fixture-'))
  const plan={runId:'ecology-fixture-run',packageId:'ecology-fixture-package',capabilityVersion:CAPABILITY,

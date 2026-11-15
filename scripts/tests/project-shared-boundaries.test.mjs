@@ -347,3 +347,39 @@ test('history adapter facade keeps public identities and split modules form an a
   graph.forEach((_, name) => visit(name))
   assert.equal(complete.size, modules.length)
 })
+
+
+test('placement audit fingerprints retain the legacy string format and duplicate entries', () => {
+  const { fingerprintMapPlacements } = load('src/world/map-state/map-placement-fingerprint.ts')
+  assert.equal(fingerprintMapPlacements([]), '')
+  const a = { id: 'a', layer: 'nature', x: -0, y: 2, alpha: 0.5, tags: ['z', 'a', 'a'] }
+  const b = { id: 'b', layer: 'ground', x: -2, y: 0, alpha: 1, tags: ['树'] }
+  assert.equal(fingerprintMapPlacements([b, a, a]), 'a:nature:0:2:0.5:a+a+z|a:nature:0:2:0.5:a+a+z|b:ground:-2:0:1:树')
+})
+
+test('placement fingerprint sorting does not mutate the state or tag arrays', () => {
+  const { fingerprintMapPlacements } = load('src/world/map-state/map-placement-fingerprint.ts')
+  const a = Object.freeze({ id: 'z', layer: 'nature', x: 0, y: 3, alpha: 1, tags: Object.freeze(['z', 'a']) })
+  const b = Object.freeze({ id: 'a', layer: 'actor', x: 1, y: 4, alpha: 1, tags: Object.freeze([]) })
+  const placements = Object.freeze([a, b])
+  assert.equal(fingerprintMapPlacements(placements), fingerprintMapPlacements([b, a]))
+  assert.strictEqual(placements[0], a)
+  assert.deepEqual(a.tags, ['z', 'a'])
+})
+
+
+test('legacy source facts preserve category order, duplicate IDs and whitespace bytes', async () => {
+  const {buildSourceFactIds}=await import('../lib/legacy-runtime-source-facts.mjs')
+  const save={worldId:'world',homeMapState:{zones:[{id:'same'},{id:''},{id:'  '}],placements:[{id:'same'},{id:0}],constructionPlans:[{id:' plan '}],mapDiffs:[{id:'diff'}],worldConnectivity:{contractId:'contract',blueprintId:'blueprint',currentRegion:{regionId:'region',neighborRegionIds:['neighbor','neighbor'],edgePorts:['edge',null]},pathGraph:{pathGraphId:'path'},hydrologyGraph:{hydrologyGraphId:'water'},walkableGraph:{walkableGraphId:'walk'}}},recentEvents:[{id:'event'}]}
+  const before=structuredClone(save)
+  assert.deepEqual(buildSourceFactIds(save),['world','same','same',' plan ','diff','event','contract','blueprint','region','neighbor','neighbor','edge','path','water','walk'])
+  assert.deepEqual(save,before)
+})
+
+test('legacy source facts keep absent-field defaults and invalid-entry failures', async () => {
+  const {buildSourceFactIds}=await import('../lib/legacy-runtime-source-facts.mjs')
+  assert.deepEqual(buildSourceFactIds({}),[])
+  assert.deepEqual(buildSourceFactIds({worldId:'world',homeMapState:{zones:{id:'ignored'},placements:null,constructionPlans:7,mapDiffs:[]},recentEvents:'ignored'}),['world'])
+  assert.throws(()=>buildSourceFactIds({homeMapState:{zones:[null]}}),TypeError)
+  assert.throws(()=>buildSourceFactIds({homeMapState:{worldConnectivity:{currentRegion:{neighborRegionIds:7}}}}),TypeError)
+})

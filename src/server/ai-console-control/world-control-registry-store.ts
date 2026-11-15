@@ -151,10 +151,16 @@ type StoredWorldState = AiConsoleWorldControlStateRecord & { creationContentBlob
 
 export function initializeAiConsoleWorldControlRegistryStore(): AiConsoleWorldControlMetadata {
   const database = openWritableStore()
+  const errors: unknown[] = []
   try {
     return readAndVerifyMetadata(database)
+  } catch (error) {
+    errors.push(error)
+    throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'initialize_ai_console_world_control_registry_store_operation_and_cleanup_failed', { cause: errors[0] })
   }
 }
 
@@ -170,6 +176,8 @@ export function executeAiConsoleWorldControlCommand(
   }
 
   const database = openWritableStore()
+  const errors: unknown[] = []
+  let transactionActive = false
   try {
     const existingRow = database.prepare(`${receiptSelectSql} WHERE command_id = ?`).get(commandId)
     if (existingRow) {
@@ -403,18 +411,15 @@ export function executeAiConsoleWorldControlCommand(
     }
 
     database.exec("BEGIN IMMEDIATE")
-    try {
-      if (worldState && event && creationContentBlob) {
+    transactionActive = true
+    if (worldState && event && creationContentBlob) {
         insertWorldState(database, worldState, creationContentBlob)
         insertEvent(database, event)
       }
-      insertReceipt(database, receipt)
-      updateMetadata(database, metadata, receipt, worldState, event)
-      database.exec("COMMIT")
-    } catch (error) {
-      database.exec("ROLLBACK")
-      throw error
-    }
+    insertReceipt(database, receipt)
+    updateMetadata(database, metadata, receipt, worldState, event)
+    database.exec("COMMIT")
+    transactionActive = false
 
     return {
       receipt,
@@ -423,8 +428,16 @@ export function executeAiConsoleWorldControlCommand(
       replayed: false,
       httpStatus: succeeded ? 201 : 409,
     }
+  } catch (error) {
+    errors.push(error)
+    if (transactionActive) {
+      try { database.exec("ROLLBACK") } catch (rollbackError) { errors.push(rollbackError) }
+    }
+    throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'execute_ai_console_world_control_command_operation_and_cleanup_failed', { cause: errors[0] })
   }
 }
 
@@ -439,6 +452,8 @@ export function readAiConsoleWorldControlRegistryStore(): AiConsoleWorldControlR
   }
 
   let database: DatabaseSync | null = null
+  let readFailed = false
+  let readError: unknown
   try {
     database = new DatabaseSync(storePath, { open: true, readOnly: true })
     verifyDatabase(database)
@@ -467,13 +482,18 @@ export function readAiConsoleWorldControlRegistryStore(): AiConsoleWorldControlR
       ],
     }
   } catch (error) {
+    readFailed = true
+    readError = error
     return {
       status: "unknown_or_stale",
       reasonCode: error instanceof Error ? error.message : "ai_console_world_control_registry_read_failed",
       evidenceReferences: [worldControlRegistryStoreLogicalPath],
     }
   } finally {
-    database?.close()
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], 'read_ai_console_world_control_registry_store_read_and_close_failed', { cause: readError })
+      throw closeError
+    }
   }
 }
 
@@ -670,7 +690,9 @@ CREATE TABLE IF NOT EXISTS command_receipts (
     verifyDatabase(database)
     return database
   } catch (error) {
-    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    try { database.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'world_control_registry_store_initialization_and_close_failed', { cause: error })
+    }
     throw error
   }
 }

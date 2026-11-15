@@ -114,3 +114,97 @@ test('unsafe and empty identities are rejected before opening a store', () => {
     assert.throws(() => recordAiConsoleTrainingTelemetry({ ...input, runId: invalid }, { storePath }), /run_id_invalid/)
   }
 })
+
+const telemetryCleanupCases=[
+  ...['error','undefined','null','false'].map(value=>({phase:'initialize',mode:value+'-cleanup'})),
+  {phase:'initialize',mode:'primary-only'},
+  ...['begin','query','insert','commit'].map(phase=>({phase,mode:'error-cleanup'})),
+  ...['undefined','null','false'].map(value=>({phase:'query',mode:value+'-cleanup'})),
+  {phase:'query',mode:'primary-only'},{phase:'success',mode:'close-only'},{phase:'success',mode:'success'},
+  ...['error','undefined','null','false'].map(value=>({phase:'read',mode:value+'-cleanup'})),
+  {phase:'read',mode:'primary-only'},{phase:'read',mode:'close-only'},
+]
+for(const {phase,mode} of telemetryCleanupCases)test(`telemetry storage cleanup ${phase} ${mode}`,t=>{
+  const storePath=path.join(mkdtempSync(path.join(tmpdir(),'telemetry-cleanup-')),'telemetry.sqlite')
+  const value={...input,heartbeatAtUtc:new Date().toISOString()}
+  if(phase!=='initialize')recordAiConsoleTrainingTelemetry(value,{storePath})
+  const before=phase==='read'?readFileSync(storePath):null
+  const primary=mode.startsWith('undefined')?undefined:mode.startsWith('null')?null:mode.startsWith('false')?false:Object.freeze(new Error('telemetry private operation'))
+  const rollback=Object.freeze(new Error('telemetry rollback acknowledgement')),close=Object.freeze(new Error('telemetry close'))
+  const injectPrimary=mode!=='success'&&mode!=='close-only',injectClose=mode!=='success'&&mode!=='primary-only'
+  const exec=DatabaseSync.prototype.exec,prepare=DatabaseSync.prototype.prepare,closeDb=DatabaseSync.prototype.close
+  let closes=0,rollbacks=0,caught,result,threw=false
+  t.mock.method(DatabaseSync.prototype,'exec',function(sql){
+    if(injectPrimary&&((phase==='initialize'&&sql.startsWith('PRAGMA busy_timeout'))||(phase==='begin'&&sql==='BEGIN IMMEDIATE')||(phase==='commit'&&sql==='COMMIT')))throw primary
+    if(sql==='ROLLBACK'){rollbacks++;exec.call(this,sql);if(injectClose)throw rollback;return}
+    return exec.call(this,sql)
+  })
+  t.mock.method(DatabaseSync.prototype,'prepare',function(sql){
+    if(injectPrimary&&((phase==='query'&&sql.startsWith('SELECT COALESCE'))||(phase==='insert'&&sql.includes('INSERT INTO training_telemetry'))||(phase==='read'&&sql==='SELECT * FROM training_telemetry ORDER BY sample_sequence DESC LIMIT 1')))throw primary
+    return prepare.call(this,sql)
+  })
+  t.mock.method(DatabaseSync.prototype,'close',function(){closes++;closeDb.call(this);if(injectClose)throw close})
+  try{result=phase==='read'?readLatestAiConsoleTrainingTelemetry({storePath,staleAfterMs:60000}):recordAiConsoleTrainingTelemetry(value,{storePath})}catch(error){caught=error;threw=true}finally{t.mock.restoreAll()}
+  assert.equal(closes,1)
+  const shouldRollback=injectPrimary&&['query','insert','commit'].includes(phase)
+  assert.equal(rollbacks,shouldRollback?1:0)
+  if(mode==='success'){assert.equal(threw,false);assert.equal(result.sampleSequence,2)}
+  else if(phase==='read'&&mode==='primary-only'){
+    assert.equal(threw,false);assert.equal(result.status,'unknown_or_stale');assert.equal(result.latest,null)
+    assert.equal(result.reasonCode,primary instanceof Error?primary.message:'ai_console_training_telemetry_read_failed')
+  }else{
+    assert.equal(threw,true)
+    if(!injectPrimary)assert.equal(caught,close)
+    else if(!injectClose)assert.equal(caught,primary)
+    else{assert(caught instanceof AggregateError);assert.equal(caught.cause,primary);assert.deepEqual(caught.errors,[primary,...(shouldRollback?[rollback]:[]),close])}
+  }
+  if(before)assert(readFileSync(storePath).equals(before),'readonly telemetry bytes changed')
+  if(phase!=='initialize'){
+    const db=new DatabaseSync(storePath,{readOnly:true});try{assert.equal(db.prepare('SELECT count(*) count FROM training_telemetry').get().count,phase==='success'?2:1)}finally{db.close()}
+  }
+  const next=recordAiConsoleTrainingTelemetry({...value,heartbeatAtUtc:new Date().toISOString()},{storePath})
+  assert.equal(next.sampleSequence,phase==='initialize'?1:phase==='success'?3:2)
+  const read=readLatestAiConsoleTrainingTelemetry({storePath,staleAfterMs:60000});assert.equal(read.status,'connected');assert.equal(read.latest.sampleId,next.sampleId)
+})
+
+test('telemetry storage cleanup preserves actual record-integrity rejection plus close error',t=>{
+  const storePath=path.join(mkdtempSync(path.join(tmpdir(),'telemetry-integrity-cleanup-')),'telemetry.sqlite')
+  recordAiConsoleTrainingTelemetry({...input,heartbeatAtUtc:new Date().toISOString()},{storePath})
+  const db=new DatabaseSync(storePath);try{db.exec("UPDATE training_telemetry SET record_sha256='tampered'")}finally{db.close()}
+  const before=readFileSync(storePath),close=Object.freeze(new Error('close acknowledgement')),closeDb=DatabaseSync.prototype.close
+  t.mock.method(DatabaseSync.prototype,'close',function(){closeDb.call(this);throw close})
+  let caught;try{readLatestAiConsoleTrainingTelemetry({storePath})}catch(error){caught=error}finally{t.mock.restoreAll()}
+  assert(caught instanceof AggregateError);assert.equal(caught.cause.message,'ai_console_training_telemetry_record_integrity_failed');assert.equal(caught.errors[0],caught.cause);assert.equal(caught.errors[1],close)
+  assert(readFileSync(storePath).equals(before));assert.equal(readLatestAiConsoleTrainingTelemetry({storePath}).status,'unknown_or_stale')
+})
+
+for(const [field,value] of [['sampleId','caller-id'],['sampleSequence',777],['reportedAtUtc','2026-01-01T00:00:00Z'],['schemaVersion','caller-schema'],['recordSha256','caller-hash']]){
+  test(`telemetry storage cleanup producer-owned ${field} cannot change committed records`,()=>{
+    const storePath=path.join(mkdtempSync(path.join(tmpdir(),'telemetry-owned-fields-')),'telemetry.sqlite')
+    const first=recordAiConsoleTrainingTelemetry({...input,heartbeatAtUtc:new Date().toISOString()},{storePath}),before=readFileSync(storePath)
+    assert.throws(()=>recordAiConsoleTrainingTelemetry({...input,[field]:value},{storePath}),/ai_console_training_telemetry_input_fields_invalid/)
+    assert(readFileSync(storePath).equals(before));const current=readLatestAiConsoleTrainingTelemetry({storePath,staleAfterMs:60000})
+    assert.equal(current.status,'connected');assert.equal(current.latest.sampleId,first.sampleId);assert.equal(current.sourceRevision,1)
+  })
+}
+test('telemetry storage cleanup rejects incomplete or noncontract input before creating a database',()=>{
+  const missing={...input};delete missing.processId
+  const hidden={...input};Object.defineProperty(hidden,'runId',{value:input.runId,enumerable:false})
+  for(const candidate of [null,[],{},missing,Object.create(input),hidden,{...input,extra:'unbound'},Object.assign({...input},{[Symbol('unbound')]:true})]){
+    const storePath=path.join(mkdtempSync(path.join(tmpdir(),'telemetry-invalid-input-')),'telemetry.sqlite')
+    assert.throws(()=>recordAiConsoleTrainingTelemetry(candidate,{storePath}),/ai_console_training_telemetry_input_fields_invalid/)
+    assert.throws(()=>readFileSync(storePath),{code:'ENOENT'})
+  }
+})
+test('telemetry storage cleanup rejects accessors without evaluating caller code',()=>{
+  let reads=0;const candidate={...input};Object.defineProperty(candidate,'runId',{enumerable:true,get(){reads++;return input.runId}})
+  const storePath=path.join(mkdtempSync(path.join(tmpdir(),'telemetry-accessor-input-')),'telemetry.sqlite')
+  assert.throws(()=>recordAiConsoleTrainingTelemetry(candidate,{storePath}),/ai_console_training_telemetry_input_fields_invalid/)
+  assert.equal(reads,0);assert.throws(()=>readFileSync(storePath),{code:'ENOENT'})
+})
+test('telemetry storage cleanup accepts plain null-prototype data with producer identity intact',()=>{
+  const storePath=path.join(mkdtempSync(path.join(tmpdir(),'telemetry-null-prototype-')),'telemetry.sqlite')
+  const candidate=Object.assign(Object.create(null),input,{heartbeatAtUtc:new Date().toISOString()})
+  const record=recordAiConsoleTrainingTelemetry(candidate,{storePath});assert.equal(record.sampleSequence,1)
+  assert.match(record.sampleId,/^[a-f0-9]{64}$/);assert.equal(readLatestAiConsoleTrainingTelemetry({storePath}).latest.sampleId,record.sampleId)
+})

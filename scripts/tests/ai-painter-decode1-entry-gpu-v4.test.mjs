@@ -1,3 +1,4 @@
+import {readQualificationCanonicalFixture} from './helpers/qualification-canonical-fixture.mjs';
 // Synthetic source/ledger/ABI fixtures only; never calls a real owned worker.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -169,7 +170,7 @@ test('resource host first error wins over cleanup-time worker error without chan
 
 function closureFixture(){const profile='ml/ai-painter/scripts/painter_stage4_joint_object_priority_training_profile_v1.py';
   const source='from ai_painter.complete_world import parameter48_causal_observation_v1\n';
-  const code=new Map([[profile,source],[p.implementations.host,"import '@babel/parser';\n"],[p.metadataCanonicalProgram.path,fs.readFileSync(path.join(ROOT,p.metadataCanonicalProgram.path))]]);
+  const code=new Map([[profile,source],[p.implementations.host,"import '@babel/parser';\n"],[p.metadataCanonicalProgram.path,readQualificationCanonicalFixture(ROOT,p.metadataCanonicalProgram).bytes]]);
   const q=copy(p);q.sourceAlgorithmBindings=[];const original={profile:{path:profile,sha256:hash(source)}},reads=[];
   const reader={bound:()=>({context:{programBindings:original}}),bytes(name,sha){reads.push(name);const raw=Buffer.from(code.get(name)??'');if(sha!==undefined)assert.equal(hash(raw),sha);return raw;},verifyStable(){}};
   return {q,reader,code,reads};}
@@ -260,8 +261,8 @@ function hostControlFixture(fault={}){
     write(guard.terminalEvidence,JSON.stringify({...receipt,cleanupConfirmed:false}));memoryFs.renameSync(guard.path,guard.terminalPath);lastReceipt=receipt;
     if(failure){Object.assign(failure,{stdout,stderr:'',ownedReceipt:receipt});throw failure;}return {stdout,stderr:'',ownedReceipt:receipt};
   }
-  const runtimeSource=fs.readFileSync(path.join(ROOT,p.implementations.phaseRuntime),'utf8');
-  const runtime=runInNewContext(runtimeSource.replace(/^import .+;\r?$/gmu,'').replace(/export (async )?function /gu,'$1function ')+
+  const runtimeSource=fs.readFileSync(path.join(ROOT,'scripts/lib/ai-painter-qualification-phase-runtime-core.mjs'),'utf8')+'\n'+fs.readFileSync(path.join(ROOT,p.implementations.phaseRuntime),'utf8');
+  const runtime=runInNewContext(runtimeSource.replace(/^import .+;\r?$/gmu,'').replace(/export (async )?function /gu,'$1function ').replace(/export const /gu,'const ')+
     ';({createAccounting,runOwnedPhase})',{...globals,...base,validateParameter60NativeProof,runDecode1EntryQualificationOwnedWorkerV4:native});
   function expire(point){if(fault.mode===mode&&fault.point===point)elapsed=phaseStarted.get(mode)+(mode==='cpu_prepare'?240000:720000)+1;}
   const createLedger=(...args)=>{inner=runtime.createAccounting(...args);return {...inner,
@@ -271,7 +272,7 @@ function hostControlFixture(fault={}){
       events.push({kind:'closed-budget',mode,elapsed});expire((closedMeasures.get(mode)??0)>=2?'outer-check-budget':'check-budget');}return value;},
     measure(){const value=inner.measure();if(closed.has(mode)){const n=(closedMeasures.get(mode)??0)+1;closedMeasures.set(mode,n);
       events.push({kind:'closed-measure',mode,n,elapsed});expire(n===1?'measure':'outer-measure');}return value;}};};
-  const hostSource=fs.readFileSync(path.join(ROOT,p.implementations.host),'utf8');
+  const hostSource=fs.readFileSync(path.join(ROOT,'scripts/lib/qualification-worker-result.mjs'),'utf8')+'\n'+fs.readFileSync(path.join(ROOT,p.implementations.host),'utf8');
   const js=hostSource.slice(0,hostSource.indexOf('\nif(process.argv[1]')).replace(/^import .+;\r?$/gmu,'')
     .replace(/^export \{createAccounting\}.+;\r?$/gmu,'').replace(/export (async )?function /gu,'$1function ').replace(/export (const|let) /gu,'$1 ')
     .replace("const SELF=fileURLToPath(import.meta.url),ROOT=path.resolve(path.dirname(SELF),'..');","const SELF='private-host.mjs',ROOT='private-memory-root';")+

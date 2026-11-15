@@ -24,7 +24,7 @@ function initializer([file, name], options = {}) {
   const source = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true)
   const declaration = source.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name)
   assert(declaration, `${file}: missing ${name}`)
-  const instances = [], statements = [], failure = new Error('fixture initialization failed'), cleanup = new Error('fixture close failed')
+  const instances = [], statements = [], failure = Object.hasOwn(options, 'failure') ? options.failure : new Error('fixture initialization failed'), cleanup = new Error('fixture close failed')
   let fail = options.fail === true
   class DatabaseSync {
     constructor() { this.closeCalls = 0; instances.push(this) }
@@ -36,11 +36,13 @@ function initializer([file, name], options = {}) {
     HISTORY_INDEX_PATH: 'fixture.sqlite', getStorePath: () => 'fixture.sqlite', getIndexPath: () => 'fixture.sqlite',
     mkdirSync() {}, existsSync: () => true, ensureStorageRoots() {}, upsertStorageMeta() {},
     verifyDatabaseSchema() {}, verifyDatabase() {}, verifyStore() {}, insertInitialMetadata() {} })
-  const code = ts.transpileModule(declaration.getText(source).replace(/^export\s+/u, '') + `\nglobalThis.invoke = ${name};`,
+  const helper = source.statements.find(n => ts.isFunctionDeclaration(n) &&
+    ['closeExecutionDatabase', 'closeLifecycleDatabase', 'closeReleaseDatabase'].includes(n.name?.text))?.getText(source) ?? ''
+  const code = ts.transpileModule(helper + '\n' + declaration.getText(source).replace(/^export\s+/u, '') + `\nglobalThis.invoke = ${name};`,
     { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText
   vm.runInContext(code, context, { filename: file, timeout: 1000 })
   const invoke = () => context.invoke('fixture.sqlite', false)
-  return { invoke, instances, statements, failure, context, allowSuccess: () => { fail = false } }
+  return { invoke, instances, statements, failure, cleanup, context, allowSuccess: () => { fail = false } }
 }
 
 for (const target of targets) {
@@ -53,7 +55,8 @@ for (const target of targets) {
   })
   test(`${label}: close failure cannot replace the initialization error`, () => {
     const f = initializer(target, { fail: true, closeFails: true })
-    assert.throws(f.invoke, e => e === f.failure)
+    assert.throws(f.invoke, e => e?.name === 'AggregateError' && e.cause === f.failure && e.errors?.length === 2
+      && e.errors[0] === f.failure && e.errors[1] === f.cleanup)
     assert.equal(f.instances[0].closeCalls, 1)
   })
   test(`${label}: successful initialization transfers an open connection to the caller`, () => {
@@ -80,4 +83,43 @@ test('catalog metadata failure also closes and evicts the incomplete connection'
   assert.throws(f.invoke, e => e === f.failure)
   assert.equal(f.instances[0].closeCalls, 1)
   assert.equal(f.context.database, null)
+})
+
+
+for (const target of targets) {
+  for (const [kind, failure] of [['undefined', undefined], ['null', null], ['false', false],
+    ['frozen error', Object.freeze(new Error('immutable initialization error'))]]) {
+    for (const closeFails of [false, true]) {
+      test(path.basename(target[0]) + ': retains ' + kind + (closeFails ? ' and close failure' : ' by identity'), () => {
+        const f = initializer(target, { fail: true, failure, closeFails })
+        let didThrow = false
+        try { f.invoke() } catch (error) {
+          didThrow = true
+          if (closeFails) {
+            assert.equal(error?.name, 'AggregateError')
+            assert.equal(error.cause, failure)
+            assert.equal(error.errors.length, 2)
+            assert.equal(error.errors[0], failure)
+            assert.equal(error.errors[1], f.cleanup)
+          } else assert.equal(error, failure)
+        }
+        assert.equal(didThrow, true)
+        assert.equal(f.instances.length, 1)
+        assert.equal(f.instances[0].closeCalls, 1)
+      })
+    }
+  }
+}
+
+test('catalog close failure evicts the incomplete cached connection before an explicit retry', () => {
+  const f = initializer(targets.at(-1), { fail: true, closeFails: true })
+  assert.throws(f.invoke, error => error?.name === 'AggregateError'
+    && error.cause === f.failure && error.errors[0] === f.failure && error.errors[1] === f.cleanup)
+  assert.equal(f.context.database, null)
+  assert.equal(f.instances[0].closeCalls, 1)
+  f.allowSuccess()
+  assert.equal(f.invoke(), f.instances[1])
+  assert.equal(f.invoke(), f.instances[1])
+  assert.equal(f.instances.length, 2)
+  assert.equal(f.instances[1].closeCalls, 0)
 })

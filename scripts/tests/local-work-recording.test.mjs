@@ -203,7 +203,7 @@ test('current pure GET factory ignores a pre-HMR cached ledger closure and stays
   try {
     const require=createRequire(import.meta.url),exports={}
     const code=ts.transpileModule(fs.readFileSync('src/server/local-backup/service.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText
-    new Function('require','exports',code)(name=>name==='./work-producers.mjs'?{...producersModule,createWorkProducers:()=>f.make()}:name==='./store.mjs'?{createStore:()=>f.store}:name==='./contracts.mjs'?contractsModule:name.startsWith('@/')?{}:require(name),exports)
+    new Function('require','exports',code)(name=>name==='../../../scripts/lib/runtime-working-directory.mjs'?{runtimeWorkingDirectory:()=>f.root,resolveRuntimePath:(...parts)=>parts.at(-1)==='hot/runtime'?path.join(f.root,'.runtime'):path.resolve(...parts)}:name==='./work-producers.mjs'?{...producersModule,createWorkProducers:()=>f.make()}:name==='./store.mjs'?{createStore:()=>f.store}:name==='./contracts.mjs'?contractsModule:name.startsWith('@/')?{}:require(name),exports)
     const before=hash(fs.readFileSync(path.join(f.moduleRoot,'module.sqlite')))
     const e=exports.ledger().events(new URLSearchParams({date:'2026-10-22',reporterId:'codex-migration'}));assert.equal(e.records.length,1);assert.equal(e.records[0].reporter.id,'codex-migration')
     const s=exports.ledger().summary(new URLSearchParams({date:'2026-10-22',reporterId:'codex-migration'}));assert.equal(s.records[0].reporter.id,'codex-migration');assert.equal(hash(fs.readFileSync(path.join(f.moduleRoot,'module.sqlite'))),before)
@@ -323,4 +323,15 @@ test('bounded mixed package ingestion preserves full evidence while rejecting wr
    assert.equal((await f.make({readRegistry:r.reader}).observeCommittedRegistry()).recorded,true)
   }else assert.equal(rows(ctx).length,0)
  }
+})
+
+for(const scenario of ['stable','file-replaced','device-replaced'])test(`work producer exact source identity ${scenario}`,async t=>{
+ const f=fixture(),ctx=f.make(),value=input(f,ctx),file=path.join(f.root,value.evidenceReferences[0].logicalPath),original=fs.readFileSync(file),base=9007199254740992n
+ const originals={lstatSync:fs.lstatSync,readFileSync:fs.readFileSync};let read=false,result
+ const mocks=[t.mock.method(fs,'lstatSync',(p,options)=>{const s=originals.lstatSync(p,options);if(p===file){const ino=base+(read&&scenario==='file-replaced'?1n:0n),dev=7n+(read&&scenario==='device-replaced'?1n:0n);s.ino=options?.bigint?ino:Number(ino);s.dev=options?.bigint?dev:Number(dev)}return s}),t.mock.method(fs,'readFileSync',(p,...args)=>{const bytes=originals.readFileSync(p,...args);if(p===file)read=true;return bytes})]
+ try{result=await ctx.recordCodex(value,'codex-controller')}finally{for(const mock of mocks.reverse())mock.mock.restore()}
+ assert.equal(result.recorded,scenario==='stable',JSON.stringify(result))
+ if(scenario==='stable')assert.equal(rows(ctx).length,1)
+ else{assert.equal(result.reasonCode,'work_evidence_changed');assert.equal(rows(ctx).length,0)}
+ assert.deepEqual(fs.readFileSync(file),original);t.diagnostic('retained private fixture: '+f.root)
 })

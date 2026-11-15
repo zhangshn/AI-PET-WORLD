@@ -1,3 +1,4 @@
+import { writeExclusiveEvidence } from './exclusive-evidence-write.mjs';
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
@@ -12,16 +13,7 @@ const STREAM_LIMIT = 8 * 1024 * 1024;
 const FRAME_LIMIT = 65536;
 const hash = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
 const message = error => String(error?.message ?? error).slice(0, 2048);
-function put(file, bytes) {
-  const fd = fs.openSync(file, "wx");
-  let primary = null;
-  try { fs.writeFileSync(fd, bytes); fs.fsyncSync(fd); }
-  catch (error) { primary = error; throw error; }
-  finally {
-    try { fs.closeSync(fd); }
-    catch (error) { if (!primary) throw error; }
-  }
-}
+function put(file, bytes) { return writeExclusiveEvidence(file, bytes); }
 
 // Pure shape/consistency check, never authority to release a guard. The caller
 // below supplies observations from this invocation's retained child and pipes.

@@ -122,7 +122,7 @@ export async function executeControlledSmoke({ attemptId = compactUtc(new Date()
     trainingOutputExistedBeforePreflight: fs.existsSync(paths.trainingOutput),
     gpuStarted: false, trainingStarted: false, recordedAtUtc: new Date().toISOString(),
   });
-  if (preflight.status !== 0) return await closeInfrastructureFailure({ code: "trainer_preflight_failed", detail: preflight.stderr || preflight.stdout, current, capabilityVersion, runId, executionRoot, paths });
+  if (preflight.status !== 0) return await closeInfrastructureFailure({ code: "trainer_preflight_failed", detail: preflight.stderr || preflight.stdout, capabilityVersion, runId, paths });
   assert.equal(fs.existsSync(paths.trainingOutput), false, "preflight created training output");
   if (preflightOnly) {
     writeExclusive(paths.terminal, {
@@ -179,7 +179,7 @@ export async function executeControlledSmoke({ attemptId = compactUtc(new Date()
   sampleHeartbeat();
   fs.closeSync(stdoutHandle);
   fs.closeSync(stderrHandle);
-  if (exitCode !== 0) return await closeInfrastructureFailure({ code: "trainer_execution_failed", detail: `exitCode=${exitCode}; stderr=${fs.readFileSync(paths.stderr, "utf8").slice(-8000)}`, current, capabilityVersion, runId, executionRoot, paths });
+  if (exitCode !== 0) return await closeInfrastructureFailure({ code: "trainer_execution_failed", detail: `exitCode=${exitCode}; stderr=${fs.readFileSync(paths.stderr, "utf8").slice(-8000)}`, capabilityVersion, runId, paths });
   assert.ok(fs.existsSync(paths.manifest), "trainer manifest missing");
 
   writeJsonAtomic(paths.executionState, {
@@ -310,7 +310,7 @@ async function reviewPreviews(executionRoot, trainingOutput, activeConfig) {
   return report;
 }
 
-async function closeInfrastructureFailure({ code, detail, current, capabilityVersion, runId, executionRoot, paths }) {
+async function closeInfrastructureFailure({ code, detail, capabilityVersion, runId, paths }) {
   writeExclusive(paths.failure, { schemaVersion: "stage4-post-decode-full-condition-responsibility-smoke-failure-v1", status: "failed_closed", code, detail: String(detail), automaticRetryStarted: false, ownerAuthorizationRequired: false, recordedAtUtc: new Date().toISOString() });
   writeExclusive(paths.terminal, { schemaVersion: "stage4-post-decode-full-condition-responsibility-controlled-smoke-terminal-v1", executionState: "completed", status: "post_decode_full_condition_responsibility_controlled_smoke_infrastructure_failed_closed", capabilityVersion, runId, failureReport: bind(paths.failure), checkpointWritten: false, modelWeightsModified: false, trainingStarted: code === "trainer_execution_failed", nextLegalAction: "repair_same_controlled_smoke_infrastructure_from_saved_evidence", fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 }, ownerAuthorizationRequired: false, recordedAtUtc: new Date().toISOString() });
   writeJsonAtomic(paths.executionState, { schemaVersion: "stage4-post-decode-full-condition-responsibility-smoke-execution-state-v1", status: "completed", phase: "failed_closed", terminal: bind(paths.terminal), completedAtUtc: new Date().toISOString() });

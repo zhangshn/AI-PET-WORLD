@@ -55,3 +55,26 @@ test('dynamic branch compatibility is distinct from strict shared branch validat
     for (const step of [-13, -1, 0, 1, 12, 13]) assert.equal(legacy.moveBranch(branch, step), strict.moveBranch(branch, step))
   }
 })
+
+
+test('legacy dynamic calendar normalization delegates while retaining boundary behavior',()=>{
+  const legacy=require('../../src/ai/destiny-core/ziwei-core/dynamic/dynamic-flow-engine.ts')
+  const normal=require('../../src/ai/destiny-core/ziwei-core/dynamic-chart/dynamic-normalizers.ts')
+  assert.strictEqual(legacy.getTimeBranchOffset,normal.getTimeBranchOffset)
+  for(const [value,month,day] of [[NaN,1,1],[Infinity,1,1],[-Infinity,1,1],[-1,1,1],[0,1,1],[1,1,1],[1.9,1,1],[12,12,12],[12.9,12,12],[13,12,13],[30,12,30],[31,12,30]]){
+    assert.equal(normal.normalizeLunarMonth(value),month)
+    assert.equal(normal.normalizeLunarDay(value),day)
+    const branches=['zi','chou','yin','mao','chen','si','wu','wei','shen','you','xu','hai']
+    assert.equal(legacy.getLiuYuePalace({douJunPalace:'zi',currentLunarMonth:value}),branches[(month-1)%12])
+    assert.equal(legacy.getLiuRiPalace({liuYuePalace:'zi',currentLunarDay:value}),branches[(day-1)%12])
+  }
+  for(const [offset,branch] of ['zi','chou','yin','mao','chen','si','wu','wei','shen','you','xu','hai'].entries())assert.equal(legacy.getTimeBranchOffset(branch),offset)
+  for(const branch of ['unknown','',null,undefined])assert.equal(legacy.getTimeBranchOffset(branch),0)
+})
+
+test('calendar delegation retains legacy invalid-palace compatibility',()=>{
+  const legacy=require('../../src/ai/destiny-core/ziwei-core/dynamic/dynamic-flow-engine.ts')
+  for(const month of [NaN,0,1,12,99])assert.equal(legacy.getLiuYuePalace({douJunPalace:'unknown',currentLunarMonth:month}),'unknown')
+  for(const day of [NaN,0,1,30,99])assert.equal(legacy.getLiuRiPalace({liuYuePalace:'unknown',currentLunarDay:day}),'unknown')
+  assert.equal(legacy.getLiuShiPalace({liuRiPalace:'unknown',currentTimeBranch:'zi'}),'unknown')
+})

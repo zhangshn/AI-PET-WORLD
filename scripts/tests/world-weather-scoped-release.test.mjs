@@ -6,11 +6,12 @@ import os from "node:os";
 import path from "node:path";
 import {fileURLToPath,pathToFileURL} from "node:url";
 import test from "node:test";
+import { DatabaseSync } from "node:sqlite";
 import {FIRST_WEATHER_SCOPED_PATH as releasePath, FIRST_WEATHER_SCOPED_VERSION as version,ROLLING_WEATHER_VERSION,
   FIRST_WEATHER_SCOPED_POLICY_PATH as policyPath, REQUIRED_BINDING_ROLES as roles,
   RUNTIME_AUTONOMY_POLICY_PATH, TRUSTED_RELEASE_REGISTRY_PATH as registryPath, sha256Of, deriveRuntimeCapabilityTicket,
   loadAndValidateReleasedCapabilityBinding as readRelease, verifyFirstWeatherReleaseForLifecycle,
-  verifyScopedWeatherReleaseForLifecycle,weatherReleaseProfile} from "../lib/ai-painter-autonomous-package-decision-core-v3.mjs";
+  verifyScopedWeatherReleaseForLifecycle,verifyScopedWeatherReleaseLifecycle,weatherReleaseProfile} from "../lib/ai-painter-autonomous-package-decision-core-v3.mjs";
 import {publishMachineAdjudicatedCapability as publish,reconcilePublishedFirstWeatherLifecycle as reconcileWeather,
   reconcilePublishedScopedWeatherLifecycle} from "../lib/ai-painter-machine-capability-release-orchestrator-v1.mjs";
 import {CAPABILITY_LIFECYCLE_CONTRACT_PATH,createCapabilityCandidate,advanceCapabilityLifecycle} from "../lib/ai-painter-capability-lifecycle-v1.mjs";
@@ -18,6 +19,68 @@ import {CAPABILITY_LIFECYCLE_CONTRACT_PATH,createCapabilityCandidate,advanceCapa
 const sourceRoot=path.resolve(import.meta.dirname,"../..");
 const scoped={requiredCapabilityScope:"world_evolution"};
 const fixed={capabilityReleaseIdentity:version};
+
+function privateLifecycleReadFixture(t) {
+  const root=fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(),"capability-lifecycle-read-")));
+  t.after(()=>{
+    assert.equal(path.dirname(root),fs.realpathSync.native(os.tmpdir()));
+    assert(path.basename(root).startsWith("capability-lifecycle-read-"));
+    fs.rmSync(root,{recursive:true,force:true});
+  });
+  const write=(relative,bytes)=>{
+    const absolute=path.join(root,relative);fs.mkdirSync(path.dirname(absolute),{recursive:true});
+    fs.writeFileSync(absolute,bytes,{flag:"wx"});return absolute;
+  };
+  const policy=fs.readFileSync(path.join(sourceRoot,policyPath));write(policyPath,policy);
+  const lifecycle=`.runtime/ai-painter/capability-lifecycle/${version}`;
+  const evidencePath="evidence/006-machine_release_adjudicated.json";
+  const evidence=Buffer.from(JSON.stringify({capabilityVersion:version,targetState:"machine_release_adjudicated",status:"passed"}));
+  const state={schemaVersion:"ai-painter-capability-lifecycle-state-v1",capabilityVersion:version,changeClass:"runtime_interface",
+    state:"machine_release_adjudicated",sequence:6,latestEvidence:{path:evidencePath,sha256:sha256Of(evidence)}};
+  write(`${lifecycle}/state.json`,JSON.stringify(state));
+  write(`${lifecycle}/candidate.json`,JSON.stringify({capabilityVersion:version,changeClass:"runtime_interface",sourceEvidence:[{path:policyPath,sha256:sha256Of(policy)}]}));
+  const evidenceFile=write(`${lifecycle}/${evidencePath}`,evidence),database=path.join(root,lifecycle,"lifecycle.sqlite");
+  const db=new DatabaseSync(database);
+  try {
+    db.exec("CREATE TABLE capabilities(capability_version TEXT PRIMARY KEY,state TEXT,change_class TEXT); CREATE TABLE lifecycle_transitions(capability_version TEXT,sequence INTEGER,from_state TEXT,to_state TEXT,evidence_sha256 TEXT);");
+    db.prepare("INSERT INTO capabilities VALUES(?,?,?)").run(version,state.state,state.changeClass);
+    db.prepare("INSERT INTO lifecycle_transitions VALUES(?,?,?,?,?)").run(version,6,"independent_regression_completed",state.state,state.latestEvidence.sha256);
+  } finally {db.close();}
+  return {root,state,database,evidenceFile,read:()=>verifyScopedWeatherReleaseLifecycle(root,version,[state.state])};
+}
+
+for(const [label,primary,failQuery,failClose,badEvidence] of [
+  ["normal",null,false,false,false],
+  ["frozen query and close",Object.freeze(new Error("private lifecycle query")),true,true,false],
+  ["undefined query and close",undefined,true,true,false],
+  ["null query and close",null,true,true,false],
+  ["false query and close",false,true,true,false],
+  ["query alone",new Error("private lifecycle query alone"),true,false,false],
+  ["close alone",null,false,true,false],
+  ["invalid evidence and close",null,false,true,true],
+  ["invalid evidence alone",null,false,false,true],
+]) test(`scoped lifecycle private read retains ${label}`,t=>{
+  const f=privateLifecycleReadFixture(t),prepare=DatabaseSync.prototype.prepare,close=DatabaseSync.prototype.close;
+  const cleanup=new Error("private lifecycle close");
+  if(badEvidence)fs.writeFileSync(f.evidenceFile,"changed evidence");
+  const databaseBytes=fs.readFileSync(f.database),evidenceBytes=fs.readFileSync(f.evidenceFile);
+  let closed=0,caught,threw=false,value;
+  try {
+    DatabaseSync.prototype.prepare=function(sql,...args){if(failQuery&&sql.startsWith("SELECT c.state,c.change_class"))throw primary;return prepare.call(this,sql,...args);};
+    DatabaseSync.prototype.close=function(){close.call(this);closed++;if(failClose)throw cleanup;};
+    try{value=f.read();}catch(error){caught=error;threw=true;}
+  }finally{DatabaseSync.prototype.prepare=prepare;DatabaseSync.prototype.close=close;}
+  assert.equal(closed,1);assert.equal(threw,failQuery||failClose||badEvidence);
+  if((failQuery||badEvidence)&&failClose){
+    assert.equal(caught.name,"AggregateError");assert.equal(caught.errors.length,2);assert.equal(caught.errors[1],cleanup);
+    assert.equal(caught.cause,caught.errors[0]);if(failQuery)assert.equal(caught.cause,primary);else assert.match(caught.cause.message,/evidence bytes differ/);
+  }else if(failQuery)assert.equal(caught,primary);
+  else if(failClose)assert.equal(caught,cleanup);
+  else if(badEvidence)assert.match(caught.message,/evidence bytes differ/);
+  else assert.deepEqual(value,f.state);
+  assert.deepEqual(fs.readFileSync(f.database),databaseBytes);assert.deepEqual(fs.readFileSync(f.evidenceFile),evidenceBytes);
+  if(!badEvidence)assert.deepEqual(f.read(),f.state);
+});
 
 function isolatedTransportFixture(withRolling=false) {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),"weather-scoped-184-"));

@@ -55,7 +55,7 @@ test('bound079/086 row geometry fits sharded JSON and bounded8MiB metadata estim
  assert.equal(single.rows.length,56);assert.equal(parents.length,56)
  const root='.runtime/private-size-fixture',packageBinding={path:root+'/package.json',sha256:'a'.repeat(64)},context={reviewId:'private-size-fixture',executionPackage:packageBinding},parts=[]
  const publish=(name,value)=>{const bytes=encodeReviewJson(value),binding={path:root+'/'+name,sha256:createHash('sha256').update(bytes).digest('hex')};parts.push({name,bytes:bytes.length});return binding}
- const observations=single.rows.map((r,n)=>({schemaVersion:'ai-painter-replay-retention-observation-v1',...context,sampleId:r.sampleId,split:r.split,identity:r.identity,slot:r.slot,ecologyIndex:r.ecologyIndex,monsoonSeason:'fixture',prediction:r.afterPrediction,metrics:r.afterMetrics,nativePredictionDimensions:{width:256,height:192},referenceNativeDimensions:{width:1024,height:768},imageTiming:r.imageTiming}))
+ const observations=single.rows.map((r)=>({schemaVersion:'ai-painter-replay-retention-observation-v1',...context,sampleId:r.sampleId,split:r.split,identity:r.identity,slot:r.slot,ecologyIndex:r.ecologyIndex,monsoonSeason:'fixture',prediction:r.afterPrediction,metrics:r.afterMetrics,nativePredictionDimensions:{width:256,height:192},referenceNativeDimensions:{width:1024,height:768},imageTiming:r.imageTiming}))
  const observationBindings=observations.map((value,n)=>({sampleId:value.sampleId,split:value.split,binding:publish('observation-'+n+'.json',value)}))
  const oldReview='.runtime/ai-painter/learning-capacity-experiments/single149-post-review-v1-4bc5d6f499fb5cfb00d8/',template=JSON.parse(fs.readFileSync(oldReview+'audit-0.json'))
  const input=observations.map((o,n)=>{

@@ -16,7 +16,7 @@ import ts from "typescript"
 const require = createRequire(import.meta.url)
 const sourceRoot = fileURLToPath(new URL("../../src/world/runtime/", import.meta.url))
 const compiled = new Map()
-for (const name of ["world-runtime-store", "world-runtime-production-store", "world-runtime-record-validation", "world-evolution-transaction", "runtime-path-security"]) {
+for (const name of ["world-runtime-store", "world-runtime-production-store", "world-runtime-record-validation", "world-runtime-write-cleanup", "world-evolution-transaction", "runtime-path-security"]) {
   const result = ts.transpileModule(fs.readFileSync(path.join(sourceRoot, `${name}.ts`), "utf8"), {
     fileName: `${name}.ts`, reportDiagnostics: true,
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
@@ -50,15 +50,37 @@ function fixture(t, kind) {
       if (name === "rename") assertPrivate(args[1])
       io.push({ operation: name, path: args[0], target: name === "rename" ? args[1] : null })
       const committedRename = name === "rename" && args[1] === transactionPath && JSON.parse(fs.readFileSync(args[0], "utf8")).state === "committed"
-      const inject = fault === "record" && name === "rename" && args[1] === recordPath
+      const inject = (fault === "record" || fault?.startsWith("record_and_lock_")) && name === "rename" && args[1] === recordPath
         || fault === "latest" && name === "rename" && args[1] === latestPath
         || fault === "commit" && committedRename
         || fault === "cleanup" && name === "rm" && args[0] === transactionPath
+        || (fault === "lock_release" || fault === "record_and_lock_release") && name === "rm" && args[0] === `${recordPath}.lock`
       if (inject) {
         fired = true
         throw new Error(`fixture_fault:${fault}`)
       }
-      return fsp[name](...args)
+      const result = await fsp[name](...args)
+      if (name === "open" && fault === "record_close" && args[0].startsWith(`${recordPath}.${process.pid}.`) && args[0].endsWith(".tmp")) {
+        const originalClose = result.close.bind(result)
+        result.close = async () => {
+          await originalClose()
+          fired = true
+          throw new Error("fixture_fault:record_close")
+        }
+      }
+      if (name === "open" && ["lock_close", "record_and_lock_close", "lock_release", "record_and_lock_release", "lock_foreign", "lock_corrupt"].includes(fault) && args[0] === `${recordPath}.lock`) {
+        const originalClose = result.close.bind(result)
+        result.close = async () => {
+          io.push({operation:"close_lock", path:args[0], target:null})
+          await originalClose()
+          if (fault.endsWith("close")) { fired = true; throw new Error("fixture_lock_close_failed") }
+          if (fault === "lock_foreign" || fault === "lock_corrupt") {
+            fired = true
+            fs.writeFileSync(args[0], fault === "lock_foreign" ? JSON.stringify({lockToken:"foreign-token"}) : "corrupted lock bytes")
+          }
+        }
+      }
+      return result
     }
   }
   function load(name) {
@@ -429,5 +451,186 @@ for (const kind of ["development", "production"]) {
     assert.ok(result.warnings.includes("runtime_transaction_incomplete"))
     assert.equal(fs.existsSync(f.recordPath), false)
     assert.equal(fs.readFileSync(f.transactionPath, "utf8"), journal)
+  })
+}
+
+// Exercise the actual private writer bodies without reaching production files.
+for (const [adapter, functionName] of [["world-runtime-store", "writeJsonAtomic"], ["world-runtime-production-store", "writeAtomic"]]) {
+  const source = fs.readFileSync(path.join(sourceRoot, `${adapter}.ts`), "utf8")
+  const ast = ts.createSourceFile(`${adapter}.ts`, source, ts.ScriptTarget.Latest, true)
+  const declaration = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === functionName)
+  assert.ok(declaration)
+  const writerSource = ts.transpileModule(declaration.getText(ast), {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText
+  for (const failedStages of [[], ["mkdir"], ["open"], ["write"], ["sync"], ["close"], ["write", "close"], ["sync", "close"], ["rename"]]) {
+    test(`${adapter}: atomic write reports ${failedStages.join("+") || "success"} without premature publication`, async () => {
+      const calls = [], errors = new Map(failedStages.map(stage => [stage, new Error(`fixture:${stage}`)]))
+      const invoke = (stage, args) => { calls.push({stage, args}); if (errors.has(stage)) throw errors.get(stage) }
+      const handle = {
+        writeFile: async (...args) => invoke("write", args),
+        sync: async (...args) => invoke("sync", args),
+        close: async (...args) => invoke("close", args),
+      }
+      const writer = new Function("mkdir", "open", "rename", "path", "process", "randomUUID", `${writerSource};return ${functionName}`)(
+        async (...args) => invoke("mkdir", args),
+        async (...args) => { invoke("open", args); return handle },
+        async (...args) => invoke("rename", args), path, {pid: 123}, () => "fixture-uuid",
+      )
+      const target = path.join("private-fixture", "world.json"), value = {worldId:"fixture", tick:3}
+      let failure
+      try { await writer(target, value) } catch (error) { failure = error }
+      if (failedStages.length === 0) assert.equal(failure, undefined)
+      else if (failedStages.length === 1) assert.equal(failure, errors.get(failedStages[0]))
+      else {
+        assert.ok(failure instanceof AggregateError)
+        assert.deepEqual(failure.errors, failedStages.map(stage => errors.get(stage)))
+        assert.equal(failure.cause, errors.get(failedStages[0]))
+      }
+      const expected = ["mkdir"]
+      if (!errors.has("mkdir")) expected.push("open")
+      if (!errors.has("mkdir") && !errors.has("open")) {
+        expected.push("write")
+        if (!errors.has("write")) expected.push("sync")
+        expected.push("close")
+        if (!["write", "sync", "close"].some(stage => errors.has(stage))) expected.push("rename")
+      }
+      assert.deepEqual(calls.map(call => call.stage), expected)
+      const write = calls.find(call => call.stage === "write")
+      if (write) assert.deepEqual(write.args, [json(value), "utf8"])
+      const opened = calls.find(call => call.stage === "open")
+      if (opened) assert.deepEqual(opened.args, [`${target}.123.fixture-uuid.tmp`, "wx"])
+      const renamed = calls.find(call => call.stage === "rename")
+      if (renamed) assert.deepEqual(renamed.args, [`${target}.123.fixture-uuid.tmp`, target])
+    })
+  }
+}
+
+for (const kind of ["development", "production"]) {
+  for (const initialized of [false, true]) {
+    test(`${kind}: record close failure preserves ${initialized ? "existing save" : "empty slot"} and temporary evidence`, async t => {
+      const f = fixture(t, kind)
+      if (initialized) assert.equal((await f.store.write({record:record(), expectedTick:-1, filePath:f.recordPath})).ok, true)
+      const before = initialized ? fs.readFileSync(f.recordPath) : null
+      f.inject("record_close")
+      const result = await f.store.write({record:record(initialized ? 1 : 0), expectedTick:initialized ? 0 : -1, filePath:f.recordPath})
+      assert.equal(f.faultFired(), true)
+      assert.equal(result.ok, false)
+      assert.equal(result.code, "persistence_error")
+      assert.match(JSON.stringify(result), /fixture_fault:record_close/)
+      if (initialized) assert.deepEqual(fs.readFileSync(f.recordPath), before)
+      else assert.equal(fs.existsSync(f.recordPath), false)
+      const directory = path.dirname(f.recordPath), name = path.basename(f.recordPath)
+      assert.equal(fs.readdirSync(directory).filter(entry => entry.startsWith(`${name}.`) && entry.endsWith(".tmp")).length, 1)
+      assert.equal(fs.existsSync(f.transactionPath), true)
+    })
+  }
+}
+
+for (const functionName of ["atomic", "createLock"]) {
+  const source = fs.readFileSync(path.join(sourceRoot, "world-evolution-transaction.ts"), "utf8")
+  const ast = ts.createSourceFile("world-evolution-transaction.ts", source, ts.ScriptTarget.Latest, true)
+  const selected = ast.statements.filter(node => ts.isFunctionDeclaration(node) && [functionName, "withClosedFile"].includes(node.name?.text))
+  assert.ok(selected.some(node => node.name.text === functionName))
+  const compiled = ts.transpileModule(selected.map(node => node.getText(ast)).join("\n"), {
+    compilerOptions: {target:ts.ScriptTarget.ES2022, module:ts.ModuleKind.CommonJS},
+  }).outputText
+  for (const failedStages of [[], ["open"], ["write"], ["sync"], ["close"], ["write", "close"], ["sync", "close"]]) {
+    test(`world transaction ${functionName}: ${failedStages.join("+") || "success"} preserves causes and closes once`, async () => {
+      const calls = [], errors = new Map(failedStages.map(stage => [stage, new Error(`fixture:${stage}`)]))
+      const step = stage => { calls.push(stage); if (errors.has(stage)) throw errors.get(stage) }
+      const file = {writeFile:async () => step("write"), sync:async () => step("sync"), close:async () => step("close")}
+      const run = new Function("guarded", "mkdir", "path", "randomUUID", "open", "rename", "release", "bytes", "JOURNAL_LIMIT", "hostname", "process", `${compiled};return ${functionName}`)(
+        async()=>{}, async()=>{}, path, ()=>"fixture-token", async()=>{step("open");return file},
+        async()=>step("rename"), async()=>step("release"), value=>Buffer.from(JSON.stringify(value)), 32768, ()=>"fixture-host", {pid:123},
+      )
+      let failure
+      try { await run("fixture-root", "fixture-path", functionName === "atomic" ? Buffer.from("fixture-bytes") : {worldId:"fixture",ownerId:"fixture"}) }
+      catch (error) { failure = error }
+      if (!failedStages.length) assert.equal(failure, undefined)
+      else if (failedStages.length === 1) assert.equal(failure, errors.get(failedStages[0]))
+      else {
+        assert.ok(failure instanceof AggregateError)
+        assert.deepEqual(failure.errors, failedStages.map(stage=>errors.get(stage)))
+        assert.equal(failure.cause, errors.get(failedStages[0]))
+        for (const stage of failedStages) assert.ok(failure.message.includes(`fixture:${stage}`))
+      }
+      const expected = ["open"]
+      if (!errors.has("open")) {
+        expected.push("write")
+        if (!errors.has("write")) expected.push("sync")
+        expected.push("close")
+        if (functionName === "createLock" && failedStages.length) expected.push("release")
+        if (functionName === "atomic" && !failedStages.length) expected.push("rename")
+      }
+      assert.deepEqual(calls, expected)
+    })
+  }
+}
+
+
+for (const kind of ['exclusive', 'atomic']) for (const phase of ['success', 'open', 'write', 'sync', 'close', 'write+close', 'sync+close', 'null+close', 'frozen+close']) {
+  test(`frame evidence ${kind} preserves ${phase} without publishing failed bytes`, async () => {
+    const name = 'src/world/game-map-frame/game-map-runtime-frame-store.ts'
+    const tree = ts.createSourceFile(name, fs.readFileSync(name, 'utf8'), ts.ScriptTarget.Latest, true)
+    const functions = tree.statements.filter(node => ts.isFunctionDeclaration(node) && ['writeExclusive','writeAtomic'].includes(node.name?.text))
+    assert.equal(functions.length, 2)
+    const code = ts.transpileModule(functions.map(node => node.getText(tree)).join('\n'), {compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText
+    const primary = phase === 'null+close' ? null : Object.freeze(new Error(`frame primary ${phase}`)), secondary = new Error('frame close failure')
+    const calls = [], writes = [], bytes = 'private frame bytes\n'
+    const handle = {
+      writeFile: async (...args) => { calls.push('write'); writes.push(args); if (['write','write+close','null+close','frozen+close'].includes(phase)) throw primary },
+      sync: async () => { calls.push('sync'); if (['sync','sync+close'].includes(phase)) throw primary },
+      close: async () => { calls.push('close'); if (phase === 'close') throw primary; if (phase.endsWith('+close')) throw secondary },
+    }
+    const invoke = new Function('open','rename','process','randomUUID','jsonBytes', `${code};return ${kind === 'exclusive' ? 'writeExclusive' : 'writeAtomic'};`)(
+      async (file, flag) => { calls.push('open'); assert.equal(flag,'wx'); assert.equal(file,kind === 'atomic' ? 'private-frame.json.123.fixture.tmp' : 'private-frame.json'); if (phase === 'open') throw primary; return handle },
+      async () => calls.push('rename'), {pid:123}, () => 'fixture', () => bytes,
+    )
+    if (phase === 'success') await invoke('private-frame.json', bytes)
+    else await assert.rejects(invoke('private-frame.json', bytes), error => {
+      if (phase.endsWith('+close')) { assert(error instanceof AggregateError); assert.deepEqual(error.errors,[primary,secondary]); assert.equal(error.cause,primary); assert(error.message.includes(secondary.message)); assert(error.message.includes(primary === null ? 'null' : primary.message)) }
+      else assert.equal(error,primary)
+      return true
+    })
+    assert.equal(calls.filter(v => v === 'close').length, phase === 'open' ? 0 : 1)
+    assert.equal(calls.includes('rename'), kind === 'atomic' && phase === 'success')
+    if (writes.length) assert.deepEqual(writes,[[bytes,'utf8']])
+  })
+}
+
+
+for (const kind of ['development', 'production']) for (const initialized of [false, true])
+for (const fault of ['lock_close','lock_release','record_and_lock_close','record_and_lock_release','lock_foreign','lock_corrupt']) {
+  test(`runtime lock cleanup ${kind} ${fault}, initialized=${initialized} reports actual publication`, async t => {
+    const f = fixture(t, kind)
+    if (initialized) assert.equal((await f.store.write({record:record(), expectedTick:-1, filePath:f.recordPath})).ok,true)
+    const original = initialized ? fs.readFileSync(f.recordPath) : null
+    f.inject(fault)
+    const value = record(initialized ? 1 : 0)
+    const result = await f.store.write({record:value,expectedTick:initialized ? 0 : -1,filePath:f.recordPath})
+    assert.equal(f.faultFired(),true)
+    assert.equal(result.ok,false)
+    assert.equal(result.code,'persistence_error')
+    assert(result.tags.includes('runtime_write_lock_cleanup_failed'))
+    assert(!result.tags.includes('ok'))
+    assert(fs.existsSync(f.recordPath+'.lock'),'uncertain or failed lock cleanup remains for recovery')
+    if (fault.startsWith('record_and_')) {
+      if (initialized) assert.deepEqual(fs.readFileSync(f.recordPath),original)
+      else assert.equal(fs.existsSync(f.recordPath),false)
+      assert(result.warnings.some(v=>v.includes(`fixture_fault:${fault}`)))
+      assert(result.tags.includes('old_save_preserved'))
+    } else {
+      assert.deepEqual(JSON.parse(fs.readFileSync(f.recordPath,'utf8')),value)
+      assert(result.tags.includes('runtime_save_record_replaced'))
+      assert(result.message.includes('replaced'))
+    }
+    if (fault === 'lock_foreign') {
+      assert(result.warnings.some(v=>v.includes('runtime_write_lock_identity_changed')))
+      assert.equal(fs.readFileSync(f.recordPath+'.lock','utf8'),JSON.stringify({lockToken:'foreign-token'}))
+    } else if (fault === 'lock_corrupt') assert.equal(fs.readFileSync(f.recordPath+'.lock','utf8'),'corrupted lock bytes')
+    else assert(result.warnings.some(v=>v.includes(fault.endsWith('close')?'fixture_lock_close_failed':`fixture_fault:${fault}`)))
+    const again = await f.store.write({record:value,expectedTick:value.tick,filePath:f.recordPath})
+    assert.equal(again.ok,false);assert.equal(again.code,'conflict')
   })
 }

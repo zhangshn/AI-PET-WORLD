@@ -4,7 +4,7 @@ import { registerHooks } from 'node:module'
 import { pathToFileURL } from 'node:url'
 
 const FILES = new Set(['natural-world-bootstrap.ts', 'world-runtime-store-adapter.ts', 'world-runtime-store.ts',
-  'world-runtime-production-store.ts', 'world-runtime-record-validation.ts', 'world-runtime-schema.ts', 'runtime-path-security.ts', 'world-evolution-transaction.ts'])
+  'world-runtime-production-store.ts', 'world-runtime-write-cleanup.ts', 'world-runtime-record-validation.ts', 'world-runtime-schema.ts', 'runtime-path-security.ts', 'world-evolution-transaction.ts'])
 const pendingByRoot = new Map()
 /** Node24's fixed native type stripper; no arbitrary transpilation or source selection. */
 export async function loadNaturalWorldBaselineRuntime(root = process.cwd()) {

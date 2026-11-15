@@ -782,7 +782,7 @@ function fixture() {
       programGraphManifest: qualificationProgramGraph,
     });
   const qualificationPayload = binding(root, qualificationPayloadPath);
-  const qualificationManifestPath = write(root,
+  write(root,
     ".runtime/ai-painter/stage4-v2-readonly-gpu-qualification-packages/qualification-package/package-manifest.json", {
       schemaVersion: "ai-painter-stage4-v2-readonly-gpu-package-manifest-v1",
       status: "materialized_not_executed",

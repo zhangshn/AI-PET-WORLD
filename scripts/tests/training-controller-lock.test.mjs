@@ -93,3 +93,35 @@ test('training startup refuses corrupted or recovery-required state before and a
     assert.equal(after.current,null);assert.equal(after.trace.filter(x=>x==='unlink').length,1)
   }
 })
+
+function loadExactIdentityFunctions(file,names,bindings) {
+  const source=ts.createSourceFile(file,fs.readFileSync(file,'utf8'),ts.ScriptTarget.Latest,true)
+  const selected=names.map(name=>{const fn=source.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text===name);assert(fn,name);return fn.getText(source)}).join('\n')
+  const compiled=ts.transpileModule(selected,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
+  return new Function('exports',...Object.keys(bindings),compiled+';return {'+names.join(',')+'};')({},...Object.values(bindings))
+}
+for(const kind of ['exclusive','task','training','control-ledger','frame','backup','git'])for(const replacement of [false,true]){
+  test(`${kind} lock compares exact 64-bit IDs: replacement=${replacement}`,async()=>{
+    const ownId=9007199254740992n,otherId=ownId+(replacement?1n:0n),flags=[]
+    assert.equal(Number(ownId),Number(otherId))
+    let bytes='private-lock',deletes=0
+    const stat=(id,options)=>{flags.push(options?.bigint===true);return{ino:options?.bigint?id:Number(id),dev:options?.bigint?7n:7,isFile:()=>true,isSymbolicLink:()=>false}}
+    const io={openSync:()=>0,writeFileSync(_fd,raw){bytes=raw},fsyncSync(){},closeSync(){},fstatSync:(_fd,options)=>stat(ownId,options),lstatSync:(_file,options)=>stat(otherId,options),readFileSync:()=>bytes,unlinkSync(){deletes++},mkdirSync(){},existsSync:()=>true}
+    const handle={writeFile:async raw=>{bytes=raw},stat:async options=>stat(ownId,options),close:async()=>{}}
+    const bindings={fs:io,path,process,...io,trainingControlDir:'private',trainingProcessLockPath:'private.lock',checkDirectory(){},need(ok,message){if(!ok)throw Error(message)},ModuleError:Error,LocalTaskRunStoreError:class extends Error{constructor(message,code){super(message);this.code=code}},readTrainingProcessLock(){throw Error('unexpected stale lock probe')},isProcessAlive(){throw Error('unexpected liveness probe')},isNodeError:()=>false,open:async()=>handle,lstat:async(_file,options)=>stat(otherId,options),unlink:async()=>{deletes++},rm:async()=>{deletes++},readFile:async()=>bytes,resolveRuntimePath:value=>value,storeError:message=>new Error(message),ledgerWriterIdentity:'private'}
+    let release
+    if(kind==='exclusive')release=loadExactIdentityFunctions('scripts/lib/exclusive-file-lock.mjs',['acquireExclusiveFileLock'],bindings).acquireExclusiveFileLock('private.lock',bytes)
+    if(kind==='task')release=loadExactIdentityFunctions('src/server/ai-painter-local-task-run-store.mjs',['acquireTaskLock'],bindings).acquireTaskLock('private.lock','private-task',new Date())
+    if(kind==='training')release=loadExactIdentityFunctions('src/server/ai-painter-training-controller.ts',['acquireTrainingProcessLock','assertTrainingProcessLockIdentity'],bindings).acquireTrainingProcessLock('train')
+    if(kind==='control-ledger')release=await loadExactIdentityFunctions('src/server/ai-console-control/control-event-ledger.ts',['acquireLedgerLock'],bindings).acquireLedgerLock('private.lock')
+    if(kind==='frame'){const api=loadExactIdentityFunctions('src/world/game-map-frame/game-map-runtime-frame-store.ts',['releaseOwnedLock'],bindings);release=()=>api.releaseOwnedLock(handle,'private.lock',bytes)}
+    if(kind==='backup')release=loadExactIdentityFunctions('src/server/local-backup/backup-storage.mjs',['createBackupStorage'],bindings).createBackupStorage('private',{}).lock('private-id')
+    if(kind==='git')release=loadExactIdentityFunctions('src/server/local-backup/git-store.mjs',['createGitStore'],bindings).createGitStore('private').lock()
+    let error
+    try{await release()}catch(failure){error=failure}
+    assert.equal(deletes,replacement?0:1,'different exact file ID must not be removed even when bytes and rounded IDs match')
+    if(replacement&&kind!=='exclusive')assert(error instanceof Error)
+    else assert.equal(error,undefined)
+    assert.equal(flags.length,2);if(replacement)assert(flags.every(Boolean),'both identity reads must request exact integers')
+  })
+}

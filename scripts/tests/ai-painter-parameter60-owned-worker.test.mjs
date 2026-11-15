@@ -111,7 +111,9 @@ function harness(fault = {}) {
   const child = Object.assign(new EventEmitter(), { pid: 4321, stdin: stream(), stdout: stream(), stderr: stream(),
     kill() { kills++; if (fault.killFailure) throw fault.primary; return fault.killReturns ?? true; }, unref() {} });
   const nativeSource = { path: "fixed-v2.cs", sha256: hash("v2 source") };
-  const js = source.replace(/^import .+;\r?$/gmu, "")
+  const evidenceWriter = fs.readFileSync(new URL("../lib/exclusive-evidence-write.mjs", import.meta.url), "utf8")
+    .replace(/^import .+\r?$/gmu, "").replace(/export function /gu, "function ");
+  const js = evidenceWriter + "\n" + source.replace(/^import .+;\r?$/gmu, "")
     .replace('const SELF = fileURLToPath(import.meta.url);', 'const SELF = "/private/helper.mjs";')
     .replace(/export function /gu, "function ") + ";runParameter60OwnedWorker";
   const run = runInNewContext(js, { assert, Buffer, crypto, fs: memoryFs, path, Date: Clock, Error,

@@ -74,7 +74,15 @@ type StoredActivation = AiConsoleCapabilityActivationRecord & { creationContentB
 type StoredCandidate = AiConsoleRuntimeFrameCandidateRecord & { creationContentBlob: Uint8Array }
 type StoredPublication = AiConsoleRuntimeFramePublicationRecord & { creationContentBlob: Uint8Array }
 
-export function initializeAiConsoleRuntimeReleaseRegistryStore(): AiConsoleRuntimeReleaseMetadata { const database = openWritableStore(); try { return readAndVerifyMetadata(database) } finally { database.close() } }
+export function initializeAiConsoleRuntimeReleaseRegistryStore(): AiConsoleRuntimeReleaseMetadata { const database = openWritableStore(); const errors: unknown[] = []
+  try { return readAndVerifyMetadata(database) } catch (error) {
+    errors.push(error)
+    throw error
+  } finally {
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'initialize_ai_console_runtime_release_registry_store_operation_and_cleanup_failed', { cause: errors[0] })
+  } }
 
 export function executeAiConsoleRuntimeReleaseCommand(input: AiConsoleRuntimeReleaseCommandInput): AiConsoleRuntimeReleaseCommandResult {
   validateCommandInput(input)
@@ -85,6 +93,8 @@ export function executeAiConsoleRuntimeReleaseCommand(input: AiConsoleRuntimeRel
   if (capabilityStore.status !== "connected") throw new Error(`ai_console_runtime_capability_source_${capabilityStore.status}`)
   if (reviewStore.status !== "connected") throw new Error(`ai_console_runtime_review_source_${reviewStore.status}`)
   const database = openWritableStore()
+  const errors: unknown[] = []
+  let transactionActive = false
   try {
     const existingRow = database.prepare(`${receiptSelectSql} WHERE command_id = ?`).get(commandId)
     if (existingRow) {
@@ -145,16 +155,43 @@ export function executeAiConsoleRuntimeReleaseCommand(input: AiConsoleRuntimeRel
     const unsignedReceipt: Omit<AiConsoleRuntimeReleaseCommandReceipt, "commandReceiptSha256"> = { schemaVersion: "ai_console_runtime_release_command_receipt_v1", registryIdentity, commandId, commandSequence: metadata.commandCount + 1, commandType: input.commandType, actorIdentity: "local_console_operator", role: "operator", targetIdentity, expectedRegistryRevision: input.expectedRegistryRevision, resultingRegistryRevision, idempotencyKeySha256: input.idempotencyKeySha256, inputSha256, reasonText: input.reasonText, validationStatus: succeeded ? "accepted" : "rejected", executionStatus: succeeded ? "succeeded" : "rejected", resultTerminalId, failureCode, eventId: event?.runtimeReleaseEventId ?? null, requestedAtUtc: input.requestedAtUtc, finishedAtUtc, executorIdentity, previousCommandReceiptSha256: metadata.headCommandReceiptSha256 }
     const receipt = { ...unsignedReceipt, commandReceiptSha256: sha256(JSON.stringify(unsignedReceipt)) }
     database.exec("BEGIN IMMEDIATE")
-    try { if (event && activation && input.commandType === "activate_qualified_release") insertActivation(database, activation, creationContentBlob as Uint8Array); if (event && candidate && input.commandType === "register_runtime_frame_candidate") insertCandidate(database, candidate, creationContentBlob as Uint8Array); if (event && publication && input.commandType === "publish_reviewed_runtime_frame") insertPublication(database, publication, creationContentBlob as Uint8Array); if (event) insertEvent(database, event); insertReceipt(database, receipt); updateMetadata(database, metadata, receipt, event); database.exec("COMMIT") } catch (error) { database.exec("ROLLBACK"); throw error }
+    transactionActive = true
+    if (event && activation && input.commandType === "activate_qualified_release") insertActivation(database, activation, creationContentBlob as Uint8Array);
+    if (event && candidate && input.commandType === "register_runtime_frame_candidate") insertCandidate(database, candidate, creationContentBlob as Uint8Array);
+    if (event && publication && input.commandType === "publish_reviewed_runtime_frame") insertPublication(database, publication, creationContentBlob as Uint8Array);
+    if (event) insertEvent(database, event);
+    insertReceipt(database, receipt);
+    updateMetadata(database, metadata, receipt, event);
+    database.exec("COMMIT")
+    transactionActive = false
     return { receipt, activation, candidate, publication, event, replayed: false, httpStatus: succeeded ? 201 : 409 }
-  } finally { database.close() }
+  } catch (error) {
+    errors.push(error)
+    if (transactionActive) {
+      try { database.exec("ROLLBACK") } catch (rollbackError) { errors.push(rollbackError) }
+    }
+    throw error
+  } finally {
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'execute_ai_console_runtime_release_command_operation_and_cleanup_failed', { cause: errors[0] })
+  }
 }
 
 export function readAiConsoleRuntimeReleaseRegistryStore(): AiConsoleRuntimeReleaseRead {
   const storePath = getStorePath(); if (!existsSync(storePath)) return { status: "not_connected", reasonCode: "ai_console_runtime_release_registry_not_initialized", evidenceReferences: [runtimeReleaseRegistryStoreLogicalPath] }
   let database: DatabaseSync | null = null
-  try { database = new DatabaseSync(storePath, { open: true, readOnly: true }); verifyDatabase(database); const metadata = readAndVerifyMetadata(database); const activations = database.prepare(`${activationSelectSql} ORDER BY activation_sequence`).all().map(activationFromRow); const candidates = database.prepare(`${candidateSelectSql} ORDER BY candidate_sequence`).all().map(candidateFromRow); const publications = database.prepare(`${publicationSelectSql} ORDER BY publication_sequence`).all().map(publicationFromRow); const events = database.prepare(`${eventSelectSql} ORDER BY event_sequence`).all().map(eventFromRow); const receipts = database.prepare(`${receiptSelectSql} ORDER BY command_sequence`).all().map(receiptFromRow); verifyRecords(metadata, activations, candidates, publications, events, receipts); verifyExternalBindings(activations, publications); return { status: "connected", metadata, activations: activations.map(stripBlob), candidates: candidates.map(stripBlob), publications: publications.map(stripBlob), events: [...events].reverse(), receipts: [...receipts].reverse(), evidenceReferences: [runtimeReleaseRegistryStoreLogicalPath, "data/ai-console/schemas/ai-console-runtime-release-registry-v1.schema.json", ".runtime/ai-console/capabilities/capability-lifecycle-v1.sqlite", ".runtime/ai-console/reviews/review-adjudication-registry-v1.sqlite"] } }
-  catch (error) { return { status: "unknown_or_stale", reasonCode: error instanceof Error ? error.message : "ai_console_runtime_release_registry_read_failed", evidenceReferences: [runtimeReleaseRegistryStoreLogicalPath] } } finally { database?.close() }
+  let readFailed = false
+  let readError: unknown
+  try { database = new DatabaseSync(storePath, { open: true, readOnly: true }); verifyDatabase(database); const metadata = readAndVerifyMetadata(database); const activations = database.prepare(`${activationSelectSql} ORDER BY activation_sequence`).all().map(activationFromRow); const candidates = database.prepare(`${candidateSelectSql} ORDER BY candidate_sequence`).all().map(candidateFromRow); const publications = database.prepare(`${publicationSelectSql} ORDER BY publication_sequence`).all().map(publicationFromRow); const events = database.prepare(`${eventSelectSql} ORDER BY event_sequence`).all().map(eventFromRow); const receipts = database.prepare(`${receiptSelectSql} ORDER BY command_sequence`).all().map(receiptFromRow); verifyRecords(metadata, activations, candidates, publications, events, receipts); verifyExternalBindings(activations, publications); return { status: "connected", metadata, activations: activations.map(stripBlob), candidates: candidates.map(stripBlob), publications: publications.map(stripBlob), events: [...events].reverse(), receipts: [...receipts].reverse(), evidenceReferences: [runtimeReleaseRegistryStoreLogicalPath, "data/ai-console/schemas/ai-console-runtime-release-registry-v1.schema.json", ".runtime/ai-console/capabilities/capability-lifecycle-v1.sqlite", ".runtime/ai-console/reviews/review-adjudication-registry-v1.sqlite"] } } catch (error) {
+    readFailed = true
+    readError = error
+    return { status: "unknown_or_stale", reasonCode: error instanceof Error ? error.message : "ai_console_runtime_release_registry_read_failed", evidenceReferences: [runtimeReleaseRegistryStoreLogicalPath] } } finally {
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], 'read_ai_console_runtime_release_registry_store_read_and_close_failed', { cause: readError })
+      throw closeError
+    }
+  }
 }
 
 function activationCreationContent(input: Extract<AiConsoleRuntimeReleaseCommandInput, { commandType: "activate_qualified_release" }>, release: AiConsoleCapabilityReleaseRecord) { return { schemaVersion: "ai_console_capability_activation_creation_v1", capabilityDomain: release.capabilityDomain, capabilityReleaseIdentity: release.capabilityReleaseIdentity, capabilityReleaseRecordSha256: release.releaseRecordSha256, capabilityVersionId: release.capabilityVersionId, qualificationSetSha256: release.qualificationSetSha256, conditionSchemaId: release.conditionSchemaId, previousActivationId: input.expectedPreviousActivationId } as const }
@@ -177,7 +214,9 @@ CREATE TABLE IF NOT EXISTS runtime_frame_publications (publish_identity TEXT PRI
 CREATE TABLE IF NOT EXISTS runtime_release_events (runtime_release_event_id TEXT PRIMARY KEY, event_sequence INTEGER NOT NULL UNIQUE, command_id TEXT NOT NULL UNIQUE, event_type TEXT NOT NULL, subject_type TEXT NOT NULL, subject_identity TEXT NOT NULL, capability_domain TEXT NOT NULL, subject_record_sha256 TEXT NOT NULL, occurred_at_utc TEXT NOT NULL, previous_event_record_sha256 TEXT, event_record_sha256 TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS command_receipts (command_id TEXT PRIMARY KEY, command_sequence INTEGER NOT NULL UNIQUE, command_type TEXT NOT NULL, actor_identity TEXT NOT NULL, role TEXT NOT NULL, target_identity TEXT, expected_registry_revision INTEGER NOT NULL, resulting_registry_revision INTEGER NOT NULL, idempotency_key_sha256 TEXT NOT NULL, input_sha256 TEXT NOT NULL, reason_text TEXT NOT NULL, validation_status TEXT NOT NULL, execution_status TEXT NOT NULL, result_terminal_id TEXT NOT NULL, failure_code TEXT, event_id TEXT, requested_at_utc TEXT NOT NULL, finished_at_utc TEXT NOT NULL, executor_identity TEXT NOT NULL, previous_command_receipt_sha256 TEXT, command_receipt_sha256 TEXT NOT NULL);`); const count = Number((d.prepare("SELECT COUNT(*) count FROM metadata").get() as { count: number }).count); if (count === 0) insertInitialMetadata(d); if (count > 1) throw new Error("ai_console_runtime_release_metadata_cardinality_invalid"); d.exec("PRAGMA user_version=1"); verifyDatabase(d); return d
   } catch (error) {
-    try { d.close() } catch { /* Preserve the initialization failure. */ }
+    try { d.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'runtime_release_registry_store_initialization_and_close_failed', { cause: error })
+    }
     throw error
   }
 }

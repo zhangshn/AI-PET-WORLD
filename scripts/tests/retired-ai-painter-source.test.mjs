@@ -98,3 +98,27 @@ test('clean local Git checkout recovers every original without cold storage or e
     }
   } finally { cleanup(temporary); }
 });
+
+
+test('qualification canonical fixture uses verified historical bytes without restoring current source',async()=>{
+  const {canonicalFixtureIdentity:id,readQualificationCanonicalFixture:read}=await import('./helpers/qualification-canonical-fixture.mjs');
+  const before=fs.readFileSync(path.join(root,id.path)),fixture=read(root,id);
+  assert.equal(fixture.sha256,id.sha256);assert.equal(sha(fixture.bytes),id.sha256);assert.equal(fixture.bytes.length,id.bytes);
+  assert.deepEqual(fs.readFileSync(path.join(root,id.path)),before);
+  assert.throws(()=>read(root,{...id,sha256:'0'.repeat(64)}),/unknown canonical fixture identity/);
+  assert.throws(()=>read(root,{...id,path:'outside'}),/unknown canonical fixture path/);
+});
+
+test('qualification canonical fixture allows offline Git recovery but refuses a corrupt existing archive',async()=>{
+  const {canonicalFixtureIdentity:id,canonicalFixtureArchiveDirectory:directory,readQualificationCanonicalFixture:read}=await import('./helpers/qualification-canonical-fixture.mjs');
+  const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'retired-source-audit-'));
+  try{
+    const coldRoot=path.join(temporary,'cold');fs.mkdirSync(coldRoot);
+    const fromGit=read(root,id,{coldRoot});assert.equal(fromGit.origin,'local_git');assert.equal(sha(fromGit.bytes),id.sha256);
+    const file=path.join(coldRoot,directory,id.path);fs.mkdirSync(path.dirname(file),{recursive:true});
+    fs.writeFileSync(file,fromGit.bytes);assert.equal(read(root,id,{coldRoot}).origin,'cold_archive');
+    const corrupt=Buffer.from(fromGit.bytes);corrupt[0]^=1;fs.writeFileSync(file,corrupt);
+    assert.throws(()=>read(root,id,{coldRoot}),/canonical fixture SHA mismatch/);
+    assert.deepEqual(fs.readFileSync(file),corrupt);
+  }finally{cleanup(temporary);}
+});

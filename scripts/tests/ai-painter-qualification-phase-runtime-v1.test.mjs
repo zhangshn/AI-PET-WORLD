@@ -10,7 +10,7 @@ import {validateParameter60NativeProof} from '../lib/ai-painter-decode1-entry-qu
 
 // Private files and a VM replacement of the fixed import only. Never spawn a
 // process, compile native code, consume a real claim or touch official registry.
-const source=fs.readFileSync(new URL('../lib/ai-painter-qualification-phase-runtime-v1.mjs',import.meta.url),'utf8');
+const source=fs.readFileSync(new URL('../lib/ai-painter-qualification-phase-runtime-core.mjs',import.meta.url),'utf8')+'\n'+fs.readFileSync(new URL('../lib/ai-painter-qualification-phase-runtime-v1.mjs',import.meta.url),'utf8');
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const policy={outputRoot:'.runtime/ai-painter/private-qualification',
   attemptClaimPath:'.runtime/ai-painter/private-qualification/attempt-v1.json',allowedModes:['cpu_prepare','gpu_qualify'],
@@ -62,7 +62,7 @@ function fixture(t){
     if(primary){primary.ownedReceipt=receipt;throw primary;}
     return {stdout:'abc',stderr:'de',ownedReceipt:receipt};
   };
-  const js=source.replace(/^import .+;\r?$/gmu,'').replace(/export (async )?function /gu,'$1function ')+';({createAccounting,runOwnedPhase})';
+  const js=source.replace(/^import .+;\r?$/gmu,'').replace(/export (async )?function /gu,'$1function ').replace(/export const /gu,'const ')+';({createAccounting,runOwnedPhase})';
   // Node strict assertions compare prototypes too; clone both sides into the
   // same realm without changing production checks or the fixed transport.
   const vmAssert=Object.assign((...args)=>assert(...args),assert,

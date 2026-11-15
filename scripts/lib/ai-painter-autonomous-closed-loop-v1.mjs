@@ -64,7 +64,7 @@ export function createExecutionStore({ root = process.cwd(), spec, packageSha256
   fs.mkdirSync(path.join(executionRoot, "phase-evidence"), { recursive: false });
   const sqlitePath = path.join(executionRoot, "execution.sqlite");
   const db = openDatabase(sqlitePath);
-  let transactionFailed = false;
+  const databaseFailures = [];
   try {
     db.exec("BEGIN IMMEDIATE");
     db.prepare(`INSERT INTO executions(package_identity, package_sha256, capability_version, state, phase, created_at_utc, updated_at_utc, owner_response_required) VALUES (?, ?, ?, 'package_materialized', NULL, ?, ?, 0)`).run(
@@ -73,11 +73,11 @@ export function createExecutionStore({ root = process.cwd(), spec, packageSha256
     db.prepare(`INSERT INTO transitions(package_identity, sequence, from_state, to_state, phase, recorded_at_utc, evidence_sha256) VALUES (?, 0, NULL, 'package_materialized', NULL, ?, NULL)`).run(spec.packageIdentity, now);
     db.exec("COMMIT");
   } catch (error) {
-    transactionFailed = true;
-    try { db.exec("ROLLBACK"); } catch { /* Preserve the first transaction failure. */ }
+    databaseFailures.push(error);
+    try { db.exec("ROLLBACK"); } catch (rollbackError) { databaseFailures.push(rollbackError); }
     throw error;
   } finally {
-    try { db.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+    closeExecutionDatabase(db, databaseFailures);
   }
 
   const state = buildState(spec, packageSha256, "package_materialized", null, 0, now, null);
@@ -104,6 +104,7 @@ function readExistingExecutionStore({ root = process.cwd(), spec, packageSha256 
   const store = locateExistingExecutionStore({ root, spec, packageSha256 });
   const { sqlitePath, state } = store;
   const db = openDatabase(sqlitePath);
+  const databaseFailures = [];
   try {
     const persisted = db.prepare("SELECT package_sha256, capability_version, state, phase, owner_response_required FROM executions WHERE package_identity = ?").get(spec.packageIdentity);
     assert(persisted, "persistent execution record is missing");
@@ -111,7 +112,7 @@ function readExistingExecutionStore({ root = process.cwd(), spec, packageSha256 
     assert(persisted.capability_version === spec.capabilityVersion, "persistent capability version mismatch");
     assert(persisted.state === state.state && persisted.phase === state.phase, "persistent execution state conflict");
     assert(persisted.owner_response_required === 0, "persistent execution cannot wait for Owner");
-  } finally { db.close(); }
+  } catch (error) { databaseFailures.push(error); throw error; } finally { closeExecutionDatabase(db, databaseFailures); }
   return store;
 }
 
@@ -226,6 +227,7 @@ export async function runAutonomousClosedLoop({
 
 function auditExecutionContinuity(store, spec, state) {
   const db = openDatabase(store.sqlitePath);
+  const databaseFailures = [];
   let persisted;
   let transitions;
   let artifacts;
@@ -235,7 +237,7 @@ function auditExecutionContinuity(store, spec, state) {
     transitions = db.prepare("SELECT * FROM transitions WHERE package_identity = ? ORDER BY sequence").all(spec.packageIdentity);
     artifacts = db.prepare("SELECT * FROM artifacts WHERE package_identity = ? ORDER BY phase, attempt").all(spec.packageIdentity);
     recoveries = db.prepare("SELECT * FROM recoveries WHERE package_identity = ? ORDER BY phase, attempt").all(spec.packageIdentity);
-  } finally { db.close(); }
+  } catch (error) { databaseFailures.push(error); throw error; } finally { closeExecutionDatabase(db, databaseFailures); }
   assert(persisted, "persistent execution record is missing");
   assert(transitions.length > 0, "persistent transition history is missing");
   assert(transitions[0].sequence === 0 && transitions[0].from_state === null && transitions[0].to_state === "package_materialized" && transitions[0].phase === null, "transition history origin is invalid");
@@ -395,7 +397,7 @@ function reconcilePersistedPhaseOutcome({ root, store, spec, state, phase, now }
 function registerPassedArtifact(store, spec, evidence, recordedAtUtc) {
   assert(evidence.payload.result.status === "passed", "only passed phase evidence can be registered as an artifact");
   const db = openDatabase(store.sqlitePath);
-  let transactionFailed = false;
+  const databaseFailures = [];
   try {
     db.exec("BEGIN IMMEDIATE");
     const existing = db.prepare("SELECT attempt, logical_path, sha256 FROM artifacts WHERE package_identity = ? AND phase = ?").get(spec.packageIdentity, evidence.phase);
@@ -408,11 +410,11 @@ function registerPassedArtifact(store, spec, evidence, recordedAtUtc) {
     }
     db.exec("COMMIT");
   } catch (error) {
-    transactionFailed = true;
-    try { db.exec("ROLLBACK"); } catch { /* Preserve the first transaction failure. */ }
+    databaseFailures.push(error);
+    try { db.exec("ROLLBACK"); } catch (rollbackError) { databaseFailures.push(rollbackError); }
     throw error;
   } finally {
-    try { db.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+    closeExecutionDatabase(db, databaseFailures);
   }
 }
 
@@ -652,7 +654,7 @@ function transition(store, spec, state, toState, phase, evidence, recordedAtUtc,
   assert(ALLOWED_TRANSITIONS[state.state]?.includes(toState), `invalid transition ${state.state} -> ${toState}`);
   const sequence = state.sequence + 1;
   const db = openDatabase(store.sqlitePath);
-  let transactionFailed = false;
+  const databaseFailures = [];
   try {
     db.exec("BEGIN IMMEDIATE");
     const current = db.prepare("SELECT state FROM executions WHERE package_identity = ?").get(spec.packageIdentity);
@@ -663,11 +665,11 @@ function transition(store, spec, state, toState, phase, evidence, recordedAtUtc,
     );
     db.exec("COMMIT");
   } catch (error) {
-    transactionFailed = true;
-    try { db.exec("ROLLBACK"); } catch { /* Preserve the first transaction failure. */ }
+    databaseFailures.push(error);
+    try { db.exec("ROLLBACK"); } catch (rollbackError) { databaseFailures.push(rollbackError); }
     throw error;
   } finally {
-    try { db.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+    closeExecutionDatabase(db, databaseFailures);
   }
   const next = buildState(spec, state.packageSha256, toState, phase, sequence, recordedAtUtc, evidence ?? state.latestEvidence, failureCode);
   writeJsonAtomic(path.join(store.executionRoot, "execution-state.json"), next);
@@ -679,11 +681,12 @@ function transition(store, spec, state, toState, phase, evidence, recordedAtUtc,
 
 function updateEvidence(store, spec, state, evidence, recordedAtUtc) {
   const db = openDatabase(store.sqlitePath);
+  const databaseFailures = [];
   try {
     db.prepare("INSERT INTO artifacts(package_identity, phase, attempt, logical_path, sha256, recorded_at_utc) VALUES (?, ?, ?, ?, ?, ?)").run(
       spec.packageIdentity, evidence.phase, evidence.attempt, evidence.path, evidence.sha256, recordedAtUtc,
     );
-  } finally { db.close(); }
+  } catch (error) { databaseFailures.push(error); throw error; } finally { closeExecutionDatabase(db, databaseFailures); }
   const next = { ...state, latestEvidence: evidence, updatedAtUtc: recordedAtUtc };
   writeJsonAtomic(path.join(store.executionRoot, "execution-state.json"), next);
   return next;
@@ -691,11 +694,12 @@ function updateEvidence(store, spec, state, evidence, recordedAtUtc) {
 
 function recordRecovery(store, spec, state, phase, attempt, evidence, recordedAtUtc) {
   const db = openDatabase(store.sqlitePath);
+  const databaseFailures = [];
   try {
     db.prepare("INSERT INTO recoveries(package_identity, phase, attempt, failure_evidence_sha256, recorded_at_utc) VALUES (?, ?, ?, ?, ?)").run(
       spec.packageIdentity, phase, attempt, evidence.sha256, recordedAtUtc,
     );
-  } finally { db.close(); }
+  } catch (error) { databaseFailures.push(error); throw error; } finally { closeExecutionDatabase(db, databaseFailures); }
   const next = { ...state, recoveryAttempt: attempt, latestEvidence: evidence, updatedAtUtc: recordedAtUtc };
   writeJsonAtomic(path.join(store.executionRoot, "execution-state.json"), next);
   return next;
@@ -731,6 +735,15 @@ function validateAdapterResult(result, phase) {
       assert(typeof result.summaryZh === "string" && result.summaryZh.length > 0, `${phase} policy summaryZh is required`);
     }
   }
+}
+
+// Preserve the original operation error when releasing its connection also fails.
+// An array distinguishes a thrown undefined/null value from a successful operation.
+function closeExecutionDatabase(db, failures) {
+  try { db.close(); } catch (error) { failures.push(error); }
+  if (failures.length > 1) throw new AggregateError(failures,
+    "execution_database_operation_and_close_failed", { cause: failures[0] });
+  if (failures.length === 1) throw failures[0];
 }
 
 function openDatabase(sqlitePath) {
@@ -769,8 +782,7 @@ function openDatabase(sqlitePath) {
   `);
     return db;
   } catch (error) {
-    try { db.close() } catch { /* Preserve the initialization failure. */ }
-    throw error
+    closeExecutionDatabase(db, [error]);
   }
 }
 
@@ -796,6 +808,7 @@ function recordReviewState(store, spec, reviewState, recordedAtUtc, evidenceSha2
   const allowed = ["review_pending", "review_running", "review_passed", "review_completed_with_failed_result", "review_failed", "review_evidence_conflict"];
   assert(allowed.includes(reviewState), "review state is invalid");
   const db = openDatabase(store.sqlitePath);
+  const databaseFailures = [];
   try {
     const latest = db.prepare("SELECT MAX(sequence) AS sequence FROM review_transitions WHERE package_identity = ?").get(spec.packageIdentity);
     const sequence = Number.isInteger(latest?.sequence) ? latest.sequence + 1 : 0;
@@ -804,7 +817,7 @@ function recordReviewState(store, spec, reviewState, recordedAtUtc, evidenceSha2
       schemaVersion: "ai-painter-machine-review-state-v1", packageIdentity: spec.packageIdentity,
       state: reviewState, sequence, evidenceSha256, ownerResponseRequired: false, updatedAtUtc: recordedAtUtc,
     });
-  } finally { db.close(); }
+  } catch (error) { databaseFailures.push(error); throw error; } finally { closeExecutionDatabase(db, databaseFailures); }
 }
 
 function appendEvent(executionRoot, state, evidence, recordedAtUtc) {

@@ -1,3 +1,4 @@
+import { acquireExclusiveFileLock } from "./lib/exclusive-file-lock.mjs"
 import crypto from "node:crypto"
 import { spawn, spawnSync } from "node:child_process"
 import fs from "node:fs"
@@ -51,7 +52,6 @@ const preflightReportPath = path.join(chainDir, "preflight-report.json")
 const terminalPath = path.join(chainDir, "stage4-terminal.json")
 
 let currentStage = null
-let currentChild = null
 let trainingConsumption = null
 const stageResults = []
 let hardwareBefore = null
@@ -115,7 +115,7 @@ async function main() {
       process.exitCode = 1
       return
     }
-    trainingConsumption = consumeTrainingExecution(preflightReport)
+    trainingConsumption = consumeTrainingExecution()
     const activeConfig = activateConfig(context.inactiveConfig, trainingConsumption)
     writeImmutableJson(derivedConfigPath, activeConfig)
     if (!fileHashMatches(AUTOENCODER_CHECKPOINT_PATH, AUTOENCODER_CHECKPOINT_SHA256)) {
@@ -287,7 +287,7 @@ function runPythonPreflight(config) {
   }
 }
 
-function consumeTrainingExecution(preflightReport) {
+function consumeTrainingExecution() {
   const target = resolve(TRAINING_CONSUMPTION_PATH)
   const record = {
     schemaVersion: "project-owner-stage4-training-execution-authorization-consumption-v1",
@@ -408,7 +408,6 @@ async function reviewStagePreviews(outputDir, stageIndex, selectedRows) {
 function runPythonStage(args, outputDir, stageIndex) {
   return new Promise((complete) => {
     const child = spawn(PYTHON, args, { cwd: ROOT, env: pythonEnv(), windowsHide: true, stdio: ["ignore", "pipe", "pipe"] })
-    currentChild = child
     let stdout = ""
     let stderr = ""
     child.stdout.on("data", (chunk) => { stdout += chunk.toString("utf8") })
@@ -421,7 +420,6 @@ function runPythonStage(args, outputDir, stageIndex) {
     child.on("error", (error) => { stderr += error.stack || error.message })
     child.on("close", (exitCode, signal) => {
       clearInterval(timer)
-      currentChild = null
       complete({ exitCode, signal, stdout, stderr })
     })
   })
@@ -499,14 +497,7 @@ function writeTerminal(report) {
 
 function acquireLock() {
   fs.mkdirSync(MODEL_ROOT, { recursive: true })
-  const handle = fs.openSync(LOCK_PATH, "wx")
-  fs.writeFileSync(handle, `${JSON.stringify({ schemaVersion: "ai-assisted-v7-r5-stage4-full-training-lock-v1", pid: process.pid, chainId, createdAtUtc: new Date().toISOString() }, null, 2)}\n`)
-  fs.closeSync(handle)
-  return () => {
-    if (!fs.existsSync(LOCK_PATH)) return
-    const lock = readJson(LOCK_PATH)
-    if (lock?.pid === process.pid && lock?.chainId === chainId) fs.unlinkSync(LOCK_PATH)
-  }
+  return acquireExclusiveFileLock(LOCK_PATH, `${JSON.stringify({ schemaVersion: "ai-assisted-v7-r5-stage4-full-training-lock-v1", pid: process.pid, chainId, createdAtUtc: new Date().toISOString() }, null, 2)}\n`)
 }
 
 function diskBudgetSnapshot() {

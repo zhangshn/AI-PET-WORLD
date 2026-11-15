@@ -43,7 +43,11 @@ function credentials(username,password){
 function transact(db,callback){
   db.exec("BEGIN IMMEDIATE");
   try {const result=callback();db.exec("COMMIT");return result;}
-  catch(e){db.exec("ROLLBACK");throw e;}
+  catch(error){
+    try{db.exec("ROLLBACK");}
+    catch(rollbackError){throw new AggregateError([error,rollbackError],"Player storage transaction and rollback failed",{cause:error});}
+    throw error;
+  }
 }
 
 // Production can address only this project-private directory. No path originates in HTTP or CLI arguments.
@@ -81,11 +85,17 @@ export function createPlayerAccessStore(privateDirectory,clock=Date.now){
       try{fs.closeSync(fs.openSync(filename,"wx",0o600));}catch(e){if(e.code!=="EEXIST")throw e;}
     }
     const db=new DatabaseSync(filename,{readOnly:mode==="read"});
+    const errors=[];
     try {
       db.exec("PRAGMA busy_timeout=3000; PRAGMA foreign_keys=ON");
       if(init)db.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;"+schema);
       return callback(db);
-    } finally {db.close();}
+    } catch(error){errors.push(error);}
+    finally {
+      try{db.close();}catch(error){errors.push(error);}
+      if(errors.length===1)throw errors[0];
+      if(errors.length>1)throw new AggregateError(errors,"Player storage operation and close failed",{cause:errors[0]});
+    }
   }
 
   // Record quota before running expensive password derivation. Global limits bound

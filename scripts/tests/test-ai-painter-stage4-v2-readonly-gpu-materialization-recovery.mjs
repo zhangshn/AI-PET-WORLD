@@ -16,6 +16,16 @@ import {
   deriveSmokeProgramPathsFromQualification,
 } from "../plan-ai-painter-stage4-v2-controlled-smoke.mjs";
 
+import { buildStage4V2QualificationProgramGraph } from "../lib/ai-painter-program-graph-manifest-v1.mjs";
+
+// Copy current declared successors and their real dependencies before installing test doubles.
+const QUALIFICATION_SOURCE_GRAPH = buildStage4V2QualificationProgramGraph({
+  projectRoot: process.cwd(),
+  programLineage: {
+    recovery: { path: "scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs" },
+  },
+});
+
 const PREFIX_HOOKS = [
   "afterMaterializationIntentPersisted",
   "afterPackageDirectoryCreated",
@@ -327,6 +337,11 @@ function createFixture() {
     fs.writeFileSync(absolute, value);
     return bind(root, logicalPath);
   };
+  for (const { path: logicalPath } of QUALIFICATION_SOURCE_GRAPH.files) {
+    writeBytes(logicalPath,
+      fs.readFileSync(path.join(process.cwd(), ...logicalPath.split("/"))));
+  }
+
   writeBytes("scripts/lib/ai-painter-python-import-ast-v1.py",
     fs.readFileSync(path.join(process.cwd(), "scripts", "lib",
       "ai-painter-python-import-ast-v1.py")));
@@ -344,14 +359,7 @@ function createFixture() {
     "ml/ai-painter/trainer-support.py",
   ]) writeBytes(logicalPath, `fixture:${logicalPath}\n`);
 
-  // This dynamic successor uses the real registry module, which imports the
-  // recovery module back. Copy both immutable sources into the private fixture;
-  // graph construction must resolve and bind the actual cyclic dependency.
-  for (const logicalPath of [
-    "scripts/lib/ai-painter-owned-worker-reboot-recovery-v1.mjs",
-    "src/server/ai-painter-current-execution-registry.mjs",
-  ]) writeBytes(logicalPath,
-    fs.readFileSync(path.join(process.cwd(), ...logicalPath.split("/"))));
+
 
   writeBytes(
     "scripts/lib/ai-painter-stage4-v2-qualification-continuation-v1.mjs",

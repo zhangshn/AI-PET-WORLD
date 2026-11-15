@@ -56,7 +56,9 @@ export function beginLocalTaskRun({
     writeImmutableJsonAtomic(startPath, startRecord);
     writeJsonAtomic(statePath, { ...startRecord, schemaVersion: "local-ai-task-state-v1" });
   } catch (error) {
-    releaseLock();
+    try { releaseLock(); } catch (releaseError) {
+      throw new AggregateError([error, releaseError], "Task initialization and lock release failed", { cause: error });
+    }
     throw error;
   }
 
@@ -75,6 +77,7 @@ export function beginLocalTaskRun({
       errorCode,
       startPath: normalizePath(path.relative(absoluteRoot, startPath)),
     };
+    const errors = [];
     try {
       writeImmutableJsonAtomic(terminalPath, terminal);
       writeJsonAtomic(statePath, { ...terminal, schemaVersion: "local-ai-task-state-v1" });
@@ -88,10 +91,14 @@ export function beginLocalTaskRun({
         updatedAtAsiaShanghai: terminal.finishedAtAsiaShanghai,
       });
       closed = true;
-      return terminal;
+    } catch (error) {
+      errors.push(error);
     } finally {
-      releaseLock();
+      try { releaseLock(); } catch (error) { errors.push(error); }
     }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) throw new AggregateError(errors, "Task terminal write and lock release failed", { cause: errors[0] });
+    return terminal;
   }
 
   return {
@@ -124,17 +131,32 @@ export function writeJsonAtomic(targetPath, value) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   const temporary = path.join(path.dirname(target), `.${path.basename(target)}.${process.pid}.${crypto.randomUUID()}.tmp`);
   let handle = null;
+  let temporaryCreated = false;
+  const errors = [];
   try {
     handle = fs.openSync(temporary, "wx");
+    temporaryCreated = true;
     fs.writeFileSync(handle, `${JSON.stringify(value, null, 2)}\n`, "utf8");
     fs.fsyncSync(handle);
-    fs.closeSync(handle);
+    const closingDescriptor = handle;
     handle = null;
+    fs.closeSync(closingDescriptor);
     fs.renameSync(temporary, target);
+    temporaryCreated = false;
+  } catch (error) {
+    errors.push(error);
   } finally {
-    if (handle !== null) fs.closeSync(handle);
-    try { fs.unlinkSync(temporary); } catch {}
+    if (handle !== null) {
+      const closingDescriptor = handle;
+      handle = null;
+      try { fs.closeSync(closingDescriptor); } catch (error) { errors.push(error); }
+    }
+    if (temporaryCreated) {
+      try { fs.unlinkSync(temporary); } catch (error) { if (error?.code !== "ENOENT") errors.push(error); }
+    }
   }
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors, "Task record write or cleanup failed", { cause: errors[0] });
 }
 
 function writeImmutableJsonAtomic(targetPath, value) {
@@ -152,9 +174,10 @@ function acquireTaskLock(lockPath, taskId, now) {
     handle = fs.openSync(lockPath, "wx");
     fs.writeFileSync(handle, lockBytes, "utf8");
     fs.fsyncSync(handle);
-    identity = fs.fstatSync(handle);
-    fs.closeSync(handle);
+    identity = fs.fstatSync(handle, { bigint: true });
+    const closingDescriptor = handle;
     handle = null;
+    fs.closeSync(closingDescriptor);
   } catch (error) {
     if (handle !== null) {
       try { fs.closeSync(handle); } catch { /* Preserve the original initialization error. */ }
@@ -167,7 +190,7 @@ function acquireTaskLock(lockPath, taskId, now) {
   let released = false;
   return () => {
     if (released) return;
-    const current = fs.lstatSync(lockPath);
+    const current = fs.lstatSync(lockPath, { bigint: true });
     if (!current.isFile() || current.isSymbolicLink() || current.ino !== identity.ino || current.dev !== identity.dev || fs.readFileSync(lockPath, "utf8") !== lockBytes) {
       throw new LocalTaskRunStoreError("任务互斥锁身份已变化，保留现有文件。", "task_mutex_identity_changed");
     }

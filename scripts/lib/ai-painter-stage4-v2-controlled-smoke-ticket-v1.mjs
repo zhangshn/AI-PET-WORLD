@@ -281,7 +281,9 @@ export function validateStage4V2SmokeTicket({ projectRoot, ticket, packagePayloa
 export function initializeStage4V2SmokeTicketLedger({ projectRoot } = {}) {
   const absolute = resolveProjectPath(projectRoot, STAGE4_V2_SMOKE_LEDGER_PATH);
   fs.mkdirSync(path.dirname(absolute), { recursive: true });
-  const db = new DatabaseSync(absolute); try { configureLedger(db); } finally { db.close(); }
+  const db = new DatabaseSync(absolute), errors = [];
+  try { configureLedger(db); } catch (error) { errors.push(error); }
+  finally { finishSmokeLedger(db, errors); }
   return Object.freeze({ path: STAGE4_V2_SMOKE_LEDGER_PATH, schemaVersion: "ai-painter-stage4-v2-controlled-smoke-ticket-ledger-v1" });
 }
 
@@ -291,7 +293,7 @@ export function registerStage4V2SmokeTicket({
 }) {
   validateBinding(ticketBinding, "ticketBinding"); validateBinding(packagePayloadBinding, "packagePayloadBinding");
   const ledger = initializeStage4V2SmokeTicketLedger({ projectRoot });
-  const db = new DatabaseSync(resolveProjectPath(projectRoot, ledger.path));
+  const db = new DatabaseSync(resolveProjectPath(projectRoot, ledger.path)), errors = [];
   try {
     configureLedger(db); db.exec("BEGIN IMMEDIATE");
     try {
@@ -319,8 +321,15 @@ export function registerStage4V2SmokeTicket({
         ticket.issuedAtUtc, ticket.expiresAtUtc,
       );
       db.exec("COMMIT");
-    } catch (error) { try { db.exec("ROLLBACK"); } catch {} throw new Error(`Smoke ticket/output reuse rejected: ${error.message}`); }
-  } finally { db.close(); }
+    } catch (error) {
+      try { db.exec("ROLLBACK"); } catch (rollbackError) { errors.push(rollbackError); }
+      // Only actual SQLite uniqueness violations denote identity/output reuse.
+      if (error?.code === "ERR_SQLITE_ERROR" && [1555, 2067].includes(error.errcode))
+        throw new Error(`Smoke ticket/output reuse rejected: ${error.message}`, { cause: error });
+      throw error;
+    }
+  } catch (error) { errors.unshift(error); }
+  finally { finishSmokeLedger(db, errors); }
   return Object.freeze({
     ...ledger, ticketId: ticket.ticketId,
     status: "issued_not_consumed_persisted",
@@ -363,7 +372,7 @@ export function consumeStage4V2SmokeTicket({
     oneTimeConsumption: true, consumedAtUtc,
   };
   const consumptionSha256 = sha256Of(jsonBytes(consumption));
-  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath));
+  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath)), errors = [];
   try {
     configureLedger(db);
     db.exec("BEGIN IMMEDIATE");
@@ -388,11 +397,11 @@ export function consumeStage4V2SmokeTicket({
       );
       db.exec("COMMIT");
     } catch (error) {
-      try { db.exec("ROLLBACK"); } catch {}
+      try { db.exec("ROLLBACK"); } catch (rollbackError) { errors.push(rollbackError); }
       throw error;
     }
-  }
-  finally { db.close(); }
+  } catch (error) { errors.unshift(error); }
+  finally { finishSmokeLedger(db, errors); }
   invokeTestHook(_testHooks, "afterConsumptionPrepareCommit", {
     ticketId: ticket.ticketId, consumptionPath,
   });
@@ -453,6 +462,14 @@ export function recoverStage4V2SmokeTicketConsumption({
   });
 }
 
+function finishSmokeLedger(db, errors) {
+  try { db.close(); } catch (error) { errors.push(error); }
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors,
+    errors[0] instanceof Error ? errors[0].message : "Smoke ledger operation and cleanup failed",
+    { cause: errors[0] });
+}
+
 function configureLedger(db) {
   db.exec(`PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
     CREATE TABLE IF NOT EXISTS tickets(
@@ -481,7 +498,7 @@ function configureLedger(db) {
 function readSmokeConsumptionPrepare({
   projectRoot, ticket, packagePayloadBinding, consumptionPath, required,
 }) {
-  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath));
+  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath)), errors = [];
   try {
     configureLedger(db);
     const prepared = db.prepare(
@@ -509,7 +526,8 @@ function readSmokeConsumptionPrepare({
     assert.ok(SHA256.test(prepared.consumption_sha256), "prepared consumption SHA-256 is invalid");
     assert.ok(["prepared", "committed"].includes(prepared.status), "prepared status is invalid");
     return prepared;
-  } finally { db.close(); }
+  } catch (error) { errors.unshift(error); }
+  finally { finishSmokeLedger(db, errors); }
 }
 
 function finalizePreparedSmokeConsumption({
@@ -517,7 +535,7 @@ function finalizePreparedSmokeConsumption({
   consumption, consumptionSha256, consumedAtUtc,
 }) {
   bindProjectFile(projectRoot, consumptionPath, consumptionSha256);
-  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath));
+  const db = new DatabaseSync(resolveProjectPath(projectRoot, ticket.ledgerPath)), errors = [];
   try {
     configureLedger(db);
     db.exec("BEGIN IMMEDIATE");
@@ -552,10 +570,11 @@ function finalizePreparedSmokeConsumption({
       }
       db.exec("COMMIT");
     } catch (error) {
-      try { db.exec("ROLLBACK"); } catch {}
+      try { db.exec("ROLLBACK"); } catch (rollbackError) { errors.push(rollbackError); }
       throw error;
     }
-  } finally { db.close(); }
+  } catch (error) { errors.unshift(error); }
+  finally { finishSmokeLedger(db, errors); }
 }
 
 function validateRegisteredSmokeTicketRow(row, ticket, packagePayloadBinding) {

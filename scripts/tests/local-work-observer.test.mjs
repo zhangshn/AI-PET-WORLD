@@ -141,6 +141,8 @@ test('startup drains multiple live batches without a CLI, new notification, time
   const ctx=f.make();assert.equal((await ctx.observeCommittedRegistry()).recorded,true)
   for(let i=3;i<=37;i++)f.commit(i,{failed:i%2===0})
   const observer=start(t,ctx);await observer.ready
+  // ready covers one bounded turn; queued setImmediate turns drain the remaining backlog.
+  await until(()=>ctx.getState(SOURCE).liveCursor===37)
   assert.equal(ctx.getState(SOURCE).liveCursor,37);assert.equal(ctx.getState(SOURCE).cursor,0)
   assert.equal(f.rows(ctx).length,36)
   assert.equal(ctx.ledger.summary(new URLSearchParams()).records.reduce((n,r)=>n+r.executionEnded,0),36)
@@ -185,4 +187,100 @@ test('legacy liveCursor zero without a live origin starts an explicit new lane r
   assert.equal(ctx.getState(SOURCE).legacyLiveBoundary.previousLiveCursor,0)
   f.commit(3);await until(()=>ctx.getState(SOURCE).liveCursor===3)
   assert.equal(f.rows(ctx).length,2);assert.equal(ctx.getState(SOURCE).coverage.complete,false)
+})
+
+for(const lane of ['durable-head','consumer'])for(const scenario of ['stable','file-replaced','device-replaced'])test(`work observer exact source identity ${lane}/${scenario}`,async t=>{
+ const f=fixture(),{head}=f.commit(1),ctx=f.make(lane==='consumer'?{readRegistry:async()=>({ok:true,status:'verified',registry:head})}:{}),before=ctx.getState(SOURCE),file=f.file(REG+'/events.jsonl'),original=fs.readFileSync(file),base=9007199254740992n
+ const originals={lstatSync:fs.lstatSync,readFileSync:fs.readFileSync};let read=false,result
+ const mocks=[t.mock.method(fs,'lstatSync',(p,options)=>{const s=originals.lstatSync(p,options);if(p===file){const ino=base+(read&&scenario==='file-replaced'?1n:0n),dev=7n+(read&&scenario==='device-replaced'?1n:0n);s.ino=options?.bigint?ino:Number(ino);s.dev=options?.bigint?dev:Number(dev)}return s}),t.mock.method(fs,'readFileSync',(p,...args)=>{const bytes=originals.readFileSync(p,...args);if(p===file)read=true;return bytes})]
+ try{result=await ctx.observeCommittedRegistry({limit:1})}finally{for(const mock of mocks.reverse())mock.mock.restore()}
+ assert.equal(result.recorded,scenario==='stable',JSON.stringify(result))
+ if(scenario==='stable'){assert.equal(f.rows(ctx).length,1);assert.equal(ctx.getState(SOURCE).liveCursor,1)}
+ else{assert.equal(result.reasonCode,'work_registry_events_changed');assert.equal(f.rows(ctx).length,0);const after=ctx.getState(SOURCE);assert.equal(after.cursor??0,before.cursor??0);assert.equal(after.liveCursor??null,before.liveCursor??null)}
+ assert.deepEqual(fs.readFileSync(file),original);t.diagnostic('retained private fixture: '+f.root)
+})
+
+
+test('observer ready yields after four bounded batches and schedules remaining backlog',async t=>{
+  const f=fixture();let calls=0
+  const context={runtime:path.join(f.root,'.runtime'),async observeCommittedRegistry(){calls++;assert(calls<=9);return{processed:1,coverage:{liveBacklog:9-calls,liveFailure:null}}},failure(_source,error){assert.fail(error)}}
+  const observer=start(t,context);await observer.ready
+  assert.equal(calls,4,'ready must not remove the bounded turn limit')
+  await until(()=>calls===9)
+  assert.equal(calls,9,'remaining backlog drains without new source events')
+})
+
+
+for(const lane of ['durable-head','consumer'])for(const mode of ['error-and-close','undefined-and-close','null-and-close','false-and-close','read-only','close-only'])test(`work registry close errors ${lane}/${mode}`,async t=>{
+  const f=fixture(),{head}=f.commit(1),ctx=f.make(lane==='consumer'?{readRegistry:async()=>({ok:true,status:'verified',registry:head})}:{})
+  const source=f.file(REG+'/registry.sqlite'),sourceBytes=fs.readFileSync(source),before=ctx.getState(SOURCE)
+  const primary=mode.startsWith('undefined')?undefined:mode.startsWith('null')?null:mode.startsWith('false')?false:Object.freeze(new Error('work_fixture_read_failure'))
+  const secondary=Object.freeze(new Error('work_fixture_close_failure')),hasRead=mode!=='close-only',hasClose=mode!=='read-only'
+  const nativePrepare=DatabaseSync.prototype.prepare,nativeClose=DatabaseSync.prototype.close,matched=new WeakSet();let closes=0,reads=0,result
+  const mocks=[t.mock.method(DatabaseSync.prototype,'prepare',function(sql,...args){
+    const match=lane==='durable-head'?sql==='SELECT * FROM registry_revisions WHERE registry_revision=?':sql.startsWith('SELECT r.*,t.status AS transaction_status')
+    if(match){matched.add(this);reads++;if(hasRead)throw primary}
+    return nativePrepare.call(this,sql,...args)
+  }),t.mock.method(DatabaseSync.prototype,'close',function(...args){
+    const value=nativeClose.apply(this,args);if(matched.has(this)){closes++;if(hasClose)throw secondary}return value
+  })]
+  try{result=await ctx.observeCommittedRegistry({limit:1})}finally{for(const mock of mocks.reverse())mock.mock.restore()}
+  const expected=hasRead?(primary instanceof Error?primary.message:'work_recording_unavailable'):secondary.message
+  assert.equal(result.recorded,false);assert.equal(result.reasonCode,expected);assert.equal(ctx.getState(SOURCE).reasonCode,expected)
+  assert.equal(reads,1);assert.equal(closes,1);assert.deepEqual(fs.readFileSync(source),sourceBytes)
+  const failureRoot=f.file('.runtime/local-backup/work-recording/failures')
+  const receipts=fs.readdirSync(failureRoot).map(name=>JSON.parse(fs.readFileSync(path.join(failureRoot,name),'utf8')))
+  assert.equal(receipts.length,Number(hasRead)+Number(hasClose))
+  assert.deepEqual(receipts.map(r=>r.reasonCode).sort(),[...(hasRead?[expected]:[]),...(hasClose?[secondary.message]:[])].sort())
+  for(const receipt of receipts){assert.equal(receipt.businessRetried,false);assert.equal(receipt.sourceId,SOURCE)}
+  const committed=lane==='consumer'&&!hasRead
+  assert.equal(result.eventIds.length,committed?1:0);assert.equal(f.rows(ctx).length,committed?1:0)
+  if(committed){assert.equal(ctx.ledger.find(result.eventIds[0]).runId,'RUN-1');assert.equal(ctx.getState(SOURCE).cursor,1)}
+  else{assert.equal(ctx.getState(SOURCE).cursor??0,before.cursor??0);assert.equal(ctx.getState(SOURCE).liveCursor??null,before.liveCursor??null)}
+  const recovered=await ctx.observeCommittedRegistry({limit:1});assert.equal(recovered.recorded,true,JSON.stringify(recovered));assert.equal(f.rows(ctx).length,1)
+  if(committed)assert.deepEqual(recovered.eventIds,result.eventIds)
+  assert.deepEqual(fs.readFileSync(source),sourceBytes);t.diagnostic('retained private fixture: '+f.root)
+})
+
+test('work registry close errors preserve committed IDs after checkpoint failure and retry without duplicate events',async t=>{
+  const f=fixture(),{head}=f.commit(1),ctx=f.make({readRegistry:async()=>({ok:true,status:'verified',registry:head})})
+  const nativePrepare=DatabaseSync.prototype.prepare,nativeClose=DatabaseSync.prototype.close,nativeRename=fs.renameSync,matched=new WeakSet()
+  const source=f.file(REG+'/registry.sqlite'),sourceBytes=fs.readFileSync(source),statePath=f.file('.runtime/local-backup/work-recording/sources/'+SOURCE+'.json')
+  let saves=0,closes=0,result
+  const mocks=[t.mock.method(DatabaseSync.prototype,'prepare',function(sql,...args){if(sql.startsWith('SELECT r.*,t.status AS transaction_status'))matched.add(this);return nativePrepare.call(this,sql,...args)}),
+    t.mock.method(DatabaseSync.prototype,'close',function(...args){const value=nativeClose.apply(this,args);if(matched.has(this)){closes++;throw new Error('work_fixture_close_failure')}return value}),
+    t.mock.method(fs,'renameSync',function(from,to){if(to===statePath&&++saves===4)throw new Error('work_fixture_checkpoint_failure');return nativeRename.call(this,from,to)})]
+  try{result=await ctx.observeCommittedRegistry({limit:1})}finally{for(const mock of mocks.reverse())mock.mock.restore()}
+  assert.equal(result.recorded,false);assert.equal(result.reasonCode,'work_fixture_checkpoint_failure');assert.equal(closes,1)
+  assert.equal(result.eventIds.length,1);assert.equal(ctx.ledger.find(result.eventIds[0]).runId,'RUN-1');assert.equal(f.rows(ctx).length,1)
+  assert.equal(ctx.getState(SOURCE).reasonCode,'work_fixture_checkpoint_failure');assert.equal(ctx.getState(SOURCE).cursor,0);assert.equal(ctx.getState(SOURCE).liveCursor,1)
+  const failureRoot=f.file('.runtime/local-backup/work-recording/failures'),receipts=fs.readdirSync(failureRoot).map(n=>JSON.parse(fs.readFileSync(path.join(failureRoot,n),'utf8')))
+  assert.deepEqual(receipts.map(r=>r.reasonCode).sort(),['work_fixture_checkpoint_failure','work_fixture_close_failure'])
+  const recovered=await ctx.observeCommittedRegistry({limit:1});assert.equal(recovered.recorded,true);assert.deepEqual(recovered.eventIds,result.eventIds);assert.equal(f.rows(ctx).length,1);assert.equal(ctx.getState(SOURCE).cursor,1)
+  assert.deepEqual(fs.readFileSync(source),sourceBytes);t.diagnostic('retained private fixture: '+f.root)
+})
+
+test('work registry close errors preserve real durable identity conflict and close failure receipts',async t=>{
+  const f=fixture();f.commit(1)
+  const source=f.file(REG+'/registry.sqlite'),db=new DatabaseSync(source);db.exec("UPDATE registry_revisions SET current_sha256='wrong'");db.close()
+  const sourceBytes=fs.readFileSync(source),ctx=f.make(),nativePrepare=DatabaseSync.prototype.prepare,nativeClose=DatabaseSync.prototype.close,matched=new WeakSet();let closes=0,result
+  const mocks=[t.mock.method(DatabaseSync.prototype,'prepare',function(sql,...args){if(sql==='SELECT * FROM registry_revisions WHERE registry_revision=?')matched.add(this);return nativePrepare.call(this,sql,...args)}),t.mock.method(DatabaseSync.prototype,'close',function(...args){const value=nativeClose.apply(this,args);if(matched.has(this)){closes++;throw new Error('work_fixture_close_failure')}return value})]
+  try{result=await ctx.observeCommittedRegistry({limit:1})}finally{for(const mock of mocks.reverse())mock.mock.restore()}
+  assert.equal(result.recorded,false);assert.equal(result.reasonCode,'work_registry_database_conflict');assert.equal(ctx.getState(SOURCE).reasonCode,'work_registry_database_conflict');assert.equal(closes,1);assert.equal(f.rows(ctx).length,0)
+  const failureRoot=f.file('.runtime/local-backup/work-recording/failures'),receipts=fs.readdirSync(failureRoot).map(n=>JSON.parse(fs.readFileSync(path.join(failureRoot,n),'utf8')))
+  assert.deepEqual(receipts.map(r=>r.reasonCode).sort(),['work_fixture_close_failure','work_registry_database_conflict']);assert.deepEqual(fs.readFileSync(source),sourceBytes);t.diagnostic('retained private fixture: '+f.root)
+})
+
+
+test('work registry close errors keep a previously reported lane blocker as the source reason',async t=>{
+  const f=fixture(),{head,tx}=f.commit(1)
+  f.write(tx.path,{schemaVersion:'ai-painter-current-execution-registry-transaction-v1',status:'committed',transactionId:'wrong-tx'})
+  const source=f.file(REG+'/registry.sqlite'),sourceBytes=fs.readFileSync(source),ctx=f.make({readRegistry:async()=>({ok:true,status:'verified',registry:head})})
+  const nativePrepare=DatabaseSync.prototype.prepare,nativeClose=DatabaseSync.prototype.close,matched=new WeakSet();let closes=0,result
+  const mocks=[t.mock.method(DatabaseSync.prototype,'prepare',function(sql,...args){if(sql.startsWith('SELECT r.*,t.status AS transaction_status'))matched.add(this);return nativePrepare.call(this,sql,...args)}),t.mock.method(DatabaseSync.prototype,'close',function(...args){const value=nativeClose.apply(this,args);if(matched.has(this)){closes++;throw new Error('work_fixture_close_failure')}return value})]
+  try{result=await ctx.observeCommittedRegistry({limit:1})}finally{for(const mock of mocks.reverse())mock.mock.restore()}
+  assert.equal(result.recorded,false);assert.equal(result.reasonCode,'work_registry_transaction_conflict');assert.equal(ctx.getState(SOURCE).reasonCode,'work_registry_transaction_conflict');assert.equal(closes,1);assert.equal(f.rows(ctx).length,0)
+  const failureRoot=f.file('.runtime/local-backup/work-recording/failures'),receipts=fs.readdirSync(failureRoot).map(n=>JSON.parse(fs.readFileSync(path.join(failureRoot,n),'utf8')))
+  assert.equal(receipts.filter(r=>r.reasonCode==='work_fixture_close_failure').length,1)
+  assert(receipts.some(r=>r.reasonCode==='work_registry_transaction_conflict'));assert.deepEqual(fs.readFileSync(source),sourceBytes);t.diagnostic('retained private fixture: '+f.root)
 })

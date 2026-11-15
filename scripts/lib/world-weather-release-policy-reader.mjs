@@ -52,6 +52,8 @@ export function readWeatherPolicyLifecycle(root, read, version) {
   const stat=fs.lstatSync(dbFile)
   requireValue(stat.isFile() && stat.nlink===1 && fs.realpathSync.native(dbFile)===dbFile,'lifecycle_sqlite_path')
   const db=new DatabaseSync(dbFile,{readOnly:true})
+  const failures=[]
+  let result
   try {
     // Connection-local wait only: do not change the database journal mode or
     // retry an inconsistent lifecycle as if it had passed verification.
@@ -60,8 +62,13 @@ export function readWeatherPolicyLifecycle(root, read, version) {
     requireValue(row && row.change_class===spec.changeClass && status.capabilityVersion===version &&
       status.changeClass===spec.changeClass && row.state===row.to_state && row.state===status.state &&
       row.sequence===status.sequence,'lifecycle_state_conflict')
-    return {state:row.state,sequence:row.sequence}
-  } finally {db.close()}
+    result={state:row.state,sequence:row.sequence}
+  } catch(error) {failures.push(error)}
+  try {db.close()} catch(error) {failures.push(error)}
+  // A cleanup failure must not hide the read or identity error that came first.
+  if(failures.length>1)throw new AggregateError(failures,'weather_lifecycle_read_and_close_failed',{cause:failures[0]})
+  if(failures.length===1)throw failures[0]
+  return result
 }
 
 // A policy candidate binds the proposed capability version. Only the original trusted

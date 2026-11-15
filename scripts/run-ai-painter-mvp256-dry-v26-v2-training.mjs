@@ -284,7 +284,7 @@ function identityFor(ready) {
 }
 
 async function advance(registry, root, { runId, packageId, outputRoot,
-  evidence, programBindings, activeExecution, activity, state,
+  evidence, activeExecution, activity, state,
   latestTrainingTerminal = null }) {
   const current = await registry.read(root)
   assert.equal(current.ok, true, current.errorCode ?? "current registry invalid")

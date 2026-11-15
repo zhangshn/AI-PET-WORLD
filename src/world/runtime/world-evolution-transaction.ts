@@ -210,12 +210,21 @@ async function rawFile(root: string, p: string, limit: number, budget?: ReadBudg
   catch (e) { if (errorCode(e) === "ENOENT") return null; throw e }
 }
 function parse(raw: Buffer): unknown { return JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(raw)) }
+async function withClosedFile(file: { close(): Promise<void> }, write: () => Promise<void>): Promise<void> {
+  const errors: unknown[] = []
+  try { await write() } catch (error) { errors.push(error) }
+  finally { try { await file.close() } catch (error) { errors.push(error) } }
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1) {
+    throw new AggregateError(errors, `World transaction write and close failed: ${errors.map(error => error instanceof Error ? error.message : String(error)).join("; ")}`, { cause: errors[0] })
+  }
+}
 async function atomic(root: string, p: string, raw: Buffer, immutable = false): Promise<void> {
   await guarded(root, p); await mkdir(path.dirname(p), { recursive: true }); await guarded(root, p)
   if (immutable) { const old = await rawFile(root, p, Math.max(RECORD_LIMIT, raw.length)); if (old) { need(old.equals(raw), "immutable_collision"); return } }
   const temp = `${p}.${randomUUID()}.tmp`; await guarded(root, temp)
   const file = await open(temp, "wx")
-  try { await file.writeFile(raw); await file.sync() } finally { await file.close() }
+  await withClosedFile(file, async () => { await file.writeFile(raw); await file.sync() })
   // All callers hold the original world lock. No other cooperating writer may
   // race the immutable existence check; preexisting bytes are never replaced.
   await guarded(root, p); await rename(temp, p)
@@ -329,10 +338,11 @@ async function release(root: string, p: string, token: string): Promise<void> {
 }
 async function createLock(root: string, p: string, id: NaturalWorldIdentity): Promise<string> {
   await guarded(root, p); const token = randomUUID(); const f = await open(p, "wx")
-  try { await f.writeFile(bytes({ schemaVersion: "world-runtime-write-lock-v1", pid: process.pid, host: hostname(),
-    worldId: id.worldId, ownerId: id.ownerId, lockToken: token, createdAtUtc: new Date().toISOString() }, JOURNAL_LIMIT)); await f.sync() }
-  catch (e) { await f.close(); await release(root, p, token); throw e }
-  await f.close(); return token
+  try { await withClosedFile(f, async () => {
+    await f.writeFile(bytes({ schemaVersion: "world-runtime-write-lock-v1", pid: process.pid, host: hostname(),
+      worldId: id.worldId, ownerId: id.ownerId, lockToken: token, createdAtUtc: new Date().toISOString() }, JOURNAL_LIMIT)); await f.sync()
+  }) } catch (e) { await release(root, p, token); throw e }
+  return token
 }
 function deadLock(raw: Buffer, id: NaturalWorldIdentity): string {
   const lock = parse(raw)

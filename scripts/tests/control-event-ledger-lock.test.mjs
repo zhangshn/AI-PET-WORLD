@@ -70,3 +70,70 @@ test('control ledger does not retry or delete on an IO error opening the lock',a
   await assert.rejects(f.run(),error=>error===f.failure)
   assert.equal(f.trace.filter(x=>x==='open').length,1);assert.equal(f.trace.includes('unlink'),false);assert.equal(f.bodyCalls,0)
 })
+
+
+for (const releaseKind of ['close', 'identity']) for (const primary of [new Error('operation failed'), Object.freeze(new Error('frozen operation failed')), null, undefined, 0, false])
+test(`control ledger retains both operation and ${releaseKind} failures: ${String(primary)}`, async () => {
+  const f = fixture({closeFails:releaseKind === 'close'})
+  const replacement = {ino:999,dev:7,isFile:()=>true,isSymbolicLink:()=>false}
+  await assert.rejects(f.run(async () => {
+    if (releaseKind === 'identity') f.replace(replacement)
+    throw primary
+  }), error => {
+    assert(error instanceof AggregateError)
+    assert.equal(error.errors.length,2)
+    assert.equal(error.errors[0],primary)
+    assert.equal(error.cause,primary)
+    assert.match(error.errors[1].message,releaseKind === 'close' ? /secondary close failure/ : /lock_identity_changed/)
+    assert(error.message.includes(primary instanceof Error ? primary.message : String(primary)))
+    assert(error.message.includes(error.errors[1].message))
+    return true
+  })
+  assert.equal(f.bodyCalls,1)
+  assert.equal(f.trace.filter(value=>value === 'close').length,1)
+  assert.equal(f.trace.includes('unlink'),false)
+  assert(f.current)
+  if (releaseKind === 'identity') assert.equal(f.current,replacement)
+})
+
+
+for (const phase of ['success','empty','existing-temp','partial-write','rename','write+cleanup','rename+cleanup'])
+test(`control ledger head preserves prior and temporary evidence: ${phase}`, async () => {
+  const filename = 'src/server/ai-console-control/control-event-ledger.ts'
+  const tree = ts.createSourceFile(filename,fs.readFileSync(filename,'utf8'),ts.ScriptTarget.Latest,true)
+  const fn = tree.statements.find(node=>ts.isFunctionDeclaration(node)&&node.name?.text==='writeLedgerHead')
+  assert(fn)
+  const code = ts.transpileModule(fn.getText(tree),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText
+  const target='private-head.json',temporary=target+'.fixture.tmp',original='original head',foreign='foreign temporary bytes'
+  const files=new Map([[target,original]]),calls=[]
+  if(phase==='existing-temp') files.set(temporary,foreign)
+  const primary=Object.freeze(Object.assign(new Error(`head ${phase}`),{code:phase==='existing-temp'?'EEXIST':'EIO'}))
+  const cleanup=new Error('cleanup failure')
+  const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex')
+  const run=new Function('getLogicalPath','controlEventLedgerHeadLogicalPath','ledgerIdentity','ledgerWriterIdentity','controlEventLedgerLogicalPath','sha256','randomUUID','writeFile','rename','unlink','isNodeError',`${code};return writeLedgerHead;`)(
+    v=>v,target,'private-ledger','private-writer','private-events.jsonl',digest,()=> 'fixture',
+    async(file,bytes,options)=>{
+      calls.push('write');assert.equal(file,temporary);assert.deepEqual(options,{encoding:'utf8',flag:'wx'})
+      if(files.has(file))throw primary
+      if(['partial-write','write+cleanup'].includes(phase)){files.set(file,'partial bytes');throw primary}
+      files.set(file,bytes)
+    },
+    async(from,to)=>{calls.push('rename');assert.equal(from,temporary);assert.equal(to,target);if(['rename','rename+cleanup'].includes(phase))throw primary;files.set(to,files.get(from));files.delete(from)},
+    async file=>{calls.push('unlink');if(phase.endsWith('+cleanup'))throw cleanup;if(!files.has(file))throw Object.assign(new Error('absent'),{code:'ENOENT'});files.delete(file)},
+    (error,code)=>error?.code===code,
+  )
+  const events=[{eventId:'private-event',eventSha256:'a'.repeat(64)}]
+  if(phase==='success'){
+    await run(events)
+    const head=JSON.parse(files.get(target)),{headRecordSha256,...unsigned}=head
+    assert.equal(headRecordSha256,digest(JSON.stringify(unsigned)))
+    assert.equal(head.headEventId,events[0].eventId);assert.equal(head.eventCount,1)
+    assert.equal(files.has(temporary),false)
+  }else{
+    if(phase==='empty')await assert.rejects(run([]),/head_without_event/)
+    else await assert.rejects(run(events),error=>error===primary)
+    assert.equal(files.get(target),original)
+    if(phase==='existing-temp')assert.equal(files.get(temporary),foreign)
+    else if(phase!=='empty')assert(files.has(temporary),'failure evidence must remain')
+  }
+})

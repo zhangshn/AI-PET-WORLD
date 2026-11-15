@@ -17,6 +17,9 @@ export async function register() {
   // must stay outside that module graph, while still starting in Node runtime.
   const indexerUrl = pathToFileURL(`${process.cwd()}/src/server/ai-console/training-history-evidence-index.mjs`).href
   const { scanHistoryEvidence } = await import(/* webpackIgnore: true */ indexerUrl)
+  // Another registration may have completed while the module import awaited.
+  // Keep the final check and assignment synchronous to retain one timer.
+  if (scope.__aiConsoleHistoryIndexerStarted) return
   scope.__aiConsoleHistoryIndexerStarted = true
   let busy = false
   const scan = async () => {

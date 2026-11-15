@@ -147,3 +147,80 @@ test("origin, body, transport and rate limits cannot become game credentials",as
     if(old===undefined)delete process.env.AI_PET_WORLD_PLAYER_ORIGIN;else process.env.AI_PET_WORLD_PLAYER_ORIGIN=old;
   }
 });
+
+for (const stage of ["initialize", "read", "write"]) {
+  for (const mode of ["error-cleanup", "undefined-cleanup", "null-cleanup", "false-cleanup", "primary-only", "close-only"]) {
+    test(`player storage cleanup ${stage} ${mode}`, t => {
+      const dir=fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(),"player-storage-errors-")));
+      const store=createPlayerAccessStore(dir), token="x".repeat(43), origin="http://127.0.0.1";
+      if(stage!=="initialize")store.issueInvite();
+      const primary=mode.startsWith("undefined")?undefined:mode.startsWith("null")?null:mode.startsWith("false")?false:Object.freeze(new Error("private-storage-operation"));
+      const rollback=Object.freeze(new Error("private-storage-rollback")),close=Object.freeze(new Error("private-storage-close"));
+      const injectPrimary=mode!=="close-only",injectClose=mode!=="primary-only",injectRollback=stage==="write"&&injectPrimary&&injectClose;
+      const exec=DatabaseSync.prototype.exec,prepare=DatabaseSync.prototype.prepare,closeDb=DatabaseSync.prototype.close;
+      const active=new WeakSet();let closed=0,rolledBack=0;
+      t.mock.method(DatabaseSync.prototype,"exec",function(sql){
+        if(stage==="initialize"&&sql.startsWith("PRAGMA busy_timeout")){active.add(this);if(injectPrimary)throw primary;}
+        if(active.has(this)&&sql==="ROLLBACK"){rolledBack++;exec.call(this,sql);if(injectRollback)throw rollback;return;}
+        return exec.call(this,sql);
+      });
+      t.mock.method(DatabaseSync.prototype,"prepare",function(sql){
+        if((stage==="read"&&sql.startsWith("SELECT a.id accountId"))||(stage==="write"&&sql.startsWith("INSERT INTO invites"))){active.add(this);if(injectPrimary)throw primary;}
+        return prepare.call(this,sql);
+      });
+      t.mock.method(DatabaseSync.prototype,"close",function(){
+        closeDb.call(this);if(active.has(this)){closed++;if(injectClose)throw close;}
+      });
+      let thrown=false,caught;
+      try{if(stage==="read")store.session(token,origin);else store.issueInvite();}catch(error){thrown=true;caught=error;}
+      finally{t.mock.restoreAll();}
+      assert.equal(thrown,true);assert.equal(closed,1);assert.equal(rolledBack,stage==="write"&&injectPrimary?1:0);
+      if(!injectPrimary)assert.equal(caught,close);
+      else if(!injectClose)assert.equal(caught,primary);
+      else{
+        assert(caught instanceof AggregateError);assert.equal(caught.errors.at(-1),close);
+        if(injectRollback){assert(caught.errors[0] instanceof AggregateError);assert.equal(caught.errors[0].cause,primary);assert.deepEqual(caught.errors[0].errors,[primary,rollback]);assert.equal(caught.cause,caught.errors[0]);}
+        else{assert.equal(caught.cause,primary);assert.deepEqual(caught.errors,[primary,close]);}
+      }
+      // Inspect the actual database after restoring methods; no fake successful writes.
+      if(stage!=="initialize"){
+        const db=new DatabaseSync(path.join(dir,"players.sqlite"),{readOnly:true});
+        try{assert.equal(db.prepare("SELECT count(*) count FROM invites").get().count,stage==="write"&&!injectPrimary?2:1);assert.equal(db.prepare("SELECT count(*) count FROM accounts").get().count,0);assert.equal(db.prepare("SELECT count(*) count FROM sessions").get().count,0);}finally{db.close();}
+      }
+      store.issueInvite();assert.equal(store.session(token,origin),null);
+      assert.equal(authorizeWithStore(new Request(origin+"/world",{headers:{cookie:"aipw_local_player="+token}}),WORLD_ID,()=>store).ok,false);
+    });
+  }
+}
+
+test("player storage cleanup HTTP failure does not expose causes or grant a session",async t=>{
+  const dir=fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(),"player-storage-http-errors-"))),store=createPlayerAccessStore(dir);
+  store.issueInvite();const prepare=DatabaseSync.prototype.prepare,closeDb=DatabaseSync.prototype.close;
+  const primary=Object.freeze(new Error("private-query-detail")),cleanup=Object.freeze(new Error("private-close-detail"));const active=new WeakSet();
+  t.mock.method(DatabaseSync.prototype,"prepare",function(sql){if(sql.startsWith("SELECT a.id accountId")){active.add(this);throw primary;}return prepare.call(this,sql);});
+  t.mock.method(DatabaseSync.prototype,"close",function(){closeDb.call(this);if(active.has(this))throw cleanup;});
+  let response;try{response=await createPlayerSessionHandlers(()=>store).GET(new Request("http://127.0.0.1/api/world/player-session",{headers:{cookie:"aipw_local_player="+"x".repeat(43)}}));}finally{t.mock.restoreAll();}
+  assert.equal(response.status,503);assert.equal(response.headers.get("set-cookie"),null);
+  const body=await response.text();assert(!body.includes(primary.message));assert(!body.includes(cleanup.message));assert.match(body,/player_access_unavailable/);
+});
+
+test("player storage cleanup preserves a real SQLite query error with close failure",t=>{
+  const dir=fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(),"player-storage-sqlite-errors-"))),store=createPlayerAccessStore(dir);
+  store.issueInvite();const seed=new DatabaseSync(path.join(dir,"players.sqlite"));seed.exec("DROP TABLE sessions");seed.close();
+  const closeDb=DatabaseSync.prototype.close,cleanup=Object.freeze(new Error("database close failed"));
+  t.mock.method(DatabaseSync.prototype,"close",function(){closeDb.call(this);throw cleanup;});
+  let caught;try{store.session("x".repeat(43),"http://127.0.0.1");}catch(error){caught=error;}finally{t.mock.restoreAll();}
+  assert(caught instanceof AggregateError);assert.equal(caught.cause.code,"ERR_SQLITE_ERROR");assert.match(caught.cause.message,/no such table: sessions/);assert.equal(caught.errors[0],caught.cause);assert.equal(caught.errors[1],cleanup);
+  store.issueInvite();assert.equal(store.session("x".repeat(43),"http://127.0.0.1"),null);
+});
+
+test("player storage cleanup retains rollback failure when close succeeds",t=>{
+  const dir=fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(),"player-storage-rollback-errors-"))),store=createPlayerAccessStore(dir);
+  store.issueInvite();const exec=DatabaseSync.prototype.exec,prepare=DatabaseSync.prototype.prepare;
+  const primary=Object.freeze(new Error("insert failed")),rollback=Object.freeze(new Error("rollback acknowledgement failed"));const active=new WeakSet();
+  t.mock.method(DatabaseSync.prototype,"prepare",function(sql){if(sql.startsWith("INSERT INTO invites")){active.add(this);throw primary;}return prepare.call(this,sql);});
+  t.mock.method(DatabaseSync.prototype,"exec",function(sql){const result=exec.call(this,sql);if(active.has(this)&&sql==="ROLLBACK")throw rollback;return result;});
+  let caught;try{store.issueInvite();}catch(error){caught=error;}finally{t.mock.restoreAll();}
+  assert(caught instanceof AggregateError);assert.equal(caught.cause,primary);assert.deepEqual(caught.errors,[primary,rollback]);
+  const db=new DatabaseSync(path.join(dir,"players.sqlite"),{readOnly:true});try{assert.equal(db.prepare("SELECT count(*) count FROM invites").get().count,1);}finally{db.close();}
+});

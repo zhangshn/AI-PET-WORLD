@@ -3,6 +3,7 @@ import path from 'node:path'
 import {createHash} from 'node:crypto'
 import {TextDecoder} from 'node:util'
 import {need,ModuleError} from './contracts.mjs'
+import {withReadHandle,readModuleError} from './read-handle.mjs'
 import {PROGRESS_PLAN,PROGRESS_SNAPSHOT,PROGRESS_SOURCES,PROGRESS_STAGES,PROGRESS_STATUS,sourceSemantics} from './project-progress-catalog.mjs'
 import {MVP_SPEC,MVP_CHECKLIST_VERSION,readMvpChecklist,projectMvp} from './project-progress-mvp.mjs'
 
@@ -21,17 +22,24 @@ function fixedReader(projectRoot,runtimeRoot){
   const isRuntime=logical.startsWith('.runtime/'),base=isRuntime?runtime:project,parts=(isRuntime?logical.slice(9):logical).split('/')
   need(parts.every(p=>p&&p!=='.'&&p!=='..'&&!/[\\:\x00-\x1f]/.test(p)),'progress_path_invalid',409)
   let file=base
-  for(const part of parts){file=path.join(file,part);const s=fs.lstatSync(file);need(!s.isSymbolicLink()&&samePath(fs.realpathSync(file),file),'progress_path_boundary',409)}
-  const before=fs.lstatSync(file);need(before.isFile()&&before.nlink===1&&before.size<=max,'progress_file_limit_or_boundary',409)
-  const fd=fs.openSync(file,'r');let bytes
-  try{
-   const opened=fs.fstatSync(fd);need(opened.ino===before.ino&&opened.dev===before.dev&&opened.size===before.size,'progress_source_changed',409)
-   const buffer=Buffer.alloc(max+1);let used=0,n
-   while(used<buffer.length&&(n=fs.readSync(fd,buffer,used,buffer.length-used,null))>0)used+=n
-   need(used<=max,'progress_file_limit_or_boundary',409);bytes=buffer.subarray(0,used)
-   const after=fs.fstatSync(fd),atPath=fs.lstatSync(file)
-   need(after.size===before.size&&after.mtimeMs===before.mtimeMs&&after.ino===atPath.ino&&after.dev===atPath.dev&&!atPath.isSymbolicLink()&&samePath(fs.realpathSync(file),file),'progress_source_changed',409)
-  }finally{fs.closeSync(fd)}
+  for(const part of parts){file=path.join(file,part);const s=fs.lstatSync(file,{bigint:true});need(!s.isSymbolicLink()&&samePath(fs.realpathSync(file),file),'progress_path_boundary',409)}
+  const before=fs.lstatSync(file,{bigint:true});need(before.isFile()&&before.nlink===1n&&before.size<=max,'progress_file_limit_or_boundary',409)
+  const bytes=withReadHandle(file,fd=>{
+   const signature=s=>[s.dev,s.ino,s.size,s.mtimeNs,s.ctimeNs,s.nlink].join(':')
+   const opened=fs.fstatSync(fd,{bigint:true});need(opened.isFile()&&signature(opened)===signature(before),'progress_source_changed',409)
+   const buffer=Buffer.alloc(max+1);let used=0
+   while(used<buffer.length){
+    const n=fs.readSync(fd,buffer,used,buffer.length-used,null)
+    need(Number.isInteger(n)&&n>=0&&n<=buffer.length-used,'progress_source_changed',409)
+    if(n===0)break
+    used+=n
+   }
+   need(used<=max,'progress_file_limit_or_boundary',409)
+   need(BigInt(used)===before.size,'progress_source_changed',409)
+   const after=fs.fstatSync(fd,{bigint:true}),atPath=fs.lstatSync(file,{bigint:true})
+   need(after.isFile()&&atPath.isFile()&&signature(after)===signature(before)&&signature(atPath)===signature(before)&&!atPath.isSymbolicLink()&&samePath(fs.realpathSync(file),file),'progress_source_changed',409)
+   return buffer.subarray(0,used)
+  })
   total+=bytes.length;need(total<=caps.total,'progress_total_limit',409)
   let body;try{body=new TextDecoder('utf-8',{fatal:true}).decode(bytes)}catch{throw new ModuleError('progress_encoding_invalid',409)}
   return {path:logical,sha256:hash(bytes),byteLength:bytes.length,body}
@@ -86,5 +94,5 @@ export function readProjectProgress({projectRoot=process.cwd(),runtimeRoot,now=D
   need(reader.read(PROGRESS_PLAN,caps.plan).sha256===planRead.sha256&&reader.read(PROGRESS_SNAPSHOT,caps.snapshot).sha256===snapRead.sha256&&reader.read(MVP_SPEC,caps.plan).sha256===specRead.sha256,'progress_mixed_revision',409)
   const gradient=values.get('gradient130'),training=values.get('training095'),probe=values.get('probe104'),stale=now-Date.parse(s.verifiedAtUtc)>24*3600000
   return {dataStatus:stale?'unknown_or_stale':'connected',reasonCode:stale?'progress_snapshot_stale':'bound_static_progress_snapshot',projection:{schemaVersion:'local-backup-project-progress-v1',source:s.source,recordedAtUtc:s.recordedAtUtc,verifiedAtUtc:s.verifiedAtUtc,readAtUtc:new Date(now).toISOString(),live:false,stale,staleAfterHours:24,scopeId:s.scopeId,plan:{path:PROGRESS_PLAN,sha256:planRead.sha256,modules},snapshot:{path:PROGRESS_SNAPSHOT,sha256:snapRead.sha256},revision:hash(planRead.sha256+snapRead.sha256+specRead.sha256),mvp:projectMvp(checklist,values,s.checklist,new Date(now).toISOString()),stages,counts:Object.fromEntries(Object.entries(PROGRESS_STATUS).map(([id,label])=>[id,{label,count:stages.filter(s=>s.status===id).length}])),notes:s.notes,evidence,distinctions:{historicalTraining:training?{runId:training.runId,optimizerSteps:training.actualFinalOptimizerSteps,completed:training.executionState==='completed',qualified:training.formalTrainingQualified}:null,nativeGradient:gradient?{completed:gradient.actualCalls.gGradientCompletions,attempted:gradient.actualCalls.gGradientAttempts,wallSeconds:gradient.wallSeconds,gate:gradient.completeGradientGate}:null,formalQuality:probe?.modelQualified===false?'not_qualified':'unknown',framePublication:probe?.framePublished===false?'not_published':'unknown',worldLoop:probe?.mvpAccepted===false?'not_accepted':'unknown'},coverage:reader.coverage()}}
- }catch(error){if(error instanceof ModuleError)throw error;if(error?.code==='ENOENT')throw new ModuleError('progress_fixed_source_missing',503);throw new ModuleError('progress_source_unavailable',503)}
+ }catch(error){throw readModuleError(error,'progress_fixed_source_missing','progress_source_unavailable')}
 }

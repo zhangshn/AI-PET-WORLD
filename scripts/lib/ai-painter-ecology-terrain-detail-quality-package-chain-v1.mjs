@@ -8,7 +8,9 @@ import {CAPABILITY,MODEL_CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,OUTPUT_ROOT,SP
 export {CAPABILITY,MODEL_CAPABILITY,PLAN_SCHEMA,EXECUTION_PROFILE,SPECIFICATION,CANDIDATE,FROZEN_PLAN,deriveConfiguration,validateTerminal,validateCompleted};
 export const ADAPTER='scripts/run-ai-painter-ecology-terrain-detail-quality-v1.mjs';
 export const sha=io.sha,withOutputBudget=io.withOutputBudget,directoryBytes=io.directoryBytes;
-export const ROLES={adapter:ADAPTER,packageChain:'scripts/lib/ai-painter-ecology-terrain-detail-quality-package-chain-v1.mjs',
+export const ROLES={
+ cpuNegativeInputInspector:'scripts/lib/cpu-negative-input-inspector.mjs',
+adapter:ADAPTER,packageChain:'scripts/lib/ai-painter-ecology-terrain-detail-quality-package-chain-v1.mjs',
  frozenProjectManifest:'.runtime/ai-painter/ecology-quality-v1-repair/t-qv12-r1/ns003-original-package.json',
  currentLegacyNativeTests:'scripts/tests/ai-painter-ecology-owned-native.test.mjs',
  currentExecutionRegistry:'src/server/ai-painter-current-execution-registry.mjs',

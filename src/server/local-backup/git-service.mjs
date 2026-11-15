@@ -57,69 +57,79 @@ export function createGitService(projectRoot,stateRoot,options={}) {
     let result={schemaVersion:'local_backup_git_operation_v1',operationId,previewId:input.previewId,requestSha256,revision:0,status:'preflight',createdAtUtc:new Date().toISOString(),repository:preview.repository,selectedFiles:preview.selected.map(x=>x.path),preparation:{status:'not_started'},commit:{status:'not_started'},push:{status:'not_started'},failureCode:null,events:[]}
     const save=()=>{result.revision++;result.events.push({sequence:result.revision,atUtc:new Date().toISOString(),status:result.status,commitStatus:result.commit.status,pushStatus:result.push.status,failureCode:result.failureCode});store.put('operations',operationId,result,result.revision>1)}
     let repository
-    try {
-      const concurrent=store.read('operations',operationId)
-      if(concurrent){need(concurrent.requestSha256===requestSha256,'git_idempotency_conflict',409);return{dataStatus:'connected',replayed:true,operation:observedOperation(concurrent)}}
-      save();repository=repo();options.hooks?.beforePreflight?.()
-      const snapshot=repository.guard()
-      need(hash(guardClosure())===hash(preview.guardClosure),'git_guard_source_changed',409)
-      need(hash(bindings(snapshot))===hash(preview.repository),'git_preview_stale',409)
-      const files=preview.selected.map(x=>x.path)
-      const captures=files.map(file=>repository.capture(file,snapshot))
-      need(hash(captures)===hash(preview.selected)&&hash(snapshot.records.filter(r=>files.includes(r.path)))===hash(preview.selectedStatuses),'git_preview_stale',409)
-      options.hooks?.afterPreflight?.()
-      const newFiles=preview.selected.filter(x=>x.newFile).map(x=>x.path)
-      result.preparation={status:'not_needed',indexBeforeSha256:snapshot.indexSha,indexAfterSha256:snapshot.indexSha}
-      if(newFiles.length){result.preparation.status='preparing_selected_new_files';save();repository.git(['add','--intent-to-add','--',...newFiles]);result.preparation={status:'selected_new_files_prepared',files:newFiles,indexBeforeSha256:snapshot.indexSha,indexAfterSha256:repository.guard().indexSha};save()}
-      const ready=repository.guard()
-      need(ready.head===preview.repository.head&&hash(ready.pushUrl)===preview.repository.pushTargetSha256&&hash(ready.target)===hash(preview.repository.target)&&ready.branch===preview.repository.branch,'git_preview_stale',409)
-      need(ready.indexSha===result.preparation.indexAfterSha256&&unselectedIndex(ready.indexEntries,files)===preview.unselectedIndexSha256,'git_index_concurrent_change',409)
-      need(hash(files.map(file=>repository.capture(file,ready)))===hash(preview.selected),'git_preview_stale',409)
-      result.status='committing';result.commit={status:'executing',startedAtUtc:new Date().toISOString()};save()
-      options.hooks?.beforeNativeCommit?.()
-      const commitStart=performance.now(),commitResult=repository.git(['commit','--only','--file=-','--',...files],{input:Buffer.from(input.message),timeout:20000,allowFailure:true})
-      result.commit.finishedAtUtc=new Date().toISOString();result.commit.elapsedMs=performance.now()-commitStart
-      result.commit.processId=commitResult.processId;result.commit.invocationStartedAtUtc=commitResult.invocationStartedAtUtc;result.commit.commandIdentitySha256=commitResult.commandIdentitySha256
-      const actualHead=repository.text(['rev-parse','HEAD'])
-      if(commitResult.error||commitResult.status!==0) {
-        result.commit.status=actualHead!==preview.repository.head?'created_unverified':'failed';result.commit.commitSha=actualHead!==preview.repository.head?actualHead:null
-        throw new ModuleError(commitResult.error?'git_commit_unknown':'git_commit_rejected',409)
+    let operationFailed=false,operationError
+    try{
+      try {
+        const concurrent=store.read('operations',operationId)
+        if(concurrent){need(concurrent.requestSha256===requestSha256,'git_idempotency_conflict',409);return{dataStatus:'connected',replayed:true,operation:observedOperation(concurrent)}}
+        save();repository=repo();options.hooks?.beforePreflight?.()
+        const snapshot=repository.guard()
+        need(hash(guardClosure())===hash(preview.guardClosure),'git_guard_source_changed',409)
+        need(hash(bindings(snapshot))===hash(preview.repository),'git_preview_stale',409)
+        const files=preview.selected.map(x=>x.path)
+        const captures=files.map(file=>repository.capture(file,snapshot))
+        need(hash(captures)===hash(preview.selected)&&hash(snapshot.records.filter(r=>files.includes(r.path)))===hash(preview.selectedStatuses),'git_preview_stale',409)
+        options.hooks?.afterPreflight?.()
+        const newFiles=preview.selected.filter(x=>x.newFile).map(x=>x.path)
+        result.preparation={status:'not_needed',indexBeforeSha256:snapshot.indexSha,indexAfterSha256:snapshot.indexSha}
+        if(newFiles.length){result.preparation.status='preparing_selected_new_files';save();repository.git(['add','--intent-to-add','--',...newFiles]);result.preparation={status:'selected_new_files_prepared',files:newFiles,indexBeforeSha256:snapshot.indexSha,indexAfterSha256:repository.guard().indexSha};save()}
+        const ready=repository.guard()
+        need(ready.head===preview.repository.head&&hash(ready.pushUrl)===preview.repository.pushTargetSha256&&hash(ready.target)===hash(preview.repository.target)&&ready.branch===preview.repository.branch,'git_preview_stale',409)
+        need(ready.indexSha===result.preparation.indexAfterSha256&&unselectedIndex(ready.indexEntries,files)===preview.unselectedIndexSha256,'git_index_concurrent_change',409)
+        need(hash(files.map(file=>repository.capture(file,ready)))===hash(preview.selected),'git_preview_stale',409)
+        result.status='committing';result.commit={status:'executing',startedAtUtc:new Date().toISOString()};save()
+        options.hooks?.beforeNativeCommit?.()
+        const commitStart=performance.now(),commitResult=repository.git(['commit','--only','--file=-','--',...files],{input:Buffer.from(input.message),timeout:20000,allowFailure:true})
+        result.commit.finishedAtUtc=new Date().toISOString();result.commit.elapsedMs=performance.now()-commitStart
+        result.commit.processId=commitResult.processId;result.commit.invocationStartedAtUtc=commitResult.invocationStartedAtUtc;result.commit.commandIdentitySha256=commitResult.commandIdentitySha256
+        const actualHead=repository.text(['rev-parse','HEAD'])
+        if(commitResult.error||commitResult.status!==0) {
+          result.commit.status=actualHead!==preview.repository.head?'created_unverified':'failed';result.commit.commitSha=actualHead!==preview.repository.head?actualHead:null
+          throw new ModuleError(commitResult.error?'git_commit_unknown':'git_commit_rejected',409)
+        }
+        result.commit.status='created_unverified';result.commit.commitSha=actualHead;save()
+        options.hooks?.afterCommit?.()
+        repository.verifyCommit(preview.repository.head,actualHead,preview.expectedChanges)
+        const beforePush=repository.guard()
+        need(beforePush.head===actualHead&&beforePush.branch===preview.repository.branch&&hash(beforePush.pushUrl)===preview.repository.pushTargetSha256&&hash(beforePush.target)===hash(preview.repository.target),'git_branch_changed_after_commit',409)
+        need(unselectedIndex(beforePush.indexEntries,files)===preview.unselectedIndexSha256,'git_index_concurrent_change',409)
+        result.commit.status='verified';result.status='commit_verified';save()
+        const publication={root:beforePush.root,targetUrl:beforePush.pushUrl}
+        const guard=prepareGuard(stateRoot,preview.guardClosure,actualHead,preview.repository.branch,publication)
+        options.hooks?.beforePush?.()
+        // Verify installed/source bytes again immediately before selecting the operation-scoped hook.
+        prepareGuard(stateRoot,preview.guardClosure,actualHead,preview.repository.branch,publication)
+        result.status='pushing';result.push={status:'executing',commitSha:actualHead,branch:preview.repository.branch,remoteAlias:'origin',startedAtUtc:new Date().toISOString()};save()
+        const pushStart=performance.now()
+        // Pin the one verified location rather than resolve a mutable multi-valued alias.
+        // The native hook also checks its actual argv and live origin/hook configuration.
+        const pushed=options.privateFixture&&options.hooks?.pushResult?options.hooks.pushResult():repository.git(['-c',`core.hooksPath=${guard.directory}`,'push','--porcelain','--no-follow-tags','--recurse-submodules=no',beforePush.pushUrl,`${actualHead}:refs/heads/${preview.repository.branch}`],{timeout:30000,allowFailure:true,guardEnvironment:guard.environment})
+        result.push.finishedAtUtc=new Date().toISOString();result.push.elapsedMs=performance.now()-pushStart
+        result.push.processId=pushed.processId??null;result.push.invocationStartedAtUtc=pushed.invocationStartedAtUtc??null;result.push.commandIdentitySha256=pushed.commandIdentitySha256??null
+        if(!pushed.error&&pushed.status===0){result.push.status='succeeded';result.status='succeeded'}
+        else {
+          const output=Buffer.concat([pushed.stdout??Buffer.alloc(0),pushed.stderr??Buffer.alloc(0)]).toString('utf8')
+          const guardFailure=output.match(/local_backup_pre_push_rejected:(guard_[a-z_]+)/)?.[1]
+          if(guardFailure)result.push.guardFailureCode=guardFailure
+          const rejected=!pushed.error&&/\[rejected\]|non-fast-forward|fetch first|authentication failed|permission denied|remote rejected|local_backup_pre_push_rejected:/i.test(output)
+          result.push.status=rejected?'failed':'unknown';result.status=rejected?'push_failed':'push_unknown';result.failureCode=rejected?'git_push_rejected':'git_push_result_unknown'
+        }
+        save()
+      }catch(error){
+        result.failureCode=error instanceof ModuleError?error.message:'git_operation_failed'
+        result.status=result.push.status==='executing'?'push_unknown':'failed'
+        if(result.push.status==='executing')result.push.status='unknown'
+        if(result.commit.status==='executing')result.commit.status='unknown'
+        save()
       }
-      result.commit.status='created_unverified';result.commit.commitSha=actualHead;save()
-      options.hooks?.afterCommit?.()
-      repository.verifyCommit(preview.repository.head,actualHead,preview.expectedChanges)
-      const beforePush=repository.guard()
-      need(beforePush.head===actualHead&&beforePush.branch===preview.repository.branch&&hash(beforePush.pushUrl)===preview.repository.pushTargetSha256&&hash(beforePush.target)===hash(preview.repository.target),'git_branch_changed_after_commit',409)
-      need(unselectedIndex(beforePush.indexEntries,files)===preview.unselectedIndexSha256,'git_index_concurrent_change',409)
-      result.commit.status='verified';result.status='commit_verified';save()
-      const publication={root:beforePush.root,targetUrl:beforePush.pushUrl}
-      const guard=prepareGuard(stateRoot,preview.guardClosure,actualHead,preview.repository.branch,publication)
-      options.hooks?.beforePush?.()
-      // Verify installed/source bytes again immediately before selecting the operation-scoped hook.
-      prepareGuard(stateRoot,preview.guardClosure,actualHead,preview.repository.branch,publication)
-      result.status='pushing';result.push={status:'executing',commitSha:actualHead,branch:preview.repository.branch,remoteAlias:'origin',startedAtUtc:new Date().toISOString()};save()
-      const pushStart=performance.now()
-      // Pin the one verified location rather than resolve a mutable multi-valued alias.
-      // The native hook also checks its actual argv and live origin/hook configuration.
-      const pushed=options.privateFixture&&options.hooks?.pushResult?options.hooks.pushResult():repository.git(['-c',`core.hooksPath=${guard.directory}`,'push','--porcelain','--no-follow-tags','--recurse-submodules=no',beforePush.pushUrl,`${actualHead}:refs/heads/${preview.repository.branch}`],{timeout:30000,allowFailure:true,guardEnvironment:guard.environment})
-      result.push.finishedAtUtc=new Date().toISOString();result.push.elapsedMs=performance.now()-pushStart
-      result.push.processId=pushed.processId??null;result.push.invocationStartedAtUtc=pushed.invocationStartedAtUtc??null;result.push.commandIdentitySha256=pushed.commandIdentitySha256??null
-      if(!pushed.error&&pushed.status===0){result.push.status='succeeded';result.status='succeeded'}
-      else {
-        const output=Buffer.concat([pushed.stdout??Buffer.alloc(0),pushed.stderr??Buffer.alloc(0)]).toString('utf8')
-        const guardFailure=output.match(/local_backup_pre_push_rejected:(guard_[a-z_]+)/)?.[1]
-        if(guardFailure)result.push.guardFailureCode=guardFailure
-        const rejected=!pushed.error&&/\[rejected\]|non-fast-forward|fetch first|authentication failed|permission denied|remote rejected|local_backup_pre_push_rejected:/i.test(output)
-        result.push.status=rejected?'failed':'unknown';result.status=rejected?'push_failed':'push_unknown';result.failureCode=rejected?'git_push_rejected':'git_push_result_unknown'
+    }catch(error){operationFailed=true;operationError=error;throw error}
+    finally{
+      try{unlock()}catch(releaseError){
+        if(!operationFailed)throw releaseError
+        const errors=[operationError,releaseError]
+        throw new AggregateError(errors, `git_operation_and_release_failed: ${errors.map(value=>value instanceof Error?value.message:String(value)).join('; ')}`, {cause:operationError})
       }
-      save()
-    }catch(error){
-      result.failureCode=error instanceof ModuleError?error.message:'git_operation_failed'
-      result.status=result.push.status==='executing'?'push_unknown':'failed'
-      if(result.push.status==='executing')result.push.status='unknown'
-      if(result.commit.status==='executing')result.commit.status='unknown'
-      save()
-    }finally{unlock()}
+    }
     return{dataStatus:'connected',replayed:false,operation:result}
   }
   return{preview,publish,operation,operationBinding}

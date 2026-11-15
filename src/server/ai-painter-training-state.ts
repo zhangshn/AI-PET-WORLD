@@ -330,12 +330,7 @@ export async function appendTrainingProcessEvent(input: Omit<TrainingProcessEven
     }
     event = persisted
     const journal = await open(trainingProcessLedgerPath, "a")
-    try {
-      await journal.writeFile(Buffer.from(`${serialized}\n`, "utf8"))
-      await journal.sync()
-    } finally {
-      await journal.close().catch(() => {})
-    }
+    await writeAndCloseTrainingFile(journal, Buffer.from(`${serialized}\n`, "utf8"))
     if (!indexTrainingProcessEvent(event as unknown as Record<string, unknown>)) {
       throw new Error("training_ledger_index_unavailable")
     }
@@ -461,15 +456,26 @@ function errorCode(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+async function writeAndCloseTrainingFile(handle: Awaited<ReturnType<typeof open>>, bytes: Buffer): Promise<void> {
+  const errors: unknown[] = []
+  try {
+    await handle.writeFile(bytes)
+    await handle.sync()
+  } catch (error) {
+    errors.push(error)
+  } finally {
+    try { await handle.close() } catch (error) { errors.push(error) }
+  }
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1) {
+    throw new AggregateError(errors, `training_file_write_and_close_failed: ${errors.map(errorCode).join("; ")}`, { cause: errors[0] })
+  }
+}
+
 export async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> {
   const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`
   const handle = await open(temporaryPath, "wx")
-  try {
-    await handle.writeFile(Buffer.from(`${JSON.stringify(value, null, 2)}\n`, "utf8"))
-    await handle.sync()
-  } finally {
-    await handle.close().catch(() => {})
-  }
+  await writeAndCloseTrainingFile(handle, Buffer.from(`${JSON.stringify(value, null, 2)}\n`, "utf8"))
   try {
     await rename(temporaryPath, filePath)
   } catch (error) {

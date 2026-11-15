@@ -282,7 +282,7 @@ export async function initializeCurrentExecutionRegistry({
   await mkdir(registryRoot, { recursive: true })
   const databasePath = path.join(registryRoot, "registry.sqlite")
   const database = new DatabaseSync(databasePath)
-  let transactionFailed = false;
+  const databaseFailures = [];
   
   
   try {
@@ -314,11 +314,11 @@ export async function initializeCurrentExecutionRegistry({
     `).run(registryRevision, eventSequence, transactionId, currentSha256, current.taskId, current.runId, recordedAtUtc)
     database.exec("COMMIT")
   } catch (error) {
-    transactionFailed = true;
-    try { database.exec("ROLLBACK") } catch { /* Preserve the first transaction failure. */ }
+    databaseFailures.push(error);
+    try { database.exec("ROLLBACK") } catch (rollbackError) { databaseFailures.push(rollbackError); }
     throw error;
   } finally {
-    try { database.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+    closeRegistryDatabase(database, databaseFailures);
   }
 
   return readCurrentExecutionRegistry(projectRoot)
@@ -582,6 +582,7 @@ export async function prepareCurrentExecutionRegistryAdvance({
       writerClaim,
     }
   } catch (error) {
+    const cleanupErrors = []
     if (!durablePrepared) {
       if (transactionRoot !== null) {
         await writeAbortedPrepareRecord(
@@ -589,10 +590,12 @@ export async function prepareCurrentExecutionRegistryAdvance({
           transactionRoot,
           transactionId,
           error,
-        ).catch(() => undefined)
+        ).catch(secondary => { cleanupErrors.push(secondary) })
       }
-      await releaseWriterClaim(projectRoot, transactionId).catch(() => undefined)
+      await releaseWriterClaim(projectRoot, transactionId).catch(secondary => { cleanupErrors.push(secondary) })
     }
+    if (cleanupErrors.length > 0) throw new AggregateError([error, ...cleanupErrors],
+      error instanceof Error ? error.message : "registry_prepare_failed", { cause: error })
     throw error
   }
 }
@@ -1139,6 +1142,7 @@ async function readRegistryBinding(projectRoot, binding, archivedNamespaces, rol
 function verifySqliteCommit(projectRoot, registry, currentSha256) {
   const databasePath = resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/registry.sqlite`)
   const database = new DatabaseSync(databasePath, { readOnly: true })
+  const databaseFailures = []
   try {
     const revision = database.prepare(`
       SELECT registry_revision, event_sequence, transaction_id, current_sha256
@@ -1159,13 +1163,17 @@ function verifySqliteCommit(projectRoot, registry, currentSha256) {
       WHERE t.status = 'committed' AND (r.registry_revision > ? OR r.event_sequence > ?) LIMIT 1
     `).get(registry.registryRevision, registry.eventSequence)
     requireValue(newer === undefined, "registry_current_behind_committed_revision")
+  } catch (error) {
+    databaseFailures.push(error)
+    throw error
   } finally {
-    database.close()
+    closeRegistryDatabase(database, databaseFailures)
   }
 }
 
 function verifyPreparedDatabaseRows(projectRoot, pending) {
   const database = new DatabaseSync(resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/registry.sqlite`), { readOnly: true })
+  const databaseFailures = []
   try {
     const transaction = database.prepare(`
       SELECT transaction_id, status, current_sha256
@@ -1180,8 +1188,11 @@ function verifyPreparedDatabaseRows(projectRoot, pending) {
     requireValue(revision?.event_sequence === pending.eventSequence, "registry_prepared_database_sequence_mismatch")
     requireValue(revision?.transaction_id === pending.transactionId, "registry_prepared_database_transaction_mismatch")
     requireValue(revision?.current_sha256 === pending.currentSha256, "registry_prepared_database_current_hash_mismatch")
+  } catch (error) {
+    databaseFailures.push(error)
+    throw error
   } finally {
-    database.close()
+    closeRegistryDatabase(database, databaseFailures)
   }
 }
 
@@ -1194,7 +1205,7 @@ function stagedCurrentValueForDatabase(current) {
 
 function ensurePreparedDatabaseRows(projectRoot, pending, current, testHooks = null) {
   const database = new DatabaseSync(resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/registry.sqlite`))
-  let transactionFailed = false;
+  const databaseFailures = [];
   
   let transactionStarted = false
   try {
@@ -1260,11 +1271,11 @@ function ensurePreparedDatabaseRows(projectRoot, pending, current, testHooks = n
     database.exec("COMMIT")
     transactionStarted = false
   } catch (error) {
-    transactionFailed = true;
-    try { if (transactionStarted) database.exec("ROLLBACK") } catch { /* Preserve the first transaction failure. */ }
+    databaseFailures.push(error);
+    try { if (transactionStarted) database.exec("ROLLBACK") } catch (rollbackError) { databaseFailures.push(rollbackError); }
     throw error;
   } finally {
-    try { database.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+    closeRegistryDatabase(database, databaseFailures);
   }
 }
 
@@ -1287,7 +1298,7 @@ async function writeAbortedPrepareRecord(
 
 function commitPreparedDatabaseRows(projectRoot, pending) {
   const database = new DatabaseSync(resolveProjectPath(projectRoot, `${CURRENT_EXECUTION_REGISTRY_ROOT}/registry.sqlite`))
-  let transactionFailed = false;
+  const databaseFailures = [];
   
   
   try {
@@ -1305,11 +1316,11 @@ function commitPreparedDatabaseRows(projectRoot, pending) {
     }
     database.exec("COMMIT")
   } catch (error) {
-    transactionFailed = true;
-    try { database.exec("ROLLBACK") } catch { /* Preserve the first transaction failure. */ }
+    databaseFailures.push(error);
+    try { database.exec("ROLLBACK") } catch (rollbackError) { databaseFailures.push(rollbackError); }
     throw error;
   } finally {
-    try { database.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+    closeRegistryDatabase(database, databaseFailures);
   }
 }
 
@@ -1430,6 +1441,7 @@ async function verifyDependencyManifest(projectRoot, manifest) {
     resolveTrustedCatalogDatabasePath(projectRoot, manifest.programEvent.catalogDatabasePath),
     { readOnly: true },
   )
+  const databaseFailures = []
   try {
     const row = catalog.prepare("SELECT event_json FROM program_events WHERE event_id = ?").get(manifest.programEvent.eventId)
     requireValue(typeof row?.event_json === "string", "registry_dependency_catalog_program_event_missing")
@@ -1438,8 +1450,11 @@ async function verifyDependencyManifest(projectRoot, manifest) {
       const indexed = catalog.prepare("SELECT sha256 FROM artifacts WHERE logical_path = ?").get(artifact.logicalPath)
       requireValue(indexed?.sha256 === artifact.sha256, "registry_dependency_catalog_artifact_mismatch")
     }
+  } catch (error) {
+    databaseFailures.push(error)
+    throw error
   } finally {
-    catalog.close()
+    closeRegistryDatabase(catalog, databaseFailures)
   }
   return {
     status: "verified",
@@ -1447,6 +1462,15 @@ async function verifyDependencyManifest(projectRoot, manifest) {
     dependencyCount: manifest.bindings.length + manifest.catalogArtifacts.length + 4,
     programEventId: manifest.programEvent.eventId,
   }
+}
+
+// Preserve the primary error code used by aborted-prepare records, and every failure.
+function closeRegistryDatabase(database, failures) {
+  try { database.close() } catch (error) { failures.push(error) }
+  if (failures.length > 1) throw new AggregateError(failures,
+    failures[0] instanceof Error ? failures[0].message : "registry_database_cleanup_failed",
+    { cause: failures[0] })
+  if (failures.length === 1) throw failures[0]
 }
 
 function initializeDatabase(database) {
@@ -2127,12 +2151,14 @@ async function publishCurrentBytes(projectRoot, bytes, { transactionId, deadline
   beforeAtomicWrite?.(CURRENT_EXECUTION_REGISTRY_PATH, bytes.length)
   const absolutePath = resolveProjectPath(projectRoot, CURRENT_EXECUTION_REGISTRY_PATH)
   const temporaryPath = `${absolutePath}.tmp-${process.pid}-${randomUUID()}`
+  let temporaryCreated = false
   let firstError = null
   const diagnostics = { transactionId, status: "pending", attempts: [] }
   const describe = error => ({ code: typeof error?.code === "string" ? error.code : null,
     message: String(error?.message ?? error).slice(0, 1024) })
   try {
     await writeFile(temporaryPath, bytes, { flag: "wx" })
+    temporaryCreated = true
     fsyncFile(temporaryPath)
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
@@ -2177,10 +2203,17 @@ async function publishCurrentBytes(projectRoot, bytes, { transactionId, deadline
     diagnostics.status = "failed_closed"
     if (firstError !== null && error !== firstError) diagnostics.secondaryError = describe(error)
     const primary = firstError ?? error
-    primary.publicationDiagnostics = diagnostics
+    try {
+      primary.publicationDiagnostics = diagnostics
+    } catch {
+      const wrapped = new Error(String(primary?.message ?? primary), { cause: primary })
+      if (typeof primary?.code === "string") wrapped.code = primary.code
+      wrapped.publicationDiagnostics = diagnostics
+      throw wrapped
+    }
     throw primary
   } finally {
-    await unlink(temporaryPath).catch(error => {
+    if (temporaryCreated) await unlink(temporaryPath).catch(error => {
       if (error?.code !== "ENOENT") diagnostics.cleanupError = describe(error)
     })
   }
@@ -2212,11 +2245,18 @@ function fsyncFile(absolutePath) {
   // Windows rejects FlushFileBuffers on a read-only handle. Every caller owns
   // the file being durably published, so a read/write handle is appropriate.
   const descriptor = openSync(absolutePath, "r+")
+  const errors = []
   try {
     fsyncSync(descriptor)
+  } catch (error) {
+    errors.push(error)
   } finally {
-    closeSync(descriptor)
+    try { closeSync(descriptor) } catch (error) { errors.push(error) }
   }
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1) throw new AggregateError(errors,
+    `Registry file sync and close failed: ${errors.map(error => String(error?.message ?? error)).join("; ")}`,
+    { cause: errors[0] })
 }
 
 function jsonBytes(value) {

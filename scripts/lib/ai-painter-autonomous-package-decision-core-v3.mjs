@@ -228,13 +228,13 @@ export function assertUnreservedWeatherVersion(...identities) {
     "reserved weather identity cannot be used as a generic capability");
 }
 
-function scopedRuntimeFile(root, relative) {
-  validateProjectRelativePath(relative, "weather runtime evidence");
-  invariant(relative.startsWith(".runtime/"), "weather evidence outside runtime");
+function scopedRuntimeFile(root, relative, label = "weather") {
+  validateProjectRelativePath(relative, `${label} runtime evidence`);
+  invariant(relative.startsWith(".runtime/"), `${label} evidence outside runtime`);
   const mount = fs.realpathSync.native(resolveRuntimePath(root, ".runtime"));
   const absolute = path.join(mount, relative.slice(".runtime/".length));
   const stat = fs.lstatSync(absolute);
-  invariant(stat.isFile() && stat.nlink === 1 && fs.realpathSync.native(absolute) === absolute, "weather runtime evidence path differs");
+  invariant(stat.isFile() && stat.nlink === 1 && fs.realpathSync.native(absolute) === absolute, `${label} runtime evidence path differs`);
   return absolute;
 }
 
@@ -255,6 +255,7 @@ export function verifyScopedWeatherReleaseLifecycle(root, version, acceptedState
   invariant(spec.sourceEvidence.some((row) => row.path === profile.policyPath && row.sha256 === policyFile.sha256),
     "weather lifecycle does not bind fixed policy");
   const db = new DatabaseSync(scopedRuntimeFile(root, `${weatherLifecycle}/lifecycle.sqlite`), { readOnly: true });
+  const failures = [];
   try {
     const latest = db.prepare("SELECT c.state,c.change_class,t.sequence,t.from_state,t.to_state,t.evidence_sha256 FROM capabilities c JOIN lifecycle_transitions t USING(capability_version) WHERE c.capability_version=? ORDER BY t.sequence DESC LIMIT 1").get(state.capabilityVersion);
     invariant(latest && latest.state === latest.to_state && latest.change_class === state.changeClass, "weather lifecycle transaction differs");
@@ -288,7 +289,8 @@ export function verifyScopedWeatherReleaseLifecycle(root, version, acceptedState
         && value.targetState === "machine_release_adjudicated" && value.status === "passed", "immutable weather lifecycle adjudication differs");
     }
     return state;
-  } finally { db.close(); }
+  } catch (error) { failures.push(error); }
+  finally { closeCapabilityDatabase(db, failures, "capability_lifecycle_read_failed"); }
 }
 
 
@@ -457,13 +459,6 @@ function readReleasedCapability({ projectRoot, capabilityReleasePath, trustedRel
     const state = verifyScopedWeatherReleaseLifecycle(projectRoot, scopedWeather.version,lifecycleTransition ? ["machine_release_adjudicated","released"] : ["released"],
       adjudication.adjudicatedStage,transitionBindings);
     if (state.state === "released") invariant(state.releaseIdentity === scopedWeather.version, "weather lifecycle release identity differs");
-    const ledger = new DatabaseSync(scopedRuntimeFile(projectRoot, ".runtime/ai-painter/capability-release-ledger.sqlite"), {readOnly:true});
-    try {
-      const rows = ledger.prepare("SELECT * FROM releases WHERE capability_release_identity=?").all(scopedWeather.version);
-      const row = rows[0];
-      invariant(rows.length === 1 && row.release_path === capabilityReleasePath && row.release_sha256 === releaseEvidence.sha256
-        && row.registry_revision === registryRecord.registryRevision && row.owner_decision_used === 0, "weather release ledger differs");
-    } finally { ledger.close(); }
   } else {
     const issuer = release.ticketIssuer;
     invariant(issuer && typeof issuer === "object", "ticket issuer binding is required");
@@ -479,6 +474,9 @@ function readReleasedCapability({ projectRoot, capabilityReleasePath, trustedRel
     verifiedIssuer = { identity: issuer.identity, keyId: issuer.keyId, publicKeyPath: issuer.publicKeyPath, publicKeySha256: publicKeyEvidence.sha256, publicKey };
   }
 
+  verifyCapabilityReleaseLedger(projectRoot, capabilityReleasePath, releaseEvidence.sha256, registryRecord,
+    scopedWeather ? "weather" : "capability");
+
   return deepFreeze({
     verificationStatus: "verified_from_machine_adjudication_and_trusted_registry",
     capabilityReleasePath,
@@ -493,6 +491,25 @@ function readReleasedCapability({ projectRoot, capabilityReleasePath, trustedRel
     machineReleaseAdjudicationSha256: adjudicationEvidence.sha256,
     ticketIssuer: verifiedIssuer,
   });
+}
+
+function verifyCapabilityReleaseLedger(projectRoot, capabilityReleasePath, releaseSha256, registryRecord, label) {
+  const ledger = new DatabaseSync(scopedRuntimeFile(projectRoot, ".runtime/ai-painter/capability-release-ledger.sqlite", label), {readOnly:true});
+  const failures = [];
+  try {
+    const rows = ledger.prepare("SELECT * FROM releases WHERE capability_release_identity=?").all(registryRecord.capabilityReleaseIdentity);
+    const row = rows[0];
+    invariant(rows.length === 1 && row.release_path === capabilityReleasePath && row.release_sha256 === releaseSha256
+      && row.registry_revision === registryRecord.registryRevision && row.owner_decision_used === 0, `${label} release ledger differs`);
+  } catch (error) { failures.push(error); }
+  finally { closeCapabilityDatabase(ledger, failures, "capability_release_ledger_read_failed"); }
+}
+
+function closeCapabilityDatabase(database, failures, fallbackMessage) {
+  try { database.close(); } catch (error) { failures.push(error); }
+  if (failures.length > 1) throw new AggregateError(failures,
+    failures[0] instanceof Error ? failures[0].message : fallbackMessage, { cause: failures[0] });
+  if (failures.length === 1) throw failures[0];
 }
 
 export function validateReleasedCapabilityBinding(options) {
@@ -607,7 +624,7 @@ export function applyRuntimeStateTransition(ticket, executionState, {
   invariant(ticketLedgerPath.startsWith(".runtime/ai-painter/"), "ticket ledger must be in the AI Painter runtime namespace");
   fs.mkdirSync(path.dirname(ledgerAbsolutePath), { recursive: true });
   const db = new DatabaseSync(ledgerAbsolutePath);
-  let persistenceFailed = false;
+  const failures = [];
   try {
     db.exec(`
       PRAGMA busy_timeout=5000;
@@ -653,7 +670,7 @@ export function applyRuntimeStateTransition(ticket, executionState, {
       );
       db.exec("COMMIT");
     } catch (error) {
-      try { db.exec("ROLLBACK"); } catch { /* Preserve the original storage failure. */ }
+      try { db.exec("ROLLBACK"); } catch (rollbackError) { failures.push(rollbackError); }
       // SQLite extended constraint codes: PRIMARYKEY and UNIQUE. Busy, IO and
       // other constraint failures do not establish that a ticket was replayed.
       if (error?.code === "ERR_SQLITE_ERROR" && [1555, 2067].includes(error.errcode)) {
@@ -664,13 +681,8 @@ export function applyRuntimeStateTransition(ticket, executionState, {
     executionState.currentState = ticket.targetState;
     return Object.freeze({ ...consumption, resultingState: executionState.currentState, ticketLedgerPath });
   } catch (error) {
-    persistenceFailed = true;
-    throw error;
-  } finally {
-    try { db.close(); } catch (closeError) {
-      if (!persistenceFailed) throw closeError;
-    }
-  }
+    failures.unshift(error);
+  } finally { closeCapabilityDatabase(db, failures, "runtime_ticket_persistence_failed"); }
 }
 
 export function adjudicateBoundedDecision({ decisionSetId, ruleVersion, optionIds, matchedOptionIds, evidenceReferences, evidenceComplete }) {

@@ -233,11 +233,11 @@ function nodeImports(source,{sourcePath=null,edges=false}={}){
   visit(tree.program);const sorted=imports.sort((a,b)=>a.start-b.start);return edges?sorted:sorted.map(v=>v.value);
 }
 
-const roleCache=new Map();
 function requiredProgramRoles({root,python,capabilityVersion,authPath}){
   assert.equal(authPath,'ml/ai-painter/scripts/decode1_entry_weight_quality_auth_v1.py','role query auth path differs from executed module');
-  const source=fs.readFileSync(path.join(root,authPath)),before=digest(source),key=[root,python,capabilityVersion,before].join('|');
-  if(roleCache.has(key))return {...roleCache.get(key)};
+  const source=fs.readFileSync(path.join(root,authPath)),before=digest(source);
+  // Roles also depend on imported route definitions and registered policy data.
+  // The auth source digest alone cannot validate a cached query result.
   const code="import json,sys;from pathlib import Path;root=Path(sys.argv[1]);sys.path[:0]=[str(root/'ml/ai-painter/scripts'),str(root/'ml/ai-painter/src')];import decode1_entry_weight_quality_auth_v1 as auth;print(json.dumps(auth.required_program_roles(sys.argv[2]),sort_keys=True))";
   const call=spawnSync(python,['-I','-B','-c',code,root,capabilityVersion],{encoding:'utf8',timeout:15000,maxBuffer:1048576,windowsHide:true,
     env:{...process.env,OMP_NUM_THREADS:'2',MKL_NUM_THREADS:'2',OPENBLAS_NUM_THREADS:'2'}});
@@ -247,7 +247,7 @@ function requiredProgramRoles({root,python,capabilityVersion,authPath}){
   }));
   assert.equal(digest(fs.readFileSync(path.join(root,authPath))),before,'auth changed across role query');
   const roles=JSON.parse(call.stdout);assert.ok(roles&&typeof roles==='object'&&!Array.isArray(roles));
-  roleCache.set(key,Object.freeze({...roles}));return {...roles};
+  return {...roles};
 }
 
 export {collectActualExecutionSources,requiredProgramRoles,nodeImports};

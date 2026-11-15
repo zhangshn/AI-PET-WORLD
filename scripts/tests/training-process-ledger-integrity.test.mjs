@@ -1,3 +1,4 @@
+import {isDeepStrictEqual} from 'node:util'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -72,6 +73,8 @@ for(const kind of ['atomic','lock']) for(const scenario of [
   if(kind==='atomic'||scenario==='existing-lock')fs.writeFileSync(target,'original')
   const io={
     mkdirSync:fs.mkdirSync,
+    fstatSync:fs.fstatSync,
+    lstatSync:fs.lstatSync,
     openSync(file,flags){calls.push('open');temp=file;if(scenario==='open')throw primary;return fs.openSync(file,flags)},
     writeFileSync(fd,bytes,encoding){calls.push('write');if(writeFails){fs.writeFileSync(fd,'partial');throw primary}fs.writeFileSync(fd,bytes,encoding)},
     fsyncSync(fd){calls.push('sync');if(['sync','sync+close'].includes(scenario))throw primary;fs.fsyncSync(fd)},
@@ -729,4 +732,210 @@ test('catalog retains valid rows, reports invalid JSON or statuses and closes it
     assert.equal(Object.hasOwn(result.summary,'toString'),false)
     assert.equal(closes,1)
   }
+})
+
+for (const phase of ['write', 'sync', 'close', 'directory']) for (const replacement of ['none', 'file', 'directory']) {
+  test(`ledger failed lock cleanup retains current owner: ${phase}/${replacement}`, t => {
+    const parent = fs.realpathSync(os.tmpdir()), root = fs.mkdtempSync(path.join(parent, 'ledger-lock-owner-'))
+    t.after(() => {
+      assert.equal(path.dirname(root), parent); assert(path.basename(root).startsWith('ledger-lock-owner-'))
+      assert.equal(fs.realpathSync(root), root); assert(!fs.lstatSync(root).isSymbolicLink())
+      fs.rmSync(root, { recursive: true })
+    })
+    const file = path.join(root, 'commit.lock'), original = path.join(root, 'original.lock')
+    const primary = Object.freeze(Object.assign(new Error('private initialization failed'), { code: 'EIO' }))
+    let closes = 0, deletes = 0, probes = 0, originalBytes
+    const io = {
+      ...fs,
+      writeFileSync(fd, bytes, encoding) { fs.writeFileSync(fd, phase === 'write' ? 'partial-original' : bytes, encoding); if (phase === 'write') throw primary },
+      fsyncSync(fd) { if (phase === 'sync') throw primary; fs.fsyncSync(fd) },
+      closeSync(fd) {
+        closes++; fs.closeSync(fd)
+        if (replacement !== 'none') {
+          originalBytes = fs.readFileSync(file)
+          fs.renameSync(file, original)
+          if (replacement === 'file') fs.writeFileSync(file, originalBytes, { flag: 'wx' })
+          else fs.mkdirSync(file)
+        }
+        if (phase === 'close') throw primary
+      },
+      unlinkSync(target) { deletes++; fs.unlinkSync(target) },
+    }
+    const run = loadLedgerPrivate('acquireLedgerCommitLock', {
+      fs: io, process, LEDGER_DIR: root, LEDGER_LOCK_PATH: file,
+      fsyncDirectoryBestEffort() { if (phase === 'directory') throw primary },
+      probeLedgerCommitLock() { probes++; throw new Error('unexpected lock takeover') },
+      archiveDeadLedgerCommitLock() { throw new Error('unexpected lock archive') },
+      LOCK_TIMEOUT_MS: 0, LOCK_RETRY_MS: 0, LOCK_WAIT_ARRAY: new Int32Array(new SharedArrayBuffer(4)), projectPath: value => value,
+    })
+    assert.throws(() => run('private-token', Date.now(), { source: 'private', value: 'identity' }), error => error === primary)
+    assert.equal(closes, 1); assert.equal(probes, 0)
+    assert.equal(deletes, replacement === 'none' ? 1 : 0)
+    if (replacement === 'none') assert(!fs.existsSync(file))
+    else {
+      assert.deepEqual(fs.readFileSync(original), originalBytes)
+      if (replacement === 'file') assert.deepEqual(fs.readFileSync(file), originalBytes)
+      else assert(fs.statSync(file).isDirectory())
+    }
+  })
+}
+for (const scenario of ['identity-unavailable', 'lstat-unavailable', 'symbolic-link', 'different-device']) {
+  test(`ledger cleanup requires verified plain file identity: ${scenario}`, () => {
+    const primary = new Error('private write failure'), cleanup = new Error('private identity failure')
+    let closed = 0, deleted = 0
+    const io = {
+      openSync: () => 0,
+      fstatSync() { if (scenario === 'identity-unavailable') throw primary; return { ino: 1, dev: 1 } },
+      writeFileSync() { throw primary },
+      closeSync(fd) { assert.equal(fd, 0); closed++ },
+      existsSync: () => true,
+      lstatSync() { if (scenario === 'lstat-unavailable') throw cleanup; return { ino: 1, dev: scenario === 'different-device' ? 2 : 1, isFile: () => true, isSymbolicLink: () => scenario === 'symbolic-link' } },
+      unlinkSync() { deleted++ },
+    }
+    const run = loadLedgerPrivate('acquireLedgerCommitLock', { fs: io, process, LEDGER_LOCK_PATH: 'private.lock' })
+    assert.throws(() => run('private', Date.now(), {}), error => error === primary)
+    assert.equal(closed, 1); assert.equal(deleted, 0)
+  })
+}
+
+for (const scenario of ['unchanged', 'replacement', 'changed-record', 'missing', 'directory', 'missing-identity', 'missing-record', 'malformed',
+  'read-denied', 'read-io', 'stat-denied', 'stat-io', 'rename-denied', 'rename-io', 'symlink', 'active-probe', 'missing-probe']) {
+  test(`stale ledger lock archive rechecks its snapshot: ${scenario}`, t => {
+    const parent = fs.realpathSync(os.tmpdir()), root = fs.mkdtempSync(path.join(parent, 'ledger-stale-owner-'))
+    t.after(() => {
+      assert.equal(path.dirname(root), parent); assert(path.basename(root).startsWith('ledger-stale-owner-'))
+      assert.equal(fs.realpathSync(root), root); assert(!fs.lstatSync(root).isSymbolicLink())
+      fs.rmSync(root, { recursive: true })
+    })
+    const file = path.join(root, 'commit.lock'), held = path.join(root, 'held.lock'), archive = path.join(root, 'archive')
+    for (const target of [file, held, archive]) assert.equal(path.dirname(path.resolve(target)), root)
+    const record = { token: 'original-token', pid: 123, processStartIdentity: { value: 'original-process' }, createdAtUtc: '2026-01-01T00:00:00Z' }
+    const bytes = JSON.stringify(record)
+    fs.writeFileSync(file, bytes, { flag: 'wx' })
+    const probe = { state: 'dead', reason: 'private-dead-process', stat: fs.statSync(file, { bigint: true }), record }
+    if (scenario === 'replacement' || scenario === 'directory') {
+      fs.renameSync(file, held)
+      if (scenario === 'replacement') fs.writeFileSync(file, bytes, { flag: 'wx' })
+      else fs.mkdirSync(file)
+    }
+    if (scenario === 'changed-record') fs.writeFileSync(file, JSON.stringify({ ...record, token: 'new-owner' }))
+    if (scenario === 'missing') fs.unlinkSync(file)
+    if (scenario === 'malformed') fs.writeFileSync(file, '{unfinished')
+    if (scenario === 'missing-identity') delete probe.stat
+    if (scenario === 'missing-record') delete probe.record
+    if (scenario === 'active-probe') probe.state = 'active'
+    if (scenario === 'missing-probe') probe.lockMissing = true
+    const failure = Object.assign(new Error('private '+scenario), { code: scenario.endsWith('denied') ? 'EACCES' : 'EIO' })
+    let moves = 0
+    const io = {
+      ...fs,
+      lstatSync(target, options) {
+        if (scenario.startsWith('stat-')) throw failure
+        const stat = fs.lstatSync(target, options)
+        if (scenario === 'symlink') stat.isSymbolicLink = () => true
+        return stat
+      },
+      readFileSync(target, encoding) { if (scenario.startsWith('read-')) throw failure; return fs.readFileSync(target, encoding) },
+      renameSync(from, to) { if (scenario.startsWith('rename-')) throw failure; moves++; fs.renameSync(from, to) },
+    }
+    const run = loadLedgerPrivate('archiveDeadLedgerCommitLock', {
+      fs: io, path, LEDGER_LOCK_PATH: file, LEDGER_DIR: root, LEDGER_LOCK_ARCHIVE_DIR: archive,
+      randomUUID: () => 'private-uuid', fsyncDirectoryBestEffort() {}, isDeepStrictEqual,
+    })
+    if (scenario.endsWith('-io')) assert.throws(() => run(probe), error => error === failure)
+    else if (['active-probe', 'missing-probe'].includes(scenario)) assert.throws(() => run(probe), /only a dead bound process lock/)
+    else assert.equal(run(probe), scenario === 'unchanged')
+    assert.equal(moves, scenario === 'unchanged' ? 1 : 0)
+    const archivedFiles = fs.existsSync(archive) ? fs.readdirSync(archive) : []
+    assert.equal(archivedFiles.length, scenario === 'unchanged' ? 1 : 0)
+    if (scenario === 'unchanged') assert.equal(fs.readFileSync(path.join(archive, archivedFiles[0]), 'utf8'), bytes)
+    else if (scenario !== 'missing') {
+      assert(fs.existsSync(file))
+      if (scenario === 'replacement') assert.equal(fs.readFileSync(file, 'utf8'), bytes)
+      if (scenario === 'changed-record') assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).token, 'new-owner')
+    }
+  })
+}
+
+
+for (const kind of ['atomic', 'journal']) for (const phase of ['success', 'open', 'write', 'sync', 'close', 'write+close', 'sync+close', 'null+close', 'frozen+close'])
+test(`training persistence ${kind} handles ${phase} before publishing`, async () => {
+  const primary = phase === 'null+close' ? null : Object.freeze(new Error(`primary ${phase}`))
+  const secondary = new Error('secondary close failure')
+  const files = new Map(), calls = [], indexed = []
+  let serial = 0, target
+  const failWrite = ['write', 'write+close', 'null+close', 'frozen+close'].includes(phase)
+  const {state} = stateFixture({uuid: () => `close-fixture-${++serial}`, recordEvent: value => { indexed.push(value); return true }, fsOperations: {
+    mkdir: async () => {},
+    open: async (file, mode) => {
+      const affected = kind === 'journal' ? file === state.trainingProcessLedgerPath : file.startsWith(target + '.')
+      if (affected) { calls.push('open'); if (phase === 'open') throw primary }
+      if (mode === 'wx') assert(!files.has(file))
+      files.set(file, files.get(file) ?? Buffer.alloc(0))
+      return {
+        writeFile: async bytes => {
+          if (affected) { calls.push('write'); if (failWrite) { files.set(file, Buffer.from('partial')); throw primary } }
+          files.set(file, Buffer.concat([files.get(file), bytes]))
+        },
+        sync: async () => { if (affected) { calls.push('sync'); if (['sync', 'sync+close'].includes(phase)) throw primary } },
+        close: async () => { if (affected) { calls.push('close'); if (phase === 'close') throw primary; if (phase.endsWith('+close')) throw secondary } },
+      }
+    },
+    rename: async (from, to) => { if (to === target) calls.push('rename'); files.set(to, files.get(from)); files.delete(from) },
+    rm: async file => { calls.push('remove'); files.delete(file) },
+    readFile: async file => { if (!files.has(file)) throw Object.assign(new Error('absent'), {code:'ENOENT'}); return files.get(file).toString('utf8') },
+  }})
+  target = kind === 'atomic' ? state.trainingControlStatePath : state.trainingProcessLedgerLatestPath
+  const original = Buffer.from('original state'), value = {private:'candidate'}
+  files.set(target, original)
+  if (kind === 'atomic') {
+    if (phase === 'success') await state.writeJsonAtomic(target, value)
+    else await assert.rejects(state.writeJsonAtomic(target, value), error => {
+      if (phase.endsWith('+close')) { assert(error instanceof AggregateError); assert.deepEqual(error.errors, [primary, secondary]); assert.equal(error.cause, primary) }
+      else assert.equal(error, primary)
+      return true
+    })
+    if (phase === 'success') assert.deepEqual(JSON.parse(files.get(target).toString()), value)
+    else {
+      assert.deepEqual(files.get(target), original)
+      if (phase !== 'open') assert([...files.keys()].some(file => file.startsWith(target + '.') && file.endsWith('.tmp')), 'failed temp evidence remains')
+    }
+  } else {
+    const result = await state.appendTrainingProcessEvent(event)
+    if (phase === 'success') { assert(result); assert.equal(indexed.length, 1); assert.equal(JSON.parse(files.get(target)).summary.total, 1) }
+    else {
+      assert.equal(result, null); assert.deepEqual(indexed, []); assert.deepEqual(files.get(target), original)
+      const marker = JSON.parse(files.get(state.trainingProcessLedgerDegradedPath))
+      assert.equal(marker.status, 'degraded')
+      assert(marker.error.includes(primary === null ? 'null' : primary.message))
+      if (phase.endsWith('+close')) assert(marker.error.includes(secondary.message))
+      if (phase !== 'open') assert(files.has(state.trainingProcessLedgerPath), 'failed journal remains')
+    }
+  }
+  assert.equal(calls.filter(value => value === 'close').length, phase === 'open' ? 0 : 1)
+  assert.equal(calls.includes('rename'), phase === 'success')
+  assert(!calls.includes('remove'))
+})
+
+for(const replacement of [false,true])test(`ledger cleanup distinguishes exact file IDs beyond Number precision: replacement=${replacement}`,()=>{
+  const originalId=9007199254740992n,currentId=originalId+(replacement?1n:0n),primary=new Error('private write failed')
+  assert.equal(Number(originalId),Number(currentId),'fixture deliberately rounds distinct IDs to the same Number')
+  let deleted=0,closed=0
+  const stat=(ino,options)=>({ino:options?.bigint?ino:Number(ino),dev:options?.bigint?1n:1,isFile:()=>true,isSymbolicLink:()=>false})
+  const run=loadLedgerPrivate('acquireLedgerCommitLock',{fs:{openSync:()=>0,fstatSync:(_fd,options)=>stat(originalId,options),writeFileSync(){throw primary},closeSync(){closed++},existsSync:()=>true,lstatSync:(_file,options)=>stat(currentId,options),unlinkSync(){deleted++}},process,LEDGER_LOCK_PATH:'private.lock'})
+  assert.throws(()=>run('private',Date.now(),{}),e=>e===primary);assert.equal(closed,1);assert.equal(deleted,replacement?0:1)
+})
+for(const replacement of [false,true])test(`ledger dead-owner archive retains exact file IDs: replacement=${replacement}`,()=>{
+  const originalId=9007199254740992n,currentId=originalId+(replacement?1n:0n),record={token:'same-token',createdAtUtc:'2020-01-01T00:00:00Z'}
+  assert.equal(Number(originalId),Number(currentId))
+  const stat=(ino,options)=>({ino:options?.bigint?ino:Number(ino),dev:options?.bigint?1n:1,mtimeMs:options?.bigint?1n:1,isFile:()=>true,isSymbolicLink:()=>false})
+  const probe=loadLedgerPrivate('probeLedgerCommitLock',{fs:{statSync:(_file,options)=>stat(originalId,options),readFileSync:()=>JSON.stringify(record)},LEDGER_LOCK_PATH:'private.lock',isValidLedgerLockRecord:()=>true,probeBoundProcessStartIdentity:()=>({state:'dead',reason:'private'}),MALFORMED_LOCK_GRACE_MS:1000,DEAD_PROCESS_CONFIRMATION_GRACE_MS:1000})()
+  let renamed=0
+  const run=loadLedgerPrivate('archiveDeadLedgerCommitLock',{fs:{lstatSync:(_file,options)=>stat(currentId,options),readFileSync:()=>JSON.stringify(record),mkdirSync(){},renameSync(){renamed++}},path,LEDGER_LOCK_PATH:'private.lock',LEDGER_LOCK_ARCHIVE_DIR:'private-archive',LEDGER_DIR:'private',randomUUID:()=> 'private',fsyncDirectoryBestEffort(){},isDeepStrictEqual})
+  assert.equal(run(probe),!replacement);assert.equal(renamed,replacement?0:1);assert.equal(typeof probe.stat.ino,'bigint')
+})
+test('exact ledger stat preserves recent malformed-lock grace without BigInt arithmetic errors',()=>{
+  let requested
+  const run=loadLedgerPrivate('probeLedgerCommitLock',{fs:{statSync(_file,options){requested=options;return{mtimeMs:options?.bigint?BigInt(Date.now()):Date.now()}},readFileSync(){throw new SyntaxError('partial fixture')}},LEDGER_LOCK_PATH:'private.lock',MALFORMED_LOCK_GRACE_MS:10000})
+  assert.equal(run().reason,'lock_initialization_in_progress');assert.equal(requested.bigint,true)
 })

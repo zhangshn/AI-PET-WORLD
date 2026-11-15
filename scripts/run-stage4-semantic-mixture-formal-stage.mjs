@@ -1,3 +1,4 @@
+import { acquireExclusiveFileLock } from "./lib/exclusive-file-lock.mjs"
 import crypto from "node:crypto"
 import { spawn, spawnSync } from "node:child_process"
 import fs from "node:fs"
@@ -69,7 +70,7 @@ try {
   const manifest = read(manifestPath)
   const manifestIssues = validateManifest(manifest)
   if (manifestIssues.length) throw new Error(manifestIssues.join(","))
-  const review = await reviewPreviews(manifest)
+  const review = await reviewPreviews()
   if (review.previewFailCount > 0 || review.previewPassCount !== 6) throw new Error(`stage_${stage}_visual_review_failed_${review.previewPassCount}_of_6`)
   const terminal = finalize("semantic_mixture_stage4_formal_stage_completed_closed", [], manifest, review)
   event("formal_stage_completed", "success", `Stage ${stage}正式训练通过`, `checkpoint=${manifest.checkpointSha256}; previews=6/6`, terminal.path)
@@ -238,7 +239,7 @@ function validateManifest(manifest) {
   return issues
 }
 
-async function reviewPreviews(manifest) {
+async function reviewPreviews() {
   const files = fs.readdirSync(path.join(outputDir, "fixed-epoch-previews")).filter(v => v.endsWith(".png")).sort()
   if (files.length !== 6) throw new Error(`fixed_preview_count_${files.length}`)
   const sourceIndex = read(read(DATASET).sourceIndexPath)
@@ -270,7 +271,10 @@ function finalize(status, blockers, manifest, review) {
   return { ...terminal, path: project(terminalPath), sha256: hash(terminalPath), capsule: { path: project(capsulePath), sha256: hash(capsulePath) } }
 }
 
-function acquireLock() { fs.mkdirSync(path.dirname(lockPath), { recursive: true }); const fd = fs.openSync(lockPath, "wx"); fs.writeFileSync(fd, JSON.stringify({ pid: process.pid, runId: args.runId, stage })); fs.closeSync(fd); return () => { if (fs.existsSync(lockPath) && read(lockPath)?.runId === args.runId) fs.rmSync(lockPath) } }
+function acquireLock() {
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true })
+  return acquireExclusiveFileLock(lockPath, JSON.stringify({ pid: process.pid, runId: args.runId, stage }))
+}
 function expectedActions(value) { return ["create_optimizer", "execute_backward", "inspect_autoencoder_identity", "inspect_checkpoint_identity", "load_autoencoder", ...(value > 0 ? ["load_parent_denoiser"] : []), "mutate_model_weights", `run_stage${value}`].sort() }
 function parseArgs(values) { const out = {}; for (let i = 0; i < values.length; i++) { const key = values[i]; if (key === "--preflight-only") out.preflightOnly = true; else if (key.startsWith("--")) out[key.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = values[++i] } return out }
 function read(value) { try { return JSON.parse(fs.readFileSync(resolve(value), "utf8")) } catch { return null } }

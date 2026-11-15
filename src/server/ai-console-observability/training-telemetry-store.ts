@@ -30,6 +30,12 @@ const expectedColumns = [
   "record_sha256",
 ] as const
 
+const expectedInputFields = [
+  "runId", "executionId", "processId", "trainingStage", "epoch", "batchIndex", "batchCount",
+  "optimizationStep", "loss", "learningRate", "throughputSamplesPerSecond",
+  "estimatedCompletionAtUtc", "checkpointIdentity", "heartbeatAtUtc", "reporterIdentity",
+] as const
+
 export type AiConsoleTrainingTelemetryRecord = {
   sampleId: string
   sampleSequence: number
@@ -91,6 +97,14 @@ function assertNullableFinite(value: number | null, field: string, minimum = 0) 
 }
 
 function validateInput(input: AiConsoleTrainingTelemetryInput) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("ai_console_training_telemetry_input_fields_invalid")
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(input)
+  if (Reflect.ownKeys(descriptors).length !== expectedInputFields.length || expectedInputFields.some((key) =>
+    !descriptors[key] || !("value" in descriptors[key]) || !descriptors[key].enumerable)) {
+    throw new Error("ai_console_training_telemetry_input_fields_invalid")
+  }
   assertSafeIdentity(input.runId, "run_id")
   assertSafeIdentity(input.executionId, "execution_id")
   assertSafeIdentity(input.reporterIdentity, "reporter_identity")
@@ -147,7 +161,9 @@ function openWritableStore(storePath: string): DatabaseSync {
     verifyStore(database)
     return database
   } catch (error) {
-    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    try { database.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], "ai_console_training_telemetry_initialization_and_close_failed", { cause: error })
+    }
     throw error
   }
 }
@@ -228,8 +244,11 @@ export function recordAiConsoleTrainingTelemetry(
 ): AiConsoleTrainingTelemetryRecord {
   validateInput(input)
   const database = openWritableStore(getStorePath(options.storePath))
+  const errors: unknown[] = []
+  let transactionActive = false
   try {
     database.exec("BEGIN IMMEDIATE")
+    transactionActive = true
     const sequenceRow = database.prepare("SELECT COALESCE(MAX(sample_sequence), 0) AS latest_sequence FROM training_telemetry").get() as Record<string, unknown>
     const sampleSequence = Number(sequenceRow.latest_sequence) + 1
     const reportedAtUtc = new Date().toISOString()
@@ -242,6 +261,7 @@ export function recordAiConsoleTrainingTelemetry(
     const recordSha256 = sha256(recordPayload(unsigned))
     const sampleId = sha256(`${aiConsoleTrainingTelemetrySchemaVersion}:${input.runId}:${sampleSequence}:${recordSha256}`)
     const record: AiConsoleTrainingTelemetryRecord = { sampleId, ...unsigned, recordSha256 }
+    verifyRecord(record)
     database.prepare(`
       INSERT INTO training_telemetry VALUES (
         ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
@@ -269,13 +289,18 @@ export function recordAiConsoleTrainingTelemetry(
       record.recordSha256,
     )
     database.exec("COMMIT")
-    verifyRecord(record)
+    transactionActive = false
     return record
   } catch (error) {
-    try { database.exec("ROLLBACK") } catch { /* transaction did not start */ }
+    errors.push(error)
+    if (transactionActive) {
+      try { database.exec("ROLLBACK") } catch (rollbackError) { errors.push(rollbackError) }
+    }
     throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, "ai_console_training_telemetry_write_cleanup_failed", { cause: errors[0] })
   }
 }
 
@@ -294,6 +319,8 @@ export function readLatestAiConsoleTrainingTelemetry(
   }
 
   let database: DatabaseSync | null = null
+  let readFailed = false
+  let readError: unknown
   try {
     database = new DatabaseSync(storePath, { open: true, readOnly: true })
     verifyStore(database)
@@ -326,6 +353,8 @@ export function readLatestAiConsoleTrainingTelemetry(
       evidenceReferences: [aiConsoleTrainingTelemetryLogicalPath],
     }
   } catch (error) {
+    readFailed = true
+    readError = error
     return {
       status: "unknown_or_stale",
       latest: null,
@@ -334,6 +363,9 @@ export function readLatestAiConsoleTrainingTelemetry(
       evidenceReferences: [aiConsoleTrainingTelemetryLogicalPath],
     }
   } finally {
-    database?.close()
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], "ai_console_training_telemetry_read_and_close_failed", { cause: readError })
+      throw closeError
+    }
   }
 }

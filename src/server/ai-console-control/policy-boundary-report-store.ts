@@ -106,10 +106,16 @@ export function isAiConsolePolicyBoundaryReportStoreInitialized(): boolean {
 
 export function initializeAiConsolePolicyBoundaryReportStore(): AiConsolePolicyBoundaryReportStoreMetadata {
   const database = openWritableStore()
+  const errors: unknown[] = []
   try {
     return readAndVerifyMetadata(database)
+  } catch (error) {
+    errors.push(error)
+    throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'initialize_ai_console_policy_boundary_report_store_operation_and_cleanup_failed', { cause: errors[0] })
   }
 }
 
@@ -124,6 +130,8 @@ export function writeAiConsolePolicyBoundaryReport(
   const policyBoundaryReportId = sha256Text(`ai_console_policy_boundary_report_v1\n${contentSha256}`)
   const database = openWritableStore()
 
+  const errors: unknown[] = []
+  let transactionActive = false
   try {
     const existingRow = database.prepare(`${reportSelectSql} WHERE boundary_event_id = ?`).get(input.boundaryEventId)
     if (existingRow) {
@@ -170,17 +178,22 @@ export function writeAiConsolePolicyBoundaryReport(
     }
 
     database.exec("BEGIN IMMEDIATE")
-    try {
-      insertReport(database, record, contentBlob)
-      updateMetadata(database, metadata, record)
-      database.exec("COMMIT")
-    } catch (error) {
-      database.exec("ROLLBACK")
-      throw error
-    }
+    transactionActive = true
+    insertReport(database, record, contentBlob)
+    updateMetadata(database, metadata, record)
+    database.exec("COMMIT")
+    transactionActive = false
     return record
+  } catch (error) {
+    errors.push(error)
+    if (transactionActive) {
+      try { database.exec("ROLLBACK") } catch (rollbackError) { errors.push(rollbackError) }
+    }
+    throw error
   } finally {
-    database.close()
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'write_ai_console_policy_boundary_report_operation_and_cleanup_failed', { cause: errors[0] })
   }
 }
 
@@ -195,6 +208,8 @@ export function readAiConsolePolicyBoundaryReportStore(): AiConsolePolicyBoundar
   }
 
   let database: DatabaseSync | null = null
+  let readFailed = false
+  let readError: unknown
   try {
     database = new DatabaseSync(storePath, { open: true, readOnly: true })
     verifyDatabaseIntegrity(database)
@@ -223,13 +238,18 @@ export function readAiConsolePolicyBoundaryReportStore(): AiConsolePolicyBoundar
       ],
     }
   } catch (error) {
+    readFailed = true
+    readError = error
     return {
       status: "unknown_or_stale",
       reasonCode: error instanceof Error ? error.message : "ai_console_policy_boundary_report_store_read_failed",
       evidenceReferences: [policyBoundaryReportStoreLogicalPath],
     }
   } finally {
-    database?.close()
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], 'read_ai_console_policy_boundary_report_store_read_and_close_failed', { cause: readError })
+      throw closeError
+    }
   }
 }
 
@@ -349,7 +369,9 @@ function openWritableStore(): DatabaseSync {
     database.exec("PRAGMA user_version = 1")
     return database
   } catch (error) {
-    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    try { database.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'policy_boundary_report_store_initialization_and_close_failed', { cause: error })
+    }
     throw error
   }
 }

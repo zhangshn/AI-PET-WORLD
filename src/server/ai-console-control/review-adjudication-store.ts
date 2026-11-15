@@ -194,7 +194,15 @@ type StoredReviewResult = AiConsoleMachineReviewResultRecord & { creationContent
 
 export function initializeAiConsoleReviewAdjudicationStore(): AiConsoleReviewAdjudicationMetadata {
   const database = openWritableStore()
-  try { return readAndVerifyMetadata(database) } finally { database.close() }
+  const errors: unknown[] = []
+  try { return readAndVerifyMetadata(database) } catch (error) {
+    errors.push(error)
+    throw error
+  } finally {
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'initialize_ai_console_review_adjudication_store_operation_and_cleanup_failed', { cause: errors[0] })
+  }
 }
 
 export function executeAiConsoleReviewCommand(input: AiConsoleReviewCommandInput): AiConsoleReviewCommandResult {
@@ -202,6 +210,8 @@ export function executeAiConsoleReviewCommand(input: AiConsoleReviewCommandInput
   const inputSha256 = sha256Text(JSON.stringify(normalizedCommandInput(input)))
   const commandId = sha256Text(`${input.actorIdentity}\n${input.commandType}\n${input.idempotencyKeySha256}`)
   const database = openWritableStore()
+  const errors: unknown[] = []
+  let transactionActive = false
   try {
     const existingRow = database.prepare(`${receiptSelectSql} WHERE command_id = ?`).get(commandId)
     if (existingRow) {
@@ -309,22 +319,34 @@ export function executeAiConsoleReviewCommand(input: AiConsoleReviewCommandInput
     }
     const receipt = { ...unsignedReceipt, commandReceiptSha256: sha256Text(JSON.stringify(unsignedReceipt)) }
     database.exec("BEGIN IMMEDIATE")
-    try {
-      if (event && input.commandType === "register_review_contract" && reviewContract) insertContract(database, reviewContract, creationContentBlob as Uint8Array)
-      if (event && input.commandType === "register_machine_review_observation" && reviewResult) insertResult(database, reviewResult, creationContentBlob as Uint8Array)
-      if (event) insertEvent(database, event)
-      insertReceipt(database, receipt)
-      updateMetadata(database, metadata, receipt, event, input.commandType)
-      database.exec("COMMIT")
-    } catch (error) { database.exec("ROLLBACK"); throw error }
+    transactionActive = true
+    if (event && input.commandType === "register_review_contract" && reviewContract) insertContract(database, reviewContract, creationContentBlob as Uint8Array)
+    if (event && input.commandType === "register_machine_review_observation" && reviewResult) insertResult(database, reviewResult, creationContentBlob as Uint8Array)
+    if (event) insertEvent(database, event)
+    insertReceipt(database, receipt)
+    updateMetadata(database, metadata, receipt, event, input.commandType)
+    database.exec("COMMIT")
+    transactionActive = false
     return { receipt, reviewContract, reviewResult, event, replayed: false, httpStatus: succeeded ? 201 : 409 }
-  } finally { database.close() }
+  } catch (error) {
+    errors.push(error)
+    if (transactionActive) {
+      try { database.exec("ROLLBACK") } catch (rollbackError) { errors.push(rollbackError) }
+    }
+    throw error
+  } finally {
+    try { database.close() } catch (closeError) { errors.push(closeError) }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'execute_ai_console_review_command_operation_and_cleanup_failed', { cause: errors[0] })
+  }
 }
 
 export function readAiConsoleReviewAdjudicationStore(): AiConsoleReviewAdjudicationRead {
   const storePath = getStorePath()
   if (!existsSync(storePath)) return { status: "not_connected", reasonCode: "ai_console_review_adjudication_store_not_initialized", evidenceReferences: [reviewAdjudicationStoreLogicalPath] }
   let database: DatabaseSync | null = null
+  let readFailed = false
+  let readError: unknown
   try {
     database = new DatabaseSync(storePath, { open: true, readOnly: true })
     verifyDatabaseIntegrity(database); verifyDatabaseVersion(database); verifyDatabaseSchema(database)
@@ -336,8 +358,15 @@ export function readAiConsoleReviewAdjudicationStore(): AiConsoleReviewAdjudicat
     verifyStoreRecords(metadata, contracts, results, events, receipts)
     return { status: "connected", metadata, reviewContracts: contracts.map(stripContractBlob), reviewResults: results.map(stripResultBlob), events: [...events].reverse(), receipts: [...receipts].reverse(), evidenceReferences: [reviewAdjudicationStoreLogicalPath, "data/ai-console/schemas/ai-console-review-adjudication-v1.schema.json"] }
   } catch (error) {
+    readFailed = true
+    readError = error
     return { status: "unknown_or_stale", reasonCode: error instanceof Error ? error.message : "ai_console_review_adjudication_store_read_failed", evidenceReferences: [reviewAdjudicationStoreLogicalPath] }
-  } finally { database?.close() }
+  } finally {
+    try { database?.close() } catch (closeError) {
+      if (readFailed) throw new AggregateError([readError, closeError], 'read_ai_console_review_adjudication_store_read_and_close_failed', { cause: readError })
+      throw closeError
+    }
+  }
 }
 
 function contractCreationContent(input: Extract<AiConsoleReviewCommandInput, { commandType: "register_review_contract" }>) {
@@ -391,7 +420,9 @@ function openWritableStore(): DatabaseSync {
     database.exec("PRAGMA user_version = 1")
     return database
   } catch (error) {
-    try { database.close() } catch { /* Preserve the initialization failure. */ }
+    try { database.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'review_adjudication_store_initialization_and_close_failed', { cause: error })
+    }
     throw error
   }
 }

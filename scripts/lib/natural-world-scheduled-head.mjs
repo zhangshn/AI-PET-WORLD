@@ -40,12 +40,17 @@ function ledgerSnapshot(root){
     if(!fs.existsSync(target))continue
     const s=fs.lstatSync(target);need(s.isFile()&&!s.isSymbolicLink()&&s.nlink===1&&s.size<=4*1024*1024&&fs.realpathSync(target)===target,'head_scheduled_sqlite_path')
   }
-  const db=new DatabaseSync(p,{readOnly:true})
+  const db=new DatabaseSync(p,{readOnly:true}),errors=[]
   try{
     db.exec('PRAGMA query_only=ON; BEGIN')
     return {current:db.prepare('SELECT * FROM service WHERE id=1').get(),slots:db.prepare('SELECT * FROM slots ORDER BY target_tick LIMIT 28').all(),
       batches:db.prepare('SELECT * FROM batches ORDER BY seq LIMIT 15').all()}
-  }finally{db.close()}
+  }catch(error){errors.push(error)}
+  finally{
+    try{db.close()}catch(error){errors.push(error)}
+    if(errors.length===1)throw errors[0]
+    if(errors.length>1)throw new AggregateError(errors,'Scheduled ledger read and close failed',{cause:errors[0]})
+  }
 }
 
 export function checkScheduledLedger(a,ledger,contract,marker,head){

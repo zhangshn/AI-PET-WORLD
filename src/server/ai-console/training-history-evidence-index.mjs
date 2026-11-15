@@ -30,7 +30,9 @@ function openIndex(root, readOnly) {
     if (!readOnly && !db.prepare('PRAGMA table_info(queue)').all().some(column => column.name === 'priority')) db.exec('ALTER TABLE queue ADD COLUMN priority INTEGER NOT NULL DEFAULT 0')
     return db
   } catch (error) {
-    try { db.close() } catch { /* Preserve the initialization failure. */ }
+    try { db.close() } catch (closeError) {
+      throw new AggregateError([error, closeError], 'training_history_evidence_index_initialization_and_close_failed', { cause: error })
+    }
     throw error
   }
 }

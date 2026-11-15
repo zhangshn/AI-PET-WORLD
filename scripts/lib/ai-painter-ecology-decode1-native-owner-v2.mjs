@@ -1,3 +1,4 @@
+import { writeExclusiveEvidence } from './exclusive-evidence-write.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,7 @@ const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const buildFailures=new WeakMap();
 export function nativeBuildFailureObservation(error){return buildFailures.get(error)??null;}
 export function nativeOwnerSourceIdentity(){return {path:sourcePath,sha256:digest(fs.readFileSync(sourcePath))};}
-function put(file,bytes){const fd=fs.openSync(file,'wx');try{fs.writeFileSync(fd,bytes);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}}
+function put(file, bytes) { return writeExclusiveEvidence(file, bytes); }
 
 // A fresh build per invocation avoids accepting an executable from a writable cache.
 // These hashes record actual build inputs/outputs; they are not cleanup authorization.

@@ -96,7 +96,7 @@ validateTaskAndEvidence({
   capacitySlot,
   conditionLabel,
 })
-validateUniqueness({ record, taskPackage, capacitySlot, conditionLabel })
+validateUniqueness({ record, capacitySlot, conditionLabel })
 
 const timestamp = new Date().toISOString()
 const contributionId = `ai-assisted-v7-capacity-contribution-${capacitySlot.slotId}-${timestamp.replace(/[:.]/g, "-")}`
@@ -313,7 +313,7 @@ function validateTaskAndEvidence(input) {
   assert(ownerReview.decision === "owner_approved" && ownerReview.imageSha256 === value.originalImage.sha256, "owner review invalid")
 }
 
-function validateUniqueness({ record: value, taskPackage, capacitySlot, conditionLabel }) {
+function validateUniqueness({ record: value, capacitySlot, conditionLabel }) {
   const index = readJson(INDEX_PATH)
   for (const summary of index.records ?? []) {
     if (summary.recordId === value.recordId || !summary.recordPath || !fs.existsSync(resolveProjectPath(summary.recordPath))) continue

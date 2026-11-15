@@ -65,14 +65,14 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
     return cursor
   }
   function read(logical,expected=null,max=MAX_JSON) {
-    const file=physical(logical),before=fs.lstatSync(file)
+    const file=physical(logical),before=fs.lstatSync(file,{bigint:true})
     const mixedSource=/^\.runtime\/ai-painter\/learning-capacity-experiments\/[A-Za-z0-9-]+\/package\.json$/.test(logical)
     const programSnapshot=/^\.runtime\/local-backup\/work-recording\/evidence\/program\/[a-f0-9]{64}\.json$/.test(logical)
     const extended=max===MAX_JSON&&/^[a-f0-9]{64}$/.test(expected??'')&&(mixedSource||programSnapshot)
     const ceiling=extended?MAX_MIXED_PACKAGE_JSON:max
     need(before.isFile()&&before.size<=ceiling,'work_evidence_limit',409)
-    const bytes=fs.readFileSync(file),after=fs.lstatSync(file),sha256=hash(bytes)
-    need(before.ino===after.ino&&before.dev===after.dev&&before.size===after.size&&before.mtimeMs===after.mtimeMs,'work_evidence_changed',409)
+    const bytes=fs.readFileSync(file),after=fs.lstatSync(file,{bigint:true}),sha256=hash(bytes)
+    need(before.ino===after.ino&&before.dev===after.dev&&before.size===after.size&&before.mtimeNs===after.mtimeNs,'work_evidence_changed',409)
     if(expected!==null)need(sha256===expected,'work_evidence_sha_conflict',409)
     let value
     try{value=JSON.parse(bytes.toString('utf8'))}catch{throw new ModuleError('work_evidence_json_invalid',409)}
@@ -346,16 +346,20 @@ function buildContext(projectRoot, providedStore, testReader, privateFixture) {
     const tx=read(REG+'/transactions/'+head.transactionId+'/transaction.json').value
     need(tx.schemaVersion==='ai-painter-current-execution-registry-transaction-v1'&&tx.status==='committed'&&tx.transactionId===head.transactionId&&tx.registryRevision===head.registryRevision&&tx.eventSequence===head.eventSequence&&tx.currentSha256===original.sha256,'work_registry_transaction_conflict',409)
     read(REG+'/transactions/'+head.transactionId+'/current.staged.json',original.sha256)
-    const db=new DatabaseSync(physical(REG+'/registry.sqlite'),{readOnly:true})
+    const db=new DatabaseSync(physical(REG+'/registry.sqlite'),{readOnly:true}),errors=[]
     try {
       const row=db.prepare('SELECT * FROM registry_revisions WHERE registry_revision=?').get(head.registryRevision)
       const transaction=db.prepare('SELECT * FROM registry_transactions WHERE transaction_id=?').get(head.transactionId)
       need(row?.transaction_id===head.transactionId&&row.event_sequence===head.eventSequence&&row.current_sha256===original.sha256&&row.run_id===head.runId&&transaction?.status==='committed'&&transaction.current_sha256===original.sha256,'work_registry_database_conflict',409)
-    }finally{db.close()}
-    const file=physical(REG+'/events.jsonl'),before=fs.lstatSync(file)
+    }catch(error){errors.push(error)}finally{
+      try{db.close()}catch(error){errors.push(error)}
+    }
+    if(errors.length===1)throw errors[0]
+    if(errors.length>1)throw new AggregateError(errors,'Registry read and close failed',{cause:errors[0]})
+    const file=physical(REG+'/events.jsonl'),before=fs.lstatSync(file,{bigint:true})
     need(before.isFile()&&before.size<=MAX_JSON,'work_registry_events_limit',409)
-    const bytes=fs.readFileSync(file),after=fs.lstatSync(file)
-    need(bytes.length<=MAX_JSON&&before.ino===after.ino&&before.size===after.size&&before.mtimeMs===after.mtimeMs,'work_registry_events_changed',409)
+    const bytes=fs.readFileSync(file),after=fs.lstatSync(file,{bigint:true})
+    need(bytes.length<=MAX_JSON&&before.ino===after.ino&&before.dev===after.dev&&before.size===after.size&&before.mtimeNs===after.mtimeNs,'work_registry_events_changed',409)
     const matches=bytes.toString('utf8').split('\n').filter(Boolean).map(line=>JSON.parse(line)).filter(e=>e.eventSequence===head.eventSequence)
     need(matches.length===1&&matches[0].schemaVersion==='ai-painter-current-execution-registry-event-v1'&&matches[0].registryRevision===head.registryRevision&&matches[0].transactionId===head.transactionId&&matches[0].currentSha256===original.sha256&&matches[0].runId===head.runId,'work_registry_event_conflict',409)
     read(REG+'/current.json',original.sha256)

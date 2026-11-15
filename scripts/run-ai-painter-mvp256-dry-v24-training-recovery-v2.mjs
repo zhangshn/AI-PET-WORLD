@@ -288,7 +288,7 @@ const productionRegistry = {
 }
 
 async function advanceRegistry(registry, root, { runId, packageId, outputRoot,
-  evidence, programBindings, activeExecution, status, state, nextAction = null,
+  evidence, activeExecution, status, state, nextAction = null,
   latestTrainingTerminal = null }) {
   const current = await registry.read(root)
   assert.equal(current.ok, true, current.errorCode ?? "current registry invalid")

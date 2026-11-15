@@ -40,18 +40,18 @@ export function createCapabilityCandidate(spec, { root = process.cwd(), recorded
   fs.mkdirSync(path.join(candidateRoot, "evidence"), { recursive: false });
   const sqlitePath = path.join(candidateRoot, "lifecycle.sqlite");
   const db = openDb(sqlitePath);
-  let transactionFailed = false;
+  const databaseFailures = [];
   try {
     db.exec("BEGIN IMMEDIATE");
     db.prepare("INSERT INTO capabilities(capability_version, state, change_class, created_at_utc, updated_at_utc, owner_response_required) VALUES (?, 'change_candidate', ?, ?, ?, 0)").run(spec.capabilityVersion, spec.changeClass, recordedAtUtc, recordedAtUtc);
     db.prepare("INSERT INTO lifecycle_transitions(capability_version, sequence, from_state, to_state, recorded_at_utc, evidence_sha256) VALUES (?, 0, NULL, 'change_candidate', ?, NULL)").run(spec.capabilityVersion, recordedAtUtc);
     db.exec("COMMIT");
   } catch (error) {
-    transactionFailed = true;
-    try { db.exec("ROLLBACK"); } catch { /* Preserve the first transaction failure. */ }
+    databaseFailures.push(error);
+    try { db.exec("ROLLBACK"); } catch (rollbackError) { databaseFailures.push(rollbackError); }
     throw error;
   } finally {
-    try { db.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+    closeLifecycleDatabase(db, databaseFailures);
   }
   const state = stateOf(spec, "change_candidate", 0, recordedAtUtc, null);
   writeAtomic(path.join(candidateRoot, "state.json"), state);
@@ -244,7 +244,7 @@ function reconcileLifecycleDatabase({
   isSameStateEvidenceRefresh,
 }) {
   const db = openDb(sqlitePath);
-  let transactionFailed = false;
+  const databaseFailures = [];
   let transactionOpen = false;
   try {
     db.exec("BEGIN IMMEDIATE");
@@ -341,11 +341,11 @@ function reconcileLifecycleDatabase({
     transactionOpen = false;
     return committed;
   } catch (error) {
-    transactionFailed = true;
-    try { if (transactionOpen) db.exec("ROLLBACK"); } catch { /* Preserve the first transaction failure. */ }
+    databaseFailures.push(error);
+    try { if (transactionOpen) db.exec("ROLLBACK"); } catch (rollbackError) { databaseFailures.push(rollbackError); }
     throw error;
   } finally {
-    try { db.close(); } catch (closeError) { if (!transactionFailed) throw closeError; }
+    closeLifecycleDatabase(db, databaseFailures);
   }
 }
 
@@ -442,6 +442,14 @@ function verifyBinding(root, binding) {
   assert(sha256File(absolute) === binding.sha256, `evidence SHA-256 mismatch: ${binding.path}`);
 }
 
+// Keep the original failure first, including falsy thrown values, without mutating it.
+function closeLifecycleDatabase(db, failures) {
+  try { db.close(); } catch (error) { failures.push(error); }
+  if (failures.length > 1) throw new AggregateError(failures,
+    "capability_lifecycle_database_cleanup_failed", { cause: failures[0] });
+  if (failures.length === 1) throw failures[0];
+}
+
 function openDb(sqlitePath) {
   const db = new DatabaseSync(sqlitePath);
   try {
@@ -450,8 +458,7 @@ function openDb(sqlitePath) {
     CREATE TABLE IF NOT EXISTS lifecycle_transitions(capability_version TEXT NOT NULL, sequence INTEGER NOT NULL, from_state TEXT, to_state TEXT NOT NULL, recorded_at_utc TEXT NOT NULL, evidence_sha256 TEXT, PRIMARY KEY(capability_version, sequence));`);
     return db;
   } catch (error) {
-    try { db.close() } catch { /* Preserve the initialization failure. */ }
-    throw error
+    closeLifecycleDatabase(db, [error]);
   }
 }
 function stateOf(spec, state, sequence, updatedAtUtc, latestEvidence) { return { schemaVersion: "ai-painter-capability-lifecycle-state-v1", capabilityVersion: spec.capabilityVersion, changeClass: spec.changeClass, state, sequence, latestEvidence, releaseIdentity: null, ownerAuthorizationRequired: false, ownerResponseRequired: false, updatedAtUtc }; }
@@ -469,27 +476,47 @@ function writeAtomic(file, value) { writeTextAtomic(file, `${JSON.stringify(valu
 function writeTextAtomic(file, text) {
   const temporary = `${file}.tmp-${process.pid}-${crypto.randomUUID()}`;
   let descriptor = null;
+  let temporaryCreated = false;
+  const errors = [];
   try {
     descriptor = fs.openSync(temporary, "wx");
+    temporaryCreated = true;
     fs.writeFileSync(descriptor, text, "utf8");
     fs.fsyncSync(descriptor);
-    fs.closeSync(descriptor);
+    const closingDescriptor = descriptor;
     descriptor = null;
+    fs.closeSync(closingDescriptor);
     fs.renameSync(temporary, file);
+    temporaryCreated = false;
     syncDirectoryBestEffort(path.dirname(file));
+  } catch (error) {
+    errors.push(error);
   } finally {
-    if (descriptor !== null) fs.closeSync(descriptor);
-    if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+    if (descriptor !== null) {
+      const closingDescriptor = descriptor;
+      descriptor = null;
+      try { fs.closeSync(closingDescriptor); } catch (error) { errors.push(error); }
+    }
+    if (temporaryCreated) {
+      try { fs.unlinkSync(temporary); } catch (error) { if (error?.code !== "ENOENT") errors.push(error); }
+    }
   }
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors, "Capability record write or cleanup failed", { cause: errors[0] });
 }
 function writeExclusive(file, value) {
   const descriptor = fs.openSync(file, "wx");
+  const errors = [];
   try {
     fs.writeFileSync(descriptor, `${JSON.stringify(value, null, 2)}\n`, "utf8");
     fs.fsyncSync(descriptor);
+  } catch (error) {
+    errors.push(error);
   } finally {
-    fs.closeSync(descriptor);
+    try { fs.closeSync(descriptor); } catch (error) { errors.push(error); }
   }
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors, "Capability exclusive write or cleanup failed", { cause: errors[0] });
   syncDirectoryBestEffort(path.dirname(file));
 }
 function writeExclusiveOrVerify(file, value, conflictMessage) {

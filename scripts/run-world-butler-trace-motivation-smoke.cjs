@@ -4,6 +4,7 @@
   const moduleApi = await import("node:module")
   const path = await import("node:path")
   const ts = await import("typescript")
+  const { installWorldSmokeTypeScriptRequireHook } = await import("./lib/world-smoke-typescript-hook.cjs")
   const repoRoot = process.cwd()
   const localRequire = moduleApi.createRequire(__filename)
   const savePath = resolveRuntimeSavePath({
@@ -48,41 +49,7 @@
   }
 
   function installTypeScriptRequireHook() {
-    const moduleConstructor = moduleApi.default
-    const originalResolveFilename = moduleConstructor._resolveFilename
-
-    moduleConstructor._resolveFilename = function resolveFilename(
-      request,
-      parent,
-      isMain,
-      options
-    ) {
-      if (request.startsWith("@/")) {
-        return originalResolveFilename.call(
-          this,
-          path.join(repoRoot, "src", request.slice(2)),
-          parent,
-          isMain,
-          options
-        )
-      }
-
-      return originalResolveFilename.call(this, request, parent, isMain, options)
-    }
-
-    localRequire.extensions[".ts"] = function compileTypescript(module, filename) {
-      const source = fs.readFileSync(filename, "utf8")
-      const output = ts.transpileModule(source, {
-        compilerOptions: {
-          esModuleInterop: true,
-          module: ts.ModuleKind.CommonJS,
-          target: ts.ScriptTarget.ES2022,
-        },
-        fileName: filename,
-      }).outputText
-
-      module._compile(output, filename)
-    }
+    installWorldSmokeTypeScriptRequireHook({ moduleApi, path, repoRoot, localRequire, fs, ts })
   }
 
   function assertNoForbiddenArchitecture() {

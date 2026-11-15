@@ -295,19 +295,26 @@ async function writeAtomic(filePath: string, value: unknown): Promise<void> {
 
 async function writeExclusive(filePath: string, bytes: string): Promise<void> {
   const handle = await open(filePath, "wx")
+  const errors: unknown[] = []
   try {
     await handle.writeFile(bytes, "utf8")
     await handle.sync()
+  } catch (error) {
+    errors.push(error)
   } finally {
-    await handle.close()
+    try { await handle.close() } catch (error) { errors.push(error) }
+  }
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1) {
+    throw new AggregateError(errors, `game_map_frame_write_and_close_failed: ${errors.map(error => error instanceof Error ? error.message : String(error)).join("; ")}`, { cause: errors[0] })
   }
 }
 
 async function releaseOwnedLock(
   handle: Awaited<ReturnType<typeof open>>, filePath: string, bytes: string
 ): Promise<void> {
-  const owned = await handle.stat()
-  const current = await lstat(filePath)
+  const owned = await handle.stat({ bigint: true })
+  const current = await lstat(filePath, { bigint: true })
   if (!current.isFile() || current.isSymbolicLink() || owned.dev !== current.dev || owned.ino !== current.ino ||
       await readFile(resolveRuntimePath(filePath), "utf8") !== bytes) {
     throw storeError("game_map_runtime_frame_lock_identity_conflict")

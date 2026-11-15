@@ -239,6 +239,69 @@ test("CLI performs the same CPU-only reconciliation in an isolated project root"
   });
 });
 
+for (const operation of ["create", "advance"]) {
+  for (const phase of ["initialize", "query", "commit"]) {
+    test(`lifecycle ${operation}: preserves ${phase}, rollback and close failures without publishing success`, (t) => {
+      withFixture((fixture) => {
+        const sources = collectStage4V2LifecycleSources({
+          projectRoot: fixture.root, cpuAcceptanceTerminalPath: fixture.cpuTerminalPath,
+        });
+        const spec = buildStage4V2CandidateSpec(sources);
+        const evidence = buildStage4V2IsolatedImplementationEvidence(sources);
+        if (operation === "advance") createCapabilityCandidate(spec, { root: fixture.root });
+        const stateFiles = ["state.json", "candidate.json", "event-ledger.jsonl"]
+          .map(name => fixture.absolute(`${STAGE4_V2_LIFECYCLE_ROOT}/${name}`));
+        const before = stateFiles.map(file => fs.existsSync(file) ? fs.readFileSync(file) : null);
+        const currentBefore = sha256File(fixture.absolute(CURRENT_PATH));
+        const primary = Object.freeze(new Error(`fixture ${phase} failed`));
+        const rollback = new Error("fixture rollback failed"), cleanup = new Error("fixture close failed");
+        const originalExec = DatabaseSync.prototype.exec, originalPrepare = DatabaseSync.prototype.prepare;
+        const originalClose = DatabaseSync.prototype.close;
+        let rollbackCalls = 0, closeCalls = 0;
+        t.mock.method(DatabaseSync.prototype, "exec", function (sql) {
+          if ((phase === "initialize" && sql.startsWith("PRAGMA")) || (phase === "commit" && sql === "COMMIT")) throw primary;
+          if (sql === "ROLLBACK") { rollbackCalls++; throw rollback; }
+          return originalExec.call(this, sql);
+        });
+        t.mock.method(DatabaseSync.prototype, "prepare", function (sql) {
+          if (phase === "query") throw primary;
+          return originalPrepare.call(this, sql);
+        });
+        t.mock.method(DatabaseSync.prototype, "close", function () {
+          closeCalls++; originalClose.call(this); throw cleanup;
+        });
+        try {
+          const expected = [primary, ...(phase === "initialize" ? [] : [rollback]), cleanup];
+          assert.throws(() => operation === "create"
+            ? createCapabilityCandidate(spec, { root: fixture.root })
+            : advanceCapabilityLifecycle({ root: fixture.root, capabilityVersion: spec.capabilityVersion,
+              targetState: "isolated_implementation", evidence }),
+          error => error instanceof AggregateError && error.cause === primary &&
+            error.errors.length === expected.length && expected.every((value, i) => error.errors[i] === value));
+          assert.equal(closeCalls, 1);
+          assert.equal(rollbackCalls, phase === "initialize" ? 0 : 1);
+          for (let i = 0; i < stateFiles.length; i++) {
+            if (before[i] === null) assert.equal(fs.existsSync(stateFiles[i]), false);
+            else assert.deepEqual(fs.readFileSync(stateFiles[i]), before[i]);
+          }
+          assert.equal(sha256File(fixture.absolute(CURRENT_PATH)), currentBefore);
+        } finally { t.mock.restoreAll(); }
+        const db = new DatabaseSync(fixture.absolute(`${STAGE4_V2_LIFECYCLE_ROOT}/lifecycle.sqlite`));
+        try {
+          assert.equal(db.prepare("SELECT 1 AS value").get().value, 1);
+          if (operation === "advance") {
+            assert.equal(db.prepare("SELECT state FROM capabilities").get().state, "change_candidate");
+            assert.equal(db.prepare("SELECT COUNT(*) AS count FROM lifecycle_transitions").get().count, 1);
+          } else if (phase !== "initialize") {
+            assert.equal(db.prepare("SELECT COUNT(*) AS count FROM capabilities").get().count, 0);
+            assert.equal(db.prepare("SELECT COUNT(*) AS count FROM lifecycle_transitions").get().count, 0);
+          }
+        } finally { db.close(); }
+      });
+    });
+  }
+}
+
 function withFixture(run) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ai-pet-world-stage4-v2-lifecycle-"));
   const resolvedTemp = path.resolve(os.tmpdir());

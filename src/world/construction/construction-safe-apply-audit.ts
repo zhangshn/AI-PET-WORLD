@@ -1,9 +1,9 @@
+import { fingerprintMapPlacements as fingerprintPlacements } from "@/world/map-state/map-placement-fingerprint"
 /**
  * 当前文件职责：审计 Construction SafeApply 的输入与输出边界。
  */
 
 import type {
-  HomeMapState,
   MapDiff,
 } from "@/world/map-state/home-map-state-schema"
 
@@ -180,26 +180,12 @@ function buildStableSafeApplyFingerprint(input: {
     String(input.safeApplyInput.now),
     `accepted:${acceptedDiffIds}`,
     `rejected:${rejectedDiffIds}`,
-    fingerprintPlacements(input.resultWithoutAudit.nextHomeMapState),
+    fingerprintPlacements(input.resultWithoutAudit.nextHomeMapState.placements),
     fingerprintMapDiffs(input.resultWithoutAudit.nextHomeMapState.mapDiffs),
   ].join("::")
 }
 
-function fingerprintPlacements(homeMapState: HomeMapState): string {
-  return homeMapState.placements
-    .map((placement) =>
-      [
-        placement.id,
-        placement.layer,
-        String(placement.x),
-        String(placement.y),
-        String(placement.alpha),
-        placement.tags.slice().sort().join("+"),
-      ].join(":")
-    )
-    .sort()
-    .join("|")
-}
+
 
 function fingerprintMapDiffs(mapDiffs: MapDiff[]): string {
   return mapDiffs

@@ -43,3 +43,46 @@ test('local task lock initialization preserves the primary error if close report
   assert.throws(f.begin,error=>error===original)
   assert.throws(()=>stat(owned),error=>error.code==='EBADF');assert(fs.existsSync(f.lock))
 })
+
+for (const stage of ['start', 'terminal']) for (const release of ['healthy', 'foreign-lock', 'unlink-failure']) {
+  test(`local task ${stage} keeps record failure and ${release} evidence`, t => {
+    const f = fixture(t), open = fs.openSync, write = fs.writeFileSync, unlink = fs.unlinkSync
+    const run = stage === 'terminal' ? f.begin() : null
+    const primary = Object.assign(new Error('private record write failure'), { code: 'EIO' })
+    const cleanup = Object.assign(new Error('private lock unlink failure'), { code: 'EACCES' })
+    let recordFd, injected = false
+    t.mock.method(fs, 'openSync', (file, ...args) => {
+      const fd = open(file, ...args)
+      if (typeof file === 'string' && path.basename(file).startsWith(`.${stage}.json.`)) recordFd = fd
+      return fd
+    })
+    t.mock.method(fs, 'writeFileSync', (file, ...args) => {
+      if (file !== recordFd || injected) return write(file, ...args)
+      injected = true
+      if (release === 'foreign-lock') write(f.lock, JSON.stringify({ taskId: 'foreign-owner' }))
+      throw primary
+    })
+    t.mock.method(fs, 'unlinkSync', file => {
+      if (file === f.lock && release === 'unlink-failure') throw cleanup
+      return unlink(file)
+    })
+    assert.throws(() => run ? run.complete('private completion') : f.begin(), error => {
+      if (release === 'healthy') return error === primary
+      assert.equal(error.name, 'AggregateError')
+      assert.equal(error.cause, primary)
+      assert.equal(error.errors.length, 2)
+      assert.equal(error.errors[0], primary)
+      if (release === 'foreign-lock') assert.equal(error.errors[1].code, 'task_mutex_identity_changed')
+      else assert.equal(error.errors[1], cleanup)
+      return true
+    })
+    assert(injected)
+    assert.equal(fs.existsSync(f.lock), release !== 'healthy')
+    if (release === 'foreign-lock') assert.equal(JSON.parse(fs.readFileSync(f.lock, 'utf8')).taskId, 'foreign-owner')
+    if (run) {
+      assert(!fs.existsSync(run.terminalPath))
+      assert.equal(JSON.parse(fs.readFileSync(run.statePath, 'utf8')).status, 'simulation_started')
+      assert(!fs.existsSync(path.join(f.root, 'latest.json')))
+    }
+  })
+}

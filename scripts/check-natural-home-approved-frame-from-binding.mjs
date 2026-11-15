@@ -1,3 +1,4 @@
+import { buildSourceFactIds } from "./lib/legacy-runtime-source-facts.mjs"
 import fs from "node:fs"
 import path from "node:path"
 import { createHash } from "node:crypto"
@@ -21,36 +22,6 @@ function decodeDataImageUrl(imageUrl) {
   const match = /^data:image\/png;base64,(.+)$/i.exec(imageUrl)
   assert(match, "approved frame imageUrl must be a PNG data URL")
   return Buffer.from(match[1], "base64")
-}
-
-function buildSourceFactIds(saveRecord) {
-  const homeMapState = saveRecord.homeMapState ?? {}
-  const zones = Array.isArray(homeMapState.zones) ? homeMapState.zones : []
-  const placements = Array.isArray(homeMapState.placements) ? homeMapState.placements : []
-  const constructionPlans = Array.isArray(homeMapState.constructionPlans)
-    ? homeMapState.constructionPlans
-    : []
-  const mapDiffs = Array.isArray(homeMapState.mapDiffs) ? homeMapState.mapDiffs : []
-  const recentEvents = Array.isArray(saveRecord.recentEvents) ? saveRecord.recentEvents : []
-  const connectivity = homeMapState.worldConnectivity ?? null
-
-  return [
-    saveRecord.worldId,
-    ...zones.map((zone) => zone.id),
-    ...placements.map((placement) => placement.id),
-    ...constructionPlans.map((plan) => plan.id),
-    ...mapDiffs.map((diff) => diff.id),
-    ...recentEvents.map((event) => event.id),
-    ...buildConnectivityFactIds(connectivity),
-  ].filter((id) => typeof id === "string" && id.trim().length > 0)
-}
-
-function buildConnectivityFactIds(connectivity) {
-  if (!connectivity) return []
-  return [connectivity.contractId, connectivity.blueprintId, connectivity.currentRegion?.regionId,
-    ...(connectivity.currentRegion?.neighborRegionIds ?? []), ...(connectivity.currentRegion?.edgePorts ?? []),
-    connectivity.pathGraph?.pathGraphId, connectivity.hydrologyGraph?.hydrologyGraphId,
-    connectivity.walkableGraph?.walkableGraphId]
 }
 
 function sameStringSet(left, right) {

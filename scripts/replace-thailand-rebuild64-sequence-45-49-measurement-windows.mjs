@@ -125,7 +125,6 @@ try {
   );
 
   const parentPointer = readJson(WINDOW_PLAN_POINTER_PATH);
-  const pointedPlan = readJson(parentPointer.runPath);
   const parentPlanPath = parentPointer.runPath;
   const parentPlan = readJson(parentPlanPath);
   const candidatePackage = readJson(parentPlan.candidateWindowsPath);

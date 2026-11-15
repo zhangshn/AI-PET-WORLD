@@ -135,7 +135,7 @@ function publishHeartbeat(context,identity){
 }
 
 function recoveryWrite(context,action,{terminal=false}={}){
- const {root,plan,prior,budget,deadline,nativeReceipt,observation}=context
+ const {root,plan,budget,deadline,nativeReceipt,observation}=context
  assert.ok(Date.now()<deadline,'cumulative recovery record deadline exhausted')
  const current=measureIndependentPrior(root);assert.deepEqual(current.budget,context.budget)
  const roots=nativeReceipt?.outputAccountingRoots??observation?.roots??[plan.outputRoot,...context.accountingRoots]

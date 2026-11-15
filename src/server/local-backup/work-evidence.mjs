@@ -1,8 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { withReadHandle, readModuleError } from './read-handle.mjs'
 import { hash, need, identity, ModuleError } from './contracts.mjs'
 
-const signature = s => [s.dev,s.ino,s.size,s.mtimeMs,s.ctimeMs,s.nlink].join(':')
+const signature = s => [s.dev,s.ino,s.size,s.mtimeNs,s.ctimeNs,s.nlink].join(':')
 const outside = p => p==='..'||p.startsWith('..'+path.sep)||path.isAbsolute(p)
 const index = value => { need(typeof value==='string'&&/^(0|[1-9][0-9]?)$/.test(value),'work_evidence_index_invalid'); return Number(value) }
 // The root is resolved by the existing local-backup context, including its hot-tier mapping check.
@@ -17,25 +18,24 @@ export function createWorkEvidenceReader({runtimeRoot,ledger}) {
       let current=root;const chain=[]
       const parts=logical.slice(9).split('/')
       for(let i=0;i<parts.length;i++) {
-        current=path.join(current,parts[i]);const s=fs.lstatSync(current)
-        need(!s.isSymbolicLink()&&(i===parts.length-1?s.isFile()&&s.nlink===1:s.isDirectory())&&!outside(path.relative(root,fs.realpathSync(current))),'work_evidence_boundary',409)
+        current=path.join(current,parts[i]);const s=fs.lstatSync(current,{bigint:true})
+        need(!s.isSymbolicLink()&&(i===parts.length-1?s.isFile()&&s.nlink===1n:s.isDirectory())&&!outside(path.relative(root,fs.realpathSync(current))),'work_evidence_boundary',409)
         chain.push(signature(s))
       }
-      return {file:current,stat:fs.lstatSync(current),chain}
+      return {file:current,stat:fs.lstatSync(current,{bigint:true}),chain}
     }
     try {
       const before=locate();need(before.stat.size<=maxBytes,'work_evidence_size_limit',413)
-      const fd=fs.openSync(before.file,'r')
-      try {
-        need(signature(fs.fstatSync(fd))===signature(before.stat),'work_evidence_changed',409)
-        const bytes=Buffer.alloc(before.stat.size);let used=0
+      return withReadHandle(before.file,fd=>{
+        need(signature(fs.fstatSync(fd,{bigint:true}))===signature(before.stat),'work_evidence_changed',409)
+        const bytes=Buffer.alloc(Number(before.stat.size));let used=0
         while(used<bytes.length){const n=fs.readSync(fd,bytes,used,bytes.length-used,used);if(!n)break;used+=n}
         const after=locate()
-        need(used===bytes.length&&signature(fs.fstatSync(fd))===signature(before.stat)&&JSON.stringify(before.chain)===JSON.stringify(after.chain),'work_evidence_changed',409)
+        need(used===bytes.length&&signature(fs.fstatSync(fd,{bigint:true}))===signature(before.stat)&&JSON.stringify(before.chain)===JSON.stringify(after.chain),'work_evidence_changed',409)
         need(hash(bytes)===binding.sha256,'work_evidence_sha_conflict',409)
         return {bytes,logicalPath:logical,sha256:binding.sha256}
-      }finally{fs.closeSync(fd)}
-    }catch(e){if(e instanceof ModuleError)throw e;throw new ModuleError(e.code==='ENOENT'?'work_evidence_file_missing':'work_evidence_read_unavailable',503)}
+      })
+    }catch(e){throw readModuleError(e,'work_evidence_file_missing','work_evidence_read_unavailable')}
   }
   function json(binding){const r=read(binding,1024*1024,'.json');try{return {...r,value:JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(r.bytes))}}catch{throw new ModuleError('work_evidence_json_invalid',409)}}
   function bound(eventId,evidenceIndex){identity(eventId);const event=ledger.find(eventId);need(event,'work_event_not_found',404);const ref=event.evidenceReferences?.[index(evidenceIndex)];need(ref,'work_evidence_not_found',404);return {event,document:json(ref)}}
